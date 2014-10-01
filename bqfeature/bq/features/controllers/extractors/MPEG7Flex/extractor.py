@@ -1,25 +1,15 @@
 #features included
 # SCD,HTD2,EHD2,DCD,CSD,CLD,RSD
+import tables
 import numpy as np
 from pyMPEG7FlexLib import extractCSD,extractSCD,extractCLD,extractDCD,extractHTD,extractEHD,extractRSD
-from pylons.controllers.util import abort
-import logging
-import tables
-from bq.features.controllers.Feature import ImageImport, gobject2mask #import base class
+from bq.features.controllers.utils import image2numpy, gobject2mask, except_image_only 
 from bq.features.controllers import Feature
 from bq.features.controllers.exceptions import FeatureExtractionError
 from bqapi.comm import BQServer
-
+import logging
 log = logging.getLogger("bq.features.MPEG7")
 
-
-def except_image_only(resource):
-    if resource.image is None:
-        raise FeatureExtractionError(None, 400, 'Image resource is required')
-    if resource.mask:
-        raise FeatureExtractionError(None, 400, 'Mask resource is not required')
-    if resource.gobject:
-        raise FeatureExtractionError(None, 400, 'Gobject resource is not required')
 
 #getting a double pointer error when run with multible threads
 class SCD(Feature.BaseFeature):
@@ -40,10 +30,9 @@ class SCD(Feature.BaseFeature):
         except_image_only(resource)
         image_uri = resource.image
         image_uri = BQServer().prepare_url(image_uri, remap='display')
-        with ImageImport(image_uri) as imgimp: #looking for the file internally and externally
-            im = imgimp.from_tiff2D_to_numpy()
-            im = np.asarray(im)
-            descriptors = extractSCD(im, descSize=256) #calculating descriptor
+        im = image2numpy(image_uri)
+        im = np.uint8(im)
+        descriptors = extractSCD(im, descSize=256) #calculating descriptor
         return descriptors
 
 #FFTW is not thread-safe
@@ -63,13 +52,12 @@ class HTD2(Feature.BaseFeature):
         image_uri = resource.image
         
         image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        with ImageImport(image_uri) as imgimp: #looking for the file internally and externally
-            im = imgimp.from_tiff2D_to_numpy()
-            im = np.asarray(im)
-            width, height = im.shape
-            if width<128 and height<128:
-                raise FeatureExtractionError(resource, 415, 'Image\'s width and height must be greater than 128')
-            descriptors = extractHTD(im) #calculating descriptor
+        im = image2numpy(image_uri)
+        im = np.uint8(im)
+        width, height = im.shape
+        if width<128 and height<128:
+            raise FeatureExtractionError(resource, 415, 'Image\'s width and height must be greater than 128')
+        descriptors = extractHTD(im) #calculating descriptor
         
         return descriptors
 
@@ -95,10 +83,9 @@ class EHD2(Feature.BaseFeature):
         except_image_only(resource)
         image_uri = resource.image
         image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            im=np.asarray(im)
-            descriptors = extractEHD(im) #calculating descriptor
+        im = image2numpy(image_uri)
+        im = np.uint8(im)
+        descriptors = extractEHD(im) #calculating descriptor
         
         return descriptors
  
@@ -157,9 +144,8 @@ class DCD(MaskedMPEG7):
             raise FeatureExtractionError(400, 'Can only take either a mask or a gobject not both')
         
         image_uri = BQServer().prepare_url(image_uri, remap='display')
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            im = np.asarray(im)        
+        im = image2numpy(image_uri)
+        im = np.uint8(im)   
         
         if mask_uri is '' and gobject_uri is '':
             #calculating descriptor
@@ -179,11 +165,7 @@ class DCD(MaskedMPEG7):
         
         if mask_uri:
             mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
-            with Feature.ImageImport(mask_uri) as maskimp:
-                mask = maskimp.from_tiff2D_to_numpy()
-                im=np.asarray(im)
-                mask = np.asarray(mask)
-                
+            mask = image2numpy(mask_uri)
         
         if gobject_uri:
             #creating a mask from gobject
@@ -234,9 +216,8 @@ class CSD(MaskedMPEG7):
             raise FeatureExtractionError(400, 'Can only take either a mask or a gobject not both')
         
         image_uri = BQServer().prepare_url(image_uri, remap='display')
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            im=np.asarray(im)        
+        im = image2numpy(image_uri)
+        im = np.uint8(im)      
         
         if mask_uri is '' and gobject_uri is '':
             #calculating descriptor
@@ -247,11 +228,7 @@ class CSD(MaskedMPEG7):
         
         if mask_uri:
             mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
-            with Feature.ImageImport(mask_uri) as maskimp:
-                mask = maskimp.from_tiff2D_to_numpy()
-                im=np.asarray(im)
-                mask = np.asarray(mask)
-                
+            mask = image2numpy(mask_uri)
         
         if gobject_uri:
             #creating a mask from gobject
@@ -293,9 +270,8 @@ class CLD(MaskedMPEG7):
             raise FeatureExtractionError(400, 'Can only take either a mask or a gobject not both')
         
         image_uri = BQServer().prepare_url(image_uri, remap='display')
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            im=np.asarray(im)        
+        im = image2numpy(image_uri)
+        im = np.uint8(im)      
         
         if mask_uri is '' and gobject_uri is '':
             #calculating descriptor
@@ -306,11 +282,7 @@ class CLD(MaskedMPEG7):
         
         if mask_uri:
             mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
-            with Feature.ImageImport(mask_uri) as maskimp:
-                mask = maskimp.from_tiff2D_to_numpy()
-                im=np.asarray(im)
-                mask = np.asarray(mask)
-                
+            mask = image2numpy(mask_uri)
         
         if gobject_uri:
             #creating a mask from gobject
@@ -349,9 +321,8 @@ class RSD(MaskedMPEG7):
             raise FeatureExtractionError(400, 'Can only take either a mask or a gobject not both')
         
         image_uri = BQServer().prepare_url(image_uri, remap='display')
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            im=np.asarray(im)        
+        im = image2numpy(image_uri)
+        im = np.uint8(im)      
         
         if mask_uri is '' and gobject_uri is '':
             #calculating descriptor
@@ -362,11 +333,7 @@ class RSD(MaskedMPEG7):
         
         if mask_uri:
             mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
-            with Feature.ImageImport(mask_uri) as maskimp:
-                mask = maskimp.from_tiff2D_to_numpy()
-                im=np.asarray(im)
-                mask = np.asarray(mask)
-                
+            mask = image2numpy(mask_uri)
         
         if gobject_uri:
             #creating a mask from gobject

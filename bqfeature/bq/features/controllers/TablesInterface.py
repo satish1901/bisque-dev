@@ -29,12 +29,9 @@ else:
 from bq.image_service.controllers.locks import Locks
 #from bq.util.locks import Locks
 from bq.util.mkdir import _mkdir
-
 #fs imports
 from PytablesMonkeyPatch import pytables_fix
 from exceptions import FeatureExtractionError, FeatureServiceError, FeatureExtractionError, InvalidResourceError
-from .var import FEATURES_TABLES_FILE_DIR, EXTRACTOR_DIR, FEATURES_WORK_DIR, FEATURES_REQUEST_ERRORS_DIR
-from ID import ID
 
 log = logging.getLogger("bq.features.TablesInterface")
 

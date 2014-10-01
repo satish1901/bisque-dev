@@ -1,23 +1,13 @@
 from PyWNDCharmFeatureList import feature_list
 from bq.features.controllers import Feature #import base class
-from pylons.controllers.util import abort
+from bq.features.controllers.utils import image2numpy, except_image_only
 import numpy as np
 import logging
-from bq.features.controllers.Feature import BaseFeature, ImageImport, rgb2gray #import base class
-from PIL import Image
 
-log = logging.getLogger("bq.features")
+log = logging.getLogger("bq.features.WNDCharm")
 
 
-def except_image_only(resource):
-    if resource.image is None:
-        raise FeatureExtractionError(400, 'Image resource is required')
-    if resource.mask:
-        raise FeatureExtractionError(400, 'Mask resource is not accepted')
-    if resource.gobject:
-        raise FeatureExtractionError(400, 'Gobject resource is not accepted')
-
-class WNDCharm(BaseFeature): #base WNDCharm feature class
+class WNDCharm(Feature.BaseFeature): #base WNDCharm feature class
     """
         Initalizes table and calculates the ORB descriptor to be
         placed into the HDF5 table.
@@ -59,13 +49,10 @@ class WNDCharm(BaseFeature): #base WNDCharm feature class
         image_uri += '&'.join(args)
         
         log.debug('WNDCharm uri: %s'% image_uri)
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            
-            # extract the feature keypoints and descriptor
-            im = np.asarray(im)        
-            extractWNDCharmFeature = feature_info[0]
-            descriptor = extractWNDCharmFeature(im)
+        
+        im = image2numpy(image_uri)      
+        extractWNDCharmFeature = feature_info[0]
+        descriptor = extractWNDCharmFeature(im)
  
             
         #initalizing rows for the table

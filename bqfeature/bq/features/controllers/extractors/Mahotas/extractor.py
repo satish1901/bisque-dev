@@ -1,29 +1,20 @@
 # -*- mode: python -*-
-""" HAR library
+""" 
 """
 
 import numpy as np
 from mahotas.features import haralick,lbp,pftas,tas,zernike_moments
 from pylons.controllers.util import abort
-from bq.features.controllers.Feature import ImageImport, rgb2gray,gray2rgb #import base class
 from bq.features.controllers import Feature
+from bq.features.controllers.utils import image2numpy, except_image_only
 from bq.features.controllers.exceptions import FeatureExtractionError
 from bqapi.comm import BQServer
-from PIL import Image
+import logging
 
-
-def except_image_only(resource):
-    if resource.image is None:
-        raise FeatureExtractionError(resource, 400, 'Image resource is required')
-    if resource.mask:
-        raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted')
-    if resource.gobject:
-        raise FeatureExtractionError(resource, 400, 'Gobject resource is not accepted')
+log = logging.getLogger("bq.features.Mahotas")
 
 class HAR(Feature.BaseFeature):
     """
-        Initalizes table and calculates the HAR descriptor to be
-        placed into the HDF5 table.
     """
     #parameters
     name = 'HAR'
@@ -31,16 +22,13 @@ class HAR(Feature.BaseFeature):
     length = 13*4
     confidence = 'good'     
         
-        
     def calculate(self, resource):
         #initalizing 
         except_image_only(resource)
         
         image_uri = resource.image
         image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        with Feature.ImageImport(image_uri) as imgimp:
-            im = np.uint8(imgimp.from_tiff2D_to_numpy())
-        
+        im = image2numpy(image_uri)
         im = np.uint8(im)
         #calculate descriptor 
         descritptors = np.hstack(haralick(im))
@@ -50,15 +38,12 @@ class HAR(Feature.BaseFeature):
             
             
 class HARColored(Feature.BaseFeature):
-    """
-        Initalizes table and calculates the colored HAR descriptor to be
-        placed into the HDF5 table.    
+    """  
     """
     #parameters
     name = 'HARColored'
     description = """Haralick Texure Features with colored image input"""
     length = 169
-        
         
     def calculate(self, resource):
         #initalizing 
@@ -66,8 +51,8 @@ class HARColored(Feature.BaseFeature):
         
         image_uri = resource.image
         image_uri = BQServer().prepare_url(image_uri, remap='display')
-        with Feature.ImageImport(image_uri) as imgimp:
-            im = np.uint8(imgimp.from_tiff2D_to_numpy())
+        im = image2numpy(image_uri)
+        im = np.uint8(im)
         
         #calculate descriptor 
         descritptors = np.hstack(haralick(im))
@@ -78,8 +63,6 @@ class HARColored(Feature.BaseFeature):
 
 class LBP(Feature.BaseFeature):
     """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
     """
     
     #parameters
@@ -94,14 +77,13 @@ class LBP(Feature.BaseFeature):
         
         image_uri = resource.image
         image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            im=np.asarray(im)
+        im = image2numpy(image_uri)
+        im = np.uint8(im)
             
-             #calculating descriptor
-            radius = 5
-            points = 5
-            descriptor = lbp(im,radius,points)
+        #calculating descriptor
+        radius = 5
+        points = 5
+        descriptor = lbp(im,radius,points)
             
         #initalizing rows for the table
         return descriptor
@@ -109,8 +91,6 @@ class LBP(Feature.BaseFeature):
         
 class PFTAS(Feature.BaseFeature):
     """
-        Initalizes table and calculates the SURF descriptor to be
-        placed into the HDF5 table.
     """
     
     #parameters
@@ -126,12 +106,9 @@ class PFTAS(Feature.BaseFeature):
         
         image_uri = resource.image
         image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
- 
-            im = np.asarray(im)
-            im = np.uint8(im)
-            descriptor = pftas(im)
+        im = image2numpy(image_uri)
+        im = np.uint8(im)
+        descriptor = pftas(im)
             
         #initalizing rows for the table
         return descriptor
@@ -153,12 +130,9 @@ class PFTASColored(Feature.BaseFeature):
         
         image_uri = resource.image
         image_uri = BQServer().prepare_url(image_uri, remap='display')        
-        with ImageImport(image_uri) as imgimp:
-            im = np.uint8(imgimp.from_tiff2D_to_numpy())
-
-            im = np.asarray(im)
-            im = np.uint8(im)
-            descriptor = pftas(im)
+        im = image2numpy(image_uri)
+        im = np.uint8(im)
+        descriptor = pftas(im)
             
         #initalizing rows for the table
         return descriptor
@@ -166,7 +140,6 @@ class PFTASColored(Feature.BaseFeature):
 class TAS(Feature.BaseFeature):
     """
     """
-    
     #parameters
     name = 'TAS'
     description = """Threshold Adjacency Statistics"""
@@ -180,11 +153,9 @@ class TAS(Feature.BaseFeature):
         
         image_uri = resource.image 
         image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            im=np.asarray(im) 
-            im = np.uint8(im)
-            descriptor = tas(im)
+        im = image2numpy(image_uri)
+        im = np.uint8(im)
+        descriptor = tas(im)
             
         #initalizing rows for the table
         return descriptor
@@ -192,7 +163,6 @@ class TAS(Feature.BaseFeature):
 class TASColored(Feature.BaseFeature):
     """
     """
-    
     #parameters
     name = 'TASColored'
     description = """Threshold Adjacency Statistics"""
@@ -205,12 +175,9 @@ class TASColored(Feature.BaseFeature):
         
         image_uri = resource.image
         image_uri = BQServer().prepare_url(image_uri, remap='display')          
-        with ImageImport(image_uri) as imgimp:
-            im = np.uint8(imgimp.from_tiff2D_to_numpy())
-
-            im=np.asarray(im) 
-            im = np.uint8(im)
-            descriptor = tas(im)
+        im = image2numpy(image_uri)
+        im = np.uint8(im)
+        descriptor = tas(im)
             
         #initalizing rows for the table
         return descriptor
@@ -219,7 +186,6 @@ class TASColored(Feature.BaseFeature):
 class ZM(Feature.BaseFeature):
     """
     """
-    
     #parameters
     name = 'ZM'
     description = """Zernike Moment"""
@@ -232,13 +198,11 @@ class ZM(Feature.BaseFeature):
         
         image_uri = resource.image
         image_uri = BQServer().prepare_url(image_uri, remap='gray')        
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-                
-            im=np.asarray(im)        
-            radius=8
-            degree=8
-            descritptor = zernike_moments(im,radius,degree)
+        im = image2numpy(image_uri)
+        im = np.uint8(im)       
+        radius=8
+        degree=8
+        descritptor = zernike_moments(im,radius,degree)
             
         #initalizing rows for the table
         return descritptor

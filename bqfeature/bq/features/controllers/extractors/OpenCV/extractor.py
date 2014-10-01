@@ -4,20 +4,16 @@
 No opencv supprot for bisque.
 """
 import cv2
-import cv
-import logging
 from lxml import etree
 import numpy as np
-from pylons.controllers.util import abort
-from bq.image_service.controllers.locks import Locks
-from bq.features.controllers.Feature import ImageImport, fetch_resource #import base class
 from bq.features.controllers import Feature
+from bq.features.controllers.utils import image2numpy, gobject2mask, except_image_only, gobject2keypoint
 from bq.features.controllers.exceptions import FeatureImportError, FeatureExtractionError
-from PIL import Image
 from bqapi.comm import BQServer
 import tables
+import logging
 
-log = logging.getLogger("bq.features")
+log = logging.getLogger("bq.features.openCV")
 
 
 try:
@@ -26,47 +22,6 @@ try:
         raise FeatureImportError('OpenCV','Must use OpenCV version >= 2.4.0 and <= 2.4.9')
 except ValueError:
     raise FeatureImportError('OpenCV','Must use OpenCV version >= 2.4.0 and <= 2.4.9')
-
-
-def gobject2keypoint(uri):
-    """
-        @param: uri - 
-    """ 
-    valid_gobject = set(['circle', 'point'])
-    uri_full = BQServer().prepare_url(uri, view='full')
-    response = fetch_resource(uri_full)
-    
-    try:
-        xml = etree.fromstring(response)
-    except etree.XMLSyntaxError:
-        raise FeatureExtractionError(None, 415, 'Url: %s, was not xml for gobject' % uri)
-    
-    #need to check if its a valid gobject
-    if xml.tag not in valid_gobject:
-        raise FeatureExtractionError(None, 415, 'Url: %s, Gobject tag: %s is not a valid gobject to make a mask' % (uri,xml.tag))
-    
-    if xml.tag == 'circle':
-        vertices = xml.xpath('vertex')
-        center_x = vertices[0].attrib.get('x')
-        center_y = vertices[0].attrib.get('y')
-        outer_vertex_x = vertices[1].attrib.get('x')
-        outer_vertex_y = vertices[1].attrib.get('y')
-
-        if center_x is None or center_y is None or outer_vertex_x is None or outer_vertex_y is None:
-            raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have x or y coordinate' % uri)
-        
-        r = np.sqrt(np.square(int(float(outer_vertex_x))-int(float(center_x)))+
-                    np.square(int(float(outer_vertex_y))-int(float(center_y))))
-        
-        return (int(float(center_x)), int(float(center_y)), 2*r)
-
-    if xml.tag == 'point':
-        point = xml.xpath('vertex')[0]
-        point_x = point.attrib.get('x')
-        point_y = point.attrib.get('y')
-        if point_x is None or point_y is None:
-            raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have x or y coordinate' % uri)
-        return (int(float(point_x)), int(float(point_y)), 1.0)
 
 
 class KeyPointFeatures(Feature.BaseFeature):
@@ -91,7 +46,6 @@ class KeyPointFeatures(Feature.BaseFeature):
             'octave'    : tables.Float32Col(pos=8)
                 }
     
-        
     def workdir_columns(self):
         """
             Columns for the output table for the feature column
@@ -131,12 +85,8 @@ class BRISK(KeyPointFeatures):
             raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted')
 
         image_url = BQServer().prepare_url(image_url, remap='gray')
-        with ImageImport(image_url) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            if len(im.shape)==3:
-                im = rgb2gray(im)
-            im=np.asarray(im)
-            im = im.astype(np.uint8)
+        im = image2numpy(image_url)
+        im = np.uint8(im)
         
         if gobject_url is '':
             fs = cv2.BRISK().detect(im) # keypoints
@@ -190,10 +140,8 @@ class ORB(KeyPointFeatures):
             raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted')
         
         image_url = BQServer().prepare_url(image_url, remap='display')
-        with ImageImport(image_url) as imgimp:     
-            im = imgimp.from_tiff2D_to_numpy()
-            im=np.asarray(im)
-            im = im.astype(np.uint8)   
+        im = image2numpy(image_url)
+        im = np.uint8(im)
             
         if gobject_url is '': 
             fs = cv2.ORB().detect(im) 
@@ -242,10 +190,8 @@ class SIFT(KeyPointFeatures):
             raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted')
 
         image_url = BQServer().prepare_url(image_url, remap='display')
-        with ImageImport(image_url) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            im=np.asarray(im)
-            im = im.astype(np.uint8)
+        im = image2numpy(image_url)
+        im = np.uint8(im)
 
         if gobject_url is '': 
             fs = cv2.SIFT().detect(im)
@@ -300,10 +246,8 @@ class SURF(KeyPointFeatures):
             raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted')
 
         image_url = BQServer().prepare_url(image_url, remap='display')
-        with ImageImport(image_url) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            im=np.asarray(im)
-            im = im.astype(np.uint8)
+        im = image2numpy(image_url)
+        im = np.uint8(im)
  
         if gobject_url is '':
             fs = cv2.SURF().detect(im)
@@ -314,9 +258,6 @@ class SURF(KeyPointFeatures):
             
         descriptor_extractor = cv2.DescriptorExtractor_create("SURF")
         (kpts, descriptors) = descriptor_extractor.compute(im, fs)
-        log.debug('fs: %s' % fs)
-        log.debug('im: %s' % im)
-        log.debug('descriptors: %s'%descriptors)
         
         if descriptors == None: #taking Nonetype into account
             raise FeatureExtractionError(resource, 500, 'No feature was calculated')
