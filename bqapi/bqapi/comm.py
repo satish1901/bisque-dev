@@ -462,12 +462,10 @@ class BQSession(object):
         url = self.c.prepare_url(import_service_url, **params)
         if isinstance(filename, basestring):
             with open(filename, 'rb') as f:
-                fields = {'file': (filename, f, mimetypes.guess_type(filename)[0])} #not sure if all filenames should be decoded from utf8
-                                                                         #also have not tested on python3 yet
+                fields = {'file': (filename, f)}
                 if xml!=None:
                     if isinstance(xml, etree._Element):
                         xml = etree.tostring(xml)
-                    
                     fields['file_resource'] = (None, xml, "text/xml")
                 
                 return self.c.post(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
@@ -618,7 +616,7 @@ class BQSession(object):
             log.error ("Problem during finish mex %s" % ce.headers)
             try:
                 return self.update_mex( status='FAILED',tags= [  { 'name':'error_message', 'value':  "Error during saving (status %s)" % ce.status } ] )
-            except Exception:
+            except:
                 log.exception ("Cannot finish/fail Mex ")
 
 

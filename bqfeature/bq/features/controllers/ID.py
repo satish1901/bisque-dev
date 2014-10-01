@@ -10,11 +10,6 @@ import numpy as np
 import uuid
 import logging
 log = logging.getLogger("bq.features")
-
-from bq.util.locks import Locks
-from pylons.controllers.util import abort
-from bq.util.paths import data_path
-
 from .var import FEATURES_TABLES_FILE_DIR
 import Feature
 
