@@ -120,7 +120,7 @@ def cleanup_dir():
         for name in files:
             try:
                 os.remove(os.path.join(root, name))
-            except:
+            except Exception:
                 pass
 
 #upload functions

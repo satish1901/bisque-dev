@@ -132,7 +132,7 @@ if hasattr(cgi, 'file_upload_handler'):
         import tempfile
         try:
             return tempfile.NamedTemporaryFile('w+b', suffix = os.path.basename(filename), dir=tmp_upload_dir, delete = False)
-        except:
+        except Exception:
             return tempfile.TemporaryFile('w+b', dir=tmp_upload_dir)
 
     #map callables to paths here
@@ -374,7 +374,7 @@ class import_serviceController(ServiceController):
         # unpack the contents of the packaged file
         try:
             members = self.unPack(filepath, unpack_dir, preserve_structure)
-        except:
+        except Exception:
             log.exception('Problem unpacking %s in %s' , filepath, unpack_dir)
             raise
 
@@ -976,7 +976,7 @@ class import_serviceController(ServiceController):
                         except etree.XMLSyntaxError:
                             log.exception ("while parsing %s" , resource)
                             raise
-                except:
+                except Exception:
                     log.exception("Couldn't read resource parameter %s" , toascii(resource))
                     resource = None
             return resource

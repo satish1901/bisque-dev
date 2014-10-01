@@ -62,7 +62,7 @@ def main():
             mexrunner.process_pending()
         except  (KeyboardInterrupt, SystemExit):
             raise
-        except:
+        except Exception:
             log.exception("Continuing after exception:")
         time.sleep(qwait)
 

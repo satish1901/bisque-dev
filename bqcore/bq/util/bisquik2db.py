@@ -716,7 +716,7 @@ def load_uri (uri, query=False):
             resource = resource.first()
         log.debug ("loaded %s", str(resource))
         return resource
-    except:
+    except Exception:
         log.exception("Failed to load uri %s", uri)
         return None
 

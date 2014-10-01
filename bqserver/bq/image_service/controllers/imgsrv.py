@@ -858,7 +858,7 @@ class FormatService(object):
                     if 'image_num_z' in data_token.dims: info['image_num_z'] = data_token.dims['image_num_z']
                     if 'image_num_t' in data_token.dims: info['image_num_t'] = data_token.dims['image_num_t']
                 data_token.dims = info
-            except:
+            except Exception:
                 pass
 
         return data_token
@@ -2099,7 +2099,7 @@ class RotateService(object):
 #                     bfinfo['converted_file'] = ofile
 #                     self.server.setImageInfo( id=image_id, info=bfinfo )
 #
-#             except:
+#             except Exception:
 #                 log.error('Error running BioFormats: %s'%sys.exc_info()[0])
 #
 #         if not os.path.exists(ofile) or not imgcnv.supported(ofile):
@@ -2674,7 +2674,7 @@ class ImageServer(object):
 
         try:
             service = self.services[method]
-        except:
+        except Exception:
             #do nothing
             service = None
 
@@ -2706,7 +2706,7 @@ class ImageServer(object):
                         service = self.services[action]
                         #log.debug ('DRY run: %s', action)
                         data_token = service.dryrun(ident, data_token, args)
-                    except:
+                    except Exception:
                         pass
                     if data_token.isHttpError():
                         break

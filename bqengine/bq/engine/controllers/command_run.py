@@ -11,7 +11,7 @@ import pickle
 import tempfile
 try:
     from lxml import etree as et
-except:
+except Exception:
     from xml.etree import ElementTree as et
 from bq.util.configfile import ConfigFile
 from bqapi import BQSession

@@ -38,7 +38,7 @@ def parse_soap_saml(xml):
     attributes = {}
     try:
         response = etree.XML(xml)
-    except:
+    except Exception:
         return attributes
 
     # Pull out username and attributes if available

@@ -157,7 +157,7 @@ class WorkerThread(threading.Thread):
                 try:
                     result = request.callable(*request.args, **request.kwds)
                     self._results_queue.put((request, result))
-                except:
+                except Exception:
                     request.exception = True
                     self._results_queue.put((request, sys.exc_info()))
 

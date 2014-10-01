@@ -121,7 +121,7 @@ def encode_etrees (a):
     def encode_etree (arg):
         try:
             return etree.XML (arg)
-        except:
+        except Exception:
             return arg
     if hasattr(a, '__iter__'):
         return [ encode_etree (x) for x in a ]
@@ -196,7 +196,7 @@ def fullpathurl(url):
 #                 log.debug ("ProxyRewrite %s  %s->%s in %s..." %( cherrypy.request.path, self.external_url, self.bisquik_root, body[0:200]))
 #                 if len(body):
 #                     cherrypy.request.body = StringIO(body.replace (self.external_url, self.bisquik_root))
-#             except:
+#             except Exception:
 #                 log.debug ("BODY=%s " % body)
 #                 raise
 

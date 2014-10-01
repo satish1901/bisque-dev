@@ -569,7 +569,7 @@ class EngineModuleResource(BaseController):
                 mextree.append(etree.Element('tag', name='error_message', value=str(e)))
                 log.debug ('QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ' + str(e))
                 tg.response.status_int = 500
-            except:
+            except Exception:
                 log.exception ("Execption in adaptor:" )
                 mextree.set('value', 'FAILED')
                 excType, excVal, excTrace  = sys.exc_info()

@@ -12,7 +12,7 @@ logging.basicConfig(level = logging.WARN)
 
 try:
     from lxml import etree as et
-except:
+except Exception:
     from xml.etree import ElementTree as et
 
 try:
@@ -22,7 +22,7 @@ try:
     def isimagefile(fname):
         ftype = ms.file(fname)
         return ftype.lower().find ('image') >= 0
-except:
+except Exception:
     def isimagefile(fname):
         return True
 

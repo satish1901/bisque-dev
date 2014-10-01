@@ -51,7 +51,7 @@ class OpenIDAuth(object):
             try:
                 if self.auto_register:
                     name = self._auto_register(environ, identity, name)
-            except:
+            except Exception:
                 self.log.exception("problem in autoreg")
 
             return name

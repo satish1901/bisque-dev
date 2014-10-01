@@ -433,5 +433,5 @@ class ConverterImgcnv(ConverterBase):
 
 try:
     ConverterImgcnv.init()
-except:
+except Exception:
     log.warn("Imgcnv not available")

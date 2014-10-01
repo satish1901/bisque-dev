@@ -317,7 +317,7 @@ class OLDSTUFF():
                 DBSession.delete(resource)
                 #DBSession.flush()
                 return "<response/>"
-        except:
+        except Exception:
             pass
         return '<response>Error in deleting resource</response>'
             

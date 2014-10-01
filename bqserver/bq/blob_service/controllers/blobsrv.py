@@ -502,7 +502,7 @@ class BlobServer(RestController, ServiceMixin):
             try:
                 with open(localpath) as f:
                     blob_id, flocal = dst_store.write(f, filename, user_name = user_name)
-            except:
+            except Exception:
                 log.error("move failed for resource_uniq %s" , resource.resource_uniq)
                 continue
             old_blob_id = resource.resource_value

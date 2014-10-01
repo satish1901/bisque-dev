@@ -176,7 +176,7 @@ class BIXImporter(object):
             data_service.update (self.resource)
         except BIXError, e:
             log.error ("Exception" + e)
-        except:
+        except Exception:
             log.exception ("BixImport")
         if  self.resource is None:
             return '', ''
@@ -188,7 +188,7 @@ class BIXImporter(object):
         #    bixlog.close()
         #except IOError, (errno, strerr):
         #    log.error ("can't append to bixlog: %s" % (strerr) )
-        #except:
+        #except Exception:
         #    log.error ("Upexpected %s " % ( sys.exc_info()[0]))
         del et
         return self.resource.get('name'), self.resource.get('uri')

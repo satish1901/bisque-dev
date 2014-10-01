@@ -139,7 +139,7 @@ class ClientServer(ServiceController):
             try:
                 image = data_service.get_resource(imageurl)
                 thumbnail = '/image_service/image/%s?thumbnail=%s'%(image.get('resource_uniq'), thumb_size)
-            except:
+            except Exception:
                 log.exception('bisque.background (%s) set but not available' % imageurl)
         else:
             tag_query = config.get('bisque.background_query', "welcome_background:")

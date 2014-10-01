@@ -233,7 +233,7 @@ class BisquikResource(Resource):
             return resource_load(self.resource_type, ident=int(token))
         except ValueError, e:
             abort (404)
-        except:
+        except Exception:
             log.exception ('While loading:')
             abort(404)
 

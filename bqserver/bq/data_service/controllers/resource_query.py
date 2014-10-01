@@ -109,7 +109,7 @@ report_errors = True
 try:
     import ply.yacc as yacc
     import ply.lex as lex
-except:
+except Exception:
     import yacc as yacc
     import lex as lex
 
@@ -1035,7 +1035,7 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
                                                   "Invitation to view",
                                                   invite,
                                                   )
-                except:
+                except Exception:
                     log.exception("Mail not sent")
 
         resource.acl = shares

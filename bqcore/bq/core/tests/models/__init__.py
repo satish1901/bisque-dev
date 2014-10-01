@@ -34,7 +34,7 @@ class ModelTest(object):
             DBSession.add(self.obj)
             DBSession.flush()
             return self.obj
-        except:
+        except Exception:
             DBSession.rollback()
             raise
 

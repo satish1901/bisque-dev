@@ -357,7 +357,7 @@ class ConverterBioformats(ConverterBase):
 
             try:
                 tag, val = [ l.strip(' \n') for l in line.split('=',1) ]
-            except:
+            except Exception:
                 break
             if not tag in bfmap:
                 continue
@@ -492,5 +492,5 @@ class ConverterBioformats(ConverterBase):
 
 try:
     ConverterBioformats.init()
-except:
+except Exception:
     log.warn("Bioformats unavailable")

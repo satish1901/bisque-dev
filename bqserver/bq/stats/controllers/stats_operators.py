@@ -145,7 +145,7 @@ class StatOperatorTagNameNumeric (StatOperator):
         def intValueSafe(t):
             try:
                 return float(t.attrib['name'])
-            except:
+            except Exception:
                 return None
         return map(intValueSafe, v_in)
         
@@ -158,7 +158,7 @@ class StatOperatorTagValueNumeric (StatOperator):
             v = BQValue(element=t)
             try:
                 return float(v.toString())
-            except:
+            except Exception:
                 return None
         return map(intValueSafe, v_in)
         

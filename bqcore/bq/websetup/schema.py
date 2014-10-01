@@ -21,7 +21,7 @@ def setup_schema(command, conf, vars):
         try:
             log.info ('found service %s' % x)
             service = x.load()
-        except:
+        except Exception:
             log.exception("Issue loading %s" % x)
             continue
         log.info ("Creating tables for " + str(x))

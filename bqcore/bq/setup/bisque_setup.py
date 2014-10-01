@@ -137,7 +137,7 @@ def copy_link (*largs):
             if os.path.exists (dest):
                 os.unlink(dest)
             os.link(f, dest)
-        except:
+        except Exception:
             if os.name is not 'nt':
                 log.exception( "Problem in link %s .. trying copy" , f)
             shutil.copyfile (f, dest)
@@ -202,7 +202,7 @@ def sql(DBURI, statement, verbose = False):
         engine = create_engine(DBURI, echo= verbose)
         result = engine.execute(sql.text(statement))
         return 0, result.fetchall()
-    except:
+    except Exception:
         if verbose:
             log.exception('in sql %s' % statement)
         return 1, ''
@@ -647,7 +647,7 @@ def install_driver(DBURL):
                 pkg_resources.require(ei_drname)
                 print 'Package %s successfully installed.' % ei_drname
                 return True
-            except:
+            except Exception:
                 print "ERROR: Could not easy install package"
                 print "Usually this occurs if the development headers for a partcular driver"
                 print "are not available. Please check the Bisque Wiki"
@@ -681,7 +681,7 @@ def test_db_existance(DBURL):
             d.dispose()
         print 'Yes, it exists.'
         return True
-    except:
+    except Exception:
         log.warn("Could not contact database")
         return False
 
@@ -768,7 +768,7 @@ def create_database(DBURL):
             if callable(create_db):
                 try:
                     db_exists = create_db (DBURL)
-                except:
+                except Exception:
                     log.exception('Could not create database')
 
     if not db_exists:
