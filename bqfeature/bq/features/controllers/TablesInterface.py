@@ -26,8 +26,7 @@ else:
 #HDF5_Global_Lock = threading.Lock() get it to run just blocking threads
 
 #bisque imports
-from bq.image_service.controllers.locks import Locks
-#from bq.util.locks import Locks
+from bq.util.locks import Locks
 from bq.util.mkdir import _mkdir
 #fs imports
 from PytablesMonkeyPatch import pytables_fix

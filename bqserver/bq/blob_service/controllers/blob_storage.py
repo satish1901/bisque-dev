@@ -66,7 +66,7 @@ from bq.util.hash import make_short_uuid
 from bq.util.http import get_file
 from bq.util.compat import OrderedDict
 
-from bq.image_service.controllers.misc import blocked_alpha_num_sort
+from bq.util.io_misc import blocked_alpha_num_sort
 
 log = logging.getLogger('bq.blobs.storage')
 

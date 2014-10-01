@@ -310,8 +310,9 @@ def startup():
     #
     # Encoding issues
     import locale
+    import os
     log.debug ("Using locale %s local.preferredencoding %s sys.defaultencoding %s",  locale.getlocale(), locale.getpreferredencoding(), sys.getdefaultencoding())
-    if locale.getpreferredencoding() != "UTF-8":
+    if locale.getpreferredencoding() != "UTF-8" and os.name != 'nt':
          log.warn('locale encoding will not allow Unicode to work properly:  Please try to set LANG="en_US.UTF-8" in your environment')
 
     # http://stackoverflow.com/questions/3828723/why-we-need-sys-setdefaultencodingutf-8-in-a-py-script

@@ -11,7 +11,7 @@ import uuid
 import logging
 log = logging.getLogger("bq.features")
 
-from bq.image_service.controllers.locks import Locks
+from bq.util.locks import Locks
 from pylons.controllers.util import abort
 from bq.util.paths import data_path
 
