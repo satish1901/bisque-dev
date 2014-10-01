@@ -1,3 +1,12 @@
+"""
+    A patch to format_header_param in urllib3
+    
+    If a value has unicode the header will be returned
+    as 'name="value"; name*=utf-8''value' else 
+    'name="value"'
+"""
+
+
 import numpy
 import requests
 import requests.packages.urllib3 as urllib3
@@ -13,9 +22,10 @@ requests_v = [int(s) for s in requests.__version__.split('.')]
 
 if requests_v < [2, 4, 0] or requests_v > [2, 4, 1]:
     warnings.warn("""\
-We need to patch requests 2.4.0 up to 2.4.2, make sure your version of requests
-needs patching, greater than 2.4.1 we do know if this patch applys"""
+We need to patch requests 2.4.0 up to 2.4.1, make sure your version of requests
+needs this patch, greater than 2.4.1 we do not know if this patch applys."""
                   )
+    raise ImportError('Requests 2.4.0 to 2.4.1 is required!')
 #elif requests_v > [3, 0, 0]:
 #    #does not require this patch
 #    pass
@@ -42,12 +52,12 @@ else:
                 pass
             else:
                 return result
-        if not six.PY3:  # Python 2:
+        if not six.PY3: # Python 2:
             value = value.encode('utf-8')
             
-        value = '%s="%s"; %s*=%s' % (
-            name, value.decode('utf-8'),
-            name, email.utils.encode_rfc2231(value, 'utf-8'),
+        value = '%s; %s*=%s' % (
+            result,
+            name, email.utils.encode_rfc2231(value, 'utf-8')     
         )
         return value
 
