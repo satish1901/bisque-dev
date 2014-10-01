@@ -172,7 +172,7 @@ class ImageServiceTestBase(unittest.TestCase):
     def fetch_file(self, filename):
         _mkdir(local_store_images)
         _mkdir(local_store_tests)
-        url = posixpath.join(url_image_store, filename)
+        url = posixpath.join(url_image_store, filename).encode('utf-8')
         path = os.path.join(local_store_images, filename)
         if not os.path.exists(path):
             urllib.urlretrieve(url, path)
@@ -184,7 +184,7 @@ class ImageServiceTestBase(unittest.TestCase):
         #    print etree.tostring(resource)
         r = save_blob(self.session, path, resource=resource)
         if r is None or r.get('uri') is None:
-            print 'Error uploading: %s'%path
+            print 'Error uploading: %s'%path.encode('ascii', 'replace')
             return None
         print 'Uploaded id: %s url: %s'%(r.get('resource_uniq'), r.get('uri'))
         return r

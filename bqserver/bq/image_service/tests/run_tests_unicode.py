@@ -23,7 +23,14 @@ from bqapi.comm import BQSession, BQCommError
 
 from bq.image_service.tests.tests_base import ImageServiceTestBase
 
-image_unicode       = 'пустыня.jpg' #utf-8 encoded filename
+image_unicode_jpeg  = 'пустыня.jpg' #utf-8 encoded filename
+image_unicode_mov   = 'видео.mov' #utf-8 encoded filename
+image_unicode_ims   = 'никлаус.ims' #utf-8 encoded filename
+image_unicode_oib   = 'ретина.oib' #utf-8 encoded filename
+image_unicode_tiff  = 'рыбы.tif' #utf-8 encoded filename
+image_unicode_dicom = 'сердце.dcm' #utf-8 encoded filename
+image_unicode_svs   = 'сму_регион.svs' #utf-8 encoded filename
+
 
 ##################################################################
 # ImageServiceTests
@@ -45,21 +52,31 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         self.session = BQSession().init_local(self.user, self.pswd,  bisque_root=self.root, create_mex=False)
 
         # download and upload test images ang get their IDs
-        self.resource_unicode   = self.ensure_bisque_file(image_unicode.decode('utf-8'))
-           
-
+        self.resource_unicode_jpeg  = self.ensure_bisque_file(image_unicode_jpeg.decode('utf-8'))
+        self.resource_unicode_mov   = self.ensure_bisque_file(image_unicode_mov.decode('utf-8'))
+        self.resource_unicode_oib   = self.ensure_bisque_file(image_unicode_oib.decode('utf-8'))
+        self.resource_unicode_tiff  = self.ensure_bisque_file(image_unicode_tiff.decode('utf-8'))
+        self.resource_unicode_ims   = self.ensure_bisque_file(image_unicode_ims.decode('utf-8'))
+        self.resource_unicode_dicom = self.ensure_bisque_file(image_unicode_dicom.decode('utf-8'))                                   
+        self.resource_unicode_svs   = self.ensure_bisque_file(image_unicode_svs.decode('utf-8'))   
+        
     @classmethod
     def tearDownClass(self):
-        self.delete_resource(self.resource_unicode)
+        self.delete_resource(self.resource_unicode_jpeg)
+        self.delete_resource(self.resource_unicode_mov)
+        self.delete_resource(self.resource_unicode_oib)
+        self.delete_resource(self.resource_unicode_tiff)
+        self.delete_resource(self.resource_unicode_ims)
+        self.delete_resource(self.resource_unicode_dicom)
+        self.delete_resource(self.resource_unicode_svs)
         self.cleanup_tests_dir()
-        pass
 
     # tests
 
-    def test_thumbnail_unicode(self):
-        resource = self.resource_unicode
+    def test_thumbnail_unicode_jpeg(self):
+        resource = self.resource_unicode_jpeg
+        filename = 'unicode.jpeg.thumbnail.jpg'
         self.assertIsNotNone(resource, 'Resource was not uploaded')
-        filename = 'unicode.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
             'image_num_x': '128',
@@ -70,6 +87,96 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
             'image_pixel_depth': '8',
             'image_pixel_format': 'unsigned integer' }
         self.validate_image_variant(resource, filename, commands, meta_required)
+
+    def test_thumbnail_unicode_mov(self):
+        resource = self.resource_unicode_mov
+        filename = 'unicode.mov.thumbnail.jpg'
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
+        commands = [('thumbnail', None)]
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '128',
+            'image_num_y': '109',
+            'image_num_c': '3',
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' }
+        self.validate_image_variant(resource, filename, commands, meta_required)
+
+    def test_thumbnail_unicode_oib(self):
+        resource = self.resource_unicode_oib
+        filename = 'unicode.oib.thumbnail.jpg'
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
+        commands = [('thumbnail', None)]
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '128',
+            'image_num_y': '128',
+            'image_num_c': '3',
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' }
+        self.validate_image_variant(resource, filename, commands, meta_required)
+
+    def test_thumbnail_unicode_tiff(self):
+        resource = self.resource_unicode_tiff
+        filename = 'unicode.tiff.thumbnail.jpg'
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
+        commands = [('thumbnail', None)]
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '128',
+            'image_num_y': '96',
+            'image_num_c': '3',
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' }
+        self.validate_image_variant(resource, filename, commands, meta_required)
+
+    def test_thumbnail_unicode_ims(self):
+        resource = self.resource_unicode_ims
+        filename = 'unicode.ims.thumbnail.jpg'
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
+        commands = [('thumbnail', None)]
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '128',
+            'image_num_y': '128',
+            'image_num_c': '3',
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' }
+        self.validate_image_variant(resource, filename, commands, meta_required)
+
+    def test_thumbnail_unicode_dicom(self):
+        resource = self.resource_unicode_dicom
+        filename = 'unicode.dicom.thumbnail.jpg'
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
+        commands = [('thumbnail', None)]
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '128',
+            'image_num_y': '128',
+            'image_num_c': '3',
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' }
+        self.validate_image_variant(resource, filename, commands, meta_required)
+        
+    def test_thumbnail_unicode_svs(self):
+        resource = self.resource_unicode_svs
+        filename = 'unicode.svs.thumbnail.jpg'
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
+        commands = [('thumbnail', None)]
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '95',
+            'image_num_y': '128',
+            'image_num_c': '3',
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' }
+        self.validate_image_variant(resource, filename, commands, meta_required)     
 
 
 #def suite():

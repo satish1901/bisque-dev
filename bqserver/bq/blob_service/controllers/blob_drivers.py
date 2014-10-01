@@ -67,7 +67,7 @@ from bq.util.mkdir import _mkdir
 from bq.util.compat import OrderedDict
 from bq.util.urlpaths import *
 
-from bq.util.io_misc import blocked_alpha_num_sort
+from bq.util.io_misc import blocked_alpha_num_sort, tounicode
 
 log = logging.getLogger('bq.blobs.drivers')
 
@@ -242,7 +242,7 @@ class LocalDriver (StorageDriver):
             # OLD STYLE : may have written %encoded values to file system
             path = posixpath.normpath(urlparse.urlparse(storeurl).path)
             path = force_filesys (path)
-            log.debug ("checking unquoted %s", path.decode('utf8'))
+            log.debug ("checking unquoted %s", tounicode(path))
             if os.path.exists (path):
                 return path  # not returning an actual URL ..
         elif storeurl.startswith('file:///'):
@@ -253,7 +253,7 @@ class LocalDriver (StorageDriver):
         else:
             return None
         localpath = url2localpath (storeurl)
-        log.debug ("checking %s", localpath.decode('utf8'))
+        log.debug ("checking %s", tounicode(localpath))
         return os.path.exists(localpath) and localpath2url(localpath)
 
     # New interface
@@ -266,7 +266,7 @@ class LocalDriver (StorageDriver):
         _mkdir (os.path.dirname(localpath))
         for x in range(100):
             if not os.path.exists (localpath):
-                log.debug('local.write: %s -> %s' , storeurl.decode('utf8'), localpath.decode('utf8'))
+                log.debug('local.write: %s -> %s' , tounicode(storeurl), tounicode(localpath))
                 #patch for no copy file uploads - check for regular file or file like object
                 move_file (fp, localpath)
                 ident = localpath[len(self.top_path):]
@@ -274,10 +274,10 @@ class LocalDriver (StorageDriver):
                     ident = ident[1:]
                 #ident = "file://%s" % localpath
                 ident = localpath2url(ident)
-                log.debug('local.blob_id: %s -> %s',  storeurl.decode('utf8'),  localpath.decode('utf8'))
+                log.debug('local.blob_id: %s -> %s',  tounicode(storeurl), tounicode(localpath))
                 return ident, localpath
             localpath = "%s-%04d%s" % (fpath , x , ext)
-            log.debug ("local.write: File exists... trying %s", localpath.decode('utf8'))
+            log.debug ("local.write: File exists... trying %s", tounicode(localpath))
         raise DuplicateFile(localpath)
 
     def pull (self, storeurl, localpath=None):
