@@ -54,6 +54,7 @@ DESCRIPTION
    Provides login and logout services.
 
 """
+import sys
 import logging
 import time
 import urlparse
@@ -309,7 +310,10 @@ def startup():
     #
     # Encoding issues
     import locale
-    log.info ("Using locale %s preferredencoding %s",  locale.getlocale(), locale.getpreferredencoding())
+    log.debug ("Using locale %s local.preferredencoding %s sys.defaultencoding %s",  locale.getlocale(), locale.getpreferredencoding(), sys.getdefaultencoding())
+    if locale.getpreferredencoding() != "UTF-8":
+         log.warn('locale encoding will not allow Unicode to work properly:  Please try to set LANG="en_US.UTF-8" in your environment')
+
     # http://stackoverflow.com/questions/3828723/why-we-need-sys-setdefaultencodingutf-8-in-a-py-script
     # reload(sys)
     # sys.setdefaultencoding('utf8') or 'latin1'
