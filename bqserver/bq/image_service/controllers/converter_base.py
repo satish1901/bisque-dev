@@ -19,9 +19,8 @@ from pylons.controllers.util import abort
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
 from itertools import groupby
-
-from .locks import Locks
-from . import misc
+from bq.util.locks import Locks
+import bq.util.io_misc as misc
 
 import logging
 log = logging.getLogger('bq.image_service.converter')

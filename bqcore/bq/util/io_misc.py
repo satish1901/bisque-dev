@@ -25,7 +25,7 @@ import re
 from bq.util.mkdir import _mkdir
 
 import logging
-log = logging.getLogger('bq.image_service.misc')
+log = logging.getLogger('bq.util.io_misc')
 
 
 ################################################################################

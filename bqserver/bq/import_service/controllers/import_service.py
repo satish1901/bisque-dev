@@ -103,7 +103,7 @@ from bq import data_service
 from bq import blob_service
 from bq import image_service
 from bq.blob_service.controllers.blob_drivers import move_file
-from bq.image_service.controllers.misc import blocked_alpha_num_sort, toascii
+from bq.util.io_misc import blocked_alpha_num_sort, toascii
 
 #from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
 #from bq.image_service.controllers.converter_bioformats import ConverterBioformats

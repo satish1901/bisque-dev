@@ -17,13 +17,13 @@ import logging
 import os.path
 from lxml import etree
 #from subprocess import call
-from .locks import Locks
+from bq.util.locks import Locks
 
 from tg import config
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
+import bq.util.io_misc as misc
 
-from . import misc
 from .converter_base import ConverterBase, Format
 
 log = logging.getLogger('bq.image_service.converter_imgcnv')

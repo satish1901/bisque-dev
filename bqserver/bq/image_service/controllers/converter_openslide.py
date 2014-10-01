@@ -27,11 +27,11 @@ import cStringIO as StringIO
 import ConfigParser
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
+from bq.util.locks import Locks
+import bq.util.io_misc as misc
 
-from . import misc
 from .converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
-from .locks import Locks
 
 try:
     import openslide

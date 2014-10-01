@@ -18,8 +18,8 @@ import time
 import logging
 import threading
 
-from read_write_locks import HashedReadWriteLock
-import  XFile
+from .read_write_locks import HashedReadWriteLock
+from . import XFile
 
 
 rw = HashedReadWriteLock()
@@ -27,7 +27,7 @@ LOCK_SLEEP = 0.3
 MAX_SLEEP  = 8
 
 class Locks (object):
-    log = logging.getLogger('bq.image_service.locks')
+    log = logging.getLogger('bq.util.locks')
 
     def debug(self, msg):
         """Log detailed info about the locking of threads and files"""

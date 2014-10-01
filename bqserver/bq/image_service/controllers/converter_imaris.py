@@ -22,11 +22,11 @@ import cStringIO as StringIO
 import ConfigParser
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
+import bq.util.io_misc as misc
 
-from . import misc
 from .converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
-from .locks import Locks
+from bq.util.locks import Locks
 
 import logging
 log = logging.getLogger('bq.image_service.converter_imaris')

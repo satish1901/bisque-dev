@@ -67,7 +67,7 @@ from bq.util.mkdir import _mkdir
 from bq.util.compat import OrderedDict
 from bq.util.urlpaths import *
 
-from bq.image_service.controllers.misc import blocked_alpha_num_sort
+from bq.util.io_misc import blocked_alpha_num_sort
 
 log = logging.getLogger('bq.blobs.drivers')
 

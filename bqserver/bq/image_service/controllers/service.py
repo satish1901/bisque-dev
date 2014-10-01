@@ -26,8 +26,7 @@ from bq.util.mkdir import _mkdir
 from bq import data_service
 from bq import export_service
 from imgsrv import ImageServer, ProcessToken, getQuery4Url
-
-from . import misc
+import bq.util.io_misc as misc
 
 log = logging.getLogger("bq.image_service")
 

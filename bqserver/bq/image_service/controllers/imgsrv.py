@@ -36,9 +36,8 @@ from bq.util.mkdir import _mkdir
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
 
-# Locals
-from .locks import Locks
-from . import misc
+from bq.util.locks import Locks
+import bq.util.io_misc as misc
 
 from .converter_imgcnv import ConverterImgcnv
 from .converter_imaris import ConverterImaris
