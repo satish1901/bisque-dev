@@ -55,8 +55,12 @@ else:
         if not six.PY3: # Python 2:
             value = value.encode('utf-8')
             
-        value = '%s; %s*=%s' % (
-            result,
+        value_encode = value
+        if not six.PY3: # Python 2:
+            value_encode = value.encode('utf-8')
+            
+        value = '%s=%s; %s*=%s' % (
+            name, value,
             name, email.utils.encode_rfc2231(value, 'utf-8')     
         )
         return value
