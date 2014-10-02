@@ -1,6 +1,8 @@
 from lxml import etree
 from threading import Thread
 import threading
+import socket
+import errno
 import tempfile
 import tables
 import os
@@ -305,8 +307,14 @@ class ParallelFeature(Feature):
         def request_factory(partial_resource_list):
             def request():
                 f = tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir())
-                f.close()                    
-                write_queue.put(super(ParallelFeature, self).fetch(session, name, partial_resource_list, path=f.name))
+                f.close()
+                try:
+                    path = super(ParallelFeature, self).fetch(session, name, partial_resource_list, path=f.name)
+                except socket.error as e:
+                    if e.errno == errno.WSAECONNRESET:
+                        log.debug('Connection fail: attempting to reconnect')
+                        path = super(ParallelFeature, self).fetch(session, name, partial_resource_list, path=f.name)
+                write_queue.put(path)
             return request
         
         if hasattr(self,'thread_num') and hasattr(self,'chunk_size'):

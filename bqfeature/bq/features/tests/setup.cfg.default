@@ -15,4 +15,12 @@ feature_sample:
 #will try to fetch from the data storage provided
 test_image: flowers_24bit_nointr.png
 
+
+[ParallelTest]
+threads: 4
+test_image: changing_tides.jpg
+feature_response:
+feature_sample:
+
+
 [nosetests]
