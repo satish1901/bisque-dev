@@ -4,6 +4,7 @@ import os
 import ntpath
 from lxml import etree
 import urllib
+import urlparse
 import zipfile
 from bqapi.comm import BQSession, BQCommError
 from bqapi.util import save_blob # local
@@ -25,6 +26,30 @@ class TestNameSpace(object):
     def __init__(self):
         pass
     
+    
+def image_tiles(bqsession, image_service_url, tile_size=64):
+    """
+        Breaks an image_service_url into a list of tiled requests of that same
+        image.
+        
+        @param: bqsession
+        @param: image_service_url
+        @param: tile_size (default: 64)
+    """
+    o = urlparse.urlparse(image_service_url)
+    query = urlparse.parse_qsl(o.query, keep_blank_values=True)
+    meta = [('meta','')]
+    meta_query = urllib.urlencode( query + meta)
+    meta = bqsession.fetchxml(urlparse.urlunparse([o.scheme, o.netloc, o.path, o.params, meta_query, o.fragment]))
+    x = int(meta.xpath('tag[@name="image_num_x"]')[0].attrib[ 'value'])
+    y = int(meta.xpath('tag[@name="image_num_y"]')[0].attrib[ 'value'])
+    
+    for ix in range(int( x/tile_size)-1):
+        for iy in range(int( y/tile_size)-1):
+            tile = [( 'tile', '0,%s,%s,%s'%( str(ix), str(iy), str(tile_size)))]
+            tile_query = urllib.unquote(urllib.urlencode( query + tile))
+            yield urlparse.urlunparse([o.scheme, o.netloc, o.path, o.params, tile_query, o.fragment])
+            
 
 #test initalization
 def ensure_bisque_file( bqsession, filename, achieve = False, local_dir='.'):
@@ -184,6 +209,39 @@ def tear_down_simple_feature_test(ns):
     #shutil.rmtree(ns.temp_store)
     ns.session.close()
     
+    
+def setup_parallel_feature_test(ns):
+    """
+        Setup feature requests test 
+    """
+    config = ConfigParser.ConfigParser()
+    config.read(CONFIG_FILE)
+    test_image = config.get('ParallelTest', 'test_image') or None
+    threads = config.get('ParallelTest', 'threads') or '4'
+    feature_response_results = config.get('ParallelTest', 'feature_response') or DEFAULT_FEATURE_PARALLEL_RESPONSE_HDF5
+    feature_past_response_results = config.get('ParallelTest', 'feature_sample') or DEFAULT_FEATURE_PARALLEL_SAMPLE_HDF5
+    
+    
+    setup_simple_feature_test(ns)
+    
+    results_table_path = os.path.join(ns.results_location, feature_response_results)
+    if os.path.exists(results_table_path):
+        os.remove(results_table_path)
+    
+    if test_image is None: raise NameError('Requre an image to run test properly')
+    
+    ns.threads = int(threads)
+    ns.test_image = test_image
+    ns.feature_response_results = feature_response_results
+    ns.feature_past_response_results = feature_past_response_results
+        
+
+def tear_down_parallel_feature_test(ns):
+    """ Teardown feature requests test """
+    tear_down_simple_feature_test(ns)
+    
+
+
 def setup_image_upload(ns):
     """
         Uploads a single image
@@ -197,6 +255,27 @@ def setup_image_upload(ns):
     
     
 def teardown_image_remove(ns):
+    """
+        Removes the uploaded image
+    """
+    delete_resource(ns.session, ns.resource_uri)
+    del ns.image_uri
+    del ns.resource_uri
+
+
+def setup_parallel_image_upload(ns):
+    """
+        Uploads a single image
+    """
+    content = upload_image_resource(ns.session, ns.test_image_location, u'%s/%s'%(TEST_PATH, ns.test_image))
+    resource_uri = content.attrib['uri']
+    image_uri = '%s/image_service/image/%s'%(ns.root, content.attrib['resource_uniq'])
+    
+    ns.image_uri = image_uri
+    ns.resource_uri = resource_uri
+    
+    
+def teardown_parallel_image_remove(ns):
     """
         Removes the uploaded image
     """

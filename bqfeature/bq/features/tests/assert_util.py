@@ -6,7 +6,9 @@ import pdb
 import tables
 import os
 import uuid
+from bqapi.bqfeature import ParallelFeature, FeatureResource
 from bqapi.comm import BQCommError
+from utils import image_tiles
 
 
 def check_response(session, request, response_code, xml=None, method='GET'):
@@ -18,6 +20,7 @@ def check_response(session, request, response_code, xml=None, method='GET'):
         assert(e.status == response_code)
     else:
         assert(200 == response_code)
+
 
 def check_feature(ns, test, feature_name, image=None, mask=None, gobject=None):
     """
@@ -74,7 +77,81 @@ def check_feature(ns, test, feature_name, image=None, mask=None, gobject=None):
                 test_names.append([tuple([test])])
     
     os.remove(temp_response_path)
-            
+    
+    #check against a past result
+    if os.path.exists(past_results_table_path):
+        with tables.open_file(results_table_path, 'r') as result_file:
+            with tables.open_file(past_results_table_path, 'r') as past_result_file:
+                test_names = result_file.root.test_names
+                feature = result_file.root.features
+                past_test_names = past_result_file.root.test_names
+                past_feature = past_result_file.root.features
+                query = 'name=="%s"' % str(test)
+                
+                index = test_names.getWhereList(query)
+                index_past = past_test_names.getWhereList(query)
+                if index_past.any():
+                    np.testing.assert_array_almost_equal(feature[index], past_feature[index_past], 4)
+
+
+def parallel_check_feature(ns, test, feature_name, image):
+    """
+        Tiles out an image an makes a request on each of the parts separately
+        to test parallel requests.
+        Makes request, compares results, stores request in an hdf5 table
+        
+        @param: ns
+        @param: test - test name
+        @param: feature_name
+        @param: image
+    """
+    temp_response_path = os.path.join(ns.temp_store,uuid.uuid4().hex)
+    resource_list = []
+    for url in image_tiles(ns.session, image, tile_size=64):
+        resource_list.append(FeatureResource(image=url))
+    bqfeatures = ParallelFeature()
+    bqfeatures.set_thread_num(ns.threads)
+    bqfeatures.set_chunk_size(30)
+    
+    try:
+        bqfeatures.fetch(ns.session, feature_name, resource_list, temp_response_path)
+    except BQCommError as e:
+        assert(e.status == 200)
+    else:
+        #check the hdf file for status of each request
+        with tables.open_file(temp_response_path, 'r') as temp:
+            temp_table = temp.root.status
+            query = 'status!=200'
+            index = temp_table.getWhereList(query)
+            if len(index)>0:
+                for i in index:
+                    assert(temp_table[i]['status']==200)    
+
+    results_table_path = os.path.join(ns.results_location, ns.feature_response_results)
+    past_results_table_path = os.path.join(ns.store_local_location, ns.feature_past_response_results)
+
+    #move to a results table with the urls ordered
+    with tables.open_file(temp_response_path, 'r') as temp:
+        with tables.open_file(results_table_path, 'a') as result_file:
+            temp_table = temp.root.values
+            image_url_list = sorted(temp_table[:]['image'])
+            if hasattr(result_file.root, 'features'):
+                features = result_file.root.features
+            else:
+                features = result_file.create_vlarray(result_file.root, 'features', tables.Float32Atom(shape=()))
+                
+            if hasattr(result_file.root, 'test_names'):
+                test_names = result_file.root.test_names
+            else:
+                test_names = result_file.create_table('/','test_names', {'name': tables.StringCol(300)})
+                test_names.cols.name.createIndex()
+                
+            for url in image_url_list:
+                for i in temp_table.getWhereList('image=="%s"' % url):
+                    features.append(temp_table[i]['feature'])
+                    test_names.append([tuple([test])])   
+    
+    os.remove(temp_response_path)
     
     #check against a past result
     if os.path.exists(past_results_table_path):
@@ -91,7 +168,6 @@ def check_feature(ns, test, feature_name, image=None, mask=None, gobject=None):
                 if index_past.any():
                     np.testing.assert_array_almost_equal(feature[index], past_feature[index_past], 4)
     
-
 
 def is_number(s):
     try:
