@@ -3,7 +3,7 @@
 import tables
 import numpy as np
 from pyMPEG7FlexLib import extractCSD,extractSCD,extractCLD,extractDCD,extractHTD,extractEHD,extractRSD
-from bq.features.controllers.utils import image2numpy, gobject2mask, except_image_only 
+from bq.features.controllers.utils import image2numpy, gobject2mask, except_image_only , calculation_lock
 from bq.features.controllers import Feature
 from bq.features.controllers.exceptions import FeatureExtractionError
 from bqapi.comm import BQServer
@@ -17,20 +17,20 @@ class SCD(Feature.BaseFeature):
         Initalizes table and calculates the SURF descriptor to be
         placed into the HDF5 table.
     """
-    
     #parameters
     name = 'SCD'
     description = """Scalable Color Descriptor"""
     length = 256 
     type = ['color']
     confidence = 'good'
-            
+    
+    @calculation_lock
     def calculate(self, resource):
         """ Append descriptors to h5 table """
         except_image_only(resource)
         image_uri = resource.image
-        image_uri = BQServer().prepare_url(image_uri, remap='display')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='display')
+        im = image2numpy(image_uri, remap='display')
         im = np.uint8(im)
         descriptors = extractSCD(im, descSize=256) #calculating descriptor
         return descriptors
@@ -45,18 +45,19 @@ class HTD2(Feature.BaseFeature):
     length = 62
     type = ['texture']
     confidence = 'good'
-            
+
+    @calculation_lock
     def calculate(self, resource):
         #initalizing
         except_image_only(resource)
         image_uri = resource.image
         
-        image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='gray')
+        im = image2numpy(image_uri, remap='gray')
         im = np.uint8(im)
         width, height = im.shape
-        if width<128 and height<128:
-            raise FeatureExtractionError(resource, 415, 'Image\'s width and height must be greater than 128')
+#        if width<128 and height<128:
+#            raise FeatureExtractionError(resource, 415, 'Image\'s width and height must be greater than 128')
         descriptors = extractHTD(im) #calculating descriptor
         
         return descriptors
@@ -77,13 +78,13 @@ class EHD2(Feature.BaseFeature):
     type = ['texture']
     confidence = 'good'    
     
-
+    @calculation_lock
     def calculate(self, resource):
         #initalizing
         except_image_only(resource)
         image_uri = resource.image
-        image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='gray')
+        im = image2numpy(image_uri, remap='gray')
         im = np.uint8(im)
         descriptors = extractEHD(im) #calculating descriptor
         
@@ -134,7 +135,7 @@ class DCD(MaskedMPEG7):
     type = ['color']
     confidence = 'good' 
 
-
+    @calculation_lock
     def calculate(self, resource):
         """ Append descriptors to DCD h5 table """
         
@@ -143,8 +144,8 @@ class DCD(MaskedMPEG7):
         if image_uri and mask_uri and gobject_uri:
             raise FeatureExtractionError(400, 'Can only take either a mask or a gobject not both')
         
-        image_uri = BQServer().prepare_url(image_uri, remap='display')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='display')
+        im = image2numpy(image_uri, remap='display')
         im = np.uint8(im)   
         
         if mask_uri is '' and gobject_uri is '':
@@ -164,8 +165,8 @@ class DCD(MaskedMPEG7):
             return [descriptors],[0]
         
         if mask_uri:
-            mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
-            mask = image2numpy(mask_uri)
+            #mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
+            mask = image2numpy(mask_uri, remap='gray')
         
         if gobject_uri:
             #creating a mask from gobject
@@ -207,6 +208,7 @@ class CSD(MaskedMPEG7):
     type = ['color']
     confidence = 'good' 
 
+    @calculation_lock
     def calculate(self, resource):
         """ Append descriptors to CSD h5 table """
         
@@ -215,8 +217,8 @@ class CSD(MaskedMPEG7):
         if image_uri and mask_uri and gobject_uri:
             raise FeatureExtractionError(400, 'Can only take either a mask or a gobject not both')
         
-        image_uri = BQServer().prepare_url(image_uri, remap='display')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='display')
+        im = image2numpy(image_uri, remap='display')
         im = np.uint8(im)      
         
         if mask_uri is '' and gobject_uri is '':
@@ -227,8 +229,8 @@ class CSD(MaskedMPEG7):
             return [CSD], [0]
         
         if mask_uri:
-            mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
-            mask = image2numpy(mask_uri)
+            #mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
+            mask = image2numpy(mask_uri, remap='gray')
         
         if gobject_uri:
             #creating a mask from gobject
@@ -260,7 +262,7 @@ class CLD(MaskedMPEG7):
     type = ['color']
     confidence = 'good' 
 
-
+    @calculation_lock
     def calculate(self, resource):
         """ Append descriptors to CSD h5 table """
         
@@ -269,8 +271,8 @@ class CLD(MaskedMPEG7):
         if image_uri and mask_uri and gobject_uri:
             raise FeatureExtractionError(400, 'Can only take either a mask or a gobject not both')
         
-        image_uri = BQServer().prepare_url(image_uri, remap='display')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='display')
+        im = image2numpy(image_uri, remap='display')
         im = np.uint8(im)      
         
         if mask_uri is '' and gobject_uri is '':
@@ -281,8 +283,8 @@ class CLD(MaskedMPEG7):
             return [CLD], [0]
         
         if mask_uri:
-            mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
-            mask = image2numpy(mask_uri)
+            #mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
+            mask = image2numpy(mask_uri, remap='gray')
         
         if gobject_uri:
             #creating a mask from gobject
@@ -311,7 +313,7 @@ class RSD(MaskedMPEG7):
     type = ['shape','texture']
     confidence = 'good' 
  
-    
+    @calculation_lock
     def calculate(self, resource):
         """ Append descriptors to CSD h5 table """
         
@@ -320,8 +322,8 @@ class RSD(MaskedMPEG7):
         if image_uri and mask_uri and gobject_uri:
             raise FeatureExtractionError(400, 'Can only take either a mask or a gobject not both')
         
-        image_uri = BQServer().prepare_url(image_uri, remap='display')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='display')
+        im = image2numpy(image_uri, remap='display')
         im = np.uint8(im)      
         
         if mask_uri is '' and gobject_uri is '':
@@ -332,8 +334,8 @@ class RSD(MaskedMPEG7):
             return [RSD], [0]
         
         if mask_uri:
-            mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
-            mask = image2numpy(mask_uri)
+            #mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
+            mask = image2numpy(mask_uri, remap='gray')
         
         if gobject_uri:
             #creating a mask from gobject

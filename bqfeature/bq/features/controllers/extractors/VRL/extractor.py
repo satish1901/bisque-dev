@@ -4,7 +4,7 @@
 import tables
 import numpy as np
 from bq.features.controllers.exceptions import FeatureExtractionError
-from bq.features.controllers.utils import image2numpy, gobject2mask, except_image_only 
+from bq.features.controllers.utils import image2numpy, gobject2mask, except_image_only, calculation_lock
 from bqapi.comm import BQServer
 from bq.features.controllers import Feature
 from pyVRLLib import extractEHD, extractHTD
@@ -28,12 +28,13 @@ class EHD(Feature.BaseFeature):
     length = 80
     confidence = 'poor' #gets different values on different machines, not sure what is causing the issue
     
+    @calculation_lock
     def calculate(self, resource):
         #initalizing
         except_image_only(resource)
         image_uri = resource.image
-        image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='gray')
+        im = image2numpy(image_uri, remap='gray')
         descriptors=extractEHD(im)
         
         #initalizing rows for the table
@@ -83,16 +84,16 @@ class HTD(Feature.BaseFeature):
                 'label'   : tables.Int32Col(pos=5)
                 }   
 
-    
+    @calculation_lock
     def calculate(self, resource):
         """ Append descriptors to DCD h5 table """
         (image_uri, mask_uri, gobject_uri) = resource
-        image_uri = BQServer().prepare_url(image_uri, remap='gray')        
+        #image_uri = BQServer().prepare_url(image_uri, remap='gray')        
         if image_uri and mask_uri and gobject_uri:
             raise FeatureExtractionError(400, 'Can only take either a mask or a gobject not both')
         
-        image_uri = BQServer().prepare_url(image_uri, remap='display')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='display')
+        im = image2numpy(image_uri, remap='gray')
         
         if mask_uri is '' and gobject_uri is '':
             #calculating descriptor
@@ -102,8 +103,8 @@ class HTD(Feature.BaseFeature):
             return [descriptor], [0]
         
         if mask_uri:
-            mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
-            mask = image2numpy(mask_uri)
+            #mask_uri = BQServer().prepare_url(mask_uri, remap='gray')
+            mask = image2numpy(mask_uri, remap='gray')
                 
         if gobject_uri:
             #creating a mask from gobject

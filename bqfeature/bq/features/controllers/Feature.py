@@ -58,7 +58,7 @@ class BaseFeature(object):
     cache = True
 
     #option of turing on the index
-    index = True
+    #index = True
 
     #Number of characters to use from the hash to name
     #the tables
@@ -68,7 +68,7 @@ class BaseFeature(object):
     type = []
     
     #will turn off the feature in the feature service if set to true
-    disabled = False
+    #disabled = False
     
     #Confidence stands for the amount of a features correctness based on the unittest comparison.
     #good - feature compares exactly with the linux and windows binaries

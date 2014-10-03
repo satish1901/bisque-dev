@@ -84,8 +84,8 @@ class BRISK(KeyPointFeatures):
         if mask_url is not '':
             raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted')
 
-        image_url = BQServer().prepare_url(image_url, remap='gray')
-        im = image2numpy(image_url)
+        #image_url = BQServer().prepare_url(image_url, remap='gray')
+        im = image2numpy(image_url, remap='gray')
         im = np.uint8(im)
         
         if gobject_url is '':
@@ -139,8 +139,8 @@ class ORB(KeyPointFeatures):
         if mask_url is not '':
             raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted')
         
-        image_url = BQServer().prepare_url(image_url, remap='display')
-        im = image2numpy(image_url)
+        #image_url = BQServer().prepare_url(image_url, remap='display')
+        im = image2numpy(image_url, remap='display')
         im = np.uint8(im)
             
         if gobject_url is '': 
@@ -189,8 +189,8 @@ class SIFT(KeyPointFeatures):
         if mask_url is not '':
             raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted')
 
-        image_url = BQServer().prepare_url(image_url, remap='display')
-        im = image2numpy(image_url)
+        #image_url = BQServer().prepare_url(image_url, remap='display')
+        im = image2numpy(image_url, remap='display')
         im = np.uint8(im)
 
         if gobject_url is '': 
@@ -245,8 +245,8 @@ class SURF(KeyPointFeatures):
         if mask_url is not '':
             raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted')
 
-        image_url = BQServer().prepare_url(image_url, remap='display')
-        im = image2numpy(image_url)
+        #image_url = BQServer().prepare_url(image_url, remap='display')
+        im = image2numpy(image_url, remap='display')
         im = np.uint8(im)
  
         if gobject_url is '':
