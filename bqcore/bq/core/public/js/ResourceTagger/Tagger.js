@@ -632,7 +632,7 @@ Ext.define('Bisque.ResourceTagger', {
 
     addTags: function () {
         var currentItem = this.tree.getSelectionModel().getSelection();
-        var editor = this.tree.plugins[0];
+        var editor = this.rowEditor || this.tree.plugins[1];
 
         if (currentItem.length)// None selected -> add tag to parent document
             currentItem = currentItem[0];
