@@ -27,8 +27,8 @@ class HAR(Feature.BaseFeature):
         except_image_only(resource)
         
         image_uri = resource.image
-        image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='gray')
+        im = image2numpy(image_uri, remap='gray')
         im = np.uint8(im)
         #calculate descriptor 
         descritptors = np.hstack(haralick(im))
@@ -50,8 +50,8 @@ class HARColored(Feature.BaseFeature):
         except_image_only(resource)
         
         image_uri = resource.image
-        image_uri = BQServer().prepare_url(image_uri, remap='display')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='display')
+        im = image2numpy(image_uri, remap='display')
         im = np.uint8(im)
         
         #calculate descriptor 
@@ -76,8 +76,8 @@ class LBP(Feature.BaseFeature):
         except_image_only(resource)
         
         image_uri = resource.image
-        image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='gray')
+        im = image2numpy(image_uri, remap='gray')
         im = np.uint8(im)
             
         #calculating descriptor
@@ -105,8 +105,8 @@ class PFTAS(Feature.BaseFeature):
         except_image_only(resource)
         
         image_uri = resource.image
-        image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='gray')
+        im = image2numpy(image_uri, remap='gray')
         im = np.uint8(im)
         descriptor = pftas(im)
             
@@ -129,8 +129,8 @@ class PFTASColored(Feature.BaseFeature):
         except_image_only(resource)
         
         image_uri = resource.image
-        image_uri = BQServer().prepare_url(image_uri, remap='display')        
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='display')        
+        im = image2numpy(image_uri, remap='display')
         im = np.uint8(im)
         descriptor = pftas(im)
             
@@ -152,8 +152,8 @@ class TAS(Feature.BaseFeature):
         except_image_only(resource)
         
         image_uri = resource.image 
-        image_uri = BQServer().prepare_url(image_uri, remap='gray')
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='gray')
+        im = image2numpy(image_uri, remap='gray')
         im = np.uint8(im)
         descriptor = tas(im)
             
@@ -174,8 +174,8 @@ class TASColored(Feature.BaseFeature):
         except_image_only(resource)
         
         image_uri = resource.image
-        image_uri = BQServer().prepare_url(image_uri, remap='display')          
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='display')          
+        im = image2numpy(image_uri, remap='display')
         im = np.uint8(im)
         descriptor = tas(im)
             
@@ -197,8 +197,8 @@ class ZM(Feature.BaseFeature):
         except_image_only(resource)
         
         image_uri = resource.image
-        image_uri = BQServer().prepare_url(image_uri, remap='gray')        
-        im = image2numpy(image_uri)
+        #image_uri = BQServer().prepare_url(image_uri, remap='gray')        
+        im = image2numpy(image_uri, remap='gray')
         im = np.uint8(im)       
         radius=8
         degree=8

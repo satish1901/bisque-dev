@@ -130,11 +130,13 @@ feature_list["Multiscale_Historgram_Wavelet"] = [extractMultiscaleHistograms,"wa
 feature_list["Multiscale_Historgram_Edge_Wavelet"]  = [extractMultiscaleHistograms,"edge","wavelet",24,False,False,'good']
 feature_list["Multiscale_Historgram_Fourier_Wavelet"] = [extractMultiscaleHistograms,"fourier","wavelet",24,False,False,'good']
 
+# Giving removing from the feature set until fixed
+# WindowsError: exception: access violation reading 0x0000000415AE314C
 #Object Feature
-feature_list["Object_Feature"] = [extractObjectFeatures,"Empty Transform","Empty Transform",34,False,False,'fair'] #failed one multi-threaded test
+#feature_list["Object_Feature"] = [extractObjectFeatures,"Empty Transform","Empty Transform",34,False,False,'fair'] #failed one multi-threaded test
 
 #Inverse Object Feature
-feature_list["Inverse_Object_Features"] = [extractInverseObjectFeatures,"Empty Transform","Empty Transform",34,False,False,'fair'] #failed one multi-threaded test
+#feature_list["Inverse_Object_Features"] = [extractInverseObjectFeatures,"Empty Transform","Empty Transform",34,False,False,'fair'] #failed one multi-threaded test
 
 #Pixel Intensity Statistics
 #mean median std min max

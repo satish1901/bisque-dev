@@ -329,8 +329,8 @@ def operations(resource_list):
         
         for table in table_list:
             query_plan = resource_list.create_query_plan(table.feature)
+            rows = Rows(table.feature)
             for results in table.find(query_plan):
-                rows = Rows(table.feature)
                 for (row_exists, id) in results:
                     _id, request_resource = resource_list.get(id)
                     if row_exists:
@@ -345,8 +345,8 @@ def operations(resource_list):
                     else:
                         continue #skip over the exception
     
-                # store features
-                table.store(rows)
+            # store features
+            table.store(rows)
 
 
 def format_response(resource_list):

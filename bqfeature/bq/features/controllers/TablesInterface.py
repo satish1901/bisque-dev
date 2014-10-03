@@ -14,23 +14,23 @@ import uuid
 from collections import namedtuple
 import numpy as np
 numexpr.set_num_threads(1) #make numexpr thread-safe
-
-LOCKING_DELAY = .5 #secs
-FAILED_LOCK_ATTEMPTS = 10
-
-
-if os.name == 'nt':
-    MULTITHREAD_HDF5 = False #will lock every type hdf5 is used
-else:
-    MULTITHREAD_HDF5 = True
-#HDF5_Global_Lock = threading.Lock() get it to run just blocking threads
-
 #bisque imports
 from bq.util.locks import Locks
 from bq.util.mkdir import _mkdir
 #fs imports
 from PytablesMonkeyPatch import pytables_fix
 from exceptions import FeatureExtractionError, FeatureServiceError, FeatureExtractionError, InvalidResourceError
+
+LOCKING_DELAY = .5 #secs
+FAILED_LOCK_ATTEMPTS = 10
+global HDF5_Global_Lock
+HDF5_Global_Lock = threading.Lock() #get it to run just blocking threads
+
+if os.name == 'nt':
+    MULTITHREAD_HDF5 = False #will lock every type hdf5 is used
+else:
+    MULTITHREAD_HDF5 = True
+
 
 log = logging.getLogger("bq.features.TablesInterface")
 
@@ -60,14 +60,12 @@ class TablesLock(object):
         self.kwargs = kwargs
         self.h5file = None
         self.hdf5_lock = None
-        
-        if mode == 'r' and MULTITHREAD_HDF5: #set read locks
-            self.bq_lock = Locks(self.filename, failonexist=failonexist, mode=mode+'b')
-        else: #set write locks
-            if MULTITHREAD_HDF5 is False: #sets a lock on all hdf5 usage in fs
-                self.hdf5_lock = Locks(None, 'hdf5_lock', failonexist=False, mode='wb')
-            self.bq_lock = Locks(None, self.filename, failonexist=failonexist, mode=mode+'b')
-    
+        self.bq_lock = Locks(None, self.filename, failonexist=failonexist, mode=mode+'b')
+
+    def debug(self, msg):
+        """Log detailed info about the locking of threads and files"""
+        log.debug("(LOCKING: %s) %s" % (threading.currentThread().getName(), msg))
+
     def acquire(self):
         """
             Acquires the locks for the hdf5 file.
@@ -77,26 +75,23 @@ class TablesLock(object):
             file hdf5_lock.
             
             @return: a pytables file handle. If locks fail nothing will be returned.
-             If the file cannot be open a FeatureServiceError exception will 
-             be raised
+            If the file cannot be open a FeatureServiceError exception will be 
+            raised.
         """
         if not self.h5file:
+
+            if MULTITHREAD_HDF5 is False:
+                self.debug('Setting HDF5 global lock!')
+                HDF5_Global_Lock.acquire(True)
             
             self.bq_lock.acquire(self.bq_lock.ifnm, self.bq_lock.ofnm)
             if not self.bq_lock.locked: #no lock was given on the hdf5 file
                 log.debug('Failed to lock hdf5 file!')
-                self.release()
+                #self.release()
                 return None
             
-            if self.hdf5_lock:
-                self.hdf5_lock.acquire(self.hdf5_lock.ifnm, self.hdf5_lock.ofnm)
-                if not self.hdf5_lock.locked: #no lock was given on pytables 
-                    log.debug('Failed to lock pytables!')
-                    self.release()
-                    return None            
-            
-            log.debug('Succesfully acquired locks!')
-            self.h5file = self._open_table()
+            log.debug('Succesfully acquired tables locks!')
+            self._open_table()
             return self.h5file
             
     def _open_table(self):
@@ -104,28 +99,39 @@ class TablesLock(object):
             Opens an hdf5 file under locks.
         """
         try:
-            self.h5file=tables.open_file(self.filename, self.mode, *self.args, **self.kwargs)
+            self.h5file = tables.open_file(self.filename, self.mode, *self.args, **self.kwargs)
         except tables.exceptions.HDF5ExtError:
-            self.release()
-            log.debug('Failed to find table %s'%self.filename)
-            raise FeatureServiceError(error_message='Fatal Error: Table was not found!')
-        
-        return self.h5file
+            #self.release()
+            #remove the file if it exists
+            if os.path.exists(self.filename):
+                try:
+                    os.remove(self.filename)
+                except Exception:
+                    log.exception('Failed to removed corrupted hdf5 file -> %s' % self.filename)
+                finally:
+                    raise FeatureServiceError(error_message='Fatal Error: hdf5 file was corrupted! -> %s' % self.filename)
+            else:
+                log.exception('Failed to find table %s' % self.filename)
+                raise FeatureServiceError(error_message='Fatal Error: Table was not found! -> %s' % self.filename)
+            
             
     def release(self):
         """
             Releases all locks and closes and deletes hdf5 
             file handle
         """
-        if self.hdf5_lock:
-            self.hdf5_lock.release()
-            self.hdf5_lock = None
-        
+        #release file
         if self.h5file:
             self.h5file.close()
             del self.h5file
             self.h5file = None
             self.bq_lock.release()
+            
+        #release pytables
+        if MULTITHREAD_HDF5 is False:
+            HDF5_Global_Lock.release()
+            self.debug('Releasing HDF5 global lock!')
+        log.debug('Succesfully release tables locks!')
     
     def __enter__(self):
         return self.acquire()
@@ -177,13 +183,15 @@ class Rows(object):
 
     def _calculate_row(self, feature_resource):
         try:
-            #log.debug('Calculate Feature')
+            log.debug('Calculating %s feature vector' % self.feature.name)
             return self.feature.calculate(feature_resource)#runs calculation
             #log.debug('Successfully calculated feature!')
         except FeatureExtractionError as e: #in case resource is None 
+            log.debug('FeatureExtractionError: %s:%s' % (e.code, e.message))
             raise FeatureExtractionError(feature_resource, e.code, e.message)
         
         except InvalidResourceError as e:
+            log.debug('InvalidResourceError: %s:%s' % (e.code, e.message))
             raise FeatureExtractionError(feature_resource, e.code, e.message)
 
         except StandardError as err:
@@ -208,7 +216,10 @@ class CachedRows(Rows):
         rows = []
         for (j) in results:
             row = tuple([id])
-            row += j
+            if isinstance(j,list) is True:
+                row += tuple([j])
+            else:
+                row += j
             rows.append(row)
         return rows
     
@@ -255,9 +266,12 @@ class WorkDirRows(Rows):
             rows = []; status = []
             for (j) in results:
                 row = tuple(feature_resource)
-                row += j
+                if isinstance(j,list) is True:
+                    row += tuple([j])
+                else:
+                    row += j
                 rows.append(row)
-                status.append((200))
+                status.append(tuple([200]))
             return (rows, status)
         else:
             r = list(feature_resource)
@@ -297,12 +311,12 @@ class WorkDirRows(Rows):
             rows, status = self.construct_error_row(self.feature, e)
         else:
             try:
-                rows, status = self.construct_row(self.feature, resource)
+                rows, status = self.construct_row(self.feature, request_resource.feature_resource)
             except FeatureExtractionError as e:
                 rows, status = self.construct_error_row(self.feature, e)
         
         if 'feature' in self.row_queue:  # feature is used to maintain the structure
-            self.table_queue['feature'].put([rows,status])  # the row is pushed into the queue
+            self.row_queue['feature'].put([rows,status])  # the row is pushed into the queue
         else:  # creates a queue if no queue is found
             self.row_queue['feature'] = Queue.Queue()
             self.row_queue['feature'].put((rows,status))
@@ -314,6 +328,7 @@ class Tables(object):
     """
     TablePlan = namedtuple('ResourceRequest', ['table_name', 'columns', 'index_column'])
     TablePlan.__new__.__defaults__ = ('', {}, [])
+    
     def __init__(self, feature):
         """
             Requires a Feature Class to intialize. Will search for table in the
@@ -330,9 +345,11 @@ class Tables(object):
             @param: table_parameters - takes a list of [(tablename, columns, [list of columns to index])]  
             @param: func - function accepting a h5 tabel object
         """
+        result = None
         with TablesLock(filename, 'w', failonexist=True) as h5file:
             if h5file:
                 try:
+                    log.debug('Create HDF5 file -> %s' % filename)
                     for (table_name, columns, indexed) in self.table_plan:
                         table = h5file.create_table('/', table_name, columns, expectedrows=1000000000)
                         for col_name in indexed:
@@ -342,7 +359,8 @@ class Tables(object):
                         table.flush()
                             
                     if func:
-                         return func(h5file)
+                        result = func(h5file)
+                         
                 
                 except tables.exceptions.HDF5ExtError:
                     log.debug('Failed to create table %s'%filename)
@@ -350,6 +368,7 @@ class Tables(object):
             else:
                 log.debug('Already initialized h5 table -> path: %s' % filename)
                 return #tables was made already
+        return result
 
 
     def read_from_table(self, filename, func):
@@ -362,10 +381,14 @@ class Tables(object):
         self.create_h5_file(filename)
         attempts = 0
         while 1:
+            result = None
             with TablesLock(filename, 'r') as h5file:
                 if h5file:
                     log.debug('Reading from table -> path: %s' % filename)
-                    return func(h5file)
+                    result = func(h5file)
+            
+            if h5file is not None:
+                return result
             
             #tries to lock again
             attempts+=1
@@ -387,10 +410,14 @@ class Tables(object):
         
         attempts = 0
         while 1:
+            result = None
             with TablesLock(filename, 'a') as h5file:
                 if h5file:
                     log.debug('Appending to table -> path: %s' % filename)
-                    return func(h5file)
+                    result = func(h5file)
+                    
+            if h5file is not None:
+                return result
             
             attempts+=1
             if attempts > FAILED_LOCK_ATTEMPTS:
@@ -484,7 +511,6 @@ class CachedTables(Tables):
             @return: generator([bool(if the query was found),hash],..)
         """
         for filename in query_queue.keys():
-            log.debug('filename: %s'%filename)
             def func(h5file):
                 query_results = []
                 table = h5file.root.values
@@ -557,7 +583,7 @@ class WorkDirTable(Tables):
 
     def find(self, query_plan):
         """
-            A pass through since this table whould be queryied
+            A pass through since this table has no elements in it
             
             @param: query_plan - list of hashes to query the table
             
@@ -567,7 +593,7 @@ class WorkDirTable(Tables):
         for filename in query_plan.keys():
             while not query_plan[filename].empty():
                 hash = query_plan[filename].get()
-            query_results.append(('false', hash))
+            query_results.append((False, hash))
         return [query_results]
     
 
@@ -580,7 +606,7 @@ class WorkDirTable(Tables):
         
             log.debug('Writing hdf5 file into workdir: %s' % self.filename)
             if self.create_h5_file(self.path, lambda x: True) is None: # creates the table, should return true
-                raise FeatureServiceError( 500,'File already exists in workdir: %s' % self.filename)            
+                raise FeatureServiceError(500, 'File already exists in workdir: %s' % self.filename)            
     
             # appends elements to the table        
             def func(h5file):
@@ -594,6 +620,7 @@ class WorkDirTable(Tables):
                 
             self.append_to_table(self.path, func)
         return
+    
 
     def get(self):
         """

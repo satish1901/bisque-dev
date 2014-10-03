@@ -9,6 +9,7 @@ import urlparse
 import urllib
 from tg import request
 from libtiff import TIFF
+import threading
 from PIL import Image, ImageDraw
 from bq import image_service
 from bq.core import identity
@@ -24,6 +25,32 @@ from bq.data_service.model import Taggable, DBSession
 
 
 log = logging.getLogger("bq.features.utils")
+
+global GLOBAL_FEATURE_CALC_LOCK
+GLOBAL_FEATURE_CALC_LOCK = {}
+
+def calculation_lock(calc):
+    """
+        Some feature calculation functions are not thread-safe.
+        This decorator will force calculations to be run concurrently
+        in threads. Place on calculation functions in Feature classes.
+    """
+    def locker(self, resource):
+        """
+            Applies and releases the lock on the calculation function
+            in the Feature class.
+            
+            @param: self - Feature class
+            @param: resource - FeatureResource namedtuple
+        """
+        if self.name not in GLOBAL_FEATURE_CALC_LOCK:
+            GLOBAL_FEATURE_CALC_LOCK[self.name] = threading.Lock()
+        log.debug('Calculation Lock: %s acquired' % self.name)
+        with GLOBAL_FEATURE_CALC_LOCK[self.name]:
+            results = calc(self, resource)
+        return results
+    return locker
+    
 
 def request_internally(url):
     """
@@ -86,17 +113,17 @@ def check_access(ident, action=RESOURCE_READ):
 #needs to be replaced with a HEAD instead of using a GET
 def mex_validation(resource):
     """
-    First checks the access of the token if the url is image_service or data_service.
-    If the token is not found on the url an internal request is made to check the
-    response status. If a 302 is returned the redirect url is added to the resource.
-    If an internal request fails an external request is made in the same way as the 
-    internal request. If all fails an InvalidResourceError is returned.
-    
-    @param: resource - a feature_resource namedtuple
-    
-    @return: resource - feature_resource namedtuple with redirected urls added 
-    
-    @exception: InvalidResourceError - if the resource could not be found
+        First checks the access of the token if the url is image_service or data_service.
+        If the token is not found on the url an internal request is made to check the
+        response status. If a 302 is returned the redirect url is added to the resource.
+        If an internal request fails an external request is made in the same way as the 
+        internal request. If all fails an InvalidResourceError is returned.
+        
+        @param: resource - a feature_resource namedtuple
+        
+        @return: resource - feature_resource namedtuple with redirected urls added 
+        
+        @exception: InvalidResourceError - if the resource could not be found
     """
     resource_name = [n for n in list(resource._fields) if getattr(resource,n) != '']
     for name in list(resource_name):
@@ -174,7 +201,7 @@ def fetch_resource(uri):
 
         # Try to route externally
         resp = request_externally(uri)
-        if resp.status_int == 200:
+        if resp.status_int in  set([200,304]):
             return resp.body
         
         log.debug("User is not authorized to read resource externally: %s" % uri)
@@ -185,7 +212,7 @@ def fetch_resource(uri):
         raise InvalidResourceError(resource_url=uri, error_code=403, error_message='Resource: %s Not Found' % uri)
 
 
-def image2numpy(uri):
+def image2numpy(uri, **kw):
     """
         Converts image url to numpy array. 
         For bisque image_service it changes the format
@@ -201,12 +228,15 @@ def image2numpy(uri):
     
     if 'image_service' in o.path:
         #finds image resource though local image service
-        urlparse.parse_qsl(o.query)
-        query_arg = urlparse.parse_qsl(o.query, keep_blank_values=True)
-        query_arg.append(('format','OME-BigTIFF'))
-        log.debug('query_arg %s' % query_arg)
-        query_str = urllib.urlencode(query_arg)
-        uri = urlparse.urlunsplit((o.scheme, o.netloc, o.path, query_str, o.fragment))
+        if kw:
+            uri = BQServer().prepare_url(uri, **kw)
+        uri = BQServer().prepare_url(uri, format='OME-BigTIFF')
+#        urlparse.parse_qsl(o.query)
+#        query_arg = urlparse.parse_qsl(o.query, keep_blank_values=True)
+#        query_arg.append(('format','OME-BigTIFF'))
+#        log.debug('query_arg %s' % query_arg)
+#        query_str = urllib.urlencode(query_arg)
+#        uri = urlparse.urlunsplit((o.scheme, o.netloc, o.path, query_str, o.fragment))
         image_path = image_service.local_file(uri)
         log.debug("Image Service path: %s" % image_path)
         if image_path is None:
@@ -254,7 +284,7 @@ def convert_image2numpy(image_path):
         
         raise InvalidResourceError(415, 'Not a grayscale or RGB image')
         
-    except IOError, TypeError:
+    except (IOError, TypeError):
         log.exception("Not a tiff file!")
         log.debug("Trying to read in image with pillow")
         try:

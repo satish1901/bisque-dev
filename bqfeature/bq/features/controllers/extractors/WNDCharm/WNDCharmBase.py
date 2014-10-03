@@ -1,6 +1,6 @@
 from PyWNDCharmFeatureList import feature_list
 from bq.features.controllers import Feature #import base class
-from bq.features.controllers.utils import image2numpy, except_image_only
+from bq.features.controllers.utils import image2numpy, except_image_only, calculation_lock
 import numpy as np
 import logging
 
@@ -16,7 +16,8 @@ class WNDCharm(Feature.BaseFeature): #base WNDCharm feature class
     #parameters
     name = 'WNDCharmBase'
     description = """This is the WNDCharm Base Class. Is not a feature in the feature server."""
-    
+
+    @calculation_lock
     def calculate(self, resource):
         """ Append descriptors to h5 table """
         except_image_only(resource)
