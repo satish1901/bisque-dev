@@ -16,13 +16,13 @@ import comm
 #####################################################
 
 def normalize_unicode(s):
-    if isinstance(s, unicode) is True:
+    if isinstance(s, unicode):
         return s
     try:
         s = s.decode('utf8')
     except UnicodeEncodeError:
         s = s.encode('ascii', 'replace')
-    return s    
+    return s
 
 #####################################################
 # misc: path manipulation
@@ -37,12 +37,12 @@ if os.name == 'nt':
             return urllib.unquote(path).decode('utf-8')
         except UnicodeEncodeError:
             # dima: safeguard measure for old non-encoded unicode paths
-            return urllib.unquote(path)    
-    
+            return urllib.unquote(path)
+
     def localpath2url(path):
         path = path.replace('\\', '/')
         url = urllib.quote(path.encode('utf-8'))
-        if len(path)>3 and path[0] != '/' and path[1] == ':': 
+        if len(path)>3 and path[0] != '/' and path[1] == ':':
             # path starts with a drive letter: c:/
             url = 'file:///%s'%url
         else:
@@ -55,14 +55,14 @@ else:
         url = url.encode('utf-8') # safegurd against un-encoded values in the DB
         path = urlparse.urlparse(url).path
         return urllib.unquote(path)
-    
+
     def localpath2url(path):
         url = urllib.quote(path.encode('utf-8'))
         url = 'file://%s'%url
         return url
-    
+
 #####################################################
-    
+
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -131,18 +131,18 @@ def save_blob(session,  localfile=None, resource=None):
     """
         put a local image on the server and return the URL
         to the METADATA XML record
-    
+
         @param session: the local session
         @param image: an BQImage object
         @param localfile:  a file-like object or name of a localfile
         @return XML content  when upload ok
-        
+
         @exceptions comm.BQCommError - if blob is failed to be posted
     """
-       
+
 
     content = session.postblob(localfile, xml=resource)
-    
+
     try:
         content = ET.XML(content)
         if len(content)<1: #when would this happen
@@ -274,12 +274,12 @@ def fetch_image_pixels(session, uri, dest, uselocalpath=False):
 def fetch_dataset(session, uri, dest, uselocalpath=False):
     """
         fetch elemens of dataset locally as tif
-        
+
         @param session: the bqsession
         @param uri: resource image uri
         @param dest: a destination directory
         @param uselocalpath: true when routine is run on same host as server
-        
+
         @return:
     """
     dataset = session.fetchxml(uri, view='deep')
@@ -301,7 +301,7 @@ def fetchImage(session, uri, dest, uselocalpath=False):
         @param: url -
         @param: dest -
         @param: uselocalpath- (default: False)
-        
+
         @return
     """
     image = session.load(uri).pixels().info()
@@ -360,11 +360,11 @@ def save_image_pixels(session,  localfile, image_tags=None):
     """
         put a local image on the server and return the URL
         to the METADATA XML record
-    
+
         @param: session - the local session
         @param: image - an BQImage object
         @param: localfile - a file-like object or name of a localfile
-        
+
         @return: XML content when upload ok
     """
     xml = None
