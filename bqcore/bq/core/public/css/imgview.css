@@ -467,16 +467,18 @@
 .viewer .editmenu {
     position: absolute;
     z-index: 30;
-    width: 20px;
-    height: 20px;
-    right: 80px;
+    width: 31px;
+    height: 31px;
+    right: 60px;
     top: 10px;
     bottom: none;
     right: none;
 
-    background-image: url('/images/viewer/64px_gobs.png');
-    background-size: 20px;
     background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+    background-position: -135px -163px;
 }
 
 .viewer .editmenu.phone {

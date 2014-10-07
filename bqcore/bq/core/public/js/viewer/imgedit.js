@@ -134,7 +134,7 @@ ImgEdit.prototype.createEditMenu = function(surf) {
         anchorToTarget: true,
         cls: 'bq-viewer-menu',
         maxWidth: 460,
-        anchorOffset: -10,
+        anchorOffset: -5,
         autoHide: false,
         shadow: false,
         closable: true,

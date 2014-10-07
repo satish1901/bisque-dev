@@ -253,7 +253,7 @@ Ext.define('Bisque.ResourceTagger', {
 
         this.tree = Ext.create('Ext.tree.Panel', {
             layout: 'fit',
-            flex: 1,
+            flex: 2,
             useArrows: true,
             rootVisible: false,
             border: false,
@@ -999,8 +999,8 @@ Ext.define('Bisque.GObjectTagger', {
             collapsible: true,
             border: 0,
             dock: 'top',
-            //height: 250,
-            flex: 1,
+            height: 300,
+            //flex: 1,
             listeners: {
                 scope: this,
                 'select': this.fireGobEvent,
