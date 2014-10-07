@@ -63,7 +63,6 @@ from bq.exceptions import ConfigurationError, ServiceError, IllegalOperation, Du
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.hash import make_short_uuid
-from bq.util.http import get_file
 from bq.util.compat import OrderedDict
 
 from bq.util.io_misc import blocked_alpha_num_sort

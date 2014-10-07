@@ -75,7 +75,6 @@ from bq.exceptions import ConfigurationError
 from bq.core.controllers.proxy import ProxyController, service_proxy
 from bq.core.service import ServiceController, service_registry
 from bq.core.service import load_services, mount_services, start_services
-from bq.util.http import http_client
 from bq.core.controllers.error import ErrorController
 from bq.util.hash import is_uniq_code
 
@@ -139,6 +138,26 @@ class ServiceRegistryController (ServiceController):
         return etree.tostring(resource)
 
 
+from tg.controllers import WSGIAppController
+from paste.proxy import make_proxy
+class ProxyCache(object):
+    "Cache proxy services"
+    def __init__(self):
+        self.proxies = {}
+    @expose()
+    def index(self, **kw):
+      return str (self.proxies.keys())
+    @expose()
+    def _lookup (self, host_addr, *rest):
+
+      log.debug ("Proxy for %s", host_addr)
+      proxy = self.proxies.setdefault(host_addr, WSGIAppController (make_proxy(config, "http://%s" % host_addr)))
+      log.debug ("PROXIES %s", str (self.proxies))
+
+      return proxy, rest
+
+
+
 oldnames = { 'imgsrv' : 'image_service',
              'ds'     : 'data_service',
              'ms'     : 'module_service',
@@ -149,6 +168,7 @@ class RootController(BaseController):
     #service_registry = MultiDict()
     #config['pylons.app_globals'].s = MDWrap(service_registry)
 
+    proxy = ProxyCache()
     error  = ErrorController()
     root = config.get ('bisque.root')
 
@@ -212,6 +232,8 @@ class RootController(BaseController):
     def index(self, **kw):
         redirect (config.get('bisque.root') + "/client_service/")
 
+
+#from bq.util.http import http_client
 
 def register_proxy_services (proxy):
     '''Registers all local services with the requested

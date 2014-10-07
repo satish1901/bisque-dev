@@ -468,9 +468,8 @@ class BlobServer(RestController, ServiceMixin):
 
     def originalFileName(self, ident):
         log.debug ('originalFileName: deprecated %s', ident)
-        try:
-            resource = data_service.query(resource_uniq=ident)[0]
-        except IndexError:
+        resource = data_service.resource_load(uniq=ident)
+        if resource is None:
             log.warn ('requested resource %s was not available/found' , ident)
             return str(ident)
 
