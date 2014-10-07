@@ -151,6 +151,12 @@ class DataServerController(ServiceController):
         if user_id is None and identity.not_anonymous():
             user_id = identity.get_user_id()
         self.server_cache.invalidate(url, user_id)
+    def cache_invalidate_resource(self, resource, user_id=None):
+        if user_id is None and identity.not_anonymous():
+            user_id = identity.get_user_id()
+        self.server_cache.invalidate_resource(resource, user_id)
+
+
 
     def resource_uniq(self, **kw):
         'generate a unique code to be used for a resource'
@@ -171,7 +177,8 @@ class DataServerController(ServiceController):
         img = db2tree (resource, baseuri= self.url)
         #log.debug ("new image " + etree.tostring(img))
         # Invalidate the top level container i.e. /data_service/images
-        self.cache_invalidate(img.get('uri').rsplit('/', 1)[0])
+        #self.cache_invalidate(img.get('uri').rsplit('/', 1)[0])
+        self.cache_invalidate_resource(resource)
         return img
 
     def resource_load(self,  uniq=None, ident=None, view=None):
@@ -193,7 +200,8 @@ class DataServerController(ServiceController):
             resource = load_uri (uri)
         dbresource = bisquik2db(doc=tree, parent=resource)
         r =  db2tree (dbresource, baseuri=self.url, **kw)
-        self.cache_invalidate(r.get('uri'))
+        #self.cache_invalidate(r.get('uri'))
+        self.cache_invalidate_resource(dbresource)
         return r
 
     def new_resource(self, resource, parent=None, **kw):
@@ -218,7 +226,8 @@ class DataServerController(ServiceController):
         log.debug ("new_resource %s" , node)
         r =  db2tree (node, baseuri=self.url, view=view)
         # Invalidate the top level container i.e. /data_service/<resource_type>
-        self.cache_invalidate(r.get('uri').rsplit('/', 1)[0])
+        #self.cache_invalidate(r.get('uri').rsplit('/', 1)[0])
+        self.cache_invalidate_resource(node)
         return r
 
     def get_resource(self, resource, **kw):
@@ -266,7 +275,9 @@ class DataServerController(ServiceController):
         if uri is not None:
             resource = load_uri (uri)
         resource_delete(resource)
-        self.cache_invalidate(uri)
+        #self.cache_invalidate(uri)
+        self.cache_invalidate_resource(resource)
+
 
     def update_resource(self, resource, new_resource=None, replace=True, **kw):
         """update a resource with a new values
@@ -290,7 +301,8 @@ class DataServerController(ServiceController):
         r = bisquik2db(doc=new_resource, resource=resource, replace=replace)
         #response  = etree.Element ('response')
         r =  db2tree (r, baseuri = self.url, **kw)
-        self.cache_invalidate(r.get('uri'))
+        #self.cache_invalidate(r.get('uri'))
+        self.cache_invalidate_resource(resource)
         return r
 
     def update(self, resource_tree, replace_all=False, **kw):
@@ -299,10 +311,11 @@ class DataServerController(ServiceController):
         #    uri = resource_tree.get ('uri')
         #    r = load_uri(resource_tree.get('uri'))
         #    r.clear()
-        r = bisquik2db(doc=resource_tree, replace=replace_all)
+        resource = bisquik2db(doc=resource_tree, replace=replace_all)
         #response  = etree.Element ('response')
-        r =  db2tree (r, parent=None, view=view, baseuri = self.url)
-        self.cache_invalidate(r.get('uri'))
+        r =  db2tree (resource, parent=None, view=view, baseuri = self.url)
+        #self.cache_invalidate(r.get('uri'))
+        self.cache_invalidate_resource(resource)
         return r
 
 
