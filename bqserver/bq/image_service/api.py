@@ -58,9 +58,9 @@ import urlparse
 import functools
 from tg import config
 
-from bq.util.http import *
+#from bq.util.http import *
 from controllers.service import image_serviceController as LocalImageServer
-from bq.core import identity 
+from bq.core import identity
 from bq.exceptions import RequestError
 
 log = logging.getLogger('bq.image_service')
@@ -75,12 +75,12 @@ class RenamableFile (object):
     def __init__(self, filename, params):
         fd = open (filename, params)
         object.__setattr__(self, '_file', fd)
-        
+
     def get_name(self):
         return self.filename
     def set_name(self, vl):
         self.filename = vl
-    
+
     name = property(get_name, set_name)
 
     def __getattr__(self, name):
@@ -98,7 +98,7 @@ class proxy_dispatch (object):
             if method in self.proxy.server.srv.services:
                 return functools.partial(self.push_method, method)
             raise AttributeError, method
-        
+
         def get(self):
             fullurl = self.create_url()
             return self.proxy.dispatch (fullurl)
@@ -106,12 +106,12 @@ class proxy_dispatch (object):
             fullurl = self.create_url()
             return self.proxy.dispatch (fullurl, body=body)
 
-            
+
         def push_method (self, method, *largs, **kw):
             #print "url push %s %s " % (method, largs)
             self.stack.append ( (method, ",".join([str(x) for x in largs]), kw) )
             return self
-        
+
         def create_url(self):
             url = self.path
             if self.stack:
@@ -121,11 +121,11 @@ class proxy_dispatch (object):
                         args.append ('%s=%s' % (m,a))
                     else:
                         args.append (m)
-                        
+
                 args = "&".join (args)
                 url  =  "%s?%s" % (url, args)
             return url
-        
+
         def image(self, path):
             self.path = path
             return self
@@ -135,23 +135,23 @@ class proxy_dispatch (object):
     def __init__(self):
         self.baseurl = None
         self.server = None
-        
+
     def add_server(self, rooturl, image_server):
         self.baseurl  = rooturl
         self.server   = image_server
-    
+
     def __getattr__ (self, name):
         'construct a URL dispatcher and pass the inital request to it'
         d =  proxy_dispatch.dispatch_for(self)
         return getattr(d, name)
 
-    
+
 
     def dispatch(self, fullurl, body=None):
         if fullurl.startswith (self.baseurl):
             return self.local_dispatch(fullurl, body)
         return self.remote_dispatch(fullurl)
-    
+
     def local_dispatch(self, fullurl, body=None):
         path, params = urlparse.urlsplit (fullurl)[2:4]
         userId  = identity.get_username()
@@ -166,7 +166,7 @@ class proxy_dispatch (object):
             log.debug('Response Code: ' +str(data_token.httpResponseCode) )
             raise RequestError(data_token.httpResponseCode)
 
-        #second check if the output is TEXT/HTML/XML                  
+        #second check if the output is TEXT/HTML/XML
         if data_token.isText():
             return data_token.data
 
@@ -177,20 +177,20 @@ class proxy_dispatch (object):
             if data_token.hasFileName():
                 fname = data_token.outFileName
                 print "has ", fname
-          
-            #Content-Disposition: attachment; filename=genome.jpeg;  
-            #if data_token.isImage():                    
+
+            #Content-Disposition: attachment; filename=genome.jpeg;
+            #if data_token.isImage():
             #    disposition = 'filename="%s"'%(fname)
             #else:
             #    disposition = 'attachment; filename="%s"'%(fname)
             #cherrypy.response.headers["Content-Disposition"] = disposition
             # this header is cleared when the streaming is used
-            #cherrypy.response.headers["Content-Length"] = 10*1024*1024            
+            #cherrypy.response.headers["Content-Length"] = 10*1024*1024
 
             ofs = RenamableFile(data_token.data,'rb')
             ofs.name = fname
             return ofs
-            log.debug('Returning file: ' + str(fname) )                       
+            log.debug('Returning file: ' + str(fname) )
 
     def remote_dispatch (self, fullurl):
         header, content  = http_client.request (fullurl)
@@ -202,7 +202,7 @@ class ImageService(proxy_dispatch):
 
     def initialize(self, uri):
         local_image_server = LocalImageServer(server_url = uri)
-        
+
         self.add_server (uri, local_image_server)
         return local_image_server
 
@@ -243,10 +243,10 @@ class ImageService(proxy_dispatch):
 
     def info (self, uri):
         return self.server.info (uri)
-    
+
     def meta(self, uri):
         return self.server.meta(uri)
-    
+
     def getFileName(self, imgsrc):
         return self.server.get_filename(imgsrc)
 
@@ -278,7 +278,7 @@ def proprietary_series_extensions ():
 
 def proprietary_series_headers():
     server = find_server()
-    return server.proprietary_series_headers()    
+    return server.proprietary_series_headers()
 
 def get_info(filename):
     server = find_server()
@@ -287,7 +287,7 @@ def get_info(filename):
 def local_file(url):
     server = find_server()
     return server.local_file(url)
-    
+
 #def new_file(src=None, name=None, **kw):
 #    ''' Find the preferred image server and store the file there
 #    '''
@@ -328,7 +328,7 @@ def info(imgsrc, **kw):
         if server:
             return server.info (imgsrc, **kw)
 
-            
+
 def files_exist(hashes, **kw):
     ''' Return a list of hashes found in the blob server'''
     server = find_server('')
@@ -346,7 +346,7 @@ def find_uris(hsh, **kw):
     else:
         # Find a remote image server to query
         pass
-            
+
 def image_path(imgsrc, **kw):
         ''' Return meta data of image from image_server
         '''
@@ -389,9 +389,9 @@ def uri(image_uri):
     return server.uri(image_uri)
 
 
-    
 
 
 
-            
-                        
+
+
+

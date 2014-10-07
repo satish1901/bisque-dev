@@ -18,7 +18,7 @@ from repoze.what import predicates
 from bq.core.service import ServiceController
 from paste.fileapp import FileApp
 from pylons.controllers.util import forward
-from bq.data_service.model import Taggable, DBSession
+from bq import data_service
 
 from bq.core import permission, identity
 from bq.util.paths import data_path
@@ -112,8 +112,7 @@ class image_serviceController(ServiceController):
 
         log.debug ("Checking %s" % id)
         # check for access permission
-        from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
-        self.check_access(id, RESOURCE_READ)
+        self.check_access(id)
 
         data_token = self.srv.process(url, id)
 
@@ -157,7 +156,7 @@ class image_serviceController(ServiceController):
         return ext in self.format_exts
 
     def proprietary_series_extensions (self):
-        """ return all extensions that can be proprietary series 
+        """ return all extensions that can be proprietary series
         """
         non_series_cnv = ['imgcnv', 'openslide']
         exts = []
@@ -171,13 +170,13 @@ class image_serviceController(ServiceController):
         #log.debug('ignore: %s', ignore)
         #log.debug('exts: %s', exts)
         return list(((set(exts) - set(ignore)) - extensions_ignore) | extensions_series)
-    
+
     def proprietary_series_headers (self):
         """ get fixed file names that could be series headers
         """
         return series_header_files
-    
-    
+
+
     def get_info (self, filename):
         """ read file info
         """
@@ -249,10 +248,8 @@ class image_serviceController(ServiceController):
     def blobs(self):
         pass
 
-    def check_access(self, ident, action):
-        from bq.data_service.controllers.resource_query import resource_permission
-        query = DBSession.query(Taggable).filter_by (resource_uniq = ident)
-        resource = resource_permission (query, action=action).first()
+    def check_access(self, ident):
+        resource = data_service.resource_load (uniq = ident)
         if resource is None:
             if identity.not_anonymous():
                 abort(403)
@@ -275,8 +272,7 @@ class image_serviceController(ServiceController):
         url = request.path+'?'+request.query_string
 
         # check for access permission
-        from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
-        self.check_access(ident, RESOURCE_READ)
+        self.check_access(ident)
 
         # dima: patch for incorrect /auth requests for image service
         if url.find('/auth')>=0:
@@ -285,16 +281,18 @@ class image_serviceController(ServiceController):
 
         # extract requested timeout: BQ-Operation-Timeout: 30
         timeout = request.headers.get('BQ-Operation-Timeout', None)
-        
+
         # fetch image meta from a resource if any, has to have a name and a type as "image_meta"
+        meta = None
         try:
-            q = data_service.query(resource_uniq=ident, view='image_meta')
-            #log.debug('images resource query: %s', etree.tostring(q))
-            meta = q.xpath('image/tag[@type="image_meta"]')[0]
-            meta = dict((i.get('name'), misc.safetypeparse(i.get('value'))) for i in meta.xpath('tag'))
-            log.debug('images meta: %s', meta)
-            if len(meta)==0:
-                meta=None
+            q = data_service.resource_load(uniq=ident, view='image_meta')
+            if q is not None:
+                #log.debug('images resource query: %s', etree.tostring(q))
+                meta = q.xpath('image/tag[@type="image_meta"]')[0]
+                meta = dict((i.get('name'), misc.safetypeparse(i.get('value'))) for i in meta.xpath('tag'))
+                log.debug('images meta: %s', meta)
+                if len(meta)==0:
+                    meta=None
         except (AttributeError, IndexError):
             meta = None
 
@@ -395,7 +393,7 @@ class image_serviceController(ServiceController):
 #
 #     @expose()
 #     def update_image_permission(self):
-# 
+#
 #         # parse the request
 #         request = tg.request
 #         clen = int(request.headers.get('Content-Length') or 0 )
@@ -406,41 +404,41 @@ class image_serviceController(ServiceController):
 #         image = request[0]
 #         src  = image.attrib['src']
 #         perm = image.attrib['perm']
-# 
+#
 #         # check identity
 #         id = get_image_id(src)
 #         userId = identity.current.user_name
 #         if self.srv.changePermission( id, userId ) == False:
 #             tg.response.status_int = 401
 #             return 'Permission denied...'
-# 
+#
 #         # Deal w/request
 #         log.debug ('permission: %s -> %s ' %( src, perm))
 #         self.set_file_info(src, perm=int(perm))
 #         return dict()
-# 
+#
 #     @expose(content_type='text/xml')
 #     def find(self, hash=None):
-# 
+#
 #         # parse the request
 #         if not hash:
 #             request = tg.request
 #             clen = int(request.headers.get('Content-Length') or 0 )
 #             if (clen<=0): return "<response/>"
 #             xmldata = request.body
-# 
+#
 #             log.debug ("XML = " + xmldata)
 #             request = etree.XML(xmldata)
 #             image = request[0]
 #             hash  = image.attrib['hash']
-# 
+#
 #         uris = self.find_uris(hash)
-# 
+#
 #         response = etree.Element ('response')
 #         for uri in uris:
 #             tag = etree.SubElement(response, 'image')
 #             tag.attrib['uri'] = str(uri)
-# 
+#
 #         return etree.tostring(response)
 
 
