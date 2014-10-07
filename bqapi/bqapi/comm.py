@@ -66,10 +66,10 @@ except ImportError:
     from ordereddict import OrderedDict
 
 import requests
-from RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
 from requests.auth import HTTPBasicAuth
 from requests.auth import AuthBase
 from requests import Session
+from bqapi.RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
 
 from lxml import etree
 

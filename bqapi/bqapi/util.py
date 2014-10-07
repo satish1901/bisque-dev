@@ -2,7 +2,6 @@ import os
 import shutil
 import urllib
 import urlparse
-import poster
 import time
 
 from lxml import etree as ET
