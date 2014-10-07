@@ -334,8 +334,9 @@ class Taggable(object):
             return "%s/%s/%s" % (self.parent.uri , self.resource_type, self.id)
             #return "%s/%s" % (self.resource_type, self.id)
         else:
+            return "%s" % (self.resource_uniq)
             #return "%s/%s" % (self.resource_type, self.resource_uniq)
-            return "%s/%s" % (self.resource_type, self.id)
+            #return "%s/%s" % (self.resource_type, self.id)
 
     uri = property(uri)
 

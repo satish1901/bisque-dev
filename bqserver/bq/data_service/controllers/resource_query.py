@@ -1026,7 +1026,8 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
                 shares.append(acl)
                 acl.action = action
                 if invalidate:
-                    Resource.hier_cache.invalidate ('/', user = user.id)
+                    #Resource.hier_cache.invalidate ('/', user = user.id)
+                    Resource.hier_cache.invalidate_resource (None, user = user.id)
 
                 try:
                     if notify and invite is not None:
@@ -1041,7 +1042,8 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
         resource.acl = shares
         if invalidate:
             for user in set(previous_shares) - set(current_shares):
-                Resource.hier_cache.invalidate ('/', user = user.id)
+                #Resource.hier_cache.invalidate ('/', user = user.id)
+                Resource.hier_cache.invalidate_resource (None, user = user.id)
         DBSession.flush()
 
     return []
@@ -1062,7 +1064,8 @@ def resource_delete(resource, user_id=None):
         q = q.filter (TaggableAcl.user_id == user_id)
         q.delete()
         log.debug('deleting acls reource_owner(%s) delete(%s) %s' % (resource.owner_id, user_id, q))
-        Resource.hier_cache.invalidate ('/', user = user_id)
+        Resource.hier_cache.invalidate_resource (q, user = user_id)
+        #Resource.hier_cache.invalidate ('/', user = user_id)
         return
     # owner so first delete all referneces.
     # ACL, values etc..
