@@ -1083,7 +1083,7 @@ def resource_delete(resource, user_id=None):
     if link:
         log.debug ('removing link %s %s from store', link.resource_name, link.resource_uniq)
         DBSession.delete(link)
-        Resource.hier_cache.invalidate ('/data_service/'+link.uri, user = user_id)
+        Resource.hier_cache.invalidate_resource (link, user = user_id)
     # Finally delete resource
     DBSession.delete(resource)
     DBSession.flush()
