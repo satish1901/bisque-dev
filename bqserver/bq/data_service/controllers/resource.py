@@ -66,7 +66,7 @@ from time import gmtime, strptime
 from pylons.controllers.util import abort
 
 import tg
-from tg import  expose, request
+from tg import  expose
 from tg.util import Bunch
 from tg.configuration import  config
 #from tg.controllers import CUSTOM_CONTENT_TYPE
@@ -188,12 +188,10 @@ class ResponseCache(object):
         return safename ( defrag_uri, user ).replace(',data_service','').replace(',,',',').replace(',#','#')
 
     def _resource_cache_name(self, resource, user):
-
         return "%s,%s" % (user if user else '',  resource.resource_uniq if resource else '')
     def _resource_query_names(self, resource, user, *args):
         base = "%s,%s" % (user if user else '', resource.resource_type if resource else '')
-        return [ "#".join ([base, arg]) for arg in args ]
-
+        return [ base ] + [ "#".join ([base, arg]) for arg in args ]
 
     def save(self, url, headers, value,user):
         cachename = os.path.join(self.cachepath, self._cache_name(url, user))
@@ -328,18 +326,27 @@ class HierarchicalCache(ResponseCache):
 
 
     def invalidate_resource(self, resource, user):
+        """ Invalidate cached files and queries for a resource
+
+        A resource can sqlalchemy query, Taggable, or a resource_type tuple
+        """
         from sqlalchemy.orm import Query
         from bq.data_service.model import Taggable
         log.debug ("CACHE invalidate: %s %s", resource, user)
 
         if isinstance(resource, tuple):
-            log.debug ("invalidate: using %s", request.bisque.parent)
-            resource = request.bisque.parent
+            parent = getattr(tg.request.bisque,'parent', None)
+            log.debug ("invalidate: tuple using %s", parent)
+            if parent:
+                resource = parent
+            else:
+                # The a pure form i.e. /data_service/image with a POST
+                resource = Bunch(resource_uniq = None, resource_type = resource [0])
         if isinstance(resource, Query):
             resource = resource.first()
         if isinstance(resource, Taggable):
             resource = resource.document
-        else:
+        if not hasattr (resource, 'resource_uniq'):
             log.error ("invalidate: Cannot determine resource %s",  resource)
             return
 
@@ -365,6 +372,8 @@ class HierarchicalCache(ResponseCache):
         # Delete user matches
         delete_matches ( files, names, user)
         # Split off user and remove global queries
+        # NOTE: we may only need to do this when resource invalidated was "published"
+
         names = [ qnames.split(',',1)[1] for qnames in query_names]
         delete_matches ( files, names, None)
 

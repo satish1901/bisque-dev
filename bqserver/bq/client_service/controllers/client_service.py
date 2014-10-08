@@ -78,7 +78,7 @@ import bq
 from bq.core.service import ServiceController, service_registry
 from bq.client_service import model
 from bq.exceptions import IllegalOperation
-import bq.release as __VERSION__
+from bq.release import  __VERSION__
 from bq.core import identity
 
 #import aggregate_service
