@@ -54,6 +54,10 @@ function callback_app(obj, method) {
     };
 }
 
+/*******************************************************************************
+  xpath
+*******************************************************************************/
+
 /*
   const unsigned short      ANY_TYPE                       = 0;
   const unsigned short      NUMBER_TYPE                    = 1;
@@ -105,6 +109,47 @@ BQ.util.xpath_string = function(node, expression) {
     return result.stringValue;
 };
 
+/*******************************************************************************
+  xhr
+*******************************************************************************/
+
+BQ.util.get_xhr_instance = function() {
+    var options = [function(){
+        return new XMLHttpRequest();
+    }, function(){
+        return new ActiveXObject('MSXML2.XMLHTTP.3.0');
+    }, function(){
+        return new ActiveXObject('MSXML2.XMLHTTP');
+    }, function(){
+        return new ActiveXObject('Microsoft.XMLHTTP');
+    }], i=0,
+        len = options.length,
+        xhr;
+
+    for(i=0; i<len; ++i) {
+        try {
+            xhr = options[i];
+            xhr();
+            break;
+        } catch(e){}
+    }
+    return xhr;
+};
+
+BQ.util.create_xhr = function() {
+    var xhr = BQ.util.get_xhr_instance()();
+    if (xhr && xhr.a5) {
+        return xhr.a5;
+    } else {
+        return xhr;
+    }
+};
+
+
+
+/*******************************************************************************
+
+*******************************************************************************/
 
 
 // e.g.

@@ -34,47 +34,14 @@ function BQFileUpload(f, conf) {
     }
 }
 
-function getXhrInstance () {
-    var options = [function(){
-        return new XMLHttpRequest();
-    }, function(){
-        return new ActiveXObject('MSXML2.XMLHTTP.3.0');
-    }, function(){
-        return new ActiveXObject('MSXML2.XMLHTTP');
-    }, function(){
-        return new ActiveXObject('Microsoft.XMLHTTP');
-    }], i = 0,
-        len = options.length,
-        xhr;
-
-    for(; i < len; ++i) {
-        try{
-            xhr = options[i];
-            xhr();
-            break;
-        }catch(e){}
-    }
-    return xhr;
-}
-
-function createXhr() {
-    var xhr = getXhrInstance()();
-    if (xhr && xhr.a5)
-        return xhr.a5;
-    else
-        return xhr;
-}
-
 BQFileUpload.prototype.upload = function () {
 
     var fd = new FormData();
     if (this.conf.resource)
         fd.append(this.form_resource, this.conf.resource );
-
     fd.append(this.form_file, this.file );
 
-    //this.xhr = new XMLHttpRequest();
-    this.xhr = createXhr();
+    this.xhr = BQ.util.create_xhr();
 
     //xhr.setRequestHeader('Content-Type', 'application/octet-stream');
     //xhr.setRequestHeader('X-File-Name', this.path+'/'+file.name);
