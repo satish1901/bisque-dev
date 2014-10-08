@@ -321,7 +321,31 @@ class HierarchicalCache(ResponseCache):
         super(HierarchicalCache, self).invalidate (
             ''.join([scheme, "://" , authority , request_uri]),
             '*', files,exact=True )
-
+        # while splitpath:
+        #     path = '/'.join(splitpath)
+        #     request_uri = query and "?".join([path, query]) or path
+        #     super(HierarchicalCache, self).invalidate (''.join([scheme, "://" , authority , request_uri]),
+        #                                                user, files)
+        #     pid = splitpath.pop()
+        #     # Specifically for /ds/dataset/XX/tag/XX/values that apear
+        #     # to act like full queries..
+        #     if pid == 'values': continue
+        #     # Not an integer token..so stop
+        #     # Has the effect of stopping on the next highest container.
+        #     #if pid and pid[0] in string.ascii_letters:
+        #     #    break
+        #     # The above was had error when modifing tags or gobjects
+        #     # and then fetching a view deep on a top level object i.e
+        #     # POST /data_service/images/2/gobjects/
+        #     # then GET /data_service/images/2?view=deep
+        #     # we are seeing a container
+        #     # if numeric then break
+        #     if pid and pid[0] not in string.ascii_letters:
+        #         break
+        #     # Current code just deletes all up until the top level object.
+        #     # Could be made better by deletes all view=deeps ?
+        #     #if len(splitpath) <=3:
+        #     #    break
 
 
 
@@ -329,6 +353,14 @@ class HierarchicalCache(ResponseCache):
         """ Invalidate cached files and queries for a resource
 
         A resource can sqlalchemy query, Taggable, or a resource_type tuple
+
+
+        # a simple resource invalidates:
+           1.  The resource document and any subdocuments
+                  USER,00-UNIQ....
+           2.  Any query associated with  resource_type
+                  USER, TYPE#....
+           if published then delete all public queries
         """
         from sqlalchemy.orm import Query
         from bq.data_service.model import Taggable
@@ -336,12 +368,12 @@ class HierarchicalCache(ResponseCache):
 
         if isinstance(resource, tuple):
             parent = getattr(tg.request.bisque,'parent', None)
-            log.debug ("invalidate: tuple using %s", parent)
+            #log.debug ("invalidate: tuple using %s", parent) #provokes logging error
             if parent:
                 resource = parent
             else:
                 # The a pure form i.e. /data_service/image with a POST
-                resource = Bunch(resource_uniq = None, resource_type = resource [0])
+                resource = Bunch(resource_uniq = None, resource_type = resource [0], permission="published")
         if isinstance(resource, Query):
             resource = resource.first()
         if isinstance(resource, Taggable):
@@ -373,46 +405,10 @@ class HierarchicalCache(ResponseCache):
         delete_matches ( files, names, user)
         # Split off user and remove global queries
         # NOTE: we may only need to do this when resource invalidated was "published"
+        if True: # resource.permission == 'published':
+            names = [ qnames.split(',',1)[1] for qnames in query_names]
+            delete_matches ( files, names, None)
 
-        names = [ qnames.split(',',1)[1] for qnames in query_names]
-        delete_matches ( files, names, None)
-
-
-
-
-
-
-
-
-
-
-        # while splitpath:
-        #     path = '/'.join(splitpath)
-        #     request_uri = query and "?".join([path, query]) or path
-        #     super(HierarchicalCache, self).invalidate (''.join([scheme, "://" , authority , request_uri]),
-        #                                                user, files)
-        #     pid = splitpath.pop()
-        #     # Specifically for /ds/dataset/XX/tag/XX/values that apear
-        #     # to act like full queries..
-        #     if pid == 'values': continue
-        #     # Not an integer token..so stop
-        #     # Has the effect of stopping on the next highest container.
-        #     #if pid and pid[0] in string.ascii_letters:
-        #     #    break
-        #     # The above was had error when modifing tags or gobjects
-        #     # and then fetching a view deep on a top level object i.e
-        #     # POST /data_service/images/2/gobjects/
-        #     # then GET /data_service/images/2?view=deep
-        #     # we are seeing a container
-
-        #     # if numeric then break
-        #     if pid and pid[0] not in string.ascii_letters:
-        #         break
-
-        #     # Current code just deletes all up until the top level object.
-        #     # Could be made better by deletes all view=deeps ?
-        #     #if len(splitpath) <=3:
-        #     #    break
 
 
 def parse_http_date(timestamp_string):

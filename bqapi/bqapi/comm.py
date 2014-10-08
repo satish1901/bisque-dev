@@ -69,10 +69,11 @@ import requests
 from requests.auth import HTTPBasicAuth
 from requests.auth import AuthBase
 from requests import Session
-from bqapi.RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
+
+from .RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
+from .casauth import caslogin
 
 from lxml import etree
-
 
 USENODE = False
 if USENODE:
@@ -92,6 +93,11 @@ class BQException(Exception):
     """
         BQException
     """
+
+class BQApiError(BQException):
+    """Exception in API usage"""
+
+
 
 class BQCommError(BQException):
 
@@ -212,7 +218,7 @@ class BQServer(Session):
             scheme = u.scheme
             netloc = u.netloc
         else: #no root provided
-            raise BQException()
+            raise BQApiError("No root provided")
 
         #query
         query = ['%s=%s'%(k,v) for k,v in urlparse.parse_qsl(u.query, True)]
@@ -268,7 +274,7 @@ class BQServer(Session):
             return r.content
 
 
-    def post(self, url, content=None, files=None, headers=None, path=None, method="POST", boundary=None):
+    def push(self, url, content=None, files=None, headers=None, path=None, method="POST", boundary=None):
         """
             Makes a http request
 
@@ -378,6 +384,45 @@ class BQSession(object):
         return self
 
 
+
+    def init_cas(self, user, pwd, moduleuri=None, bisque_root=None, create_mex=True):
+        """Initalizes a cas session
+
+        @param: user - a bisque user
+        @param: pwd - the bisque user's password
+        @param: moduleuri - module uri to be set to the mex (Only matter if create mex is set to true) (moduleuri: None)
+        @param: bisque_root - the root of the bisque system the user is trying to access (bisque_root: None)
+        @param: create_mex - creates a mex session under the user (default: True)
+        @return: self
+
+        Example
+        >>>from bqapi import BQSession
+        >>>s = BQSession()
+        >>>s.init_cas (CASNAME, CASPASS, bisque_root='http://bisque.iplantcollaborative.org', create_mex=False)
+        >>>s.fetchxml('/data_serice/image', limit=10)
+        """
+
+        if bisque_root != None:
+            self.bisque_root = bisque_root
+            self.c.root = bisque_root
+        else:
+            raise BQApiError ("cas login requires bisque_root")
+
+        caslogin (self.c, bisque_root + "/auth_service/login", user, pwd)
+        self._load_services()
+        self.mex = None
+
+        if create_mex:
+            mex = BQMex()
+            mex.module = moduleuri
+            mex.status = 'RUNNING'
+            self.mex = self.save(mex, url=self.service_url('module_service', 'mex'))
+            if self.mex:
+                mextoken = self.mex.resource_uniq
+                self.c.authenticate_mex(mextoken, user)
+        return self
+
+
     def close(self):
         pass
 
@@ -423,10 +468,10 @@ class BQSession(object):
         url = self.c.prepare_url(url, **params)
 
         if path:
-            return self.c.post(url, content=xml, path=path, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
+            return self.c.push(url, content=xml, path=path, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
         else:
             try:
-                r = self.c.post(url, content=xml, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
+                r = self.c.push(url, content=xml, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
                 return etree.XML(r, self.parser)
             except etree.XMLSyntaxError:
                 return r
@@ -456,7 +501,7 @@ class BQSession(object):
         """
         import_service_url = self.service_url('import', path='transfer')
         if import_service_url is None:
-            raise 'Could not find import service to post blob.'
+            raise BQApiError('Could not find import service to post blob.')
 
         filename = normalize_unicode(filename)
 
@@ -470,7 +515,7 @@ class BQSession(object):
 
                     fields['file_resource'] = (None, xml, "text/xml")
 
-                return self.c.post(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
+                return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
 
 
 #    def post_streaming_blob(self, filename, xml=None, **params):
@@ -510,7 +555,7 @@ class BQSession(object):
         """
         root = self.service_map.get(service_type, None)
         if root is None:
-            raise 'Not a service type'
+            raise BQApiError('Not a service type')
         if query:
             path = "%s?%s" % (path, urllib.urlencode(query))
         return urlparse.urljoin(root, path)
@@ -545,7 +590,7 @@ class BQSession(object):
                 elif isinstance(tg, etree._Element):
                     pass
                 else:
-                    raise BQException('bad values in tag/gobject list %s' % tg)
+                    raise BQApiError('bad values in tag/gobject list %s' % tg)
                 mex.append(tg)
 
         append_mex(mex, ('tag', tags))
@@ -581,7 +626,7 @@ class BQSession(object):
                 elif isinstance(tg, etree._Element):
                     pass
                 else:
-                    raise BQException('bad values in tag/gobject list %s' % tg)
+                    raise BQApiError('bad values in tag/gobject list %s' % tg)
                 mex.append(tg)
 
         append_mex(mex, ('tag', tags))
