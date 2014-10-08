@@ -66,7 +66,7 @@ from time import gmtime, strptime
 from pylons.controllers.util import abort
 
 import tg
-from tg import  expose
+from tg import  expose, request
 from tg.util import Bunch
 from tg.configuration import  config
 #from tg.controllers import CUSTOM_CONTENT_TYPE
@@ -166,6 +166,8 @@ class BaseCache(object):
     def save(self, url, header, value, user):
         pass
     def invalidate(self, url, user, files=None):
+        pass
+    def invalidate_resource(self, resource, user):
         pass
     def modified(self, url, user):
         return None
@@ -327,11 +329,19 @@ class HierarchicalCache(ResponseCache):
 
     def invalidate_resource(self, resource, user):
         from sqlalchemy.orm import Query
+        from bq.data_service.model import Taggable
+        log.debug ("CACHE invalidate: %s %s", resource, user)
 
+        if isinstance(resource, tuple):
+            log.debug ("invalidate: using %s", request.bisque.parent)
+            resource = request.bisque.parent
         if isinstance(resource, Query):
             resource = resource.first()
-        if resource:
+        if isinstance(resource, Taggable):
             resource = resource.document
+        else:
+            log.error ("invalidate: Cannot determine resource %s",  resource)
+            return
 
         files = os.listdir(self.cachepath)
         cache_name = self._resource_cache_name(resource, user)
