@@ -605,6 +605,10 @@ Ext.define('BQ.upload.Item', {
     },
 
     onFailed : function(e) {
+        if (e && e.target) {
+            this.error = e.target.status+' - '+e.target.statusText;
+            this.fileName.setText('Error while uploading <b>'+this.file.name+'</b>'+' at '+timing);
+        }
         this.state = BQ.upload.STATES.ERROR;
         this.updateUi();
         this.fireEvent( 'fileerror', this);

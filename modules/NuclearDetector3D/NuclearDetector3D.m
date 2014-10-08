@@ -1,6 +1,7 @@
-function NuclearDetector3D(mex_url, access_token, image_url, varargin)
+function NuclearDetector3D(mex_url, access_token, varargin)
     session = bq.Session(mex_url, access_token);
     try
+        image_url = session.mex.findValue('//tag[@name="inputs"]/tag[@name="resource_url"]');
         nuclear_channel  = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_channel"]'));
         membrane_channel = str2num(session.mex.findValue('//tag[@name="inputs"]/tag[@name="membrane_channel"]', '0'));        
         nuclear_diameter = session.mex.findValue('//tag[@name="inputs"]/tag[@name="nuclear_size"]');     
