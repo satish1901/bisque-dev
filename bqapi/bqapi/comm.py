@@ -385,7 +385,7 @@ class BQSession(object):
 
 
 
-    def init_cas(self, user, pwd, moduleuri=None, bisque_root=None, create_mex=True):
+    def init_cas(self, user, pwd, moduleuri=None, bisque_root=None, create_mex=False):
         """Initalizes a cas session
 
         @param: user - a bisque user

@@ -303,6 +303,27 @@ class AuthenticationServer(ServiceController):
         return ""
 
 
+    @expose(content_type="text/xml")
+    @require(predicates.not_anonymous())
+    def setbasicauth(self,  username, passwd, **kw):
+        log.debug ("Set basic auth %s", kw)
+        if not identity.is_admin() and username != identity.get_username() :
+            return "failed: not allowed to change password of others"
+        user = tg.request.identity.get('user')
+        log.debug ("Got user %s", user)
+        if user and user.user_name == username:  # sanity check
+            user = DBSession.merge(user)
+            user.password = passwd
+            log.info ("Setting new basicauth password for %s", username)
+            #transaction.commit()
+            return
+        log.error ("Could not set basicauth password for %s", username)
+        return "Failed to set password"
+
+
+
+
+
 def initialize(url):
     service =  AuthenticationServer(url)
     return service
