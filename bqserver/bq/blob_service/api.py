@@ -1,6 +1,5 @@
 from bq.core.service import service_registry
 
-from controllers.blobsrv import guess_type
 from controllers.blob_storage import make_short_uuid, localpath2url, url2localpath
 
 def find_server():

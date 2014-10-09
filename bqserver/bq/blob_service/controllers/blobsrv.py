@@ -91,19 +91,11 @@ from . import mount_service
 log = logging.getLogger('bq.blobs')
 
 from .blob_drivers import split_subpath, join_subpath
-
+from .blob_plugins import ResourcePluginManager
 
 #########################################################
 # Utility functions
 ########################################################
-
-def guess_type(filename):
-    from bq import image_service
-    filename = filename.strip()
-    if image_service.is_image_type (filename):
-        return 'image'
-    return 'file'
-
 
 def transfer_msg(flocal, transfer_t):
     'return a human string for transfer time and size'
@@ -290,6 +282,19 @@ class BlobServer(RestController, ServiceMixin):
         self.__class__.paths  = PathService(self)
         self.__class__.mounts = mount_service.MountServer(url)
         self.__class__.store = self.__class__.mounts
+        
+        path_root = config.get('bisque.paths.root', '')
+        path_plugins = os.path.join(path_root, 'bqcore/bq/core/public/plugins')
+        self.plugin_manager = ResourcePluginManager(path_plugins)
+
+
+    def guess_type(self, filename):
+        from bq import image_service
+        filename = filename.strip()
+        if image_service.is_image_type (filename):
+            return 'image'
+        return self.plugin_manager.guess_type(filename) or 'file'
+
 
 #################################
 # service  functions
@@ -405,7 +410,7 @@ class BlobServer(RestController, ServiceMixin):
         perm     = resource.get('permission', 'private')
         filename = resource.get('name')
         if resource.tag == 'resource': # requires type guessing
-            resource.set('resource_type', resource.get('resource_type') or guess_type(filename))
+            resource.set('resource_type', resource.get('resource_type') or self.guess_type(filename))
         if resource.get('resource_uniq') is None:
             resource.set('resource_uniq', data_service.resource_uniq() )
         ts = resource.get('ts') or datetime.now().isoformat(' ')

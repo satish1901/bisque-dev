@@ -50,6 +50,10 @@
     '/js/volume/bioWeb3D.css',
     {'file' : '/export_service/public/css/BQ.Export.css', 'path' : h.file_root() + 'bqserver/bq'},
     '/css/bisquik_extjs_fix.css',
+
+    # -- plugin css
+    plugins = { 'path': h.file_root() + 'bqcore/bq/core/public/plugins/', 'file': '/plugins/' },
+
     # combined will not work for now due to relative urls in .css files
     #fs_root=h.file_public(),
     #combined='/css/b.css',
@@ -253,6 +257,11 @@
     '/js/volume/transferEditorD3.js',
     '/js/volume/scalebar.js',
     '/js/volume/bioWeb3D.js',
+
+    # -- plugin renderers
+    plugins = { 'path': h.file_root() + 'bqcore/bq/core/public/plugins/', 'file': '/plugins/' },
+
+    # --
     **link_kw
     )}
 
