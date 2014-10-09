@@ -286,9 +286,10 @@ class image_serviceController(ServiceController):
         meta = None
         try:
             q = data_service.resource_load(uniq=ident, view='image_meta')
+            #log.debug('images resource query: %s', q)
             if q is not None:
                 #log.debug('images resource query: %s', etree.tostring(q))
-                meta = q.xpath('image/tag[@type="image_meta"]')[0]
+                meta = q.xpath('tag[@type="image_meta"]')[0]
                 meta = dict((i.get('name'), misc.safetypeparse(i.get('value'))) for i in meta.xpath('tag'))
                 log.debug('images meta: %s', meta)
                 if len(meta)==0:
