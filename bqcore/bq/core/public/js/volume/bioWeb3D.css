@@ -52,7 +52,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     border-color: rgba(255,255,255,0.2);
     border-radius: 5px;
     padding: 0px 0px 5px 10px;
-    z-index: 2147483647 !important;
+    z-index: 100 !important;
 
 }
 
@@ -141,7 +141,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     top: 10px;
     width: 120px;
     height: 20px;
-    z-index: 2147483647 !important;
+    z-index: 100 !important;
     opacity: 0.8;
 }
 
@@ -284,10 +284,10 @@ transfer
     margin-left:auto;
     margin-right:auto;
 
-    bottom: 80px;
+    bottom: 100px;
     width: 60%;
     opacity: 0.2;
-    z-index: 2147483647 !important;
+    z-index: 100 !important;
 }
 
 .bq-volume-playback .x-panel-header-text {
@@ -385,6 +385,7 @@ transfer
     vertical-align: middle;
 }
 
+/*
 .bq-volume-playback .x-btn {
     background-image: none;
     border-style: none;
@@ -392,12 +393,23 @@ transfer
     background-color: rgba(0, 0, 0, 0.0);
     vertical-align: middle;
 }
+*/
 
-.bq-volume-playback .x-btn-inner {
+
+.bq-volume-playback .tool-2 .x-btn {
     background-image: none;
     border-style: none;
     color: white;
     background-color: rgba(0, 0, 0, 0.0);
+    vertical-align: middle;
+}
+
+
+.bq-volume-playback .x-btn-inner {
+    //background-image: none;
+   // border-style: none;
+    color: white;
+    //background-color: rgba(0, 0, 0, 0.0);
 }
 
 .bq-volume-playback .x-toolbar-text-default {
@@ -675,7 +687,7 @@ scale bar
 
 
 /*******************************************************************************
-3D axis component
+3D axis componentax
 *******************************************************************************/
 
 

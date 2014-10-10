@@ -307,7 +307,8 @@ VolumeShader.prototype.config = function(config){
             luma2Alpha = [
                 'vec4 luma2Alpha(vec4 color, float min, float max, float C){',
                 '  //float x = sqrt(1.0/9.0*(color[0]*color[0] +color[1]*color[1] +color[2]*color[2]));',
-                '  float iChannels = 1.0/float(NUM_CHANNELS);',
+                //'  float iChannels = 1.0/float(NUM_CHANNELS);',
+                '  float iChannels = 1.0/3.0;',
                 '  float x = iChannels*(color[0] + color[1] + color[2]);',
 
                 '  //x = clamp(x, 0.0, 1.0);',
@@ -355,10 +356,10 @@ VolumeShader.prototype.config = function(config){
             '  //return vec4(pos.xyz,0.05);',
             '  pos = 0.5*(1.0 - pos);',
             '  pos[0] = 1.0 - pos[0];',
-            '  pos = clamp(pos,0.005,0.995);',
-            '  float bounds = float(pos[0] < 1.0 && pos[0] > 0.0 &&',
-            '                      pos[1] < 1.0 && pos[1] > 0.0 &&',
-            '                      pos[2] < 1.0 && pos[2] > 0.0 );',
+            //'  pos = clamp(pos,0.005,0.995);',
+            '  float bounds = float(pos[0] > 0.005 && pos[0] < 0.995 &&',
+            '                       pos[1] > 0.005 && pos[1] < 0.995 &&',
+            '                       pos[2] > 0.005 && pos[2] < 0.995 );',
             '  float nx      = float(ATLAS_X);',
             '  float ny      = float(ATLAS_Y);',
             '  float nSlices = float(SLICES);',
@@ -687,8 +688,8 @@ VolumeShader.prototype.config = function(config){
             '  float rayMag   = length(eye_d);',
 
             '  //float clipNear = eyeDist - (1.0 - CLIP_NEAR);',
-            '  float clipNear = eyeDist/rayMag - 0.275 + 0.55*CLIP_NEAR;',
-            '  float clipFar = eyeDist/rayMag  + 0.275 - 0.55*CLIP_FAR;//+ (0.25 - CLIP_FAR);',
+            '  float clipNear = eyeDist/rayMag - 0.338 + 0.65*CLIP_NEAR;',
+            '  float clipFar = eyeDist/rayMag  + 0.338 - 0.65*CLIP_FAR;//+ (0.35 - CLIP_FAR);',
             '  //clipFar = CLIP_FAR;',
             '  if (!hit || tnear > clipFar || tfar < clipNear) {',
             '     return C;',
@@ -709,17 +710,19 @@ VolumeShader.prototype.config = function(config){
             '  float csteps = float(BREAK_STEPS);',
             '  csteps = clamp(csteps,0.0,float(maxSteps));',
             '  float isteps = 1.0/csteps;',
-
-            '  float tstep = 0.90*isteps;',
-            '  float tfarsurf = 100.0;',
+            '  float r = 0.5 - 1.0*rand(eye_d.xy);',
+            '  float tstep = 1.5*isteps;',
+            '  float tfarsurf = float(DITHERING)*r*tstep;',
             '  float overflow = mod((tfarsurf - tfar),tstep);',
 
             '  float t = tbegin + overflow;',
 
             '  //float t = 0.5*(tnear + tfar) + overflow;',
-            '  float r = 0.5 - 1.0*rand(eye_d.xy);',
-            '  t = clamp(t, 0.0, clipFar);',
-            '  t += 1.0*float(DITHERING)*r*tstep;',
+
+            '  t = clamp(t, clipNear, clipFar);',
+            //'  t += 1.0*float(DITHERING)*r*tstep;',
+            //'  t = clamp(t, clipNear, clipFar);',
+
             '  float A = 0.0;',
             '  float     tdist    = 0.0;',
             '  const int maxStepsLight = 32;',
@@ -1089,7 +1092,7 @@ DepthShader.prototype.config = function(config){
 		'  gl_FragColor = pack(0.999999);',
 		' } ',
 		' else{',
-		'  gl_FragColor = vec4(0.5);',
+		'  gl_FragColor = vec4(0.75, 0.75, 0.75, 1.0);',
 		' }',
 		'}'
 	].join('\n');

@@ -51,7 +51,7 @@ function gObjectBuffer(volume) {
 };
 
 gObjectBuffer.prototype.rescale = function () {
-	var scale = this.volume.sceneVolume.getRescale().clone();
+	var scale = this.volume.getRescale().clone();
 	this.mesh.geometry.dynamic = true;
 	this.mesh.geometry.verticesNeedUpdate = true;
 	var mat = new THREE.Matrix4().scale(scale);
@@ -656,7 +656,7 @@ gObjectTool.prototype.updateScene = function () {
 
 		var curMesh = this.currentSet[item].mesh;
 		if (curMesh)
-			this.volume.sceneVolume.sceneData.remove(curMesh); // remove current point set
+			this.volume.sceneData.remove(curMesh); // remove current point set
 	}
 	this.currentSet = this.gObjectBuffers[t];
 	for (var item in this.currentSet) {
@@ -664,7 +664,7 @@ gObjectTool.prototype.updateScene = function () {
 			continue;
 		var curMesh = this.currentSet[item].mesh;
 		if (curMesh) {
-			this.volume.sceneVolume.sceneData.add(curMesh); // remove current point set
+			this.volume.sceneData.add(curMesh); // remove current point set
 			if (this.state === 1)
 				curMesh.visible = true;
 			else
@@ -757,18 +757,18 @@ gObjectTool.prototype.initControls = function(){
 	var me = this;
 	this.plane = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000, 8, 8),
 				                new THREE.MeshBasicMaterial({
-					                color : 0x000000,
+					                color : 0x808080,
 					                opacity : 0.25,
 					                transparent : true,
 					                wireframe : true
 				                }));
 	this.plane.visible = false;
 
-	this.volume.sceneVolume.scene.add(this.plane);
+	this.volume.scene.add(this.plane);
 	//this.volume.sceneVolume.scene.add(this.lightObject);
 
 	var onAnimate = function () {
-		if (this.volume.sceneVolume.sceneData) {
+		if (this.volume.sceneData) {
 			var panel = this.volume;
 			//move this to background plug-in
 			var camPos = this.volume.canvas3D.camera.position;
@@ -782,7 +782,7 @@ gObjectTool.prototype.initControls = function(){
 			this.polyShaderMaterial.uniforms.USE_COLOR.value = 0;
 			this.backGroundShaderMaterial.uniforms.USE_COLOR.value = 0;
 			//this.useColor = 0;
-			panel.canvas3D.renderer.render(this.volume.sceneVolume.sceneData,
+			panel.canvas3D.renderer.render(this.volume.sceneData,
 				                           panel.canvas3D.camera,
 				                           this.depthBuffer);
 
@@ -790,12 +790,12 @@ gObjectTool.prototype.initControls = function(){
 			this.pointShaderMaterial.uniforms.USE_COLOR.value = 1;
 			this.polyShaderMaterial.uniforms.USE_COLOR.value = 1;
 			this.backGroundShaderMaterial.uniforms.USE_COLOR.value = 1;
-			panel.canvas3D.renderer.render(panel.sceneVolume.sceneData,
+			panel.canvas3D.renderer.render(panel.sceneData,
 				                           panel.canvas3D.camera,
 				                           this.colorBuffer);
 
-			panel.sceneVolume.setUniform('BACKGROUND_DEPTH', this.depthBuffer, false);
-			panel.sceneVolume.setUniform('BACKGROUND_COLOR', this.colorBuffer, false);
+			panel.sceneVolume.setUniformNoRerender('BACKGROUND_DEPTH', this.depthBuffer, false);
+			panel.sceneVolume.setUniformNoRerender('BACKGROUND_COLOR', this.colorBuffer, false);
 		}
 	};
 
@@ -1011,7 +1011,7 @@ gObjectTool.prototype.initControls = function(){
 
 	//backGround.overdraw = true;
 	//backGround.doubleSided = true;
-	this.volume.sceneVolume.sceneData.add(backGround);
+	this.volume.sceneData.add(backGround);
 
 	this.addUniforms();
 	this.isLoaded = true;

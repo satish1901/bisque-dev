@@ -422,8 +422,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		if ( scope.enabled === false ) { return; }
 		event.preventDefault();
-
-        console.log(axis, taxis);
         axis = taxis;
 
 
