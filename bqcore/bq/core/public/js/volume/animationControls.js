@@ -339,6 +339,40 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 
 //////////////////////////////////////////////////////////////////
 //
+// keyframe Thumb
+//
+//////////////////////////////////////////////////////////////////
+
+
+Ext.define('BQ.viewer.Volume.Thumb',{
+    extend: 'Ext.slider.Thumb',
+
+    mixins : {
+	    observable : 'Ext.util.Observable'
+	},
+
+    constructor: function (config) {
+        this.callParent(arguments);
+        this.mixins.observable.constructor.call(this, config);
+        this.addEvents('dblclick');
+    },
+
+    render : function(){
+        this.callParent(arguments);
+        var me = this;
+        this.el.dom.ondblclick = function(){
+            me.fireEvent('dblclick', me);
+        };
+    },
+
+    bringToFront: function() {
+        this.callParent(arguments);
+        this.fireEvent('click', this);
+    },
+});
+
+//////////////////////////////////////////////////////////////////
+//
 // keyframe slider
 //
 //////////////////////////////////////////////////////////////////
@@ -399,7 +433,10 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	        cls : 'x-slider-head',
         });
 	    this.timeThumb.render();
-	    this.callParent();
+	    this.thumbs.forEach(function(e,i,a){
+            e.render();
+        });
+        this.callParent();
     },
 
     drawTicks : function(canvas){
@@ -439,6 +476,39 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    this.callParent();
     },
 
+    /**
+     * Creates a new thumb and adds it to the slider
+     * @param {Number} [value=0] The initial value to set on the thumb.
+     * @return {Ext.slider.Thumb} The thumb
+     */
+    addThumb: function(value) {
+        var me = this,
+            thumb = new BQ.viewer.Volume.Thumb({
+                ownerCt     : me,
+                ownerLayout : me.getComponentLayout(),
+                value       : value,
+                slider      : me,
+                index       : me.thumbs.length,
+                constrain   : me.constrainThumbs,
+                disabled    : !!me.readOnly,
+                listeners : {
+                    click : function(thumb){
+                        var val = thumb.value;
+                        me.setValue(999, val, false, false);
+                    },
+                    scope: me,
+                }
+            });
+
+        me.thumbs.push(thumb);
+
+        //render the thumb now if needed
+        if (me.rendered) {
+            thumb.render();
+        }
+
+        return thumb;
+    },
 
     setValue : function(index, value, animate, changeComplete) {
         var me = this,
@@ -497,6 +567,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
         // If vertical, the origin is the bottom of the slider track.
 
         //find the nearest thumb to the click event
+        console.log(trackPoint);
         thumb = me.getNearest(trackPoint);
 	    if (thumb.index == 999)
             if (!thumb.disabled) {
