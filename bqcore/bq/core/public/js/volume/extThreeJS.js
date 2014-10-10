@@ -97,40 +97,6 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 
     listeners: {
         scope: this,
-        /*
-        el:{
-            mousedown:  this.onMouseDown,
-            mouseup: this.onMouseUp,
-            DOMMouseScroll:this.onMouseWheel,
-            mousewheel: this.onMouseWheel,
-            mousemove:this.onMouseMove,
-        }
-
-
-        //mousedown: this.onMouseDown,
-
-
-        mousedown: {
-            element: 'el',
-            fn: this.onMouseDown
-        },
-        mouseup: {
-            element: 'el',
-            fn: this.onMouseUp
-        },
-        DOMMouseScroll: {
-            element: 'el',
-            fn : this.onMouseWheel,
-        },
-        mousewheel: {
-            element: 'el',
-            fn : this.onMouseWheel,
-        },
-        mousemove: {
-            element: 'el',
-            fn : this.onMouseMove,
-        },
-        */
     },
 
     initComponent : function() {
@@ -160,10 +126,13 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.renderer = new THREE.WebGLRenderer({
             canvas: thisDom,
             preserveDrawingBuffer : true,
-            clearAlpha: 1,
+            alpha: true,
+            premultipliedAlpha: false,
             sortObjects: true,
         });
-        this.renderer.setClearColor(0xC0C0C0, 1);
+
+        this.setClearColor(0xC0C0C0, 1.0);
+
         var aspect = this.getWidth() / this.getHeight();
         this.fov = 40;
         this.camera = new THREE.PerspectiveCamera(this.fov, aspect, .01, 20);
@@ -189,7 +158,13 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 
         this.fireEvent('loaded', this);
         this.callParent();
+        if(this.buildScene)
+            this.buildScene();
         this.renderer.render(this.scene, this.camera);
+    },
+
+    setClearColor: function(color, alpha){
+        this.renderer.setClearColor(color, alpha);
     },
 
     getPixelWidth : function(){
@@ -212,7 +187,10 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 	        me.zooming = false;
 	        me.mousedown = false;
             me.controls.enabled = true;
+            me.controls.update();
+            me.fireEvent('mousewheelup', event);
         }, 200);
+
         this.fireEvent('mousewheel', event);
     },
 
@@ -235,7 +213,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.controls.enabled = true;
         this.mousedown   = false;
         this.needs_render = true;
-        this.fireEvent('mousemove', event);
+        this.fireEvent('mouseup', event);
     },
 
     onMouseMove : function(event){
@@ -257,6 +235,11 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.needs_render = true;
     },
 
+    render : function(){
+        this.renderer.render(this.scene, this.camera);
+        this.fireEvent('render', this);
+    },
+
     doAnimate : function() {
         var me = this;
 	    if(this.onAnimate)
@@ -268,67 +251,14 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
             for(var i = 0; i < this.animate_funcs.length; i++){
                 this.animate_funcs[i]();
             }
-            this.renderer.render(this.scene, this.camera);
-            this.fireEvent('render', this);
+            this.render();
             //this.anaglyph.render(this.scene, this.camera);
         }
 
-        this.controls.update();
+        //this.controls.update();
         requestAnimationFrame(function() {
             me.doAnimate()
         });
     },
 
-});
-
-
-Ext.define('BQ.viewer.Volume.Axis', {
-    //extend: 'Ext.container.Container',
-    extend : 'BQ.viewer.Volume.ThreejsPanel',
-    alias : 'widget.axis_panel',
-    border : 0,
-    frame : false,
-
-    initComponent : function() {
-        this.callParent();
-    },
-
-    initScene : function(uniforms) {
-        //this.fireEvent("initscene");
-    },
-
-    afterRender : function() {
-        this.callParent();
-    },
-
-    afterFirstLayout : function() {
-        var me = this;
-        var thisDom = this.getEl().dom;
-
-        this.scene = new THREE.Scene();
-		var material = new THREE.MeshBasicMaterial({
-			color : 0xffff00
-		});
-
-        this.cube = new THREE.CubeGeometry(0.25, 0.25, 0.25);
-		this.cubeMesh = new THREE.Mesh(this.cube, material);
-		this.scene.add(this.cubeMesh);
-
-        this.axisHelper = new THREE.AxisHelper( 1 );
-        this.scene.add( this.axisHelper );
-        this.callParent();
-        this.camera = new THREE.OrthographicCamera( -this.getWidth()/100, this.getWidth()/100,
-                                                    this.getHeight()/100, -this.getHeight()/100, 1, 20 );
-        this.camera.position.set(0,0,10);
-        //this.camera.fov = 10;
-        this.renderer.render(this.scene, this.camera);
-    },
-
-    doAnimate : function() {
-        var me = this;
-        this.axisHelper.rotation.setFromRotationMatrix(this.followingCam.matrixWorldInverse);
-        this.cubeMesh.rotation.setFromRotationMatrix(this.followingCam.matrixWorldInverse);
-
-        this.callParent();
-    },
 });

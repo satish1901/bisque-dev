@@ -42,6 +42,136 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+
+//////////////////////////////////////////////////////////////////
+//
+// Load slider
+//
+//////////////////////////////////////////////////////////////////
+
+
+Ext.define('BQ.viewer.Volume.loadSlider',{
+    extend: 'Ext.slider.Multi',
+    alias: 'widget.load_slider',
+    cls: 'key-slider',
+    height: 40,
+    constructor : function(config) {
+        this.callParent(arguments);
+        return this;
+    },
+
+    initComponent : function(){
+	    this.frameArray = new Array();
+	    this.callParent();
+    },
+
+    setSize : function(N){
+        this.N = N;
+        for(var i = 0; i < this.N; i++){
+            this.frameArray.push(0);
+        }
+	    var me = this;
+
+    },
+
+    afterRender: function(){
+	    this.svgUrl = "http://www.w3.org/2000/svg";
+	    this.svgdoc = document.createElementNS(this.svgUrl, "svg");
+	    this.svgdoc.setAttributeNS(null, 'class', 'tick-slider');
+	    this.el.dom.appendChild(this.svgdoc);
+	    this.svgTicks = document.createElementNS(this.svgUrl, "g");
+	    this.svgTicks.setAttributeNS(null, 'class', 'tick-slider');
+	    this.svgdoc.appendChild(this.svgTicks);
+	    this.drawTicks();
+	    this.callParent();
+    },
+
+    getStop : function (stop) {
+        var color = stop.color;
+        var offset = stop.offset;
+        svgStop = '<stop offset="' + offset +
+            '%" stop-color="rgba(' +
+            color[0] + ', ' +
+            color[1] + ', ' +
+            color[2] + ', ' +
+            color[3] + ')"/>\n';
+        return svgStop;
+    },
+
+    genGradient : function (config, stops) {
+
+        var orient;
+        if (config.vertical)
+            orient = 'x1="0%" y1="0%" x2="0%" y2="100%"\n';
+        else
+            orient = '';
+
+        var grad = '<defs> <linearGradient id="' + config.id + '">\n';
+        var grad = ['<defs>',
+                    '<linearGradient id="' + config.id + '" ',
+                    orient,
+                    'gradientTransform="rotate(' + config.angle + ')">\n'
+                   ].join(' ');
+        for (var i = 0; i < stops.length; i++) {
+            grad += this.getStop(stops[i]);
+        }
+        grad += '</linearGradient> </defs>';
+        return grad;
+    },
+
+    drawTicks : function(canvas){
+        if (this.frameArray.length == 1) return;
+        var grad1 = this.genGradient({
+            id : 'Load-Tick',
+            angle : 0,
+            vertical : true
+        },[{
+            offset : 0,
+            color : [0, 0, 0, 0.0]
+        },{
+            offset : 35,
+            color : [60, 50, 0, 1.0]
+        },{
+            offset : 100,
+            color : [0, 0, 0, 0.0]
+        } ]);
+
+	    var Start = this.startFrame;
+	    var End   = this.endFrame;
+	    var tic = this.tic;
+	    var N = this.frameArray.length;
+	    var path = '';
+	    for(var i = 0; i < this.frameArray.length; i++){
+	        var x0, y0, x1, y1, w;
+	        x0 = 1 + 98.25*i/N + '%';
+	        w = 60*1/N + '%';
+            x1 = x0;
+	        if(i%tic == 0){
+		        y0 = '25%';
+		        y1 = '75%';
+	        } else {
+		        y0 = '40%';
+		        y1 = '60%';
+	        }
+            var op = this.frameArray[i] ? 0.9 : 0.2;
+            path += '<rect x="'+x0+'" y="30%" width="'+w+'" height="40%"' +
+                'style="fill:url(#Load-Tick);stroke:none;stroke-width:1;fill-opacity:'+op+';stroke-opacity:0.9" />';
+
+	    }
+        var back = ['<rect ',
+                    'x="0" y="25%"',
+                    'rx="6" ry="6"',
+                    'width="100%"',
+                    'height="50%"',
+                    'fill="#E5E5E3"',
+                    '/>'].join(' ');
+        //var back = '<rect x="0%" y="25%" rx="6" ry="6" width="100%" height="50%" style="fill:#FAEBD7"></rect>';
+
+	    this.svgTicks.innerHTML = grad1 + back + path;
+    },
+});
+
+
 //////////////////////////////////////////////////////////////////
 //
 // playback controller
@@ -67,15 +197,22 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 	    this.sampleRate = 16;
 	    var me = this;
 
-	    this.timeSlider = Ext.create('Ext.slider.Slider', {
+	    this.timeSlider = Ext.create('BQ.viewer.Volume.loadSlider', {
 	        minValue: 0,
 	        flex: 1,
-	        //width: 400,
+
 	        listeners: {
 		        change: function(slider, value) {
 		            var ratio = (value)/(this.timeSlider.maxValue-1);
-		            this.panel3D.setCurrentTimeRatio(ratio);
-		            this.panel3D.rerender(this.sampleRate);
+		            //this.panel3D.setCurrentTimeRatio(ratio);
+                    this.panel3D.setCurrentTime(value);
+                    if(this.playButton.pressed){
+                        this.panel3D.updateTextureUniform();
+                        this.panel3D.setSampleRate(this.sampleRate);
+                        this.panel3D.canvas3D.render();
+                    }
+                        else
+		                    this.panel3D.rerender(this.sampleRate);
 		            this.frameNumber.setText((value+1) + "/" + this.endFrame);
 		        },
 		        scope:me
@@ -86,7 +223,6 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 	        cls: 'bq-btn-play',
 	        enableToggle: true,
 	        handler: function(){
-		        console.log(this.playButton);
 		        requestAnimationFrame(function() {me.doAnimate()});
 
 	        },
@@ -98,42 +234,66 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 	        text: "1/1",
 	    });
 
+        var qualityCheck = function(item, checked){
+
+            if(checked === false) return;
+            if (item.text === 'low'){
+                me.sampleRate = 64;
+            }
+            if (item.text === 'medium'){
+                me.sampleRate = 128;
+            }
+            if (item.text === 'high'){
+                me.sampleRate = 256;
+            }
+            if (item.text === 'ultra'){
+                me.sampleRate = 512;
+            }
+            if (item.text === 'extreme'){
+                me.sampleRate = 1024;
+            }
+        };
+
         var qualityMenu = Ext.create('Ext.menu.Menu', {
 	        text: 'render quality: ',
             //id: 'renderQuality1',
 	        floating: true,  // usually you want this set to True (default)
 	        items: [{
-		        text: 'good',
+		        text: 'low',
 		        checked: false,
                 group: 'quality',
-		        checkHandler: function(item, checked){
-	                me.sampleRate = 32;
-		        },
-                scope: me
+		        checkHandler:qualityCheck
 	        },{
-		        text: 'better',
+		        text: 'medium',
 		        checked: false,
                 group: 'quality',
-		        checkHandler: function(item, checked){
-	                me.sampleRate = 96;
-		        },
-                scope: me
+		        checkHandler: qualityCheck
+
 	        },{
-		        text: 'best',
+		        text: 'high',
 		        checked: true,
                 group: 'quality',
-		        checkHandler: function(item, checked){
-	                me.sampleRate = 256;
-		        },
-                scope: me
-	        }]
+		        checkHandler:qualityCheck
+	        },{
+		        text: 'ultra',
+		        checked: true,
+                group: 'quality',
+		        checkHandler:qualityCheck
+	        },{
+		        text: 'extreme',
+		        checked: true,
+                group: 'quality',
+		        checkHandler:qualityCheck
+	        },]
 	    });
 
         this.endFrame = this.panel3D.dims.t;
+        this.timeSlider.setSize(this.endFrame);
 		this.timeSlider.setMaxValue(this.endFrame - 1);
 		this.frameNumber.setText("1/" + this.endFrame);
 	    var toolbar = {
             xtype: 'toolbar',
+            cls: 'tool-2',
 	        items:[this.playButton,
                    this.timeSlider,
 		           this.frameNumber,
@@ -158,15 +318,19 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 	    this.callParent();
     },
 
+    setLoaded : function(t){
+        this.timeSlider.frameArray[t] = 1;
+        this.timeSlider.drawTicks();
+    },
 
     doAnimate : function(){
 	    var me = this;
 	    if(this.playButton.pressed == true){
-	        var newVal = this.timeSlider.getValue()+1;
+	        var newVal = parseInt(this.timeSlider.getValue())+1;
 	        var maxVal = this.timeSlider.maxValue;
 	        newVal = newVal > maxVal ? 0 : newVal;
-	        this.timeSlider.setValue(newVal,false);
-            this.panel3D.sceneVolume.setMaxSteps = this.sampleRate;
+	        this.timeSlider.setValue(0,newVal,false);
+
 	        requestAnimationFrame(function() {me.doAnimate()});
 	    }
     },
@@ -194,7 +358,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    this.keyArray = new Array();
 	    this.autoKey = false;
 	    this.insertDist = 2;
-	    this.sampleRate = 8;
+	    this.sampleRate = 128;
 	    this.timeValue = 0;
 	    var me = this;
 
@@ -354,11 +518,9 @@ Ext.define('BQ.viewer.Volume.keySlider',{
     getNearest: function(trackPoint){
 	    var me = this;
 
-	    console.log(this);
 	    clickValue = me.reversePixelValue(trackPoint);
 	    var value = this.timeThumb.value;
 	    dist = Math.abs(value - clickValue);
-	    console.log("dist: ", dist);
 	    if (dist < 10) return this.timeThumb;
 	    else {
 	        return this.callParent(arguments);
@@ -435,8 +597,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    var q1 = (new THREE.Quaternion).setFromEuler(this.keyArray[i1].rotation);
 	    var qi = q0.clone();
 	    qi.slerp(q1,t);
-	    var ri = new THREE.Euler(0,0,0,'XYZ');
-	    ri.setFromQuaternion(qi,'XYZ');
+	    var ri = new THREE.Euler(0,0,0,'XYZ').setFromQuaternion(qi,'XYZ');
 
         /*
 	      var q0 = (new THREE.Quaternion).setFromEuler(this.keyArray[i+0].rotation);
@@ -483,9 +644,10 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    var pi = new THREE.Vector3(0.0,0.0,li);
 	    pi.applyQuaternion(qi).add(ti);
 	    //p0.lerp(p1,t);
-	    return {pos:pi,
+	    return {pos:  pi,
                 targ: ti,
-		        rot:ri};
+		        rot:  ri,
+                quat: qi};
     },
 
     //----------------------------------------------------------------------
@@ -505,9 +667,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	        this.keyArray[nearestFrame].position = pos.clone();
 	        this.keyArray[nearestFrame].target   = target.clone();
 	        var lastFrame = this.keyArray.length-1;
-	        console.log(nearestFrame, this.loop);
 	        if(nearestFrame == 0 && this.loop == true ){
-		        console.log("swoop");
 		        this.keyArray[lastFrame].rotation = rot.clone();
 		        this.keyArray[lastFrame].position = pos.clone();
 		        this.keyArray[lastFrame].target = target.clone();
@@ -570,6 +730,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	        var rot = this.panel3D.canvas3D.camera.rotation.clone();
 	        var pos = this.panel3D.canvas3D.camera.position.clone();
 	        var targ = this.panel3D.canvas3D.controls.target.clone();
+            //var up = this.panel3D.canvas3D.controls.position.up.clone();
 	        var thumb;
 	        if(frame == 0) {
 		        thumb = this.thumbs[0];
@@ -613,9 +774,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	        var ik = this.getNearestFrame(frame);
 	        this.keyArray.splice(ik,1);
 	    }
-	    console.log("post: ", this.keyArray, this.keyArray.length);
-	    console.log("post: ", this.thumbs);
-    },
+	},
 
 });
 
@@ -653,8 +812,10 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    else
 	        this.volumeEndFrame = 1;
 	    this.loop = false;
-	    this.sampleRate = 8;
+	    this.sampleRate = 128;
 	    var me = this;
+		var controls = this.panel3D.canvas3D.controls;
+        var curCamera = this.panel3D.canvas3D.camera;
 
 	    this.keySlider = Ext.create('BQ.viewer.Volume.keySlider', {
 	        startFrame: this.startFrame,
@@ -664,36 +825,47 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	        autoKey: false,
 	        flex: 1,
             listeners: {
+                //beforechange: f
 		        change: function(slider, value, thumb) {
 		            //console.log(slider, value);
 		            if(thumb.index === 999){
 			            if (this.keySlider.keyArray.length < 2) return;
 			            //var rat = value/slider.maxValue;
-			            var ratio = (value)/(slider.maxValue-1);
+                        controls.enabled = false;
+
+
+                        var ratio = (value)/(slider.maxValue-1);
 			            this.panel3D.setCurrentTimeRatio(ratio);
-			            this.panel3D.setMaxSteps = this.sampleRate;
-			            this.panel3D.rerender(this.sampleRate);
+			            this.panel3D.setSampleRate(this.sampleRate);
+                        this.panel3D.rerender(this.sampleRate);
 
 			            var nearFrame = this.keySlider.getFloorFrame(value);
 			            var interp = this.keySlider.getInterpolatedValue(nearFrame, value);
+                        curCamera.rotation.copy(interp.rot);
+			            curCamera.position.copy(interp.pos);
 
-			            this.panel3D.canvas3D.camera.rotation.copy(interp.rot);
-			            this.panel3D.canvas3D.camera.position.copy(interp.pos);
 
-                        this.panel3D.canvas3D.controls.target.copy(interp.targ);
-                        this.panel3D.canvas3D.controls.object.position.copy(interp.pos);
-                        this.panel3D.canvas3D.controls.object.rotation.copy(interp.rot);
+                        var newTarg = new THREE.Vector3(0,0,1);
+                        var newUp   = new THREE.Vector3(0,1,0);
+                        newTarg.applyQuaternion(interp.quat);
+                        newUp.applyQuaternion(interp.quat);
+                        controls.target.copy(interp.targ);
+                        controls.object.up.copy(newUp);
+                        controls.object.position.copy(interp.pos);
 
-                        this.panel3D.canvas3D.controls.update();
+                        //this.panel3D.canvas3D.controls.update();
 
 			            this.keySlider.panelCamera.position.copy( this.panel3D.canvas3D.camera.position );
 			            this.keySlider.panelCamera.rotation.copy( this.panel3D.canvas3D.camera.rotation );
 			            this.keySlider.panel3D.canvas3D.camera = this.keySlider.panelCamera;
+
 			            var volFrame = Math.floor(ratio*this.volumeEndFrame);
 			            this.frameNumber.setText(volFrame + "/" + this.volumeEndFrame);
 		            }
 		        },
 		        changeComplete: function(){
+                    this.panel3D.canvas3D.controls.enabled = true;
+                    //this.panel3D.canvas3D.controls.update();
 		            this.panel3D.canvas3D.controls.object = this.panel3D.canvas3D.camera;
 		            this.panel3D.canvas3D.controls.noRotate = false;
 		            this.panel3D.canvas3D.controls.noPan = false;
@@ -703,7 +875,8 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    });
 
 	    var addKeyButton = Ext.create('Ext.Button', {
-	        iconCls: 'addbutton',
+	        text: '+',
+            enableToggle: true,
 	        handler: function(){
 		        this.keySlider.addKeyFrame(this.keySlider.getCurrentTime());
 
@@ -712,7 +885,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    });
 
 	    var removeKeyButton = Ext.create('Ext.Button', {
-	        iconCls: 'deletebutton',
+	        text: '-',
 	        handler:function(){
 		        this.keySlider.removeKeyFrame(this.keySlider.getCurrentTime());
 	        },
@@ -724,17 +897,18 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
             cls: 'bq-btn-play',
 	        enableToggle: true,
 
-	        handler: function(){
-		        if(this.isPlaying) {
-		            this.isPlaying = false;
+	        handler: function(button){
+		        if(button.pressed) {
 		            this.keySlider.panelCamera.position.copy( this.panel3D.canvas3D.camera.position );
 		            this.keySlider.panelCamera.rotation.copy( this.panel3D.canvas3D.camera.rotation );
 		            this.keySlider.panel3D.canvas3D.camera = this.keySlider.panelCamera;
-		            //if() button.iconCls = 'pausebutton';
+		            this.isPlaying = true;
+                    requestAnimationFrame(function() {me.doAnimate()});
+                    //if() button.iconCls = 'pausebutton';
 		            //else button.setText('autokey on');
 		        }
-		        else this.isPlaying = true;
-		        requestAnimationFrame(function() {me.doAnimate()});
+		        else this.isPlaying = false;
+
 	        },
 
 	        scope:me,
@@ -766,10 +940,10 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 	    var autoKeyButton = Ext.create('Ext.Button', {
 	        enableToggle: true,
-	        iconCls: 'addbutton',
-
+	        text: '+',
 	        handler: function(button, pressed) {
-		        this.keySlider.autoKey = this.keySlider.autoKey ? false:true;
+                this.keySlider.autoKey = button.pressed;
+		        //this.keySlider.autoKey = this.keySlider.autoKey ? false:true;
 
 	        },
 	        scope:me,
@@ -802,36 +976,61 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 	    });
 
-	    var qualityMenu = Ext.create('Ext.menu.Menu', {
-	        text: 'render quality: ',
-            //id: 'renderQuality2',
-	        floating: true,  // usually you want this set to True (default)
-	        items: [{
-		        text: 'good',
-		        checked: false,
-                group: 'quality',
-		        checkHandler: function(item, checked){
-	                me.sampleRate = 32;
-		        },
-                scope: me
-	        },{
-		        text: 'better',
-		        checked: false,
-                group: 'quality',
-		        checkHandler: function(item, checked){
-	                me.sampleRate = 96;
-		        },
-                scope: me
-	        },{
-		        text: 'best',
-		        checked: true,
-                group: 'quality',
-		        checkHandler: function(item, checked){
-	                me.sampleRate = 256;
-		        },
-                scope: me
-	        }]
-	    });
+        var qualityCheck = function(item, checked){
+            if(checked === false) return;
+            if (item.text === 'low'){
+                me.sampleRate = 64;
+            }
+            if (item.text === 'medium'){
+                me.sampleRate = 128;
+            }
+            if (item.text === 'high'){
+                me.sampleRate = 256;
+            }
+            if (item.text === 'ultra'){
+                me.sampleRate = 512;
+            }
+            if (item.text === 'extreme'){
+                me.sampleRate = 1024;
+            }
+        };
+
+        var qualityMenu = Ext.create('Ext.menu.Menu', {
+            //id: 'mainMenu',
+            style: {
+                overflow: 'visible'     // For the Combo popup
+            },
+            items: [
+                '<b class="menu-title">Choose a Theme</b>',
+                {
+                    text: 'low',
+                    checked: true,
+                    group: 'theme',
+                    checkHandler: qualityCheck
+                }, {
+                    text: 'medium',
+                    checked: false,
+                    group: 'theme',
+                    checkHandler: qualityCheck
+                }, {
+                    text: 'high',
+                    checked: false,
+                    group: 'theme',
+                    checkHandler: qualityCheck
+                }, {
+                    text: 'ultra',
+                    checked: false,
+                    group: 'theme',
+                    checkHandler: qualityCheck
+                },{
+                    text: 'extreme',
+                    checked: false,
+                    group: 'theme',
+                    checkHandler: qualityCheck
+                },
+
+            ]
+        });
 
 	    this.numKeyFramesField = Ext.create('Ext.form.field.Number', {
             name: 'numberfield1',
@@ -853,6 +1052,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    });
 	    var toolbar1 = {
             xtype: 'toolbar',
+			//cls : 'toolItem',
 	        items:[recordButton,
 		           autoKeyButton,
 		           removeKeyButton,
@@ -866,6 +1066,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    };
 	    var toolbar2 = {
             xtype: 'toolbar',
+            cls: 'tool-2',
 	        items:[playButton,this.keySlider,
 		           this.frameNumber],
 	    };
@@ -931,6 +1132,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
     doAnimate : function(){
 	    var me = this;
 	    if(this.isPlaying){
+            this.panel3D.canvas3D.controls.enabled = false;
 	        var maxTime = this.keySlider.maxValue;
 	        var increment = maxTime/this.keySlider.endFrame;
 	        var currentTime = (this.keySlider.timeThumb.value + increment)%maxTime;
@@ -938,6 +1140,8 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	        this.keySlider.setHeadValue(currentTime,false);
 	        requestAnimationFrame(function() {me.doAnimate()});
 	    }
+        this.panel3D.canvas3D.controls.enabled = true;
+        this.panel3D.canvas3D.controls.update();
     },
 
     doRecord : function(video){

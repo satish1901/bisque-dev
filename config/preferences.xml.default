@@ -143,5 +143,19 @@
             <tag name="hide_gobjects_creation" value="" />
 
         </tag>
+
+        <tag name="Viewer3D">
+	    <tag name="render_quality" value="high"  type="string">
+                <template>
+                        <tag type="string" name="Type" value="ComboBox"/>
+                        <tag type="string" name="defaultValue" value="high"/>
+                        <tag type="boolean" name="allowBlank" value="false"/>
+                        <tag type="boolean" name="Editable" value="true"/>
+                        <tag type="string" name="select" value="low,medium,high"/>
+                </template>
+            </tag>
+        </tag>
+
+
     </tag>
 </system>

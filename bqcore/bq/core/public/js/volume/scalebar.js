@@ -204,8 +204,42 @@ VolAxisTool.prototype.initControls = function () {
 		renderTo : thisDom,
         layout : 'fit',
 		cls : 'vol-axis',
-        items: [{xtype: 'axis_panel',
-                 itemId: 'axis_panel'}],
+        items: [{xtype: 'threejs_panel',
+                 itemId: 'axis_panel',
+                 doAnimate : function() {
+                     var me = this;
+                     this.renderer.render(this.scene, this.camera);
+                     this.axisHelper.rotation.setFromRotationMatrix(this.followingCam.matrixWorldInverse);
+                     this.cubeMesh.rotation.setFromRotationMatrix(this.followingCam.matrixWorldInverse);
+                     requestAnimationFrame(function() {
+                         me.doAnimate()
+                     });
+                 },
+
+                 buildScene: function() {
+                     var thisDom = this.getEl().dom;
+
+                     this.scene = new THREE.Scene();
+		             var material = new THREE.MeshBasicMaterial({
+			             color : 0xffff00
+		             });
+
+                     this.cube = new THREE.CubeGeometry(0.25, 0.25, 0.25);
+		             this.cubeMesh = new THREE.Mesh(this.cube, material);
+		             this.scene.add(this.cubeMesh);
+
+                     this.axisHelper = new THREE.AxisHelper( 1 );
+                     this.scene.add( this.axisHelper );
+                     this.camera = new THREE.OrthographicCamera( -this.getWidth()/100, this.getWidth()/100,
+                                                                 this.getHeight()/100, -this.getHeight()/100, 1, 20 );
+                     //this.setClearColor(0xC0C0C0, 0.0);
+                     //this.setClearColor(0xC0C0C0,1.0);
+                     this.renderer.setClearColor(0x808080,0.001);
+
+                     this.camera.position.set(0,0,10);
+                 }
+
+                }],
         listeners : {
             afterlayout: function(){
                 var canvas = this.queryById('axis_panel');

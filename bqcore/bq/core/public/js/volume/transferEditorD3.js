@@ -864,7 +864,7 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 				text : 'edit',
 				width : 'auto',
 				enableToggle : true,
-				cls : 'toolItem',
+				//cls : 'toolItem',
                 itemId: 'transButton0',
 				handler : function(){
                     var

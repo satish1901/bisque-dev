@@ -58,7 +58,7 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
   },
 
   genGradient : function (config, stops) {
-    console.log(config, stops);
+
     var orient;
     if (config.vertical)
       orient = 'x1="0%" y1="0%" x2="0%" y2="100%"\n';
@@ -75,7 +75,6 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
       grad += this.getStop(stops[i]);
     }
     grad += '</linearGradient> </defs>';
-    console.log(grad);
     return grad;
   },
 

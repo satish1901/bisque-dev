@@ -719,11 +719,11 @@ lightTool.prototype.initControls = function(){
     this.plane.visible = false;
     this.lightObject.visible = false;
 
-    this.sceneVolume.scene.add(this.plane);
+    this.volume.scene.add(this.plane);
     this.lightObject.position.x = 0.0;
     this.lightObject.position.y = 0.0;
     this.lightObject.position.z = 1.0;
-    this.sceneVolume.scene.add(this.lightObject);
+    this.volume.scene.add(this.lightObject);
     //this.sceneVolume.sceneData.add(this.lightObject);
 
     var onMouseUp = function () {
