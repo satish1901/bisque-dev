@@ -139,7 +139,7 @@ class ServiceRegistryController (ServiceController):
 
 
 from tg.controllers import WSGIAppController
-from paste.proxy import make_proxy
+from bq.util.proxy import make_proxy
 class ProxyCache(object):
     "Cache proxy services"
     def __init__(self):
