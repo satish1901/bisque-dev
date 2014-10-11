@@ -33,9 +33,14 @@ TODO:
 import httplib
 import urlparse
 import urllib
+import requests
+import logging
+import posixpath
 
 from paste import httpexceptions
 from paste.util.converters import aslist
+
+log = logging.getLogger('bq.util.proxy')
 
 # Remove these headers from response (specify lower case header
 # names):
@@ -64,6 +69,11 @@ class Proxy(object):
 
         self.suppress_http_headers = [
             x.lower() for x in suppress_http_headers if x]
+        
+        headers_ignore_in = ['cookie', 'host', 'referer', 'connection', 'origin']
+        self.suppress_http_headers.extend(headers_ignore_in)
+        
+        self.suppress_http_headers_out = ['content-encoding', 'transfer-encoding', 'vary', 'connection']
 
     def __call__(self, environ, start_response):
         if (self.allowed_request_methods and
@@ -78,6 +88,7 @@ class Proxy(object):
         #    raise ValueError(
         #        "Unknown scheme for %r: %r" % (self.address, self.scheme))
         #conn = ConnClass(self.host)
+        
         headers = {}
         for key, value in environ.items():
             if key.startswith('HTTP_'):
@@ -102,6 +113,7 @@ class Proxy(object):
         else:
             body = ''
 
+        #log.debug('environ: %s', str(environ))
         path_info = urllib.quote(environ['PATH_INFO'])
         if self.path:
             request_path = path_info
@@ -114,16 +126,34 @@ class Proxy(object):
         if environ.get('QUERY_STRING'):
             path += '?' + environ['QUERY_STRING']
 
-        res = requests.request (method=environ['REQUEST_METHOD'],
-                                url = "%s://%s" % (self.scheme,  path),
-                                body = body,
-                                headers = headers,
-                                allow_redirects=True)
+        url = "%s://%s%s" % (self.scheme, self.host, path)
+        log.debug('method: %s, url: %s', environ['REQUEST_METHOD'], url)
+        log.debug('headers: %s', headers)
+        #log.debug('environ: %s', environ)
+        #log.debug('body: %s', body)
+        try:
+            res = requests.request (method=environ['REQUEST_METHOD'],
+                                    url = url,
+                                    data = body,
+                                    headers = headers,
+                                    stream=False,
+                                    verify=False,
+                                    allow_redirects=True)
+           
+            log.debug ("Proxy response: %s with: %s", str(res), res.headers)
+            #log.debug ("Proxy response content: %s", res.content)
+            #log.debug ("Proxy response text: %s", res.text)
+            #log.debug ("Proxy response history: %s", res.history)        
+            #log.debug ("Proxy response request headers: %s", res.request.headers)
 
-        status = '%s %s' % (res.status_code, res.reason)
-        start_response(status, headers_out)
-        return [ res.content ]
-
+            status = '%s %s' % (res.status_code, res.reason)
+            headers_out = {k: res.headers[k] for k in res.headers if k.lower() not in self.suppress_http_headers_out}
+            start_response(status, list(headers_out.items()))
+            return [ res.content ]
+        except Exception:
+            log.exception('Failed')
+            start_response(502, [])
+            return ['Bad Gateway']             
 
         # conn.request(environ['REQUEST_METHOD'],
         #              path,
