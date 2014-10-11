@@ -18,6 +18,7 @@ from bq.config.app_cfg import base_config
 from bq.config.environment import load_environment
 from bq.core.controllers import root
 from bq.util.paths import site_cfg_path
+from bq.util.proxy import Proxy
 
 from .direct_cascade import DirectCascade
 
@@ -104,6 +105,21 @@ class LogWSGIErrors(object):
         if message != '\n':
             self.logger.log(self.level, message)
 
+class ProxyApp(object):
+    def __init__(self, app):
+        self.oldapp = app
+        
+    def __call__(self, environ, start_response):
+        if environ['PATH_INFO'].startswith('/proxy/'):
+            log.debug('ProxyApp activated')
+            command = environ['PATH_INFO'].split('/', 3)
+            #log.debug('ProxyApp command: %s', command)
+            address = 'http://%s'%command[2]
+            path = '/%s'%command[3]
+            environ['PATH_INFO'] = path
+            proxy = Proxy(address)
+            return proxy(environ, start_response)
+        return self.oldapp(environ, start_response)
 
 
 def make_app(global_conf, full_stack=True, **app_conf):
@@ -184,7 +200,9 @@ def make_app(global_conf, full_stack=True, **app_conf):
         #cascade = staticfilters + [app]
         #print ("CASCADE", cascade)
         app = DirectCascade([static_app, app])
-    bisque_app = app
+    
+    app = ProxyApp(app)
+    bisque_app = app 
 
     log.info( "END STATICS: discovered %s static files " % len(static_app.files.keys()))
 
