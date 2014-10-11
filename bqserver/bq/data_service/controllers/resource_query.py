@@ -956,7 +956,10 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
 
                 user = None
                 if user_url:
-                    user = DBSession.query(BQUser).get (int (user_url.rsplit('/', 1)[1]))
+                    try:
+                        user = DBSession.query(BQUser).get (int (user_url.rsplit('/', 1)[1]))
+                    except ValueError:
+                        user = DBSession.query(BQUser).filter_by (resource_uniq= (user_url.rsplit('/', 1)[1])).first()
                 if not user and email:
                     user = DBSession.query(BQUser).filter_by(resource_value=unicode(email)).first()
 
