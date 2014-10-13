@@ -69,10 +69,10 @@ class Proxy(object):
 
         self.suppress_http_headers = [
             x.lower() for x in suppress_http_headers if x]
-        
+
         headers_ignore_in = ['cookie', 'host', 'referer', 'connection', 'origin']
         self.suppress_http_headers.extend(headers_ignore_in)
-        
+
         self.suppress_http_headers_out = ['content-encoding', 'transfer-encoding', 'vary', 'connection']
 
     def __call__(self, environ, start_response):
@@ -88,7 +88,7 @@ class Proxy(object):
         #    raise ValueError(
         #        "Unknown scheme for %r: %r" % (self.address, self.scheme))
         #conn = ConnClass(self.host)
-        
+
         headers = {}
         for key, value in environ.items():
             if key.startswith('HTTP_'):
@@ -139,21 +139,21 @@ class Proxy(object):
                                     stream=False,
                                     verify=False,
                                     allow_redirects=True)
-           
+
             log.debug ("Proxy response: %s with: %s", str(res), res.headers)
             #log.debug ("Proxy response content: %s", res.content)
             #log.debug ("Proxy response text: %s", res.text)
-            #log.debug ("Proxy response history: %s", res.history)        
+            #log.debug ("Proxy response history: %s", res.history)
             #log.debug ("Proxy response request headers: %s", res.request.headers)
 
             status = '%s %s' % (res.status_code, res.reason)
-            headers_out = {k: res.headers[k] for k in res.headers if k.lower() not in self.suppress_http_headers_out}
+            headers_out = dict ( (k, res.headers[k]) for k in res.headers if k.lower() not in self.suppress_http_headers_out)
             start_response(status, list(headers_out.items()))
             return [ res.content ]
         except Exception:
             log.exception('Failed')
             start_response(502, [])
-            return ['Bad Gateway']             
+            return ['Bad Gateway']
 
         # conn.request(environ['REQUEST_METHOD'],
         #              path,

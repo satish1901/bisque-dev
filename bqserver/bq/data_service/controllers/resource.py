@@ -364,7 +364,6 @@ class HierarchicalCache(ResponseCache):
         """
         from sqlalchemy.orm import Query
         from bq.data_service.model import Taggable
-        log.debug ("CACHE invalidate: %s %s", resource, user)
 
         if isinstance(resource, tuple):
             parent = getattr(tg.request.bisque,'parent', None)
@@ -381,6 +380,7 @@ class HierarchicalCache(ResponseCache):
         if not hasattr (resource, 'resource_uniq'):
             log.error ("invalidate: Cannot determine resource %s",  resource)
             return
+        log.debug ("CACHE invalidate: %s %s", resource.resource_uniq, user)
 
         files = os.listdir(self.cachepath)
         cache_name = self._resource_cache_name(resource, user)

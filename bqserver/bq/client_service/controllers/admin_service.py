@@ -175,7 +175,7 @@ class AdminController(ServiceController):
         redirect(request.headers.get("Referer", "/"))
 
     @expose ('bq.client_service.templates.admin.confirmdeleteuser')
-    def confirmdeleteuser(self, username=None, **kw):      
+    def confirmdeleteuser(self, username=None, **kw):
         flash("Caution. You are deleting " + (username or '') + " from the system. All of their images will also be deleted. Are you sure you want to continue?")
         return dict(username = username, query=None, wpublic=None, search=None, analysis=None)
 
@@ -270,6 +270,7 @@ class AdminController(ServiceController):
         tg_user.password = password
         #tg_user.display_name = display_name
         log.debug("ADMIN: Updated user: " + str(user_name) )
+        # Needed for SQLITE? No idea why..
         transaction.commit()
         redirect( '/admin/edituser?username='+ str(user_name) )
 

@@ -1003,7 +1003,6 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
                         common_email,
                         name = name,
                         email = email)
-                    log.debug("AUTH: new user %s" , user.id)
                 elif user not in previous_shares:
                     invite = string.Template(textwrap.dedent(share_msg)).substitute(
                         common_email,
