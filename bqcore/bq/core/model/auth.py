@@ -24,9 +24,10 @@ except ImportError:
 
 from sqlalchemy import Table, ForeignKey, Column
 from sqlalchemy.types import Unicode, Integer, DateTime
-from sqlalchemy.orm import relation, synonym
+from sqlalchemy.orm import relation, synonym, validates
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
+from sqlalchemy.ext.hybrid import hybrid_property
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -42,12 +43,13 @@ __all__ = ['User', 'Group', 'Permission', 'HashPassword', 'FreeTextPassword']
 
 from sqlalchemy.engine import Engine
 
-@event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    if config.get('sqlalchemy.url', '').startswith ("sqlite://"):
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
+# THIS APPEARS TO BE A DUPLICATE (bad merge) of the above..
+#@event.listens_for(Engine, "connect")
+#def set_sqlite_pragma(dbapi_connection, connection_record):
+#    if config.get('sqlalchemy.url', '').startswith ("sqlite://"):
+#        cursor = dbapi_connection.cursor()
+#        cursor.execute("PRAGMA foreign_keys=ON")
+#        cursor.close()
 
 
 #{ Association tables
@@ -166,7 +168,7 @@ class User(DeclarativeBase):
 
     user_id = Column(Integer, autoincrement=True, primary_key=True)
     user_name = Column(Unicode(255), unique=True, nullable=False)
-    email_address = Column(Unicode(255), unique=True, nullable=False,
+    _email_address = Column('email_address', Unicode(255), unique=True, nullable=False,
                            info={'rum': {'field':'Email'}})
     display_name = Column(Unicode(255))
     _password = Column('password', Unicode(80),
@@ -176,7 +178,10 @@ class User(DeclarativeBase):
     #{ Special methods
     def __init__(self, **kw):
         super(User, self).__init__(**kw)
+        if 'password' in kw:
+            self.password = kw['password'] # Force hashing if needed
 
+        self.on_create()
 
     def __repr__(self):
         return ('<User: name=%r, email=%r, display=%r>' % (
@@ -219,6 +224,7 @@ class User(DeclarativeBase):
         if not isinstance(password, unicode):
             password = password.decode('utf-8')
         self._password = password
+        self.on_update()
 
     def _get_password(self):
         """Return the hashed version of the password."""
@@ -250,17 +256,37 @@ class User(DeclarativeBase):
 
         return password_cls.check_password(self.password, password)
 
+    @hybrid_property
+    def email_address(self):
+        return self._email_address
+
+    @email_address.setter
+    def _set_email(self, email):
+        self._email_address = email
+        self.on_update()
 
 
-def create_user(mapper, connection, target, ):
-    for cb in User.callbacks:
-        cb(tg_user = target, operation = 'create')
-def update_user(mapper, connection, target, ):
-    for cb in User.callbacks:
-        cb(tg_user = target, operation = 'update')
 
-event.listen(User, 'after_update', update_user )
-event.listen(User, 'after_insert', create_user )
+    def on_create(self):
+        for cb in User.callbacks:
+            cb(tg_user = self, operation = 'create')
+    def on_update(self):
+        # never run update on new objects
+        if self.user_id is None:
+            return
+        for cb in User.callbacks:
+            cb(tg_user = self, operation = 'update')
+
+
+# Newer sqlalchemy does not allow modification of session ..
+#def create_user(mapper, connection, target, ):
+#    for cb in User.callbacks:
+#        cb(tg_user = target, operation = 'create')
+#def update_user(mapper, connection, target, ):
+#    for cb in User.callbacks:
+#        cb(tg_user = target, operation = 'update')
+#event.listen(User, 'after_update', update_user )
+#event.listen(User, 'after_insert', create_user )
 
 
 
