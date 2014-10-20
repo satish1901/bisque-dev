@@ -169,10 +169,10 @@ def setup_simple_feature_test(ns):
     results_location = config.get('Store', 'results_dir') or DEFAULT_RESULTS_DIR
     store_location = config.get('Store', 'location') or None
     store_local_location = config.get('Store', 'local_dir') or DEFAULT_LOCAL_DIR
-    test_image = config.get('Store', 'test_image') or None
     temp_store = config.get('Store', 'temp_dir') or DEFAULT_TEMPORARY_DIR
-    feature_response_results = config.get('Store', 'feature_response') or DEFAULT_FEATURE_RESPONSE_HDF5
-    feature_past_response_results = config.get('Store','feature_sample') or DEFAULT_FEATURE_SAMPLE_HDF5
+    test_image = config.get('SimpleTest', 'test_image') or None
+    feature_response_results = config.get('SimpleTest', 'feature_response') or DEFAULT_FEATURE_RESPONSE_HDF5
+    feature_past_response_results = config.get('SimpleTest','feature_sample') or DEFAULT_FEATURE_SAMPLE_HDF5
     
     if store_location is None: raise NameError('Requre a store location to run test properly')
     if test_image is None: raise NameError('Requre an image to run test properly')
