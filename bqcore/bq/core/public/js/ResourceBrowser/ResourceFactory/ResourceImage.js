@@ -858,8 +858,8 @@ Ext.define('Bisque.Resource.Image.Page', {
         this.dims = dims;
         if (dims.t>1 || dims.z>1)
             this.toolbar.queryById('menu_view_movie').setDisabled( false );
-        if (dims.t>1 || dims.z>1)
-            this.toolbar.queryById('menu_view_3d').setDisabled( false );
+        /*if (dims.t>1 || dims.z>1)
+            this.toolbar.queryById('menu_view_3d').setDisabled( false );*/
 
         if (dims.x>10000 && dims.y>10000) {
             this.toolbar.queryById('menu_view_movie').setDisabled( true );
