@@ -274,9 +274,13 @@ class DataServerController(ServiceController):
             uri = resource
         if uri is not None:
             resource = load_uri (uri)
-        resource_delete(resource)
-        #self.cache_invalidate(uri)
-        self.cache_invalidate_resource(resource)
+        if resource is not None:
+            resource_delete(resource)
+            #self.cache_invalidate(uri)
+            self.cache_invalidate_resource(resource)
+        else:
+            log.warn ("Could not load uri %s ", uri)
+
 
 
     def update_resource(self, resource, new_resource=None, replace=True, **kw):

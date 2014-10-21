@@ -388,7 +388,7 @@ class HierarchicalCache(ResponseCache):
         log.info ("CACHE invalidate %s for %s %s:%s" , resource.resource_uniq , user, cache_name, query_names)
         # invalidate cached resource varients
         def delete_matches (files, names, user):
-            for f in files:
+            for f in list(files):
                 cf = f.split(',',1)[1] if user is None else f
                 if any ( cf.startswith(qn) for qn in names ):
                     try:

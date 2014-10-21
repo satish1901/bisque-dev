@@ -80,6 +80,7 @@ from bq.client_service import model
 from bq.exceptions import IllegalOperation
 from bq.release import  __VERSION__
 from bq.core import identity
+from bq.util.hash import is_uniq_code
 
 #import aggregate_service
 from bq import data_service
@@ -103,6 +104,11 @@ class ClientServer(ServiceController):
     def viewlink(self, resource):
         return self.baseuri + "view?" + urlencode ({'resource': resource})
 
+
+    @expose()
+    def _default (self, *path, **kw):
+        if is_uniq_code(path[0]):
+            redirect ("/client_service/view?resource=/data_service/%s" % path[0])
 
     @expose(content_type="text/xml")
     def version(self):
@@ -264,7 +270,14 @@ class ClientServer(ServiceController):
         resource=kw.pop('resource', None)
         return dict(resource=resource)
 
+    @expose(content_type='text/html')
+    def form(self, **kw):
+        bb = tg.request.body_file_raw.seek(0)
+        bb = tg.request.body_file_raw.read()
 
+
+        log.debug ("FORM %s %s" , kw, bb)
+        return str(kw)
 
 
 

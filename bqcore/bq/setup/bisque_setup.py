@@ -235,9 +235,10 @@ class STemplate (string.Template):
     idpattern = r'[_a-z][._a-z0-9]*'
 
 
-def call(cmd, echo=False, **kw):
+def call(cmd, echo=False, capture=False, **kw):
     """Special version subprocess.call that write output
     """
+    lines = []
     if echo:
         print "Executing '%s'" % ' '.join (cmd)
     if not kw.has_key ('stdout'):
@@ -248,13 +249,17 @@ def call(cmd, echo=False, **kw):
             l = p.stdout.readline()
             if not l: break
             print l,
+            lines .append(l)
             #p.wait()
     else:
         p = subprocess.Popen(cmd, **kw)
 
     p.wait()
 
-    return p.returncode
+    if capture:
+        return p.returncode, "".join(lines)
+    else:
+        return p.returncode
 
 
 
@@ -1273,7 +1278,7 @@ def fetch_external_binaries (params):
         from dateutil.parser import parse
         from dateutil import tz
         try:
-            mtime = parse (info['Last-Modified']).astimezone(tz.tzlocal())            
+            mtime = parse (info['Last-Modified']).astimezone(tz.tzlocal())
             srvLastModified = time.mktime(mtime.timetuple())
             touch (dest, (srvLastModified, srvLastModified))
         except (ValueError):
@@ -1367,6 +1372,14 @@ def install_imgcnv ():
     """Install dependencies that aren't handled by setup.py"""
 
     filename_zip = os.path.join(BQDEPOT, 'imgcnv.zip')
+    imgcnv = which('imgcnv')
+    if imgcnv :
+        r, version = call ([ imgcnv, '-v'], capture = True)
+        if r == 0:
+            print "Found imgcnv version %s" % version
+        if  not os.path.exists(filename_zip):
+            print "Imgcnv is installed and no-precompiled version exists. Using installed version"
+            return
 
     if not os.path.exists(filename_zip):
         print "No pre-compiled version of imgcnv exists for your system"
@@ -1374,6 +1387,7 @@ def install_imgcnv ():
         print "or visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage"
         print "for help"
         return
+
 
     if getanswer ("Install Bio-Image Convert", "Y",
                   "imgcnv will allow image server to read pixel data") == "Y":
