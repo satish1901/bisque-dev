@@ -54,7 +54,8 @@ gObjectBuffer.prototype.rescale = function () {
 	var scale = this.volume.getRescale().clone();
 	this.mesh.geometry.dynamic = true;
 	this.mesh.geometry.verticesNeedUpdate = true;
-	var mat = new THREE.Matrix4().scale(scale);
+
+    var mat = new THREE.Matrix4().scale(scale);
 	this.mesh.geometry.applyMatrix(mat);
 	this.mesh.geometry.computeBoundingBox();
 };
@@ -521,6 +522,7 @@ function gObjectTool(volume, cls) {
 	//renderingTool.call(this, volume);
 	this.cls = 'gButton';
     this.base = renderingTool;
+    this.name = 'gobjects';
     this.base(volume, this.cls);
     this.gobjects = this.volume.phys.image.gobjects;
 };
@@ -1031,5 +1033,20 @@ gObjectTool.prototype.initControls = function(){
 		});
 
 	this.updateScene();
+
+
+    this.button.tooltip = 'show gobjects';
+
 	this.items = [this.lighting];
+};
+
+gObjectTool.prototype.loadPreferences = function(prefs){
+//////////////////////
+//set toggled on start
+//////////////////////
+
+    if(prefs.show == 'true')
+        this.button.toggle(true);
+    else
+        this.button.toggle(false);
 };
