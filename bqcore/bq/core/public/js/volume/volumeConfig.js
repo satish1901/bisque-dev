@@ -1092,7 +1092,7 @@ DepthShader.prototype.config = function(config){
 		'  gl_FragColor = pack(0.999999);',
 		' } ',
 		' else{',
-		'  gl_FragColor = vec4(0.75, 0.75, 0.75, 1.0);',
+		'  gl_FragColor = vec4(0.75, 0.75, 0.75, 0.0);',
 		' }',
 		'}'
 	].join('\n');
@@ -1110,6 +1110,7 @@ DepthShader.prototype.config = function(config){
 		' } ',
 		' else{',
 		'  gl_FragColor.xyz = vColor;',
+        '  gl_FragColor.w = 1.0;',
 		' }',
 		'}'
 	].join('\n');
