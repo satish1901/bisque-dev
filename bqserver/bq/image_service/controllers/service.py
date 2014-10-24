@@ -213,7 +213,7 @@ class image_serviceController(ServiceController):
 
     @expose()
     def services(self, **kw):
-        return self.operations(self, kw)
+        return self.operations(**kw)
 
     @expose()
     def operations(self, **kw):
