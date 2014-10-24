@@ -208,14 +208,14 @@ class ParallelFeature(Feature):
             @return: chunk_size - the amount of resources for request
             @return: thread_num - the amount of concurrent requests
         """
-        if len(l)>MaxThread*MaxChunk:
-            return (MaxThread,MaxChunk)
+        if len(l)>self.MaxThread*self.MaxChunk:
+            return (self.MaxThread, self.MaxChunk)
         else:
-            if len(l)/float(MaxThread)>=MinChunk:
-                return (MaxThread, ceil(MaxChunk/float(MaxThread)))
+            if len(l)/float(self.MaxThread)>=self.MinChunk:
+                return (self.MaxThread, ceil(self.MaxChunk/float(self.MaxThread)))
             else:
-                t = ceil(len(l)/float(MinChunk))
-                return (t, len(l)/float(t))
+                t = ceil(len(l)/float(self.MinChunk))
+                return (t, ceil(len(l)/float(t)))
 
 
     def chunk(self, l, chunk_size):
@@ -318,12 +318,16 @@ class ParallelFeature(Feature):
             return request
 
         if hasattr(self,'thread_num') and hasattr(self,'chunk_size'):
-            thread_num = self.thread_num
-            chunk_size = self.chunk_size
+            thread_num = ceil(self.thread_num)
+            chunk_size = ceil(self.chunk_size)
+            if thread_num <= 0:
+                thread_num = 1
+            if chunk_size <= 0:
+                chunk_size = 1
         else:
-            thread_num, chunk_size = calculate_request_plan(resource_list)
+            thread_num, chunk_size = self.calculate_request_plan(resource_list)
 
-        for partial_resource_list in self.chunk(resource_list, chunk_size):
+        for partial_resource_list in self.chunk(resource_list, int(chunk_size)):
             request_queue.put(request_factory(partial_resource_list))
 
 
@@ -332,7 +336,7 @@ class ParallelFeature(Feature):
         w.daemon = True
         w.start()
 
-        self.request_thread_pool(request_queue, errorcb=errorcb, thread_count = thread_num)
+        self.request_thread_pool(request_queue, errorcb=errorcb, thread_count = int(thread_num))
         stop_write_thread = True
         w.join()
 

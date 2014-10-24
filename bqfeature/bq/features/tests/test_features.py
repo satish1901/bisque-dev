@@ -500,25 +500,27 @@ def test_Multiscale_Historgram():
     test_name = 'test_Multiscale_Historgram'
     check_feature(NS, test_name, name, image=NS.image_uri)
 
-@attr('WNDCharm')
-@with_setup(setup_image_upload, teardown_image_remove)
-def test_Object_Feature():
-    """
-        Test Object Feature
-    """
-    name = 'Object_Feature'
-    test_name = 'test_Object_Feature'
-    check_feature(NS, test_name, name, image=NS.image_uri)
-
-@attr('WNDCharm')
-@with_setup(setup_image_upload, teardown_image_remove)
-def test_Inverse_Object_Features():
-    """
-        Test Inverse Object Features
-    """
-    name = 'Inverse_Object_Features'
-    test_name = 'test_Inverse_Object_Features'
-    check_feature(NS, test_name, name, image=NS.image_uri)
+# Giving removing from the feature set
+# WindowsError: exception: access violation reading 0x0000000415AE314C
+#@attr('WNDCharm')
+#@with_setup(setup_image_upload, teardown_image_remove)
+#def test_Object_Feature():
+#    """
+#        Test Object Feature
+#    """
+#    name = 'Object_Feature'
+#    test_name = 'test_Object_Feature'
+#    check_feature(NS, test_name, name, image=NS.image_uri)
+#
+#@attr('WNDCharm')
+#@with_setup(setup_image_upload, teardown_image_remove)
+#def test_Inverse_Object_Features():
+#    """
+#        Test Inverse Object Features
+#    """
+#    name = 'Inverse_Object_Features'
+#    test_name = 'test_Inverse_Object_Features'
+#    check_feature(NS, test_name, name, image=NS.image_uri)
 
 @attr('WNDCharm')
 @with_setup(setup_image_upload, teardown_image_remove)
