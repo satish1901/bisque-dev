@@ -320,7 +320,7 @@ def operations(resource_list):
     """
     feature = resource_list.feature()
     if resource_list.check_response_in_workdir() is False:
-        if resource_list.feature.cache: #checks if the feature caches
+        if resource_list.feature.cache is True: #checks if the feature caches
             table_list = [CachedTables(feature), CachedTables(ID())]
             Rows = CachedRows
         else:
@@ -333,10 +333,10 @@ def operations(resource_list):
             for results in table.find(query_plan):
                 for (row_exists, id) in results:
                     _id, request_resource = resource_list.get(id)
-                    if row_exists:
-                        log.debug("Returning Resource: %s from cache"%str(request_resource.feature_resource))
+                    if row_exists is True:
+                        log.debug("Returning Resource: %s from cache" % str(request_resource.feature_resource))
                     elif request_resource.exception is None:
-                        log.debug("Resource: %s was not found in the table"%str(request_resource.feature_resource))
+                        log.debug("Resource: %s was not found in the table" % str(request_resource.feature_resource))
                         try:
                             rows.push(request_resource)
                         except FeatureExtractionError as feature_extractor_error: #if error occured the exception is added to the resource
@@ -469,11 +469,11 @@ class Format(object):
         idx = 0
         for (row, status) in table.get():
             resource = FeatureResource(image=row['image'], mask=row['mask'], gobject=row['gobject'])
-            if status==200:
+            if status['status']==200:
                 yield self.construct_row(idx, feature, resource, row)
                 idx += 1
             else:
-                yield self.construct_error_row(idx, feature, FeatureExtractionError(resource, status, 'An error occured during feature extraction'))
+                yield self.construct_error_row(idx, feature, FeatureExtractionError(resource, status['status'], 'An error occured during feature extraction'))
                 idx += 1
 
 
@@ -802,7 +802,9 @@ class Hdf(Format):
         
         #require read lock to stream
         with Locks(table.path):
-            return forward(FileApp(table.path, allowed_methods=('GET','POST'), content_type=self.content_type, content_disposition=disposition))
+            pass
+        
+        return forward(FileApp(table.path, allowed_methods=('GET','POST'), content_type=self.content_type, content_disposition=disposition))
 
 
 #-------------------------------------------------------------

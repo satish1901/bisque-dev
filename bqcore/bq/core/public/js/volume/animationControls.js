@@ -143,7 +143,7 @@ Ext.define('BQ.viewer.Volume.loadSlider',{
 	    var path = '';
 	    for(var i = 0; i < this.frameArray.length; i++){
 	        var x0, y0, x1, y1, w;
-	        x0 = 1 + 98.25*i/N + '%';
+	        x0 = 1.1 + 97.9*i/N + '%';
 	        w = 60*1/N + '%';
             x1 = x0;
 	        if(i%tic == 0){
@@ -320,6 +320,12 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 
     setLoaded : function(t){
         this.timeSlider.frameArray[t] = 1;
+        this.timeSlider.drawTicks();
+    },
+
+    resetBuffers : function(t){
+        this.timeSlider.frameArray = [];
+        this.timeSlider.setSize(this.endFrame);
         this.timeSlider.drawTicks();
     },
 
@@ -1242,3 +1248,208 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
     },
 });
+
+
+function animationTool(volume, cls) {
+	//renderingTool.call(this, volume);
+    this.name = 'animation';
+	this.cls = 'animateButton';
+    this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+animationTool.prototype = new renderingTool();
+
+animationTool.prototype.addUniforms = function(){
+};
+
+
+	//----------------------------------------------------------------------
+	// Animation Panel
+	//---------------------------------------------------------------------
+
+animationTool.prototype.createAnimPanel = function () {
+	var thisDom = this.volume.getEl().dom;
+	this.animPanel = Ext.create('Ext.panel.Panel', {
+		collapsible : false,
+		header : false,
+		renderTo : thisDom,
+		cls : 'bq-volume-playback',
+		items : [{
+			xtype : 'anim_control',
+			panel3D : this.volume,
+		}],
+	});
+	this.volume.addFade(this.animPanel);
+};
+
+	//----------------------------------------------------------------------
+	// Playback Panel
+	//---------------------------------------------------------------------
+
+animationTool.prototype.createPlaybackPanel = function () {
+		var thisDom = this.volume.getEl().dom;
+        this.playBack = Ext.create('BQ.viewer.Volume.playbackcontroller', {
+		    panel3D: this.volume
+        });
+		this.playbackPanel = Ext.create('Ext.panel.Panel', {
+				collapsible : true,
+				header : false,
+				renderTo : thisDom,
+				cls : 'bq-volume-playback',
+				items : [
+                    this.playBack
+				],
+			});
+		this.volume.addFade(this.playbackPanel);
+
+};
+
+animationTool.prototype.initControls = function(){
+    var me = this;
+
+    this.createPlaybackPanel();
+    this.createAnimPanel();
+    this.playbackPanel.hide();
+    this.animPanel.hide();
+    this.button.tooltip = 'enable animation and time series playback';
+    //this.volume.on('loaded', function () {});
+
+
+    var showAnimPanel = function() {
+        if(me.useAnimation == false){
+            //this.
+            me.playbackPanel.hide();
+			me.animPanel.hide();
+            return;
+        }
+
+        if(me.animStyle == 1) {
+            me.playbackPanel.hide();
+			me.animPanel.show();
+        } else {
+            me.playbackPanel.show();
+			me.animPanel.hide();
+        }
+    };
+
+	var toolMenuRadioHandler = function () {
+		var
+        radio1 = this.controls.queryById('toolRadio1'),
+		radio2 = this.controls.queryById('toolRadio2');
+		if (radio2.getValue()) {
+            me.animStyle = 1;
+		} else {
+            me.animStyle = 2;
+		}
+
+        showAnimPanel();
+		return;
+	};
+
+    var radioOpts = Ext.create('Ext.container.Container',{
+
+		defaults : {
+			xtype : 'radio',
+			width : 200,
+			name : 'tools',
+			cls : 'toolItem',
+            handler : toolMenuRadioHandler,
+            scope : this,
+        },
+
+        items:[{
+			fieldLabel : 'standard player',
+			itemId : 'toolRadio1',
+		}, {
+			fieldLabel : 'animation player',
+            checked : true,
+			itemId : 'toolRadio2',
+		},]
+    });
+
+    this.controls.add([radioOpts]);
+    this.volume.on({
+        atlasloadedat: function (t) {
+            me.playBack.setLoaded(t);
+        },
+        wipetexturebuffer: function () {
+            me.playBack.resetBuffers();
+        }
+    });
+};
+
+
+animationTool.prototype.toggle = function(button){
+    radio1 = this.controls.queryById('toolRadio1'),
+	radio2 = this.controls.queryById('toolRadio2');
+    if(button.pressed){
+        if(this.volume.dims.t == 1){
+            radio2.setValue(true);
+            this.animPanel.show();
+        }
+        else{
+            radio1.setValue(true);
+            this.playbackPanel.show();
+        }
+    }
+    else{
+        this.animPanel.hide();
+        this.playbackPanel.hide();
+
+    }
+    /*
+        this.transfer ^= 1;
+        this.changed();
+        //this..sceneVolume.setUniform('USE_TRANSFER', this.transfer);
+
+        if (button.pressed) {
+            this.volume.shaderConfig.transfer = true;
+            this.volume.sceneVolume.setConfigurable("default",
+                                             "fragment",
+                                             this.volume.shaderConfig);
+
+            this.volume.setModel('transfer', true);
+        } else{
+            this.volume.shaderConfig.transfer = false;
+            this.volume.sceneVolume.setConfigurable("default",
+                                             "fragment",
+                                             this.volume.shaderConfig);
+
+            this.volume.setModel('false', true);
+        }
+
+    if(this.transfer){
+        var me = this;
+
+        var data = this.transferData;
+        this.transferEditor = Ext.create('BQ.viewer.volume.transfer.editor',{
+            data: data,
+            histogram: this.volume.model.histogram,
+            gamma:     this.volume.model.gamma,
+            dock : 'bottom',
+            collapseDirection: 'bottom',
+            expandDirection: 'top',
+            height: 250,
+            collapsible: true,
+            cls : 'bq-volume-transfer',
+            listeners: {
+                change: function(){
+                    me.changed();
+                }
+            }
+        });
+
+        this.volume.addDocked(this.transferEditor);
+        //this.volume.southView.expand(true);
+    }
+    else{
+        this.volume.removeDocked(this.transferEditor);
+        //this.volume.southView.collapse();
+        //this.volume.southView.remove(this.transferEditor);
+    }
+*/
+    this.base.prototype.toggle.call(this,button);
+
+};
+

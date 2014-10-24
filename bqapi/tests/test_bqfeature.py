@@ -143,8 +143,6 @@ def test_bqparallelfeature_fetch_1():
         Test parallel feature fetch vector and returning pytables object
     """
     PF=ParallelFeature()
-    PF.set_thread_num(1)
-    PF.set_chunk_size(5)
     hdf5 = PF.fetch(bqsession, 'SimpleTestFeature', resource_list)
     hdf5.close()
     os.remove(hdf5.filename)
