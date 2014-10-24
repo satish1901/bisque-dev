@@ -210,7 +210,7 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 				},
 				requestcomplete : function () {
 					this.setLoading(false);
-				},
+				},x
 				requestexception : function () {
 					this.setLoading(false);
 				},
@@ -310,34 +310,9 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 
 });
 
-Ext.define('BQ.viewer.Volume.renderProgress', {
-	extend : 'Ext.ProgressBar',
-
-	alias : 'widget.renderProgress',
-	border : false,
-	requires : ['Ext.window.MessageBox'],
-
-	initComponent : function () {},
-
-	afterFirstLayout : function () {
-		////////////////////
-		this.callParent();
-		this.doUpdate();
-	},
-
-	doUpdate : function () {
-		var renderProgress = this.setMaxSteps / 512;
-		this.updateProgress(renderProgress);
-		var me = this;
-		requestAnimationFrame(function () {
-			me.doUpdate()
-		});
-	},
-});
-
 Ext.define('BQ.viewer.Volume.Panel', {
 	alias : 'widget.bq_volume_panel',
-	extend : 'Ext.container.Container',
+	extend : 'Ext.panel.Panel',
 	border : 0,
 	cls : 'bq-three-container',
 	layout : 'fit',
@@ -376,6 +351,8 @@ Ext.define('BQ.viewer.Volume.Panel', {
        this.canvas3D = Ext.create('BQ.viewer.Volume.ThreejsPanel', {
 			itemId : 'canvas3D',
             listeners: {
+                scope : me,
+                resize: this.onresize,
                 mousemove : mousedown,
                 mousedown : mousedown,
                 mousewheel: mousedown,
@@ -393,7 +370,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				    color : 0xffff00
 		        });
 
-		        me.cube = new THREE.CubeGeometry(1.0, 1.0, 1.0);
+		        me.cube = new THREE.BoxGeometry(1.0, 1.0, 1.0);
 		        me.cubeMesh = new THREE.Mesh(me.cube, material);
 		        me.scene.add(me.cubeMesh);
 
@@ -403,6 +380,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 me.setMaxSteps = 32;
 		        me.oldScale = new THREE.Vector3(0.5, 0.5, 0.5);
 		        me.currentScale = new THREE.Vector3(0.5, 0.5, 0.5);
+                this.renderer.setClearColor(0x808080,0.001);
             }
 		});
 		this.canvas3D.animate_funcs[1] = callback(this, this.onAnimate);
@@ -482,62 +460,129 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		this.plug_ins = [new VolumeTime(this), new VolumeAtlas(this),
 			new VolumeDisplay(this), new VolumeFormat(this)];
 
-        //---------------------------------------------------------
-        //register preferences
-        //---------------------------------------------------------
-        if (BQ.Preferences)
-        BQ.Preferences.get({
-            key : 'Viewer3D',
-            callback : Ext.bind(this.onPreferences, this),
-        });
 
         //-------------------------------------
         //register non-exjs-standard screen widgets
         //-------------------------------------
+        this.mainView = Ext.create('Ext.container.Container', {
+            layout: 'fit',
+            autoEl : {
+				tag : 'div',
+			},
+            items: [{
+                xtype: 'component',
+                itemId: 'canvasBack',
+                autoEl : {
+                    tag: 'div',
+                    cls: 'threejsBack'
+                },
+            }, this.canvas3D,{
+			    xtype : 'component',
+			    itemId : 'button-fullscreen-vol',
+			    autoEl : {
+				    tag : 'span',
+				    cls : 'control fullscreen',
+			    },
+			    listeners : {
+				    scope : this,
+				    click : {
+					    element : 'el', //bind to the underlying el property on the panel
+					    fn : this.onFullScreenClick,
+				    },
+			    },
+		    }, {
+			    xtype : 'component',
+			    itemId : 'button-menu',
+			    autoEl : {
+				    tag : 'span',
+				    cls : 'control viewoptions',
+			    },
+			    listeners : {
+				    scope : this,
+				    click : {
+					    element : 'el', //bind to the underlying el property on the panel
+					    fn : this.onMenuClick,
+				    },
+			    },
+		    }, {
+			    xtype : 'component',
+			    itemId : 'tool-menu',
+			    autoEl : {
+				    tag : 'span',
+				    cls : 'control tooloptions',
+			    },
+			    listeners : {
+				    scope : this,
+				    click : {
+					    element : 'el', //bind to the underlying el property on the panel
+					    fn : this.onToolMenuClick,
+				    },
+			    },
+		    }]
+        });
 
-        this.items = [this.canvas3D,{
-			xtype : 'component',
-			itemId : 'button-fullscreen-vol',
-			autoEl : {
-				tag : 'span',
-				cls : 'control fullscreen',
-			},
-			listeners : {
-				scope : this,
-				click : {
-					element : 'el', //bind to the underlying el property on the panel
-					fn : this.onFullScreenClick,
-				},
-			},
-		}, {
-			xtype : 'component',
-			itemId : 'button-menu',
-			autoEl : {
-				tag : 'span',
-				cls : 'control viewoptions',
-			},
-			listeners : {
-				scope : this,
-				click : {
-					element : 'el', //bind to the underlying el property on the panel
-					fn : this.onMenuClick,
-				},
-			},
-		}, {
-			xtype : 'component',
-			itemId : 'tool-menu',
-			autoEl : {
-				tag : 'span',
-				cls : 'control tooloptions',
-			},
-			listeners : {
-				scope : this,
-				click : {
-					element : 'el', //bind to the underlying el property on the panel
-					fn : this.onToolMenuClick,
-				},
-			},
-		}];
+            /*
+              this.mainView = Ext.create('Ext.container.Container', {
+              region: 'center',
+              layout: 'fit',
+              items:         [this.canvas3D,{
+			  xtype : 'component',
+			  itemId : 'button-fullscreen-vol',
+			  autoEl : {
+			  tag : 'span',
+			  cls : 'control fullscreen',
+			  },
+			  listeners : {
+			  scope : this,
+			  click : {
+			  element : 'el', //bind to the underlying el property on the panel
+			  fn : this.onFullScreenClick,
+			  },
+			  },
+		      }, {
+			  xtype : 'component',
+			  itemId : 'button-menu',
+			  autoEl : {
+			  tag : 'span',
+			  cls : 'control viewoptions',
+			    },
+			    listeners : {
+				    scope : this,
+				    click : {
+					    element : 'el', //bind to the underlying el property on the panel
+					    fn : this.onMenuClick,
+				    },
+			    },
+		    }, {
+			    xtype : 'component',
+			    itemId : 'tool-menu',
+			    autoEl : {
+				    tag : 'span',
+				    cls : 'control tooloptions',
+			    },
+			    listeners : {
+				    scope : this,
+				    click : {
+					    element : 'el', //bind to the underlying el property on the panel
+					    fn : this.onToolMenuClick,
+				    },
+			    },
+		    }],
+        });
+
+       this.southView = Ext.create('Ext.panel.Panel', {
+           region: 'south',
+           layout: 'fit',
+           collapsible: true,
+           collapsed:   true,
+           split: true,
+           height: 250,
+           cls : 'bq-volume-transfer',
+        });
+        this.items = [this.mainView, this.southView];
+*/
+
+        this.items = [this.mainView];
 
 		this.on({
             resize: this.onresize,
@@ -555,15 +600,20 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				//me.createClipSlider();
 				me.createZoomSlider();
 
-				me.createAnimPanel();
-				me.createPlaybackPanel();
-			    me.createToolMenu();
-
-				//this.showAnimPanel();
-                this.playbackPanel.hide();
-                this.animPanel.hide();
+		        me.createToolMenu();
 
                 this.firstLoad = true;
+
+
+                //---------------------------------------------------------
+                //register preferences
+                //---------------------------------------------------------
+                // preferences need to be retreived after ui has been built
+                if (BQ.Preferences)
+                    BQ.Preferences.get({
+                        key : 'Viewer3D',
+                        callback : Ext.bind(this.onPreferences, this),
+                    });
 				//this.setLoading(false);
 
             },
@@ -586,9 +636,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
 	scaleCube : function (inScale) {
-
 		this.sceneVolume.setUniform('BOX_SIZE', inScale);
-
 		var cube = this.cube;
 		var bMax = cube.vertices[0];
 		var scale = inScale.clone();
@@ -611,7 +659,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		//it then return the new scaling parameter
 		var scale = this.currentScale.clone();
 		scale.divide(this.oldScale);
-		return scale;
+        //scale.x *= 0.5;
+		//scale.y *= 0.5;
+        //scale.z *= 0.5;
+        return scale;
 	},
 
 	getHalf : function () {
@@ -625,58 +676,61 @@ Ext.define('BQ.viewer.Volume.Panel', {
     },
 
 	onresize : function (comp, w, h, ow, oh, eOpts) {
-		if (this.sceneVolume.uniforms['iResolution']) {
-			var pw = this.canvas3D.getPixelWidth();
-			var ph = this.canvas3D.getPixelHeight();
-			var newRes =
-				new THREE.Vector2(pw, ph);
-			this.sceneVolume.setUniform('iResolution', newRes);
+        if(!this.sceneVolume) return;
+        if(!this.sceneVolume.uniforms) return;
+		if(!this.sceneVolume.uniforms['iResolution']) return;
 
-			this.screenBuffer
-				 = new THREE.WebGLRenderTarget(pw, ph, {
-					minFilter : THREE.LinearFilter,
-					magFilter : THREE.NearestFilter,
-					format : THREE.RGBAFormat
-				});
-            /*
-			this.accumBuffer1
-				= new THREE.WebGLRenderTarget(w, h, {
-					minFilter : THREE.LinearFilter,
-					magFilter : THREE.NearestFilter,
-					format : THREE.RGBAFormat
-				});
-            */
-			var materialScreen = this.sceneVolume.getMaterial('screen');
-			materialScreen.depthWrite = false;
-			materialScreen.threeShader.uniforms.tDiffuse.value = this.accumulationBuffer;
+		var pw = this.canvas3D.getPixelWidth();
+		var ph = this.canvas3D.getPixelHeight();
+		var newRes =
+			new THREE.Vector2(pw, ph);
+		this.sceneVolume.setUniform('iResolution', newRes);
+        /*
+		  this.screenBuffer
+		  = new THREE.WebGLRenderTarget(pw, ph, {
+		  minFilter : THREE.LinearFilter,
+		  magFilter : THREE.NearestFilter,
+		  format : THREE.RGBAFormat
+		  });
 
-            //this is necessary to update the quad which renders the scene and captures
-            //the texture map to allow compositing
-            /*
-			var quad = this.sceneScreen.children[0];
+		  this.accumBuffer1
+		  = new THREE.WebGLRenderTarget(w, h, {
+		  minFilter : THREE.LinearFilter,
+		  magFilter : THREE.NearestFilter,
+		  format : THREE.RGBAFormat
+		  });
 
-			quad.geometry.width = pw;
-			quad.geometry.height = ph;
-			quad.geometry.vertices[0] = new THREE.Vector3(-pw / 2, ph / 2, 0);
-			quad.geometry.vertices[1] = new THREE.Vector3(pw / 2, ph / 2, 0);
-			quad.geometry.vertices[2] = new THREE.Vector3(-pw / 2, -ph / 2, 0);
-			quad.geometry.vertices[3] = new THREE.Vector3(pw / 2, -ph / 2, 0);
+		  var materialScreen = this.sceneVolume.getMaterial('screen');
+		  materialScreen.depthWrite = false;
+		  materialScreen.threeShader.uniforms.tDiffuse.value = this.accumulationBuffer;
+        */
+        //this is necessary to update the quad which renders the scene and captures
+        //the texture map to allow compositing
+        /*
+		  var quad = this.sceneScreen.children[0];
 
-			quad.geometry.verticesNeedUpdate = true;
-			quad.geometry.dynamic = true;
-            */
-			//this.sceneScreen.children[0] =
+		  quad.geometry.width = pw;
+		  quad.geometry.height = ph;
+		  quad.geometry.vertices[0] = new THREE.Vector3(-pw / 2, ph / 2, 0);
+		  quad.geometry.vertices[1] = new THREE.Vector3(pw / 2, ph / 2, 0);
+		  quad.geometry.vertices[2] = new THREE.Vector3(-pw / 2, -ph / 2, 0);
+		  quad.geometry.vertices[3] = new THREE.Vector3(pw / 2, -ph / 2, 0);
 
-			this.orthoCamera.left = -pw / 2;
-			this.orthoCamera.right = pw / 2;
-			this.orthoCamera.top = ph / 2;
-			this.orthoCamera.bottom = -ph / 2;
-			this.orthoCamera.updateProjectionMatrix();
-            //this.sceneVolume.setConfigurable("default",
-            //                                 "fragment",
-            //                                 this.shaderConfig);
-			this.rerender();
-		}
+		  quad.geometry.verticesNeedUpdate = true;
+		  quad.geometry.dynamic = true;
+        */
+		//this.sceneScreen.children[0] =
+
+		//this.orthoCamera.left = -pw / 2;
+		//this.orthoCamera.right = pw / 2;
+		//this.orthoCamera.top = ph / 2;
+		//this.orthoCamera.bottom = -ph / 2;
+		//this.orthoCamera.updateProjectionMatrix();
+        //this.sceneVolume.setConfigurable("default",
+        //                                 "fragment",
+        //                                 this.shaderConfig);
+		this.rerender();
+
 	},
 
     setSampleRate : function(sampleRate){
@@ -992,16 +1046,21 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	updateTextureUniform : function () {
 		var me = this;
-        //if(!this.imageCache)
-        //    this.imageCache = [];
 		if (!this.textureTimeBuffer[this.currentTime]) {
 			//var textureAtlas' = new Array();
+            this.loadedTextures++;
+            if(me.loadedTextures == 1)
+                this.fireEvent('loadinitiated',t);
+
             var t = this.currentTime;
-            //this.imageCache[this.currentTime] = new Image();
-            //this.imageCache[this.currentTime].src = this.constructAtlasUrl();
 			var textureAtlas = new THREE.ImageUtils.loadTexture(this.constructAtlasUrl(), undefined, function () {
                 //console.log(t, 'loaded!!!');
-                me.playBack.setLoaded(t);
+                //me.playBack.setLoaded(t);
+                me.loadedTextures--;
+                if(me.loadedTextures == 0)
+                    me.fireEvent('loadcomplete',t);
+
+                me.fireEvent('atlasloadedat',t);
                 me.setLoading(false);
                 //me.rerender();
                 if(t == me.currentTime)
@@ -1014,6 +1073,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			textureAtlas.wrapT = THREE.MirroredRepeatWrapping;
 
 			this.textureTimeBuffer[this.currentTime] = textureAtlas;
+
 			//this.uniforms.textureAtlas.value = textureAtlas;
 		}
 		this.sceneVolume.setUniform('textureAtlas', this.textureTimeBuffer[this.currentTime]);
@@ -1021,6 +1081,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
 	initTextures : function () {
+        this.loadedTextures = 0;
 		var resUniqueUrl = (this.hostName ? this.hostName : '') + '/image_service/image/' + this.resource.resource_uniq;
 		var slice;
 		this.dims.slice.x = this.phys.x;
@@ -1067,7 +1128,9 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
 	wipeTextureTimeBuffer : function () {
-		this.textureTimeBuffer = new Array();
+		this.loadedTextures = 0;
+        this.textureTimeBuffer = new Array();
+        this.fireEvent('wipetexturebuffer', this);
 	},
 
 	initUniforms : function () {
@@ -1272,8 +1335,27 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
     onPreferences: function(pref) {
         this.preferences = pref;
-        if(pref.quality)
+        if(pref.quality){
             this.setQuality(this.preferences.quality);
+            var menu = this.toolMenu.queryById('qualityMenu');
+            //var chk = menu.getAt(0);
+            menu.items.each(function(item){
+                if(item.text == pref.quality){
+                    item.setChecked(true);
+                }
+            });
+        }
+
+        //this.preferences.
+        for (var key in this.preferences) {
+            if (!this.preferences.hasOwnProperty(key)) {
+                //The current property is not a direct property of p
+                continue;
+            }
+            if(this.tools[key]){
+                this.tools[key].loadPreferences(this.preferences[key]);
+            };
+        }
 
         if (this.preferences.title)
             this.queryById('menu_title').setText( '<h3><a href="/">'+this.preferences.title+'</a></h3>' );
@@ -1311,48 +1393,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
 	//----------------------------------------------------------------------
-	// Animation Panel
-	//---------------------------------------------------------------------
-
-	createAnimPanel : function () {
-		var thisDom = this.getEl().dom;
-		this.animPanel = Ext.create('Ext.panel.Panel', {
-				collapsible : false,
-				header : false,
-				renderTo : thisDom,
-				cls : 'bq-volume-playback',
-				items : [{
-						xtype : 'anim_control',
-						panel3D : this,
-					}
-				],
-			});
-		this.addFade(this.animPanel);
-	},
-
-	//----------------------------------------------------------------------
-	// Playback Panel
-	//---------------------------------------------------------------------
-
-	createPlaybackPanel : function () {
-		var thisDom = this.getEl().dom;
-        this.playBack = Ext.create('BQ.viewer.Volume.playbackcontroller', {
-		    panel3D: this
-        });
-		this.playbackPanel = Ext.create('Ext.panel.Panel', {
-				collapsible : true,
-				header : false,
-				renderTo : thisDom,
-				cls : 'bq-volume-playback',
-				items : [
-                    this.playBack
-				],
-			});
-		this.addFade(this.playbackPanel);
-
-	},
-
-	//----------------------------------------------------------------------
 	// Tool Panel
 	//---------------------------------------------------------------------
 
@@ -1363,16 +1403,14 @@ Ext.define('BQ.viewer.Volume.Panel', {
             //id: 'toolbar-buttons',
             layout: {
                 type: 'table',
-                columns: 8
+                columns: 4
             },
         });
 
         items.push(this.toolPanelButtons);
 
-		items.push({
-			xtype : 'glinfo'
-		});
 
+        //tools factory function
 		if (!this.toolPanel) {
 			var thisDom = this.getEl().dom;
 
@@ -1400,7 +1438,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				});
 			this.addFade(this.toolPanel);
 
-            this.tools = [
+            var tools = [
                 new ditherTool(this),
                 new boxTool(this),
                 new gammaTool(this),
@@ -1408,27 +1446,34 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
             if (Ext.isWindows) {
 			    if (Ext.isChrome && Ext.chromeVersion >= 37) {
-				    this.tools.push(new phongTool(this),
+				    tools.push(new phongTool(this),
                                     new deepTool(this),
                                     new lightTool(this));
 			    }
 		    } else {
-			    this.tools.push(new phongTool(this),
+			    tools.push(new phongTool(this),
                                 new deepTool(this),
                                 new lightTool(this));
 		    }
 
-            this.tools.push(new transferTool(this),
+            tools.push(new transferTool(this),
                             new gObjectTool(this),
                             new clipTool(this),
-                            new VolScaleBarTool(this),
-                            new VolAxisTool(this));
+                            new animationTool(this),
+                            new saveTool(this),
 
-            this.tools.forEach(function(e,i,a){
+                            new VolScaleBarTool(this),
+                            new VolAxisTool(this),
+                            new VolSpinnerTool(this));
+            this.tools = {};
+            var me = this;
+            tools.forEach(function(e,i,a){
+                me.tools[e.name] = e;
                 e.init();
                 e.addButton();
 		        e.addControls();
             });
+
 
 		}
 
@@ -1471,7 +1516,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 						if (!this.canvas3D.zooming) {
 							var scale = 10.0 * (1.0 - value / slider.maxValue);
 							scale = scale < 0.25 ? 0.25 : scale;
-                            console.log(me.canvas3D.controls);
 							me.canvas3D.controls.enabled = false;
 							me.canvas3D.controls.setRadius(scale);
                            	//me.canvas3D.controls.enabled = false;;
@@ -1533,36 +1577,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	createToolMenu : function () {
         var me = this;
 	    if (this.toolMenu)return;
-        var showAnimPanel = function() {
-            if(me.useAnimation == false){
-                //this.
-                me.playbackPanel.hide();
-			    me.animPanel.hide();
-                return;
-            }
-
-            if(me.animStyle == 1) {
-                me.playbackPanel.hide();
-			    me.animPanel.show();
-            } else {
-                me.playbackPanel.show();
-			    me.animPanel.hide();
-            }
-        };
-
-	    var toolMenuRadioHandler = function () {
-		    var
-            radio1 = this.toolMenu.queryById('toolRadio1'),
-		    radio2 = this.toolMenu.queryById('toolRadio2');
-		    if (radio2.getValue()) {
-                me.animStyle = 1;
-		    } else {
-                me.animStyle = 2;
-		    }
-
-            showAnimPanel();
-		    return;
-	    };
 
         var menubutton = this.queryById('tool-menu');
 		this.toolMenu = Ext.create('Ext.tip.ToolTip', {
@@ -1581,26 +1595,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 		});
 
-        var radioOpts = Ext.create('Ext.container.Container',{
-
-			defaults : {
-				xtype : 'radio',
-				width : 200,
-				name : 'tools',
-				cls : 'toolItem',
-                handler : toolMenuRadioHandler,
-                scope : this,
-            },
-
-            items:[{
-				fieldLabel : 'standard player',
-				checked : true,
-				itemId : 'toolRadio1',
-			}, {
-				fieldLabel : 'animation player',
-				itemId : 'toolRadio2',
-			},]
-        }).hide();
 
         var qualityCheck = function(item, checked){
             if(checked === false) return;
@@ -1608,12 +1602,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
         };
 
         var qualityMenu = Ext.create('Ext.menu.Menu', {
-            //id: 'mainMenu',
+            itemId: 'qualityMenu',
             style: {
                 overflow: 'visible'     // For the Combo popup
             },
             items: [
-                '<b class="menu-title">Choose a Theme</b>',
                 {
                     text: 'low',
                     checked: true,
@@ -1656,33 +1649,17 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				} else
 					me.toolPanel.hide();
 			},
-		},{
-			boxLabel : 'animation',
-			checked : this.useAnimation,
-			width : 200,
-			cls : 'toolItem',
-			xtype : 'checkbox',
-			handler : function (item, checked) {
-				if (checked) {
-					radioOpts.show();
-                    me.useAnimation = true;
-                    showAnimPanel();
-
-				} else{
-					radioOpts.hide();
-                    me.useAnimation = false;
-                    showAnimPanel();
-
-                }
-			},
-		}, radioOpts, {
+		}, {
             xtype: 'button',
             width : 100,
             text:'rendering quality',
             //iconCls: 'bmenu',  // <-- icon
             menu: qualityMenu  // assign menu by instance
+        },{
+            xtype: 'glinfo',
+            canvas3D: this.canvas3D
         }]);
-        showAnimPanel();
+//        showAnimPanel();
 
 	},
 

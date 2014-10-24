@@ -146,6 +146,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.camera.position.z = 5.0;
         this.getEl().on({
             scope : this,
+            //resize : this.onresize,
             mouseup : this.onMouseUp,
             mousedown : this.onMouseDown,
             mousemove : this.onMouseMove,
@@ -206,7 +207,11 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 	        this.zooming = true;
 	    }
         this.needs_render = true;
-        this.fireEvent('mousedown', event);
+        //console.log(event);
+        if(event.button == 0 || event.button == 1 )
+          this.fireEvent('mousedown', event);
+        if(event.button == 2)
+          this.fireEvent('rightclick', event);
     },
 
     onMouseUp : function(event) {
@@ -260,5 +265,12 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
             me.doAnimate()
         });
     },
+
+    savePng : function(){
+        var c = this.getEl().dom;
+        var d=c.toDataURL("image/png");
+        var w=window.open('about:blank','image from canvas');
+        w.document.write("<img src='"+d+"' alt='from canvas'/>");
+    }
 
 });

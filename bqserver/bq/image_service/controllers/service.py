@@ -107,7 +107,12 @@ class image_serviceController(ServiceController):
 
     def local_file (self, url, **kw):
         ''' returns local path if it exists otherwise None'''
-        m = re.search(r'(\/image_service\/image[s]?\/)(?P<id>[\w-]+)', url)
+        #m = re.search(r'(\/image_service\/image[s]?\/)(?P<id>[\w-]+)', url) # changed by chris
+        m = re.search(r'(\/image_service\/(image[s]?\/|))(?P<id>[\w-]+)', url) #includes cases without image(s) in the url
+        
+        if m is None: #url did not match the regex
+            return
+        
         id = m.group('id')
 
         log.debug ("Checking %s" % id)
