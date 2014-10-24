@@ -3,6 +3,7 @@
 """
 import os
 import numpy as np
+import re
 import logging
 import tempfile
 import urlparse
@@ -64,9 +65,9 @@ def request_internally(url):
     req = Request.blank('/')
     req.environ.update(request.environ)
     req.environ.update(environ_from_url(url))
-    log.debug("Mex %s" % identity.mex_authorization_token())  
+    log.debug("Mex %s" % identity.mex_authorization_token())
     req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
-    req.headers['Accept'] = 'text/xml'        
+    req.headers['Accept'] = 'text/xml'
     log.debug("begin routing internally %s" % url)
     resp = req.get_response(bisque_app)
     log.debug("end routing internally: status %s" % resp.status_int)
@@ -114,6 +115,12 @@ def check_access(ident, action=RESOURCE_READ):
         return False
     return True
 
+
+#def bq_url_parser(url):
+#    o = urlparse.urlsplit(url)
+#    m = re.match('\/(?P<service>[\w-]+)\/(image[s]?\/|)(?P<id>[\w-]+)|\/(?P<id>[\w-]+)', o.path)
+#    
+#    m=re.match('\/((?P<service>[\[A-Za-z_]-]+)\/(image[s]?\/|)|)(?P<id>[\w-]+)', url_path)
                 
 #needs to be replaced with a HEAD instead of using a GET
 def mex_validation(resource):
@@ -135,14 +142,16 @@ def mex_validation(resource):
         url = getattr(resource,name)
         log.debug("resource: %s" % url)
         try:
-            
             o = urlparse.urlsplit(url)
-            url_path = o.path.split('/')
+            url_path = o.path
             log.debug('url_path :%s' % url_path)
-            if url_path[1] == 'image_service' and url_path[1] == 'data_service': #check for data_service
-                ident = url_path[-1] #seaching a plan image_service or data_service url
-                if check_access(ident) is True:
-                    continue #check next resource
+            m = re.match('\/(?P<service>[\w-]+)\/(image[s]?\/|)(?P<id>[\w-]+)', url_path)
+            if m is not None:
+                if m.group('service') == 'image_service' or m.group('service') == 'data_service': #check for data_service
+                    if 'pixels' not in url_path: #if false requires a redirect
+                        ident = m.group('id') #seaching a plan image_service or data_service url
+                        if check_access(ident) is True:
+                            continue #check next resource
             
             # Try to route internally through bisque
             resp = request_internally(url)
