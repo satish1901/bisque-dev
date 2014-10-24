@@ -458,7 +458,7 @@ Ext.define('BQ.volume.transfer.graph', {
 
         this.histogramSvg = new histogramD3(this.histogram, this.gamma, this.svg, this);
         this.svg.append("svg:path")
-            .datum(this.data)
+            .data([this.data])
             .attr("class", "transfer")
             .attr("fill", "url(#gradient)")
             .attr("stroke", "rgba(0,0,0,0.75)")
@@ -528,6 +528,7 @@ Ext.define('BQ.volume.transfer.graph', {
             .attr("cy", function(d) { return me.yScale(d.alpha); })
             .attr("fill",function(d){return d.selected ? "rgb(128,0,0)" : "rgb(128,128,128)";});
         this.histogramSvg.redraw();
+        console.log(JSON.stringify(this.data));
         //this.redrawHistogram();
     },
 
@@ -537,6 +538,8 @@ Ext.define('BQ.volume.transfer.graph', {
         var circle = this.svg.selectAll("circle")
             .data(this.data, function(d){return d.id;});
         var stops = this.gradient.selectAll("stop")
+            .data(this.data, function(d){return d.id;});
+       var path = this.svg.select("path.transfer")
             .data(this.data, function(d){return d.id;});
 
         //1. update graph and gradient points
@@ -598,9 +601,17 @@ Ext.define('BQ.volume.transfer.graph', {
         stops.exit().remove();
 
         //4. redraw my area
+        var buffer = 0.025*this.getHeight();
 
-        this.svg.select("path.transfer").transition()
+
+        this.area = d3.svg.area()
+            .x(function(d) { return me.xScale(d.offset); })
+            .y0(this.getHeight()-buffer)
+            .y1(function(d) { return me.yScale(d.alpha); });
+        this.svg.select("path.transfer").data([this.data])
+            .transition()
             .attr("d", this.area);
+
             //.attr("opacity", 50)
 
     },
@@ -707,30 +718,9 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 
     initComponent : function () {
 
-        this.data = [];
-        var N = 2;
-        this.data[0] = {
-            id: 0,
-            offset: 0,
-            alpha: 0,
-            color: [0,0,0]}
-        for(var i = 1; i < N-1; i++){
-            this.data[i] = {
-                id: i,
-                offset: 100*(i + Math.random())/N,
-                alpha: i/N + 2.0*Math.random()/N,
-                color: [
-                    255*Math.random(),
-                    255*Math.random(),
-                    255*Math.random()
-                ]};
-        }
+        //this.data = [];
+        //var N = 2;
 
-        this.data[N-1] = {
-            id: N-1,
-            offset: 100,
-            alpha: 1,
-            color: [255,255,255]}
         var panelWidth = 500,
         panelHeight = 500,
         canvasWidth = null,
@@ -853,10 +843,11 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
         }).hide();
 
         var menu = Ext.create('Ext.menu.Menu', {
-            //id: 'mainMenu',
+            itemId: 'transferPresetMenu',
             style: {
-                overflow: 'visible'     // For the Combo popup
-            },});
+                overflow: 'visible'
+            },
+        });
 
         Ext.apply(this, {
             tbar : [{
@@ -923,8 +914,9 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
                         me.snapBoxY.hide();
                     }}
 		    }, this.snapBoxX, this.snapBoxY,{
-                text:'Button w/ Menu',
-                iconCls: 'bmenu',  // <-- icon
+                xtype: 'button',
+                text:'presets',
+                //iconCls: 'bmenu',  // <-- icon
                 menu: menu  // assign menu by instance
             }]
         });
@@ -946,11 +938,25 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
             }];
         this.callParent();
     },
+
+    setData: function(data){
+       //never explicitely copies data, if owner wants to copy before sending that is OK.
+        this.transferGraph.data =  data;
+        if(this.getEl()){
+            this.transferGraph.updateGraph();
+        }
+    },
+
+    getData: function(){
+        return this.transferGraph.data;
+    }
+
 });
 
 
 function transferTool(volume, cls) {
 	//renderingTool.call(this, volume);
+    this.name = 'transfer_editor';
 	this.cls = 'transferButton';
     this.base = renderingTool;
     this.base(volume, this.cls);
@@ -967,98 +973,179 @@ transferTool.prototype.addUniforms = function(){
 
 transferTool.prototype.initControls = function(){
     var me = this;
-    this.showButton = Ext.create('Ext.Button', {
-        text : 'edit transfer function',
-        handler : function (button, pressed) {
 
-            if (!this.transferWindow)
-                me.displayTransferWindow();
-            else
-                this.transferWindow.show();
-        },
-        scope : me,
-    });
-
-
-    this.transferEditor = Ext.create('BQ.viewer.volume.transfer.editor',{
-        histogram: this.volume.model.histogram,
-        gamma:     this.volume.model.gamma,
-        listeners: {
-            change: function(){
-                me.changed();
-            }
-        }
-    });
 
     this.volume.on('histogramupdate', function(){
-        if(me.transferEditor.transferGraph.histogramSvg)
+        if(me.transferEditor)
             me.transferEditor.transferGraph.histogramSvg.redraw();
     });
-
-    this.controls.add(this.showButton);
-
+    this.button.tooltip = 'edit transfer function';
     //this.volume.on('loaded', function () {});
 };
 
-transferTool.prototype.toggle = function(button){
-        this.transfer ^= 1;
-        this.changed();
-        //this..sceneVolume.setUniform('USE_TRANSFER', this.transfer);
+transferTool.prototype.initData = function(){
+    var data = [];
+    data[0] = {
+        id: 0,
+        offset: 0,
+        alpha: 0,
+        color: [0,0,0]};
+    var N = 2;
+    for(var i = 1; i < N-1; i++){
+        data[i] = {
+            id: i,
+            offset: 100*(i + Math.random())/N,
+            alpha: i/N + 2.0*Math.random()/N,
+            color: [
+                255*Math.random(),
+                255*Math.random(),
+                255*Math.random()
+            ]};
+    }
 
-        if (button.pressed) {
-            this.volume.shaderConfig.transfer = true;
-            this.volume.sceneVolume.setConfigurable("default",
-                                             "fragment",
-                                             this.volume.shaderConfig);
+    data[N-1] = {
+        id: N-1,
+        offset: 100,
+        alpha: 1,
+        color: [255,255,255]};
+    console.log(data);
+    return data;
+},
 
-            this.volume.setModel('transfer', true);
-            this.showButton.show();
-        } else{
-            this.volume.shaderConfig.transfer = false;
-            this.volume.sceneVolume.setConfigurable("default",
-                                             "fragment",
-                                             this.volume.shaderConfig);
+transferTool.prototype.loadPreferences = function(prefs){
+    //////////////////////
+    //set toggled on start
+    //////////////////////
+    var me = this;
+    if(prefs.show == 'true')
+        this.button.toggle(true);
+    else
+        this.button.toggle(false);
 
-            this.volume.setModel('false', true);
-            this.showButton.hide();
+    if(!this.presets) this.presets = {}; //initialize a presets menu
+    //if for some reason a default isn't available lets just make one ahead of time
+    this.presets['default'] = this.initData();
+
+    //check to see if there are presets available
+    this.presets['current'] = this.initData();
+    if(!prefs.functions) {
+        this.presets['default'] = this.initData();
+        return
+    }
+
+    for (var key in prefs.functions) {
+        if (!prefs.functions.hasOwnProperty(key)) {
+            //The current property is not a direct property of functions
+            continue;
         }
-    this.base.prototype.toggle.call(this,button);
+        //parse the jason in the key and store it
+        var transfer = prefs.functions[key];
+        this.presets[key] = JSON.parse(transfer);
+    }
+
+
 };
 
-transferTool.prototype.displayTransferWindow = function () {
-        if(!this.transferWindow){
-            this.transferWindow = Ext.create('Ext.window.Window',{
-                border : 0,
-	            layout : 'fit',
-	            border : false,
-	            autoScroll : true,
-	            title : 'transfer function editor',
-                cls : 'bq-volume-transfer',
-                width: 1200,
-                height: 300,
-	            x: 40,
-	            y: 40,
-                minHeight: 300,
-                minWidth: 800,
-                hidden: false,
-                maximizable: true,
-                autoShow: true,
-                closeAction: 'hide',
-                items : [this.transferEditor]
-            });
-        }
-        this.transferWindow.show();
+transferTool.prototype.createTransferEditor = function(){
+    var data = this.transferData;
+    var me = this;
+    this.transferEditor = Ext.create('BQ.viewer.volume.transfer.editor',{
+        data: data,
+        histogram: this.volume.model.histogram,
+        gamma:     this.volume.model.gamma,
+        dock : 'bottom',
+        collapseDirection: 'bottom',
+        expandDirection: 'top',
+        height: 250,
+        collapsible: true,
+        cls : 'bq-volume-transfer',
+        listeners: {
+            change: function(){
+                me.changed();
+            },
+            afterlayout: function(){
+                //we need to get the presets menu from the transfer editor window
+                var menu = this.queryById('transferPresetMenu');
+                //menu.removeAll(); //in case there are multiple layouts, or we add new presets down the road, clear the menu
+                var data = me.presets;
+
+                menu.removeAll();
+                for (var key in data) {
+                    if (!data.hasOwnProperty(key)) {
+                        //The current property is not a direct property of functions
+                        continue;
+                    }
+                    //parse the jason in the key and store
+                    //create a new menu item for the preference function
+                    var newMenuItem = Ext.create('Ext.Button', {
+                        autoDestroy: false,
+                        text: key, //use the supplied key as the name of the button
+                        handler: function(){
+                            me.presets['current'] = me.presets[this.text].slice(0);
+                            me.transferEditor.setData(me.presets['current']);
+                            me.changed();
+                        }
+                    });
+
+                    //add the new menu item
+                    menu.add(newMenuItem);
+                }
+                //changed should get called afterlayout.  Normally onToggle it gets called immediately
+                me.changed();
+            }
+        },
+
+    });
+    this.transferEditor.setData(this.presets['current']);
+    this.transferData = this.transferEditor.data;
+};
+
+transferTool.prototype.toggle = function(button){
+    this.transfer ^= 1;
+    //this.changed(); //don't want to call this until after layout since the editor stores the data
+    //this..sceneVolume.setUniform('USE_TRANSFER', this.transfer);
+
+    if (button.pressed) {
+        this.volume.shaderConfig.transfer = true;
+        this.volume.sceneVolume.setConfigurable("default",
+                                                "fragment",
+                                                this.volume.shaderConfig);
+
+        this.volume.setModel('transfer', true);
+    } else{
+        this.volume.shaderConfig.transfer = false;
+        this.volume.sceneVolume.setConfigurable("default",
+                                                "fragment",
+                                                this.volume.shaderConfig);
+
+        this.volume.setModel('false', true);
+    }
+
+    if(this.transfer){
+        var me = this;
+        this.createTransferEditor();
+        this.volume.addDocked(this.transferEditor);
+        //this.volume.southView.expand(true);
+    }
+    else{
+        this.volume.removeDocked(this.transferEditor);
+        //this.volume.southView.collapse();
+        //this.volume.southView.remove(this.transferEditor);
+    }
+    this.base.prototype.toggle.call(this,button);
+
 };
 
 
 transferTool.prototype.changed = function () {
-    if (!this.transferEditor)
-        return;
+
+    if(!this.transferData) this.transferData = this.initData();
+
     this.tSize = 127;
     var pixels = new Uint8Array(4*(this.tSize+1));
     var cStop = 0;
     var ci = 0;
-    var data = this.transferEditor.data;
+    var data = this.transferEditor.getData();
     var l = data.length;
     var stop0 = data[0];
     var stop1 = data[l-1];

@@ -14,7 +14,6 @@ from PIL import Image, ImageDraw
 from bq import image_service
 from bq.core import identity
 from bqapi.comm import BQServer
-from bq.util import http
 from lxml import etree
 from bq.util.mkdir import _mkdir
 from webob.request import Request, environ_from_url
@@ -59,7 +58,7 @@ def request_internally(url):
         
         @param url - the url that is requested internally
         
-        @return body - body of the response
+        @return webob response object
     """
     from bq.config.middleware import bisque_app
     req = Request.blank('/')
@@ -81,14 +80,20 @@ def request_externally(url):
         
         @param url - the url that is requested externally
         
-        @return body - body of the response
+        @return requests response object
     """
-    req = Request.blank(url)
-    req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
-    req.headers['Accept'] = 'text/xml'
+    session = BQServer()
+    #session = root
+    session.authenticate_mex(identity.mex_authorization_token())
+    url = session.prepare_url(url)
     log.debug("begin routing externally: %s" % url)
-    resp = http.send(req)
-    log.debug("end routing externally: status %s" % resp.status_int)
+    try:
+        resp = session.get(url, headers={'Content-Type':'text/xml'})
+    except BQCommError as e:
+        log.debug('%s' % str(e))
+        return 
+        
+    log.debug("end routing externally: status %s" % resp.status_code)
     return resp
 
 
@@ -154,8 +159,8 @@ def mex_validation(resource):
                 
             # Try to route externally
             resp = request_externally(url)
-            if resp.status_int < 400:
-                if resp.status_int == 302:
+            if resp.status_code < 400:
+                if resp.status_code == 302:
                     #reset the url to the redirected url
                     redirect_url = resp.headers.get('Location')
                     if redirect_url is not None: #did not find the redirect
@@ -196,13 +201,13 @@ def fetch_resource(uri):
     try:
         # Try to route internally through bisque 
         resp = request_internally(uri)
-        if resp.status_int == 200:
+        if int(resp.status_int) == 200:
             return resp.body
 
         # Try to route externally
         resp = request_externally(uri)
-        if resp.status_int in  set([200,304]):
-            return resp.body
+        if int(resp.status_code) in set([200,304]):
+            return resp.content
         
         log.debug("User is not authorized to read resource externally: %s" % uri)
         raise InvalidResourceError(resource_url=uri, error_code=403, error_message='Resource: %s Not Found' % uri)
@@ -221,6 +226,7 @@ def image2numpy(uri, **kw):
         and then the pillow reader is used instead. 
         
         @param: takes in an image_url
+        @param: query parameters added to only image service urls
         
         @return numpy image
     """
@@ -231,12 +237,7 @@ def image2numpy(uri, **kw):
         if kw:
             uri = BQServer().prepare_url(uri, **kw)
         uri = BQServer().prepare_url(uri, format='OME-BigTIFF')
-#        urlparse.parse_qsl(o.query)
-#        query_arg = urlparse.parse_qsl(o.query, keep_blank_values=True)
-#        query_arg.append(('format','OME-BigTIFF'))
-#        log.debug('query_arg %s' % query_arg)
-#        query_str = urllib.urlencode(query_arg)
-#        uri = urlparse.urlunsplit((o.scheme, o.netloc, o.path, query_str, o.fragment))
+        log.debug("Image Service uri: %s" % uri)
         image_path = image_service.local_file(uri)
         log.debug("Image Service path: %s" % image_path)
         if image_path is None:
@@ -245,10 +246,13 @@ def image2numpy(uri, **kw):
             return convert_image2numpy(image_path)
 
     _mkdir(FEATURES_TEMP_DIR)
-    with tempfile.NamedTemporaryFile(dir=FEATURES_TEMP_DIR, prefix='image', delete=True) as f:
+    with tempfile.NamedTemporaryFile(dir=FEATURES_TEMP_DIR, prefix='image', delete=False) as f:
         content = fetch_resource(uri)
         f.write(content)
-        return convert_image2numpy(f.name)
+    
+    im = convert_image2numpy(f.name)
+    os.remove(f.name)
+    return im
 
     
 def convert_image2numpy(image_path):
@@ -285,12 +289,12 @@ def convert_image2numpy(image_path):
         raise InvalidResourceError(415, 'Not a grayscale or RGB image')
         
     except (IOError, TypeError):
-        log.exception("Not a tiff file!")
+        log.debug("Not a tiff file!")
         log.debug("Trying to read in image with pillow")
         try:
             return np.array(Image.open(image_path)) #try to return something, pil doesnt support bigtiff
         except IOError:
-            log.exception("File type not supported!")
+            log.debug("File type not supported!")
             raise InvalidResourceError(415, 'Unsupported media type') 
 
 
