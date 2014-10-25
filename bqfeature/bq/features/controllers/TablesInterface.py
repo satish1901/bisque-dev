@@ -113,7 +113,8 @@ class TablesLock(object):
             self.h5file.close()
             del self.h5file
             self.h5file = None
-            self.bq_lock.release()
+        
+        self.bq_lock.release()
             
         #release pytables
         if MULTITHREAD_HDF5 is False:
