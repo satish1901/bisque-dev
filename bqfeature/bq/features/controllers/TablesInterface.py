@@ -87,7 +87,6 @@ class TablesLock(object):
             self.bq_lock.acquire(self.bq_lock.ifnm, self.bq_lock.ofnm)
             if not self.bq_lock.locked: #no lock was given on the hdf5 file
                 log.debug('Failed to lock hdf5 file!')
-                #self.release()
                 return None
             
             log.debug('Succesfully acquired tables locks!')
@@ -101,19 +100,8 @@ class TablesLock(object):
         try:
             self.h5file = tables.open_file(self.filename, self.mode, *self.args, **self.kwargs)
         except tables.exceptions.HDF5ExtError:
-            #self.release()
-            #remove the file if it exists
-            if os.path.exists(self.filename):
-                try:
-                    os.remove(self.filename)
-                except Exception:
-                    log.exception('Failed to removed corrupted hdf5 file -> %s' % self.filename)
-                finally:
-                    raise FeatureServiceError(error_message='Fatal Error: hdf5 file was corrupted! -> %s' % self.filename)
-            else:
-                log.exception('Failed to find table %s' % self.filename)
-                raise FeatureServiceError(error_message='Fatal Error: Table was not found! -> %s' % self.filename)
-            
+            log.exception('Fatal Error: hdf5 file was corrupted! -> %s' % self.filename)
+            raise FeatureServiceError(error_message='Fatal Error: hdf5 file was corrupted! -> %s' % self.filename)            
             
     def release(self):
         """
