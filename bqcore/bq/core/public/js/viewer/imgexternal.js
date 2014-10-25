@@ -2,11 +2,6 @@ function ImgExternal (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
     
-    //createing current view ns
-    this.currentview = {};
-    this.currentview.scale = 1;
-    this.currentview.border = true;
-    this.currentview.showGobject = true;
 
     this.viewer.addMenu([{
         itemId: 'menu_viewer_external',
@@ -28,56 +23,40 @@ function ImgExternal (viewer,name){
                 border: true, //default
                 showGobjects: true,
                 handler: function() {
-                    this.exportCurrentView(this.currentview.scale, this.currentview.border, this.currentview.showGobject)
+                    this.exportCurrentView(1);
                     },
+                    /*
                 menu   : {
+                    hidden: true,
                     handler: function() {return false;},
                     items   : [
                     '<b class="menu-title">Choose a Scale</b>',
                     {
-                        text: '.5x',
-                        handler: function() {this.currentview.scale = .5;},
+                        text: '100%',
+                        handler: function() {this.exportCurrentView(1);},
                         scope: this,
                         checked: false,
                         hideOnClick : false,
                         group: 'scale',
-                        tooltip: 'Download current view scaled at .5x',
+                        tooltip: 'Download current view scaled at 100%',
                     }, {
-                        text: '1x',
-                        handler: function(){this.currentview.scale = 1;},
+                        text: '200%',
+                        handler: function(){this.exportCurrentView(2);},
                         scope: this,
                         checked: true,
                         hideOnClick : false,
                         group: 'scale',
-                        tooltip: 'Download current view',
+                        tooltip: 'Download current view scaled at 200%',
                     }, {
-                        text: '2x',
-                        handler: function(){this.currentview.scale = 2;},
+                        text: '400%',
+                        handler: function(){this.exportCurrentView(4);},
                         scope: this,
                         checked: false,
                         hideOnClick : false,
                         group: 'scale',
-                        tooltip: 'Download current view scaled at 2x',
-                    },'-',{
-                        text: 'Border',
-                        handler: function(){
-                            if (this.currentview.border) {this.currentview.border = false}
-                            else {this.currentview.border = true}
-                        },
-                        scope: this,
-                        checked: true,
-                        tooltip: 'Adds the dark border',
-                    }, {
-                        text: 'Show Gobjects',
-                        handler: function(){
-                            if (this.currentview.showGobject) {this.currentview.showGobject = false}
-                            else {this.currentview.showGobject = true}
-                        },
-                        scope: this,
-                        checked: true,
-                        tooltip: 'gobjects are placed on the current view',
+                        tooltip: 'Download current view scaled at 400%',
                 }]},
-                
+                */
             },{
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_external_bioView',
@@ -199,7 +178,7 @@ ImgExternal.prototype.exportTagsToGoogle = function () {
  * Downloads a scaled view of the view currently being presented in the
  * viewer.
  */
-ImgExternal.prototype.exportCurrentView = function (scale, border, showGobjects) {
+ImgExternal.prototype.exportCurrentView = function (scale) {
 
     var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
     
@@ -270,6 +249,7 @@ ImgExternal.prototype.exportCurrentView = function (scale, border, showGobjects)
         ctx_view.drawImage(inViewImages[i], xoffset, yoffset, scaled_imgwidth, scaled_imgheight);
     }
     
+    showGobjects = true; 
     if (showGobjects) {
         //render svg to canvas
         var renderer = this.viewer.plugins_by_name['renderer'];
@@ -289,7 +269,7 @@ ImgExternal.prototype.exportCurrentView = function (scale, border, showGobjects)
         //ctx_view.drawImage(svgimg, xoffset, yoffset, tiled_viewer.width, tiled_viewer.height);
     }
     
-    
+    border = false;
     if (!border) {
         //removes border from the image
         var renderer = this.viewer.plugins_by_name['renderer'];
