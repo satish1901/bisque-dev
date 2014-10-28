@@ -84,7 +84,7 @@ class TablesLock(object):
             If the file cannot be open a FeatureServiceError exception will be 
             raised.
         """
-        if self.h5file is None and self.h5file_lock is None:
+        if self.h5file is None:
 
             if MULTITHREAD_HDF5 is False:
                 self.debug('Setting HDF5 global lock!')
