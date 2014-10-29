@@ -424,7 +424,6 @@ ditherTool.prototype.loadPreferences = function(prefs){
         this.button.toggle(true);
     else
         this.button.toggle(false);
-
 };
 
 ditherTool.prototype.toggle = function(button){
@@ -454,9 +453,10 @@ boxTool.prototype.addUniforms = function(){
 
 boxTool.prototype.setScale = function(){
     var me = this;
-    me.boxSize.x = 0.5*me.min / me.rescale.x;
-    me.boxSize.y = 0.5*me.min / me.rescale.y;
-    me.boxSize.z = 0.5*me.min / me.rescale.z;
+    var dims = me.volume.dims;
+    me.boxSize.x = 0.5*me.rescale.x/me.max*dims.slice.x / me.boxMax;
+    me.boxSize.y = 0.5*me.rescale.y/me.max*dims.slice.y / me.boxMax;
+    me.boxSize.z = 0.5*me.rescale.z/me.max*dims.slice.z / me.boxMax;
     this.volume.scaleCube(this.boxSize);
 };
 
@@ -472,7 +472,7 @@ boxTool.prototype.initControls = function(){
         fieldLabel : 'x',
         value : 0,
         minValue : 0.1,
-        maxValue : 1,
+        maxValue : 10,
         step : 0.01,
         width : 150,
         labelWidth: 10,
@@ -480,7 +480,7 @@ boxTool.prototype.initControls = function(){
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
-                newValue = newValue < 0.1 ? 0.1 : newValue;
+                newValue = newValue < 0.01 ? 0.01 : newValue;
                 this.rescale.x = newValue;
                 this.setScale();
             },
@@ -493,7 +493,7 @@ boxTool.prototype.initControls = function(){
         fieldLabel : 'y',
         value : 0,
         minValue : 0.1,
-        maxValue : 1,
+        maxValue : 10,
         step : 0.01,
         width : 150,
         labelWidth: 10,
@@ -501,7 +501,7 @@ boxTool.prototype.initControls = function(){
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
-                newValue = newValue < 0.1 ? 0.1 : newValue;
+                newValue = newValue < 0.01 ? 0.01 : newValue;
                 this.rescale.y = newValue;
                 this.setScale();
             },
@@ -513,8 +513,8 @@ boxTool.prototype.initControls = function(){
         name : 'box_z',
         fieldLabel : 'z',
         value : 0,
-        minValue : 0.1,
-        maxValue : 1,
+        minValue : 0.01,
+        maxValue : 10,
         step : 0.01,
         width : 150,
         labelWidth: 10,
@@ -522,14 +522,17 @@ boxTool.prototype.initControls = function(){
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
-                newValue = newValue < 0.1 ? 0.1 : newValue;
+                newValue = newValue < 0.01 ? 0.01 : newValue;
                 this.rescale.z = newValue
                 this.setScale();
             },
             scope : me
         },
     });
-    this.min = 1.0;
+    this.min =  999;
+    this.max = -999;
+
+    this.boxMax = 1.0;
     this.controls.add([this.boxX, this.boxY, this.boxZ]);
     this.volume.on('loaded', function () {
 
@@ -546,12 +549,18 @@ boxTool.prototype.initControls = function(){
 */
 
         if(dims){
+
             me.min = Math.min(dims.pixel.x, Math.min(dims.pixel.y,dims.pixel.z));
+            me.max = Math.max(dims.pixel.x, Math.max(dims.pixel.y,dims.pixel.z));
+            me.boxMax = Math.max(dims.slice.x, Math.max(dims.slice.y,dims.slice.z));
             me.boxX.setValue(dims.pixel.x);
             me.boxY.setValue(dims.pixel.y);
             me.boxZ.setValue(dims.pixel.z);
         }
         else {
+
+            me.min = 1.0;
+            me.max = 1.0;
             me.boxX.setValue(1.0);
             me.boxY.setValue(1.0);
             me.boxZ.setValue(1.0);
@@ -591,7 +600,7 @@ phongTool.prototype.addUniforms = function(){
                                    type: 'f',
                                    val: 0.5,
                                    slider: true,
-                                   min: 2,
+                                   min: 1,
                                    max: 100,
                                    def: 50,
                                    K: 1.0};
@@ -602,7 +611,7 @@ phongTool.prototype.addUniforms = function(){
                                    min: 0,
                                    max: 100,
                                    def: 50,
-                                   K: 1.0};
+                                   K: 0.25};
     //this.initUniforms();
 };
 
@@ -619,12 +628,54 @@ phongTool.prototype.initControls = function(){
         me.sliders['intensity'].setValue(0);
     });
 
-    var check = {
-		boxLabel : 'sobel gradients',
-		checked : false,
-		width : 200,
+
+    var differenceHandler = function(item, checked){
+
+        if(checked){
+            me.volume.shaderConfig.gradientType = item.text;
+        }
+        me.volume.sceneVolume.setConfigurable("default",
+                                              "fragment",
+                                              me.volume.shaderConfig);
+	};
+
+    var gradMenu = Ext.create('Ext.menu.Menu', {
+        itemId: 'gradMenu',
+        style: {
+            overflow: 'visible'     // For the Combo popup
+        },
+        items: [
+            {
+                text: 'finite_difference',
+                checked: true,
+                group: 'grad',
+                tooltip : 'standard difference gradient calculation (slow)',
+                checkHandler: differenceHandler
+            }, {
+                text: 'sobel',
+                checked: false,
+                group: 'grad',
+                tooltip : 'smoothed difference gradient calculation (very slow)',
+                checkHandler: differenceHandler
+            }, {
+                text: 'directional',
+                checked: false,
+                group: 'grad',
+                tooltip : 'approximate calculation using directional gradient.  Highlights not supported. (fast)',
+                checkHandler: differenceHandler
+            },
+
+        ]
+    });
+
+    var gradButton = {
+		xtype : 'button',
+        text : 'gradient type',
+		//checked : false,
+		width : 100,
 		cls : 'toolItem',
-		xtype : 'checkbox',
+        menu : gradMenu,
+        /*
 		handler : function (item, checked) {
             if(checked){
                 me.volume.shaderConfig.gradientType = 'sobel';
@@ -635,8 +686,10 @@ phongTool.prototype.initControls = function(){
                                                     "fragment",
                                                     me.volume.shaderConfig);
 		},
+        */
 	};
-    this.controls.add(check);
+
+    this.controls.add(gradButton);
 };
 
 phongTool.prototype.toggle = function(button){
