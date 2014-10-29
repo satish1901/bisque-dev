@@ -71,7 +71,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     top: 0px;
     width: 100%;
     height: 100%;
-    background-color: rgba(128,128, 128, 1.0);
+    background-color: rgba(67,67,67, 1.0);
 }
 
 
@@ -197,7 +197,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     border-radius: 0px 0px 5px 5px;
     border-color: #333333;
     vertical-align: middle;
-    //display: none;
 }
 
 .bq-volume-toolbar .x-field {
@@ -256,8 +255,6 @@ transfer
     color: white;
     background-color: rgba(50, 50, 50, 1.0);
     background-image: none;
-    //border: 2px solid;
-    //border-radius: 5px 5px 0px 0px;
     border-color: #333333;
     box-shadow: none;
 }
@@ -266,8 +263,6 @@ transfer
     color: white;
     background-color: rgba(0, 0, 0, 1.0);
     background-image: none;
-    //border: 2px solid;
-    //border-radius: 5px 5px 0px 0px;
     border-color: #333333;
     box-shadow: none;
 }
@@ -279,7 +274,6 @@ transfer
     border-radius: 0px 0px 5px 5px;
     border-color: #333333;
     vertical-align: middle;
-    //display: none;
 }
 
 .bq-volume-transfer .x-field {
@@ -419,10 +413,7 @@ transfer
 
 
 .bq-volume-playback .x-btn-inner {
-    //background-image: none;
-   // border-style: none;
     color: white;
-    //background-color: rgba(0, 0, 0, 0.0);
 }
 
 .bq-volume-playback .x-toolbar-text-default {

@@ -329,11 +329,15 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
         this.cubeMesh; //initialize the
 
+
         var mousedown = function(event){
             if(event.button >= 0){
                 me.mousedown = true;
-                //me.sceneVolume.setMaxSteps = 32;
-                //this.setSamp
+                me.rerenderImmediate(32);
+            }
+        };
+        var mousemove = function(event){
+            if(me.mousedown){
                 me.rerenderImmediate(32);
             }
         };
@@ -350,15 +354,21 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
        this.canvas3D = Ext.create('BQ.viewer.Volume.ThreejsPanel', {
 			itemId : 'canvas3D',
-            listeners: {
-                scope : me,
+           listeners: {
+               scope : me,
                 resize: this.onresize,
-                mousemove : mousedown,
-                mousedown : mousedown,
-                mousewheel: mousedown,
-                mouseup : mouseup,
-                mousewheelup : mouseup,
-            },
+           },
+           handlers: {
+               scope : me,
+               contextlost: function(event){
+                   me.fireEvent('contextlost', me);
+               },
+               mousemove : mousemove,
+               mousedown : mousedown,
+               mousewheel: mousedown,
+               mouseup : mouseup,
+               mousewheelup : mouseup,
+           },
 
             buildScene: function() {
 		        me.scene = new THREE.Scene();
@@ -427,7 +437,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
             highlight: false,
             //gradientType: 'sobel',
             //gradientType: 'directional',
-            gradientType: 'std',
+            gradientType: 'finite_difference',
             maxSteps: this.maxSteps,
             usePow: usePow,
         };
@@ -682,6 +692,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 		var pw = this.canvas3D.getPixelWidth();
 		var ph = this.canvas3D.getPixelHeight();
+        var w = this.canvas3D.getWidth();
+		var h = this.canvas3D.getHeight();
+
+        console.log(pw,ph, w, h);
 		var newRes =
 			new THREE.Vector2(pw, ph);
 		this.sceneVolume.setUniform('iResolution', newRes);
@@ -1561,12 +1575,13 @@ Ext.define('BQ.viewer.Volume.Panel', {
             this.maxSteps = 512;
         }
         if (quality === 'extreme'){
-            this.maxSteps = 1024;
+            this.maxSteps = 2048;
         }
         this.shaderConfig.maxSteps = this.maxSteps;
         this.sceneVolume.setConfigurable("default",
                                        "fragment",
                                        this.shaderConfig);
+        this.fireEvent('setquality', this);
         this.rerender();
     },
 

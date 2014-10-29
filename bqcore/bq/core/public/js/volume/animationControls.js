@@ -234,59 +234,6 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 	        text: "1/1",
 	    });
 
-        var qualityCheck = function(item, checked){
-
-            if(checked === false) return;
-            if (item.text === 'low'){
-                me.sampleRate = 64;
-            }
-            if (item.text === 'medium'){
-                me.sampleRate = 128;
-            }
-            if (item.text === 'high'){
-                me.sampleRate = 256;
-            }
-            if (item.text === 'ultra'){
-                me.sampleRate = 512;
-            }
-            if (item.text === 'extreme'){
-                me.sampleRate = 1024;
-            }
-        };
-
-        var qualityMenu = Ext.create('Ext.menu.Menu', {
-	        text: 'render quality: ',
-            //id: 'renderQuality1',
-	        floating: true,  // usually you want this set to True (default)
-	        items: [{
-		        text: 'low',
-		        checked: false,
-                group: 'quality',
-		        checkHandler:qualityCheck
-	        },{
-		        text: 'medium',
-		        checked: false,
-                group: 'quality',
-		        checkHandler: qualityCheck
-
-	        },{
-		        text: 'high',
-		        checked: true,
-                group: 'quality',
-		        checkHandler:qualityCheck
-	        },{
-		        text: 'ultra',
-		        checked: true,
-                group: 'quality',
-		        checkHandler:qualityCheck
-	        },{
-		        text: 'extreme',
-		        checked: true,
-                group: 'quality',
-		        checkHandler:qualityCheck
-	        },]
-	    });
-
         this.endFrame = this.panel3D.dims.t;
         this.timeSlider.setSize(this.endFrame);
 		this.timeSlider.setMaxValue(this.endFrame - 1);
@@ -297,11 +244,7 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 	        items:[this.playButton,
                    this.timeSlider,
 		           this.frameNumber,
-                  {
-                       xtype: 'button',
-                       text: 'render quality',
-                       menu: qualityMenu
-                   }],
+                  ],
 	    };
 	    Ext.apply(this, {
 	        items:[toolbar]
@@ -309,6 +252,11 @@ Ext.define('BQ.viewer.Volume.playbackcontroller',{
 
 	    this.setLoading(true);
 
+        this.panel3D.on({
+            setquality: function(vol){
+                me.sampleRate = vol.maxSteps;
+            }
+        });
 	    this.panel3D.on({
 	        loaded: function(){
 
@@ -1053,61 +1001,6 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 	    });
 
-        var qualityCheck = function(item, checked){
-            if(checked === false) return;
-            if (item.text === 'low'){
-                me.sampleRate = 64;
-            }
-            if (item.text === 'medium'){
-                me.sampleRate = 128;
-            }
-            if (item.text === 'high'){
-                me.sampleRate = 256;
-            }
-            if (item.text === 'ultra'){
-                me.sampleRate = 512;
-            }
-            if (item.text === 'extreme'){
-                me.sampleRate = 1024;
-            }
-        };
-
-        var qualityMenu = Ext.create('Ext.menu.Menu', {
-            //id: 'mainMenu',
-            style: {
-                overflow: 'visible'     // For the Combo popup
-            },
-            items: [
-                '<b class="menu-title">Choose a Theme</b>',
-                {
-                    text: 'low',
-                    checked: true,
-                    group: 'theme',
-                    checkHandler: qualityCheck
-                }, {
-                    text: 'medium',
-                    checked: false,
-                    group: 'theme',
-                    checkHandler: qualityCheck
-                }, {
-                    text: 'high',
-                    checked: false,
-                    group: 'theme',
-                    checkHandler: qualityCheck
-                }, {
-                    text: 'ultra',
-                    checked: false,
-                    group: 'theme',
-                    checkHandler: qualityCheck
-                },{
-                    text: 'extreme',
-                    checked: false,
-                    group: 'theme',
-                    checkHandler: qualityCheck
-                },
-
-            ]
-        });
 
 	    this.numKeyFramesField = Ext.create('Ext.form.field.Number', {
             name: 'numberfield1',
@@ -1135,9 +1028,6 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 		           removeKeyButton,
 		           setLoopButton,
 		           '->',
-		           //sampleRate,
-                   {text: 'render quality',
-                    menu: qualityMenu,},
 		           this.numKeyFramesField
 		          ],
 	    };
@@ -1147,6 +1037,12 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	        items:[playButton,this.keySlider,
 		           this.frameNumber],
 	    };
+
+        this.panel3D.on({
+            setquality: function(vol){
+                me.sampleRate = vol.maxSteps;
+            }
+        });
 
 	    Ext.apply(this, {
 	        items:[toolbar1,

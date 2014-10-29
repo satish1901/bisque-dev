@@ -302,7 +302,7 @@ VolSpinnerTool.prototype.initControls = function () {
 		cls : 'vol-spinner',
         items: [{xtype: 'threejs_panel',
                  itemId: 'spinner_panel',
-                 listeners :{
+                 handlers :{
                      mousedown: function(){
                          if(me.small==0){
                              me.small = 1;

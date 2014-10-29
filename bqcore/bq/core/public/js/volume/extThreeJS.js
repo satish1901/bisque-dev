@@ -161,6 +161,17 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.callParent();
         if(this.buildScene)
             this.buildScene();
+
+        this.renderer.context.canvas.addEventListener("webglcontextlost", function(event) {
+            event.preventDefault();
+            // animationID would have been set by your call to requestAnimationFrame
+            me.triggerHandler('contextlost', event);
+            cancelAnimationFrame(animationID);
+        }, false);
+
+        this.renderer.context.canvas.addEventListener("webglcontextrestored", function(event) {
+            me.triggerHandler('contextrestored', event);
+        }, false);
         this.renderer.render(this.scene, this.camera);
     },
 
@@ -178,6 +189,13 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         //return this.getHeight();
     },
 
+    triggerHandler : function(handler, event){
+        if(!this.handlers) return;
+        if(this.handlers[handler])
+            this.handlers[handler](event);
+
+    },
+
     onMouseWheel : function(event) {
 	    this.zooming = true;
         this.mousedown = true;
@@ -189,10 +207,13 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 	        me.mousedown = false;
             me.controls.enabled = true;
             me.controls.update();
-            me.fireEvent('mousewheelup', event);
+            me.triggerHandler('mousewheelup', event);
+
         }, 200);
 
-        this.fireEvent('mousewheel', event);
+        //this.fireEvent('mousewheel', event);
+        this.triggerHandler('mousewheel', event);
+
     },
 
     onMouseDown : function(event) {
@@ -208,21 +229,33 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 	    }
         this.needs_render = true;
         //console.log(event);
-        if(event.button == 0 || event.button == 1 )
-          this.fireEvent('mousedown', event);
+        this.triggerHandler('mousedown', event);
+        /*
+        if(event.button == 0 || event.button == 1 ){
+            //this.handlers.mousedown(event);
+            this.triggerHandler('mousedown', event);
+
+        }
+        //  this.fireEvent('mousedown', event);
         if(event.button == 2)
-          this.fireEvent('rightclick', event);
+            this.triggerHandler('rightclick', event);
+            */
     },
 
     onMouseUp : function(event) {
         this.controls.enabled = true;
         this.mousedown   = false;
         this.needs_render = true;
-        this.fireEvent('mouseup', event);
+        //this.fireEvent('mouseup', event);
+        this.triggerHandler('mouseup', event);
+
     },
 
     onMouseMove : function(event){
-        this.fireEvent('mousemove', event);
+        //this.fireEvent('mousemove', event);
+
+        this.triggerHandler('mousemove', event);
+
     },
 
     onresize : function(comp, w, h, ow, oh, eOpts) {
@@ -243,6 +276,8 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
     render : function(){
         this.renderer.render(this.scene, this.camera);
         this.fireEvent('render', this);
+        //me.triggerHandler('mousewheelup', event);
+
     },
 
     doAnimate : function() {
