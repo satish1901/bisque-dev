@@ -96,6 +96,7 @@ VolScaleBar.prototype.setValue = function ( val ) {
 }
 
 function VolScaleBarTool (volume){
+    this.name = 'scale_bar';
     this.base = renderingTool;
     this.base (volume, null);
 }
@@ -108,7 +109,7 @@ VolScaleBarTool.prototype.addButton = function () {
 
 VolScaleBarTool.prototype.initControls = function () {
     var me = this;
-    var thisDom = this.volume.getEl().dom;
+    var thisDom = this.volume.mainView.getEl().dom;
 
     this.volume.on('loaded', function () {
         if(me.scalePanel) return;
@@ -140,8 +141,6 @@ VolScaleBarTool.prototype.initControls = function () {
             render: me.updatePosition
         });
         //me.updateImage();
-
-
     });
 };
 
@@ -184,6 +183,7 @@ Temp home for the axis tool
 *******************************************************************************/
 
 function VolAxisTool (volume){
+    this.name = 'axis';
     this.base = renderingTool;
     this.base (volume, null);
 }
@@ -196,7 +196,7 @@ VolAxisTool.prototype.addButton = function () {
 
 VolAxisTool.prototype.initControls = function () {
     var me = this;
-    var thisDom = this.volume.getEl().dom;
+    var thisDom = this.volume.mainView.getEl().dom;
 
     this.Panel = Ext.create('Ext.container.Container', {
 		collapsible : false,
@@ -224,7 +224,7 @@ VolAxisTool.prototype.initControls = function () {
 			             color : 0xffff00
 		             });
 
-                     this.cube = new THREE.CubeGeometry(0.25, 0.25, 0.25);
+                     this.cube = new THREE.BoxGeometry(0.25, 0.25, 0.25);
 		             this.cubeMesh = new THREE.Mesh(this.cube, material);
 		             this.scene.add(this.cubeMesh);
 
@@ -259,5 +259,184 @@ VolAxisTool.prototype.initControls = function () {
         //me.updateImage();
 
 
+    });
+};
+
+
+/*******************************************************************************
+Temp home for the axis tool
+*******************************************************************************/
+
+function VolSpinnerTool (volume){
+    this.name = 'spinner';
+    this.base = renderingTool;
+    this.base (volume, null);
+}
+
+VolSpinnerTool.prototype = new renderingTool();
+
+VolSpinnerTool.prototype.addButton = function () {
+    //blank since we don't actually add anything
+};
+
+VolSpinnerTool.prototype.start = function () {
+    this.go = true;
+};
+
+
+VolSpinnerTool.prototype.stop = function () {
+    this.go = false;
+};
+
+
+VolSpinnerTool.prototype.initControls = function () {
+    var me = this;
+    var thisDom = this.volume.mainView.getEl().dom;
+    this.go = false;
+    this.small = 1;
+    this.spinner = Ext.create('Ext.panel.Panel', {
+		collapsible : false,
+		header : false,
+		renderTo : thisDom,
+        layout : 'fit',
+		cls : 'vol-spinner',
+        items: [{xtype: 'threejs_panel',
+                 itemId: 'spinner_panel',
+                 handlers :{
+                     mousedown: function(){
+                         if(me.small==0){
+                             me.small = 1;
+                             me.spinner.setSize(24,24);
+                         }
+                         else{
+                             me.small = 0;
+                             me.spinner.setSize(72,72);
+                         }
+
+                     }
+                 },
+
+                 doAnimate : function() {
+                     if(this.uniforms.small)
+                         this.uniforms.small.value = me.small;
+
+                     if(me.go){
+                         this.renderer.render(this.scene, this.camera);
+                         this.t += 0.01;
+                         this.uniforms.t.value = this.t;
+                     }
+                     var canvas = this;
+                     requestAnimationFrame(function() {
+                         canvas.doAnimate()
+                     });
+                 },
+
+                 buildScene: function() {
+                     var thisDom = this.getEl().dom;
+                     this.t = 0;
+                     this.scene = new THREE.Scene();
+		             var material = new THREE.MeshBasicMaterial({
+			             color : 0xffff00
+		             });
+
+
+                     this.camera = new THREE.OrthographicCamera( -0.5, 0.5,
+                                                                  0.5,-0.5, 1, 20 );
+                     //this.setClearColor(0xC0C0C0, 0.0);
+                     //this.setClearColor(0xC0C0C0,1.0);
+
+		             var pw = this.getPixelWidth();
+		             var ph = this.getPixelHeight();
+                     var frag = [
+                         'uniform int small;',
+		                 'uniform float t;',
+                         'uniform vec2 ires;',
+                         '#define M_PI 3.14159265358979323846',
+		                 'void main() {',
+                         'if(small == 1){',
+                         'gl_FragColor = vec4(vec3(0.5 + 0.5*cos(4.0*t)),1.0);',
+                         'return;',
+                         '}',
+	                     'vec2 uv = gl_FragCoord.xy / ires.xy;',
+                         'vec2 p = uv - 0.5 + 0.05*vec2(cos(t), sin(t));',
+	                     'float a = atan(p.x, p.y);',
+                         'float l = length(p);',
+   	                     'float ct  = cos(t);',
+                         'float ct0 = sin(t);',
+                         'float rady = cos(1.5*log(1.0*l) + 0.1*t)*sin(1.5*a + 1.0*ct*log(l));',
+                         'float radx = sin(1.5*log(1.0*l) + 0.1*t)*cos(1.5*a + 1.0*ct*log(l));',
+                         'float a2 = atan(radx, rady);',
+                         'float l2 = length(vec2(radx, rady));',
+                         'float rad2 = sin(log(1.0*l2)+0.1*t)*cos(1.0*a2 - 8.0*l*ct0*log(0.5*l2));',
+                         'float but = l - 0.5;',
+                         'gl_FragColor = vec4(vec3(rad2*rad2),1.0-l2);',
+
+                         '}'
+	                 ].join('\n');
+
+	                 var vert = [
+		                 'void main() {',
+		                 '  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
+		                 '}'
+	                 ].join('\n');
+
+		             this.uniforms = {
+			             small : {
+				             type : "i",
+				             value : me.small
+			             },
+			             t : {
+				             type : "f",
+				             value : this.t
+			             },
+                         ires : {
+				             type : "v2",
+				             value : new THREE.Vector2(pw,ph)
+			             }
+		             };
+
+		             var shader = new THREE.ShaderMaterial({
+				         uniforms : this.uniforms,
+				         vertexShader : vert,
+				         fragmentShader : frag,
+				         //side : THREE.DoubleSide,
+			         });
+                     this.plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 8, 8), shader);
+                     this.scene.add(this.plane);
+                     var sphereGeometry = new THREE.SphereGeometry(0.05);
+
+	                 //var sphereMaterial = new THREE.MeshBasicMaterial( { color: 0x1A1A1A, shading: THREE.FlatShading } );
+	                 this.spheres = [];
+                     this.colors = [];
+
+                     this.renderer.setClearColor(0x808080,0.001);
+
+                     this.camera.position.set(0,0,10);
+                 }
+
+                }],
+        listeners : {
+            afterlayout: function(){
+                var canvas = this.queryById('spinner_panel');
+                var pw = canvas.getPixelWidth();
+		        var ph = canvas.getPixelHeight();
+                canvas.uniforms.ires.value.x = pw;
+                canvas.uniforms.ires.value.y = ph;
+                canvas.doAnimate();
+                me.parentdiv = this.getEl().dom;
+                me.volume.addFade(this);
+            }
+        }
+	});
+
+    this.volume.on({
+        loadinitiated: function() {
+            me.start();
+        },
+
+        loadcomplete: function(){
+            me.stop();
+        },
+        scope: me,
     });
 };

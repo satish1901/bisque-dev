@@ -59,12 +59,18 @@ class TablesLock(object):
         self.args = args
         self.kwargs = kwargs
         self.h5file = None
-        self.hdf5_lock = None
-        self.bq_lock = Locks(None, self.filename, failonexist=failonexist, mode=mode+'b')
+        
+        #create locks
+        if mode in set(['w','a']): #write lock
+            self.bq_lock = Locks(None, self.filename, failonexist=failonexist, mode=mode+'b')
+        else: #read lock
+            self.bq_lock = Locks(self.filename, None, failonexist=failonexist, mode=mode+'b')
+
 
     def debug(self, msg):
         """Log detailed info about the locking of threads and files"""
         log.debug("(LOCKING: %s) %s" % (threading.currentThread().getName(), msg))
+
 
     def acquire(self):
         """
@@ -78,7 +84,7 @@ class TablesLock(object):
             If the file cannot be open a FeatureServiceError exception will be 
             raised.
         """
-        if not self.h5file:
+        if self.h5file is None:
 
             if MULTITHREAD_HDF5 is False:
                 self.debug('Setting HDF5 global lock!')
@@ -86,34 +92,30 @@ class TablesLock(object):
             
             self.bq_lock.acquire(self.bq_lock.ifnm, self.bq_lock.ofnm)
             if not self.bq_lock.locked: #no lock was given on the hdf5 file
-                log.debug('Failed to lock hdf5 file!')
-                #self.release()
+                self.debug('Failed to lock hdf5 file!')
                 return None
-            
-            log.debug('Succesfully acquired tables locks!')
+                            
+            self.debug('Succesfully acquired tables locks!')
             self._open_table()
             return self.h5file
+        
+        else:
+            self.debug('%s is already locked' % self.h5file.filename)
+            return self.h5file
+            
             
     def _open_table(self):
         """
             Opens an hdf5 file under locks.
         """
         try:
-            self.h5file = tables.open_file(self.filename, self.mode, *self.args, **self.kwargs)
+            if self.mode == 'w':
+                self.h5file = tables.open_file(self.filename, 'r+', *self.args, **self.kwargs)
+            else: #if append is passed make it +r to protect the locks'
+                self.h5file = tables.open_file(self.filename, self.mode.replace('a','r+'), *self.args, **self.kwargs)
         except tables.exceptions.HDF5ExtError:
-            #self.release()
-            #remove the file if it exists
-            if os.path.exists(self.filename):
-                try:
-                    os.remove(self.filename)
-                except Exception:
-                    log.exception('Failed to removed corrupted hdf5 file -> %s' % self.filename)
-                finally:
-                    raise FeatureServiceError(error_message='Fatal Error: hdf5 file was corrupted! -> %s' % self.filename)
-            else:
-                log.exception('Failed to find table %s' % self.filename)
-                raise FeatureServiceError(error_message='Fatal Error: Table was not found! -> %s' % self.filename)
-            
+            log.exception('Fatal Error: hdf5 file was corrupted! -> %s' % self.filename)
+            raise FeatureServiceError(error_message='Fatal Error: hdf5 file was corrupted! -> %s' % self.filename)            
             
     def release(self):
         """
@@ -125,16 +127,20 @@ class TablesLock(object):
             self.h5file.close()
             del self.h5file
             self.h5file = None
+        
+        if self.bq_lock.locked:
             self.bq_lock.release()
             
         #release pytables
         if MULTITHREAD_HDF5 is False:
             HDF5_Global_Lock.release()
             self.debug('Releasing HDF5 global lock!')
-        log.debug('Succesfully release tables locks!')
+        self.debug('Successfully release tables locks!')
+    
     
     def __enter__(self):
         return self.acquire()
+        
         
     def __exit__(self, type, value, traceback):
         self.release()

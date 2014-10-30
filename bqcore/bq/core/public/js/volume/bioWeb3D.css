@@ -58,9 +58,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 .threejsComponent {
+    position: absolute;
+    left: 0px;
+    top: 0px;
     width: 100%;
     height: 100%;
 }
+
+.threejsBack {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(67,67,67, 1.0);
+}
+
 
 .x-boundlist-floating {
     z-index: 2147483647 !important;
@@ -157,8 +170,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     position: absolute;
     right: 10px;
     top: 60px;
-    width: 300px;
-    z-index: 2147483647 !important;
+    width: 160px;
+    z-index: 100 !important;
     opacity: 0.2;
 }
 
@@ -184,7 +197,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     border-radius: 0px 0px 5px 5px;
     border-color: #333333;
     vertical-align: middle;
-    //display: none;
 }
 
 .bq-volume-toolbar .x-field {
@@ -225,7 +237,7 @@ transfer
 
 .bq-volume-transfer {
     position: absolute;
-    z-index: 2147483647 !important;
+    z-index: 999 !important;
     border: 0px;
     border-width: 0px;
     padding: 0px 0px 0px 0px;
@@ -243,8 +255,6 @@ transfer
     color: white;
     background-color: rgba(50, 50, 50, 1.0);
     background-image: none;
-    //border: 2px solid;
-    //border-radius: 5px 5px 0px 0px;
     border-color: #333333;
     box-shadow: none;
 }
@@ -253,8 +263,6 @@ transfer
     color: white;
     background-color: rgba(0, 0, 0, 1.0);
     background-image: none;
-    //border: 2px solid;
-    //border-radius: 5px 5px 0px 0px;
     border-color: #333333;
     box-shadow: none;
 }
@@ -266,7 +274,6 @@ transfer
     border-radius: 0px 0px 5px 5px;
     border-color: #333333;
     vertical-align: middle;
-    //display: none;
 }
 
 .bq-volume-transfer .x-field {
@@ -406,10 +413,7 @@ transfer
 
 
 .bq-volume-playback .x-btn-inner {
-    //background-image: none;
-   // border-style: none;
     color: white;
-    //background-color: rgba(0, 0, 0, 0.0);
 }
 
 .bq-volume-playback .x-toolbar-text-default {
@@ -698,8 +702,40 @@ scale bar
     height: 100px !important;
     background-color: transparent;
     left: 6px !important;
-    bottom: 52px !important;
+    bottom: 42px;
 }
+
+/*******************************************************************************
+3D spinner component
+*******************************************************************************/
+
+.vol-spinner {
+    opacity: 0.6;
+    position: absolute;
+    right: 6px;
+    bottom: 10px;
+    width: 24px;
+    height: 24px;
+
+    background-color: #222222;
+    background : #222222;
+    color: #FFFFFF;
+
+    font-size: 12px;
+    /* border: 1px solid #666666; */
+    padding: 8px 8px 8px 8px;
+    border-radius: 5px;
+    -moz-border-radius: 5px;
+    z-index: 30;
+}
+
+.vol-spinner .x-panel-body {
+    width: 100% !important;
+    height: 100% !important;
+    border-width: 0px;
+}
+
+
 
 /*******************************************************************************
 zoom slider
@@ -830,6 +866,17 @@ zoom slider
     background-position: -528px -0px;
 }
 
+.animateButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -0px -0px;
+}
+
+.downloadButton {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -576px -0px;
+}
+
+
 
 
 .clipButton-pressed {
@@ -882,6 +929,16 @@ zoom slider
     background-position: -528px -48px;
 }
 
+.animateButton-pressed {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -0px -48px;
+}
+
+.downloadButton-pressed {
+    background-image: url(/js/volume/icons/tool-icons.svg) !important;
+    background-position: -576px -48px;
+}
+
 
 /*
 .bq-volume-toolbar .x-btn {
@@ -893,7 +950,7 @@ zoom slider
 .bq-volume-toolbar .x-btn-icon-el {
     width:  32px !important;
     height: 32px !important;
-    background-size: 576px;
+    background-size: 608px;
     background-repeat: no-repeat;
 
 }
