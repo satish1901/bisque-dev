@@ -60,6 +60,8 @@ import tempfile
 import mimetypes
 import warnings
 
+log = logging.getLogger('bqapi.comm')
+
 try:
     from collections import OrderedDict
 except ImportError:
@@ -71,20 +73,26 @@ from requests.auth import AuthBase
 from requests import Session
 
 from .RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
-from .casauth import caslogin
+try:
 
-from lxml import etree
+    from .casauth import caslogin
+except ImportError:
+    log.warning ("CAS login not supported: may need to install BeautifulSoup4")
+
+try:
+    from lxml import etree
+except ImportError:
+    import xml.etree.ElementTree as etree
 
 USENODE = False
 if USENODE:
-    from bqapi.bqnode import fromXml, toXml, BQMex, BQNode, BQFactory
+    from bqapi.bqnode import  BQMex, BQNode, BQFactory
 else:
-    from bqapi.bqclass import fromXml, toXml, BQMex, BQNode
+    from bqapi.bqclass import BQMex, BQNode, BQFactory
 
 from bqapi.util import parse_qs, make_qs, xml2d, d2xml, normalize_unicode
 
 
-log = logging.getLogger('bqapi.comm')
 
 
 #SERVICES = ['']
@@ -241,7 +249,9 @@ class BQServer(Session):
         return urlparse.urlunsplit([scheme,netloc,u.path,query,u.fragment])
 
 
-    def fetch(self, url, headers = None, path=None):
+
+
+    def webreq(self, method, url, headers = None, path=None, ):
         """
             Makes a http GET to the url given
 
@@ -254,9 +264,9 @@ class BQServer(Session):
 
             @exception: BQCommError if the requests returns an error code and message
         """
-        log.debug("GET: %s req  header=%s" %  (url, headers))
+        log.debug("%s: %s req  header=%s" , method, url, headers)
 
-        r = self.get(url, headers=headers)
+        r = self.request(method=method, url=url, headers=headers, stream = (path is not None))
 
         try:
             r.raise_for_status()
@@ -268,11 +278,14 @@ class BQServer(Session):
 
         if path:
             with open(path, 'wb') as f:
-                f.write(r.content)
+                for line in r.iter_lines():
+                    f.write(line)
             return f.name
         else:
             return r.content
 
+    def fetch(self, url, headers = None, path=None):
+        return self.webreq(method='get', url=url, headers=headers, path=path)
 
     def push(self, url, content=None, files=None, headers=None, path=None, method="POST", boundary=None):
         """
@@ -317,15 +330,32 @@ class BQSession(object):
         self.new = set()
         self.dirty = set()
         self.deleted = set()
-        self.parser = etree.XMLParser()
         self.bisque_root = None
-        if USENODE:
-            self.parser.set_element_class_lookup(BQFactory())
+        self.factory = BQFactory(self)
+        self.dryrun = False
 
 
     ############################
     # Establish a bisque session
     ############################
+    def _create_mex (self, user, moduleuri):
+        mex = BQMex()
+        mex.name = moduleuri or 'script:%s' % " ".join (sys.argv)
+        mex.status = 'RUNNING'
+        self.mex = self.save(mex, url=self.service_url('module_service', 'mex'))
+        if self.mex:
+            mextoken = self.mex.resource_uniq
+            self.c.authenticate_mex(mextoken, user)
+            for c in range (100):
+                try:
+                    self.load(url = self.service_url('module_service', path = "/".join (['mex', mextoken])))
+                    return True
+                except BQCommError:
+                    pass
+        return False
+
+
+
     def init_local(self, user, pwd, moduleuri=None, bisque_root=None, create_mex=True):
         """
             Initalizes a local session
@@ -348,13 +378,8 @@ class BQSession(object):
         self.mex = None
 
         if create_mex:
-            mex = BQMex()
-            mex.module = moduleuri
-            mex.status = 'RUNNING'
-            self.mex = self.save(mex, url=self.service_url('module_service', 'mex'))
-            if self.mex:
-                mextoken = self.mex.resource_uniq
-                self.c.authenticate_mex(mextoken, user)
+            self._create_mex(user, moduleuri)
+
         return self
 
 
@@ -413,13 +438,7 @@ class BQSession(object):
         self.mex = None
 
         if create_mex:
-            mex = BQMex()
-            mex.module = moduleuri
-            mex.status = 'RUNNING'
-            self.mex = self.save(mex, url=self.service_url('module_service', 'mex'))
-            if self.mex:
-                mextoken = self.mex.resource_uniq
-                self.c.authenticate_mex(mextoken, user)
+            self._create_mex(user, moduleuri)
         return self
 
 
@@ -444,7 +463,7 @@ class BQSession(object):
             return self.c.fetch(url, headers={'Content-Type':'text/xml', 'Accept':'text/xml'}, path=path)
         else:
             r = self.c.fetch(url, headers = {'Content-Type':'text/xml', 'Accept':'text/xml'})
-            return etree.XML(r, self.parser)
+            return self.factory.string2etree(r)
 
 
     def postxml(self, url, xml, path=None, method="POST", **params):
@@ -460,21 +479,23 @@ class BQSession(object):
 
             @return: xml etree or path to the file were the response was stored
         """
-        log.debug('postxml %s  content %s ' % (url, xml))
 
-        if isinstance(xml, etree._Element):
-            xml = etree.tostring(xml, pretty_print=True)
+        if not isinstance(xml, basestring):
+            xml = self.factory.to_string (xml)
+
+        log.debug('postxml %s  content %s ' % (url, xml))
 
         url = self.c.prepare_url(url, **params)
 
-        if path:
-            return self.c.push(url, content=xml, path=path, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
-        else:
-            try:
-                r = self.c.push(url, content=xml, method=method, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
-                return etree.XML(r, self.parser)
-            except etree.XMLSyntaxError:
+        try:
+            r = None
+            if not self.dryrun:
+                r = self.c.push(url, content=xml, method=method, path=path, headers={'Content-Type':'text/xml', 'Accept': 'text/xml' })
+            if path is not None:
                 return r
+            return r and self.factory.string2etree(r)
+        except etree.XMLSyntaxError:
+            return r
 
 
     def fetchblob(self, url, path=None, **param):
@@ -504,18 +525,15 @@ class BQSession(object):
             raise BQApiError('Could not find import service to post blob.')
 
         filename = normalize_unicode(filename)
-
         url = self.c.prepare_url(import_service_url, **params)
-        if isinstance(filename, basestring):
-            with open(filename, 'rb') as f:
-                fields = {'file': (filename, f)}
-                if xml!=None:
-                    if isinstance(xml, etree._Element):
-                        xml = etree.tostring(xml)
+        with open(filename, 'rb') as f:
+            fields = {'file': (filename, f)}
+            if xml!=None:
+                if not isinstance(xml, basestring):
+                    xml = self.factory.to_string(xml)
+                fields['file_resource'] = (None, xml, "text/xml")
 
-                    fields['file_resource'] = (None, xml, "text/xml")
-
-                return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
+            return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
 
 
 #    def post_streaming_blob(self, filename, xml=None, **params):
@@ -586,7 +604,7 @@ class BQSession(object):
                 if isinstance(tg, dict):
                     tg = d2xml({ type_ : tg})
                 elif isinstance(tg, BQNode):
-                    tg = toXml(tg)
+                    tg = BQFactory.to_etree(tg)
                 elif isinstance(tg, etree._Element):
                     pass
                 else:
@@ -615,14 +633,13 @@ class BQSession(object):
         """
         mex = etree.Element('mex', value = status, uri = self.mex.uri)
         #self.mex.value = status
-        #mex = toXml(self.mex)
         def append_mex (mex, type_tup):
             type_, elems = type_tup
             for  tg in elems:
                 if isinstance(tg, dict):
                     tg = d2xml({ type_ : tg})
                 elif isinstance(tg, BQNode):
-                    tg = toXml(tg)
+                    tg = self.factory.to_etree(tg)
                 elif isinstance(tg, etree._Element):
                     pass
                 else:
@@ -640,7 +657,7 @@ class BQSession(object):
         #                  'gobject': gobjects }}
         content = self.postxml(self.mex.uri, mex, view='deep' if reload else 'short')
         if reload and content is not None:
-            self.mex = fromXml(content, session=self)
+            self.mex = self.factory.from_string(content)
             return self.mex
         return None
 
@@ -680,6 +697,19 @@ class BQSession(object):
         pass
 
 
+    ############################
+    #
+    def query (self, resource_type, **kw):
+        """Query for a resource
+        tag_query=None, tag_order=None, offset=None, limit=None
+        """
+        results = []
+        queryurl = self.service_url ('data_service', path=resource_type, query=kw)
+        items = self.fetchxml (queryurl)
+        for item in items:
+            results.append (self.factory.from_etree(item))
+        return results
+
 
     ##############################
     # Low-level save
@@ -698,10 +728,17 @@ class BQSession(object):
             xml = self.fetchxml(url, **params)
             if xml.tag == "response":
                 xml = xml[0]
-            bqo  = fromXml(xml, session=self)
+            bqo  = self.factory.from_etree (xml)
             return bqo
         except BQCommError, ce:
+            log.exception('communication issue while loading %s' % ce)
             return None
+
+    def delete(self, bqo, url=None, **kw):
+        "Delete an object and all children"
+        url = bqo.uri or url
+        if url is not None:
+            r = self.webreq (method='delete', url=url)
 
 
     def save(self, bqo, url=None, **kw):
@@ -713,11 +750,21 @@ class BQSession(object):
             @return
         """
         try:
-            if url is None and bqo.uri:
-                url = bqo.uri
-            xml =  toXml(bqo)
+            original = bqo
+
+            # Find an object (or parent with a valild uri)
+            url = url or bqo.uri
+            if url is None:
+                url = bqo.parent.uri
+                while url is None and bqo.parent:
+                    bqo = bqo.parent
+                    url=  bqo.parent.uri
+            if url is None:
+                raise BQApiError("Can't determine save url for %s" % original)
+
+            xml =  self.factory.to_etree(bqo)
             xml = self.postxml(url, xml, **kw)
-            return fromXml( xml, session=self)
+            return xml is not None and self.factory.from_etree(xml)
         except BQCommError, ce:
             log.exception('communication issue while saving %s' % ce)
             return None

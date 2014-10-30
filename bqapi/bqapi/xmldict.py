@@ -1,7 +1,10 @@
 # Create python xml structures compatible with
 # http://search.cpan.org/~grantm/XML-Simple-2.18/lib/XML/Simple.pm
 
-from lxml import etree
+try:
+    from lxml import etree
+except ImportError:
+    import xml.etree.ElementTree as etree
 from itertools import groupby
 
 def xml2d(e):
@@ -18,7 +21,7 @@ def xml2d(e):
         #if e.tail:
         #    kids['__tail__'] = e.tail
         for k, g in groupby(e, lambda x: x.tag):
-            g = [ _xml2d(x) for x in g ] 
+            g = [ _xml2d(x) for x in g ]
             kids[k]=  g
         return kids
     return { e.tag : _xml2d(e) }
@@ -47,7 +50,7 @@ def d2xml(d):
        <tag name="c" value="d"/>
     </module>
 
-    @type  d: dict 
+    @type  d: dict
     @param d: A dictionary formatted as an XML document
     @return:  A etree Root element
     """
@@ -73,8 +76,8 @@ def d2xml(d):
     node = etree.Element(k)
     _d2xml(v, node)
     return node
-    
-    
+
+
 
 if __name__=="__main__":
 

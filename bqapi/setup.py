@@ -15,12 +15,16 @@ setup(name='bqapi',
       author_email='cbi@biodev.ece.ucsb.edu',
       #home_page = 'http://biodev.ece.ucsb.edu/projects/bisque',
       url='http://biodeve.ece.ucsb.edu/projects/bisquik',
-      packages= ['bqapi' ],
+      packages= find_packages(), # ['bqapi', 'bqapi. ],
+      ###packages= ['bqapi' ],
 #      namespace_packages = ['bq'],
       install_requires=[
-        "httplib2",
-        "lxml",
-        "poster",
+        "requests >=2.4.1, <=2.4.3"
         ],
+      extras_require = {
+        'lxml' : [ 'lxml'],
+        'CAS'  : ['BeautifulSoup4' ],
+        },
+
       zip_safe= True,
       )
