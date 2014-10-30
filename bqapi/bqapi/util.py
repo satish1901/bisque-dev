@@ -4,10 +4,9 @@ import urllib
 import urlparse
 import time
 
-from lxml import etree as ET
-from lxml import etree
+#from lxml import etree as ET
+#from lxml import etree
 from xmldict import xml2d, d2xml
-from bqclass import fromXml, toXml, BQMex
 import comm
 
 #####################################################
@@ -138,12 +137,11 @@ def save_blob(session,  localfile=None, resource=None):
 
         @exceptions comm.BQCommError - if blob is failed to be posted
     """
-
-
     content = session.postblob(localfile, xml=resource)
 
     try:
-        content = ET.XML(content)
+        #content = ET.XML(content)
+        content = session.factory.string2etree(content)
         if len(content)<1: #when would this happen
             return None
         return content[0]
@@ -196,10 +194,11 @@ def fetch_image_planes(session, uri, dest=None, uselocalpath=False):
     image = session.load (uri, view='full')
     #x,y,z,t,ch = image.geometry()
     meta = image.pixels().meta().fetch()
-    meta = ET.XML(meta)
-    t  = meta.xpath('//tag[@name="image_num_t"]')
+    #meta = ET.XML(meta)
+    meta = session.factory.string2etree(meta)
+    t  = meta.findall('.//tag[@name="image_num_t"]')
     t  = len(t) and t[0].get('value')
-    z  = meta.xpath('//tag[@name="image_num_z"]')
+    z  = meta.findall('.//tag[@name="image_num_z"]')
     z  = len(z) and z[0].get('value')
     tplanes = int(t)
     zplanes = int(z)
@@ -217,7 +216,9 @@ def fetch_image_planes(session, uri, dest=None, uselocalpath=False):
         slize = p.fetch()
         fname = os.path.join (dest, "%.5d.TIF" % i)
         if uselocalpath:
-            path = ET.XML(slize).xpath('/resource/@src')[0]
+            #path = ET.XML(slize).xpath('/resource/@src')[0]
+            resource = session.factory.string2etree(slize)
+            path = resource.get ('src')
             # Strip file:/ from path
             safecopy (path[5:], fname)
         else:
@@ -258,7 +259,9 @@ def fetch_image_pixels(session, uri, dest, uselocalpath=False):
 
 
     if uselocalpath:
-        path = ET.XML(pixels).xpath('/resource/@src')[0]
+        #path = ET.XML(pixels).xpath('/resource/@src')[0]
+        resource = session.factory.string2etree(pixels)
+        path = resource.get ('src')
         #path = urllib.url2pathname(path[5:])
         path = path[5:]
         # Skip 'file:'
@@ -282,7 +285,7 @@ def fetch_dataset(session, uri, dest, uselocalpath=False):
         @return:
     """
     dataset = session.fetchxml(uri, view='deep')
-    members = dataset.xpath('//value[@type="object"]')
+    members = dataset.findall('.//value[@type="object"]')
 
     results = {}
     for i, imgxml in enumerate(members):
@@ -304,7 +307,9 @@ def fetchImage(session, uri, dest, uselocalpath=False):
         @return
     """
     image = session.load(uri).pixels().info()
-    fileName = ET.XML(image.fetch()).xpath('//tag[@name="filename"]/@value')[0]
+    #fileName = ET.XML(image.fetch()).xpath('//tag[@name="filename"]/@value')[0]
+    fileName = session.factory.string2etree(image.fetch()).findall('.//tag[@name="filename"]')[0]
+    fileName = fileName.get ('value')
 
     ip = session.load(uri).pixels().format('tiff')
 
@@ -317,7 +322,9 @@ def fetchImage(session, uri, dest, uselocalpath=False):
         dest = os.path.join(dest, fileName)
 
     if uselocalpath:
-        path = ET.XML(pixels).xpath('/resource/@src')[0]
+        #path = ET.XML(pixels).xpath('/resource/@src')[0]
+        resource = session.factory.string2etree(pixels)
+        path = resource.get ('src')
         #path = urllib.url2pathname(path[5:])
         path = path[5:]
 
@@ -332,7 +339,7 @@ def fetchImage(session, uri, dest, uselocalpath=False):
 
 def fetchDataset(session, uri, dest, uselocalpath=False):
     dataset = session.fetchxml(uri, view='deep')
-    members = dataset.xpath('//value[@type="object"]')
+    members = dataset.findall('.//value[@type="object"]')
     results = {}
 
     for i, imgxml in enumerate(members):
@@ -368,7 +375,8 @@ def save_image_pixels(session,  localfile, image_tags=None):
     """
     xml = None
     if image_tags:
-        xml = ET.tostring(toXml(image_tags))
+        #xml = ET.tostring(toXml(image_tags))
+        xml = session.factory.to_string(image_tags)
     return session.postblob(localfile, xml=xml)
 
 

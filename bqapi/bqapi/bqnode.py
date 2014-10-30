@@ -62,7 +62,7 @@ from lxml import etree
 
 log = logging.getLogger('bqapi.class')
 
-__all__ = [ 'BQFactory', 'BQNode', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject', 'gobject_primitives',
+__all__ = [ 'BQFactory', 'BQNode', 'BQImage', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject', 'gobject_primitives',
             'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQRectangle', 'BQSquare', 'toXml', 'fromXml' ]
 
 gobject_primitives = set(['point', 'label', 'polyline', 'polygon', 'circle', 'ellipse', 'rectangle', 'square'])
@@ -74,16 +74,20 @@ gobject_primitives = set(['point', 'label', 'polyline', 'polygon', 'circle', 'el
 
 class BQNode (etree.ElementBase):
     '''Base class for parsing Bisque XML'''
-    xmltag = ''
+    TAG = xmltag = 'NODE'
     xmlfields = []
     xmlkids = []
 
 
     def __getattr__(self, name):
-        return self.get (name)
+        if name in self.xmlfields:
+            return self.get (name)
+        return etree.ElementBase.__getattr__(self, name)
 
     def __setattr__(self, name, val):
-        return self.set (name, val)
+        if name in self.xmlfields:
+            return self.set (name, val)
+        object.__setattr__(self, val)
 
     def initialize(self):
         'used for class post parsing initialization'
@@ -97,10 +101,11 @@ class BQNode (etree.ElementBase):
         pass
 
     def __repr__(self):
-        return '(%s:%s)' % (self.tag, id(self) )
+        return '(%s#%s)' % (self.TAG, len(self))
 
     def __str__(self):
-        return '(%s:%s)'%(self.tag,','.join (['%s=%s' % (f, getattr(self,f,'')) for f in self.attrib]))
+        return etree.tostring(self)
+    #    return '(%s:%s:%s)'%(self.TAG,','.join (['%s=%s' % (f, getattr(self,f,'')) for f in self.attrib]), [ str (q) for q in self ] )
 
     def toTuple (self):
         return tuple( [ x for x in self.attr ] )
@@ -114,12 +119,12 @@ class BQNode (etree.ElementBase):
 
 class BQResource (BQNode):
     '''Base class for Bisque resources'''
-    xmltag = 'resource'
+    TAG = xmltag = 'resource'
     xmlfields = ['name', 'value', 'type', 'uri', 'ts', 'resource_uniq']
     xmlkids = ['kids', 'tags', 'gobjects']
 
-    def __repr__(self):
-        return '(%s:%s)'%(self.xmltag, self.uri)
+    #def __repr__(self):
+    #    return '(%s:%s)'%(self.xmltag, self.uri)
 
 
     def get_tags(self):
@@ -132,12 +137,10 @@ class BQResource (BQNode):
         return [ x for x in self.iter () ]
     kids = property(get_kids)
 
-
     #def __init__(self):
     #    self.tags = []
     #    self.gobjects = []
     #    self.kids = []
-
 
     def toDict (self):
         objs = {}
@@ -148,18 +151,17 @@ class BQResource (BQNode):
     def set_parent(self, parent):
         parent.kids.append(self)
 
-    def addTag(self, name='',value='', tag=None):
+    def add_tag(self, name='',value='', type='', tag=None):
         if tag is None:
-            tag = BQTag(name, value)
-        self.tags.append(tag)
+            tag = BQTag(name=name, value=value, type=type)
+        self.append(tag)
         return tag
 
-    def addGObject(self, name='', value='', gob=None):
+    def add_gob(self, name='', value='', type='', gob=None):
         if gob is None:
-            gob = BQGObject(name, value)
-        self.gobjects.append(gob)
-        #self.session.dirty.add(self)
-        #self.session.new.add(tag)
+            gob = BQGObject(name=name, value=value, type=type)
+        self.append(gob)
+        return gob
 
     def tag(self, name):
         results = []
@@ -190,7 +192,7 @@ class BQResource (BQNode):
 ################################################################################
 
 class BQImage(BQResource):
-    xmltag = "image"
+    TAG = xmltag = "image"
     xmlfields = ['name', 'uri', 'ts' , "value", 'resource_uniq' ] #  "x", "y","z", "t", "ch"  ]
     xmlkids = ['tags', 'gobjects']
 
@@ -213,7 +215,6 @@ class BQImage(BQResource):
                     tn = info.xpath('//tag[@name="image_num_%s"]' % n)
                     geom.append(tn[0].get('value'))
                 self._geometry = tuple(map(int, geom))
-
         return self._geometry
 
 
@@ -275,7 +276,7 @@ class BQImagePixels(object):
 
 class BQValue (BQNode):
     '''tag value'''
-    xmltag = "value"
+    TAG = xmltag = "value"
     xmlfields = ['value', 'type', 'index']
 
     #def __init__(self,  value=None, type=None, index=None):
@@ -313,7 +314,7 @@ class BQValue (BQNode):
 
 class BQTag (BQResource):
     '''tag resource'''
-    xmltag = "tag"
+    TAG = xmltag = "tag"
     xmlfields = ['name', 'type', 'uri', 'ts', 'value']
     xmlkids = ['tags', 'gobjects',  ] # handle values  specially
 
@@ -328,16 +329,18 @@ class BQTag (BQResource):
         parent.tags.append(self)
 
     def get_value(self):
-        if len(self.values)==0:
-            return None
-        if len(self.values)==1:
-            return self.values[0].value
-        return [ x.value for x in self.values ]
+        if hasattr(self, 'value'):
+            return self.getattr('value')
+        return list ( self.iter ('value'))
     def set_value(self, values):
         if not isinstance(values, list):
-            self.values = [ BQValue(values)]
-        else:
-            self.values = [ BQValue(v) for v in values ]
+            values = [values]
+        if hasattr(self, 'value'):
+            del self.attrib['value']
+        for child in self:
+            self.remove (chile)
+        for v in values:
+            self.append(v)
 
     value = property(get_value, set_value)
 
@@ -364,7 +367,7 @@ class BQTag (BQResource):
 class BQVertex (BQNode):
     '''gobject vertex'''
     type = 'vertex'
-    xmltag = "vertex"
+    TAG = xmltag = "vertex"
     xmlfields = ['x', 'y', 'z', 't', 'c', 'index']
 
     #def __init__(self, **kw):
@@ -391,7 +394,7 @@ class BQVertex (BQNode):
 class BQGObject(BQResource):
     '''Gobject resource: A grpahical annotation'''
     type = 'gobject'
-    xmltag = "gobject"
+    TAG = xmltag = "gobject"
     xmlfields = ['name', 'type', 'uri']
     xmlkids = ['tags', 'gobjects', 'vertices']
 
@@ -419,15 +422,15 @@ class BQGObject(BQResource):
 
 class BQPoint (BQGObject):
     '''point gobject resource'''
-    xmltag = "point"
+    TAG = xmltag = "point"
 
 class BQLabel (BQGObject):
     '''label gobject resource'''
-    xmltag = "label"
+    TAG = xmltag = "label"
 
 class BQPolyline (BQGObject):
     '''polyline gobject resource'''
-    xmltag = "polyline"
+    TAG = xmltag = "polyline"
     def perimeter(self):
         vx = self.verticesAsTuples()
         d = 0
@@ -442,7 +445,7 @@ class BQPolyline (BQGObject):
 # implement better algorithm based on triangles
 class BQPolygon (BQGObject):
     '''Polygon gobject resource'''
-    xmltag = "polygon"
+    TAG = xmltag = "polygon"
     # only does 2D version right now
     def perimeter(self):
         vx = self.verticesAsTuples()
@@ -468,7 +471,7 @@ class BQPolygon (BQGObject):
 
 class BQCircle (BQGObject):
     '''circle gobject resource'''
-    xmltag = "circle"
+    TAG = xmltag = "circle"
     def perimeter(self):
         vx = self.verticesAsTuples()
         x1,y1,z1,t1 = vx[0]
@@ -483,7 +486,7 @@ class BQCircle (BQGObject):
 
 class BQEllipse (BQGObject):
     '''ellipse gobject resource'''
-    xmltag = "ellipse"
+    TAG = xmltag = "ellipse"
     type = 'ellipse'
 
     def perimeter(self):
@@ -506,7 +509,7 @@ class BQEllipse (BQGObject):
 
 class BQRectangle (BQGObject):
     '''rectangle gobject resource'''
-    xmltag = "rectangle"
+    TAG = xmltag = "rectangle"
     def perimeter(self):
         vx = self.verticesAsTuples()
         x1,y1,z1,t1 = vx[0]
@@ -521,25 +524,25 @@ class BQRectangle (BQGObject):
 
 class BQSquare (BQRectangle):
     '''square gobject resource'''
-    xmltag = "square"
+    TAG = xmltag = "square"
 
 
 ################################################################################
 # Advanced Objects
 ################################################################################
 class BQDataset(BQResource):
-    xmltag = "dataset"
+    TAG = xmltag = "dataset"
     #xmlfields = ['name', 'uri', 'ts']
     #xmlkids = ['kids', 'tags', 'gobjects']
 
 
 class BQUser(BQResource):
-    xmltag = "user"
+    TAG = xmltag = "user"
     #xmlfields = ['name', 'uri', 'ts']
     #xmlkids = ['tags', 'gobjects']
 
 class BQMex(BQResource):
-    xmltag = "mex"
+    TAG = xmltag = "mex"
     #xmlfields = ['module', 'uri', 'ts', 'value']
     #xmlkids = ['tags', 'gobjects']
 
@@ -553,6 +556,11 @@ class BQFactory (etree.PythonElementClassLookup):
     '''Factory for Bisque resources'''
     resources = dict([ (x[1].xmltag, x[1]) for x in inspect.getmembers(sys.modules[__name__]) if inspect.isclass(x[1]) and hasattr(x[1], 'xmltag') ])
 
+
+    def __init__(self, session):
+        self.session = session
+        self.parser = etree.XMLParser()
+        self.parser.set_element_class_lookup(self)
 
     def lookup (self, document, element):
         return self.find(element.tag, element.get ('type', ''))
@@ -581,9 +589,30 @@ class BQFactory (etree.PythonElementClassLookup):
             #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v))
             return v
 
+    # Parsing
+    def from_etree(self, node):
+        """ Convert an etree to a python structure"""
+        return node
+
+    def from_string(self, xmlstring):
+        return etree.XML(xmlstring, self.parser)
+
+    # Generation
+    def to_string (self, nodes):
+        return etree.tostring (nodes)
+
+    def to_etree(self, bqnode):
+        """Convert BQNode  to elementTree"""
+        return bqnode
+
+    def string2etree(self, xmlstring):
+        return etree.XML (xmlstring, self.parser)
+
+
 ################################################################################
 # Parsing
 ################################################################################
+
 
 
 def fromXml (xmlResource, resource=None, parent=None, factory=BQFactory,session = None):
@@ -614,7 +643,6 @@ def fromXml (xmlResource, resource=None, parent=None, factory=BQFactory,session 
     resources[0].initialize()
     resources[0].xmltree = xmlResource
     return resources[0];
-
 
 
 

@@ -1,13 +1,12 @@
 """
     A patch to format_header_param in urllib3
-    
+
     If a value has unicode the header will be returned
-    as 'name="value"; name*=utf-8''value' else 
+    as 'name="value"; name*=utf-8''value' else
     'name="value"'
 """
 
 
-import numpy
 import requests
 import requests.packages.urllib3 as urllib3
 import email.utils
@@ -20,12 +19,12 @@ from monkeypatch import *
 
 requests_v = [int(s) for s in requests.__version__.split('.')]
 
-if requests_v < [2, 4, 0] or requests_v > [2, 4, 1]:
+if requests_v < [2, 4, 0]  or requests_v > [2, 4, 3]:
     warnings.warn("""\
-We need to patch requests 2.4.0 up to 2.4.1, make sure your version of requests \
-needs this patch, greater than 2.4.1 we do not know if this patch applys."""
+We need to patch requests 2.4.0 up to 2.4.3, make sure your version of requests \
+needs this patch, greater than 2.4.3 we do not know if this patch applys."""
                   )
-    raise ImportError('Requests 2.4.0 to 2.4.1 is required!')
+    raise ImportError('Requests 2.4.0 to 2.4.3 is required!')
 #elif requests_v > [3, 0, 0]:
 #    #does not require this patch
 #    pass
@@ -34,11 +33,11 @@ else:
     def format_header_param(name, value):
         """
         Helper function to format and quote a single header parameter.
-    
+
         Particularly useful for header parameters which might contain
         non-ASCII values, like file names. This follows RFC 2231, as
         suggested by RFC 2388 Section 4.4.
-    
+
         :param name:
             The name of the parameter, a string expected to be ASCII only.
         :param value:
@@ -52,14 +51,14 @@ else:
                 pass
             else:
                 return result
-            
+
         value_encode = value
         if not six.PY3: # Python 2:
             value_encode = value.encode('utf-8')
-            
+
         value = '%s="%s"; %s*=%s' % (
             name, value,
-            name, email.utils.encode_rfc2231(value_encode, 'utf-8')     
+            name, email.utils.encode_rfc2231(value_encode, 'utf-8')
         )
         return value
 
