@@ -68,11 +68,10 @@ renderingTool.prototype.init = function(){
 		},
         width : 36,
         height : 36,
-        //cls : 'bq-vol-btn',
-        //pressedCls: this.cls + '-pressed',
         iconCls   : this.cls,
         enableToggle: true,
-        handler : this.toggle,
+        pressed: false,
+        toggleHandler : this.toggle,
         scope : me,
     });
 
@@ -140,6 +139,11 @@ renderingTool.prototype.addUniforms = function(){
 renderingTool.prototype.initControls = function(){
 };
 
+
+renderingTool.prototype.loadPreferences = function(prefs){
+};
+
+
 renderingTool.prototype.toggle = function(button){
     //default is just to show and hide, but can modify this as well
     if(button.pressed) {
@@ -186,7 +190,7 @@ gammaTool.prototype = new renderingTool();
 gammaTool.prototype.addUniforms = function(){
     this.uniforms['min']   = {name: 'GAMMA_MIN', type: 'f', val: 0.0};
     this.uniforms['max']   = {name: 'GAMMA_MAX', type: 'f', val: 1.0};
-    this.uniforms['scale'] = {name: 'GAMMA_SCALE', type: 'f', val: 0.5} ;
+    this.uniforms['scale'] = {name: 'GAMMA_SCALE', type: 'f', val: 1.0} ;
     //this.initUniforms();
 };
 
@@ -194,11 +198,14 @@ gammaTool.prototype.toggle = function(button){
     this.base.prototype.toggle.call(this,button);
 };
 
+gammaTool.prototype.changed = function(){
+};
+
 gammaTool.prototype.initControls = function(){
     var me = this;
 
     this.title = 'gamma';
-
+    this.button.tooltip = 'edit gamma';
     //this.addUniforms();
     this.histogram = this.volume.model.histogram;
     this.gamma = this.volume.model.gamma;
@@ -272,6 +279,7 @@ gammaTool.prototype.initControls = function(){
             xtype: 'multislider',
             hideLabel : true,
             fieldLabel : 'gamma',
+            itemId : 'histSlider',
             //increment : 1,
             maxValue: 255,
             minValue: 0,
@@ -284,10 +292,6 @@ gammaTool.prototype.initControls = function(){
                     var conThumb = slider.thumbs[1].value;
                     var maxThumb = slider.thumbs[2].value;
                     if(conThumb > maxThumb || conThumb < minThumb) conThumb = 0.5*(minThumb + maxThumb);
-                    var min = minThumb / div;
-                    var max = maxThumb / div;
-                    var diff = max - min;
-                    var x = (conThumb / div - min) / diff;
 
                     var vals = getVals(minThumb, conThumb, maxThumb);
 
@@ -314,7 +318,6 @@ gammaTool.prototype.initControls = function(){
                     this.data = vals;
                     this.volume.model.gamma = vals;
 
-
                     if(this.histogramSvg){
                         this.volume.model.updateHistogram();
                         //this.histogramSvg.redraw();
@@ -328,6 +331,10 @@ gammaTool.prototype.initControls = function(){
     this.controls.on('afterlayout', function () {
         if(this.loaded) return;
         if(me.volume.model.loaded == true){
+            slider = me.volume.toolPanel.queryById('histSlider'),
+            slider.setValue(0,0);
+            slider.setValue(1,128);
+            slider.setValue(2,255);
             me.histogramSvg = new histogramD3(me.histogram, me.gamma, me.svg.svg, me.controls);
             //me.setEqualized();
             me.histogramSvg.redraw();
@@ -352,7 +359,7 @@ function materialTool(volume, cls) {
 	//renderingTool.call(this, volume);
     this.label = 'brightness/density';
     this.cls = 'materialButton';
-
+    this.name = 'material';
 	this.base = renderingTool;
     this.base(volume, this.cls);
 };
@@ -380,6 +387,7 @@ materialTool.prototype.addUniforms = function(){
 
 materialTool.prototype.initControls = function(){
     var me = this;
+    this.button.tooltip = 'edit brightness/density';
     this.volume.on('loaded', function () {
         me.sliders['density'].setValue(50);
         me.sliders['brightness'].setValue(75);
@@ -388,6 +396,7 @@ materialTool.prototype.initControls = function(){
 
 function ditherTool(volume) {
 	//renderingTool.call(this, volume);
+    this.name = 'dithering';
 	this.cls = 'ditherButton';
     this.base = renderingTool;
     this.base(volume, this.cls);
@@ -403,6 +412,18 @@ ditherTool.prototype.addUniforms = function(){
 ditherTool.prototype.initControls = function(){
     var me = this;
     this.dithering = false;
+    this.button.tooltip = 'enable dithering';
+    //this.button.toggle(true);
+    //this.volume.on('loaded', function () {
+    //    me.button.toggle(true);
+    //});
+};
+
+ditherTool.prototype.loadPreferences = function(prefs){
+    if(prefs == 'true')
+        this.button.toggle(true);
+    else
+        this.button.toggle(false);
 };
 
 ditherTool.prototype.toggle = function(button){
@@ -415,6 +436,7 @@ ditherTool.prototype.toggle = function(button){
 
 function boxTool(volume, cls) {
 	//renderingTool.call(this, volume);
+    this.name = 'size';
     this.label = 'relative dimensions';
     this.cls = 'resizeButton';
 
@@ -429,26 +451,38 @@ boxTool.prototype.addUniforms = function(){
     //this.initUniforms();
 };
 
+boxTool.prototype.setScale = function(){
+    var me = this;
+    var dims = me.volume.dims;
+    me.boxSize.x = 0.5*me.rescale.x/me.max*dims.slice.x / me.boxMax;
+    me.boxSize.y = 0.5*me.rescale.y/me.max*dims.slice.y / me.boxMax;
+    me.boxSize.z = 0.5*me.rescale.z/me.max*dims.slice.z / me.boxMax;
+    this.volume.scaleCube(this.boxSize);
+};
+
 boxTool.prototype.initControls = function(){
     var me = this;
+    this.button.tooltip = 'change dimensions';
     this.boxSize = new THREE.Vector3(0.5, 0.5, 0.5);
+    this.rescale = new THREE.Vector3(0.5, 0.5, 0.5);
     var controlBtnSize = 22;
 
     this.boxX = Ext.create('Ext.form.field.Number', {
         name : 'box_x',
         fieldLabel : 'x',
-        value : 1,
+        value : 0,
         minValue : 0.1,
-        maxValue : 1,
-        step : 0.05,
+        maxValue : 10,
+        step : 0.01,
         width : 150,
+        labelWidth: 10,
         listeners : {
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
-                newValue = newValue < 0.1 ? 0.1 : newValue;
-                this.boxSize.x = 0.5 * newValue;
-                this.volume.scaleCube(this.boxSize);
+                newValue = newValue < 0.01 ? 0.01 : newValue;
+                this.rescale.x = newValue;
+                this.setScale();
             },
             scope : me
         },
@@ -457,18 +491,19 @@ boxTool.prototype.initControls = function(){
     this.boxY = Ext.create('Ext.form.field.Number', {
         name : 'box_y',
         fieldLabel : 'y',
-        value : 1,
+        value : 0,
         minValue : 0.1,
-        maxValue : 1,
-        step : 0.05,
+        maxValue : 10,
+        step : 0.01,
         width : 150,
+        labelWidth: 10,
         listeners : {
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
-                newValue = newValue < 0.1 ? 0.1 : newValue;
-                this.boxSize.y = 0.5 * newValue;
-                this.volume.scaleCube(this.boxSize);
+                newValue = newValue < 0.01 ? 0.01 : newValue;
+                this.rescale.y = newValue;
+                this.setScale();
             },
             scope : me
         },
@@ -477,26 +512,33 @@ boxTool.prototype.initControls = function(){
     this.boxZ = Ext.create('Ext.form.field.Number', {
         name : 'box_z',
         fieldLabel : 'z',
-        value : 1,
-        minValue : 0.1,
-        maxValue : 1,
-        step : 0.05,
+        value : 0,
+        minValue : 0.01,
+        maxValue : 10,
+        step : 0.01,
         width : 150,
+        labelWidth: 10,
         listeners : {
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
-                newValue = newValue < 0.1 ? 0.1 : newValue;
-                this.boxSize.z = 0.5 * newValue;
-                this.volume.scaleCube(this.boxSize);
+                newValue = newValue < 0.01 ? 0.01 : newValue;
+                this.rescale.z = newValue
+                this.setScale();
             },
             scope : me
         },
     });
+    this.min =  999;
+    this.max = -999;
+
+    this.boxMax = 1.0;
     this.controls.add([this.boxX, this.boxY, this.boxZ]);
     this.volume.on('loaded', function () {
-        me.boxSize.x = 0.5;
+
         var dims = me.volume.dims;
+
+/*
         if (dims) {
             me.boxSize.y = 0.5 * dims.pixel.x / dims.pixel.y;
             me.boxSize.z = 0.5 * dims.pixel.x / dims.pixel.z;
@@ -504,9 +546,25 @@ boxTool.prototype.initControls = function(){
             me.boxSize.y = 0.5;
             me.boxSize.z = 0.5;
         }
-        me.boxX.setValue(2.0 * me.boxSize.x);
-        me.boxY.setValue(2.0 * me.boxSize.y);
-        me.boxZ.setValue(2.0 * me.boxSize.z);
+*/
+
+        if(dims){
+
+            me.min = Math.min(dims.pixel.x, Math.min(dims.pixel.y,dims.pixel.z));
+            me.max = Math.max(dims.pixel.x, Math.max(dims.pixel.y,dims.pixel.z));
+            me.boxMax = Math.max(dims.slice.x, Math.max(dims.slice.y,dims.slice.z));
+            me.boxX.setValue(dims.pixel.x);
+            me.boxY.setValue(dims.pixel.y);
+            me.boxZ.setValue(dims.pixel.z);
+        }
+        else {
+
+            me.min = 1.0;
+            me.max = 1.0;
+            me.boxX.setValue(1.0);
+            me.boxY.setValue(1.0);
+            me.boxZ.setValue(1.0);
+        }
     });
 };
 
@@ -514,7 +572,7 @@ function phongTool(volume, cls) {
 	//renderingTool.call(this, volume);
     this.label = 'phong rendering';
     this.cls = 'phongButton';
-
+    this.name = 'phong_rendering';
 	this.base = renderingTool;
     this.base(volume, this.cls);
 };
@@ -542,7 +600,7 @@ phongTool.prototype.addUniforms = function(){
                                    type: 'f',
                                    val: 0.5,
                                    slider: true,
-                                   min: 2,
+                                   min: 1,
                                    max: 100,
                                    def: 50,
                                    K: 1.0};
@@ -553,11 +611,13 @@ phongTool.prototype.addUniforms = function(){
                                    min: 0,
                                    max: 100,
                                    def: 50,
-                                   K: 1.0};
+                                   K: 0.25};
     //this.initUniforms();
 };
 
 phongTool.prototype.initControls = function(){
+    this.button.tooltip = 'enable phong rendering';
+
     var me = this;
     this.phong = 0;
     this.controls.add();
@@ -568,12 +628,54 @@ phongTool.prototype.initControls = function(){
         me.sliders['intensity'].setValue(0);
     });
 
-    var check = {
-		boxLabel : 'sobel gradients',
-		checked : false,
-		width : 200,
+
+    var differenceHandler = function(item, checked){
+
+        if(checked){
+            me.volume.shaderConfig.gradientType = item.text;
+        }
+        me.volume.sceneVolume.setConfigurable("default",
+                                              "fragment",
+                                              me.volume.shaderConfig);
+	};
+
+    var gradMenu = Ext.create('Ext.menu.Menu', {
+        itemId: 'gradMenu',
+        style: {
+            overflow: 'visible'     // For the Combo popup
+        },
+        items: [
+            {
+                text: 'finite_difference',
+                checked: true,
+                group: 'grad',
+                tooltip : 'standard difference gradient calculation (slow)',
+                checkHandler: differenceHandler
+            }, {
+                text: 'sobel',
+                checked: false,
+                group: 'grad',
+                tooltip : 'smoothed difference gradient calculation (very slow)',
+                checkHandler: differenceHandler
+            }, {
+                text: 'directional',
+                checked: false,
+                group: 'grad',
+                tooltip : 'approximate calculation using directional gradient.  Highlights not supported. (fast)',
+                checkHandler: differenceHandler
+            },
+
+        ]
+    });
+
+    var gradButton = {
+		xtype : 'button',
+        text : 'gradient type',
+		//checked : false,
+		width : 100,
 		cls : 'toolItem',
-		xtype : 'checkbox',
+        menu : gradMenu,
+        /*
 		handler : function (item, checked) {
             if(checked){
                 me.volume.shaderConfig.gradientType = 'sobel';
@@ -584,8 +686,10 @@ phongTool.prototype.initControls = function(){
                                                     "fragment",
                                                     me.volume.shaderConfig);
 		},
+        */
 	};
-    this.controls.add(check);
+
+    this.controls.add(gradButton);
 };
 
 phongTool.prototype.toggle = function(button){
@@ -606,7 +710,7 @@ function deepTool(volume, cls) {
 	//renderingTool.call(this, volume);
     this.label = 'deep rendering';
     this.cls = 'deepButton';
-
+    this.name = 'deep_rendering';
 	this.base = renderingTool;
     this.base(volume, this.cls);
 };
@@ -639,6 +743,8 @@ deepTool.prototype.addUniforms = function(){
 };
 
 deepTool.prototype.initControls = function(){
+    this.button.tooltip = 'enable deep rendering';
+
     var me = this;
     this.state = 0;
     var sampleField = Ext.create('Ext.form.field.Number', {
@@ -683,6 +789,7 @@ deepTool.prototype.toggle = function(button){
 function lightTool(volume, cls) {
 	//renderingTool.call(this, volume);
     //this.label = 'gamma';
+    this.name = 'light_loc';
     this.cls = 'lightButton';
 
 	this.base = renderingTool;
@@ -697,6 +804,8 @@ lightTool.prototype.addUniforms = function(){
 };
 
 lightTool.prototype.initControls = function(){
+    this.button.tooltip = 'change light location';
+
     var me = this;
 
     this.sceneVolume = this.volume.sceneVolume;
@@ -811,56 +920,10 @@ lightTool.prototype.toggle = function(button){
     this.volume.rerender();
 };
 
-Ext.define('BQ.viewer.Volume.clip', {
-  extend : 'Ext.container.Container',
-  alias : 'widget.clip',
-  border : false,
-  addUniforms : function () {
-    this.sceneVolume.initUniform('CLIP_NEAR', "f", 0.0);
-    this.sceneVolume.initUniform('CLIP_FAR', "f", 3.0);
-  },
-
-  initComponent : function () {
-    this.title = 'clipping';
-    var me = this;
-    this.clipNear = 0.0;
-    this.clipFar = 3.0;
-    //console.log("slider func: ", this.mixins, this.updateSlider);
-    this.clipSlider = Ext.create('Ext.slider.Multi', {
-        renderTo : Ext.get('slider-ph'),
-        hideLabel : false,
-        fieldLabel : 'clip',
-        labelWidth : 60,
-        minValue : 0.00,
-        maxValue : 100,
-        values : [0, 100],
-        uniform_var : 'CLIP_NEAR',
-        listeners : {
-          change : function (slider, value, thumb) {
-              console.log(value/100);
-              if (thumb.index == 0) {
-                  this.sceneVolume.setUniform('CLIP_NEAR', value / 100, true, true);
-              } else {
-                  this.sceneVolume.setUniform('CLIP_FAR', value / 100, true, true);
-              }
-
-          },
-          scope : me,
-        },
-      });
-
-    this.addUniforms();
-    this.isLoaded = true;
-
-    this.items = [this.clipSlider];
-    this.callParent();
-  },
-
-  afterFirstLayout : function () {},
-});
-
 
 function clipTool(volume) {
+    this.name = 'clipping_plane';
+
     this.cls = 'clipButton';
 
 	this.base = renderingTool;
@@ -883,6 +946,7 @@ clipTool.prototype.addUniforms = function(){
 
 clipTool.prototype.initControls = function(){
     var me = this;
+    this.button.tooltip = 'change clipping plane';
 
 	var clipSlider = Ext.create('Ext.slider.Multi', {
 		//renderTo : thisDom,
@@ -942,6 +1006,51 @@ clipTool.prototype.toggle = function(button){
     this.base.prototype.toggle.call(this,button);
 
 };
+
+function saveTool(volume, cls) {
+	//renderingTool.call(this, volume);
+
+    this.name = 'save';
+
+    this.label = 'save png';
+    this.cls = 'downloadButton';
+
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+saveTool.prototype = new renderingTool();
+
+saveTool.prototype.addUniforms = function(){
+};
+
+saveTool.prototype.initControls = function(){
+    var me = this;
+    this.button.tooltip = 'save png';
+    var controlBtnSize = 22;
+
+    var button = Ext.create('Ext.Button', {
+        text : 'save png',
+        cls : 'volume-button',
+        handler : function (button, pressed) {
+            this.volume.canvas3D.savePng();
+        },
+        scope : me,
+    });
+    this.min = 1.0;
+    this.controls.add([button]);
+    this.volume.on('loaded', function () {
+
+    });
+};
+/*
+saveTool.prototype.toggle = function(button){
+
+    //if(button.pressed)
+    this.base.prototype.toggle.call(this,button);
+
+};
+*/
 
 //////////////////////////////////////////////////////////////////
 //
