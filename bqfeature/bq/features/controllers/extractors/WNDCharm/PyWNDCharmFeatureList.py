@@ -95,22 +95,22 @@ feature_list["Gabor_Textures"] = [extractGaborTextures,"Empty Transform","Empty 
 
 #Haralick Textures
 #disable
-feature_list["Haralick_Textures"] = [extractHaralickTextures,"Empty Transform","Empty Transform",28,False,False,'good'] #double free or seg fault for multithread
-feature_list["Haralick_Textures_Chebyshev"] = [extractHaralickTextures,"chebyshev","Empty Transform",28,False,False,'good'] 
-feature_list["Haralick_Textures_Fourier_Chebyshev"] = [extractHaralickTextures,"fourier","chebyshev",28,False,False,'good'] 
-feature_list["Haralick_Textures_Hue_Chebyshev"] = [extractHaralickTextures,"Hue Transform","chebyshev",28,True,False,'good'] 
-feature_list["Haralick_Textures_Wavelet_Chebyshev"] = [extractHaralickTextures,"wavelet","chebyshev",28,False,False,'good'] 
-feature_list["Haralick_Textures_Color"] = [extractHaralickTextures,"wndchrmcolor","Empty Transform",28,True,False,'good'] 
-feature_list["Haralick_Textures_Edge"] = [extractHaralickTextures,"edge","Empty Transform",28,False,False,'good'] 
-feature_list["Haralick_Textures_Fourier"] = [extractHaralickTextures,"fourier","Empty Transform",28,False,False,'good'] 
-feature_list["Haralick_Textures_Chebyshev_Fourier"] = [extractHaralickTextures,"chebyshev","fourier",28,False,False,'good'] 
-feature_list["Haralick_Textures_Edge_Fourier"] = [extractHaralickTextures,"edge","fourier",28,False,False,'good'] 
-feature_list["Haralick_Textures_Hue_Fourier"] = [extractHaralickTextures,"Hue Transform","fourier",28,True,False,'good'] 
-feature_list["Haralick_Textures_Wavelet_Fourier"] = [extractHaralickTextures,"wavelet","fourier",28,False,False,'good'] 
-feature_list["Haralick_Textures_Hue"] = [extractHaralickTextures,"Hue Transform","Empty Transform",28,True,False,'good'] 
-feature_list["Haralick_Textures_Wavelet"] = [extractHaralickTextures,"wavelet","Empty Transform",28,False,False,'good'] 
-feature_list["Haralick_Textures_Edge_Wavelet"] = [extractHaralickTextures,"edge","wavelet",28,False,False,'good'] 
-feature_list["Haralick_Textures_Fourier_Wavelet"] = [extractHaralickTextures,"fourier","wavelet",28,False,False,'good'] 
+#feature_list["Haralick_Textures"] = [extractHaralickTextures,"Empty Transform","Empty Transform",28,False,False,'good'] #double free or seg fault for multithread
+#feature_list["Haralick_Textures_Chebyshev"] = [extractHaralickTextures,"chebyshev","Empty Transform",28,False,False,'good'] 
+#feature_list["Haralick_Textures_Fourier_Chebyshev"] = [extractHaralickTextures,"fourier","chebyshev",28,False,False,'good'] 
+#feature_list["Haralick_Textures_Hue_Chebyshev"] = [extractHaralickTextures,"Hue Transform","chebyshev",28,True,False,'good'] 
+#feature_list["Haralick_Textures_Wavelet_Chebyshev"] = [extractHaralickTextures,"wavelet","chebyshev",28,False,False,'good'] 
+#feature_list["Haralick_Textures_Color"] = [extractHaralickTextures,"wndchrmcolor","Empty Transform",28,True,False,'good'] 
+#feature_list["Haralick_Textures_Edge"] = [extractHaralickTextures,"edge","Empty Transform",28,False,False,'good'] 
+#feature_list["Haralick_Textures_Fourier"] = [extractHaralickTextures,"fourier","Empty Transform",28,False,False,'good'] 
+#feature_list["Haralick_Textures_Chebyshev_Fourier"] = [extractHaralickTextures,"chebyshev","fourier",28,False,False,'good'] 
+#feature_list["Haralick_Textures_Edge_Fourier"] = [extractHaralickTextures,"edge","fourier",28,False,False,'good'] 
+#feature_list["Haralick_Textures_Hue_Fourier"] = [extractHaralickTextures,"Hue Transform","fourier",28,True,False,'good'] 
+#feature_list["Haralick_Textures_Wavelet_Fourier"] = [extractHaralickTextures,"wavelet","fourier",28,False,False,'good'] 
+#feature_list["Haralick_Textures_Hue"] = [extractHaralickTextures,"Hue Transform","Empty Transform",28,True,False,'good'] 
+#feature_list["Haralick_Textures_Wavelet"] = [extractHaralickTextures,"wavelet","Empty Transform",28,False,False,'good'] 
+#feature_list["Haralick_Textures_Edge_Wavelet"] = [extractHaralickTextures,"edge","wavelet",28,False,False,'good'] 
+#feature_list["Haralick_Textures_Fourier_Wavelet"] = [extractHaralickTextures,"fourier","wavelet",28,False,False,'good'] 
 
 #Multiscale Historgram
 feature_list["Multiscale_Historgram"] = [extractMultiscaleHistograms,"Empty Transform","Empty Transform",24,False,False,'good']
@@ -133,10 +133,10 @@ feature_list["Multiscale_Historgram_Fourier_Wavelet"] = [extractMultiscaleHistog
 # Giving removing from the feature set until fixed
 # WindowsError: exception: access violation reading 0x0000000415AE314C
 #Object Feature
-#feature_list["Object_Feature"] = [extractObjectFeatures,"Empty Transform","Empty Transform",34,False,False,'fair'] #failed one multi-threaded test
+feature_list["Object_Feature"] = [extractObjectFeatures,"Empty Transform","Empty Transform",34,False,False,'fair'] #failed one multi-threaded test
 
 #Inverse Object Feature
-#feature_list["Inverse_Object_Features"] = [extractInverseObjectFeatures,"Empty Transform","Empty Transform",34,False,False,'fair'] #failed one multi-threaded test
+feature_list["Inverse_Object_Features"] = [extractInverseObjectFeatures,"Empty Transform","Empty Transform",34,False,False,'fair'] #failed one multi-threaded test
 
 #Pixel Intensity Statistics
 #mean median std min max

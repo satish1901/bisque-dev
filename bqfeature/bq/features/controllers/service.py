@@ -64,7 +64,7 @@ class Feature_Archive(dict):
             try:
                 extractor = importlib.import_module('bq.features.controllers.extractors.' + module + '.extractor')  # the module needs to have a file named
                 for n, item in inspect.getmembers(extractor):  # extractor.py to import correctly
-                    if inspect.isclass(item) and issubclass(item, BaseFeature):
+                    if inspect.isclass(item) and issubclass(item, BaseFeature) and item.disabled==False:
                         log.debug('Imported Feature: %s' % item.name)
                         item.library = module #for the list of features
                         self[item.name] = item
@@ -196,8 +196,8 @@ class ResourceList(object):
         query_plan = QueryPlan(feature)
         for hash in self.resource_list:
             query_plan.push(hash)
-        return query_plan  
-
+        return query_plan
+            
     def __getitem__(self, index):
         """get with index, the list is always ordered """
         resource_hash = sorted(self.resource_list.keys())[index]
@@ -254,7 +254,7 @@ def parse_request(feature_name, format_name='xml', method='GET', **kw):
         if not request.body:
             raise FeatureServiceError(400, 'Document Error: No body attached to the POST')
         try:
-            log.debug('body : %s'% request.body)
+            #log.debug('body : %s'% request.body)
             body = etree.fromstring(request.body)
         except etree.XMLSyntaxError:
             raise FeatureServiceError(400, 'Document Error: document was not formatted correctly')
@@ -266,8 +266,8 @@ def parse_request(feature_name, format_name='xml', method='GET', **kw):
             o = urlparse.urlparse(uri)
             path = o.path
             query = urlparse.parse_qs(o.query)
-            resource = FeatureResource(image=clean_url(query.get('image','')), 
-                                       mask=clean_url(query.get('mask','')), 
+            resource = FeatureResource(image=clean_url(query.get('image','')),
+                                       mask=clean_url(query.get('mask','')),
                                        gobject=clean_url(query.get('gobject','')))
             if tuple(resource) != ('', '', ''): #skip nodes with nothing in them
                 log.debug('Resource: %s'%str(resource))
@@ -685,7 +685,8 @@ class Csv(Format):
         resource_names = ['image','mask','gobject']#self.feature.resource
         # creates a title row and writes it to the document
         yield str("%s%s"%(",".join(['index', 'feature type'] + resource_names + ['feature'] + self.feature.parameter + ['error']),os.linesep))
-        yield self._construct_from_cache(table, resource_list, self.feature)
+        for r in self._construct_from_cache(table, resource_list, self.feature):
+            yield r
 
     def return_from_workdir(self, table, resource_list):
         """
@@ -701,7 +702,8 @@ class Csv(Format):
         resource_names = ['image','mask','gobject']
         # creates a title row and writes it to the document
         yield str("%s%s"%(",".join(['index', 'feature type'] + resource_names + ['feature'] + self.feature.parameter + ['error']),os.linesep))
-        yield self._construct_from_workdir(table, resource_list, self.feature)
+        for r in self._construct_from_workdir(table, resource_list, self.feature):
+            yield r
 
 
 #-------------------------------------------------------------
@@ -748,7 +750,7 @@ class Hdf(Format):
             @param: error -  a FeatureExtractionError object returning
             info about the resource and the exception that occured
 
-            @yield: feature rows and a status rows to be place into hdf5 table
+            @return: feature rows and a status rows to be place into hdf5 table
         """
         return WorkDirRows(feature).construct_error_row(feature, error)
     

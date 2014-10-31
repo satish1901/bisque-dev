@@ -11,8 +11,6 @@ from .var import FEATURES_TABLES_FILE_DIR
 log = logging.getLogger("bq.features.Feature")
 
 
-
-
 ###############################################################
 # Feature Object
 ###############################################################
@@ -68,7 +66,7 @@ class BaseFeature(object):
     type = []
     
     #will turn off the feature in the feature service if set to true
-    #disabled = False
+    disabled = False
     
     #Confidence stands for the amount of a features correctness based on the unittest comparison.
     #good - feature compares exactly with the linux and windows binaries
