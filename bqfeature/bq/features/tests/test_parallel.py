@@ -1,10 +1,8 @@
 """
-    test_features.py
+    test_parallel.py
 
     Checks all the feature inputs and vectors output
     - features
-    - features with gobject
-    - features with masks
     
     Only tests against the bisque features with hdf
     response.
@@ -25,16 +23,20 @@ NS = TestNameSpace()
 def setUp():
     """ Setup feature requests test """
     utils.setup_parallel_feature_test(NS)
+    utils.setup_parallel_image_upload(NS)
 
 def tearDown():
     """ Teardown feature requests test """
     utils.tear_down_parallel_feature_test(NS)
+    utils.teardown_parallel_image_remove(NS)
 
 def setup_image_upload():
-    utils.setup_parallel_image_upload(NS)
+    pass
+    #utils.setup_parallel_image_upload(NS)
     
 def teardown_image_remove():
-    utils.teardown_parallel_image_remove(NS)
+    pass
+    #utils.teardown_parallel_image_remove(NS)
     
 
 ##################################
@@ -271,25 +273,25 @@ def test_Multiscale_Historgram():
 
 # Giving removing from the feature set
 # WindowsError: exception: access violation reading 0x0000000415AE314C
-#@attr('WNDCharm')
-#@with_setup(setup_image_upload, teardown_image_remove)
-#def test_Object_Feature():
-#    """
-#        Test Object Feature
-#    """
-#    name = 'Object_Feature'
-#    test_name = 'test_Object_Feature'
-#    check_feature(NS, test_name, name, NS.image_uri)
-#
-#@attr('WNDCharm')
-#@with_setup(setup_image_upload, teardown_image_remove)
-#def test_Inverse_Object_Features():
-#    """
-#        Test Inverse Object Features
-#    """
-#    name = 'Inverse_Object_Features'
-#    test_name = 'test_Inverse_Object_Features'
-#    check_feature(NS, test_name, name, NS.image_uri)
+@attr('WNDCharm')
+@with_setup(setup_image_upload, teardown_image_remove)
+def test_Object_Feature():
+    """
+        Test Object Feature
+    """
+    name = 'Object_Feature'
+    test_name = 'test_Object_Feature'
+    check_feature(NS, test_name, name, NS.image_uri)
+
+@attr('WNDCharm')
+@with_setup(setup_image_upload, teardown_image_remove)
+def test_Inverse_Object_Features():
+    """
+        Test Inverse Object Features
+    """
+    name = 'Inverse_Object_Features'
+    test_name = 'test_Inverse_Object_Features'
+    check_feature(NS, test_name, name, NS.image_uri)
 
 @attr('WNDCharm')
 @with_setup(setup_image_upload, teardown_image_remove)

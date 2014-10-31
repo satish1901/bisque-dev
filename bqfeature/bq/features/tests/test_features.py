@@ -27,16 +27,20 @@ NS = TestNameSpace()
 def setUp():
     """ Setup feature requests test """
     utils.setup_simple_feature_test(NS)
+    utils.setup_image_upload(NS)
 
 def tearDown():
     """ Teardown feature requests test """
     utils.tear_down_simple_feature_test(NS)
+    utils.teardown_image_remove(NS)
 
 def setup_image_upload():
-    utils.setup_image_upload(NS)
+    pass
+    #utils.setup_image_upload(NS)
     
 def teardown_image_remove():
-    utils.teardown_image_remove(NS)
+    pass
+    #utils.teardown_image_remove(NS)
     
 def setup_mask_upload():
     utils.setup_mask_upload(NS)

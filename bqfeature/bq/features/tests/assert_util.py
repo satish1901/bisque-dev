@@ -11,6 +11,14 @@ from bqapi.comm import BQCommError
 from utils import image_tiles
 
 
+class ParallelFeaturewithException(ParallelFeature):
+    def errorcb(self, e):
+        """
+            Returns an error log
+        """
+        self.exception = e
+            
+
 def check_response(session, request, response_code, xml=None, method='GET'):
     """
     """
@@ -109,12 +117,15 @@ def parallel_check_feature(ns, test, feature_name, image):
     resource_list = []
     for url in image_tiles(ns.session, image, tile_size=64):
         resource_list.append(FeatureResource(image=url))
-    bqfeatures = ParallelFeature()
+                
+    bqfeatures = ParallelFeaturewithException()
     bqfeatures.set_thread_num(ns.threads)
-    bqfeatures.set_chunk_size(30)
+    bqfeatures.set_chunk_size(50)
     
     try:
         bqfeatures.fetch(ns.session, feature_name, resource_list, temp_response_path)
+        if hasattr(bqfeatures, 'exception'):
+            raise bqfeatures.exception
     except BQCommError as e:
         assert(e.status == 200)
     else:
