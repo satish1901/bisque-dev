@@ -12,7 +12,7 @@ classdef Feature < handle
 
         % resource_list  - Cell Array 
         % structure:
-        %       {{'resource type1','resource url1';'resource type2','resource url2'...};...}}
+        %       {{'resource type1','resource url1';'resource type2','resource url2'...};...}
         % name           - string
         % user           - optional: string
         % password       - optional: string
@@ -33,6 +33,8 @@ classdef Feature < handle
             if ~exist('user', 'var') || isempty(user) || ~exist('password', 'var') || isempty(password),
                 error('bq.Feature.fetch:UserCredentialsInvalid', 'Feature request requires user name and password');
             end
+
+            source_url = [root_url '/features/' name '/hdf'];
             
             %create feature request body
             body = bq.Factory.new('resource');
@@ -40,12 +42,13 @@ classdef Feature < handle
                 f = body.doc.createElement('feature');
                 body.element.appendChild(f); 
                 resource = resource_list{i};
+                feature_element = bq.Url(source_url);
                 for j = 1:size(resource,1)
-                    f.setAttribute(resource{j,1},resource{j,2})
+                    feature_element.pushQuery(resource{j,1}, resource{j,2})
                 end
+                f.setAttribute('uri',feature_element.toString()) 
             end
 
-            source_url = [root_url '/features/' name '/hdf'];
             supargs{1} = 'POST';
             supargs{2} = source_url;
             

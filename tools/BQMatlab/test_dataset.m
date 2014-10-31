@@ -31,9 +31,7 @@ dataset.save([url '/data_service/dataset'], user, pass);
 %% rename some tags within the dataset
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-url = 'http://128.111.185.26:8080/data_service/dataset/635?view=deep';
-user = 'admin';
-pass = 'admin';
+url = 'http://host/data_service/dataset/635?view=deep';
 dataset = bq.Factory.fetch(url, [], user, pass);
 images = dataset.getValues('object');
 
