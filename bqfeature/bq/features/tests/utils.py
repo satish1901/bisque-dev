@@ -193,6 +193,7 @@ def setup_simple_feature_test(ns):
     
     #set to namespace
     ns.root = root 
+    ns.store_location = store_location
     ns.session = session
     ns.results_location = results_location
     ns.store_local_location = store_local_location
@@ -230,7 +231,10 @@ def setup_parallel_feature_test(ns):
     
     if test_image is None: raise NameError('Requre an image to run test properly')
     
+    test_image_location = fetch_file(test_image, ns.store_location, ns.store_local_location)
+    
     ns.threads = int(threads)
+    ns.test_image_location = test_image_location
     ns.test_image = test_image
     ns.feature_response_results = feature_response_results
     ns.feature_past_response_results = feature_past_response_results
