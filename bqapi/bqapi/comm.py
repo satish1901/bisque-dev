@@ -497,6 +497,11 @@ class BQSession(object):
         except etree.XMLSyntaxError:
             return r
 
+    def deletexml(self, url):
+        "Delete a resource"
+        r = self.c.webreq (method='delete', url=url)
+        return r
+
 
     def fetchblob(self, url, path=None, **param):
         """
@@ -738,7 +743,7 @@ class BQSession(object):
         "Delete an object and all children"
         url = bqo.uri or url
         if url is not None:
-            r = self.webreq (method='delete', url=url)
+            return self.deletexml(url)
 
 
     def save(self, bqo, url=None, **kw):
