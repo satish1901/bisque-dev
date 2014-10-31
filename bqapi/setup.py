@@ -24,6 +24,7 @@ setup(name='bqapi',
       extras_require = {
         'lxml' : [ 'lxml'],
         'CAS'  : ['BeautifulSoup4' ],
+        'bqfeature' : ['tables'],
         },
 
       zip_safe= True,
