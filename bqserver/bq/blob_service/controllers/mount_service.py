@@ -484,6 +484,9 @@ class MountServer(TGController):
         else:
             storeurls = [x.text for x in resource.xpath('value')]
 
+        if len(storeurls) < 1:
+            log.warn ("No value in resource trying name")
+
         for store_name, store in stores.items():
             prefix = store.get ('value')
             log.debug ("checking %s and %s" ,  prefix, storeurls[0])
@@ -782,6 +785,7 @@ class MountServer(TGController):
         @param resource_name: options name of resource
         """
 
+        path = list (path)
         root = None
         log.debug ("CREATE_PATH %s %s", store, path)
         if isinstance(store, basestring):
@@ -824,7 +828,7 @@ class MountServer(TGController):
                 resource.set ('value', resource_uniq)
             # create the new resource
             log.debug ("New resource %s at %s " , etree.tostring(root), (parent is not None) and parent.get ('uri'))
-            q = data_service.new_resource(resource=root, parent=parent)
+            q = data_service.new_resource(resource=root, parent=parent, flush=False)
         return q
 
 
@@ -849,7 +853,9 @@ class MountServer(TGController):
         for x in range(1, repeats+1):
             try:
                 with optional_cm(subtrans):
-                    return self._insert_mount_path (store, mount_path, resource, **kw)
+                    value =  self._insert_mount_path (store, mount_path, resource, **kw)
+                log.debug ("Inserted path %s", mount_path)
+                return value
             except IntegrityError:
                 log.exception ('Integrity Error caught on attempt %s.. retrying %s', x, mount_path)
 

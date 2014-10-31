@@ -8,7 +8,7 @@ import pkg_resources
 from tempfile import NamedTemporaryFile
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from tg import expose, flash, controllers
-from repoze.what import predicates 
+from repoze.what import predicates
 
 from bq.core.service import ServiceMixin
 from bq.core.service import ServiceController
@@ -39,7 +39,7 @@ def image_ingest (blob):
     #    f.write(block)
     #f.close()
     #fname = f.name
-    
+
     log.debug ('NAME = %s' % fname)
     #info = image_service.new_image(src=open(fname,'rb'), name=original_name)
     info = image_service.uri(blob_uri).info().get()
@@ -47,7 +47,7 @@ def image_ingest (blob):
         image=None
         raise IngestException(_('unable to create image file'))
     log.debug ('imageservice=%s' % info)
-    image = data_service.new_image (**info)
+    #image = data_service.new_image (**info)
     tags = etree.Element('request')
     etree.SubElement(tags, 'tag', name="filename", value=original_name)
     data_service.append_resource(image, tree=tags)
@@ -101,10 +101,10 @@ class ingestController(controllers.RestController, ServiceMixin):
             except Exception:
                 log.exception("Unknown exception during ingest")
             skipped.append(blob)
-        return 
-            
+        return
 
-    
+
+
 
 def initialize(uri):
     """ Initialize the top level server for this microapp"""
