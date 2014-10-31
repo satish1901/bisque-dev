@@ -216,6 +216,7 @@ class image_serviceController(ServiceController):
             tag.attrib['description'] = d
         return etree.tostring(response)
 
+    # deprecated, to be removed in future versions
     @expose()
     def services(self, **kw):
         return self.operations(**kw)
