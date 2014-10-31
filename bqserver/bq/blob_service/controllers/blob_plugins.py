@@ -91,6 +91,7 @@ class ResourcePlugin (object):
     version = '1.0'
     ext = ''
     resource_type = 'resource'
+    mime_type = 'application/octet-stream'
     
     def __init__(self):
         pass
@@ -104,6 +105,11 @@ class ResourcePlugin (object):
     def guess_type(self, filename):
         if self.is_supported(filename):
             return self.resource_type
+        return None
+
+    def guess_mime(self, filename):
+        if self.is_supported(filename):
+            return self.mime_type
         return None
     
     def to_xml(self, filename):
@@ -147,3 +153,9 @@ class ResourcePluginManager(object):
                 return rt
         return None
 
+    def guess_mime(self, filename):
+        for p in self.plugins:
+            rt = p.guess_mime(filename)
+            if rt is not None:
+                return rt
+        return None

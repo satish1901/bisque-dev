@@ -295,6 +295,16 @@ class BlobServer(RestController, ServiceMixin):
             return 'image'
         return self.plugin_manager.guess_type(filename) or 'file'
 
+    def guess_mime(self, filename):
+        from bq import image_service
+        filename = filename.strip()
+        if image_service.is_image_type (filename):
+            try:
+                return 'image/%s'%os.path.splitext(filename.strip())[1][1:].lower()
+            except Exception:
+                pass
+        return self.plugin_manager.guess_mime(filename) or 'application/octet-stream'
+
 
 #################################
 # service  functions
@@ -341,12 +351,18 @@ class BlobServer(RestController, ServiceMixin):
                 tg.response.headers['Content-Type']  = 'text/xml'
                 resource = etree.Element ('resource', name=filename, value=localpath)
                 return etree.tostring (resource)
+            
+            disposition = '' if 'noattach' in kw else 'attachment; '
             try:
-                disposition = 'attachment; filename="%s"'%filename.encode('ascii')
+                disposition = '%sfilename="%s"'%(disposition, filename.encode('ascii'))
             except UnicodeEncodeError:
-                disposition = 'attachment; filename="%s"; filename*="%s"'%(filename.encode('utf8'), filename.encode('utf8'))
+                disposition = '%sfilename="%s"; filename*="%s"'%(disposition, filename.encode('utf8'), filename.encode('utf8'))
 
-            return forward(BQFileApp(localpath, content_disposition=disposition).cache_control (max_age=60*60*24*7*6)) # 6 weeks
+            content_type = self.guess_mime(filename)
+            return forward(BQFileApp(localpath, 
+                                     content_type=content_type,
+                                     content_disposition=disposition,
+                                     ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
         except IllegalOperation:
             abort(404)
 
