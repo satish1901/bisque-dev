@@ -6,14 +6,16 @@ from nose import with_setup
 import os
 from bq.util.mkdir import _mkdir
 from util import fetch_file
-from lxml import etree
 import ConfigParser
 from bqapi.comm import BQCommError
 from bqapi.util import *
 import numpy as np
 import urllib
 from datetime import datetime
-
+try:
+    from lxml import etree
+except ImportError:
+    import xml.etree.ElementTree as etree
 
 TEST_PATH = 'tests_%s'%urllib.quote(datetime.now().strftime('%Y%m%d%H%M%S%f'))  #set a test dir on the system so not too many repeats occur
 

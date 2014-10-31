@@ -41,7 +41,7 @@ def setUp():
     global store_local_location
     global file1_location
     global filename1
-    
+
     config = ConfigParser.ConfigParser()
     config.read('setup.cfg')
     root = config.get('Host', 'root') or 'localhost:8080'
@@ -49,13 +49,13 @@ def setUp():
     pwd = config.get('Host', 'password') or 'test'
     results_location = config.get('Store', 'results_location') or 'Results'
     _mkdir(results_location)
-    
+
     store_location = config.get('Store', 'location') or None
     if store_location is None: raise NameError('Requre a store location to run test properly')
-    
+
     store_local_location = config.get('Store', 'local_location') or 'SampleData'
-    
-    
+
+
     filename1 = config.get('Store','filename1') or None
     if filename1 is None: raise NameError('Requre an image to run test properly')
     file1_location = fetch_file(filename1, store_location, store_local_location)
@@ -107,15 +107,15 @@ def test_open_session():
     """
     bqsession = BQSession().init_local(user, pwd, bisque_root=root, create_mex=False)
     bqsession.close()
-    
-    
+
+
 def test_initalize_mex_locally():
     """
         Test initalizing a mex locally
     """
     bqsession = BQSession().init_local(user, pwd, bisque_root=root)
     bqsession.close()
-    
+
 
 def test_initalize_session_From_mex():
     """
@@ -127,11 +127,11 @@ def test_initalize_session_From_mex():
     bqmex = BQSession().init_mex(mex_url, token, user, bisque_root=root)
     bqmex.close()
     bqsession.close()
-    
-    
+
+
 def test_fetchxml_1():
     """
-        Test fetch xml 
+        Test fetch xml
     """
     bqsession = BQSession().init_local(user, pwd, bisque_root=root)
     response_xml = bqsession.fetchxml(root+'/data_service/'+user) #fetches the user
@@ -148,11 +148,11 @@ def test_fetchxml_2():
     bqsession = BQSession().init_local(user, pwd, bisque_root=root)
     path = bqsession.fetchxml(root+'/data_service/'+user, path=path) #fetches the user
     bqsession.close()
-    
+
     try:
         with open(path,'r') as f:
             etree.XML(f.read()) #check if xml was returned
-            
+
     except etree.Error:
         assert False %'Did not return XML!'
 
@@ -161,7 +161,7 @@ def test_postxml_1():
     """
         Test post xml
     """
-    
+
     test_document ="""
     <file name="test_document">
         <tag name="my_tag" value="test"/>
@@ -172,13 +172,13 @@ def test_postxml_1():
     bqsession.close()
     if not isinstance(response_xml, etree._Element):
         assert False %'Did not return XML!'
-        
-        
+
+
 def test_postxml_2():
     """
         Test post xml and save the document to disk
     """
-    
+
     test_document ="""
     <file name="test_document">
         <tag name="my_tag" value="test"/>
@@ -186,22 +186,46 @@ def test_postxml_2():
     """
     filename = 'postxml_test_2.xml'
     path = os.path.join(results_location,filename)
-    
+
     bqsession = BQSession().init_local(user, pwd, bisque_root=root)
     path = bqsession.postxml(root+'/data_service/file', test_document, path=path)
     bqsession.close()
-    
+
     try:
         with open(path,'r') as f:
             etree.XML(f.read()) #check if xml was returned
-            
+
     except etree.Error:
         assert False %'Did not return XML!'
 
 
+def test_postxml_3():
+    """
+        Test post xml and read immediately
+    """
+
+    test_document ="""
+    <file name="test_document">
+        <tag name="my_tag" value="test"/>
+    </file>
+    """
+    bqsession = BQSession().init_local(user, pwd, bisque_root=root)
+    response0_xml = bqsession.postxml(root+'/data_service/file', xml=test_document)
+    uri0 = response0_xml.get ('uri')
+    response1_xml = bqsession.fetchxml(uri0)
+    uri1 = response0_xml.get ('uri')
+    bqsession.deletexml (url = uri0)
+    bqsession.close()
+    if not isinstance(response0_xml, etree._Element):
+        assert False %'Did not return XML!'
+    nose.tools.eq_(uri0, uri1)
+
+
+
+
 def test_fetchblob_1():
     """
-        
+
     """
     pass
 
@@ -211,7 +235,7 @@ def test_postblob_1():
         Test post blob
     """
     bqsession = BQSession().init_local(user, pwd, bisque_root=root)
-    resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))        
+    resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))
     content = bqsession.postblob(file1_location, xml=resource)
     bqsession.close()
 
@@ -223,48 +247,48 @@ def test_postblob_2():
     filename = 'postblob_test_2.xml'
     path = os.path.join(results_location,filename)
     bqsession = BQSession().init_local(user, pwd, bisque_root=root)
-    resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))        
+    resource = etree.Element ('resource', name=u'%s/%s'%(TEST_PATH, filename1))
     path = bqsession.postblob(file1_location, xml=resource, path=path)
     bqsession.close()
-    
+
     try:
         with open(path,'r') as f:
             etree.XML(f.read()) #check if xml was returned
-            
+
     except etree.Error:
         assert False %'Did not return XML!'
-    
+
 def test_postblob_3():
     """
         Test post blob with xml attached
     """
-    
+
     test_document = """
     <image name="%s">
         <tag name="my_tag" value="test"/>
     </image>
-    """%u'%s/%s'%(TEST_PATH, filename1)      
+    """%u'%s/%s'%(TEST_PATH, filename1)
     bqsession = BQSession().init_local(user, pwd, bisque_root=root)
     content = bqsession.postblob(file1_location, xml=test_document)
     bqsession.close()
-    
+
 
 def test_run_mex():
     """
-        Test run mex 
+        Test run mex
     """
     bqsession = BQSession().init_local(user, pwd, bisque_root=root)
     mex_uri = bqsession.mex.uri
     bqsession.update_mex(status="IN PROGRESS", tags = [], gobjects = [], children=[], reload=False)
     response_xml = bqsession.fetchxml(mex_uri) #check xml
-    
+
     bqsession.finish_mex()
     response_xml = bqsession.fetchxml(mex_uri) #check xml
-    
+
     bqsession.close()
-    
-
-    
 
 
-        
+
+
+
+

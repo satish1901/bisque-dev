@@ -128,6 +128,7 @@ def _create_default_mounts(drivers, root=None):
                 storeorder.set ('value', ','.join (drivers.keys()))
             else:
                 store = user_stores[store_name]
+
             if store.get ('value') is None:
                 mounturl = driver.get ('mounturl')
                 mounturl = string.Template(mounturl).safe_substitute(datadir = data_url_path(), user = user_name)
@@ -156,3 +157,52 @@ def fill_stores(username = None):
 
     raise NotImplementedError ("fill stores not yet implemented")
 
+
+def update_stores(username = None):
+    """ Update stores to use current datadir specifications """
+    if username is not None:
+        users = [ username ]
+    else:
+        users  = [ x.get ('name') for x in data_service.query('user', wpublic=1) ]
+
+    drivers = load_default_drivers()
+    for user in users:
+        with identity.as_user(user):
+            _update_mounts(drivers)
+
+def _update_mounts(drivers):
+    update = False
+    user_name  = identity.current.user_name
+    user_root = data_service.query('store', resource_unid='(root)', view='full')
+    if len(user_root) == 0:
+        log.warn ("No store found")
+    elif len(user_root) == 1:
+        user_root =  user_root[0]
+    elif len(root) > 1:
+        log.error("Root store created more than once: %s please check DB", etree.tostring(root))
+        return None
+
+    user_stores = dict ((x.get ('name'), x)  for x in user_root.xpath('store'))
+    for store_name, driver in drivers.items():
+        if store_name not in user_stores:
+            log.warn("Need to create new store : %s", store_name)
+            continue
+        store = user_stores[store_name]
+
+        mounturl = driver.get ('mounturl')
+        mounturl = string.Template(mounturl).safe_substitute(datadir = data_url_path(), user = user_name)
+        # ensure no $ are left
+        mounturl = mounturl.split('$', 1)[0]
+
+        store_value =  store.get ('value')
+
+        print "examining store %s with %s" % (store_name, store_value)
+
+
+        if store_value is None or store_value != mounturl:
+            print "Updating store with value %s to %s" % (store_value, mounturl)
+            store.set ('value', mounturl)
+            update = True
+
+    if update:
+        return data_service.update(user_root, new_resource=user_root, replace=False, view='full')
