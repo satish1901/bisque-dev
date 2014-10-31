@@ -78,7 +78,7 @@ from .runtime_adapter import RuntimeAdapter
 log = logging.getLogger('bq.engine_service')
 
 MODULE_PATH = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
-POOL_SIZE   = config.get('bisque.engine_service.poolsize', 4)
+POOL_SIZE   = int(config.get('bisque.engine_service.poolsize', 4))
 
 engine_root = '/'.join ([config.get('bisque.server','') , 'engine_service'])
 
