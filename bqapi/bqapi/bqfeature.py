@@ -1,10 +1,9 @@
-from lxml import etree
+
 from threading import Thread
 import threading
 import socket
 import errno
 import tempfile
-import tables
 import os
 from math import ceil
 import Queue
@@ -13,8 +12,21 @@ import numpy as np
 import logging
 from collections import namedtuple
 
+try: #checks for lxml if not found uses python xml
+    from lxml import etree
+except ImportError:
+    from xml.etree import ElementTree as etree
+
 log = logging.getLogger('bqapi.bqfeature')
 
+#requires pytables to run this portion of the api
+try:
+    import tables
+except ImportError:
+     warnings.warn("Pytables was not found! bqfeatures requires pytables!")
+
+#max requests attemps if the connection is drop when making parallel requests
+MAX_ATTEMPTS = 5
 
 FeatureResource = namedtuple('FeatureResource',['image','mask','gobject'])
 FeatureResource.__new__.__defaults__ = (None, None, None)
@@ -35,7 +47,9 @@ class Feature(object):
             @param: resource_list - list of the resources to extract. format:
             [(image_url, mask_url, gobject_url),...] if a parameter is
             not required just provided None
-
+            @param: path - the location were the hdf5 file is stored. If None is set the file will be placed in a tempfile and the pytables
+            file handle will be returned. (default: None)
+            
             @return: returns either a pytables file handle or the file name when the path is provided
         """
         url = '%s/features/%s/hdf'%(session.bisque_root,name)
@@ -52,15 +66,14 @@ class Feature(object):
 
         log.debug('Fetch Feature %s for %s resources'%(name, len(resource_list)))
 
-        if path:
-            log.debug('Returning feature response to %s' % path)
-            return session.c.push(url, content=etree.tostring(resource), headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
-        else:
-            f = tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir())
+        if path is None:
+            f = tempfile.NamedTemporaryFile(suffix='.h5', dir=tempfile.gettempdir(), delete=False)
             f.close()
-            log.debug('Returning feature response to %s' % f.name)
-            path = session.c.push(url, content=etree.tostring(resource), headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=f.name)
-            return tables.open_file(path, 'r')
+            session.c.push(url, content=etree.tostring(resource), headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=f.name)
+            return tables.open_file(f.name,'r')
+        log.debug('Returning feature response to %s' % path)
+        return session.c.push(url, content=etree.tostring(resource), headers={'Content-Type':'text/xml', 'Accept':'application/x-bag'}, path=path)
+
 
 
     def fetch_vector(self, session, name, resource_list):
@@ -107,7 +120,7 @@ class Feature(object):
             @return: feature length
         """
         xml = session.fetchxml('/features/%s'%name)
-        return int(xml.xpath('feature/tag[@name="feature_length"]/@value')[0])
+        return int(xml.find('feature/tag[@name="feature_length"]').attrib.get('value'))
 
 class ParallelFeature(Feature):
 
@@ -133,6 +146,7 @@ class ParallelFeature(Feature):
             if errorcb is not None:
                 self.errorcb = errorcb
             else:
+                
                 def error_callback(e):
                     """
                         Default callback function
@@ -140,6 +154,7 @@ class ParallelFeature(Feature):
                         @param: e - BQCommError object
                     """
                     pass
+                
                 self.errorcb = error_callback
             super(ParallelFeature.BQRequestThread, self).__init__()
 
@@ -196,6 +211,7 @@ class ParallelFeature(Feature):
         """
         self.chunk_size = n
 
+
     def calculate_request_plan(self, l):
         """
             Tries to figure out the best configuration
@@ -226,6 +242,7 @@ class ParallelFeature(Feature):
         for i in xrange(0, len(l), chunk_size):
             yield l[i:i+chunk_size]
 
+
     def fetch(self, session, name, resource_list, path=None):
         """
             Requests the feature server to calculate provided resources.
@@ -236,9 +253,17 @@ class ParallelFeature(Feature):
             @param: name - the name of the feature one wishes to extract
             @param: resource_list - list of the resources to extract. format: [(image_url, mask_url, gobject_url),...] if a parameter is
             not required just provided None
+            @param: path - the location were the hdf5 file is stored. If None is set the file will be placed in a tempfile and the pytables
+            file handle will be returned. (default: None)
 
             @return: returns either a pytables file handle or the file name when the path is provided
         """
+        if len(resource_list) < 1:
+            log.warning('Warning no resources were provided')
+            return 
+        
+        log.debug('Exctracting %s on %s resources'%(name,len(resource_list)))
+        
         if path is None:
             f = tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir())
             f.close()
@@ -248,6 +273,7 @@ class ParallelFeature(Feature):
 
         stop_write_thread = False #sets a flag to stop the write thread
         # when the requests threads have finished
+
 
         class WriteHDF5Thread(Thread):
             """
@@ -273,6 +299,7 @@ class ParallelFeature(Feature):
                 while True:
                     if not self.h5_filename_queue.empty():
                         temp_path = self.h5_filename_queue.get()
+                        log.debug('Writing %s to %s' % (temp_path, table_path))
                         with tables.open_file(temp_path, 'a') as hdf5temp:
                             with tables.open_file(table_path, 'a') as hdf5:
                                 temp_table = hdf5temp.root.values
@@ -294,27 +321,26 @@ class ParallelFeature(Feature):
                         log.debug('Ending HDF5 write thread')
                         break
 
-
-        def errorcb(e):
-            """
-                Returns an error log
-            """
-            log.warning('%s'%str(e))
-
         write_queue = Queue.Queue()
         request_queue = Queue.Queue()
 
         def request_factory(partial_resource_list):
             def request():
-                f = tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir())
+                f = tempfile.NamedTemporaryFile(suffix='.h5', dir=tempfile.gettempdir(), delete=False)
                 f.close()
-                try:
-                    path = super(ParallelFeature, self).fetch(session, name, partial_resource_list, path=f.name)
-                except socket.error as e:
-                    if e.errno == errno.WSAECONNRESET:
-                        log.debug('Connection fail: attempting to reconnect')
+                attempts = 0
+                while True:
+                    try:
                         path = super(ParallelFeature, self).fetch(session, name, partial_resource_list, path=f.name)
-                write_queue.put(path)
+                    except socket.error as e:
+                        if attempts>MAX_ATTEMPTS:
+                            log.debug('Connection fail: Reached max attempts')
+                            break
+                        if e.errno == errno.WSAECONNRESET:
+                            log.debug('Connection fail: Attempting to reconnect (try: %s)' % attempts)        
+                    write_queue.put(path)
+                    break
+                
             return request
 
         if hasattr(self,'thread_num') and hasattr(self,'chunk_size'):
@@ -330,22 +356,27 @@ class ParallelFeature(Feature):
         for partial_resource_list in self.chunk(resource_list, int(chunk_size)):
             request_queue.put(request_factory(partial_resource_list))
 
-
         w = WriteHDF5Thread(write_queue)
         log.debug('Starting HDF5 write thread')
         w.daemon = True
         w.start()
 
-        self.request_thread_pool(request_queue, errorcb=errorcb, thread_count = int(thread_num))
+        self.request_thread_pool(request_queue, errorcb=self.errorcb, thread_count=int(thread_num))
         stop_write_thread = True
         w.join()
 
+        log.debug('Returning parallel feature response to %s' % table_path)
+
         if path is None:
-            log.debug('Returning parallel feature response to %s'%table_path)
             return tables.open_file(table_path, 'r')
         else:
-            log.debug('Returning parallel feature response to %s'%path)
-            return path
+            return table_path
+
+    def errorcb(self, e):
+        """
+            Returns an error log
+        """
+        log.warning('%s'%str(e))
 
 
     def fetch_vector(self, session, name, resource_list):
