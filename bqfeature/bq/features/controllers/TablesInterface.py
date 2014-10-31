@@ -109,7 +109,9 @@ class TablesLock(object):
             Opens an hdf5 file under locks.
         """
         try:
-            if self.mode == 'w':
+            if os.name == 'nt' and self.mode == 'w':
+                self.h5file = tables.open_file(self.filename, 'w', *self.args, **self.kwargs) #windows does not make a file initally when locked
+            elif self.mode == 'w':
                 self.h5file = tables.open_file(self.filename, 'r+', *self.args, **self.kwargs)
             else: #if append is passed make it +r to protect the locks'
                 self.h5file = tables.open_file(self.filename, self.mode.replace('a','r+'), *self.args, **self.kwargs)
@@ -160,11 +162,9 @@ class QueryPlan(object):
             @param: hash
         """
         path = self.feature.localfile(hash)
-        if path in self.query_queue:  # checking the first few element on the hash
-            self.query_queue[path].put(hash)  # place the output in the queue
-        else:
+        if path not in self.query_queue:  # checking the first few element on the hash
             self.query_queue[path] = Queue.Queue()  # build queue since none were found
-            self.query_queue[path].put(hash)
+        self.query_queue[path].put(hash)
 
     def keys(self):
         return self.query_queue.keys()
@@ -240,11 +240,9 @@ class CachedRows(Rows):
         id = self.feature.hash_resource(request_resource.feature_resource)
         path = self.feature.localfile(id)
         rows = self.construct_row(self.feature, request_resource.feature_resource)
-        if path in self.row_queue:  # checking the first few element on the hash
-            self.row_queue[path].put(rows)  # place the output in the queue
-        else:
-            self.row_queue[path] = Queue.Queue()  # build queue since none were found
-            self.row_queue[path].put(rows)
+        if path not in self.row_queue:  # checking the first few element on the hash
+            self.row_queue[path] = Queue.Queue()  # build queue since none were found      
+        self.row_queue[path].put(rows)
         return
     
 class WorkDirRows(Rows):

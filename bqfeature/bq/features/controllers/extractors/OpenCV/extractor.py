@@ -27,6 +27,7 @@ except ValueError:
 class KeyPointFeatures(Feature.BaseFeature):
 
     #parameters
+    disabled = True
     additional_resource = ['gobject']
     parameter = ['x','y','response','size','angle','octave']
 
@@ -74,6 +75,7 @@ class BRISK(KeyPointFeatures):
     name = 'BRISK'
     description = """Scale-invariant feature transform also know as SIFT """
     length = 64
+    disabled = False
              
     def calculate(self, resource):
         """ Append descriptors to BRISK h5 table """
@@ -130,6 +132,7 @@ class ORB(KeyPointFeatures):
     This explination was taken from opencv documention on orb and the algorithm iself was taken from
     the opencv library"""
     length = 32
+    disabled = False
 
     def calculate(self, resource):
         """ Append descriptors to ORB h5 table """
@@ -180,6 +183,7 @@ class SIFT(KeyPointFeatures):
     description = """Scale-invariant feature transform also know as SIFT """
     length = 128
     feature_format = "int32"
+    disabled = False
     
     def calculate(self, resource):
         """ Append descriptors to SIFT h5 table """
@@ -230,6 +234,7 @@ class SURF(KeyPointFeatures):
     name = 'SURF'
     description = """Speeded Up Robust Features also know as SURF"""
     length = 64 
+    disabled = False
       
     def calculate(self, resource):
         """ Append descriptors to SURF h5 table """
