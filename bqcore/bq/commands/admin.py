@@ -445,11 +445,11 @@ class stores(object):
 
     def __init__(self, version):
         parser = optparse.OptionParser(
-                    usage="%prog stores  [list|create [name]]|fill",
+                    usage="%prog stores  [list|create [name]]|fill[name]|update[name]",
                     version="%prog " + version)
         parser.add_option('-c','--config', default="config/site.cfg")
         options, args = parser.parse_args()
-        if len(args) < 1 or args[0] not in ('list', 'init', 'fill'):
+        if len(args) < 1 or args[0] not in ('list', 'init', 'fill', 'update'):
             parser.error("No command given")
         self.command  = args.pop(0)
         self.args = args
@@ -465,10 +465,9 @@ class stores(object):
         from bq.util.fakerequestenv import create_fake_env
 
         import transaction
-        from bq.commands.stores import init_stores, list_stores, fill_stores
+        from bq.commands.stores import init_stores, list_stores, fill_stores, update_stores
 
         session, request = create_fake_env()
-
 
         command = self.command.lower()
         username = None
@@ -483,6 +482,9 @@ class stores(object):
         elif command == 'fill':
             print "attempting to fill stores with data"
             fill_stores(username)
+        elif command == 'update':
+            print "attempting to update stores based on config/site.cfg settings"
+            update_stores(username)
 
         transaction.commit()
 
