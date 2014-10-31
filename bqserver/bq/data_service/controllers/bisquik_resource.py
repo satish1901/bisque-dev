@@ -57,6 +57,7 @@ import sqlalchemy
 import urllib
 
 import  pylons
+import transaction
 from pylons.controllers.util import abort
 from paste.deploy.converters import asbool
 from sqlalchemy import desc
@@ -180,6 +181,7 @@ class ResourceAuth(Resource):
         tree = db2tree (resource,  parent = response, baseuri=baseuri)
         formatter, content_type  = find_formatter (format)
         tg.response.headers['Content-Type'] = content_type
+        transaction.commit()
         return formatter(response)
 
 RESOURCE_HANDLERS = {
@@ -258,7 +260,7 @@ class BisquikResource(Resource):
             #   Previously loaded resource .. recreate query but with
             #   permission check
             #log.debug ("PERMISSION: loaded object %s %s" % ((query.xmltag, query.__class__), query.id))
-            query = resource_load ((query.xmltag, query.__class__), query.id)
+            query = resource_load ((query.xmltag, query.__class__), ident=query.id)
             query = resource_permission (query, action=action)
 
         resource = self.force_dbload(query)
@@ -282,6 +284,7 @@ class BisquikResource(Resource):
         else:
             response = db2tree (resource, view = view, parent = response,
                                 baseuri=self.baseurl, **kw)
+        transaction.commit()
         formatter, content_type  = find_formatter (format)
         tg.response.headers['Content-Type'] = content_type
         return formatter(response)
@@ -295,6 +298,7 @@ class BisquikResource(Resource):
         tags=tag expression i.e. [TAG:]VAL [AND|OR [TAG:]VAL]+
         xxx=val match an attribute on the resorce
         """
+
         view  = kw.pop('view', 'short')
         tag_query = kw.pop('tag_query', '')
         tag_order = kw.pop('tag_order', '')
@@ -307,13 +311,14 @@ class BisquikResource(Resource):
         log.info ('DIR  %s' % (request.url))
         #  Do not use loading
         parent = getattr(request.bisque,'parent', None)
+        #specials = set(['tag_names', 'tag_values', 'gob_types'])
         if parent is None:
             limit = kw.pop ('limit', None) or 1000
             limit = min(int(limit), 1000)
             kw['limit'] = str(limit)
             log.debug ("limiting top level to %s", limit)
-            if kw.pop('noparent', None):
-                parent = False
+        if kw.pop('noparent', None):
+            parent = False
         user_id = identity.get_user_id()
 
         if view=='count':
@@ -413,6 +418,7 @@ class BisquikResource(Resource):
 
         parent = self.load_parent()
         parent.clear([self.resource_name])
+        transaction.commit()
         return "<response/>"
 
 
@@ -420,7 +426,7 @@ class BisquikResource(Resource):
     def get(self, resource, **kw):
         """GET /ds/images/1 : fetch the resource
         """
-        log.info ('GET  %s' % (request.url))
+        log.info ('GET  %s' , request.url)
         view=kw.pop('view', 'short')
         format = kw.pop('format', None)
         resource = self.check_access(resource)
@@ -468,6 +474,7 @@ class BisquikResource(Resource):
         log.info ('DELETE %s' % (request.url))
         resource = self.check_access(resource)
         response = resource_delete(resource, user_id = identity.get_user_id())
+        transaction.commit()
         return "<resource/>"
 
 

@@ -1,5 +1,9 @@
 import sys
-from lxml import etree as ET
+try:
+    from lxml import etree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
+
 from bqapi import BQSession, BQTag
 import logging
 

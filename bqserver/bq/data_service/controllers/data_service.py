@@ -65,6 +65,7 @@ from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from lxml import etree
 from tg import expose, flash, config
 from repoze.what import predicates
+import transaction
 
 from bq.core.service import ServiceController
 from bq.data_service.model  import dbtype_from_tag, dbtype_from_name, all_resources
@@ -156,30 +157,17 @@ class DataServerController(ServiceController):
             user_id = identity.get_user_id()
         self.server_cache.invalidate_resource(resource, user_id)
 
-
+    def flushchanges(self, *args):
+        from bq.core.model import DBSession
+        transaction.commit()
+        for r in args:
+            if r:
+                DBSession.merge(r)
+        #DBSession.flush()
 
     def resource_uniq(self, **kw):
         'generate a unique code to be used for a resource'
         return make_uniq_code()
-
-
-    def new_image(self, resource = None, **kw):
-        ''' place the data file in a local '''
-
-        if resource is not None and resource.tag != 'image':
-            raise BadValue('new_image resource must be an image: received %s' % resource.tag)
-
-        if resource is None:
-            resource = etree.Element ('image')
-        for k,v in kw.items():
-            resource.set (k, str(v))
-        resource = bisquik2db (doc=resource)
-        img = db2tree (resource, baseuri= self.url)
-        #log.debug ("new image " + etree.tostring(img))
-        # Invalidate the top level container i.e. /data_service/images
-        #self.cache_invalidate(img.get('uri').rsplit('/', 1)[0])
-        self.cache_invalidate_resource(resource)
-        return img
 
     def resource_load(self,  uniq=None, ident=None, view=None):
         "Load a resource by uniq code or db ident (deprecated)"
@@ -192,7 +180,7 @@ class DataServerController(ServiceController):
         log.debug ("load failure for resource %s", uniq)
         return None
 
-    def append_resource(self, resource, tree=None, **kw):
+    def append_resource(self, resource, tree=None, flush=True, **kw):
         '''Append an element to resource (a node)
         '''
         if isinstance (resource, etree._Element):
@@ -202,9 +190,11 @@ class DataServerController(ServiceController):
         r =  db2tree (dbresource, baseuri=self.url, **kw)
         #self.cache_invalidate(r.get('uri'))
         self.cache_invalidate_resource(dbresource)
+        if flush:
+            self.flushchanges(dbresource, resource)
         return r
 
-    def new_resource(self, resource, parent=None, **kw):
+    def new_resource(self, resource, parent=None, flush=True, **kw):
         '''Create a new resouce in the local database based on the
         resource tree given.
         '''
@@ -228,6 +218,8 @@ class DataServerController(ServiceController):
         # Invalidate the top level container i.e. /data_service/<resource_type>
         #self.cache_invalidate(r.get('uri').rsplit('/', 1)[0])
         self.cache_invalidate_resource(node)
+        if flush:
+            self.flushchanges(node, parent)
         return r
 
     def get_resource(self, resource, **kw):
@@ -280,10 +272,11 @@ class DataServerController(ServiceController):
             self.cache_invalidate_resource(resource)
         else:
             log.warn ("Could not load uri %s ", uri)
+        self.flushchanges()
 
 
 
-    def update_resource(self, resource, new_resource=None, replace=True, **kw):
+    def update_resource(self, resource, new_resource=None, replace=True, flush=True, **kw):
         """update a resource with a new values
         @param resource: an etree element or uri
         @param new_resource:  an etree element if resource is a uri
@@ -302,14 +295,16 @@ class DataServerController(ServiceController):
         if uri is not None:
             resource = load_uri (uri)
         log.debug ('resource %s = %s' , uri, resource)
-        r = bisquik2db(doc=new_resource, resource=resource, replace=replace)
+        node = bisquik2db(doc=new_resource, resource=resource, replace=replace)
         #response  = etree.Element ('response')
-        r =  db2tree (r, baseuri = self.url, **kw)
+        r =  db2tree (node, baseuri = self.url, **kw)
         #self.cache_invalidate(r.get('uri'))
         self.cache_invalidate_resource(resource)
+        if flush:
+            self.flushchanges(node)
         return r
 
-    def update(self, resource_tree, replace_all=False, **kw):
+    def update(self, resource_tree, replace_all=False, flush=True, **kw):
         view=kw.pop('view', None)
         #if replace_all:
         #    uri = resource_tree.get ('uri')
@@ -320,10 +315,12 @@ class DataServerController(ServiceController):
         r =  db2tree (resource, parent=None, view=view, baseuri = self.url)
         #self.cache_invalidate(r.get('uri'))
         self.cache_invalidate_resource(resource)
+        if flush:
+            self.flushchanges(resource)
         return r
 
 
-    def auth_resource(self, resource, action=RESOURCE_READ, auth=None, notify=False, invalidate=False, **kw):
+    def auth_resource(self, resource, action=RESOURCE_READ, auth=None, notify=False, invalidate=False, flush=True, **kw):
         if isinstance(resource, basestring):
             uri = resource
         elif isinstance (resource, etree._Element):
@@ -336,6 +333,8 @@ class DataServerController(ServiceController):
             db2tree(auth, parent=response, view=None, baseuri=self.url)
         else:
             log.warn ('AUTH: could not load resource %s', uri)
+        if flush:
+            self.flushchanges()
         return response
 
 
