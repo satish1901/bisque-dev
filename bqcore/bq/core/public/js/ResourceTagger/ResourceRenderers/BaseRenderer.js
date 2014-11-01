@@ -8,15 +8,21 @@ Bisque.ResourceTagger.LinkRenderer = function(value, metaData, record) {
 };*/
 
 Bisque.ResourceTagger.ResourceRenderer = function(value, metaData, record) {
-    var url = BQ.Server.url('/client_service/view?resource=' + value);
-    var unique = 'bqresource_' + new Date().valueOf();
+    var url = BQ.Server.url('/client_service/view?resource=' + value),
+        unique = 'bqresource_' + new Date().valueOf();
 
     BQFactory.request({
         uri: value,
         uri_params: { view:'short' },
         cb: function(r) {
-            var text = Ext.String.format('{0}:{1} - {2}', r.resource_type, r.name, r.value);
-            var el = Ext.get(unique);
+            var el = Ext.get(unique),
+                text = r.resource_type;
+            if (r.name) {
+                text += ':' + r.name;
+            }
+            if (r.value) {
+                text += ' - ' + r.value;
+            }
             el.dom.textContent = text;
         },
     });
@@ -82,7 +88,7 @@ Bisque.ResourceTagger.RenderersAvailable = {
 
 Bisque.ResourceTagger.BaseRenderer = function(value, metaData, record) {
     var tagType = record.data.type.toLowerCase();
-    if (tagType.indexOf('data_service/template') != -1 && record.raw.template && record.raw.template.Type)
+    if (tagType.indexOf('/data_service/') != -1 && record.raw.template && record.raw.template.Type)
         tagType = record.raw.template.Type.toLowerCase();
 
     var renderer = Bisque.ResourceTagger.RenderersAvailable[tagType];
