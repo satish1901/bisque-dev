@@ -60,7 +60,7 @@ Ext.define('Bisque.ResourceTagger', {
 
         this.store_values = Ext.create('Ext.data.Store', {
             model: 'BQ.model.TagValues',
-            autoLoad: true,
+            autoLoad: false,
             autoSync: false,
 
             proxy: {
@@ -319,7 +319,7 @@ Ext.define('Bisque.ResourceTagger', {
 
     updateQueryTagValues: function (tag_name) {
         var proxy = this.store_values.getProxy();
-        proxy.url = '/data_service/image?tag_values=' + encodeURIComponent(tag_name);
+        proxy.url = '/data_service/'+this.resource.resource_type+'?tag_values=' + encodeURIComponent(tag_name);
         this.store_values.load();
     },
 

@@ -102,11 +102,10 @@ Ext.define('BQ.TagRenderer.String', {
                 });
             }
 
-            var valueStore = Ext.create('Ext.data.Store', {
+            valueStore = Ext.create('Ext.data.Store', {
                 model : 'TagValues',
-                autoLoad : true,
+                autoLoad : false,
                 autoSync : false,
-
                 proxy : {
                     noCache : false,
                     type : 'ajax',
@@ -146,8 +145,8 @@ Ext.define('BQ.TagRenderer.Number', {
         componentName : 'Number',
         template : {
             'Type' : 'Number',
-            'minValue' : 10,
-            'maxValue' : 100,
+            'minValue' : 0,
+            'maxValue' : 100000000,
             'allowDecimals' : true,
             'decimalPrecision' : 4,
         }
@@ -156,7 +155,6 @@ Ext.define('BQ.TagRenderer.Number', {
     getRenderer : function(config) {
         return {
             xtype : 'numberfield',
-
             minValue : config.tplInfo.minValue || BQ.TagRenderer.Number.template.minValue,
             maxValue : config.tplInfo.maxValue || BQ.TagRenderer.Number.template.maxValue,
             allowDecimals : config.tplInfo.allowDecimals || BQ.TagRenderer.Number.template.allowDecimals,
@@ -321,7 +319,7 @@ Ext.define('BQ.TagRenderer.Email', {
             'Type' : 'Email'
         }
     },
-    
+
     /*
     getRenderer : function(config) {
         return {
