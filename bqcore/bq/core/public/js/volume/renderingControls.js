@@ -467,11 +467,23 @@ boxTool.prototype.initControls = function(){
     this.rescale = new THREE.Vector3(0.5, 0.5, 0.5);
     var controlBtnSize = 22;
 
+    var constrainDims = Ext.create('Ext.form.field.Checkbox',{
+        itemId: 'constrain-dims',
+        boxLabel: 'maintain proportion',
+    });
+
+    this.constraintLock = false;
+    var resetLock = function(){
+        setTimeout(function () {
+		    me.constraintLock = false;
+	    }, 10);
+    };
+
     this.boxX = Ext.create('Ext.form.field.Number', {
         name : 'box_x',
         fieldLabel : 'x',
         value : 0,
-        minValue : 0.1,
+        minValue : 0.01,
         maxValue : 10,
         step : 0.01,
         width : 150,
@@ -480,6 +492,19 @@ boxTool.prototype.initControls = function(){
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
+
+                var cons = me.controls.queryById('constrain-dims');
+                if(cons.getValue() == true && !this.constraintLock){
+                   this.constraintLock = true;
+                    var vy = this.boxY.getValue();
+                    var vz = this.boxZ.getValue();
+                    var ry = vy/oldValue;
+                    var rz = vz/oldValue;
+                    this.boxY.setValue(newValue*ry);
+                    this.boxZ.setValue(newValue*rz);
+                    resetLock();
+                }
+
                 newValue = newValue < 0.01 ? 0.01 : newValue;
                 this.rescale.x = newValue;
                 this.setScale();
@@ -492,7 +517,7 @@ boxTool.prototype.initControls = function(){
         name : 'box_y',
         fieldLabel : 'y',
         value : 0,
-        minValue : 0.1,
+        minValue : 0.01,
         maxValue : 10,
         step : 0.01,
         width : 150,
@@ -501,6 +526,19 @@ boxTool.prototype.initControls = function(){
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
+
+                var cons = me.controls.queryById('constrain-dims');
+                if(cons.getValue() == true && !this.constraintLock){
+                    this.constraintLock = true;
+                    var vx = this.boxX.getValue();
+                    var vz = this.boxZ.getValue();
+                    var rx = vx/oldValue;
+                    var rz = vz/oldValue;
+                    this.boxX.setValue(newValue*rx);
+                    this.boxZ.setValue(newValue*rz);
+                    resetLock();
+                }
+
                 newValue = newValue < 0.01 ? 0.01 : newValue;
                 this.rescale.y = newValue;
                 this.setScale();
@@ -522,6 +560,20 @@ boxTool.prototype.initControls = function(){
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
+
+                var cons = me.controls.queryById('constrain-dims');
+                if(cons.getValue() == true && !this.constraintLock){
+                    this.constraintLock = true;
+                    var vx = this.boxX.getValue();
+                    var vy = this.boxY.getValue();
+                    var rx = vx/oldValue;
+                    var ry = vy/oldValue;
+
+                    this.boxX.setValue(newValue*rx);
+                    this.boxY.setValue(newValue*ry);
+                    resetLock();
+                }
+
                 newValue = newValue < 0.01 ? 0.01 : newValue;
                 this.rescale.z = newValue
                 this.setScale();
@@ -533,7 +585,7 @@ boxTool.prototype.initControls = function(){
     this.max = -999;
 
     this.boxMax = 1.0;
-    this.controls.add([this.boxX, this.boxY, this.boxZ]);
+    this.controls.add([constrainDims, this.boxX, this.boxY, this.boxZ]);
     this.volume.on('loaded', function () {
 
         var dims = me.volume.dims;
