@@ -932,7 +932,7 @@ VolumeShader.prototype.config = function(config){
             //'col.xyz = vec3(r0, r1, r2);',
             '    col.xyz *= Dl;',
             //'    col.xyz = lr.xyz;',
-            '    col.xyz *= 4.0;',
+            '    col.xyz *= 8.0;',
             '//',
             '//end deep shading secondary integration',
         ].join('\n');
