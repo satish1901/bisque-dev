@@ -1266,6 +1266,13 @@ animationTool.prototype.initControls = function(){
 
     this.controls.add([radioOpts]);
     this.volume.on({
+        loaded: function(){
+            if(me.volume.dims.t > 1){
+                me.button.toggle(true);
+            }
+            else
+                me.button.toggle(false);
+        },
         atlasloadedat: function (t) {
             me.playBack.setLoaded(t);
         },
@@ -1275,6 +1282,9 @@ animationTool.prototype.initControls = function(){
     });
 };
 
+
+animationTool.prototype.loadPreferences = function(prefs){
+};
 
 animationTool.prototype.toggle = function(button){
     radio1 = this.controls.queryById('toolRadio1'),

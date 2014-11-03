@@ -187,7 +187,7 @@ VolumeShader.prototype.config = function(config){
     var deepVars = [
         'uniform int   LIGHT_SAMPLES;',
         'uniform float LIGHT_DEPTH;',
-        'uniform float LIGHT_SIG;',
+        'uniform float ABSORPTION;',
         'uniform float DISP_SIG;',
         'uniform float DISPERSION;',
     ].join('\n');
@@ -422,9 +422,9 @@ VolumeShader.prototype.config = function(config){
                 'vec4 getNormal(sampler2D tex, vec4 texCoord, vec4 lightDir){',
                 '  float nx      = float(ATLAS_X);',
                 '  float ny      = float(ATLAS_Y);',
-                '  float iz = 4.0/float(SLICES);',
-                '  float ix      = 4.0/float(TEX_RES_X);',
-                '  float iy      = 4.0/float(TEX_RES_Y);',
+                '  float iz = 2.0/float(SLICES);',
+                '  float ix      = 2.0/float(TEX_RES_X);',
+                '  float iy      = 2.0/float(TEX_RES_Y);',
 
                 '  vec4 pos = texCoord;',
                 //012
@@ -530,9 +530,9 @@ VolumeShader.prototype.config = function(config){
             'vec4 getNormal(sampler2D tex, vec4 texCoord, vec4 lightDir){',
             '  float nx      = float(ATLAS_X);',
             '  float ny      = float(ATLAS_Y);',
-            '  float iz = 4.0/float(SLICES);',
-            '  float ix      = 4.0/float(TEX_RES_X);',
-            '  float iy      = 4.0/float(TEX_RES_Y);',
+            '  float iz = 2.0/float(SLICES);',
+            '  float ix      = 2.0/float(TEX_RES_X);',
+            '  float iy      = 2.0/float(TEX_RES_Y);',
 
             '  vec4 pos = texCoord;',
             '  //s[0] = 1.0 - pos[0];',
@@ -580,9 +580,9 @@ VolumeShader.prototype.config = function(config){
             'float  getDirNormal(sampler2D tex, vec4 texCoord, vec4 lightDir){',
             '  float nx      = float(ATLAS_X);',
             '  float ny      = float(ATLAS_Y);',
-            '  float iz = 1.0/float(SLICES);',
-            '  float ix      = 1.0/float(TEX_RES_X);',
-            '  float iy      = 1.0/float(TEX_RES_Y);',
+            '  float iz      = 2.0/float(SLICES);',
+            '  float ix      = 2.0/float(TEX_RES_X);',
+            '  float iy      = 2.0/float(TEX_RES_Y);',
 
             '  vec4 pos = texCoord;',
             '  //s[0] = 1.0 - pos[0];',
@@ -801,7 +801,7 @@ VolumeShader.prototype.config = function(config){
                 '    float ks = 1.0*SPEC_INTENSITY;',
                 '    kn = clamp(kn,0.0,1.0);',
                 '    //float kn = 1.0;',
-                '    col *= (ka + col[3]*kd*vec4(vec3(lightVal),1.0));',
+                '    col *= (ka + kd*vec4(vec3(lightVal),1.0));',
                 '    col += col[3]*ks*vec4(spec);',
                 '    col = clamp(col, 0.0, 1.0);',
                 //'    //col += H;',
@@ -834,7 +834,7 @@ VolumeShader.prototype.config = function(config){
                 '    float kd = KD;',
                 '    float ks = 1.0*SPEC_INTENSITY;',
                 '    col *= (ka + vec4(vec3(lightVal),1.0));',
-                '    col += ks*vec4(spec);',
+                //'    col += ks*vec4(spec);',
                 '    col = clamp(col, 0.0, 1.0);',
                 //'    col = vec4(vec3(dNH - lightVal),col[3]);',
                 //'    col = vec4(2.0*dNH);',
@@ -881,63 +881,58 @@ VolumeShader.prototype.config = function(config){
 
             '      dens.w *= 1.0*DENSITY;',
             '      //dens.w = clamp(dens.w, 0.0, 1.0);',
-            '      Dl =  (1.0-Dl)*dens.w + Dl;',
-            '      //Dl =  (1.0-dens.w)*Dl + dens.w;',
+            '      //Dl =  (1.0-Dl)*dens.w + Dl;',
+            '      Dl =  (1.0-dens.w)*Dl + dens.w;',
             '    }',
-            '    //Dl = clamp(Dl,0.0,1.0);',
-            '    col.xyz *= (1.0 - exp(-Dl));',
+            '    Dl = clamp(Dl,0.0,10.0);',
+            '    //col.xyz = vec3((exp(-ABSORPTION*Dl)));',
+            '    col.xyz *= (exp(-ABSORPTION*Dl));', //beers law
             '    //col.xyz *= (1.0 - Dl);',
-            '    col.xyz *= 1.0;',
+            '    col.xyz *= 2.0;', //can look kind of dark
             '//',
             '//end deep shading secondary integration',
         ].join('\n');
 
-        var deepFragTmp = [
+        var softFrag = [
             ' ',
             '//begin deep shading secondary integration',
             '//',
             '    float lstep = LIGHT_DEPTH/float(LIGHT_SAMPLES);',
             '    float Dl = 0.0;',
+            '    dl = -normalize(dl);',
+            '    vec4 lr = dl;',
+            '    vec4 ln = dot(dl,N)*N;', //normal component of light
+            '    vec4 lrt = dl - 2.0*ln;',   //reflected component of light
+            '    if(dot(dl,lrt) > 0.0){', //if the normal is facing us, the light reflects
+            '       lr = lrt;',   //reflected component of light
+            '     }',
+            '    vec3 dtemp = cross(lr.xyz,vec3(1.0,1.0,1.0)); dtemp = normalize(dtemp);',
+            '    vec3 N1 = cross(lr.xyz,dtemp);',
+            '    vec3 N2 = cross(lr.xyz,N1);',
 
-            '    vec3 DISP_BIAS = vec3(100.5, 200.3, 0.004);',
-            '    dl = normalize(dl);',
-
-            '    vec3 dtemp = cross(dl.xyz,vec3(1.0,1.0,1.0)); dtemp = normalize(dtemp);',
-            '    vec3 N1 = cross(dl.xyz,dtemp);',
-            '    vec3 N2 = cross(dl.xyz,N1);',
-            '    //N1 = normalize(N1);',
-            '    //N2 = normalize(N2);',
             '      float r0 = 1.0 - 2.0*rand(pos.xy + eye_d.zx); //create three random numbers for each dimension',
             '      float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);',
             '      float r2 = 1.0 - 2.0*rand(pos.xz + eye_d.yx);',
+
             '    for(int j=0; j<maxStepsLight; j++){ ',
             '      if (j > LIGHT_SAMPLES) break;',
+            '      vec4 Ni   = DISPERSION*(r0*lr + vec4(r1*N1 + r2*N2, 0.0));',
+            '      vec4 lpos = pos - lstep*Ni - 0.2*lstep*lr;',
 
-            '      float lti = (float(j))*lstep;',
-            '      vec4 Ni   = DISPERSION*(r0*dl + vec4(r1*N1 + r2*N2, 0.0));',
+            '      r0 = 1.0 - 2.0*rand(r2*eye_d.zx);',
+            '      r1 = 1.0 - 2.0*rand(r0*eye_d.zx);',
+            '      r2 = 1.0 - 2.0*rand(r1*eye_d.yx);',
 
-            '      vec4 lpos = pos - lti*dl;',
-
-            '      r0 = 1.0 - 2.0*rand(lpos.xy + eye_d.zx); //create three random numbers for each dimension',
-            '      r1 = 1.0 - 2.0*rand(lpos.yz + eye_d.zx);',
-            '      r2 = 1.0 - 2.0*rand(lpos.xz + eye_d.yx);',
-
-            '      lpos += lti*Ni;',
             '      vec4 dens = sampleStack(textureAtlas,lpos);',
-
-            '      float Kdisp = DISP_SIG;',
-            '      float sl = float(maxStepsLight)/float(LIGHT_SAMPLES);',
-            '      //lti *= dens.w;',
-
             '      dens.w *= 1.0*DENSITY;',
-            '      //dens.w = clamp(dens.w, 0.0, 1.0);',
-            '      //Dl =  (1.0-Dl)*dens.w + Dl;',
-            '      Dl +=  dens.w;',
+            '      Dl +=  exp(-2.0*ABSORPTION*dens.w);',
             '    }',
-            '    Dl /= float(LIGHT_SAMPLES);',
-            '    //col *= (1.0 - exp(-Dl));',
-            '    col.xyz = (1.0-Dl)*vec3(0.01,0.02,0.04) + (Dl)*(col.xyz);',
-            '    col.xyz *= 2.0;',
+            '    Dl /= float(maxStepsLight);',
+            '    Dl = clamp(Dl,0.0,1.0);',
+            //'col.xyz = vec3(r0, r1, r2);',
+            '    col.xyz *= Dl;',
+            //'    col.xyz = lr.xyz;',
+            '    col.xyz *= 4.0;',
             '//',
             '//end deep shading secondary integration',
         ].join('\n');
@@ -976,12 +971,17 @@ VolumeShader.prototype.config = function(config){
         if(config.lighting.phong || config.lighting.deep) output.push(dl);
 
         if(gradType != 'directional'){
-            if(config.lighting.phong || config.highlight) output.push(N);
+            if(config.lighting.phong || config.highlight || config.lighting.deepType == 'soft_shading') output.push(N);
             if(config.highlight) output.push(highlight);
         }
 
         if(config.lighting.phong) output.push(phongFrag);
-        if(config.lighting.deep) output.push(deepFrag);
+        if(config.lighting.deep) {
+            if(config.lighting.deepType == 'deep_shading')
+                output.push(deepFrag);
+            else
+                output.push(softFrag);
+        }
         output.push(integrateLoopEnd);
         output.push(integrateEnd);
         return output.join('\n');
@@ -1045,7 +1045,7 @@ VolumeShader.prototype.config = function(config){
     output.push(rand);
     output.push(sampleStack(config.transfer, config.usePow));
     var gradType = config.gradientType ? config.gradientType : 'finite_difference';
-    if(config.highlight || config.lighting.phong) output.push(getNormal(gradType));
+    if(config.highlight || config.lighting.phong || config.lighting.deepType == 'soft_shading') output.push(getNormal(gradType));
     output.push(integrate(config));
     output.push(main);
     output = output.join('\n')

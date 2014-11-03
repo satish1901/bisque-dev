@@ -431,6 +431,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
             lighting: {
                 phong: false,
                 deep: false,
+                deepType: 'deep_shading'
             },
             transfer: false,
             pow: true,
@@ -646,20 +647,13 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
 	scaleCube : function (inScale) {
+        //this.scale = inScale;
 		this.sceneVolume.setUniform('BOX_SIZE', inScale);
-		var cube = this.cube;
-		var bMax = cube.vertices[0];
-		var scale = inScale.clone();
 
-		scale.divide(this.currentScale);
-
-		this.oldScale = this.currentScale.clone();
 		this.currentScale = inScale.clone();
-
-		cube.dynamic = true;
-		cube.verticesNeedUpdate = true;
-		var mat = new THREE.Matrix4().scale(scale);
-		this.cube.applyMatrix(mat);
+        this.cubeMesh.scale.copy(new THREE.Vector3(2.0*inScale.x,
+                                                   2.0*inScale.y,
+                                                   2.0*inScale.z));
 		this.canvas3D.rerender();
 		this.fireEvent('scale', this);
 	},
@@ -1985,9 +1979,10 @@ VolumeDisplay.prototype.createMenu = function () {
 	this.menu = this.volume.menu;
 
 	this.createChannelMap();
-
-	var enhancement = this.volume.phys && parseInt(this.volume.phys.pixel_depth) === 8 ? this.def.enhancement_8bit : this.def.enhancement;
-	this.menu.add({
+    //this.def.enhancement = 'd'; //force data range!!
+	//var enhancement = this.volume.phys && parseInt(this.volume.phys.pixel_depth) === 8 ? this.def.enhancement_8bit : this.def.enhancement;
+	var enhancement = 'd';
+    this.menu.add({
 		xtype : 'displayfield',
 		fieldLabel : 'View',
 		cls : 'heading',

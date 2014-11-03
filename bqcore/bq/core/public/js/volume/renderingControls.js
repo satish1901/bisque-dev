@@ -514,7 +514,7 @@ boxTool.prototype.initControls = function(){
         fieldLabel : 'z',
         value : 0,
         minValue : 0.01,
-        maxValue : 10,
+        maxValue : 5,
         step : 0.01,
         width : 150,
         labelWidth: 10,
@@ -739,6 +739,15 @@ deepTool.prototype.addUniforms = function(){
                                       max: 100,
                                       def: 50,
                                       K: 0.02};
+
+    this.uniforms['absorption']    = {name: 'ABSORPTION',
+                                      type: 'f',
+                                      val: 0.5,
+                                      slider: true,
+                                      min: 0,
+                                      max: 100,
+                                      def: 50,
+                                      K: 0.05};
     //this.initUniforms();
 };
 
@@ -747,6 +756,40 @@ deepTool.prototype.initControls = function(){
 
     var me = this;
     this.state = 0;
+
+   this.button.tooltip = 'save png';
+    var controlBtnSize = 22;
+
+
+
+       var shadingToggle = function(item, checked){
+            if(checked === false) return;
+           me.volume.shaderConfig.lighting.deepType = item.text;
+           me.volume.sceneVolume.setConfigurable("default",
+                                                 "fragment",
+                                                 me.volume.shaderConfig);
+        };
+
+        var typeMenu = Ext.create('Ext.menu.Menu', {
+            itemId: 'shadingType',
+            style: {
+                overflow: 'visible'     // For the Combo popup
+            },
+            items: [
+                {
+                    text: 'deep_shading',
+                    checked: true,
+                    group: 'theme',
+                    checkHandler: shadingToggle
+                }, {
+                    text: 'soft_shading',
+                    checked: false,
+                    group: 'theme',
+                    checkHandler: shadingToggle
+                }
+            ]
+        });
+
     var sampleField = Ext.create('Ext.form.field.Number', {
         name : 'numberfield2',
         fieldLabel : 'samples',
@@ -764,7 +807,13 @@ deepTool.prototype.initControls = function(){
 
 
 
-    this.controls.add(sampleField);
+    this.controls.add({
+            xtype: 'button',
+            width : 100,
+            text:'shading model',
+            //iconCls: 'bmenu',  // <-- icon
+            menu: typeMenu  // assign menu by instance
+        }, sampleField);
     this.controls.on('afterlayout', function () {
     });
 };
