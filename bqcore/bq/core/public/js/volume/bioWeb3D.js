@@ -329,7 +329,8 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
         this.cubeMesh; //initialize the
 
-
+        this.minSampleRate = 32;
+        this.autoRotateSampleRate = 32;
         var mousedown = function(event){
             if(event.button >= 0){
                 me.mousedown = true;
@@ -607,11 +608,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
                 me.BQImageRequest();
                 me.initHistogram();
+
+		        me.createToolMenu();
                 me.createToolPanel();
 				//me.createClipSlider();
 				me.createZoomSlider();
-
-		        me.createToolMenu();
 
                 this.firstLoad = true;
 
@@ -645,39 +646,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 		this.callParent();
 	},
-
-	scaleCube : function (inScale) {
-        //this.scale = inScale;
-		this.sceneVolume.setUniform('BOX_SIZE', inScale);
-
-		this.currentScale = inScale.clone();
-        this.cubeMesh.scale.copy(new THREE.Vector3(2.0*inScale.x,
-                                                   2.0*inScale.y,
-                                                   2.0*inScale.z));
-		this.canvas3D.rerender();
-		this.fireEvent('scale', this);
-	},
-
-	getRescale : function () {
-		//since we scale locally, we lose the old scale that we scaled from, so we track
-		//it then return the new scaling parameter
-		var scale = this.currentScale.clone();
-		scale.divide(this.oldScale);
-        //scale.x *= 0.5;
-		//scale.y *= 0.5;
-        //scale.z *= 0.5;
-        return scale;
-	},
-
-	getHalf : function () {
-		var cube = this.cube;
-		return cube.vertices[0];
-	},
-
-    setModel : function (field, value){
-        this.shaderConfig[field] = value;
-        this.sceneVolume.updateShader
-    },
 
 	onresize : function (comp, w, h, ow, oh, eOpts) {
         if(!this.sceneVolume) return;
@@ -741,11 +709,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	},
 
-    setSampleRate : function(sampleRate){
-        this.setMaxSteps = sampleRate;
-		this.sceneVolume.setUniformNoRerender('BREAK_STEPS',
-				                              sampleRate, false);
-    },
+
 
 	rerenderImmediate : function (input) {
         if (!input){
@@ -774,11 +738,19 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	onAnimate : function () {
 		//if (this.canvas3D.mousedown)
 		//	this.setMaxSteps = 32;
+
+        if(this.canvas3D.getAutoRotate()){
+            this.setSampleRate(128);
+            return;
+        }
+
+
         if(this.mousedown){
-            this.setSampleRate(32);
+            this.setSampleRate(128);
             this.canvas3D.needs_render = false;
             return;
         }
+
         if(!this.progressive){
             this.setSampleRate(this.setMaxSteps);
 			this.canvas3D.needs_render = false;
@@ -1291,6 +1263,20 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 */
 
+
+    /////////////////////////////////////////////
+    //Sets which emit Events after setting
+    /////////////////////////////////////////////
+
+    setMaxSampleRate : function (qual) {
+        this.shaderConfig.maxSteps = qual;
+        this.sceneVolume.setConfigurable("default",
+                                       "fragment",
+                                       this.shaderConfig);
+        this.fireEvent('setquality', this);
+        this.rerender();
+    },
+
 	setCurrentTime : function (time) {
 		if (this.dims.t == 1)
 			return;
@@ -1319,6 +1305,37 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		}
 	},
 
+	setVolumeScale : function (inScale) {
+        //this.scale = inScale;
+		this.sceneVolume.setUniform('BOX_SIZE', inScale);
+
+		this.currentScale = inScale.clone();
+        this.cubeMesh.scale.copy(new THREE.Vector3(2.0*inScale.x,
+                                                   2.0*inScale.y,
+                                                   2.0*inScale.z));
+		this.canvas3D.rerender();
+		this.fireEvent('scale', this);
+	},
+
+    /////////////////////////////////////////////
+    //Sets which do NOT emit Events after setting
+    /////////////////////////////////////////////
+
+    setModel : function (field, value){
+        this.shaderConfig[field] = value;
+        this.sceneVolume.updateShader
+    },
+
+    setAutoRotate : function (rotate){
+        this.canvas3D.setAutoRotate(rotate);
+    },
+
+    setSampleRate : function(sampleRate){
+        this.setMaxSteps = sampleRate;
+		this.sceneVolume.setUniformNoRerender('BREAK_STEPS',
+				                              sampleRate, false);
+    },
+
 	doUpdate : function () {
 		this.update_needed = undefined;
 		// dima: image service is serving bad h264 right now
@@ -1343,16 +1360,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
     onPreferences: function(pref) {
         this.preferences = pref;
-        if(pref.quality){
-            this.setQuality(this.preferences.quality);
-            var menu = this.toolMenu.queryById('qualityMenu');
-            //var chk = menu.getAt(0);
-            menu.items.each(function(item){
-                if(item.text == pref.quality){
-                    item.setChecked(true);
-                }
-            });
-        }
+
 
         //this.preferences.
         for (var key in this.preferences) {
@@ -1442,8 +1450,8 @@ Ext.define('BQ.viewer.Volume.Panel', {
 						},
 						border : false,
 					},
-					items : items,
-				});
+				items : items,
+			});
 			this.addFade(this.toolPanel);
 
             var tools = [
@@ -1455,24 +1463,29 @@ Ext.define('BQ.viewer.Volume.Panel', {
             if (Ext.isWindows) {
 			    if (Ext.isChrome && Ext.chromeVersion >= 37) {
 				    tools.push(new phongTool(this),
-                                    new deepTool(this),
-                                    new lightTool(this));
+                               new deepTool(this),
+                               new lightTool(this));
 			    }
 		    } else {
 			    tools.push(new phongTool(this),
-                                new deepTool(this),
-                                new lightTool(this));
+                           new deepTool(this),
+                           new lightTool(this));
 		    }
 
             tools.push(new transferTool(this),
-                            new gObjectTool(this),
-                            new clipTool(this),
-                            new animationTool(this),
-                            new saveTool(this),
+                       new gObjectTool(this),
+                       new clipTool(this),
+                       new animationTool(this),
+                       new saveTool(this),
 
-                            new VolScaleBarTool(this),
-                            new VolAxisTool(this),
-                            new VolSpinnerTool(this));
+                       //Tools in the settings menu
+                       new autoRotateTool(this),
+                       new qualityTool(this),
+
+                       //Tools in the Div
+                       new VolScaleBarTool(this),
+                       new VolAxisTool(this),
+                       new VolSpinnerTool(this));
             this.tools = {};
             var me = this;
             tools.forEach(function(e,i,a){
@@ -1555,29 +1568,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		this.addFade(this.zoomSlider);
 	},
 
-    setQuality : function(quality) {
-        if (quality === 'low'){
-            this.maxSteps = 64;
-        }
-        if (quality === 'medium'){
-            this.maxSteps = 128;
-        }
-        if (quality === 'high'){
-            this.maxSteps = 256;
-        }
-        if (quality === 'ultra'){
-            this.maxSteps = 512;
-        }
-        if (quality === 'extreme'){
-            this.maxSteps = 2048;
-        }
-        this.shaderConfig.maxSteps = this.maxSteps;
-        this.sceneVolume.setConfigurable("default",
-                                       "fragment",
-                                       this.shaderConfig);
-        this.fireEvent('setquality', this);
-        this.rerender();
-    },
 
 	//----------------------------------------------------------------------
 	// tool combo
@@ -1604,48 +1594,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 		});
 
-
-        var qualityCheck = function(item, checked){
-            if(checked === false) return;
-            me.setQuality(item.text);
-        };
-
-        var qualityMenu = Ext.create('Ext.menu.Menu', {
-            itemId: 'qualityMenu',
-            style: {
-                overflow: 'visible'     // For the Combo popup
-            },
-            items: [
-                {
-                    text: 'low',
-                    checked: true,
-                    group: 'theme',
-                    checkHandler: qualityCheck
-                }, {
-                    text: 'medium',
-                    checked: false,
-                    group: 'theme',
-                    checkHandler: qualityCheck
-                }, {
-                    text: 'high',
-                    checked: false,
-                    group: 'theme',
-                    checkHandler: qualityCheck
-                }, {
-                    text: 'ultra',
-                    checked: false,
-                    group: 'theme',
-                    checkHandler: qualityCheck
-                },{
-                    text: 'extreme',
-                    checked: false,
-                    group: 'theme',
-                    checkHandler: qualityCheck
-                },
-
-            ]
-        });
-
 		this.toolMenu.add([{
 			boxLabel : 'settings',
 			checked : true,
@@ -1658,13 +1606,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				} else
 					me.toolPanel.hide();
 			},
-		}, {
-            xtype: 'button',
-            width : 100,
-            text:'rendering quality',
-            //iconCls: 'bmenu',  // <-- icon
-            menu: qualityMenu  // assign menu by instance
-        },{
+		},{
             xtype: 'glinfo',
             canvas3D: this.canvas3D
         }]);
@@ -2065,3 +2007,4 @@ VolumeDisplay.prototype.createChannelMap = function () {
 		});
 	}
 };
+
