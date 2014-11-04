@@ -139,8 +139,8 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 
         //this.controls = new THREE.TrackballControls(this.camera, thisDom);
         this.controls = new THREE.OrbitControls(this.camera, thisDom);
+        this.controls.autoRotate = false;
 
-        this.controls.noRoll = true;
         this.projector = new THREE.Projector();
 
         this.camera.position.z = 5.0;
@@ -162,17 +162,31 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         if(this.buildScene)
             this.buildScene();
 
+
+        //handle context loss and restoration...
         this.renderer.context.canvas.addEventListener("webglcontextlost", function(event) {
             event.preventDefault();
             // animationID would have been set by your call to requestAnimationFrame
-            me.triggerHandler('contextlost', event);
+            me.fireEvent('glcontextlost', event);
+            BQ.ui.error()
             cancelAnimationFrame(animationID);
         }, false);
 
         this.renderer.context.canvas.addEventListener("webglcontextrestored", function(event) {
-            me.triggerHandler('contextrestored', event);
+            me.fireEvent('glcontextrestored', event);
+            //rebuild the scene
+            //this.buildScene();
         }, false);
+
         this.renderer.render(this.scene, this.camera);
+    },
+
+    setAutoRotate: function(rotate){
+        this.controls.autoRotate = rotate;
+    },
+
+    getAutoRotate: function(){
+        return this.controls.autoRotate;
     },
 
     setClearColor: function(color, alpha){
@@ -277,11 +291,11 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.renderer.render(this.scene, this.camera);
         this.fireEvent('render', this);
         //me.triggerHandler('mousewheelup', event);
-
     },
 
     doAnimate : function() {
         var me = this;
+        this.controls.update();
 	    if(this.onAnimate)
 	        this.onAnimate();
         if(this.needs_render){

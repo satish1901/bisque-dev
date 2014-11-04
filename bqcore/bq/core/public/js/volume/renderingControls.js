@@ -55,7 +55,7 @@ function renderingTool(volume, cls){
     this.uniforms = {};
 };
 
-renderingTool.prototype.init = function(){
+renderingTool.prototype.createButton = function(){
     var me = this;
     this.button = Ext.create('Ext.Button',{
         //xtype: 'button',
@@ -74,6 +74,10 @@ renderingTool.prototype.init = function(){
         toggleHandler : this.toggle,
         scope : me,
     });
+},
+
+renderingTool.prototype.createControls = function(){
+    var me = this;
 
     this.controls = Ext.create('Ext.container.Container', {
         border : false,
@@ -93,9 +97,15 @@ renderingTool.prototype.init = function(){
             text: this.label
         }]);
     }
+},
 
+
+
+renderingTool.prototype.init = function(){
+    var me = this;
+    this.createButton();
+    this.createControls();
     this.initControls();
-
     this.addUniforms();
     this.initUniforms();
 };
@@ -457,7 +467,7 @@ boxTool.prototype.setScale = function(){
     me.boxSize.x = 0.5*me.rescale.x/me.max*dims.slice.x / me.boxMax;
     me.boxSize.y = 0.5*me.rescale.y/me.max*dims.slice.y / me.boxMax;
     me.boxSize.z = 0.5*me.rescale.z/me.max*dims.slice.z / me.boxMax;
-    this.volume.scaleCube(this.boxSize);
+    this.volume.setVolumeScale(this.boxSize);
 };
 
 boxTool.prototype.initControls = function(){
@@ -1140,18 +1150,13 @@ saveTool.prototype.initControls = function(){
     });
     this.min = 1.0;
     this.controls.add([button]);
+    /*
     this.volume.on('loaded', function () {
 
     });
+    */
 };
-/*
-saveTool.prototype.toggle = function(button){
 
-    //if(button.pressed)
-    this.base.prototype.toggle.call(this,button);
-
-};
-*/
 
 //////////////////////////////////////////////////////////////////
 //

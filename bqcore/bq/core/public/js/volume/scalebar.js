@@ -354,7 +354,7 @@ VolSpinnerTool.prototype.initControls = function () {
                          '#define M_PI 3.14159265358979323846',
 		                 'void main() {',
                          'if(small == 1){',
-                         'gl_FragColor = vec4(vec3(0.5 + 0.5*cos(4.0*t)),1.0);',
+                         'gl_FragColor = vec4(vec3(0.5 + 0.5*cos(4.0*t), 0.0, 0.0), 1.0);',
                          'return;',
                          '}',
 	                     'vec2 uv = gl_FragCoord.xy / ires.xy;',
@@ -439,4 +439,165 @@ VolSpinnerTool.prototype.initControls = function () {
         },
         scope: me,
     });
+};
+
+
+function qualityTool(volume, cls) {
+	//renderingTool.call(this, volume);
+    this.name = 'quality';
+/*
+
+
+    this.label = 'save png';
+    //this.cls = 'downloadButton';
+*/
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+qualityTool.prototype = new renderingTool();
+
+
+qualityTool.prototype.init = function(){
+    //override the init function,
+    var me = this;
+    // all we need is the button which has a menu
+    this.createButton();
+};
+
+qualityTool.prototype.addButton = function () {
+    //we override where we'll add this button, we send it to the settings menu, currently called toolMenu
+    this.volume.toolMenu.add(this.button);
+};
+
+qualityTool.prototype.addUniforms = function(){
+};
+
+qualityTool.prototype.loadPreferences = function(prefs){
+    var menu = this.qualityMenu;
+    //var chk = menu.getAt(0);
+    menu.items.each(function(item){
+        if(item.text == prefs){
+            item.setChecked(true);
+        }
+    });
+
+};
+
+qualityTool.prototype.setQuality = function(quality) {
+    var maxSteps = 64;
+    if (quality === 'low'){
+            maxSteps = 64;
+        }
+        if (quality === 'medium'){
+            maxSteps = 128;
+        }
+        if (quality === 'high'){
+            maxSteps = 256;
+        }
+        if (quality === 'ultra'){
+            maxSteps = 512;
+        }
+        if (quality === 'extreme'){
+            maxSteps = 2048;
+        }
+    this.volume.maxSteps = maxSteps;
+    this.volume.setMaxSampleRate(maxSteps);
+};
+
+qualityTool.prototype.createButton = function(){
+    var me = this;
+    var qualityCheck = function(item, checked){
+        if(checked === false) return;
+        me.setQuality(item.text);
+    };
+
+    this.qualityMenu = Ext.create('Ext.menu.Menu', {
+        itemId: 'qualityMenu',
+        style: {
+            overflow: 'visible'     // For the Combo popup
+        },
+        items: [
+            {
+                text: 'low',
+                checked: true,
+                group: 'theme',
+                checkHandler: qualityCheck
+            }, {
+                text: 'medium',
+                checked: false,
+                group: 'theme',
+                checkHandler: qualityCheck
+            }, {
+                text: 'high',
+                checked: false,
+                group: 'theme',
+                checkHandler: qualityCheck
+            }, {
+                text: 'ultra',
+                checked: false,
+                group: 'theme',
+                checkHandler: qualityCheck
+            },{
+                text: 'extreme',
+                checked: false,
+                group: 'theme',
+                checkHandler: qualityCheck
+            },
+
+        ]
+    });
+
+
+    this.button = Ext.create('Ext.Button', {
+        text : 'rendering quality',
+        cls : 'volume-button',
+        //width: 100,
+        menu: this.qualityMenu,
+        scope : me,
+    });
+
+    this.button.tooltip = 'set maximum rendering quality';
+};
+
+
+function autoRotateTool(volume, cls) {
+	//renderingTool.call(this, volume);
+
+    this.name = 'autoRotate';
+/*
+    this.label = 'save png';
+    //this.cls = 'downloadButton';
+*/
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+autoRotateTool.prototype = new renderingTool();
+
+autoRotateTool.prototype.init = function(){
+    //override the init function,
+    var me = this;
+    // all we need is the button which has a menu
+    this.createButton();
+};
+
+autoRotateTool.prototype.addButton = function () {
+    this.volume.toolMenu.add(this.button);
+};
+
+autoRotateTool.prototype.createButton = function(){
+    var me = this;
+
+    this.button = Ext.create('Ext.form.field.Checkbox', {
+        boxLabel : 'Autorotate Camera',
+        cls : 'volume-button',
+        checked: false,
+		handler : function (item, checked) {
+			me.volume.setAutoRotate(checked);
+		},
+        scope : me,
+    });
+
+    this.button.tooltip = 'Allows the camera to automatically rotate after manipulation';
 };

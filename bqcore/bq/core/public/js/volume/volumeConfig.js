@@ -971,7 +971,8 @@ VolumeShader.prototype.config = function(config){
         if(config.lighting.phong || config.lighting.deep) output.push(dl);
 
         if(gradType != 'directional'){
-            if(config.lighting.phong || config.highlight || config.lighting.deepType == 'soft_shading') output.push(N);
+            if(config.lighting.phong || config.highlight ||
+               (config.lighting.deep && config.lighting.deepType == 'soft_shading')) output.push(N);
             if(config.highlight) output.push(highlight);
         }
 
@@ -1045,7 +1046,8 @@ VolumeShader.prototype.config = function(config){
     output.push(rand);
     output.push(sampleStack(config.transfer, config.usePow));
     var gradType = config.gradientType ? config.gradientType : 'finite_difference';
-    if(config.highlight || config.lighting.phong || config.lighting.deepType == 'soft_shading') output.push(getNormal(gradType));
+    if(config.highlight || config.lighting.phong ||
+       (config.lighting.deep && config.lighting.deepType == 'soft_shading')) output.push(getNormal(gradType));
     output.push(integrate(config));
     output.push(main);
     output = output.join('\n')
