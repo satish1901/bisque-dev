@@ -916,7 +916,7 @@ VolumeShader.prototype.config = function(config){
 
             '    for(int j=0; j<maxStepsLight; j++){ ',
             '      if (j > LIGHT_SAMPLES) break;',
-            '      vec4 Ni   = DISPERSION*(r0*lr + vec4(r1*N1 + r2*N2, 0.0));',
+            '      vec4 Ni   = DISPERSION*(vec4(r1*N1 + r2*N2, 0.0));',
             '      vec4 lpos = pos - lstep*Ni - 0.2*lstep*lr;',
 
             '      r0 = 1.0 - 2.0*rand(r2*eye_d.zx);',

@@ -464,9 +464,9 @@ boxTool.prototype.addUniforms = function(){
 boxTool.prototype.setScale = function(){
     var me = this;
     var dims = me.volume.dims;
-    me.boxSize.x = 0.5*me.rescale.x/me.max*dims.slice.x / me.boxMax;
-    me.boxSize.y = 0.5*me.rescale.y/me.max*dims.slice.y / me.boxMax;
-    me.boxSize.z = 0.5*me.rescale.z/me.max*dims.slice.z / me.boxMax;
+    me.boxSize.x = 0.5*me.rescale.x/me.min * dims.slice.x/me.boxMax;
+    me.boxSize.y = 0.5*me.rescale.y/me.min * dims.slice.y/me.boxMax;
+    me.boxSize.z = 0.5*me.rescale.z/me.min * dims.slice.z/me.boxMax;
     this.volume.setVolumeScale(this.boxSize);
 };
 
@@ -494,7 +494,7 @@ boxTool.prototype.initControls = function(){
         fieldLabel : 'x',
         value : 0,
         minValue : 0.01,
-        maxValue : 10,
+        maxValue : 100,
         step : 0.01,
         width : 150,
         labelWidth: 10,
@@ -528,7 +528,7 @@ boxTool.prototype.initControls = function(){
         fieldLabel : 'y',
         value : 0,
         minValue : 0.01,
-        maxValue : 10,
+        maxValue : 100,
         step : 0.01,
         width : 150,
         labelWidth: 10,
@@ -562,7 +562,7 @@ boxTool.prototype.initControls = function(){
         fieldLabel : 'z',
         value : 0,
         minValue : 0.01,
-        maxValue : 5,
+        maxValue : 100,
         step : 0.01,
         width : 150,
         labelWidth: 10,
@@ -614,6 +614,7 @@ boxTool.prototype.initControls = function(){
 
             me.min = Math.min(dims.pixel.x, Math.min(dims.pixel.y,dims.pixel.z));
             me.max = Math.max(dims.pixel.x, Math.max(dims.pixel.y,dims.pixel.z));
+            me.boxMin = Math.min(dims.slice.x, Math.min(dims.slice.y,dims.slice.z));
             me.boxMax = Math.max(dims.slice.x, Math.max(dims.slice.y,dims.slice.z));
             me.boxX.setValue(dims.pixel.x);
             me.boxY.setValue(dims.pixel.y);
