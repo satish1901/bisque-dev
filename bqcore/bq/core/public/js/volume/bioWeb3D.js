@@ -334,12 +334,12 @@ Ext.define('BQ.viewer.Volume.Panel', {
         var mousedown = function(event){
             if(event.button >= 0){
                 me.mousedown = true;
-                me.rerenderImmediate(32);
+                me.rerenderImmediate(me.minSampleRate);
             }
         };
         var mousemove = function(event){
             if(me.mousedown){
-                me.rerenderImmediate(32);
+                me.rerenderImmediate(me.minSampleRate);
             }
         };
 
@@ -388,7 +388,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		        me.light = new THREE.PointLight(0xFFFFFF, 1, 100);
 		        me.scene.add(me.light);
 		        me.canvas3D.scene = me.scene;
-                me.setMaxSteps = 32;
+                me.setMaxSteps = me.minSampleRate;
 		        me.oldScale = new THREE.Vector3(0.5, 0.5, 0.5);
 		        me.currentScale = new THREE.Vector3(0.5, 0.5, 0.5);
                 this.renderer.setClearColor(0x808080,0.001);
@@ -713,7 +713,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	rerenderImmediate : function (input) {
         if (!input){
-			input = 32;
+			input = this.minSampleRate;
             this.progressive = true;
         }
         else this.progressive = false;
@@ -723,7 +723,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	rerender : function (input) {
 		if (!input){
-			input = 32;
+			input = this.minSampleRate;
             this.progressive = true;
         }
         else this.progressive = false;
@@ -740,13 +740,13 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		//	this.setMaxSteps = 32;
 
         if(this.canvas3D.getAutoRotate()){
-            this.setSampleRate(128);
+            this.setSampleRate(this.minSampleRate);
             return;
         }
 
 
         if(this.mousedown){
-            this.setSampleRate(128);
+            this.setSampleRate(this.minSampleRate);
             this.canvas3D.needs_render = false;
             return;
         }
@@ -758,7 +758,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
         }
 
 		if (this.setMaxSteps < this.maxSteps) {
-			//console.log('multiplying',this.setMaxSteps);
             this.setSampleRate(1.5*this.setMaxSteps);
 		} else {
             this.setSampleRate(this.maxSteps);
@@ -1898,7 +1897,8 @@ VolumeDisplay.prototype.addCommand = function (command, pars) {
 
 	var fusion = '';
 	for (var i = 0; i < this.channel_colors.length; i++) {
-		fusion += this.channel_colors[i].getRed() + ',';
+		if(!this.channel_colors[i]) continue;
+        fusion += this.channel_colors[i].getRed() + ',';
 		fusion += this.channel_colors[i].getGreen() + ',';
 		fusion += this.channel_colors[i].getBlue() + ';';
 	}

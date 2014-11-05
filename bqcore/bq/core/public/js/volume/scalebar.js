@@ -487,20 +487,25 @@ qualityTool.prototype.loadPreferences = function(prefs){
 qualityTool.prototype.setQuality = function(quality) {
     var maxSteps = 64;
     if (quality === 'low'){
-            maxSteps = 64;
-        }
-        if (quality === 'medium'){
-            maxSteps = 128;
-        }
-        if (quality === 'high'){
-            maxSteps = 256;
-        }
-        if (quality === 'ultra'){
-            maxSteps = 512;
-        }
-        if (quality === 'extreme'){
-            maxSteps = 2048;
-        }
+        maxSteps = 64;
+        this.volume.minSampleRate = 32;
+    }
+    if (quality === 'medium'){
+        maxSteps = 128;
+        this.volume.minSampleRate = 64;
+    }
+    if (quality === 'high'){
+        maxSteps = 256;
+        this.volume.minSampleRate = 128;
+    }
+    if (quality === 'ultra'){
+        maxSteps = 512;
+        this.volume.minSampleRate = 128;
+    }
+    if (quality === 'extreme'){
+        this.volume.minSampleRate = 512;
+        maxSteps = 2048;
+    }
     this.volume.maxSteps = maxSteps;
     this.volume.setMaxSampleRate(maxSteps);
 };
