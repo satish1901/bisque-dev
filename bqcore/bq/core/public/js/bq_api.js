@@ -2288,99 +2288,83 @@ function BQSession () {
     this.expires = null;
     this.user = undefined;
     this.user_uri = undefined;
+    this.callbacks = undefined;
 };
 
 BQSession.prototype= new BQObject();
 BQSession.current_session = undefined;
 
-BQSession.reset_timeout  = function (){
+// Class-Level functions for use in BQApplication
+BQSession.reset_session  = function (){
+    // Called to reset time on countdown clock..
     if (BQSession.current_session)
         BQSession.current_session.reset_timeout();
 };
-BQSession.initialize_timeout = function (baseurl, opts) {
+BQSession.initialize_session = function (baseurl, opts) {
+    if (BQSession.current_session){
+        console.log ("SESSION ALREADY SET");
+        return ;
+    }
+    // Load first Session
     BQFactory.load (baseurl + BQ.Server.url("/auth_service/session"),
                     function (session) {
                         BQSession.current_session = session;
-                        session.set_timeout (baseurl, opts);
-                        if (session.onsignedin) session.onsignedin(session);
+                        session.new_session (opts);
                     }, null, false);
 };
-BQSession.clear_timeout = function (baseurl) {
+BQSession.clear_session = function (baseurl) {
     if (BQSession.current_session) {
-        clearTimeout(BQSession.current_session.current_timer);
+        BQSession.current_session.end_session();
         BQSession.current_session = undefined;
     }
 };
 
-BQSession.prototype.parseTags  = function (){
-    var timeout = this.find_tags ('timeout');
-    var expires = this.find_tags ('expires');
-    if (expires && timeout) {
-        console.log ("session (timeout, expires) " + timeout.value + ':' + expires.value);
-        this.timeout = parseInt (timeout.value) * 1000;
-        this.expires = parseInt (expires.value) * 1000;
-    }
-
-    var user = this.find_tags ('user');
-    if (user) {
-        this.user_uri = user.value;
-        if (this.user == null)
-            BQFactory.request({uri: user.value, cb: callback(this, 'setUser'), cache: false, uri_params: {view:'full'}});
-    } else {
-        this.user = null;
-        this.user_uri = null;
-        var sess = this;
-        if (sess.onnouser) sess.onnouser();
-    }
-};
-
-BQSession.prototype.hasUser = function () {
-    return this.user ? true : false;
-};
-
-BQSession.prototype.setUser = function (user) {
-    this.user = user;
-    if (this.ongotuser)
-        this.ongotuser(this.user);
-};
-
-BQSession.prototype.set_timeout  = function (baseurl, opts) {
-    if (opts) {
-      if (opts.onsignedin)  this.onsignedin  = opts.onsignedin;
-      if (opts.onsignedout) this.onsignedout = opts.onsignedout;
-      if (opts.ongotuser)   this.ongotuser   = opts.ongotuser;
-      if (opts.onnouser)    this.onnouser    = opts.onnouser;
-    }
-
-    this.parseTags ();
+// Instance level functions
+BQSession.prototype.new_session  = function (opts) {
+    this.callbacks = opts;
+    this.parse_session ();
     if (this.timeout) {
-        this.callback = callback (this, 'check_timeout', baseurl);
         // tag value  is in seconds while timeout is in milliseconds
         console.log ("timeout in " + this.timeout/1000 + " s" );
         this.reset_timeout();
     } else {
         console.log ('no expire');
     }
+    if (this.user_uri){
+        BQFactory.request({uri: this.user_uri, cb: callback(this, 'setUser'), cache: false, uri_params: {view:'full'}});
+        if (this.callbacks.onsignedin) this.callbacks.onsignedin(this);
+    }else{
+        if (this.callbacks.onnouser) this.callbacks.onnouser(this);
+    }
 };
+
+BQSession.prototype.end_session  = function () {
+    this.timeout = 0;
+    this.reset_timeout();
+    if (this.callbacks.onsignedout) {
+        this.callbacks.onsignedout(this)
+    }
+}
 
 BQSession.prototype.reset_timeout  = function (){
     clearTimeout (this.current_timer);
     if (this.timeout)
-        this.current_timer = setTimeout (this.callback, this.timeout);
-    //console.log ('timeout reset:' + this.timeout);
-    BQSession.current_session = this;
-};
-BQSession.prototype.cancel_timeout  = function (){
-    clearTimeout (this.current_timer);
+        this.current_timer = setTimeout (callback(this, 'timeout_checker'), this.timeout);
 };
 
-BQSession.prototype.check_timeout = function (baseurl) {
-    BQSession.clear_timeout();
-    BQFactory.load (baseurl + BQ.Server.url("/auth_service/session"),
-                    function (session){
-                        session.session_timeout (baseurl);
-                    }, null, false);
+BQSession.prototype.timeout_checker = function () {
+    BQFactory.load (this.uri, callback(this, 'check_timeout'));
+}
+BQSession.prototype.check_timeout = function (newsession) {
+    newuser  = newsession.find_tags('user')
+    if (! newuser) {
+        // User logged out or session timed out
+        this.end_session();
+        return;
+    }
+    this.reset_timeout();
 };
+
 BQSession.prototype.session_timeout = function (baseurl) {
     this.parseTags();
     // timeout in more than 30 seconds ?  then just reset
@@ -2394,6 +2378,32 @@ BQSession.prototype.session_timeout = function (baseurl) {
     //window.location = baseurl + "/auth_service/logout";
     //alert("Your session has  timed out");
 };
+
+
+BQSession.prototype.parse_session  = function (){
+    var timeout = this.find_tags ('timeout');
+    var expires = this.find_tags ('expires');
+    if (expires && timeout) {
+        console.log ("session (timeout, expires) " + timeout.value + ':' + expires.value);
+        this.timeout = parseInt (timeout.value) * 1000;
+        this.expires = parseInt (expires.value) * 1000;
+    }
+    var user = this.find_tags ('user');
+    if (user) {
+        this.user_uri = user.value;
+    }
+};
+
+BQSession.prototype.hasUser = function () {
+    return this.user ? true : false;
+};
+
+BQSession.prototype.setUser = function (user) {
+    this.user = user;
+    if (this.callbacks.ongotuser)
+        this.callbacks.ongotuser(this.user);
+};
+
 
 
 //-------------------------------------------------------------------------
