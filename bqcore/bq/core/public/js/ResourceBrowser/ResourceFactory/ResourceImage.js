@@ -855,6 +855,7 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     onImagePhys : function(viewer, phys, dims) {
+
         this.dims = dims;
         if (dims.t>1 || dims.z>1)
             this.toolbar.queryById('menu_view_movie').setDisabled( false );
@@ -870,6 +871,23 @@ Ext.define('Bisque.Resource.Image.Page', {
             this.toolbar.queryById('download_as_ometiff').setDisabled( true );
             this.toolbar.queryById('download_as_omebigtiff').setDisabled( true );
         }
+
+
+        var webGl = function (){
+            try { var canvas = document.createElement( 'canvas' );
+                  return !! ( window.WebGLRenderingContext &&
+                              ( canvas.getContext( 'webgl' ) ||
+                                canvas.getContext( 'experimental-webgl' ) ) ); }
+            catch( e ) { return false; }
+        }; //test if webgl is available to the client
+
+        if (!webGl()) {//if webgl isn't available then we'll disable the command.
+            var button3D = this.toolbar.queryById('menu_view_3d');
+            button3D.setText('3D (WebGl not available)');
+            button3D.setTooltip('Enable WebGl to access viewer.');
+            button3D.setDisabled( true );
+        }
+
     },
 
     show2D : function() {
@@ -961,6 +979,17 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     show3D : function() {
+
+        var webGl = function (){
+            try { var canvas = document.createElement( 'canvas' );
+                return !! ( window.WebGLRenderingContext &&
+                            ( canvas.getContext( 'webgl' ) ||
+                              canvas.getContext( 'experimental-webgl' ) ) ); }
+          catch( e ) { return false; }
+        };
+
+        if(!webGl()) return;
+
         var btn = this.queryById('button_view');
         btn.setText('View: 3D');
         btn.setIconCls('view3d');
@@ -981,6 +1010,7 @@ Ext.define('Bisque.Resource.Image.Page', {
         }
 
         var cnt = this.queryById('main_container');
+        var me = this;
         cnt.add({
             //region : 'center',
             xtype: 'bq_volume_panel',
@@ -989,6 +1019,13 @@ Ext.define('Bisque.Resource.Image.Page', {
             toolbar: this.toolbar,
             phys: this.viewerContainer.viewer.imagephys,
             preferences: this.viewerContainer.viewer.preferences,
+            listeners: {
+                glcontextlost: function(event){
+                    BQ.ui.error("Hmmm WebGL seems to hit a snag: \n" + event.statusMessage);
+                    me.show2D();
+               },
+
+            }
         });
     },
 

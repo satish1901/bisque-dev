@@ -108,6 +108,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.needs_render = true;
         this.callParent();
 
+
     },
 
     initScene : function(uniforms) {
@@ -122,6 +123,15 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         var me = this;
 
         var thisDom = this.getEl().dom;
+
+        if(this.debug){
+            thisDom = WebGLDebugUtils.makeLostContextSimulatingCanvas(thisDom);
+            this.loseContext = function(){
+                thisDom.loseContext();
+            }
+            //thisDom.loseContextInNCalls(20);
+
+        }
 
         this.renderer = new THREE.WebGLRenderer({
             canvas: thisDom,
@@ -169,7 +179,8 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
             // animationID would have been set by your call to requestAnimationFrame
             me.fireEvent('glcontextlost', event);
             BQ.ui.error()
-            cancelAnimationFrame(animationID);
+
+            cancelAnimationFrame(me.animationID);
         }, false);
 
         this.renderer.context.canvas.addEventListener("webglcontextrestored", function(event) {
@@ -187,6 +198,10 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 
     getAutoRotate: function(){
         return this.controls.autoRotate;
+    },
+
+    getCanvas : function() {
+        return this.getEl().dom;
     },
 
     setClearColor: function(color, alpha){
@@ -310,7 +325,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         }
 
         //this.controls.update();
-        requestAnimationFrame(function() {
+        this.animationID = requestAnimationFrame(function() {
             me.doAnimate()
         });
     },
