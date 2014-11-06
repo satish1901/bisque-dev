@@ -544,7 +544,7 @@ def tags_special(dbtype, query, params):
                   'gob_types' : (GObject, ['resource_user_type'], None),
                    }
 
-    name_map = { 'resource_name' : 'name', 'resource_user_type' : 'type', 'resource_value': 'value', 'count':'count' }
+    name_map = { 'resource_name' : 'name', 'resource_user_type' : 'type', 'resource_value': 'value', 'count':'text' }
 
     # extract=tag[name],tag[value, name="qqq"],gobject[type],gobject[name,type="Fish*",value, ts ]
     # /tag[name],tag[value,name=qqq]
@@ -556,16 +556,16 @@ def tags_special(dbtype, query, params):
         for (dbclass, columns, filters) in filter_parse(tn):
 
             filters.append (dbclass.document_id == sq1.c.taggable_document_id)
-            query = DBSession.query(*columns)
-            log.debug ("FILTER %s" % query)
+            query = DBSession.query(func.count(columns[-1]).label('count'), *columns)
             query =query.filter (*filters)
             query =query.group_by(*columns).order_by(*columns)
-            log.debug ("FILTER %s" % query)
+            #log.debug ("FILTER %s" % query)
             q = [ fobject(resource_type=dbclass.xmltag, **(dict ((name_map[k], v) for k,v in attr._asdict().items()))) for  attr in query]
             #q = []
             results.extend (q)
         return results
 
+    # OLD versions
     if any (filt in params for filt in filter_map.keys()):
         results = []
         sq1 = query.with_labels().subquery()
@@ -579,7 +579,7 @@ def tags_special(dbtype, query, params):
             if fv and sel:
                 sq2=sq2.filter(getattr(dbtyp, sel) == fv)
             sq3 = sq2.group_by(*columns).order_by(*columns)
-            log.debug ("NEWSPECIAL %s" % sq3)
+            #log.debug ("NEWSPECIAL %s" % sq3)
 
             # tag_names : fobject (resource_type='tag' , name=tg.resource_name
             # tag_values: fobject (resource_type='tag', name = tv, value = v.resource_value, resource_value = v.resource_value)
