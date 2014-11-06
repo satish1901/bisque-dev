@@ -476,92 +476,57 @@ qualityTool.prototype.addUniforms = function(){
 qualityTool.prototype.loadPreferences = function(prefs){
     var menu = this.qualityMenu;
     //var chk = menu.getAt(0);
+    var idx = this.button.getStore().find('text', prefs);
+    var rcd = this.button.getStore().getAt(idx);
+    this.button.setValue(rcd.get('value'));
+    this.setQuality();
+    /*
     menu.items.each(function(item){
         if(item.text == prefs){
             item.setChecked(true);
         }
     });
+    */
 
 };
 
-qualityTool.prototype.setQuality = function(quality) {
-    var maxSteps = 64;
-    if (quality === 'low'){
-        maxSteps = 64;
-        this.volume.minSampleRate = 32;
-    }
-    if (quality === 'medium'){
-        maxSteps = 128;
-        this.volume.minSampleRate = 64;
-    }
-    if (quality === 'high'){
-        maxSteps = 256;
-        this.volume.minSampleRate = 128;
-    }
-    if (quality === 'ultra'){
-        maxSteps = 512;
-        this.volume.minSampleRate = 128;
-    }
-    if (quality === 'extreme'){
-        this.volume.minSampleRate = 512;
-        maxSteps = 2048;
-    }
-    this.volume.maxSteps = maxSteps;
-    this.volume.setMaxSampleRate(maxSteps);
+qualityTool.prototype.setQuality = function() {
+    var val = this.button.getValue();
+    var minVal = val/4;
+    this.volume.minSampleRate = minVal;
+    this.volume.maxSteps = val;
+    this.volume.setMaxSampleRate(val);
 };
 
 qualityTool.prototype.createButton = function(){
     var me = this;
-    var qualityCheck = function(item, checked){
-        if(checked === false) return;
-        me.setQuality(item.text);
-    };
 
-    this.qualityMenu = Ext.create('Ext.menu.Menu', {
-        itemId: 'qualityMenu',
-        style: {
-            overflow: 'visible'     // For the Combo popup
-        },
-        items: [
-            {
-                text: 'low',
-                checked: true,
-                group: 'theme',
-                checkHandler: qualityCheck
-            }, {
-                text: 'medium',
-                checked: false,
-                group: 'theme',
-                checkHandler: qualityCheck
-            }, {
-                text: 'high',
-                checked: false,
-                group: 'theme',
-                checkHandler: qualityCheck
-            }, {
-                text: 'ultra',
-                checked: false,
-                group: 'theme',
-                checkHandler: qualityCheck
-            },{
-                text: 'extreme',
-                checked: false,
-                group: 'theme',
-                checkHandler: qualityCheck
-            },
-
+    var options = Ext.create('Ext.data.Store', {
+		fields : ['value', 'text'],
+		data : [
+            {"value" : 64,   "text" : "minimal"},
+            {"value" : 256,  "text" : "low"},
+            {"value" : 768,  "text" : "medium"},
+            {"value" : 2048, "text" : "high"},
         ]
-    });
+	});
+	this.button = Ext.create('Ext.form.ComboBox',{
 
+		fieldLabel : 'rendering quality',
+		store : options,
+		queryMode : 'local',
+		displayField : 'text',
+		valueField : 'value',
+		forceSelection : true,
+		editable : false,
+		//value : def,
 
-    this.button = Ext.create('Ext.Button', {
-        text : 'rendering quality',
-        cls : 'volume-button',
-        //width: 100,
-        menu: this.qualityMenu,
-        scope : me,
-    });
+		listeners : {
+			scope : this,
+			'select' : this.setQuality,
+		},
 
+	});
     this.button.tooltip = 'set maximum rendering quality';
 };
 

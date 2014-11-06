@@ -353,23 +353,32 @@ Ext.define('BQ.viewer.Volume.Panel', {
         //create the threejs canvas
         //-------------------------------------
 
-       this.canvas3D = Ext.create('BQ.viewer.Volume.ThreejsPanel', {
-			itemId : 'canvas3D',
-           listeners: {
-               scope : me,
+        this.canvas3D = Ext.create('BQ.viewer.Volume.ThreejsPanel', {
+		    itemId : 'canvas3D',
+            debug: true,
+
+            listeners: {
+                scope : me,
                 resize: this.onresize,
-           },
-           handlers: {
-               scope : me,
-               contextlost: function(event){
-                   me.fireEvent('contextlost', me);
-               },
-               mousemove : mousemove,
-               mousedown : mousedown,
-               mousewheel: mousedown,
-               mouseup : mouseup,
-               mousewheelup : mouseup,
-           },
+
+                glcontextlost: function(event){
+                    me.fireEvent('glcontextlost', event);
+                },
+                glcontextrestored: function(event){
+                    me.fireEvent('glcontextrestored', event);
+                }
+            },
+
+            handlers: {
+                scope : me,
+                mousemove : mousemove,
+                mousedown : mousedown,
+                mousewheel: mousedown,
+                mouseup : mouseup,
+                mousewheelup : mouseup,
+                //piggy back events
+
+            },
 
             buildScene: function() {
 		        me.scene = new THREE.Scene();
@@ -1600,15 +1609,16 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			cls : 'toolItem',
 			xtype : 'checkbox',
 			handler : function (item, checked) {
-				if (checked) {
+				me.canvas3D.loseContext();
+                if (checked) {
 					me.toolPanel.show();
 				} else
 					me.toolPanel.hide();
 			},
-		},{
+		},/*{
             xtype: 'glinfo',
             canvas3D: this.canvas3D
-        }]);
+        }*/]);
 //        showAnimPanel();
 
 	},

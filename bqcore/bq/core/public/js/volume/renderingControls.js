@@ -480,7 +480,7 @@ boxTool.prototype.initControls = function(){
     var constrainDims = Ext.create('Ext.form.field.Checkbox',{
         itemId: 'constrain-dims',
         boxLabel: 'maintain proportion',
-    });
+    }).hide();
 
     this.constraintLock = false;
     var resetLock = function(){
