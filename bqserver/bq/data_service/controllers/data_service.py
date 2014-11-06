@@ -107,6 +107,11 @@ class DataServerController(ServiceController):
     @expose(content_type='text/xml')
     def index(self, **kw):
         #resources = all_resources()
+        if kw:
+            # parameters where sent to index
+            resource_controller = self.get_child_resource('resource')
+            return resource_controller._default (**kw)
+
         resource = etree.Element('resource')
         for r in resource_types():
             etree.SubElement(resource, 'resource', name = str(r), uri = self.makeurl(str(r)))
