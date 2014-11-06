@@ -75,6 +75,7 @@ from bq.core import identity
 from bq.core.service import ServiceController
 #from bq.exceptions import RequestError
 from bq.util.paths import data_path
+from bq.util.converters import asbool
 
 log = logging.getLogger("bq.data_service.resource")
 
@@ -191,7 +192,8 @@ class ResponseCache(object):
         return "%s,%s" % (user if user else '',  resource.resource_uniq if resource else '')
     def _resource_query_names(self, resource, user, *args):
         base = "%s,%s" % (user if user else '', resource.resource_type if resource else '')
-        return [ base ] + [ "#".join ([base, arg]) for arg in args ]
+        top = "%s#" % (user if user else 0)
+        return [ top, base ] + [ "#".join ([base, arg]) for arg in args ]
 
     def save(self, url, headers, value,user):
         cachename = os.path.join(self.cachepath, self._cache_name(url, user))
@@ -360,6 +362,8 @@ class HierarchicalCache(ResponseCache):
                   USER,00-UNIQ....
            2.  Any query associated with  resource_type
                   USER, TYPE#....
+           3.  Queries accross multiple resource types
+                  USER,*#
            if published then delete all public queries
         """
         from sqlalchemy.orm import Query
@@ -389,7 +393,7 @@ class HierarchicalCache(ResponseCache):
         # invalidate cached resource varients
         def delete_matches (files, names, user):
             for f in list(files):
-                cf = f.split(',',1)[1] if user is None else f
+                cf = f.split(',',1)[-1] if user is None else f
                 if any ( cf.startswith(qn) for qn in names ):
                     try:
                         os.unlink (os.path.join(self.cachepath, f))
@@ -402,11 +406,15 @@ class HierarchicalCache(ResponseCache):
         names  = [ cache_name ]
         names.extend (query_names)
         # Delete user matches
-        delete_matches ( files, names, user)
+        try:
+            delete_matches ( files, names, user)
+        except Exception:
+            log.exception ("Problem while deleting files")
+
         # Split off user and remove global queries
         # NOTE: we may only need to do this when resource invalidated was "published"
         if True: # resource.permission == 'published':
-            names = [ qnames.split(',',1)[1] for qnames in query_names]
+            names = [ qnames.split(',',1)[-1] for qnames in query_names]
             delete_matches ( files, names, None)
 
 
@@ -557,6 +565,7 @@ class Resource(ServiceController):
             request.bisque = bisque
         bisque = request.bisque
         user_id  = identity.get_user_id()
+        usecache = asbool(kw.pop('cache', True))
         http_method = request.method.lower()
         log.info ('Request "%s" with %s?%s'%(http_method,str(request.path),str(kw)))
         log.debug ('Request "%s" '%(path))
@@ -580,7 +589,10 @@ class Resource(ServiceController):
             elif http_method == 'get':
                 #If the method is a get, call the self.index method, which
                 #should list the contents of the collection.
-                headers, value = self.server_cache.fetch(request.url, user=user_id)
+                headers = value = None
+                if usecache:
+                    headers, value = self.server_cache.fetch(request.url, user=user_id)
+
                 if value:
                     response.headers.update(headers) # cherrypy.response.headers.update (headers)
                 else:
@@ -663,7 +675,9 @@ class Resource(ServiceController):
                 value = method(resource, **kw)
                 #self.server_cache.invalidate(request.url, user=user_id)
             elif  http_method == 'get':
-                headers, value = self.server_cache.fetch(request.url, user=user_id)
+                headers = value = None
+                if usecache:
+                    headers, value = self.server_cache.fetch(request.url, user=user_id)
                 if value:
                     response.headers.update (headers)
                 else:
