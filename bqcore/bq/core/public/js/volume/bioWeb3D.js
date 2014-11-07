@@ -376,7 +376,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 mousewheel: mousedown,
                 mouseup : mouseup,
                 mousewheelup : mouseup,
-                //piggy back events
 
             },
 
