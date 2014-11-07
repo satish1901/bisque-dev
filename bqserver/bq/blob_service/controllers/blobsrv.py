@@ -305,6 +305,8 @@ class BlobServer(RestController, ServiceMixin):
                 pass
         return self.plugin_manager.guess_mime(filename) or 'application/octet-stream'
 
+    def get_import_plugins(self):
+        return self.plugin_manager.get_import_plugins()
 
 #################################
 # service  functions
