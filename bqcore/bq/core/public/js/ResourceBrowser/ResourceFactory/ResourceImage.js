@@ -979,7 +979,7 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     show3D : function() {
-
+        try{
         var webGl = function (){
             try { var canvas = document.createElement( 'canvas' );
                 return !! ( window.WebGLRenderingContext &&
@@ -1011,7 +1011,8 @@ Ext.define('Bisque.Resource.Image.Page', {
 
         var cnt = this.queryById('main_container');
         var me = this;
-        cnt.add({
+
+            cnt.add({
             //region : 'center',
             xtype: 'bq_volume_panel',
             itemId: 'main_view_3d',
@@ -1020,13 +1021,30 @@ Ext.define('Bisque.Resource.Image.Page', {
             phys: this.viewerContainer.viewer.imagephys,
             preferences: this.viewerContainer.viewer.preferences,
             listeners: {
+
                 glcontextlost: function(event){
-                    BQ.ui.error("Hmmm WebGL seems to hit a snag: \n" + event.statusMessage);
+                    var msgText = " ";
+                    var link = " mailto:me@example.com"
+                        + "?cc=myCCaddress@example.com"
+                        + "&subject=" + escape("This is my subject")
+                        + "&body=" + msgText + "";
+
+                    BQ.ui.error("Hmmm... WebGL seems to hit a snag: <BR/> " +
+                                "error: " + event.statusMessage +
+                               "<BR/>Do you want to report this problem?" +
+                                "<a href = " + link + "> send mail </a>");
                     me.show2D();
                },
 
             }
         });
+        }
+        catch(err){
+            BQ.ui.error("This is strange, the volume renderer failed to load. <BR/>" +
+                        "The reported error is: <BR/> " +
+                        err.message);
+            me.show2D();
+        }
     },
 
 });
