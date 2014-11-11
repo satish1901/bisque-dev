@@ -115,7 +115,7 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
         if(!this.uniforms[name]) return;
 		this.uniforms[name].value = value;
 
-        this.canvas3D.rerender();
+        //this.canvas3D.rerender();
         this.fireEvent('setuniform', this);
 	},
 
@@ -318,7 +318,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	layout : 'fit',
 
 	initComponent : function () {
-		this.update_delay_ms = 50;
+		this.update_delay_ms = 200;
 
 		this.preMultiplyAlpha = false;
 		this.currentTime = 0;
@@ -355,8 +355,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
         this.canvas3D = Ext.create('BQ.viewer.Volume.ThreejsPanel', {
 		    itemId : 'canvas3D',
-            debug: true,
-
             listeners: {
                 scope : me,
                 resize: this.onresize,
@@ -413,8 +411,14 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			cubeMesh : this.cubeMesh,
             canvas3D : this.canvas3D,
             listeners: {
-                materialloaded : function(){me.rerender()},
-                setuniform     : function(){me.rerender()},
+                materialloaded : function(){
+                    me.setMaxSteps = me.minSampleRate;
+                    me.rerender()
+                },
+                setuniform     : function(){
+                    me.setMaxSteps = me.minSampleRate;
+                    me.rerender()
+                },
                 scope: this
             },
 		});
@@ -613,17 +617,14 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
                 me.createViewMenu();
 
-
                 me.BQImageRequest();
                 me.initHistogram();
 
 		        me.createToolMenu();
                 me.createToolPanel();
-				//me.createClipSlider();
 				me.createZoomSlider();
 
                 this.firstLoad = true;
-
 
                 //---------------------------------------------------------
                 //register preferences
@@ -720,25 +721,15 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 
 	rerenderImmediate : function (input) {
-        if (!input){
-			input = this.minSampleRate;
-            this.progressive = true;
-        }
-        else this.progressive = false;
-        this.setSampleRate(input);
         this.canvas3D.rerender();
     },
 
-	rerender : function (input) {
-		if (!input){
-			input = this.minSampleRate;
-            this.progressive = true;
-        }
-        else this.progressive = false;
+	rerender : function () {
         var me = this;
+        //me.canvas3D.rerender();
+
         setTimeout(callback(this, function () {
-			me.setSampleRate(input);
-            me.canvas3D.rerender();
+			me.canvas3D.rerender();
 		}), this.update_delay_ms);
 
     },
@@ -758,15 +749,18 @@ Ext.define('BQ.viewer.Volume.Panel', {
             this.canvas3D.needs_render = false;
             return;
         }
-
+/*
         if(!this.progressive){
             this.setSampleRate(this.setMaxSteps);
 			this.canvas3D.needs_render = false;
             return;
         }
+*/
 
 		if (this.setMaxSteps < this.maxSteps) {
-            this.setSampleRate(1.5*this.setMaxSteps);
+            var newSampleRate = 1.5*this.setMaxSteps;
+            this.setSampleRate(this.setMaxSteps);
+            this.setMaxSteps = newSampleRate;
 		} else {
             this.setSampleRate(this.maxSteps);
 			this.canvas3D.needs_render = false;
@@ -1033,6 +1027,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	updateTextureUniform : function () {
 		var me = this;
+
+        if(!this.state)
+            this.state = 0;
+
 		if (!this.textureTimeBuffer[this.currentTime]) {
 			//var textureAtlas' = new Array();
             this.loadedTextures++;
@@ -1040,10 +1038,12 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 this.fireEvent('loadinitiated',t);
 
             var t = this.currentTime;
+            var currentState = this.state;
 			var textureAtlas = new THREE.ImageUtils.loadTexture(this.constructAtlasUrl(), undefined, function () {
                 //console.log(t, 'loaded!!!');
                 //me.playBack.setLoaded(t);
                 me.loadedTextures--;
+                if(currentState != me.state) return;
                 if(me.loadedTextures == 0)
                     me.fireEvent('loadcomplete',t);
 
@@ -1116,6 +1116,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	wipeTextureTimeBuffer : function () {
 		this.loadedTextures = 0;
+        this.state++;
         this.textureTimeBuffer = new Array();
         this.fireEvent('wipetexturebuffer', this);
 	},
@@ -1479,6 +1480,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
                            new lightTool(this));
 		    }
 
+            if(window.location.hash == "#debug"){
+                tools.push(new loseContextTool(this));
+
+            }
+
             tools.push(new transferTool(this),
                        new gObjectTool(this),
                        new clipTool(this),
@@ -1608,7 +1614,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			cls : 'toolItem',
 			xtype : 'checkbox',
 			handler : function (item, checked) {
-				me.canvas3D.loseContext();
+
                 if (checked) {
 					me.toolPanel.show();
 				} else
@@ -1782,11 +1788,22 @@ VolumePlugin.prototype.addCommand = function (command, pars) {};
 VolumePlugin.prototype.changed = function () {
 	if (!this.update_check || (this.update_check && this.update_check.checked))
 	{
-	    this.volume.needs_update();
+        this.volume.needs_update();
+
+        this.volume.wipeTextureTimeBuffer();
+        this.volume.setLoading("fetching new texture...");
 
     }
-
 };
+
+/*
+VolumePlugin.prototype.changed = function () {
+	if (!this.update_check || (this.update_check && this.update_check.checked))
+		this.volume.needs_update();
+	this.volume.wipeTextureTimeBuffer();
+    this.volume.setLoading("fetching new texture...");
+};
+*/
 
 function VolumeSize(player) {
 	this.base = VolumePlugin;
@@ -1889,13 +1906,6 @@ VolumeDisplay.prototype.init = function () {
 	};
 	if (!this.menu)
 		this.createMenu();
-};
-
-VolumePlugin.prototype.changed = function () {
-	if (!this.update_check || (this.update_check && this.update_check.checked))
-		this.volume.needs_update();
-	this.volume.wipeTextureTimeBuffer();
-    this.volume.setLoading("fetching new texture...");
 };
 
 VolumeDisplay.prototype.addCommand = function (command, pars) {

@@ -169,13 +169,23 @@ VolScaleBarTool.prototype.updateImage = function () {
 
 VolScaleBarTool.prototype.updatePosition = function () {
     if (this.scalebar == null) return;
+    var dims = this.volume.dims;
+
+    var min = Math.min(dims.pixel.x, Math.min(dims.pixel.y,dims.pixel.z));
+    var max = Math.max(dims.pixel.x, Math.max(dims.pixel.y,dims.pixel.z));
+    var boxMin = Math.min(dims.slice.x, Math.min(dims.slice.y,dims.slice.z));
+    var boxMax = Math.max(dims.slice.x, Math.max(dims.slice.y,dims.slice.z));
+
     var camPos = this.volume.canvas3D.camera.position;
     var fov = this.volume.canvas3D.fov;
-    var l = camPos.length();
-    var d = 2.0*l/Math.tan(fov/2);
+    var d = camPos.length();
+    var tanHalf = 2.0*Math.tan(Math.PI*fov/2/180);
+    var l = d*tanHalf;
     var imgphys = this.volume.phys;
-
-    this.scalebar.setValue( d*imgphys.pixel_size[0] );
+    var y = this.volume.canvas3D.getHeight();
+    this.scalebar.setValue( l * dims.slice.y/y*dims.pixel.y);
+    //this.scalebar.setValue( l );
+    //this.scalebar.setValue( d*imgphys.pixel_size[0] );
 };
 
 /*******************************************************************************
@@ -281,11 +291,13 @@ VolSpinnerTool.prototype.addButton = function () {
 
 VolSpinnerTool.prototype.start = function () {
     this.go = true;
+    this.spinner.show();
 };
 
 
 VolSpinnerTool.prototype.stop = function () {
     this.go = false;
+    this.spinner.hide();
 };
 
 
@@ -510,7 +522,10 @@ qualityTool.prototype.createButton = function(){
             {"value" : 2048, "text" : "high"},
         ]
 	});
-	this.button = Ext.create('Ext.form.ComboBox',{
+    /*
+    this.button = this.volume.createCombo('rendering quality', options, 'medium', this, this.quality, 'quality-combo') ;
+    */
+    this.button = Ext.create('Ext.form.ComboBox',{
 
 		fieldLabel : 'rendering quality',
 		store : options,
@@ -527,6 +542,7 @@ qualityTool.prototype.createButton = function(){
 		},
 
 	});
+
     this.button.tooltip = 'set maximum rendering quality';
 };
 
@@ -570,4 +586,47 @@ autoRotateTool.prototype.createButton = function(){
     });
 
     this.button.tooltip = 'Allows the camera to automatically rotate after manipulation';
+};
+
+
+
+function loseContextTool(volume, cls) {
+	//renderingTool.call(this, volume);
+
+    this.name = 'autoRotate';
+/*
+    this.label = 'save png';
+    //this.cls = 'downloadButton';
+*/
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+loseContextTool.prototype = new renderingTool();
+
+loseContextTool.prototype.init = function(){
+    //override the init function,
+    var me = this;
+    // all we need is the button which has a menu
+    this.createButton();
+};
+
+loseContextTool.prototype.addButton = function () {
+    this.volume.toolMenu.add(this.button);
+};
+
+loseContextTool.prototype.createButton = function(){
+    var me = this;
+
+    this.button = Ext.create('Ext.Button', {
+        width : 36,
+        height : 36,
+        cls : 'volume-button',
+		handler : function (item, checked) {
+            me.volume.canvas3D.loseContext();
+		},
+        scope : me,
+    });
+
+    this.button.tooltip = 'kaboom goes the dynamite';
 };

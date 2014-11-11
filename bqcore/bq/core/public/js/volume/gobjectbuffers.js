@@ -45,9 +45,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 function gObjectBuffer(volume) {
 	this.volume = volume
-	this.position = new Array();
-	this.index = new Array();
-	this.colors = new Array();
+	this.position = new Array(); //this stores vertices
+	this.index = new Array(); //this stores indices into the vertex set
+	this.colors = new Array(); //this stores colors
 };
 
 gObjectBuffer.prototype.rescale = function () {
@@ -306,6 +306,9 @@ lineBuffer.prototype.allocateMesh = function (geometry, material) {
 };
 
 function polyBuffer(volume) {
+    this.rindex = new Array(); //reverse index stores the
+    this.shapeIndex = new Array(); //this stores an index for each g-object shape
+    this.selected = -1;
 	gObjectBuffer.call(this, volume);
 };
 
@@ -327,6 +330,21 @@ polyBuffer.prototype.push = function (g) {
 	//loads necessary data onto the vertex buffer
     var poly = g.vertices;
 	var lindex = [];
+
+	var lcolor = {
+		r : Math.random(),
+		g : Math.random(),
+		b : Math.random()
+	}
+
+    var shapeID = this.shapeIndex.length;
+
+    var idStart = this.index.length == 0 ? 0 : this.index.length-1;
+    this.shapeIndex.push({
+        color:  lcolor,
+        index:  this.index[idStart],
+    });
+
 	if (!this.isClockWise(poly))
 		lindex = POLYGON.tessellate(poly, []);
 	else
@@ -336,25 +354,48 @@ polyBuffer.prototype.push = function (g) {
 		lindex[j] += this.position.length;
 	}
 
-	var lcolor = {
-		r : Math.random(),
-		g : Math.random(),
-		b : Math.random()
-	}
 	for (var j = 0; j < poly.length; j++) {
 		this.colors.push(lcolor);
 	}
 
 	for (var i = 0; i < poly.length; i++) {
 		this.position.push(poly[i]); // = positions.concat(poly)
-	};
+	}
 
 	for (var i = 0; i < lindex.length; i++) {
 		this.index.push(lindex[i]); // = positions.concat(poly)
-	};
+        this.rindex[lindex[i]] = shapeID;
+	}
 	//index.push(lindex);// = index.concat(lindex);
 	//console.log('local: ', lindex, 'localpoly: ', poly, 'global: ', index, 'global p: ',positions);
 	//triCounter += polys[i].vertices.length;
+};
+
+polyBuffer.prototype.setColor = function(id, color){
+    var shape = this.shapeIndex[id];
+    var i0 = this.shapeIndex[id].index;
+    var i1;
+    if(id + 1 == this.shapeIndex.length)
+        i1 = this.index.length; //this means that we go to the last index
+    else
+        i1 = this.shapeIndex[id + 1].index; //otherwise we take the stored index
+
+    for(var i = i0; i < i1 - i0; i++){
+        var cid = this.index[i];
+        this.colors[cid].r = color.r;
+        this.colors[cid].g = color.g;
+        this.colors[cid].b = color.b;
+    }
+};
+
+polyBuffer.prototype.setSelected = function(toSelect){
+    if(this.selected > 0){
+        var shape = this.shapeIndex[toSelect];
+        this.setColor(this.selected,shape.color);
+    }
+    this.selected = toSelect;
+    this.setColor(toSelect,{r: 255, g: 0, b: 0});
+    this.mesh.geometry.verticesNeedUpdate = true;
 };
 
 polyBuffer.prototype.allocateMesh = function (geometry, material) {
@@ -892,12 +933,19 @@ gObjectTool.prototype.initControls = function(){
 			//this.sphere.position.copy( intersection.point );
 			var gindex = intersections[0].object.geometry.getAttribute('index').array;
 			var pos = canvas.projector.projectVector(intersection.point.clone(), camera);
+
 			var index;
-			if (intersection.index)
+            if (intersection.index)
 				index = gindex[intersection.index];
 			if (intersection.indices)
 				index = intersection.indices;
-			this.label.style.top = '' + 0.5 * height * (1.0 - pos.y) + cy + 'px';
+
+            if(index.length == 3){
+                var id = this.currentSet.polygons.rindex[index[0]];
+                this.currentSet.polygons.setSelected(id);
+            }
+
+            this.label.style.top = '' + 0.5 * height * (1.0 - pos.y) + cy + 'px';
 			this.label.style.left = '' + 0.5 * width * (1.0 + pos.x) - cx + 'px';
 			this.label.textContent = [index].join(", ");
 		}

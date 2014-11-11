@@ -860,8 +860,9 @@ VolumeShader.prototype.config = function(config){
             '      float r0 = 1.0 - 2.0*rand(pos.xy + eye_d.zx); //create three random numbers for each dimension',
             '      float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);',
             '      float r2 = 1.0 - 2.0*rand(pos.xz + eye_d.yx);',
-            '    for(int j=0; j<maxStepsLight; j++){ ',
-            '      if (j > LIGHT_SAMPLES) break;',
+            '    for(int j=0; j<4; j++){ ',
+            //'    for(int j=0; j<maxStepsLight; j++){ ',
+            '      //if (j > LIGHT_SAMPLES) break;',
 
             '      float lti = (float(j))*lstep;',
             '      vec4 Ni   = DISPERSION*(r0*dl + vec4(r1*N1 + r2*N2, 0.0));',
@@ -914,8 +915,10 @@ VolumeShader.prototype.config = function(config){
             '      float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);',
             '      float r2 = 1.0 - 2.0*rand(pos.xz + eye_d.yx);',
 
-            '    for(int j=0; j<maxStepsLight; j++){ ',
-            '      if (j > LIGHT_SAMPLES) break;',
+            //'    for(int j=0; j<maxStepsLight; j++){ ',
+            //'      if (j > LIGHT_SAMPLES) break;',
+            '    for(int j=0; j<4; j++){ ',
+            //'      if (j > LIGHT_SAMPLES) break;',
             '      vec4 Ni   = DISPERSION*(vec4(r1*N1 + r2*N2, 0.0));',
             '      vec4 lpos = pos - lstep*Ni - 0.2*lstep*lr;',
 
