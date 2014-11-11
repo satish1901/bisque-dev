@@ -882,6 +882,17 @@ deepTool.prototype.initControls = function(){
 };
 
 deepTool.prototype.toggle = function(button){
+
+    var l = this.volume.canvas3D.camera.position.length();
+    console.log(l);
+    if( this.state == 0 && l < 2.2){
+        BQ.ui.error("setting the deep rendering tool while too close </br>" +
+                    "to the objet being rendered can result in context loss.</br>" +
+                    "zoom out and try again.");
+        this.button.toggle(false);
+        return;
+    }
+
     this.state ^= 1;
     if(this.state){
         this.volume.shaderConfig.lighting.deep = true;
@@ -1136,6 +1147,32 @@ saveTool.prototype = new renderingTool();
 saveTool.prototype.addUniforms = function(){
 };
 
+
+saveTool.prototype.createButton = function(){
+    var me = this;
+    this.button = Ext.create('Ext.Button',{
+        //xtype: 'button',
+        //text : this.cls,
+        //layout : 'fit',
+        layout : {
+			type : 'vbox',
+			align : 'stretch',
+			pack : 'start',
+		},
+        handler : function (button, pressed) {
+            this.volume.canvas3D.savePng();
+        },
+        scope : me,
+        width : 36,
+        height : 36,
+        iconCls   : this.cls,
+        //enableToggle: true,
+        pressed: false,
+        //toggleHandler : this.toggle,
+        scope : me,
+    });
+},
+/*
 saveTool.prototype.initControls = function(){
     var me = this;
     this.button.tooltip = 'save png';
@@ -1151,13 +1188,9 @@ saveTool.prototype.initControls = function(){
     });
     this.min = 1.0;
     this.controls.add([button]);
-    /*
-    this.volume.on('loaded', function () {
 
-    });
-    */
 };
-
+*/
 
 //////////////////////////////////////////////////////////////////
 //

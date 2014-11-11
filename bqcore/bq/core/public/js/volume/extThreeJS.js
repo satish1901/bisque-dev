@@ -123,14 +123,11 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         var me = this;
 
         var thisDom = this.getEl().dom;
-
-        if(this.debug){
+        if(window.location.hash == "#debug"){
             thisDom = WebGLDebugUtils.makeLostContextSimulatingCanvas(thisDom);
             this.loseContext = function(){
                 thisDom.loseContext();
             }
-            //thisDom.loseContextInNCalls(20);
-
         }
 
         this.renderer = new THREE.WebGLRenderer({
@@ -144,7 +141,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.setClearColor(0xC0C0C0, 1.0);
 
         var aspect = this.getWidth() / this.getHeight();
-        this.fov = 40;
+        this.fov = 20;
         this.camera = new THREE.PerspectiveCamera(this.fov, aspect, .01, 20);
 
         //this.controls = new THREE.TrackballControls(this.camera, thisDom);
@@ -178,8 +175,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
             event.preventDefault();
             // animationID would have been set by your call to requestAnimationFrame
             me.fireEvent('glcontextlost', event);
-            BQ.ui.error()
-
+            BQ.ui.error(event.statusMessage)
             cancelAnimationFrame(me.animationID);
         }, false);
 
