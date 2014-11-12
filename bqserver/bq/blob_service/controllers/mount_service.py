@@ -142,9 +142,13 @@ def load_default_drivers():
                 path = params.pop ('path')
                 params['mounturl'] = string.Template(path).safe_substitute(OLDPARMS)
                 log.warn ("Use of deprecated path (%s) in  %s driver . Please change to mounturl and remove any from %s", path, store, OLDPARMS.keys())
+                log.info ("using mounturl = ", params['mounturl'])
             else:
                 log.error ('cannot configure %s without the mounturl parameter' , store)
                 continue
+        if 'top' not in params:
+            log.warn ("mounturl and top are required  for driver.  using mounturl")
+            params['top'] = params['mounturl'].split ('$user')[0]
         log.debug("params = %s" , params)
         #driver = make_storage_driver(params.pop('path'), **params)
         #if driver is None:
