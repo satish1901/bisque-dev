@@ -56,6 +56,7 @@ import logging
 import base64
 import transaction
 import json
+import posixpath
 
 from datetime import datetime, timedelta
 from lxml import etree
@@ -180,7 +181,7 @@ class AuthenticationServer(ServiceController):
         userid = request.identity['repoze.who.userid']
         flash(_('Welcome back, %s!') % userid)
         self._begin_mex_session()
-        timeout = int (config.get ('bisque.login.timeout', 10))
+        timeout = int (config.get ('bisque.login.timeout', 0))
         if timeout:
             session['expires']  = (datetime.now() + timedelta(minutes=timeout))
             session['timeout']  = timeout*60
@@ -250,13 +251,13 @@ class AuthenticationServer(ServiceController):
 
     @expose(content_type="text/xml")
     def session(self):
-        sess = etree.Element ('session', )
+        sess = etree.Element ('session', uri = posixpath.join(self.uri, "session") )
         if identity.not_anonymous():
             #vk = tgidentity.current.visit_link.visit_key
             #log.debug ("session_timout for visit %s" % str(vk))
             #visit = Visit.lookup_visit (vk)
             #expire =  (visit.expiry - datetime.now()).seconds
-            timeout = int(session.get ('timeout', 600 ))
+            timeout = int(session.get ('timeout', 0 ))
             expires = session.get ('expires', datetime(2100, 1,1))
 
             current_user = identity.get_user()

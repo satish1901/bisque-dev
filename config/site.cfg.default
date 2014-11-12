@@ -140,6 +140,7 @@ bisque.image_service.imgcnv.omp_num_threads = 4
 #
 # Login identification  systems
 # NOTE: you must also edit config/who.ini to enable these
+#bisque.login.timeout=0  # no session expire
 bisque.login.providers =  local
 #bisque.login.providers =  iplant, local
 

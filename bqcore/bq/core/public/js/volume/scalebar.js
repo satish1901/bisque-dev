@@ -169,13 +169,23 @@ VolScaleBarTool.prototype.updateImage = function () {
 
 VolScaleBarTool.prototype.updatePosition = function () {
     if (this.scalebar == null) return;
+    var dims = this.volume.dims;
+
+    var min = Math.min(dims.pixel.x, Math.min(dims.pixel.y,dims.pixel.z));
+    var max = Math.max(dims.pixel.x, Math.max(dims.pixel.y,dims.pixel.z));
+    var boxMin = Math.min(dims.slice.x, Math.min(dims.slice.y,dims.slice.z));
+    var boxMax = Math.max(dims.slice.x, Math.max(dims.slice.y,dims.slice.z));
+
     var camPos = this.volume.canvas3D.camera.position;
     var fov = this.volume.canvas3D.fov;
-    var l = camPos.length();
-    var d = 2.0*l/Math.tan(fov/2);
+    var d = camPos.length();
+    var tanHalf = 2.0*Math.tan(Math.PI*fov/2/180);
+    var l = d*tanHalf;
     var imgphys = this.volume.phys;
-
-    this.scalebar.setValue( d*imgphys.pixel_size[0] );
+    var y = this.volume.canvas3D.getHeight();
+    this.scalebar.setValue( l * dims.slice.y/y*dims.pixel.y);
+    //this.scalebar.setValue( l );
+    //this.scalebar.setValue( d*imgphys.pixel_size[0] );
 };
 
 /*******************************************************************************
@@ -281,11 +291,13 @@ VolSpinnerTool.prototype.addButton = function () {
 
 VolSpinnerTool.prototype.start = function () {
     this.go = true;
+    this.spinner.show();
 };
 
 
 VolSpinnerTool.prototype.stop = function () {
     this.go = false;
+    this.spinner.hide();
 };
 
 
@@ -354,7 +366,7 @@ VolSpinnerTool.prototype.initControls = function () {
                          '#define M_PI 3.14159265358979323846',
 		                 'void main() {',
                          'if(small == 1){',
-                         'gl_FragColor = vec4(vec3(0.5 + 0.5*cos(4.0*t)),1.0);',
+                         'gl_FragColor = vec4(vec3(0.5 + 0.5*cos(4.0*t), 0.0, 0.0), 1.0);',
                          'return;',
                          '}',
 	                     'vec2 uv = gl_FragCoord.xy / ires.xy;',
@@ -439,4 +451,182 @@ VolSpinnerTool.prototype.initControls = function () {
         },
         scope: me,
     });
+};
+
+
+function qualityTool(volume, cls) {
+	//renderingTool.call(this, volume);
+    this.name = 'quality';
+/*
+
+
+    this.label = 'save png';
+    //this.cls = 'downloadButton';
+*/
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+qualityTool.prototype = new renderingTool();
+
+
+qualityTool.prototype.init = function(){
+    //override the init function,
+    var me = this;
+    // all we need is the button which has a menu
+    this.createButton();
+};
+
+qualityTool.prototype.addButton = function () {
+    //we override where we'll add this button, we send it to the settings menu, currently called toolMenu
+    this.volume.toolMenu.add(this.button);
+};
+
+qualityTool.prototype.addUniforms = function(){
+};
+
+qualityTool.prototype.loadPreferences = function(prefs){
+    var menu = this.qualityMenu;
+    //var chk = menu.getAt(0);
+    var idx = this.button.getStore().find('text', prefs);
+    var rcd = this.button.getStore().getAt(idx);
+    this.button.setValue(rcd.get('value'));
+    this.setQuality();
+    /*
+    menu.items.each(function(item){
+        if(item.text == prefs){
+            item.setChecked(true);
+        }
+    });
+    */
+
+};
+
+qualityTool.prototype.setQuality = function() {
+    var val = this.button.getValue();
+    var minVal = val/4;
+    this.volume.minSampleRate = minVal;
+    this.volume.maxSteps = val;
+    this.volume.setMaxSampleRate(val);
+};
+
+qualityTool.prototype.createButton = function(){
+    var me = this;
+
+    var options = Ext.create('Ext.data.Store', {
+		fields : ['value', 'text'],
+		data : [
+            {"value" : 64,   "text" : "minimal"},
+            {"value" : 256,  "text" : "low"},
+            {"value" : 768,  "text" : "medium"},
+            {"value" : 2048, "text" : "high"},
+        ]
+	});
+    /*
+    this.button = this.volume.createCombo('rendering quality', options, 'medium', this, this.quality, 'quality-combo') ;
+    */
+    this.button = Ext.create('Ext.form.ComboBox',{
+
+		fieldLabel : 'rendering quality',
+		store : options,
+		queryMode : 'local',
+		displayField : 'text',
+		valueField : 'value',
+		forceSelection : true,
+		editable : false,
+		//value : def,
+
+		listeners : {
+			scope : this,
+			'select' : this.setQuality,
+		},
+
+	});
+
+    this.button.tooltip = 'set maximum rendering quality';
+};
+
+
+function autoRotateTool(volume, cls) {
+	//renderingTool.call(this, volume);
+
+    this.name = 'autoRotate';
+/*
+    this.label = 'save png';
+    //this.cls = 'downloadButton';
+*/
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+autoRotateTool.prototype = new renderingTool();
+
+autoRotateTool.prototype.init = function(){
+    //override the init function,
+    var me = this;
+    // all we need is the button which has a menu
+    this.createButton();
+};
+
+autoRotateTool.prototype.addButton = function () {
+    this.volume.toolMenu.add(this.button);
+};
+
+autoRotateTool.prototype.createButton = function(){
+    var me = this;
+
+    this.button = Ext.create('Ext.form.field.Checkbox', {
+        boxLabel : 'Autorotate Camera',
+        cls : 'volume-button',
+        checked: false,
+		handler : function (item, checked) {
+			me.volume.setAutoRotate(checked);
+		},
+        scope : me,
+    });
+
+    this.button.tooltip = 'Allows the camera to automatically rotate after manipulation';
+};
+
+
+
+function loseContextTool(volume, cls) {
+	//renderingTool.call(this, volume);
+
+    this.name = 'autoRotate';
+/*
+    this.label = 'save png';
+    //this.cls = 'downloadButton';
+*/
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+loseContextTool.prototype = new renderingTool();
+
+loseContextTool.prototype.init = function(){
+    //override the init function,
+    var me = this;
+    // all we need is the button which has a menu
+    this.createButton();
+};
+
+loseContextTool.prototype.addButton = function () {
+    this.volume.toolMenu.add(this.button);
+};
+
+loseContextTool.prototype.createButton = function(){
+    var me = this;
+
+    this.button = Ext.create('Ext.Button', {
+        width : 36,
+        height : 36,
+        cls : 'volume-button',
+		handler : function (item, checked) {
+            me.volume.canvas3D.loseContext();
+		},
+        scope : me,
+    });
+
+    this.button.tooltip = 'kaboom goes the dynamite';
 };

@@ -855,6 +855,7 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     onImagePhys : function(viewer, phys, dims) {
+
         this.dims = dims;
         if (dims.t>1 || dims.z>1)
             this.toolbar.queryById('menu_view_movie').setDisabled( false );
@@ -870,6 +871,23 @@ Ext.define('Bisque.Resource.Image.Page', {
             this.toolbar.queryById('download_as_ometiff').setDisabled( true );
             this.toolbar.queryById('download_as_omebigtiff').setDisabled( true );
         }
+
+
+        var webGl = function (){
+            try { var canvas = document.createElement( 'canvas' );
+                  return !! ( window.WebGLRenderingContext &&
+                              ( canvas.getContext( 'webgl' ) ||
+                                canvas.getContext( 'experimental-webgl' ) ) ); }
+            catch( e ) { return false; }
+        }; //test if webgl is available to the client
+
+        if (!webGl()) {//if webgl isn't available then we'll disable the command.
+            var button3D = this.toolbar.queryById('menu_view_3d');
+            button3D.setText('3D (WebGl not available)');
+            button3D.setTooltip('Enable WebGl to access viewer.');
+            button3D.setDisabled( true );
+        }
+
     },
 
     show2D : function() {
@@ -961,35 +979,78 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     show3D : function() {
-        var btn = this.queryById('button_view');
-        btn.setText('View: 3D');
-        btn.setIconCls('view3d');
+        var me = this;
+        try{
+            var webGl = function (){
+                try { var canvas = document.createElement( 'canvas' );
+                      return !! ( window.WebGLRenderingContext &&
+                                  ( canvas.getContext( 'webgl' ) ||
+                                    canvas.getContext( 'experimental-webgl' ) ) ); }
+                catch( e ) { return false; }
+            };
 
-        var image3d = this.queryById('main_view_3d');
-        if (image3d && image3d.isVisible()) return;
+            if(!webGl()) return;
 
-        var image2d = this.queryById('main_view_2d');
-        if (image2d) {
-            image2d.setVisible(false);
-            //image2d.destroy(); // do not destroy to really fast return
+            var btn = this.queryById('button_view');
+            btn.setText('View: 3D');
+            btn.setIconCls('view3d');
+
+            var image3d = this.queryById('main_view_3d');
+            if (image3d && image3d.isVisible()) return;
+
+            var image2d = this.queryById('main_view_2d');
+            if (image2d) {
+                image2d.setVisible(false);
+                //image2d.destroy(); // do not destroy to really fast return
+            }
+
+            var movie = this.queryById('main_view_movie');
+            if (movie) {
+                movie.setVisible(false);
+                movie.destroy();
+            }
+
+            var cnt = this.queryById('main_container');
+
+            cnt.add({
+                //region : 'center',
+                xtype: 'bq_volume_panel',
+                itemId: 'main_view_3d',
+                resource: this.resource,
+                toolbar: this.toolbar,
+                phys: this.viewerContainer.viewer.imagephys,
+                preferences: this.viewerContainer.viewer.preferences,
+                listeners: {
+
+                    glcontextlost: function(event){
+                        var msgText = " ";
+                        var link = " mailto:me@example.com"
+                            + "?cc=myCCaddress@example.com"
+                            + "&subject=" + escape("This is my subject")
+                            + "&body=" + msgText + "";
+
+                        BQ.ui.error("Hmmm... WebGL seems to hit a snag: <BR/> " +
+                                    "error: " + event.statusMessage +
+                                    "<BR/>Do you want to report this problem?" +
+                                    "<a href = " + link + "> send mail </a>");
+
+                        var image3d = me.queryById('main_view_3d');
+                        var toolMenu = image3d.toolMenu;
+                        toolMenu.destroy();
+                        image3d.destroy();
+                        //this should destroy the 3D viewer
+                        me.show2D();
+                    },
+
+                }
+            });
         }
-
-        var movie = this.queryById('main_view_movie');
-        if (movie) {
-            movie.setVisible(false);
-            movie.destroy();
+        catch(err){
+            BQ.ui.error("This is strange, the volume renderer failed to load. <BR/>" +
+                        "The reported error is: <BR/> " +
+                        err.message);
+            me.show2D();
         }
-
-        var cnt = this.queryById('main_container');
-        cnt.add({
-            //region : 'center',
-            xtype: 'bq_volume_panel',
-            itemId: 'main_view_3d',
-            resource: this.resource,
-            toolbar: this.toolbar,
-            phys: this.viewerContainer.viewer.imagephys,
-            preferences: this.viewerContainer.viewer.preferences,
-        });
     },
 
 });

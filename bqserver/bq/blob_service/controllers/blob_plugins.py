@@ -92,7 +92,7 @@ class ResourcePlugin (object):
     ext = ''
     resource_type = 'resource'
     mime_type = 'application/octet-stream'
-    
+        
     def __init__(self):
         pass
     
@@ -114,6 +114,18 @@ class ResourcePlugin (object):
     
     def to_xml(self, filename):
         return None
+    
+    # special import processing,
+    # inputs:
+    #   f - import_service.UploadedResource object
+    #   
+    # outputs:
+    #   list of ingested resources
+    #def process_on_import(self, f, intags):
+    #    # do import processing here
+    #    return resources
+    
+    
     
 ################################################################################
 # Plugin manager
@@ -159,3 +171,13 @@ class ResourcePluginManager(object):
             if rt is not None:
                 return rt
         return None
+    
+    # this will return a list of plugins with an import process function
+    def get_import_plugins(self):
+        ps = []
+        for p in self.plugins:
+            if hasattr(p, "process_on_import"):
+                ps.append(p)
+        return ps
+    
+    

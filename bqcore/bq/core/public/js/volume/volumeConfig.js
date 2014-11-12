@@ -860,8 +860,9 @@ VolumeShader.prototype.config = function(config){
             '      float r0 = 1.0 - 2.0*rand(pos.xy + eye_d.zx); //create three random numbers for each dimension',
             '      float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);',
             '      float r2 = 1.0 - 2.0*rand(pos.xz + eye_d.yx);',
-            '    for(int j=0; j<maxStepsLight; j++){ ',
-            '      if (j > LIGHT_SAMPLES) break;',
+            '    for(int j=0; j<4; j++){ ',
+            //'    for(int j=0; j<maxStepsLight; j++){ ',
+            '      //if (j > LIGHT_SAMPLES) break;',
 
             '      float lti = (float(j))*lstep;',
             '      vec4 Ni   = DISPERSION*(r0*dl + vec4(r1*N1 + r2*N2, 0.0));',
@@ -914,9 +915,11 @@ VolumeShader.prototype.config = function(config){
             '      float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);',
             '      float r2 = 1.0 - 2.0*rand(pos.xz + eye_d.yx);',
 
-            '    for(int j=0; j<maxStepsLight; j++){ ',
-            '      if (j > LIGHT_SAMPLES) break;',
-            '      vec4 Ni   = DISPERSION*(r0*lr + vec4(r1*N1 + r2*N2, 0.0));',
+            //'    for(int j=0; j<maxStepsLight; j++){ ',
+            //'      if (j > LIGHT_SAMPLES) break;',
+            '    for(int j=0; j<4; j++){ ',
+            //'      if (j > LIGHT_SAMPLES) break;',
+            '      vec4 Ni   = DISPERSION*(vec4(r1*N1 + r2*N2, 0.0));',
             '      vec4 lpos = pos - lstep*Ni - 0.2*lstep*lr;',
 
             '      r0 = 1.0 - 2.0*rand(r2*eye_d.zx);',
@@ -932,7 +935,7 @@ VolumeShader.prototype.config = function(config){
             //'col.xyz = vec3(r0, r1, r2);',
             '    col.xyz *= Dl;',
             //'    col.xyz = lr.xyz;',
-            '    col.xyz *= 4.0;',
+            '    col.xyz *= 8.0;',
             '//',
             '//end deep shading secondary integration',
         ].join('\n');
@@ -971,7 +974,8 @@ VolumeShader.prototype.config = function(config){
         if(config.lighting.phong || config.lighting.deep) output.push(dl);
 
         if(gradType != 'directional'){
-            if(config.lighting.phong || config.highlight || config.lighting.deepType == 'soft_shading') output.push(N);
+            if(config.lighting.phong || config.highlight ||
+               (config.lighting.deep && config.lighting.deepType == 'soft_shading')) output.push(N);
             if(config.highlight) output.push(highlight);
         }
 
@@ -1045,7 +1049,8 @@ VolumeShader.prototype.config = function(config){
     output.push(rand);
     output.push(sampleStack(config.transfer, config.usePow));
     var gradType = config.gradientType ? config.gradientType : 'finite_difference';
-    if(config.highlight || config.lighting.phong || config.lighting.deepType == 'soft_shading') output.push(getNormal(gradType));
+    if(config.highlight || config.lighting.phong ||
+       (config.lighting.deep && config.lighting.deepType == 'soft_shading')) output.push(getNormal(gradType));
     output.push(integrate(config));
     output.push(main);
     output = output.join('\n')
