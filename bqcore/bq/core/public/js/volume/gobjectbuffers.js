@@ -309,7 +309,8 @@ function polyBuffer(volume) {
     this.rindex = new Array(); //reverse index stores the
     this.shapeIndex = new Array(); //this stores an index for each g-object shape
     this.selected = -1;
-	gObjectBuffer.call(this, volume);
+	this.highlighted = -1;
+    gObjectBuffer.call(this, volume);
 };
 
 polyBuffer.prototype = new gObjectBuffer();
@@ -339,10 +340,10 @@ polyBuffer.prototype.push = function (g) {
 
     var shapeID = this.shapeIndex.length;
 
-    var idStart = this.index.length == 0 ? 0 : this.index.length-1;
+    var idStart = this.index.length == 0 ? 0 : this.index.length;
     this.shapeIndex.push({
         color:  lcolor,
-        index:  this.index[idStart],
+        index:  idStart,
     });
 
 	if (!this.isClockWise(poly))
@@ -380,23 +381,60 @@ polyBuffer.prototype.setColor = function(id, color){
     else
         i1 = this.shapeIndex[id + 1].index; //otherwise we take the stored index
 
-    for(var i = i0; i < i1 - i0; i++){
+    for(var i = i0; i < i1; i++){
         var cid = this.index[i];
-        this.colors[cid].r = color.r;
-        this.colors[cid].g = color.g;
-        this.colors[cid].b = color.b;
+        this.mesh.geometry.attributes.color.array[3*cid + 0] = color.r;
+        this.mesh.geometry.attributes.color.array[3*cid + 1] = color.g;
+        this.mesh.geometry.attributes.color.array[3*cid + 2] = color.b;
+
     }
 };
 
+
+polyBuffer.prototype.resetColors = function(){
+    if(this.highlighted > -1){
+        var shape = this.shapeIndex[this.highlighted];
+        this.setColor(this.highlighted,shape.color);
+    }
+    this.highlighted = -1;
+
+    if(this.selected > -1){
+        var shape = this.shapeIndex[this.selected];
+        this.setColor(this.selected,shape.color);
+    }
+    this.selected = -1;
+
+};
+
+
 polyBuffer.prototype.setSelected = function(toSelect){
-    if(this.selected > 0){
-        var shape = this.shapeIndex[toSelect];
+    if(this.selected > -1){
+        var shape = this.shapeIndex[this.selected];
         this.setColor(this.selected,shape.color);
     }
     this.selected = toSelect;
-    this.setColor(toSelect,{r: 255, g: 0, b: 0});
-    this.mesh.geometry.verticesNeedUpdate = true;
+    this.setColor(toSelect,{r: 1, g: 0, b: 0});
+    this.mesh.geometry.dynamic = true;
+    //this.mesh.geometry.verticesNeedUpdate = true;
+    this.mesh.geometry.attributes.color.needsUpdate = true;
 };
+
+
+
+polyBuffer.prototype.highlight = function(toHighlight){
+    if(this.highlighted > -1){
+        var shape = this.shapeIndex[this.highlighted];
+        this.setColor(this.highlighted,shape.color);
+    }
+    this.highlighted = toHighlight;
+    var shape = this.shapeIndex[this.highlighted];
+    var col = shape.color;
+    this.setColor(toHighlight,{r: col.r - .1, g: col.g - .1, b: col.b - .1});
+    this.mesh.geometry.dynamic = true;
+    //this.mesh.geometry.verticesNeedUpdate = true;
+    this.mesh.geometry.attributes.color.needsUpdate = true;
+};
+
 
 polyBuffer.prototype.allocateMesh = function (geometry, material) {
 	return new THREE.Mesh(geometry, material);
@@ -830,7 +868,7 @@ gObjectTool.prototype.initControls = function(){
 	});
 
 	var me = this;
-	this.plane = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000, 8, 8),
+	this.plane = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000, 8, 8),
 				                new THREE.MeshBasicMaterial({
 					                color : 0x808080,
 					                opacity : 0.25,
@@ -892,8 +930,9 @@ gObjectTool.prototype.initControls = function(){
 		var vector = new THREE.Vector3(x, y, 0.5);
 		var camera = this.volume.canvas3D.camera;
 
-		this.volume.canvas3D.projector.unprojectVector(vector, camera);
-		/*
+		//this.volume.canvas3D.projector.unprojectVector(vector, camera);
+		vector.unproject(camera);
+        /*
 		  var objects = [this.lightObject];
 		  var intersects = this.raycaster.intersectObjects( objects );
 		  if(intersects.length > 0){
@@ -924,7 +963,8 @@ gObjectTool.prototype.initControls = function(){
 		var camera = canvas.camera;
 
 		var vector = new THREE.Vector3(x, y, 0.5);
-		canvas.projector.unprojectVector(vector, camera);
+		//canvas.projector.unprojectVector(vector, camera);
+        vector.unproject(camera);
 		this.raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
 
 		var intersections = this.raycaster.intersectObjects(this.pointclouds);
@@ -932,32 +972,43 @@ gObjectTool.prototype.initControls = function(){
 		if (intersection !== null) {
 			//this.sphere.position.copy( intersection.point );
 			var gindex = intersections[0].object.geometry.getAttribute('index').array;
-			var pos = canvas.projector.projectVector(intersection.point.clone(), camera);
-
+			//var pos = canvas.projector.projectVector(intersection.point.clone(), camera);
+            var pos = intersection.point.project(camera);
 			var index;
             if (intersection.index)
 				index = gindex[intersection.index];
-			if (intersection.indices)
-				index = intersection.indices;
+			if (intersection.face)
+				index = intersection.face;
 
-            if(index.length == 3){
-                var id = this.currentSet.polygons.rindex[index[0]];
-                this.currentSet.polygons.setSelected(id);
+            if(index.a){ //test to see if its a face
+                var id = this.currentSet.polygons.rindex[index.a];
+                //this.currentSet.polygons.setSelected(id);
+                this.currentSet.polygons.highlight(id);
             }
+            this.volume.rerender();
+            /*
+              this.label.style.top = '' + 0.5 * height * (1.0 - pos.y) + cy + 'px';
+			  this.label.style.left = '' + 0.5 * width * (1.0 + pos.x) - cx + 'px';
+			  this.label.textContent = [index].join(", ");
+		    */
+        }
+        else{
+            this.currentSet.polygons.resetColors();
 
-            this.label.style.top = '' + 0.5 * height * (1.0 - pos.y) + cy + 'px';
-			this.label.style.left = '' + 0.5 * width * (1.0 + pos.x) - cx + 'px';
-			this.label.textContent = [index].join(", ");
-		}
+        }
         //console.log(this.label);
-		if (!this.label) {
-			this.label = document.createElement('div');
-			this.label.style.backgroundColor = 'white';
-			this.label.style.position = 'absolute';
-			this.label.style.padding = '1px 4px';
-			this.label.style.borderRadius = '2px';
-			this.volume.getEl().dom.appendChild(this.label);
-		}
+		/*
+
+          if (!this.label) {
+		  this.label = document.createElement('div');
+		  this.label.style.backgroundColor = 'white';
+		  this.label.style.position = 'absolute';
+		  this.label.style.padding = '1px 4px';
+		  this.label.style.borderRadius = '2px';
+		  this.volume.getEl().dom.appendChild(this.label);
+		  }
+        */
+
 		//this.panel3D.rerender();
 	};
 

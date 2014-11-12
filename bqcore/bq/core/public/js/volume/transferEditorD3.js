@@ -528,7 +528,6 @@ Ext.define('BQ.volume.transfer.graph', {
             .attr("cy", function(d) { return me.yScale(d.alpha); })
             .attr("fill",function(d){return d.selected ? "rgb(128,0,0)" : "rgb(128,128,128)";});
         this.histogramSvg.redraw();
-        console.log(JSON.stringify(this.data));
         //this.redrawHistogram();
     },
 
@@ -1008,7 +1007,7 @@ transferTool.prototype.initData = function(){
         offset: 100,
         alpha: 1,
         color: [255,255,255]};
-    console.log(data);
+
     return data;
 },
 
@@ -1054,10 +1053,11 @@ transferTool.prototype.createTransferEditor = function(){
         histogram: this.volume.model.histogram,
         gamma:     this.volume.model.gamma,
         dock : 'bottom',
-        collapseDirection: 'bottom',
-        expandDirection: 'top',
-        height: 250,
         collapsible: true,
+        //collapseDirection: 'top',
+        //expandDirection: 'top',
+        height: 250,
+
         cls : 'bq-volume-transfer',
         listeners: {
             change: function(){
