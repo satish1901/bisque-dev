@@ -312,14 +312,23 @@ class BisquikResource(Resource):
         #  Do not use loading
         parent = getattr(request.bisque,'parent', None)
         #specials = set(['tag_names', 'tag_values', 'gob_types'])
-        if parent is None:
+        if kw.pop('noparent', None):
+            parent = False
+        user_id = identity.get_user_id()
+        if parent is None and view!='count':
             limit = kw.pop ('limit', None) or 1000
             limit = min(int(limit), 1000)
             kw['limit'] = str(limit)
             log.debug ("limiting top level to %s", limit)
-        if kw.pop('noparent', None):
-            parent = False
-        user_id = identity.get_user_id()
+        else:
+            limit = None
+
+        params = kw.copy()
+        newparams = dict (view=view, offset=offset, limit=limit,
+                          tag_query=tag_query, tag_order=tag_order,
+                          format=format, wpublic=wpublic)
+        params.update ( [(k,v) for k,v in newparams.items() if v ])
+        request_uri = "%s?%s" % ( request.path, urllib.urlencode (params))
 
         if view=='count':
             limit=None
@@ -331,13 +340,10 @@ class BisquikResource(Resource):
                                    wpublic = wpublic,
                                    **kw)
             xtag = self.resource_type[1].xmltag
-            response = etree.Element ('resource', uri=request.url)
+            response = etree.Element ('resource', uri=request_uri)
             etree.SubElement(response, 'tag', name="count", value=str(count), type="number")
         else:
-            #if limit is None: limit = 1000
-            #if limit > 1000:
-            #    log.warn('LIMIT of %s requested over accepted 1000' % limit)
-            #    limit = 1000
+            # Never return more than 1000 items in a top level query
             resources = resource_query (self.resource_type,
                                         parent=parent,
                                         user_id= user_id,
@@ -346,7 +352,7 @@ class BisquikResource(Resource):
                                         wpublic = wpublic,
                                         #limit = limit,
                                         **kw)
-            response = etree.Element('resource', uri=request.url)
+            response = etree.Element('resource', uri=request_uri)
             db2tree (resources,
                      parent=response,
                      view=view,
