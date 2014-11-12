@@ -61,11 +61,12 @@ renderingTool.prototype.createButton = function(){
         //xtype: 'button',
         //text : this.cls,
         //layout : 'fit',
-        layout : {
-			type : 'vbox',
-			align : 'stretch',
-			pack : 'start',
-		},
+        //layout : {
+		//	type : 'vbox',
+		//	align : 'stretch',
+	//		pack : 'start',
+	//	},
+        //text: 'pee!',
         width : 36,
         height : 36,
         iconCls   : this.cls,
@@ -941,7 +942,7 @@ lightTool.prototype.initControls = function(){
                                           wireframe : true,
                                       }));
 
-    this.plane = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000, 8, 8),
+    this.plane = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000, 8, 8),
                                 new THREE.MeshBasicMaterial({
                                     color : 0x000000,
                                     opacity : 0.25,
@@ -974,8 +975,8 @@ lightTool.prototype.initControls = function(){
 
         var vector = new THREE.Vector3(x, y, 0.5);
         var camera = this.canvas3D.camera;
-        this.canvas3D.projector.unprojectVector(vector, camera);
-
+        //this.canvas3D.projector.unprojectVector(vector, camera);
+        vector.unproject(camera);
         var raycaster
             = new THREE.Raycaster(camera.position,
                                   vector.sub(camera.position).normalize());
@@ -1004,8 +1005,8 @@ lightTool.prototype.initControls = function(){
         var vector = new THREE.Vector3(x, y, 0.5);
 
         var camera = this.canvas3D.camera;
-        this.canvas3D.projector.unprojectVector(vector, camera);
-
+        //this.canvas3D.projector.unprojectVector(vector, camera);
+        vector.unproject(camera);
         var raycaster
             = new THREE.Raycaster(camera.position,
                                   vector.sub(camera.position).normalize());

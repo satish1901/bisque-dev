@@ -110,25 +110,17 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 		//console.log('bef',reset);
 		if (typeof(reset) === 'undefined')
 			reset = true;
-		//console.log('aft',reset);
-        //console.log(name, value);
+
         if(!this.uniforms[name]) return;
 		this.uniforms[name].value = value;
-
-        //this.canvas3D.rerender();
         this.fireEvent('setuniform', this);
 	},
 
 	setUniformNoRerender : function (name, value, reset, timeOut) {
-		//console.log('bef',reset);
 		if (typeof(reset) === 'undefined')
 			reset = true;
-		//console.log('aft',reset);
-        //console.log(name, value);
         if(!this.uniforms[name]) return;
 		this.uniforms[name].value = value;
-
-        //this.canvas3D.rerender();
 	},
 
 	initUniform : function (name, type, value) {
@@ -234,7 +226,6 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 	},
 */
     initFragmentByConfig : function (config, id) {
-        //console.log(shaderConfig().rayCastShader(config));
         this.shaders[id] = shaderConfig().rayCastShader(config);
         this.updateMaterials();
 	},
@@ -614,6 +605,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
             //all this stuff happens after the layout occurs and the threejs canvas is available
             afterlayout: function () {
                 if(this.firstLoad) return;
+                this.firstLoad = true;
 
                 me.createViewMenu();
 
@@ -624,7 +616,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 me.createToolPanel();
 				me.createZoomSlider();
 
-                this.firstLoad = true;
 
                 //---------------------------------------------------------
                 //register preferences
@@ -641,7 +632,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
             //all this stuff happens after the layout occurs and the threejs canvas is available
 			loaded : function () {
-				console.log(this.constructAtlasUrl());
+				console.log('loaded URL from: ', this.constructAtlasUrl());
 				me.initUniforms();
 				me.wipeTextureTimeBuffer();
 				me.updateTextureUniform();
@@ -1022,7 +1013,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
 	//----------------------------------------------------------------------
-	// texture loadi
+	// texture loading
 	//----------------------------------------------------------------------
 
 	updateTextureUniform : function () {
@@ -1081,8 +1072,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		this.dims.pixel.z = this.phys.pixel_size[2] === 0 ? 1 : this.phys.pixel_size[2];
 		if (this.dims.pixel.z < 0.1)
 			this.dims.pixel.z = 0.1;
-		console.log(this.dims.pixel.z);
-		console.log("phys: ", this.phys);
 
 		if (this.dims.t > 1 && this.dims.slice.z == 1) {
 			var z = this.dims.t;
@@ -1421,17 +1410,65 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	//---------------------------------------------------------------------
 
 	createToolPanel : function () {
+        var me = this;
 		var items = [];
 
-        this.toolPanelButtons = Ext.create('Ext.container.Container',{
-            //id: 'toolbar-buttons',
+        this.toolPanelButtons = Ext.create('Ext.toolbar.Toolbar',{
+            itemId: 'toolbar-buttons',
+            //height: 32,
             layout: {
                 type: 'table',
-                columns: 4
+                columns: 6
             },
         });
 
-        items.push(this.toolPanelButtons);
+        var tools = [
+            new ditherTool(this),
+            new boxTool(this),
+            new gammaTool(this),
+            new materialTool(this),
+        ];
+
+        if (Ext.isWindows) {
+			if (Ext.isChrome && Ext.chromeVersion >= 37) {
+				tools.push(new phongTool(this),
+                           new deepTool(this),
+                           new lightTool(this));
+			}
+		} else {
+			tools.push(new phongTool(this),
+                       new deepTool(this),
+                       new lightTool(this));
+		}
+
+        if(window.location.hash == "#debug"){
+            tools.push(new loseContextTool(this));
+
+        }
+
+        tools.push(new transferTool(this),
+                   new gObjectTool(this),
+                   new clipTool(this),
+                   new animationTool(this),
+                   new saveTool(this),
+
+                   //Tools in the settings menu
+                   new autoRotateTool(this),
+                   new qualityTool(this),
+
+                   //Tools in the Div
+                   new VolScaleBarTool(this),
+                   new VolAxisTool(this),
+                   new VolSpinnerTool(this));
+
+        this.tools = {};
+
+        tools.forEach(function(e,i,a){
+            me.tools[e.name] = e;
+            e.init();
+            e.addButton();
+		    //e.addControls();
+        });
 
 
         //tools factory function
@@ -1439,76 +1476,30 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			var thisDom = this.getEl().dom;
 
 			this.toolPanel = Ext.create('Ext.panel.Panel', {
-					renderTo : thisDom,
-					title : 'Settings',
-					cls : 'bq-volume-toolbar',
-					split : true,
-					collapsible : true,
-					floatable : true,
+				//renderTo : thisDom,
+			    tbar: this.toolPanelButtons,
+                dock: 'right',
+                collapsible: true,
+                collapseDirection: 'right',
 
-					defaults : {
-						collapsible : true,
-						sceneVolume : this.sceneVolume,
-						panel3D : this,
-						canvas3D : this.canvas3D,
-						layout : {
-							type : 'vbox',
-							align : 'stretch',
-							pack : 'start',
-						},
-						border : false,
-					},
-				items : items,
+                title : 'Settings',
+				cls : 'bq-volume-toolbar',
+				split : true,
+				collapsible : true,
+                width: 240,
+
 			});
-			this.addFade(this.toolPanel);
+			//this.addFade(this.toolPanel);
+            this.addDocked(this.toolPanel);
 
-            var tools = [
-                new ditherTool(this),
-                new boxTool(this),
-                new gammaTool(this),
-                new materialTool(this),];
-
-            if (Ext.isWindows) {
-			    if (Ext.isChrome && Ext.chromeVersion >= 37) {
-				    tools.push(new phongTool(this),
-                               new deepTool(this),
-                               new lightTool(this));
-			    }
-		    } else {
-			    tools.push(new phongTool(this),
-                           new deepTool(this),
-                           new lightTool(this));
-		    }
-
-            if(window.location.hash == "#debug"){
-                tools.push(new loseContextTool(this));
-
-            }
-
-            tools.push(new transferTool(this),
-                       new gObjectTool(this),
-                       new clipTool(this),
-                       new animationTool(this),
-                       new saveTool(this),
-
-                       //Tools in the settings menu
-                       new autoRotateTool(this),
-                       new qualityTool(this),
-
-                       //Tools in the Div
-                       new VolScaleBarTool(this),
-                       new VolAxisTool(this),
-                       new VolSpinnerTool(this));
-            this.tools = {};
-            var me = this;
             tools.forEach(function(e,i,a){
-                me.tools[e.name] = e;
-                e.init();
-                e.addButton();
+                //me.tools[e.name] = e;
+                //e.init();
+                //e.addButton();
 		        e.addControls();
             });
 
-
+            //this.toolPanel.add(this.toolPanelButtons);
 		}
 
 	},
@@ -1521,50 +1512,50 @@ Ext.define('BQ.viewer.Volume.Panel', {
         var me = this;
 		var thisDom = this.getEl().dom;
         this.zoomSlider = Ext.create('Ext.slider.Single', {
-				renderTo : thisDom,
-				//id : 'zoom-slider',
-				cls : 'bq-zoom-slider',
-				hideLabel : true,
-				minValue : 0,
-				maxValue : 100,
-				increment : 1,
-				height : 300,
-				x : 10,
-				y : 10,
-				style : {
-					position : 'absolute',
-					'z-index' : 9999999
-				},
-				layout : {
-					type : 'vbox',
-					align : 'left',
-					clearInnerCtOnLayout : true,
-					bindToOwnerCtContainer : false
-				},
-				vertical : true,
-				value : 0,
-				animation : false,
-				listeners : {
-					change : function (slider, value) {
+			renderTo : thisDom,
+			//id : 'zoom-slider',
+			cls : 'bq-zoom-slider',
+			hideLabel : true,
+			minValue : 0,
+			maxValue : 100,
+			increment : 1,
+			height : 300,
+			x : 10,
+			y : 10,
+			style : {
+				position : 'absolute',
+				'z-index' : 9999999
+			},
+			layout : {
+				type : 'vbox',
+				align : 'left',
+				clearInnerCtOnLayout : true,
+				bindToOwnerCtContainer : false
+			},
+			vertical : true,
+			value : 0,
+			animation : false,
+			listeners : {
+				change : function (slider, value) {
 
-						if (!this.canvas3D.zooming) {
-							var scale = 10.0 * (1.0 - value / slider.maxValue);
-							scale = scale < 0.25 ? 0.25 : scale;
-							me.canvas3D.controls.enabled = false;
-							me.canvas3D.controls.setRadius(scale);
-                           	//me.canvas3D.controls.enabled = false;;
-							//me.canvas3D.controls.noPan = true;
-							me.rerender();
-						}
-					},
-					changecomplete : function (slider, value) {
-						me.canvas3D.controls.enabled = true;
-						me.canvas3D.controls.update();
-                        me.rerender();
-					},
-					scope : me,
-				}
-			});
+					if (!this.canvas3D.zooming) {
+						var scale = 10.0 * (1.0 - value / slider.maxValue);
+						scale = scale < 0.25 ? 0.25 : scale;
+						me.canvas3D.controls.enabled = false;
+						me.canvas3D.controls.setRadius(scale);
+                        //me.canvas3D.controls.enabled = false;;
+						//me.canvas3D.controls.noPan = true;
+						me.rerender();
+					}
+				},
+				changecomplete : function (slider, value) {
+					me.canvas3D.controls.enabled = true;
+					me.canvas3D.controls.update();
+                    me.rerender();
+				},
+				scope : me,
+			}
+		});
 
 		thisDom.addEventListener('mousewheel', function () {
 			var distFromCenter = me.canvas3D.camera.position.length();

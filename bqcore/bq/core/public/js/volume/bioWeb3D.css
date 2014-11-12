@@ -163,35 +163,43 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 
 /*******************************************************************************
- toolbar
+toolbar
 *******************************************************************************/
 
 .bq-volume-toolbar {
     position: absolute;
-    right: 10px;
-    top: 60px;
-    width: 160px;
     z-index: 100 !important;
-    opacity: 0.2;
+    border: 0px;
+    border-width: 0px;
+    padding: 0px 0px 0px 0px;
 }
 
-.bq-volume-toolbar .x-panel-header-text {
+.bq-volume-toolbar .x-header-text {
     color: white;
 }
 
-
-.bq-volume-toolbar .x-panel-header {
+.bq-volume-toolbar .x-btn-inner {
     color: white;
-    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.bq-volume-toolbar .x-toolbar {
+    color: white;
+    background-color: rgba(50, 50, 50, 1.0);
     background-image: none;
-    border: 2px solid;
-    border-radius: 5px 5px 0px 0px;
+    border-color: #333333;
+    box-shadow: none;
+}
+
+.bq-volume-toolbar .x-header {
+    color: white;
+    background-color: rgba(0, 0, 0, 1.0);
+    background-image: none;
     border-color: #333333;
     box-shadow: none;
 }
 
 .bq-volume-toolbar .x-panel-body {
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 1.0);
     padding: 5px;
     border: 2px solid;
     border-radius: 0px 0px 5px 5px;
@@ -206,30 +214,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .bq-volume-toolbar label {
     color: #ffffff;
 }
-
-.bq-volume-toolbar .heading {
-    /*width: 100%;*/
-    margin: 5px 0px 10px 0px;
-}
-
-.bq-volume-toolbar .heading td {
-    width: 100% !important;
-}
-
-.bq-volume-toolbar .heading label {
-    width: 100% !important;
-    font-size: 16px !important;
-}
-
-.bq-volume-toolbar .x-tool img {
-    background-image: url('/js/volume/icons/viewer/16px_close.png');
-    background-repeat: no-repeat;
-    background-size: 10px;
-    margin: 4px 4px 0px 0px;
-    background-color: transparent;
-    background-position: 0px 0px;
-}
-
 
 /*******************************************************************************
 transfer
@@ -971,6 +955,7 @@ zoom slider
 */
 
 .bq-volume-toolbar .x-btn-inner {
-    color: rgba(0, 0, 0, 0.7);
-    /*color: #FDFDFD;*/
+    /*color: rgba(0, 0, 0, 0.0);*/
+    color: none !important;
+/*color: #FDFDFD;*/
 }

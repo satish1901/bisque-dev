@@ -148,8 +148,6 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.controls = new THREE.OrbitControls(this.camera, thisDom);
         this.controls.autoRotate = false;
 
-        this.projector = new THREE.Projector();
-
         this.camera.position.z = 5.0;
         this.getEl().on({
             scope : this,
