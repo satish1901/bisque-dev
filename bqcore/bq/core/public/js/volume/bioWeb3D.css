@@ -959,7 +959,7 @@ zoom slider
 .bq-volume-toolbar .x-btn {
 
     background: none !important;
-    border-color: #383838;
+    border-color: rgba(0, 0, 0, 0.7);
 }
 
 /*
@@ -971,5 +971,6 @@ zoom slider
 */
 
 .bq-volume-toolbar .x-btn-inner {
-    color: #FDFDFD;
+    color: rgba(0, 0, 0, 0.7);
+    /*color: #FDFDFD;*/
 }

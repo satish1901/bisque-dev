@@ -101,6 +101,19 @@ global admin_user, init_module, init_mex
 admin_user =  init_module = init_mex = None
 
 
+# Legal attributes for Taggable
+LEGAL_ATTRIBUTES = {
+     'name': 'resource_name',  'resource_name' : 'resource_name',
+     'type': 'resource_user_type', 'resource_user_type': 'resource_user_type',
+     'value': 'resource_value', 'resource_value' : 'resource_value',
+     'hidden': 'resource_hidden', 'resource_hidden': 'resource_hidden',
+     'ts': 'ts', 'created': 'created',
+     'unid' : 'resource_unid', 'resource_unid' : 'resource_unid',
+     'uniq' : 'resource_uniq', 'resource_uniq' : 'resource_uniq'
+     }
+
+
+
 def create_tables1(bind):
     metadata.bind = bind
     """Create the appropriate database tables."""

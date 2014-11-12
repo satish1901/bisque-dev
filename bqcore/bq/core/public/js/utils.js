@@ -264,7 +264,7 @@ function makeRequest(url, callback, callbackdata, method, postdata, errorcb) {
     function bindCallback() {
         if (ajaxRequest.readyState === XMLHttpRequest.DONE) {
             //console.log ("ajaxRequest.readyState == 4 and status: " + ajaxRequest.status);
-            BQSession.reset_timeout();
+            BQSession.reset_session();
             if (ajaxRequest.status === 200 || ajaxRequest.status === 0) {
                 if (ajaxCallback) {
                     if (ajaxRequest.responseXML !== null) {// added to accomodate HTML requests as well as XML requests
@@ -342,7 +342,7 @@ function makeRequest(url, callback, callbackdata, method, postdata, errorcb) {
 function xmlrequest(url, cb, method, postdata, errorcb) {
     function checkResponse() {
         if (ajaxRequest.readyState === XMLHttpRequest.DONE) {
-            BQSession.reset_timeout();
+            BQSession.reset_session();
             if (ajaxRequest.status === 200) {
                 if (ajaxRequest.callback) {
                     if (ajaxRequest.responseXML !== null) {

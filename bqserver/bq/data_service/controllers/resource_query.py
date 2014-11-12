@@ -67,7 +67,7 @@ from pylons.controllers.util import abort
 from bq.core.model import DBSession
 
 #from bq.data_service.model import UniqueName, names
-from bq.data_service.model import Taggable, taggable, Image
+from bq.data_service.model import Taggable, taggable, Image, LEGAL_ATTRIBUTES
 from bq.data_service.model import TaggableAcl, BQUser
 from bq.data_service.model import Tag, GObject
 from bq.data_service.model import Value, values
@@ -81,6 +81,7 @@ from bq.util.paths import data_path
 from bq.util.converters import asbool
 
 from .resource import Resource
+from .filter_parser import filter_parse
 
 log = logging.getLogger('bq.data_service.query')
 
@@ -89,17 +90,6 @@ PRIVATE=1
 RESOURCE_READ=0
 RESOURCE_EDIT=1
 RESOURCE_SHARE=2
-
-# Legal attributes for Taggable
-LEGAL_ATTRIBUTES = {
-     'name': 'resource_name',  'resource_name' : 'resource_name',
-     'type': 'resource_user_type', 'resource_user_type': 'resource_user_type',
-     'value': 'resource_value', 'resource_value' : 'resource_value',
-     'hidden': 'resource_hidden', 'resource_hidden': 'resource_hidden',
-     'ts': 'ts', 'created': 'created',
-     'unid' : 'resource_unid', 'resource_unid' : 'resource_unid',
-     'uniq' : 'resource_uniq', 'resource_uniq' : 'resource_uniq'
-     }
 
 
 #####################################################
@@ -517,6 +507,9 @@ class fobject(object):
             return o
         return str(d)
 
+    def __str__(self):
+        return str(self.__dict__)
+
 
 
 ##   NOTE: Please examine for a better way of handling
@@ -542,10 +535,67 @@ def tags_special(dbtype, query, params):
        name=tag_name   : all tags have a name="tag_name" as an attribute
        value=tag_val   : all tags having a value attribute of tag_val
     '''
+    filter_map = {#param         DBType, Attribute, Filter
+                  'tag_names' : (Tag,  ['resource_name'], None,),
+                  'tag_values': (Tag, ['resource_name', 'resource_value'], 'resource_name'),
+                  #'tag_types': (Tag, 'resource_user_type', None),
+                  'gob_names' : (GObject, ['resource_name', 'resource_user_type'], 'resource_user_type'),
+                  #'gob_values': (GObject, 'resource_value', 'resource_name'),
+                  'gob_types' : (GObject, ['resource_user_type'], None),
+                   }
+
+    name_map = { 'resource_name' : 'name', 'resource_user_type' : 'type', 'resource_value': 'value', 'count':'text' }
+
+    # extract=tag[name],tag[value, name="qqq"],gobject[type],gobject[name,type="Fish*",value, ts ]
+    # /tag[name],tag[value,name=qqq]
+
+    tn = params.pop ('extract',None)
+    if tn:
+        sq1 = query.with_labels().subquery()
+        results = []
+        for (dbclass, columns, filters) in filter_parse(tn):
+
+            filters.append (dbclass.document_id == sq1.c.taggable_document_id)
+            query = DBSession.query(func.count(columns[-1]).label('count'), *columns)
+            query =query.filter (*filters)
+            query =query.group_by(*columns).order_by(*columns)
+            #log.debug ("FILTER %s" % query)
+            q = [ fobject(resource_type=dbclass.xmltag, **(dict ((name_map[k], v) for k,v in attr._asdict().items()))) for  attr in query]
+            #q = []
+            results.extend (q)
+        return results
+
+    # OLD versions
+    if any (filt in params for filt in filter_map.keys()):
+        results = []
+        sq1 = query.with_labels().subquery()
+        for filt in filter_map.keys():
+            if filt not in params:
+                continue
+            fv  = params.pop (filt, None)
+            dbtyp, dbcols, sel = filter_map [filt]
+            columns = [ getattr(dbtyp, dbcol) for dbcol in dbcols ]
+            sq2 = DBSession.query (func.count (columns[-1]).label('count'), *columns).filter(Taggable.document_id == sq1.c.taggable_document_id)
+            if fv and sel:
+                sq2=sq2.filter(getattr(dbtyp, sel) == fv)
+            sq3 = sq2.group_by(*columns).order_by(*columns)
+            #log.debug ("NEWSPECIAL %s" % sq3)
+
+            # tag_names : fobject (resource_type='tag' , name=tg.resource_name
+            # tag_values: fobject (resource_type='tag', name = tv, value = v.resource_value, resource_value = v.resource_value)
+            # gob_names:  fobject (resource_type='gobject', type = tv, name = v.resource_name)
+            # gob_type :  fobject (resource_type='gobject' , type=tg.resource_user_type )
+            q = [ fobject(resource_type=dbtyp.xmltag, **(dict ((name_map[k], v) for k,v in attr._asdict().items()))) for  attr in sq3]
+            results.extend (q)
+        return results
+    return None
+
+
+
+
 
     tn = params.pop('gob_types', None)
     if tn:
-
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
         # Fetch all name on all 'top' level tags from the query
@@ -593,7 +643,7 @@ def tags_special(dbtype, query, params):
         ### Return all tha available tag names for the given superquery
         sq1 = query.with_labels().subquery()
         # Fetch all name on all 'top' level tags from the query
-        sq2 = DBSession.query(Tag.resource_name).filter(Tag.document_id == sq1.c.taggable_document_id)
+        sq2 = DBSession.query(Tag.resource_name, func.count (Taggable.resource_name)).filter(Tag.document_id == sq1.c.taggable_document_id)
         #sq3 = sq2.distinct(Tag.resource_name).order_by(Tag.resource_name)
         sq3 = sq2.distinct().order_by(Tag.resource_name)
         vsall = sq3.all()

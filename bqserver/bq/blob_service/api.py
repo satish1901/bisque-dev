@@ -37,3 +37,8 @@ def url2local(path):
 def local2url(path):
     "decode local path as a url"
     return localpath2url(path)
+
+def get_import_plugins():
+    "return a listr of plugins with import function"
+    server = find_server()
+    return server.get_import_plugins()

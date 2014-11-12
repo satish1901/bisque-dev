@@ -263,8 +263,12 @@ class import_serviceController(ServiceController):
         self.filters['zip-proprietary']   = self.filter_zip_proprietary
         self.filters['image/proprietary'] = self.filter_series_proprietary
 
-        #self.bioformats = ConverterBioformats()
-        #self.imgcnv = ConverterImgcnv()
+        ps = blob_service.get_import_plugins()
+        for p in ps:
+            mime_import = 'import/%s'%(p.name)
+            mimetypes.add_type(mime_import, '.%s'%p.ext)
+            self.filters[mime_import] = p.process_on_import
+        
 
     @expose('bq.import_service.templates.upload')
     @require(predicates.not_anonymous())

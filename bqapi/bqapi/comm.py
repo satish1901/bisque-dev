@@ -274,7 +274,7 @@ class BQServer(Session):
             if r.content:
                 raise BQCommError(r.status_code, r.headers, r.content)
             else:
-                raise BQCommError(r.status_code, r.headers) #need to finish
+                raise BQCommError(r.status_code, r.headers) 
 
         if path:
             with open(path, 'wb') as f:
@@ -305,11 +305,12 @@ class BQServer(Session):
         """
         log.debug("POST %s req %s" % (url, headers))
 
-        r = self.request(method, url, data=content, headers=headers, files=files) #maintain name space
+        r = self.request(method, url, data=content, headers=headers, files=files) 
+        
         try: #error checking
             r.raise_for_status()
         except requests.exceptions.HTTPError:
-            raise BQCommError(r.status_code, r.headers) #need to finish
+            raise BQCommError(r.status_code, r.headers) 
 
         if path:
             with open(path, 'wb') as f:
@@ -503,7 +504,7 @@ class BQSession(object):
         return r
 
 
-    def fetchblob(self, url, path=None, **param):
+    def fetchblob(self, url, path=None, **params):
         """
             Requests for a blob
 
@@ -539,33 +540,6 @@ class BQSession(object):
                 fields['file_resource'] = (None, xml, "text/xml")
 
             return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
-
-
-#    def post_streaming_blob(self, filename, xml=None, **params):
-#        """
-#        Requires requests_toolbet
-#        """
-#        try:
-#            from requests_toolbelt import MultipartEncoder
-#        except ImportError:
-#            print 'Does not have requests_toolbelt'
-#            return
-#
-#        url = self.c.prepare_url('import/transfer',**params)
-#
-#        if isinstance(filename, basestring):
-#
-#            fields={'file':(filename, open(filename, 'rb'), 'text/plain')}
-#
-#            if xml!=None:
-#                if isinstance( xml, etree):
-#                    text = etree.tostring(xml, pretty_print=True)
-#                files['file_resource'] = text
-#
-#            files = MultipartEncoder(fields)
-#
-#                r = self.c.bq_post(url, headers=headers, data=files, headers={'Content-Type': files.content_type})
-#            return r
 
 
     def service_url(self, service_type, path = "" , query=None):

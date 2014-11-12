@@ -108,6 +108,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.needs_render = true;
         this.callParent();
 
+
     },
 
     initScene : function(uniforms) {
@@ -122,6 +123,12 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         var me = this;
 
         var thisDom = this.getEl().dom;
+        if(window.location.hash == "#debug"){
+            thisDom = WebGLDebugUtils.makeLostContextSimulatingCanvas(thisDom);
+            this.loseContext = function(){
+                thisDom.loseContext();
+            }
+        }
 
         this.renderer = new THREE.WebGLRenderer({
             canvas: thisDom,
@@ -134,13 +141,13 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.setClearColor(0xC0C0C0, 1.0);
 
         var aspect = this.getWidth() / this.getHeight();
-        this.fov = 40;
+        this.fov = 20;
         this.camera = new THREE.PerspectiveCamera(this.fov, aspect, .01, 20);
 
         //this.controls = new THREE.TrackballControls(this.camera, thisDom);
         this.controls = new THREE.OrbitControls(this.camera, thisDom);
+        this.controls.autoRotate = false;
 
-        this.controls.noRoll = true;
         this.projector = new THREE.Projector();
 
         this.camera.position.z = 5.0;
@@ -162,17 +169,35 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         if(this.buildScene)
             this.buildScene();
 
+
+        //handle context loss and restoration...
         this.renderer.context.canvas.addEventListener("webglcontextlost", function(event) {
             event.preventDefault();
             // animationID would have been set by your call to requestAnimationFrame
-            me.triggerHandler('contextlost', event);
-            cancelAnimationFrame(animationID);
+            me.fireEvent('glcontextlost', event);
+            BQ.ui.error(event.statusMessage)
+            cancelAnimationFrame(me.animationID);
         }, false);
 
         this.renderer.context.canvas.addEventListener("webglcontextrestored", function(event) {
-            me.triggerHandler('contextrestored', event);
+            me.fireEvent('glcontextrestored', event);
+            //rebuild the scene
+            //this.buildScene();
         }, false);
+
         this.renderer.render(this.scene, this.camera);
+    },
+
+    setAutoRotate: function(rotate){
+        this.controls.autoRotate = rotate;
+    },
+
+    getAutoRotate: function(){
+        return this.controls.autoRotate;
+    },
+
+    getCanvas : function() {
+        return this.getEl().dom;
     },
 
     setClearColor: function(color, alpha){
@@ -277,11 +302,11 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.renderer.render(this.scene, this.camera);
         this.fireEvent('render', this);
         //me.triggerHandler('mousewheelup', event);
-
     },
 
     doAnimate : function() {
         var me = this;
+        this.controls.update();
 	    if(this.onAnimate)
 	        this.onAnimate();
         if(this.needs_render){
@@ -296,7 +321,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         }
 
         //this.controls.update();
-        requestAnimationFrame(function() {
+        this.animationID = requestAnimationFrame(function() {
             me.doAnimate()
         });
     },

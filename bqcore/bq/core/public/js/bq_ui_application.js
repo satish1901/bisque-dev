@@ -97,7 +97,7 @@ Ext.define('BQ.Application', {
         this.onReady();
         this.main = Ext.create('BQ.Application.Window', config.config);
 
-        BQSession.initialize_timeout('', {
+        BQSession.initialize_session('', {
             onsignedin: callback(this, this.onSignedIn),
             onsignedout: callback(this, this.onSignedOut),
             ongotuser: callback(this, this.onGotUser),
@@ -134,8 +134,8 @@ Ext.define('BQ.Application', {
     onSignedOut: function() {
         this.session = undefined;
         this.fireEvent( 'signedout');
-        alert("Your session has  timed out");
-        window.location = this.url( "/auth_service/logout" );
+        alert("Your session has timed out");
+        window.location = BQ.Server.url( "/client_service" );
     },
 
     onGotUser: function() {

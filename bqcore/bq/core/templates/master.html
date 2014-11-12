@@ -96,8 +96,17 @@
     <!-- D3 -->
     <script type="text/javascript" src="${tg.url('/d3/d3.js')}"></script>
 
+    <!-- ThreeJS -->
+    <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/threejs/three.min.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/threejs/three.js')}"></script>    
+    <script type="text/javascript" src="${tg.url('/threejs/TypedArrayUtils.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/threejs/math/ColorConverter.js')}"></script>
+
     <!-- Async.js -->
-    <script type="text/javascript" src="${tg.url('/async/async.js')}"></script>
+    <!--<script type="text/javascript" src="${tg.url('/async/async.js')}"></script>-->
+
+    <!-- jquery -->
+    <!--<script type="text/javascript" src="${tg.url('/jquery/jquery.min.js')}"></script>-->
 
     <!-- BisQue UI code -->
     <?python
@@ -242,12 +251,9 @@
     # -- WebGL viewer --
     '/js/volume/lib/whammy.js',
     '/js/volume/lib/polygon.js',
-    '/js/volume/threejs/three.min.js',
     '/js/volume/threejs/AnaglyphEffect.js',
     '/js/volume/threejs/OrbitControls.js',
     '/js/volume/threejs/TrackballControls.js',
-    '/js/volume/threejs/TypedArrayUtils.js',
-    #'/js/volume/volumeConfig.js'
     '/js/volume/volumeConfig.js',
     '/js/volume/renderingControls.js',
     '/js/volume/animationControls.js',

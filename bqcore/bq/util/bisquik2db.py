@@ -407,11 +407,13 @@ def xmlelement(dbo, parent, baseuri, view, **kw):
     elif xtag == 'gobject' and dbo.type in known_gobjects:
         xtag  = dbo.type
         kw.pop('type')
+    text = kw.pop ('text',None)
     if parent is not None:
         #log.debug ("etree: " + str(xtag)+ str(kw))
         elem =  etree.SubElement (parent, xtag, **kw)
     else:
         elem =  etree.Element (xtag,  **kw)
+    elem.text = text and str(text)
     return elem
 
 

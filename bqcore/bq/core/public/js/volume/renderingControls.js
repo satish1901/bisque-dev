@@ -55,7 +55,7 @@ function renderingTool(volume, cls){
     this.uniforms = {};
 };
 
-renderingTool.prototype.init = function(){
+renderingTool.prototype.createButton = function(){
     var me = this;
     this.button = Ext.create('Ext.Button',{
         //xtype: 'button',
@@ -74,6 +74,10 @@ renderingTool.prototype.init = function(){
         toggleHandler : this.toggle,
         scope : me,
     });
+},
+
+renderingTool.prototype.createControls = function(){
+    var me = this;
 
     this.controls = Ext.create('Ext.container.Container', {
         border : false,
@@ -93,9 +97,15 @@ renderingTool.prototype.init = function(){
             text: this.label
         }]);
     }
+},
 
+
+
+renderingTool.prototype.init = function(){
+    var me = this;
+    this.createButton();
+    this.createControls();
     this.initControls();
-
     this.addUniforms();
     this.initUniforms();
 };
@@ -454,10 +464,10 @@ boxTool.prototype.addUniforms = function(){
 boxTool.prototype.setScale = function(){
     var me = this;
     var dims = me.volume.dims;
-    me.boxSize.x = 0.5*me.rescale.x/me.max*dims.slice.x / me.boxMax;
-    me.boxSize.y = 0.5*me.rescale.y/me.max*dims.slice.y / me.boxMax;
-    me.boxSize.z = 0.5*me.rescale.z/me.max*dims.slice.z / me.boxMax;
-    this.volume.scaleCube(this.boxSize);
+    me.boxSize.x = 0.5*me.rescale.x/me.min * dims.slice.x/me.boxMax;
+    me.boxSize.y = 0.5*me.rescale.y/me.min * dims.slice.y/me.boxMax;
+    me.boxSize.z = 0.5*me.rescale.z/me.min * dims.slice.z/me.boxMax;
+    this.volume.setVolumeScale(this.boxSize);
 };
 
 boxTool.prototype.initControls = function(){
@@ -467,12 +477,24 @@ boxTool.prototype.initControls = function(){
     this.rescale = new THREE.Vector3(0.5, 0.5, 0.5);
     var controlBtnSize = 22;
 
+    var constrainDims = Ext.create('Ext.form.field.Checkbox',{
+        itemId: 'constrain-dims',
+        boxLabel: 'maintain proportion',
+    }).hide();
+
+    this.constraintLock = false;
+    var resetLock = function(){
+        setTimeout(function () {
+		    me.constraintLock = false;
+	    }, 10);
+    };
+
     this.boxX = Ext.create('Ext.form.field.Number', {
         name : 'box_x',
         fieldLabel : 'x',
         value : 0,
-        minValue : 0.1,
-        maxValue : 10,
+        minValue : 0.01,
+        maxValue : 100,
         step : 0.01,
         width : 150,
         labelWidth: 10,
@@ -480,6 +502,19 @@ boxTool.prototype.initControls = function(){
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
+
+                var cons = me.controls.queryById('constrain-dims');
+                if(cons.getValue() == true && !this.constraintLock){
+                   this.constraintLock = true;
+                    var vy = this.boxY.getValue();
+                    var vz = this.boxZ.getValue();
+                    var ry = vy/oldValue;
+                    var rz = vz/oldValue;
+                    this.boxY.setValue(newValue*ry);
+                    this.boxZ.setValue(newValue*rz);
+                    resetLock();
+                }
+
                 newValue = newValue < 0.01 ? 0.01 : newValue;
                 this.rescale.x = newValue;
                 this.setScale();
@@ -492,8 +527,8 @@ boxTool.prototype.initControls = function(){
         name : 'box_y',
         fieldLabel : 'y',
         value : 0,
-        minValue : 0.1,
-        maxValue : 10,
+        minValue : 0.01,
+        maxValue : 100,
         step : 0.01,
         width : 150,
         labelWidth: 10,
@@ -501,6 +536,19 @@ boxTool.prototype.initControls = function(){
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
+
+                var cons = me.controls.queryById('constrain-dims');
+                if(cons.getValue() == true && !this.constraintLock){
+                    this.constraintLock = true;
+                    var vx = this.boxX.getValue();
+                    var vz = this.boxZ.getValue();
+                    var rx = vx/oldValue;
+                    var rz = vz/oldValue;
+                    this.boxX.setValue(newValue*rx);
+                    this.boxZ.setValue(newValue*rz);
+                    resetLock();
+                }
+
                 newValue = newValue < 0.01 ? 0.01 : newValue;
                 this.rescale.y = newValue;
                 this.setScale();
@@ -514,7 +562,7 @@ boxTool.prototype.initControls = function(){
         fieldLabel : 'z',
         value : 0,
         minValue : 0.01,
-        maxValue : 5,
+        maxValue : 100,
         step : 0.01,
         width : 150,
         labelWidth: 10,
@@ -522,6 +570,20 @@ boxTool.prototype.initControls = function(){
             change : function (field, newValue, oldValue) {
                 if (typeof newValue != 'number')
                     return;
+
+                var cons = me.controls.queryById('constrain-dims');
+                if(cons.getValue() == true && !this.constraintLock){
+                    this.constraintLock = true;
+                    var vx = this.boxX.getValue();
+                    var vy = this.boxY.getValue();
+                    var rx = vx/oldValue;
+                    var ry = vy/oldValue;
+
+                    this.boxX.setValue(newValue*rx);
+                    this.boxY.setValue(newValue*ry);
+                    resetLock();
+                }
+
                 newValue = newValue < 0.01 ? 0.01 : newValue;
                 this.rescale.z = newValue
                 this.setScale();
@@ -533,7 +595,7 @@ boxTool.prototype.initControls = function(){
     this.max = -999;
 
     this.boxMax = 1.0;
-    this.controls.add([this.boxX, this.boxY, this.boxZ]);
+    this.controls.add([constrainDims, this.boxX, this.boxY, this.boxZ]);
     this.volume.on('loaded', function () {
 
         var dims = me.volume.dims;
@@ -552,6 +614,7 @@ boxTool.prototype.initControls = function(){
 
             me.min = Math.min(dims.pixel.x, Math.min(dims.pixel.y,dims.pixel.z));
             me.max = Math.max(dims.pixel.x, Math.max(dims.pixel.y,dims.pixel.z));
+            me.boxMin = Math.min(dims.slice.x, Math.min(dims.slice.y,dims.slice.z));
             me.boxMax = Math.max(dims.slice.x, Math.max(dims.slice.y,dims.slice.z));
             me.boxX.setValue(dims.pixel.x);
             me.boxY.setValue(dims.pixel.y);
@@ -819,6 +882,17 @@ deepTool.prototype.initControls = function(){
 };
 
 deepTool.prototype.toggle = function(button){
+
+    var l = this.volume.canvas3D.camera.position.length();
+    console.log(l);
+    if( this.state == 0 && l < 2.2){
+        BQ.ui.error("setting the deep rendering tool while too close </br>" +
+                    "to the objet being rendered can result in context loss.</br>" +
+                    "zoom out and try again.");
+        this.button.toggle(false);
+        return;
+    }
+
     this.state ^= 1;
     if(this.state){
         this.volume.shaderConfig.lighting.deep = true;
@@ -1073,6 +1147,32 @@ saveTool.prototype = new renderingTool();
 saveTool.prototype.addUniforms = function(){
 };
 
+
+saveTool.prototype.createButton = function(){
+    var me = this;
+    this.button = Ext.create('Ext.Button',{
+        //xtype: 'button',
+        //text : this.cls,
+        //layout : 'fit',
+        layout : {
+			type : 'vbox',
+			align : 'stretch',
+			pack : 'start',
+		},
+        handler : function (button, pressed) {
+            this.volume.canvas3D.savePng();
+        },
+        scope : me,
+        width : 36,
+        height : 36,
+        iconCls   : this.cls,
+        //enableToggle: true,
+        pressed: false,
+        //toggleHandler : this.toggle,
+        scope : me,
+    });
+},
+/*
 saveTool.prototype.initControls = function(){
     var me = this;
     this.button.tooltip = 'save png';
@@ -1088,15 +1188,6 @@ saveTool.prototype.initControls = function(){
     });
     this.min = 1.0;
     this.controls.add([button]);
-    this.volume.on('loaded', function () {
-
-    });
-};
-/*
-saveTool.prototype.toggle = function(button){
-
-    //if(button.pressed)
-    this.base.prototype.toggle.call(this,button);
 
 };
 */
