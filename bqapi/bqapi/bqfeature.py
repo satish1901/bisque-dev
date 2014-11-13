@@ -274,7 +274,6 @@ class ParallelFeature(Feature):
         stop_write_thread = False #sets a flag to stop the write thread
         # when the requests threads have finished
 
-
         class WriteHDF5Thread(Thread):
             """
                 Copies small hdf5 feature tables
@@ -300,22 +299,27 @@ class ParallelFeature(Feature):
                     if not self.h5_filename_queue.empty():
                         temp_path = self.h5_filename_queue.get()
                         log.debug('Writing %s to %s' % (temp_path, table_path))
-                        with tables.open_file(temp_path, 'a') as hdf5temp:
-                            with tables.open_file(table_path, 'a') as hdf5:
-                                temp_table = hdf5temp.root.values
-                                temp_status_table = hdf5temp.root.status
-                                if not hasattr(hdf5.root, 'values'):
-                                    temp_table.copy(hdf5.root,'values')
-                                    temp_status_table.copy(hdf5.root,'status')
-                                else:
-                                    table = hdf5.root.values
-                                    status_table = hdf5.root.status
-                                    table.append(temp_table[:])
-                                    status_table.append(temp_status_table[:])
-                                    table.flush()
-                                    status_table.flush()
-                        os.remove(hdf5temp.filename)
-                        continue
+                        try:
+                            with tables.open_file(temp_path, 'a') as hdf5temp:
+                                with tables.open_file(table_path, 'a') as hdf5:
+                                    temp_table = hdf5temp.root.values
+                                    temp_status_table = hdf5temp.root.status
+                                    if not hasattr(hdf5.root, 'values'):
+                                        temp_table.copy(hdf5.root,'values')
+                                        temp_status_table.copy(hdf5.root,'status')
+                                    else:
+                                        table = hdf5.root.values
+                                        status_table = hdf5.root.status
+                                        table.append(temp_table[:])
+                                        status_table.append(temp_status_table[:])
+                                        table.flush()
+                                        status_table.flush()
+                        except StandardError as e:
+                            log.exception('Could not read hdf5 file')
+                        finally:
+                            log.debug('Clean up: removing %s' % temp_path)
+                            if os.path.exists(temp_path):
+                                os.remove(temp_path)
 
                     if stop_write_thread is True:
                         log.debug('Ending HDF5 write thread')
@@ -332,12 +336,24 @@ class ParallelFeature(Feature):
                 while True:
                     try:
                         path = super(ParallelFeature, self).fetch(session, name, partial_resource_list, path=f.name)
-                    except socket.error as e:
+                    except socket.error as e: #if connection fails
                         if attempts>MAX_ATTEMPTS:
                             log.debug('Connection fail: Reached max attempts')
                             break
                         if e.errno == errno.WSAECONNRESET:
-                            log.debug('Connection fail: Attempting to reconnect (try: %s)' % attempts)        
+                            attempts+=1
+                            log.debug('Connection fail: Attempting to reconnect (try: %s)' % attempts)
+                    try:
+                        tables.is_pytables_file(path)
+                    except tables.HDF5ExtError: #if fail gets corrupts during download
+                        if attempts>MAX_ATTEMPTS:
+                            log.debug('Failed to open hdf5 file: Reached max attempts')
+                            break
+                        attempts+=1
+                        log.debug('HDF5 file may be corrupted: Attempted to redownload (try: %s)' % attempts)
+                        if os.path.exists(path):
+                            os.remove(path)
+                       
                     write_queue.put(path)
                     break
                 
@@ -346,10 +362,10 @@ class ParallelFeature(Feature):
         if hasattr(self,'thread_num') and hasattr(self,'chunk_size'):
             thread_num = ceil(self.thread_num)
             chunk_size = ceil(self.chunk_size)
-            if thread_num <= 0:
-                thread_num = 1
-            if chunk_size <= 0:
-                chunk_size = 1
+            
+            if thread_num <= 0: thread_num = 1
+            if chunk_size <= 0: chunk_size = 1
+            
         else:
             thread_num, chunk_size = self.calculate_request_plan(resource_list)
 
