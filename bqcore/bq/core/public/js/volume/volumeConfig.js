@@ -760,17 +760,24 @@ VolumeShader.prototype.config = function(config){
         ].join('\n');
 
 
+
+        var gradType = config.gradientType;
+        var needsN =
+            (config.lighting.phong && gradType == 'finite_difference') ||
+            (config.lighting.phong && gradType == 'sobel') ||
+            (config.lighting.deep && config.lighting.deepType == 'soft_shading');
+
+        var N =[
+            ' ',
+            '//->compute normal',
+            '    vec4 N = getNormal(textureAtlas, pos, lightPos);',
+            //'return vec4(N.xyz, col[3]);',
+            '//->',
+
+        ].join('\n');
+
         var phongFrag = [];
         if(config.gradientType != 'directional'){
-            var N =[
-                ' ',
-                '//->compute normal',
-                '    vec4 N = getNormal(textureAtlas, pos, lightPos);',
-                //'return vec4(N.xyz, col[3]);',
-                '//->',
-
-            ].join('\n');
-
             var highlight = [
                 ' ',
                 '//->add highlights',
@@ -846,7 +853,7 @@ VolumeShader.prototype.config = function(config){
             ' ',
             '//begin deep shading secondary integration',
             '//',
-            '    float lstep = LIGHT_DEPTH/float(LIGHT_SAMPLES);',
+            '    float lstep = LIGHT_DEPTH/float(4);',
             '    float Dl = 0.0;',
 
             '    vec3 DISP_BIAS = vec3(100.5, 200.3, 0.004);',
@@ -877,7 +884,7 @@ VolumeShader.prototype.config = function(config){
             '      vec4 dens = sampleStack(textureAtlas,lpos);',
 
             '      float Kdisp = DISP_SIG;',
-            '      float sl = float(maxStepsLight)/float(LIGHT_SAMPLES);',
+            '      float sl = float(maxStepsLight)/float(4);',
             '      //lti *= dens.w;',
 
             '      dens.w *= 1.0*DENSITY;',
@@ -898,7 +905,7 @@ VolumeShader.prototype.config = function(config){
             ' ',
             '//begin deep shading secondary integration',
             '//',
-            '    float lstep = LIGHT_DEPTH/float(LIGHT_SAMPLES);',
+            '    float lstep = LIGHT_DEPTH/float(4);',
             '    float Dl = 0.0;',
             '    dl = -normalize(dl);',
             '    vec4 lr = dl;',
@@ -968,16 +975,16 @@ VolumeShader.prototype.config = function(config){
             '  return C;',
             '}',
         ].join('\n');
-        var gradType = config.gradientType;
+
 
         var output = [intersectBox, integrateInit, integrateLoopBegin, sampleAt];
         if(config.lighting.phong || config.lighting.deep) output.push(dl);
 
-        if(gradType != 'directional'){
-            if(config.lighting.phong || config.highlight ||
-               (config.lighting.deep && config.lighting.deepType == 'soft_shading')) output.push(N);
-            if(config.highlight) output.push(highlight);
-        }
+
+        if(needsN)
+            output.push(N);
+        //if(config.highlight) output.push(highlight);
+
 
         if(config.lighting.phong) output.push(phongFrag);
         if(config.lighting.deep) {
@@ -1049,8 +1056,21 @@ VolumeShader.prototype.config = function(config){
     output.push(rand);
     output.push(sampleStack(config.transfer, config.usePow));
     var gradType = config.gradientType ? config.gradientType : 'finite_difference';
-    if(config.highlight || config.lighting.phong ||
-       (config.lighting.deep && config.lighting.deepType == 'soft_shading')) output.push(getNormal(gradType));
+    if(gradType == 'directional'){
+        output.push(getNormal(gradType));
+        if(config.lighting.deep && config.lighting.deepType == 'soft_shading')
+            output.push(getNormal('finite_difference'));
+    }
+
+    else{
+        var needsN =
+            (config.lighting.phong && gradType == 'finite_difference') ||
+            (config.lighting.phong && gradType == 'sobel') ||
+            (config.lighting.deep && config.lighting.deepType == 'soft_shading');
+        if(needsN) output.push(getNormal(gradType));
+    }
+
+
     output.push(integrate(config));
     output.push(main);
     output = output.join('\n')
