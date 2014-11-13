@@ -140,8 +140,11 @@ classdef Image < bq.File
                 end                  
                 
                 if ~isfield(args, 'dim'), args.dim = []; end
-                if ~isfield(args, 'res'), args.res = []; end                
-                filename = [tempdir args.filename];
+                if ~isfield(args, 'res'), args.res = []; end  
+                
+                s = strsplit(args.filename, '/');
+                filename = s{1, size(s, 2)};
+                filename = [tempdir filename];
                 bim.write_ome_tiff( image, filename, args.dim, args.res);
             else
                 filename = image;                

@@ -435,7 +435,12 @@ Ext.define('BQ.Application.Toolbar', {
                 iconCls : 'icon-browse',
                 //hidden: !browse_vis,
                 tooltip: 'Browse resources',
-                //menu: [{text: 'Menu Button 1'}],
+                menu: {
+		            xtype: 'menu',
+		            cls: 'toolbar-menu',
+		            plain: true,
+		            items: [],
+		        },
                 /*handler: function(c) {
                     var q = '';
                     var m = toolbar.queryById('menu_query');
@@ -449,6 +454,12 @@ Ext.define('BQ.Application.Toolbar', {
                 tooltip: 'Browse resources',
                 //hidden: browse_vis,
                 hidden: true,
+                menu: {
+		            xtype: 'menu',
+		            cls: 'toolbar-menu',
+		            plain: true,
+		            items: [],
+		        },
             }, {
                 xtype: 'tbspacer',
                 width: 10,
@@ -629,28 +640,23 @@ Ext.define('BQ.Application.Toolbar', {
     },
 
     addBrowseResourceTypes : function(types) {
-        var menu = {
-            xtype: 'menu',
-            cls: 'toolbar-menu',
-            plain: true,
-            items: [],
-        };
         types = Ext.Object.merge(types, BQ.resources.preferred);
 
-        var keys = Object.keys(types).sort();
-        var name = null;
+        var keys = Object.keys(types).sort(),
+            name = null,
+            menu_items = [],
+            path = null;
         for (var i=0; name=keys[i]; ++i) {
-            var path = types[name] || '/data_service/'+name;
-            menu.items.push({
+            path = types[name] || '/data_service/'+name;
+            menu_items.push({
                 text: name,
                 scope: this,
                 handler: Ext.Function.pass(this.doBrowse, '/client_service/browser?resource='+path),
             });
         }
 
-        menu = Ext.create('Ext.menu.Menu', menu);
-        this.queryById('menu_images').menu = menu;
-        this.queryById('menu_resources').menu = menu;
+        this.queryById('menu_images').menu.add(menu_items);
+        this.queryById('menu_resources').menu.add(menu_items);
     },
 
     doBrowse : function (url) {
