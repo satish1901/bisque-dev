@@ -4,39 +4,41 @@
     <tag name="inputs">
         <tag name="mex_url"      type="system-input" />
         <tag name="bisque_token" type="system-input" />
-        <tag name="resource_url"  type="resource">
+              
+        <tag name="Query"  type="query">     
             <template>
-                <tag name="label" value="Select a group of images to train a model" />
-                <tag name="accepted_type" value="dataset" />
-				<tag name="accepted_type" value="query" />
-				<tag name="prohibit_upload" value="true" />
+                <tag name="label" value="Enter a query to train" />
+                <tag name="accepted_type" value="string" /> 
             </template>  
         </tag>
         
-        <tag name="tag_names" type="tag_selector">     
+        <tag name="TAGS" type="tagselector">     
             <template>
                 <tag name="label" value="Enter tags to be classified" />
-                <tag name="reference" value="resource_url"/>
+                <tag name="reference" value="Query"/>
+                <tag name="accepted_type" value="string" />
             </template>  
         </tag>
-        <!--
-        <tag name="classifier_method" value="Bush Descriptor" type="combo">
+        
+        <tag name="ClassifierMethod" value="Bush Descriptor" type="combo">
             <template>
                 <tag name="label" value="Select the classifier method" />
                 <tag name="editable" value="false" type="boolean" />
                 <tag name="select" value="Bush Descriptor" />
                 <tag name="select" value="Leaf Descriptor" />
-            </template>
+            </template>     
         </tag>
-		-->
     </tag>
     
-    <tag name="outputs">
-		<tag name="classification_file" type="model_viewer"/>
-			<template>
-				<tag name="label" value="Resulting Model File" />
-			</template>
-    </tag>
+    <tag name="outputs">      
+        <tag name="similar_images" type="browser">
+            <template>
+                <tag name="label" value="The file created by the module" />
+                <tag name="path" value="/data_service/file/" />
+                <tag name="value_action" value="query" />
+            </template>
+        </tag>           
+    </tag>  
     
     
     <tag name="execute_options">
@@ -44,7 +46,7 @@
     </tag>
 
     <tag name="module_options" >
-        <tag name="version" value="3" />
+        <tag name="version" value="2" />
     </tag>   
 
     <tag name="display_options" >

@@ -17,9 +17,9 @@
                     <tag name="gobject" value="rectangle" />
                 </template>
             </gobject>		
-        </tag>   
-		<!--
-		<tag name="plant_part" value="bush" type="combo">
+        </tag>    
+		
+		<tag name="plantpart" value="bush" type="combo">
 		    <template>
                 <tag name="label" value="Select a visible part of the plant" />
 				<tag name="editable" value="false" type="boolean" />
@@ -27,7 +27,6 @@
 				<tag name="select" value="leaf" />
             </template>
 		</tag>
-		-->
     </tag>
   
     <tag name="outputs">
@@ -35,7 +34,7 @@
             <template>
                 <tag name="label" value="Detection summary" />
             </template>
-        </tag>      
+        </tag>        
         
         <tag name="similar_images" type="browser">
             <template>
@@ -51,7 +50,7 @@
     </tag>
 
     <tag name="module_options" >
-        <tag name="version" value="6" />
+        <tag name="version" value="5" />
     </tag>   
 
     <tag name="display_options" >
