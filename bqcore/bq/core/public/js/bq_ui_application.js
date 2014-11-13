@@ -75,6 +75,19 @@ BQ.resources.preferred = {
     file: null
 };
 
+BQ.resources.known = {
+    user: null,
+    module: null,
+    service: null,
+    system: null,
+    store: null,
+    dataset: null,
+    template: null,
+    mex: null,
+    image: null,
+    file: null,
+    image: null,
+};
 
 //--------------------------------------------------------------------------------------
 // BQ.Application

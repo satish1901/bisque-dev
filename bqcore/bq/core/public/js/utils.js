@@ -75,14 +75,16 @@ Ext.namespace('BQ.util');
 //var BQ = BQ || {}; // ensure BQ namespace
 
 BQ.util.do_xpath = function(node, expression, result_type) {
+	if (!node) return;
     result_type = result_type || XPathResult.ANY_TYPE;
     var xpe = new XPathEvaluator();
-    var nsResolver = xpe.createNSResolver(node.ownerDocument == null ? node.documentElement : node.ownerDocument.documentElement);
+    var nsResolver = xpe.createNSResolver(!node.ownerDocument ? node.documentElement : node.ownerDocument.documentElement);
     return xpe.evaluate( expression, node, nsResolver, result_type, null );
 };
 
 BQ.util.xpath_nodes = function(node, expression) {
     var result = BQ.util.do_xpath(node, expression, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+    if (!result) return [];
     var found = [];
     var res = null;
     while (res = result.iterateNext())
@@ -101,12 +103,16 @@ BQ.util.xpath_nodes = function(node, expression) {
 
 BQ.util.xpath_node = function(node, expression) {
     var result = BQ.util.do_xpath(node, expression, XPathResult.ANY_UNORDERED_NODE_TYPE);
-    return result.singleNodeValue;
+    if (result) {
+        return result.singleNodeValue;
+    }
 };
 
 BQ.util.xpath_string = function(node, expression) {
     var result = BQ.util.do_xpath(node, expression, XPathResult.STRING_TYPE);
-    return result.stringValue;
+    if (result) {
+        return result.stringValue;
+    }
 };
 
 /*******************************************************************************

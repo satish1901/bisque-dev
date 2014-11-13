@@ -16,7 +16,7 @@
 
     <!-- Bisque styles -->
     <!--<link href="http://fonts.googleapis.com/css?family=Abel|Varela+Round" rel="stylesheet" type="text/css" />-->
-    <link href="//fonts.googleapis.com/css?family=Abel|Varela+Round" rel="stylesheet" type="text/css" />
+    <link href="//fonts.googleapis.com/css?family=Abel|Varela+Round|Roboto:400,300,100" rel="stylesheet" type="text/css" />
 
     <!-- ExtJS4 styles -->
     <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
@@ -121,6 +121,12 @@
           link_kw = {}
     ?>
 
+    <!-- Bisque Application instantiation, must be one of the first onReady to run -->
+    <script type="text/javascript" >
+        Ext.onReady( function() {
+            BQApp = Ext.create('BQ.Application');
+        });
+    </script>
 
     ${h.javascript_link(
     #'/js/bq_ui_extjs_fix.js',
@@ -280,13 +286,6 @@
 
     <!-- Derived template configuration includes   -->
     ${select('*[@id="config" and local-name()="script"]')}
-
-    <!-- Bisque Application instantiation   -->
-    <script type="text/javascript" >
-        Ext.onReady( function() {
-            BQApp = Ext.create('BQ.Application');
-        });
-    </script>
 
     <!-- Derived template includes   -->
     ${select('*[local-name()!="title" and not(@id="config" and local-name()="script")]')}
