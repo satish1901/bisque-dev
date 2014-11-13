@@ -68,6 +68,9 @@ class BisqueIdentity(object):
             return None
         bquser = request.identity.get ('bisque.bquser')
         if bquser:
+            if bquser not in DBSession:
+                bquser = DBSession.merge (bquser)
+                request.identity['bisque.bquser'] = bquser
             return bquser
 
         user_name = self.get_username()
