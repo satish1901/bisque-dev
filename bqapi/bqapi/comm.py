@@ -275,10 +275,9 @@ class BQServer(Session):
                 raise BQCommError(r.status_code, r.headers, r.content)
             else:
                 raise BQCommError(r.status_code, r.headers) 
-
         if path:
             with open(path, 'wb') as f:
-                for line in r.iter_lines():
+                for line in r.iter_content():
                     f.write(line)
             return f.name
         else:
@@ -565,7 +564,7 @@ class BQSession(object):
         services = self.load (self.bisque_root + "/services")
         smap = {}
         for service in services.tags:
-            smap [ service.type ] = service.value
+            smap [service.type] = service.value
         self.service_map = smap
 
 
@@ -662,7 +661,6 @@ class BQSession(object):
             except:
                 log.exception ("Cannot finish/fail Mex ")
 
-
     def fail_mex(self, msg):
         """
             @param msg:
@@ -676,9 +674,11 @@ class BQSession(object):
         pass
 
 
-    ############################
-    #
-    def query (self, resource_type, **kw):
+
+    ##############################
+    # Resources
+    ##############################
+    def query(self, resource_type, **kw):
         """Query for a resource
         tag_query=None, tag_order=None, offset=None, limit=None
         """
@@ -690,9 +690,6 @@ class BQSession(object):
         return results
 
 
-    ##############################
-    # Low-level save
-    ##############################
     def load(self, url,  **params):
         """Load a bisque object
 
@@ -707,7 +704,7 @@ class BQSession(object):
             xml = self.fetchxml(url, **params)
             if xml.tag == "response":
                 xml = xml[0]
-            bqo  = self.factory.from_etree (xml)
+            bqo  = self.factory.from_etree(xml)
             return bqo
         except BQCommError, ce:
             log.exception('communication issue while loading %s' % ce)
