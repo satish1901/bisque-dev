@@ -1430,23 +1430,25 @@ Ext.define('BQ.viewer.Volume.Panel', {
             new gammaTool(this),
             new materialTool(this),
         ];
-        var lTool = new lightTool(this);
+        /*
         if (Ext.isWindows) {
 			if (Ext.isChrome && Ext.chromeVersion >= 37) {
-				tools.push(
-                    lTool,
-                    new phongTool(this,lTool),
-                    new deepTool(this,lTool)),
 
+                tools.push(
+                    new lightTool(this),
+                    new phongTool(this),
+                    new deepTool(this),
+                )
 			}
-		} else {
+		}
+        else {
 			tools.push(
-                lTool,
-                new phongTool(this,lTool),
-                new deepTool(this,lTool),
+                new lightTool(this),
+                new phongTool(this),
+                new deepTool(this),
             );
 		}
-
+        */
         if(window.location.hash == "#debug"){
             tools.push(new loseContextTool(this));
 
@@ -1485,7 +1487,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			    tbar: this.toolPanelButtons,
                 //dock: 'right',
                 //collapsible: true,
-                //collapseDirection: 'right',
+                collapseDirection: 'right',
 
                 title : 'Settings',
 				cls : 'bq-volume-toolbar',
