@@ -867,7 +867,7 @@ VolumeShader.prototype.config = function(config){
             '      float r0 = 1.0 - 2.0*rand(pos.xy + eye_d.zx); //create three random numbers for each dimension',
             '      float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);',
             '      float r2 = 1.0 - 2.0*rand(pos.xz + eye_d.yx);',
-            '    for(int j=0; j<4; j++){ ',
+            '    for(int j=1; j<5; j++){ ',
             //'    for(int j=0; j<maxStepsLight; j++){ ',
             '      //if (j > LIGHT_SAMPLES) break;',
 
@@ -896,7 +896,7 @@ VolumeShader.prototype.config = function(config){
             '    //col.xyz = vec3((exp(-ABSORPTION*Dl)));',
             '    col.xyz *= (exp(-ABSORPTION*Dl));', //beers law
             '    //col.xyz *= (1.0 - Dl);',
-            '    col.xyz *= 2.0;', //can look kind of dark
+            '    //col.xyz *= 2.0;', //can look kind of dark
             '//',
             '//end deep shading secondary integration',
         ].join('\n');
@@ -911,12 +911,14 @@ VolumeShader.prototype.config = function(config){
             '    vec4 lr = dl;',
             '    vec4 ln = dot(dl,N)*N;', //normal component of light
             '    vec4 lrt = dl - 2.0*ln;',   //reflected component of light
-            '    if(dot(dl,lrt) > 0.0){', //if the normal is facing us, the light reflects
+            '    vec3 Nxyz = normalize(N.xyz);',
+
+            '    if(dot(lrt.xyz,N.xyz) < 0.0){', //if the normal is facing us, the light reflects
             '       lr = lrt;',   //reflected component of light
             '     }',
-            '    vec3 dtemp = cross(lr.xyz,vec3(1.0,1.0,1.0)); dtemp = normalize(dtemp);',
-            '    vec3 N1 = cross(lr.xyz,dtemp);',
-            '    vec3 N2 = cross(lr.xyz,N1);',
+            '    vec3 dtemp = cross(N.xyz,dl.xyz); //dtemp = normalize(dtemp);',
+            '    vec3 N1 = cross(N.xyz,dtemp);',
+            '    vec3 N2 = cross(N.xyz,N1);',
 
             '      float r0 = 1.0 - 2.0*rand(pos.xy + eye_d.zx); //create three random numbers for each dimension',
             '      float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);',
@@ -927,7 +929,7 @@ VolumeShader.prototype.config = function(config){
             '    for(int j=0; j<4; j++){ ',
             //'      if (j > LIGHT_SAMPLES) break;',
             '      vec4 Ni   = DISPERSION*(vec4(r1*N1 + r2*N2, 0.0));',
-            '      vec4 lpos = pos - lstep*Ni - 0.2*lstep*lr;',
+            '      vec4 lpos = pos - lstep*Ni -  0.2*lstep*lr;',
 
             '      r0 = 1.0 - 2.0*rand(r2*eye_d.zx);',
             '      r1 = 1.0 - 2.0*rand(r0*eye_d.zx);',
@@ -937,12 +939,12 @@ VolumeShader.prototype.config = function(config){
             '      dens.w *= 1.0*DENSITY;',
             '      Dl +=  exp(-2.0*ABSORPTION*dens.w);',
             '    }',
-            '    Dl /= float(maxStepsLight);',
+            '    Dl /= float(4);',
             '    Dl = clamp(Dl,0.0,1.0);',
             //'col.xyz = vec3(r0, r1, r2);',
             '    col.xyz *= Dl;',
-            //'    col.xyz = lr.xyz;',
-            '    col.xyz *= 8.0;',
+            //'    col.xyz = dtemp.xyz;',
+            //'    col.xyz *= 8.0;',
             '//',
             '//end deep shading secondary integration',
         ].join('\n');
@@ -952,9 +954,10 @@ VolumeShader.prototype.config = function(config){
             '//Finish up by adding brightness/density',
             //'col = N;',
             '    col.xyz *= BRIGHTNESS;',
+            '    col.w *= DENSITY;',
+
             //'    float s = 1.0*float(##MAXSTEPS##)/ float(BREAK_STEPS);',
             '    float s = 1.0*float(1024)/ float(BREAK_STEPS);',
-            '    col.w *= DENSITY;',
             '    col.w = clamp(col.w, 0.0,1.0);',
             '    float stepScale = (1.0 - powf((1.0-col.w),s));',
             '    col.w = stepScale;',

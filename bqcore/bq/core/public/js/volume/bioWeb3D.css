@@ -171,6 +171,9 @@ toolbar
     z-index: 100 !important;
     border: 0px;
     border-width: 0px;
+    top: 50px;
+    right: 10px;
+    width: 220px;
     padding: 0px 0px 0px 0px;
 }
 

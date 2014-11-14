@@ -1360,14 +1360,16 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 
         //this.preferences.
-        for (var key in this.preferences) {
-            if (!this.preferences.hasOwnProperty(key)) {
+        for (var key in this.tools) {
+            if (!this.tools.hasOwnProperty(key)) {
                 //The current property is not a direct property of p
                 continue;
             }
-            if(this.tools[key]){
+            if(this.preferences[key]){
                 this.tools[key].loadPreferences(this.preferences[key]);
-            };
+            }
+            else
+                this.tools[key].loadDefaults();
         }
 
         if (this.preferences.title)
@@ -1428,17 +1430,21 @@ Ext.define('BQ.viewer.Volume.Panel', {
             new gammaTool(this),
             new materialTool(this),
         ];
-
+        var lTool = new lightTool(this);
         if (Ext.isWindows) {
 			if (Ext.isChrome && Ext.chromeVersion >= 37) {
-				tools.push(new phongTool(this),
-                           new deepTool(this),
-                           new lightTool(this));
+				tools.push(
+                    lTool,
+                    new phongTool(this,lTool),
+                    new deepTool(this,lTool)),
+
 			}
 		} else {
-			tools.push(new phongTool(this),
-                       new deepTool(this),
-                       new lightTool(this));
+			tools.push(
+                lTool,
+                new phongTool(this,lTool),
+                new deepTool(this,lTool),
+            );
 		}
 
         if(window.location.hash == "#debug"){
@@ -1470,17 +1476,16 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		    //e.addControls();
         });
 
-
         //tools factory function
 		if (!this.toolPanel) {
 			var thisDom = this.getEl().dom;
 
 			this.toolPanel = Ext.create('Ext.panel.Panel', {
-				//renderTo : thisDom,
+				renderTo : thisDom,
 			    tbar: this.toolPanelButtons,
-                dock: 'right',
-                collapsible: true,
-                collapseDirection: 'right',
+                //dock: 'right',
+                //collapsible: true,
+                //collapseDirection: 'right',
 
                 title : 'Settings',
 				cls : 'bq-volume-toolbar',
@@ -1489,17 +1494,13 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 width: 240,
 
 			});
-			//this.addFade(this.toolPanel);
-            this.addDocked(this.toolPanel);
+			this.addFade(this.toolPanel);
+            //this.addDocked(this.toolPanel);
 
             tools.forEach(function(e,i,a){
-                //me.tools[e.name] = e;
-                //e.init();
-                //e.addButton();
 		        e.addControls();
             });
 
-            //this.toolPanel.add(this.toolPanelButtons);
 		}
 
 	},

@@ -44,7 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Ext.define('BQ.viewer.Volume.uniformUpdate', {
   updateSlider : function (slider, value) {
-    this.sceneVolume.setUniform(slider.uniform_var, slider.convert(value), true, true);
+    this.volume.sceneVolume.setUniform(slider.uniform_var, slider.convert(value), true, true);
   },
 });
 
@@ -117,6 +117,8 @@ renderingTool.prototype.initUniforms = function(){
     this.sliders = {};
     for(var key in this.uniforms ){
         var e = this.uniforms[key];
+        var updateSlider = this.updateSlider;
+        if(e.updateSlider) updateSlider = e.updateSlider;
         shaderManager.initUniform(e.name, e.type, e.val);
         //sliders build themselves from uniform variables...
         if(e.slider){
@@ -130,7 +132,7 @@ renderingTool.prototype.initUniforms = function(){
                 value : e.def,
                 uniform_var : e.name,
                 listeners : {
-                    change : this.updateSlider,
+                    change : updateSlider,
                     scope : me,
                 },
                 k: k,
@@ -150,6 +152,8 @@ renderingTool.prototype.addUniforms = function(){
 renderingTool.prototype.initControls = function(){
 };
 
+renderingTool.prototype.loadDefaults = function(prefs){
+};
 
 renderingTool.prototype.loadPreferences = function(prefs){
 };
@@ -380,29 +384,56 @@ materialTool.prototype = new renderingTool();
 materialTool.prototype.addUniforms = function(){
     this.uniforms['brightness'] = {name: 'BRIGHTNESS',
                                    type: 'f',
-                                   val: 0.5,
+                                   val: 1.0,
                                    slider: true,
                                    min: 0,
-                                   max: 100,
-                                   def: 50,
-                                   K: 0.02};
+                                   max: 200,
+                                   def: 100.0,
+                                   K: 0.01,
+                                   updateSlider : function (slider, value) {
+                                       var val = 0.025*(value - 100);
+                                       var setVal = Math.exp(val);
+                                       this.volume.sceneVolume.setUniform(
+                                           slider.uniform_var, setVal, true, true);
+                                   },
+                                  };
     this.uniforms['density']    = {name: 'DENSITY',
                                    type: 'f',
-                                   val: 0.5,
+                                   val: 1.0,
                                    slider: true,
                                    min: 0,
-                                   max: 100,
-                                   def: 50,
-                                   K: 0.025};
+                                   max: 200,
+                                   def: 100.0,
+                                   K: 0.01,
+                                   updateSlider : function (slider, value) {
+                                       /*
+                                       var setVal =  slider.convert(value);
+                                       if(value > 100){
+                                           setVal = value*0.05 - 4;
+                                       }
+                                       */
+                                       var val = 0.025*(value - 100);
+                                       var setVal = Math.exp(val);
+                                       this.volume.sceneVolume.setUniform(
+                                           slider.uniform_var, setVal, true, true);
+                                   },
+                                  };
 };
 
 materialTool.prototype.initControls = function(){
     var me = this;
     this.button.tooltip = 'edit brightness/density';
+    /*
     this.volume.on('loaded', function () {
-        me.sliders['density'].setValue(50);
-        me.sliders['brightness'].setValue(75);
+        me.sliders['density'].setValue(100);
+        me.sliders['brightness'].setValue(100);
     });
+    */
+};
+
+materialTool.prototype.loadDefaults = function(){
+    this.sliders['density'].setValue(100);
+    this.sliders['brightness'].setValue(100);
 };
 
 function ditherTool(volume) {
@@ -430,7 +461,12 @@ ditherTool.prototype.initControls = function(){
     //});
 };
 
+ditherTool.prototype.loadDefaults = function(){
+    this.button.toggle(true);
+};
+
 ditherTool.prototype.loadPreferences = function(prefs){
+
     if(prefs == 'true')
         this.button.toggle(true);
     else
@@ -867,7 +903,7 @@ deepTool.prototype.initControls = function(){
             },
             scope : me
         },
-    });
+    }).hide();
 
 
 
