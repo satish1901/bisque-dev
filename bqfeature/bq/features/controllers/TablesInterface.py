@@ -365,6 +365,8 @@ class Tables(object):
                     if func:
                         result = func(h5file)
                          
+                except table.exceptions.NodeError: #race condtion may occur, stop writing if table already contains table
+                    log.debug('Table already exists skipping write %s'%filename)        
                 
                 except tables.exceptions.HDF5ExtError:
                     log.debug('Failed to create table %s'%filename)
@@ -609,7 +611,7 @@ class WorkDirTable(Tables):
             table = h5file.root.values
             status = h5file.root.status
             for key in row_genorator.keys():
-                queue = row_genorator[key] 
+                queue = row_genorator[key]
                 while not queue.empty():
                     rows,s = queue.get()
                     table.append(rows)
