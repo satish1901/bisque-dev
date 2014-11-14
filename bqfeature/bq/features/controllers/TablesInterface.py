@@ -603,26 +603,21 @@ class WorkDirTable(Tables):
 
     def store(self, row_genorator):
         """
-            store row elements to an output table
+            store row elements to an output table only write to table once
         """
-        for key in row_genorator.keys():
-            queue = row_genorator[key]
-        
-            log.debug('Writing hdf5 file into workdir: %s' % self.filename)
-            if self.create_h5_file(self.path, lambda x: True) is None: # creates the table, should return true
-                raise FeatureServiceError(500, 'File already exists in workdir: %s' % self.filename)            
-    
-            # appends elements to the table        
-            def func(h5file):
-                table = h5file.root.values
-                status = h5file.root.status
+        def func(h5file):
+            table = h5file.root.values
+            status = h5file.root.status
+            for key in row_genorator.keys():
+                queue = row_genorator[key] 
                 while not queue.empty():
                     rows,s = queue.get()
                     table.append(rows)
                     status.append(s)
-                table.flush()
-                
-            self.append_to_table(self.path, func)
+            table.flush()
+            status.flush()
+            
+        self.write_to_table(self.path, func)
         return
     
 
