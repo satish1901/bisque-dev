@@ -4,10 +4,9 @@ function test_visible_dim(pos, pos_view, tolerance ) {
     return !(pos!==undefined && pos!==null && !isNaN(pos) && Math.abs(pos-pos_view)>=tolerance);
 }
 
-function test_visible (pos, viewstate, polygon, tolerance_z ) {
+function test_visible (pos, viewstate, tolerance_z ) {
     var proj = viewstate.imagedim.project,
         proj_gob = viewstate.gob_projection;
-    polygon = polygon || false;
 
     tolerance_z = tolerance_z || viewstate.gob_tolerance.z || 1.0;
     tolerance_t = viewstate.gob_tolerance.t || 1.0;
@@ -19,13 +18,8 @@ function test_visible (pos, viewstate, polygon, tolerance_z ) {
     } else if (proj === 'projectmaxt' || proj === 'projectmint' || proj_gob==='T') {
         return test_visible_dim(pos.z, viewstate.z, tolerance_z);
     } else if (!proj || proj === 'none') {
-        if (polygon) {
-            return (test_visible_dim(pos.z, viewstate.z, tolerance_z) ||
-                    test_visible_dim(pos.t, viewstate.t, tolerance_t));
-        } else {
-            return (test_visible_dim(pos.z, viewstate.z, tolerance_z) &&
-                    test_visible_dim(pos.t, viewstate.t, tolerance_t));
-        }
+        return (test_visible_dim(pos.z, viewstate.z, tolerance_z) &&
+                test_visible_dim(pos.t, viewstate.t, tolerance_t));
     }
     return true;
 }
@@ -325,8 +319,7 @@ SVGRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility)
             continue;
         }
 
-        //
-        if (!test_visible(pnt, viewstate, true))
+        if (!test_visible(pnt, viewstate))
             continue;
 
         var p = viewstate.transformPoint (pnt.x, pnt.y);
