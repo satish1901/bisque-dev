@@ -307,7 +307,7 @@ def convert_image2numpy(image_path):
             if image.shape[2] == 3:
                 return image
         
-        raise InvalidResourceError(415, 'Not a grayscale or RGB image')
+        raise InvalidResourceError(error_code=415, error_message='Not a grayscale or RGB image')
         
     except (IOError, TypeError):
         log.debug("Not a tiff file!")
@@ -316,7 +316,7 @@ def convert_image2numpy(image_path):
             return np.array(Image.open(image_path)) #try to return something, pil doesnt support bigtiff
         except IOError:
             log.debug("File type not supported!")
-            raise InvalidResourceError(415, 'Unsupported media type') 
+            raise InvalidResourceError(error_code=415, error_message='Unsupported media type') 
 
 
 def gobject2mask(uri, im):
