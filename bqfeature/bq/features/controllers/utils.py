@@ -46,8 +46,12 @@ def calculation_lock(calc):
         if self.name not in GLOBAL_FEATURE_CALC_LOCK:
             GLOBAL_FEATURE_CALC_LOCK[self.name] = threading.Lock()
         log.debug('Calculation Lock: %s acquired' % self.name)
-        with GLOBAL_FEATURE_CALC_LOCK[self.name]:
+        GLOBAL_FEATURE_CALC_LOCK[self.name].acquire()
+        try:
             results = calc(self, resource)
+        finally:
+            GLOBAL_FEATURE_CALC_LOCK[self.name].release()
+            log.debug('Calculation Lock: %s release' % self.name)
         return results
     return locker
     
@@ -109,7 +113,7 @@ def check_access(ident, action=RESOURCE_READ):
         @return bool
     """
     query = DBSession.query(Taggable).filter_by (resource_uniq = ident)
-    resource = resource_permission (query, action=action).first()
+    resource = resource_permission(query, action=action).first()
     log.debug('Result from the database: %s'%resource)
     if resource is None:
         return False
@@ -188,6 +192,14 @@ def mex_validation(resource):
     return resource
 
 def except_image_only(resource):
+    """
+        Returns only if the resource contains an image url else a FeatureExtractorError
+        is raised.
+        
+        @param: resource
+        
+        @exception: FeatureExtractionError
+    """
     if resource.image is None:
         raise FeatureExtractionError(resource, 400, 'Image resource is required')
     if resource.mask:
