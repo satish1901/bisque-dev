@@ -138,7 +138,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
             sortObjects: true,
         });
 
-        this.setClearColor(0xC0C0C0, 1.0);
+        //this.setClearColor(0xC0C0C0, 1.0);
 
         var aspect = this.getWidth() / this.getHeight();
         this.fov = 20;
