@@ -55,26 +55,26 @@ def calculation_lock(calc):
     return locker
     
 
-def request_internally(url):
-    """
-        Makes a request on the give url internally. If it finds url without errors the content
-        of the body is returned else None is returned
-        
-        @param url - the url that is requested internally
-        
-        @return webob response object
-    """
-    from bq.config.middleware import bisque_app
-    req = Request.blank('/')
-    req.environ.update(request.environ)
-    req.environ.update(environ_from_url(url))
-    log.debug("Mex %s" % identity.mex_authorization_token())
-    req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
-    req.headers['Accept'] = 'text/xml'
-    log.debug("begin routing internally %s" % url)
-    resp = req.get_response(bisque_app)
-    log.debug("end routing internally: status %s" % resp.status_int)
-    return resp
+#def request_internally(url):
+#    """
+#        Makes a request on the give url internally. If it finds url without errors the content
+#        of the body is returned else None is returned
+#        
+#        @param url - the url that is requested internally
+#        
+#        @return webob response object
+#    """
+#    from bq.config.middleware import bisque_app
+#    req = Request.blank('/')
+#    req.environ.update(request.environ)
+#    req.environ.update(environ_from_url(url))
+#    log.debug("Mex %s" % identity.mex_authorization_token())
+#    req.headers['Authorization'] = "Mex %s" % identity.mex_authorization_token()
+#    req.headers['Accept'] = 'text/xml'
+#    log.debug("begin routing internally %s" % url)
+#    resp = req.get_response(bisque_app)
+#    log.debug("end routing internally: status %s" % resp.status_int)
+#    return resp
 
 
 def request_externally(url):
@@ -101,7 +101,7 @@ def request_externally(url):
     return resp
 
 
-def check_access(ident, action=RESOURCE_READ):
+def check_access(ident):
     """
         Checks for element in the database. If found returns True else returns 
         False
@@ -111,7 +111,7 @@ def check_access(ident, action=RESOURCE_READ):
         
         @return bool
     """
-    resource = data_service.resource_load (uniq = ident)
+    resource = data_service.resource_load(uniq = ident)
     log.debug('Result from the database: %s'%resource)
     if resource is None:
         return False
