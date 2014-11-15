@@ -305,16 +305,16 @@ VolumeShader.prototype.config = function(config){
         var luma2Alpha;
         if(usePow){
             luma2Alpha = [
-                'vec4 luma2Alpha(vec4 color, float min, float max, float C){',
+                'vec4 luma2Alpha(vec4 color, float vmin, float vmax, float C){',
                 '  //float x = sqrt(1.0/9.0*(color[0]*color[0] +color[1]*color[1] +color[2]*color[2]));',
                 //'  float iChannels = 1.0/float(NUM_CHANNELS);',
                 '  float iChannels = 1.0/3.0;',
-                '  float x = iChannels*(color[0] + color[1] + color[2]);',
-
+                //'  float x = iChannels*(color[0] + color[1] + color[2]);',
+                '  float x = max(color[2], max(color[0],color[1]));',
                 '  //x = clamp(x, 0.0, 1.0);',
-                '  float xi = (x-min)/(max-min);',
+                '  float xi = (x-vmin)/(vmax-vmin);',
                 '  xi = clamp(xi,0.0,1.0);',
-                '  //float b = 0.5*(max + min);',
+                '  //float b = 0.5*(vmax + vmin);',
                 '  //float xi = 1.0 / (1.0 + exp(-((x-b)/0.001)));',
                 '  float y = pow(xi,C);',
                 '  y = clamp(y,0.0,1.0);',
@@ -324,9 +324,9 @@ VolumeShader.prototype.config = function(config){
             ].join('\n');
         } else{
             luma2Alpha = [
-                'vec4 luma2Alpha(vec4 color, float min, float max, float C){',
+                'vec4 luma2Alpha(vec4 color, float vmin, float vmax, float C){',
                 '  float x = 1.0/3.0*(color[0] + color[1] + color[2]);',
-                '  float xi = (x-min)/(max-min);',
+                '  float xi = (x-vmin)/(vmax-vmin);',
                 '  xi = clamp(xi,0.0,1.0);',
                 '  color[3] = xi;',
                 '  return(color);',
@@ -674,7 +674,8 @@ VolumeShader.prototype.config = function(config){
             '  vec2 vUv = gl_FragCoord.xy/iResolution.xy;',
             '  vec4 D = texture2D(BACKGROUND_DEPTH, vUv);',
             '  vec4 C = texture2D(BACKGROUND_COLOR, vUv);',
-
+            //'return C;',
+            //' C = vec4(C.xyz, 1.0);',
             '  float zNear = 0.01;',
             '  float zFar = 20.0;',
             '  float z_b = unpack(D);',
@@ -1142,6 +1143,7 @@ DepthShader.prototype.config = function(config){
 		});
 	}
 
+	//24 bit precision pack that preserves the alpha value.
 	var pack = [
 		'vec4 pack (float depth){',
 		'const vec4 bitSh = vec4(256 * 256,',
@@ -1158,7 +1160,8 @@ DepthShader.prototype.config = function(config){
 		'}'
 	].join('\n');
 
-	//24 bit precision pack that preserves the alpha value.
+    //shader for the background proxy object.  Either returns "really far away" if we're in depth mode, and v4(0.0),
+    //if we're in color mode;
 	var fragDepthBack = [
 		'varying vec2 vUv;',
 		'uniform float near;',
@@ -1171,7 +1174,7 @@ DepthShader.prototype.config = function(config){
 		'  gl_FragColor = pack(0.999999);',
 		' } ',
 		' else{',
-		'  gl_FragColor = vec4(0.75, 0.75, 0.75, 0.0);',
+		'  gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);',
 		' }',
 		'}'
 	].join('\n');

@@ -388,7 +388,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 me.setMaxSteps = me.minSampleRate;
 		        me.oldScale = new THREE.Vector3(0.5, 0.5, 0.5);
 		        me.currentScale = new THREE.Vector3(0.5, 0.5, 0.5);
-                this.renderer.setClearColor(0x808080,0.001);
+                this.renderer.setClearColor(0x434343,0.000);
             }
 		});
 		this.canvas3D.animate_funcs[1] = callback(this, this.onAnimate);
@@ -1152,10 +1152,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	onImage : function (resource) {
 		//build custom atlas dims here, maybe this can get cuter...
 
-		var textureAtlas = new THREE.ImageUtils.loadTexture('/images/bisque_logo_400.png');
-		textureAtlas.generateMipmaps = false;
-		textureAtlas.magFilter = THREE.LinearFilter;
-		textureAtlas.minFilter = THREE.LinearFilter;
 		this.dims = {
 			slice : {
 				x : 0,
@@ -1429,26 +1425,19 @@ Ext.define('BQ.viewer.Volume.Panel', {
             new boxTool(this),
             new gammaTool(this),
             new materialTool(this),
+            //new lightTool(this),
         ];
-        /*
+
         if (Ext.isWindows) {
 			if (Ext.isChrome && Ext.chromeVersion >= 37) {
-
-                tools.push(
-                    new lightTool(this),
-                    new phongTool(this),
-                    new deepTool(this),
-                )
+                tools.push(new lightTool(this));
 			}
 		}
+
         else {
-			tools.push(
-                new lightTool(this),
-                new phongTool(this),
-                new deepTool(this),
-            );
+			tools.push(new lightTool(this));
 		}
-        */
+
         if(window.location.hash == "#debug"){
             tools.push(new loseContextTool(this));
 
@@ -1485,15 +1474,27 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			this.toolPanel = Ext.create('Ext.panel.Panel', {
 				renderTo : thisDom,
 			    tbar: this.toolPanelButtons,
-                //dock: 'right',
-                //collapsible: true,
                 collapseDirection: 'right',
-
+                //layout : 'fit',
+                layout : 'auto',
+                //layout : {
+			    //    type : 'vbox',
+			    //    align : 'stretch',
+			    //    pack : 'start',
+		        //},
                 title : 'Settings',
 				cls : 'bq-volume-toolbar',
 				split : true,
 				collapsible : true,
                 width: 240,
+                //resizeable: true,
+                //resizeHandles: 's',
+                listeners:{
+                    expand: function(p,opts){
+
+                        this.doLayout();
+                    }
+                }
 
 			});
 			this.addFade(this.toolPanel);
