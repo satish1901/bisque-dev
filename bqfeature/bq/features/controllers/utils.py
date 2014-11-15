@@ -13,6 +13,7 @@ from libtiff import TIFF
 import threading
 from PIL import Image, ImageDraw
 from bq import image_service
+from bq import data_service
 from bq.core import identity
 from bqapi.comm import BQServer
 from lxml import etree
@@ -20,8 +21,6 @@ from bq.util.mkdir import _mkdir
 from webob.request import Request, environ_from_url
 from bq.features.controllers.exceptions import InvalidResourceError, FeatureExtractionError
 from .var import FEATURES_TEMP_DIR
-from bq.data_service.controllers.resource_query import RESOURCE_READ, resource_permission
-from bq.data_service.model import Taggable, DBSession
 
 
 log = logging.getLogger("bq.features.utils")
@@ -112,8 +111,7 @@ def check_access(ident, action=RESOURCE_READ):
         
         @return bool
     """
-    query = DBSession.query(Taggable).filter_by (resource_uniq = ident)
-    resource = resource_permission(query, action=action).first()
+    resource = data_service.resource_load (uniq = ident)
     log.debug('Result from the database: %s'%resource)
     if resource is None:
         return False
@@ -157,18 +155,18 @@ def mex_validation(resource):
                         if check_access(ident) is True:
                             continue #check next resource
             
-            # Try to route internally through bisque
-            resp = request_internally(url)
-            if resp.status_int < 400:
-                if resp.status_int == 302:
-                    #reset the url to the redirected url
-                    redirect_url = resp.headers.get('Location')
-                    if redirect_url is not None: #did not find the redirect
-                        log.debug('Redirect Url: %s' % redirect_url)
-                        resource = resource._replace(**{name:redirect_url})
-                        continue 
-                else:
-                    continue
+#            # Try to route internally through bisque
+#            resp = request_internally(url)
+#            if resp.status_int < 400:
+#                if resp.status_int == 302:
+#                    #reset the url to the redirected url
+#                    redirect_url = resp.headers.get('Location')
+#                    if redirect_url is not None: #did not find the redirect
+#                        log.debug('Redirect Url: %s' % redirect_url)
+#                        resource = resource._replace(**{name:redirect_url})
+#                        continue 
+#                else:
+#                    continue
                 
             # Try to route externally
             resp = request_externally(url)
@@ -221,9 +219,9 @@ def fetch_resource(uri):
     """
     try:
         # Try to route internally through bisque 
-        resp = request_internally(uri)
-        if int(resp.status_int) == 200:
-            return resp.body
+#        resp = request_internally(uri)
+#        if int(resp.status_int) == 200:
+#            return resp.body
 
         # Try to route externally
         resp = request_externally(uri)
