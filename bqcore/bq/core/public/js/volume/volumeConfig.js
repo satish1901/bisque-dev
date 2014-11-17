@@ -182,6 +182,7 @@ VolumeShader.prototype.config = function(config){
         'uniform float CLIP_FAR;',
     ].join('\n');
 
+
     var lightPos = 'uniform vec3 LIGHT_POSITION;';
 
     var deepVars = [
@@ -293,7 +294,7 @@ VolumeShader.prototype.config = function(config){
 
 
 
-    var sampleStack = function(useTransfer, usePow){
+    var sampleStack = function(config, useTransfer, usePow){
 
         var getTransfer = [
             'vec4 getTransfer(float density){',
@@ -335,7 +336,25 @@ VolumeShader.prototype.config = function(config){
 
         }
 
-        var sampleTexture = [
+
+        //I can't figure out why this function works differently on OSX vs other operating systems,
+        //subtract 1.0 from x value on mac
+        var offset = [
+            'vec2 offsetFrontBack(float t, float nx, float ny){',
+            '  vec2 os = vec2((mod(t/nx,1.0))*nx, ny - floor(t/nx) - 1.0);',
+            '  return os;',
+            '}',];
+
+
+        if(config.OSX)
+            offset = [
+                'vec2 offsetFrontBack(float t, float nx, float ny){',
+                '  vec2 os = vec2((mod(t/nx,1.0))*nx-1.0, ny - floor(t/nx) - 1.0);',
+                '  return os;',
+                '}',];
+
+        var sampleTexture = offset.join('\n') + [
+            /*
             'vec2 offsetBackFront(float t, float nx){',
             '  vec2 os = vec2((1.0-mod(t,1.0))*nx-1.0, floor(t));',
             '  return os;',
@@ -345,6 +364,7 @@ VolumeShader.prototype.config = function(config){
             '  vec2 os = vec2((mod(t,1.0))*nx, ny - floor(t) - 1.0);',
             '  return os;',
             '}',
+            */
 
             'vec4 sampleAs3DTexture(sampler2D tex, vec4 pos) {',
             '  //vec4 pos = -0.5*(texCoord - 1.0);',
@@ -356,7 +376,7 @@ VolumeShader.prototype.config = function(config){
             '  //return vec4(pos.xyz,0.05);',
             '  pos = 0.5*(1.0 - pos);',
             '  pos[0] = 1.0 - pos[0];',
-            //'  pos = clamp(pos,0.005,0.995);',
+
             '  float bounds = float(pos[0] > 0.005 && pos[0] < 0.995 &&',
             '                       pos[1] > 0.005 && pos[1] < 0.995 &&',
             '                       pos[2] > 0.005 && pos[2] < 0.995 );',
@@ -373,13 +393,13 @@ VolumeShader.prototype.config = function(config){
 
             '  float iz = pos.z*nSlices;',
             '  float zs = floor(iz);',
-            '  float ty  = zs/nx;',
-            '  float typ = (zs+1.0)/nx;',
-
+            '  float ty  = zs;',
+            '  float typ = (zs+1.0);',
             '  typ = clamp(typ, 0.0, nSlices);',
-            '  vec2 o0 = offsetFrontBack(ty,nx,ny)*pix;',
+            '  vec2 o0 = offsetFrontBack(ty, nx,ny)*pix;',
             '  vec2 o1 = offsetFrontBack(typ,nx,ny)*pix;',
-
+            '  o0 = clamp(o0, 0.0, 1.0);',
+            '  o1 = clamp(o1, 0.0, 1.0);',
             '  //return vec4(o0/vec2(nx,ny),0.0,0.5);',
 
             '  float t = mod(iz, 1.0);',
@@ -1058,7 +1078,7 @@ VolumeShader.prototype.config = function(config){
     output.push(powf(config.pow));
     output.push(unpack);
     output.push(rand);
-    output.push(sampleStack(config.transfer, config.usePow));
+    output.push(sampleStack(config, config.transfer, config.usePow));
     var gradType = config.gradientType ? config.gradientType : 'finite_difference';
     if(gradType == 'directional'){
         output.push(getNormal(gradType));

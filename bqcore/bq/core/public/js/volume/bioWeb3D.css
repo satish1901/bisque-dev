@@ -171,7 +171,8 @@ toolbar
     z-index: 100 !important;
     border: 0px;
     border-width: 0px;
-    top: 50px;
+    top: 60px;
+    height: 80% !important;
     right: 10px;
     width: 220px;
     padding: 0px 0px 0px 0px;
@@ -187,7 +188,7 @@ toolbar
 
 .bq-volume-toolbar .x-toolbar {
     color: white;
-    background-color: rgba(50, 50, 50, 1.0);
+    background-color: rgba(20, 20, 20, 0.5);
     background-image: none;
     border-color: #333333;
     box-shadow: none;
@@ -202,9 +203,10 @@ toolbar
 }
 
 .bq-volume-toolbar .x-panel-body {
-    background-color: rgba(0, 0, 0, 1.0);
-    padding: 5px;
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 5%;
     border: 2px solid;
+    height: 80% !important;
     border-radius: 0px 0px 5px 5px;
     border-color: #333333;
     vertical-align: middle;

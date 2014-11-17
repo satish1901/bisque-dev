@@ -330,6 +330,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
         };
         var mousemove = function(event){
             if(me.mousedown){
+                //console.log('move');
                 me.rerenderImmediate(me.minSampleRate);
             }
         };
@@ -418,7 +419,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		//Platform and browser version checking
 		//-------------------------------------
 
-		var fragUrl, usePow;
+		var OSX, fragUrl, usePow;
 		if (Ext.isWindows) {
 			if (Ext.isChrome) {
 				if (Ext.chromeVersion < 37)
@@ -430,7 +431,8 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				usePow = true;
 		} else
 				usePow = true;
-
+        if(Ext.isMac)
+            OSX = true;
         this.shaderConfig = {
             lighting: {
                 phong: false,
@@ -445,6 +447,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
             gradientType: 'finite_difference',
             maxSteps: this.maxSteps,
             usePow: usePow,
+            OSX: OSX,
         };
 
 		this.sceneVolume.initMaterial({
@@ -913,6 +916,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			var ctx = this.canvas3D.renderer.getContext();
 			this.maxTextureSize = 0.5 * ctx.getParameter(ctx.MAX_TEXTURE_SIZE);
 		}
+        //return 2048;
 		return this.maxTextureSize;
 	},
 
@@ -1241,8 +1245,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		var plugin = undefined;
 		for (var i = 0; (plugin = this.plug_ins[i]); i++)
 			plugin.addCommand(command, opts);
-		return (this.hostName ? this.hostName : '') + '/image_service/image/'
-		 + this.resource.resource_uniq + '?' + command.join('&');
+        var atlas = (this.hostName ? this.hostName : '') + '/image_service/image/'
+		    + this.resource.resource_uniq + '?' + command.join('&');
+        //console.log('atlas: ', atlas);
+		return atlas;
 	},
 
 /*
@@ -1474,7 +1480,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			this.toolPanel = Ext.create('Ext.panel.Panel', {
 				renderTo : thisDom,
 			    tbar: this.toolPanelButtons,
-                collapseDirection: 'right',
+
                 //layout : 'fit',
                 layout : 'auto',
                 //layout : {
@@ -1484,14 +1490,14 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		        //},
                 title : 'Settings',
 				cls : 'bq-volume-toolbar',
-				split : true,
 				collapsible : true,
+                collapseDirection: 'right',
+                autoScroll: true,
                 width: 240,
                 //resizeable: true,
                 //resizeHandles: 's',
                 listeners:{
                     expand: function(p,opts){
-
                         this.doLayout();
                     }
                 }
