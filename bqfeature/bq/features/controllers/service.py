@@ -9,6 +9,7 @@ import os
 import logging
 import pkg_resources
 import tables
+import urllib
 from PytablesMonkeyPatch import pytables_fix
 import inspect
 import pkgutil
@@ -233,6 +234,7 @@ def clean_url(url):
         url = url[1:]
         if url.endswith('"'):
             url = url[:-1]
+    url = urllib.unquote(url)
     return url
 
 
@@ -368,7 +370,7 @@ def format_response(resource_list):
     feature = resource_list.feature()
     format = resource_list.format(feature)
     
-    if resource_list.check_response_in_workdir() is False:  
+    if resource_list.check_response_in_workdir() is False:
         table = CachedTables(feature) # queries for results in the feature tables
         body = format.return_from_tables(table, resource_list)
     else:
@@ -802,7 +804,7 @@ class Hdf(Format):
         except UnicodeEncodeError:
             disposition = 'attachment; filename="%s"; filename*="%s"' % ((table.filename).encode('utf8'), (table.filename).encode('utf8'))   
         
-        #require read lock to stream
+        #waits table that is being constructed
         with Locks(table.path):
             pass
         

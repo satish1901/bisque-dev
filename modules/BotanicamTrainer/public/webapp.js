@@ -98,7 +98,7 @@ Ext.define('BQ.selectors.Botanicam.TagSelector', {
                 this.tag_url=me['resource'].value+'/value?tag_names=1';
             } 
             else {
-                this.onerror(me['rource'].value)
+                this.onerror(me['resource'].value)
             }
             this.setLoading('Fetching memebrs...');
             BQFactory.request({ 
