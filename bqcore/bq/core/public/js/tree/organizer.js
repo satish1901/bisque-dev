@@ -208,7 +208,7 @@ Ext.define('BQ.tree.organizer.Panel', {
     path: undefined, // initial path
     url: '/data_service/image', // base url
 
-    cls: 'organizer',
+    componentCls: 'organizer',
     //pageSize: 100,          // number of records to fetch on every request
     //trailingBufferZone: 20, // Keep records buffered in memory behind scroll
     //leadingBufferZone: 20,  // Keep records buffered in memory ahead of scroll
