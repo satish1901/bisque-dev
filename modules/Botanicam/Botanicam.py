@@ -40,6 +40,8 @@ class BotanicamError(Exception):
     
     def __init__(self, message):
         self.message = message
+    def __str__(self):
+        return self.message
         
 
 def unzip_model_file(path):
@@ -75,12 +77,12 @@ def image_tiles(bqsession, image_service_url, tile_size=64):
         
         @yield: urls for images service that tile the entire image
     """
-    meta = bqsession.fetchxml(image_service_url, meta='')
-    x = int(meta.xpath('tag[@name="image_num_x"]')[0].attrib[ 'value'])
-    y = int(meta.xpath('tag[@name="image_num_y"]')[0].attrib[ 'value'])
+    dims = bqsession.fetchxml(image_service_url, dims='')
+    x = int(dims.xpath('//tag[@name="image_num_x"]')[0].attrib[ 'value'])
+    y = int(dims.xpath('//tag[@name="image_num_y"]')[0].attrib[ 'value'])
     
-    for ix in range(int( x/tile_size)-1):
-        for iy in range(int( y/tile_size)-1):
+    for ix in range(int(x/tile_size)-1):
+        for iy in range(int(y/tile_size)-1):
             yield bqsession.c.prepare_url(image_service_url, tile='0,%s,%s,%s' % (str(ix), str(iy), str(tile_size)))
 
 
@@ -99,7 +101,6 @@ def extract_bush_feature(bqsession, image_url):
     resource_list = []
     for url in image_tiles(bqsession, image_url, tile_size=IMAGE_BLOCK_SIZE):
         resource_list.append(FeatureResource(image=url))
-        
     if PARALLEL:
         feature = ParallelFeature()
     else:
@@ -180,7 +181,7 @@ class Botanicam(object):
         else:
             raise BotanicamError('No model type was choosen')
         
-        query_xml = self.bqSession.fetchxml('/data_service/file', **MODEL_QUERY )
+        query_xml = self.bqSession.fetchxml('/data_service/file', **MODEL_QUERY)
 
         self.options.model_url = None
         if len(query_xml)>0:
@@ -198,9 +199,8 @@ class Botanicam(object):
             except BQCommError:
                 raise BotanicamError('Model file was not found! Ask admin to set the correct model file')
         else: #run demo classifier model store in the module
-            with open(DEMO_MODEL_XML, 'r') as f:
-                 self.model_xml = etree.fromstring(f.read())
-            self.model_path = DEMO_MODEL_PATH
+            raise BotanicamError('No model file was found. Ask your admin to train a new model with \
+             the Botanicam Trainer.')
 
         self.bqSession.update_mex('Initialized...')
         log.debug('Botanicam: image URL: %s, mexURL: %s, stagingPath: %s, token: %s' % (self.options.image_url, self.options.mexURL, self.options.stagingPath, self.options.token))
@@ -217,22 +217,24 @@ class Botanicam(object):
         self.bqSession.update_mex('Calculating Features...')
         log.debug('Forming Feature Requests...')
         #get rectanle gobjects for roi
-        r_xml = self.bqSession.fetchxml(self.options.mexURL)
+        r_xml = self.bqSession.fetchxml(self.options.mexURL, view='deep')
 
         rectangles = r_xml.xpath('//tag[@name="inputs"]/tag[@name="image_url"]/gobject[@name="roi"]/rectangle')
+        image_xml = self.bqSession.fetchxml(self.options.image_url)
+        image_url = self.bqSession.service_url('image_service',path=image_xml.attrib['resource_uniq'])
         if rectangles: #On chooses the first rectangle
             #construct operation node
-            x1 = rectangles[0][0].attrib['x']
-            y2 = rectangles[0][0].attrib['y']
-            x2 = rectangles[0][1].attrib['x']
-            y1 = rectangles[0][1].attrib['y']
-            feature_vectors = extract_bush_feature(self.bqSession,'%/pixels?roi=%s,%s,%s,%s'%(self.options.image_url, x1, x2, y1, y2))
-                        
-        else: #for case without
-            try:
-                feature_vectors = extract_bush_feature(self.bqSession, '%s/pixels'%self.options.image_url)
-            except FeatureCommError as e:
-                raise BotanicamError(str(e))
+            x1 = int(float(rectangles[0][0].attrib['x']))
+            y1 = int(float(rectangles[0][0].attrib['y']))
+            x2 = int(float(rectangles[0][1].attrib['x']))
+            y2 = int(float(rectangles[0][1].attrib['y']))
+            log.debug('Adding Crop: roi=%s,%s,%s,%s' % (x1, y1, x2, y2))
+            image_url = self.bqSession.c.prepare_url(image_url, roi='%s,%s,%s,%s' % (x1, y1, x2, y2))
+            
+        try:
+            feature_vectors = extract_bush_feature(self.bqSession, image_url)
+        except FeatureCommError as e:
+            raise BotanicamError(str(e))
                 
         #parse features
         self.bqSession.update_mex('Classifying Results...')

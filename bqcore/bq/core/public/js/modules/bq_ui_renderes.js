@@ -335,6 +335,7 @@ Ext.define('BQ.selectors.Resource', {
                         var i = this;
                         this.tag_query = tag_query // passing the tag_query to createQueryViewer
                         var r = '/data_service/image?tag_query='+tag_query;
+						if (me.browser.browserParams.wpublic) {var r = r+'&wPublic=true';} //adds with public to query
                         setTimeout(function() {
                             BQFactory.request( { uri: r,
                                  cb: callback(i, 'onselectedquery'),

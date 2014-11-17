@@ -85,6 +85,8 @@ class BotanicamTrainerError(Exception):
     
     def __init__(self, message):
         self.message = message
+    def __str__(self):
+        return self.message
   
 
 class BotanicamTrainer(object):
@@ -156,6 +158,8 @@ class BotanicamTrainer(object):
             on all the images and then trained using the tag value classes. The 
             resulting model file is stored on bisque as a zip file.
         """
+        
+
         #retieve tags
         self.bqSession.update_mex('Parse Tags...')
         
@@ -163,7 +167,18 @@ class BotanicamTrainer(object):
             raise BotanicamTrainerError('Tags are a required input!')
         
         self.tag_names = self.options.tag_names.split(',')
-        all_images = self.bqSession.fetchxml('%s/value'%self.options.resource_url, view='full,clean')
+
+
+        #type check
+        resource_short = self.bqSession.fetchxml(self.options.resource_url,view='short')
+        if resource_short.tag=='dataset':
+            resource_url_values = '%s/value'%self.options.resource_url
+        else:
+            resource_url_values = self.options.resource_url
+        
+        
+        
+        all_images = self.bqSession.fetchxml(resource_url_values, view='full,clean')
         
         tag_query_list = []
         for name in self.tag_names:
@@ -174,15 +189,33 @@ class BotanicamTrainer(object):
 
         #need to find the unique values to create lists of images
         #hopefully the tag names and lists are not too complicated
-        tag_query_list = [element for element in itertools.product(*tag_query_list)] #cartesian product
+        tag_query_list = [list(element) for element in itertools.product(*tag_query_list)] #cartesian product
         
         self.complete_tag_list = []
         tag_query_url_list = []
         #search for classes with images
         #query all the values to see if images return 
+        
+        #removing query_tag from the resource_url and adding it back in later
+        resource_url_wo_query = resource_url_values
+        resource_query = None
+        from urlparse import urlsplit, urlunsplit, parse_qs
+        from urllib import urlencode
+        o = urlsplit(resource_url_values)
+        q = parse_qs(o.query)
+        if q.get('tag_query'):
+            resource_query = q['tag_query']
+            del q['tag_query']
+            query = urlencode(q)
+            resource_url_wo_query = urlunsplit((o.scheme,o.netloc,o.path,query,o.fragment))
+            
+        log.debug(tag_query_list)
         for tag_query in tag_query_list:
+            encoded_tag_query = tag_query
+            if resource_query: encoded_tag_query+=resource_query #adding back in the query_tag from the resource_url
             encoded_tag_query = map(urllib.quote, tag_query)
-            query_xml = self.bqSession.fetchxml('%s/value'%self.options.resource_url, view='full,clean', tag_query='%s' % ' AND '.join(encoded_tag_query))
+            encoded_tag_query='%s' % ' AND '.join(encoded_tag_query)
+            query_xml = self.bqSession.fetchxml(resource_url_wo_query, tag_query=encoded_tag_query, view='full,clean')
             if len(query_xml.xpath('image'))>0:
                 name_value_pairs = {}
                 for t in tag_query: #create dictionary of clases with list of name value pairs
@@ -192,6 +225,9 @@ class BotanicamTrainer(object):
                 tag_query_url_list.append(query_xml.attrib['uri'])
 
         feature_length = Feature().length(self.bqSession, FEATURE_NAME)
+
+        if len(tag_query_url_list)<2:
+            raise BotanicamTrainerError('Requires atleast 2 classes to train found %s' % len(tag_query_url_list))
 
          #extracts all the features and then appends it to a larger table
         _mkdir(os.path.join(self.options.stagingPath, FEATURE_TABLE_DIR))
