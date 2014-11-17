@@ -1,6 +1,4 @@
-
-
-
+import numpy as np
 
 def FFTSD(contour,sample):
     """

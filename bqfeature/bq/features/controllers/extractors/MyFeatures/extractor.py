@@ -1,20 +1,18 @@
 # -*- mode: python -*-
-""" FFTSD library
+""" MyFeature library
 """
 
-import tables
 import logging
-from pylons.controllers.util import abort
 from fftsd_extract import FFTSD as fftsd
 from lxml import etree
-import urllib, urllib2, cookielib
+from bqapi.comm import BQServer
 import random
-from bq.features.controllers.Feature import calc_wrapper, ImageImport, rgb2gray, gray2rgb  #import base class
+from bq.features.controllers.utils import image2numpy, except_image_only, fetch_resource
 from bq.features.controllers import Feature
 from hog_extractor import histogram_of_oriented_gradients
 #from htd_extractor import homogenious_texture_descriptor
 
-log = logging.getLogger("bq.features")
+log = logging.getLogger("bq.features.MyFeature")
 
 class FFTSD(Feature.BaseFeature):
     
@@ -25,29 +23,27 @@ class FFTSD(Feature.BaseFeature):
     description = """Fast Fourier Transform Shape Descriptor"""
     length = 500
     confidence = 'good'
+    disabled = True
     
-        
-    def output_feature_columns(self):
-        """
-            Columns for the output table for the feature column
-        """
-        featureAtom = tables.Atom.from_type(self.feature_format, shape=(self.length ))
-
-        class Columns(tables.IsDescription):
-            polygon       = tables.StringCol(2000,pos=1)
-            feature_type  = tables.StringCol(20, pos=2)
-            feature       = tables.Col.from_atom(featureAtom, pos=3)
-            
-        return Columns
-  
-    
-    @calc_wrapper       
-    def calculate(self, **resource):
+    def calculate(self, resource):
         """ Append descriptors to FFTSD h5 table """
-        #initalizing
-        polygon_uri = resource['polygon']
-        poly_xml=Feature.xml_import(polygon_uri+'?view=deep')
-        if poly_xml.tag==self.resource[0]:
+        
+        if resource.gobject is None:
+            raise FeatureExtractionError(resource, 400, 'Gobject resource is required.')
+        if resource.mask:
+            raise FeatureExtractionError(resource, 400, 'Mask resource is not accepted.')
+        if resource.image:
+            raise FeatureExtractionError(resource, 400, 'Image resource is not accepted.')
+        
+        uri_full = BQServer().prepare_url(resource.gobject, view='deep')
+        response = fetch_resource(uri_full)
+        
+        try:
+            poly_xml = etree.fromstring(response)
+        except etre.XMLSyntaxError:
+            raise FeatureExtractionError(resource, 400, 'image resource is not accepted')
+        
+        if poly_xml.tag=='polygon':
             vertices = poly_xml.xpath('vertex')
             contour = []
             for vertex in vertices:
@@ -63,52 +59,50 @@ class FFTSD(Feature.BaseFeature):
         return [descriptor[:500]]
     
     
-#class HOG(Feature.BaseFeature):
+class HOG(Feature.BaseFeature):
+    
+    file = 'features_hog.h5'
+    name = 'HOG'
+    description = """Histogram of Orientated Gradients: bin = 9"""
+    length = 9
+    confidence = 'good'   
+    disabled = True 
+           
+    def calculate(self, resource):
+        """ Append descriptors to HOG h5 table """
+        
+        except_image_only(resource)
+        image_uri = resource.image
+
+        with ImageImport(image_uri) as imgimp:
+            im = image2numpy(image_uri, remap='gray')
+                
+        descriptor = histogram_of_oriented_gradients(im)
+                
+        #initalizing rows for the table
+        return [descriptor]
+    
+    
+#class HTD(Feature.BaseFeature):
 #    
-#    file = 'features_hog.h5'
-#    name = 'HOG'
-#    description = """Histogram of Orientated Gradients: bin = 9"""
-#    length = 9
+#    file = 'feature_htd.h5'
+#    name = 'HTD'
+#    description = """Homogenious Texture Descriptor"""
+#    length = 48
 #    confidence = 'good'    
-#        
-#    @calc_wrapper       
-#    def calculate(self, **resource):
+#              
+#    def calculate(self, resource):
 #        """ Append descriptors to HOG h5 table """
 #        #initalizing
-#        image_uri = resource['image']
+#        image_uri = resource.image
 #
 #        with ImageImport(image_uri) as imgimp:
 #            im = imgimp.from_tiff2D_to_numpy()
 #            if len(im.shape)==3:
 #                im = rgb2gray(im)
 #                
-#        descriptor = histogram_of_oriented_gradients(im)
+#        descriptor = homogenious_texture_descriptor(im)
 #                
 #        #initalizing rows for the table
-#        return [descriptor]
-    
-    
-class HTD(Feature.BaseFeature):
-    
-    file = 'feature_htd.h5'
-    name = 'HTD'
-    description = """Homogenious Texture Descriptor"""
-    length = 48
-    confidence = 'good'    
-        
-    @calc_wrapper       
-    def calculate(self, **resource):
-        """ Append descriptors to HOG h5 table """
-        #initalizing
-        image_uri = resource['image']
-
-        with ImageImport(image_uri) as imgimp:
-            im = imgimp.from_tiff2D_to_numpy()
-            if len(im.shape)==3:
-                im = rgb2gray(im)
-                
-        descriptor = homogenious_texture_descriptor(im)
-                
-        #initalizing rows for the table
-        return [descriptor]     
+#        return [descriptor]     
     

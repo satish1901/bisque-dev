@@ -4,6 +4,7 @@ import threading
 import socket
 import errno
 import tempfile
+import urllib
 import os
 from math import ceil
 import Queue
@@ -58,9 +59,9 @@ class Feature(object):
         for (image, mask, gobject) in resource_list:
             sub = etree.SubElement(resource, 'feature')
             query = []
-            if image: query.append('image=%s' % image)
-            if mask: query.append('mask=%s' % mask)
-            if gobject: query.append('gobject=%s' % gobject)
+            if image: query.append('image=%s' % urllib.quote(image))
+            if mask: query.append('mask=%s' % urllib.quote(mask))
+            if gobject: query.append('gobject=%s' % urllib.quote(gobject))
             query = '&'.join(query)
             sub.attrib['uri'] = '%s?%s'%(url,query)
 
