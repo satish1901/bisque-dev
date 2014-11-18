@@ -82,9 +82,11 @@ class BisqueAppConfig(AppConfig):
     def setup_sqlalchemy(self):
         from tg import config
         sqlalchemy_url = config.get ('sqlalchemy.url')
-        if not sqlalchemy_url:
+        has_database = asbool(config.get ('bisque.has_database', True))
+        if not has_database or not sqlalchemy_url:
             config['use_transaction_manager'] = False
             config['has_database'] = False
+            log.info ("NO DATABASE is configured")
             return
         config['has_database'] = True
         if not sqlalchemy_url.startswith('sqlite://'):
