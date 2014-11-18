@@ -23,7 +23,12 @@ def check_response(session, request, response_code, xml=None, method='GET'):
     """
     """
     try:
-        xml = session.postxml(request, xml, method=method)
+        if method=='GET':
+            xml = session.c.fetch(request, headers={'Content-Type':'text/xml', 'Accept':'text/xml'})
+        elif method=='POST':
+            xml = session.postxml(request, xml)
+        else:
+            xml = session.postxml(request, xml, method=method)
     except BQCommError as e:
         assert(e.status == response_code)
     else:
@@ -49,7 +54,8 @@ def check_feature(ns, test, feature_name, image=None, mask=None, gobject=None):
         if gobject: resources.append('gobject=%s' % gobject)
         query = '&'.join(resources)
         request = '%s/features/%s/hdf?%s' % (ns.root, feature_name, query)
-        temp_response_path = ns.session.postxml(request, xml=None, method='GET', path=temp_response_path)
+        temp_response_path = ns.session.c.fetch(request, headers={'Content-Type':'text/xml', 'Accept':'text/xml'}, path=temp_response_path)
+        #temp_response_path = ns.session.postxml(request, xml=None, method='GET', path=temp_response_path)
     except BQCommError as e:
         assert(e.status == 200)
     else:

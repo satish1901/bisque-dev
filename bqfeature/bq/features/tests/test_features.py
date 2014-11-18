@@ -484,15 +484,15 @@ def test_Gabor_Textures():
     test_name = 'test_Gabor_Textures'
     check_feature(NS, test_name, name, image=NS.image_uri)
 
-@attr('WNDCharm')
-@with_setup(setup_image_upload, teardown_image_remove)
-def test_Haralick_Textures():
-    """
-        Test Haralick Textures
-    """
-    name = 'Haralick_Textures'
-    test_name = 'test_Haralick_Textures'
-    check_feature(NS, test_name, name, image=NS.image_uri)
+#@attr('WNDCharm')
+#@with_setup(setup_image_upload, teardown_image_remove)
+#def test_Haralick_Textures():
+#    """
+#        Test Haralick Textures
+#    """
+#    name = 'Haralick_Textures'
+#    test_name = 'test_Haralick_Textures'
+#    check_feature(NS, test_name, name, image=NS.image_uri)
 
 @attr('WNDCharm')
 @with_setup(setup_image_upload, teardown_image_remove)
