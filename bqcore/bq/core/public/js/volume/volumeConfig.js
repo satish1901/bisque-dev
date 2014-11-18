@@ -927,7 +927,8 @@ VolumeShader.prototype.config = function(config){
             '//begin deep shading secondary integration',
             '//',
             '    float lstep = LIGHT_DEPTH/float(4);',
-            '    float Dl = 0.0;',
+            '    vec4 Dl = vec4(0.0);',
+            '    float Da = 0.0;',
             '    dl = -normalize(dl);',
             '    vec4 lr = dl;',
             '    vec4 ln = dot(dl,N)*N;', //normal component of light
@@ -958,13 +959,16 @@ VolumeShader.prototype.config = function(config){
 
             '      vec4 dens = sampleStack(textureAtlas,lpos);',
             '      dens.w *= 1.0*DENSITY;',
-            '      Dl +=  exp(-2.0*ABSORPTION*dens.w);',
+            '      Dl +=  vec4(dens.w*dens.xyz,dens.w);',
+            '      Da += exp(-2.0*ABSORPTION*dens.w);',
             '    }',
-            '    Dl /= float(4);',
-            '    Dl = clamp(Dl,0.0,1.0);',
+            '    Dl /= 4.0;', //number of samples... maybe should const this...
+            '    Dl.w = clamp(Dl.w,1e-9,Dl.w);',
+            '    Dl.xyz /= Dl.w;',
+
             //'col.xyz = vec3(r0, r1, r2);',
-            '    col.xyz *= Dl;',
-            //'    col.xyz = dtemp.xyz;',
+            '    col.xyz = (1.0-Dl.w)*col.xyz + Dl.w*Dl.xyz;',
+            '    col.xyz *= Da/4.0;',
             //'    col.xyz *= 8.0;',
             '//',
             '//end deep shading secondary integration',
