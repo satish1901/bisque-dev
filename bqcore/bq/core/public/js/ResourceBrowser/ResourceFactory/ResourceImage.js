@@ -521,6 +521,7 @@ Ext.define('Bisque.Resource.Image.Page', {
     extend : 'Bisque.Resource.Page',
 
     onResourceRender : function() {
+    	BQApp.setActiveHelpVideo('//www.youtube.com/embed/0odEMDQ1xqo?list=PLAaP7tKanFcyR5cjJsPTCa0CDmWp9unds');
         this.setLoading(true);
         this.root = '';
         if (this.resource && this.resource.uri)

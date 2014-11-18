@@ -74,6 +74,44 @@ function analysisAction(o, e) {
     tip.show();
 }
 
+//------------------------------------------------------------------------------
+// BQ.help.Video
+//------------------------------------------------------------------------------
+
+Ext.define('BQ.help.Video', {
+    extend: 'Ext.Component',
+    alias: 'widget.bq_help_video',
+    componentCls: 'bq-help-video',
+  
+    border: false,
+    layout: 'fit',
+    autoEl: {
+        tag: 'div',
+    },    
+
+    iframe_youtube: '<iframe src="{1}" frameborder="0" allowfullscreen></iframe>',
+
+    afterRender: function() {
+        this.callParent();
+        if (this.video) {
+        	this.setVideo(this.video);
+        }	
+    },  
+
+    setVideo : function(url) {
+        this.setVideoYoutube(url);
+    },
+    
+    setVideoYoutube : function(url) {
+    	this.video = url; 
+    	var el = this.getEl();
+    	if (el && el.dom) { 
+    	    el.dom.innerHTML = this.iframe_youtube.replace('{1}', url);
+    	}
+    },
+});
+
+
 //--------------------------------------------------------------------------------------
 // Main Bisque toolbar menu
 //--------------------------------------------------------------------------------------
@@ -343,6 +381,15 @@ Ext.define('BQ.Application.Toolbar', {
                 text: '<div class="image-about-bisque"></div>',
                 indent: true,
             }, {
+                xtype:'tbtext', text: 'Contextual help video:',
+                indent: true,
+                cls: 'menu-heading',
+            }, {
+                xtype:'bq_help_video',
+                itemId: 'help_video_contextual',
+                video: '//www.youtube.com/embed/_tq62SJ8SCw?list=PLAaP7tKanFcyR5cjJsPTCa0CDmWp9unds', // set default bisque overview help video
+                indent: true,
+            }, '-', {
                 text: 'About Bisque',
                 //handler: Ext.Function.pass(htmlAction, [BQ.Server.url('/client_service/public/about/about.html'), 'About Bisque'] ),
                 handler: Ext.Function.pass(htmlAction, [BQ.Server.url('/client_service/about'), 'About Bisque'] ),
@@ -919,6 +966,11 @@ Ext.define('BQ.Application.Toolbar', {
         if (this.preferences.title)
             this.queryById('menu_title').setText( '<h3><a href="/">'+this.preferences.title+'</a></h3>' );
 
+    },
+
+    setActiveHelpVideo: function(url) {
+        var v = this.queryById('help_video_contextual');
+        v.setVideo(url);
     },
 
 });

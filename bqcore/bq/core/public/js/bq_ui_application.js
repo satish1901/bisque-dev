@@ -169,6 +169,8 @@ Ext.define('BQ.Application', {
         return (this.session && this.user);
     },
 
+    // UI elements --------------------------------------------------
+
     getCenterComponent: function() {
         if (this.main)
             return this.main.getCenterComponent();
@@ -189,6 +191,13 @@ Ext.define('BQ.Application', {
         var w = this.getCenterComponent() || this.main;
         w.setLoading(load, targetEl);
     },
+
+    setActiveHelpVideo: function(url) {
+        if (!this.main) return;
+        var tb = this.main.getToolbar();
+        tb.setActiveHelpVideo(url);
+    },
+
 
 });
 
@@ -213,7 +222,9 @@ Ext.define('BQ.Application.Window', {
           content = undefined;
         }
 
-        this.toolbar = Ext.create('BQ.Application.Toolbar', { toolbar_opts: BQ.Server.toolbar_opts });
+        this.toolbar = Ext.create('BQ.Application.Toolbar', { 
+        	toolbar_opts: BQ.Server.toolbar_opts 
+        });
         this.items = [
                 this.toolbar, {
                     region : 'center',
@@ -238,6 +249,8 @@ Ext.define('BQ.Application.Window', {
                 }, ];
 
         this.callParent();
+        // set bisque overview help video
+        //this.toolbar.setActiveHelpVideo('//www.youtube.com/embed/_tq62SJ8SCw?list=PLAaP7tKanFcyR5cjJsPTCa0CDmWp9unds');
     },
 
     // private
