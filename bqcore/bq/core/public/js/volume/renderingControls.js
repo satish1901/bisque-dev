@@ -133,6 +133,7 @@ renderingTool.prototype.initUniforms = function(){
                 maxValue : e.max,
                 value : e.def,
                 uniform_var : e.name,
+                tipText : e.tipText,
                 listeners : {
                     change : updateSlider,
                     scope : me,
@@ -393,6 +394,9 @@ materialTool.prototype.addUniforms = function(){
                                    max: 200,
                                    def: 100.0,
                                    K: 0.01,
+                                   tipText: function (val){
+                                       return 100 - val;
+                                   },
                                    updateSlider : function (slider, value) {
                                        var val = 0.025*(value - 100);
                                        var setVal = Math.exp(val);
@@ -408,6 +412,9 @@ materialTool.prototype.addUniforms = function(){
                                    max: 200,
                                    def: 100.0,
                                    K: 0.01,
+                                   tipText: function (val){
+                                       return 100 - val;
+                                   },
                                    updateSlider : function (slider, value) {
                                        /*
                                        var setVal =  slider.convert(value);
