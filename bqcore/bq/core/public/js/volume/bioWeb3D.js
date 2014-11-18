@@ -1605,6 +1605,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			closable : true,
 			layout : {
 				type : 'vbox',
+                align: 'stretch',
 			},
 
 		});
