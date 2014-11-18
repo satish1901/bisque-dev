@@ -70,7 +70,7 @@ class MexAuthenticatePlugin(object):
         # NOTE: Commented out during system debugging
         #
         #if  mex.closed():
-        #    log.warn ('attempt with  closed mex %s' % mexid)
+        #    log.warn ('attempt with  closed mex %s' % mex_id)
         #    return None
         if mex:
             identity['bisque.mex'] = mex

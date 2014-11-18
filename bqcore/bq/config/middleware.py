@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """WSGI middleware initialization for the bqcore application."""
 import os
+import sys
 import logging
 import pkg_resources
 #from webtest import TestApp
@@ -10,6 +11,7 @@ from paste.httpexceptions import HTTPNotFound
 from paste.fileapp import FileApp
 from paste.urlparser import StaticURLParser
 from paste.httpheaders import ETAG
+from paste.registry import RegistryManager
 
 #from repoze.who.config import make_middleware_with_config
 from repoze.who.plugins.testutil import make_middleware_with_config
@@ -27,14 +29,22 @@ __all__ = ['make_app', 'bisque_app']
 
 log = logging.getLogger("bq.config.middleware")
 
+
+public_file_filter = None
+bisque_app = None
+
+def save_bisque_app(app):
+    global bisque_app
+    bisque_app = app # RegistryManager(app, streaming = True)
+    log.info ("HOOKING App %s", app)
+    return app
+
+base_config.register_hook('before_config', save_bisque_app)
+
 # Use base_config to setup the necessary PasteDeploy application factory.
 # make_base_app will wrap the TG2 app with all the middleware it needs.
 make_base_app = base_config.setup_tg_wsgi_app(load_environment)
 
-
-
-public_file_filter = None
-bisque_app = None
 
 class BQStaticURLParser (object):
 
@@ -108,7 +118,7 @@ class LogWSGIErrors(object):
 class ProxyApp(object):
     def __init__(self, app):
         self.oldapp = app
-        
+
     def __call__(self, environ, start_response):
         if environ['PATH_INFO'].startswith('/proxy/'):
             log.debug('ProxyApp activated')
@@ -142,6 +152,9 @@ def make_app(global_conf, full_stack=True, **app_conf):
 
 
     """
+    site_cfg = site_cfg_path()
+    logging.config.fileConfig(site_cfg)
+
     global public_file_filter
     global bisque_app
 
@@ -160,13 +173,7 @@ def make_app(global_conf, full_stack=True, **app_conf):
     #    )
 
 
-
-    site_cfg = site_cfg_path()
-    logging.config.fileConfig(site_cfg)
-
-
-    public_file_filter = static_app = BQStaticURLParser()
-    if 'who.config_file' in app_conf:
+    if 'who.config_file' in app_conf and os.path.exists (app_conf['who.config_file']):
         app = make_middleware_with_config(
             app, global_conf,
             app_conf['who.config_file'],
@@ -174,11 +181,43 @@ def make_app(global_conf, full_stack=True, **app_conf):
             app_conf['who.log_level'],
             skip_authentication=app_conf.get('skip_authentication', False),
             )
+    else:
+        log.info ("MEX auth only")
+        # Add mex only authentication
+        from repoze.who.middleware import PluggableAuthenticationMiddleware
+        from repoze.who.plugins.basicauth import BasicAuthPlugin
+        from bq.core.lib.mex_auth import make_plugin
+        from repoze.who.classifiers import default_request_classifier
+        from repoze.who.classifiers import default_challenge_decider
+        basicauth = BasicAuthPlugin('repoze.who')
+        mexauth   = make_plugin ()
+
+        _LEVELS = {'debug': logging.DEBUG,
+                   'info': logging.INFO,
+                   'warning': logging.WARNING,
+                   'error': logging.ERROR,
+                   }
+        identifiers = [('mexauth', mexauth)]
+        authenticators = [('mexauth', mexauth)]
+        challengers = []
+        mdproviders = []
+        aa = app_conf['who.log_stream'],
+        app = PluggableAuthenticationMiddleware(app,
+                                                identifiers,
+                                                authenticators,
+                                                challengers,
+                                                mdproviders,
+                                                default_request_classifier,
+                                                default_challenge_decider,
+                                                log_stream = sys.stdout,
+                                                log_level = _LEVELS[app_conf['who.log_level']],
+                                                )
 
     # Wrap your base TurboGears 2 application with custom middleware here
     from tg import config
     from paste.deploy.converters import asbool
 
+    public_file_filter = static_app = BQStaticURLParser()
     if asbool(config.get ('bisque.static_files', True)):
         log.info( "LOADING STATICS")
         ###staticfilters = []
@@ -200,9 +239,9 @@ def make_app(global_conf, full_stack=True, **app_conf):
         #cascade = staticfilters + [app]
         #print ("CASCADE", cascade)
         app = DirectCascade([static_app, app])
-    
+
     app = ProxyApp(app)
-    bisque_app = app 
+    #bisque_app = app
 
     log.info( "END STATICS: discovered %s static files " % len(static_app.files.keys()))
 
