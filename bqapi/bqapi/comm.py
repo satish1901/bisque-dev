@@ -277,8 +277,9 @@ class BQServer(Session):
                 raise BQCommError(r.status_code, r.headers) 
         if path:
             with open(path, 'wb') as f:
-                for line in r.iter_content():
-                    f.write(line)
+                f.write(r.content)
+#                for line in r.iter_content(): #really slow
+#                    f.write(line)
             return f.name
         else:
             return r.content
