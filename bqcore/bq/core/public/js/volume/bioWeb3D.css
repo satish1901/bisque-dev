@@ -212,9 +212,6 @@ toolbar
     vertical-align: middle;
 }
 
-.bq-volume-toolbar .x-field {
-    margin-left: 15px;
-}
 
 .bq-volume-toolbar label {
     color: #ffffff;
@@ -950,6 +947,7 @@ zoom slider
     background: none !important;
     border-color: rgba(0, 0, 0, 0.0);
 }
+
 
 /*
 .bq-volume-toolbar .x-btn-pressed {

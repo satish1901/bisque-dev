@@ -82,11 +82,13 @@ renderingTool.prototype.createControls = function(){
 
     this.controls = Ext.create('Ext.container.Container', {
         border : false,
+
 		layout : {
 			type : 'vbox',
 			align : 'stretch',
-			pack : 'start',
+			//pack : 'start',
 		},
+
         //mixins : ['BQ.viewer.Volume.uniformUpdate'],
     }).hide();
 

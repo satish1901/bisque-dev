@@ -917,7 +917,7 @@ gObjectTool.prototype.initControls = function(){
 		this.selectLight = false;
 	};
 
-	var onMouseDown = function () {
+	var onMouseDown = function (event) {
 		if (this.state === 0)
 			return;
 		var width = this.volume.canvas3D.getWidth();
