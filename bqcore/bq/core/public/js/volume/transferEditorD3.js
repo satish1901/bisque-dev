@@ -476,8 +476,9 @@ Ext.define('BQ.volume.transfer.graph', {
     },
 
     findInterval : function(me) {
-        var xp = d3.event.offsetX;
-        var yp = d3.event.offsetY;
+        var xp = d3.event.offsetX == undefined ? d3.event.layerX : d3.event.offsetX;
+        var yp = d3.event.offsetY == undefined ? d3.event.layerY : d3.event.offsetY;
+
         var offset = me.xScale.invert(xp);
 
         var alpha  = me.yScale.invert(yp);
@@ -566,7 +567,9 @@ Ext.define('BQ.volume.transfer.graph', {
         circle
             .enter().append("circle")
             .attr("id", function(d, i){return "circle_"+i;})
-            .attr("cx", function(d) { return me.xScale(d.offset); })
+            .attr("cx", function(d) {
+                return me.xScale(d.offset);
+            })
             .attr("cy", function(d) { return me.yScale(d.alpha); })
             .attr("r", 3)
             .attr("fill", function(d){
@@ -1041,9 +1044,18 @@ transferTool.prototype.loadPreferences = function(prefs){
         var transfer = prefs.functions[key];
         this.presets[key] = JSON.parse(transfer);
     }
-
-
 };
+
+
+
+
+transferTool.prototype.loadDefaults = function(prefs){
+    if(!this.presets) this.presets = {}; //initialize a presets menu
+    this.presets['default'] = this.initData();
+    this.presets['current'] = this.initData();
+};
+
+
 
 transferTool.prototype.createTransferEditor = function(){
     var data = this.transferData;

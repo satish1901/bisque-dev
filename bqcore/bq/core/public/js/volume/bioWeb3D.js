@@ -1367,6 +1367,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 //The current property is not a direct property of p
                 continue;
             }
+            //if(this.preferences[key] && key != 'transfer_editor'){ //save for debug
             if(this.preferences[key]){
                 this.tools[key].loadPreferences(this.preferences[key]);
             }
