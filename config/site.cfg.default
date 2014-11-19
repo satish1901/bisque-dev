@@ -67,6 +67,7 @@ use = egg:bqcore
 full_stack = true
 #filter-with = linesman
 
+
 ##########################################################
 # Bisque Configuration
 ##########################################################
@@ -226,8 +227,9 @@ who.config_file = %(here)s/who.ini
 who.log_level = error
 who.log_stream = stdout
 
-
-
+#linesmain profiler 
+bisque.profiler_enable = false
+bisque.profiler_path = __profiler__
 
 # WARNING: *THE LINE BELOW MUST BE UNCOMMENTED ON A PRODUCTION ENVIRONMENT*
 # Debug mode will enable the interactive debugging tool, allowing ANYONE to
