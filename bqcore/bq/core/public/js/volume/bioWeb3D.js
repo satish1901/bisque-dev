@@ -1476,7 +1476,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
         //tools factory function
 		if (!this.toolPanel) {
-			var thisDom = this.getEl().dom;
+			var thisDom = this.mainView.getEl().dom;
 
 			this.toolPanel = Ext.create('Ext.panel.Panel', {
 				renderTo : thisDom,
@@ -1521,7 +1521,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	createZoomSlider : function () {
 		if(this.zoomSlider) return;
         var me = this;
-		var thisDom = this.getEl().dom;
+		var thisDom = this.mainView.getEl().dom;
         this.zoomSlider = Ext.create('Ext.slider.Single', {
 			renderTo : thisDom,
 			//id : 'zoom-slider',
@@ -1605,6 +1605,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			closable : true,
 			layout : {
 				type : 'vbox',
+                align: 'stretch',
 			},
 
 		});
@@ -1747,10 +1748,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
 Ext.define('BQ.viewer.Volume.Dialog', {
 	extend : 'Ext.window.Window',
 	alias : 'widget.bq_volume_dialog',
-	border : 0,
+	//border : 0,
 	layout : 'fit',
 	modal : true,
-	border : false,
+	border : 0,
 	width : '75%',
 	height : '75%',
 	buttonAlign : 'center',
