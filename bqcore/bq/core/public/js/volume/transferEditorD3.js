@@ -1066,10 +1066,11 @@ transferTool.prototype.createTransferEditor = function(){
         data: data,
         histogram: this.volume.model.histogram,
         gamma:     this.volume.model.gamma,
+        animCollapse: false,
         dock : 'bottom',
         collapsible: true,
-        //collapseDirection: 'top',
-        //expandDirection: 'top',
+        collapseDirection: 'bottom',
+        expandDirection: 'bottom',
         height: 250,
 
         cls : 'bq-volume-transfer',
