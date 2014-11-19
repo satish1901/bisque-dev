@@ -374,6 +374,7 @@ Ext.define('BQ.volume.transfer.graph', {
 
         function dragstarted(d) {
             //fooled you! the point keeps jumping from the cursor... ha ha ha, only if you're windows
+            /*
             if(Math.random() > 0.75 && Ext.isWindows){
                 this.fooled = true;
                 d.alpha += (0.5 - Math.random())*0.25;
@@ -388,6 +389,7 @@ Ext.define('BQ.volume.transfer.graph', {
                 redraw();
                 return 0;
             }
+            */
             this.fooled = false;
             this.parentNode.appendChild(this);
 
@@ -410,7 +412,7 @@ Ext.define('BQ.volume.transfer.graph', {
         }
 
         function ondrag(d, i) {
-            if(this.fooled) return;
+            //if(this.fooled) return;
 
             var N = me.data.length;
             var oprev = d.id == 0     ? 0                 : me.data[d.id-1].offset;
@@ -1064,10 +1066,11 @@ transferTool.prototype.createTransferEditor = function(){
         data: data,
         histogram: this.volume.model.histogram,
         gamma:     this.volume.model.gamma,
+        animCollapse: false,
         dock : 'bottom',
         collapsible: true,
-        //collapseDirection: 'top',
-        //expandDirection: 'top',
+        collapseDirection: 'bottom',
+        expandDirection: 'bottom',
         height: 250,
 
         cls : 'bq-volume-transfer',
