@@ -118,7 +118,7 @@ class LogWSGIErrors(object):
 class ProxyApp(object):
     def __init__(self, app):
         self.oldapp = app
-
+        
     def __call__(self, environ, start_response):
         if environ['PATH_INFO'].startswith('/proxy/'):
             log.debug('ProxyApp activated')
@@ -171,6 +171,11 @@ def make_app(global_conf, full_stack=True, **app_conf):
     #    flush_at_shutdown=True,
     #    path='/__profile__'
     #    )
+
+    #adds a custom linesman profiler to the bisque app
+    if app_conf.get('bisque.profiler_enable', None) == 'true': #inialize profiler app
+        from bq.util.LinesmanProfiler import BQProfilingMiddleware
+        app = BQProfilingMiddleware(app, app_conf.get('sqlalchemy.url',None), app_conf.get('bisque.profiler_path', '__profiler__'))
 
 
     if 'who.config_file' in app_conf and os.path.exists (app_conf['who.config_file']):
@@ -239,9 +244,9 @@ def make_app(global_conf, full_stack=True, **app_conf):
         #cascade = staticfilters + [app]
         #print ("CASCADE", cascade)
         app = DirectCascade([static_app, app])
-
+    
     app = ProxyApp(app)
-    #bisque_app = app
+    bisque_app = app 
 
     log.info( "END STATICS: discovered %s static files " % len(static_app.files.keys()))
 
@@ -251,6 +256,8 @@ def make_app(global_conf, full_stack=True, **app_conf):
     log.info ("Root-Controller: startup complete")
 
     app = LogWSGIErrors(app, logging.getLogger('bq.middleware'), logging.ERROR)
+    
+
 
     return app
 
