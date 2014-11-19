@@ -394,8 +394,8 @@ materialTool.prototype.addUniforms = function(){
                                    max: 200,
                                    def: 100.0,
                                    K: 0.01,
-                                   tipText: function (val){
-                                       return 100 - val;
+                                   tipText: function (thumb){
+                                       return (thumb.value-100).toString();
                                    },
                                    updateSlider : function (slider, value) {
                                        var val = 0.025*(value - 100);
@@ -412,8 +412,8 @@ materialTool.prototype.addUniforms = function(){
                                    max: 200,
                                    def: 100.0,
                                    K: 0.01,
-                                   tipText: function (val){
-                                       return 100 - val;
+                                   tipText: function (thumb){
+                                       return (thumb.value-100).toString();
                                    },
                                    updateSlider : function (slider, value) {
                                        /*
