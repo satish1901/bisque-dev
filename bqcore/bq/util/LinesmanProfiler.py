@@ -18,7 +18,7 @@ except ImportError:
 from sqlalchemy import create_engine
 
 from sqlalchemy.ext.declarative import declarative_base
-DeclarativeBase = declarative_base()
+
 
 log = logging.getLogger("bq.config.middleware.profiler")
 
@@ -86,19 +86,18 @@ class BQProfilingMiddleware(ProfilingMiddleware):
         start_timestamp = datetime.now()
         prof.runctx("app = self.app(environ, start_response)", globals(), _locals)
         stats = prof.getstats()
-        session = ProfilingSession(stats, environ, start_timestamp)
-        self._backend.add(session)
+        profile_data = ProfilingSession(stats, environ, start_timestamp)
+        self._backend.add(profile_data)
         return _locals['app']
-            
+    
+DeclarativeBase = declarative_base()
+      
 class Profiler_Sessions(DeclarativeBase):
     __tablename__ = 'profiler'
     uuid      = Column('uuid', String(36), primary_key=True)
     timestamp = Column('timestamp', FLOAT)
     session   = Column('session', PickleType)
 
-#maker = sessionmaker(autoflush=True, autocommit=False,
-#                     extension=ZopeTransactionExtension())
-#DBSession = scoped_session(maker)
 
 class SqlAlchemyBackend(Backend):
     """
@@ -107,9 +106,6 @@ class SqlAlchemyBackend(Backend):
     def __init__(self, url='sqlite:///session.db'):
         self.url = url
         self.engine = create_engine(self.url)
-        maker = sessionmaker(autoflush=True, autocommit=False)
-        self.session = scoped_session(maker)
-        self.session.configure(bind=self.engine)
         
     def setup(self):
         """
@@ -118,6 +114,17 @@ class SqlAlchemyBackend(Backend):
         """
         metadata = DeclarativeBase.metadata
         metadata.create_all(bind=self.engine, checkfirst=True)
+
+    def conn(self):
+        """
+            Creates a connection to the database and initalizes a session
+            
+            @return: session - dbsession
+        """
+        maker = sessionmaker(autoflush=True, autocommit=False)
+        session = scoped_session(maker)
+        session.configure(bind=self.engine)
+        return session
 
     def add(self, session):
         """
@@ -128,11 +135,13 @@ class SqlAlchemyBackend(Backend):
             timestamp = time.mktime(session.timestamp.timetuple())
         else:
             timestamp = None
-        log.info('dir %s'%dir(session))
+        log.info('dir %s' % dir(session))
         row = Profiler_Sessions(uuid=uuid, timestamp=timestamp, session=session)
-        log.info('adding row %s'%row)
-        self.session.add(row)
-        self.session.commit()
+        log.info('adding row %s' % row)
+        local_session = self.conn()
+        local_session.add(row)
+        local_session.commit()
+        local_session.close()
 #        transaction.commit()
         
     def delete(self, session_uuid):
@@ -140,11 +149,13 @@ class SqlAlchemyBackend(Backend):
         Removes a specific stored session from the history.
         This should return the number of rows removed (0 or 1).
         """
+        local_session = self.conn()
         count = 0
-        for row in self.session.query(Profiler_Sessions).filter(Profiler_Sessions.uuid==session_uuid):
-            self.session.delete(row)
+        for row in local_session.query(Profiler_Sessions).filter(Profiler_Sessions.uuid==session_uuid):
+            session.delete(row)
             count +=1
-        self.session.commit()
+        local_session.commit()
+        local_session.close()
         #transaction.commit()
         return count
 
@@ -153,11 +164,13 @@ class SqlAlchemyBackend(Backend):
         Removes a list of stored sessions from the history.
         This should return the number of rows removed.
         """
+        local_session = self.conn()
         count = 0
-        for row in self.session.query(Profiler_Sessions).filter(Profiler_Sessions.uuid.in_(session_uuids)):
-            self.session.delete(row)
+        for row in local_session.query(Profiler_Sessions).filter(Profiler_Sessions.uuid.in_(session_uuids)):
+            local_session.delete(row)
             count +=1
-        self.session.commit()
+        local_session.commit()
+        local_session.close()
         #transaction.commit()
         return count
     
@@ -166,8 +179,10 @@ class SqlAlchemyBackend(Backend):
         Removes all stored sessions from the history.
         This should return the number of rows removed.
         """
-        count = self.session.Profiler_Sessions.query.delete()
-        self.session.commit()
+        local_session = self.conn()
+        count = local_session.Profiler_Sessions.query.delete()
+        local_session.commit()
+        local_session.close()
         #transaction.commit()
         return count
 
@@ -176,20 +191,25 @@ class SqlAlchemyBackend(Backend):
         Returns the data associated with ``session_uuid``.  Should return
         `None` if no session can be found with the specified uuid.
         """
-        for row in self.session.query(Profiler_Sessions).filter(Profiler_Sessions.uuid==session_uuid):
-            log.info('get %s'%row.session)
-            return row.session
+        local_session = self.conn()
+        for row in local_session.query(Profiler_Sessions).filter(Profiler_Sessions.uuid==session_uuid):
+            log.info('get %s' % row.session)
+            break
         else:
             return None
+        local_session.close()
+        return row.session
 
     def get_all(self):
         """
         Return a dictionary-like object of ALL sessions, where the key is the
         `session uuid`.
         """
+        local_session = self.conn()
         od = OrderedDict()
-        for id, session in self.session.query(Profiler_Sessions.uuid, Profiler_Sessions.session).order_by(Profiler_Sessions.timestamp):
+        for id, session in local_session.query(Profiler_Sessions.uuid, Profiler_Sessions.session).order_by(Profiler_Sessions.timestamp):
             od[id] = session
-        log.info('get_all %s'%od)
+        log.info('get_all %s' % od)
+        local_session.close()
         return od
     
