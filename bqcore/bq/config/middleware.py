@@ -22,7 +22,7 @@ from bq.config.environment import load_environment
 from bq.core.controllers import root
 from bq.util.paths import site_cfg_path
 from bq.util.proxy import Proxy
-
+from tg.configuration import config
 from .direct_cascade import DirectCascade
 
 
@@ -33,6 +33,16 @@ log = logging.getLogger("bq.config.middleware")
 
 public_file_filter = None
 bisque_app = None
+
+def add_profiler(app):
+    if config.get('bisque.profiler_enable', None) == 'true': #inialize profiler app
+        from bq.util.LinesmanProfiler import BQProfilingMiddleware
+        app = BQProfilingMiddleware(app, config.get('sqlalchemy.url', None), config.get('bisque.profiler_path', '__profiler__'))
+        log.info("HOOKING profiler app")
+        return app
+    return app #pass through
+
+base_config.register_hook('before_config', add_profiler)
 
 def save_bisque_app(app):
     global bisque_app

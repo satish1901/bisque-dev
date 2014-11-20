@@ -1,4 +1,5 @@
 from linesman.middleware import *
+
 from linesman.backends.sqlite import SqliteBackend
 from linesman.backends.base import Backend
 from sqlalchemy import MetaData, Table, Column, ForeignKey
@@ -53,43 +54,47 @@ class BQProfilingMiddleware(ProfilingMiddleware):
         #check if its the profiler ui requested
         req = Request(environ)
         
+        dispatch = {''        : self.list_profiles, 
+                    'graph'   : self.render_graph, 
+                    'media'   : self.media, 
+                    'profiles': self.show_profile, 
+                    'delete'  : self.delete_profile}
+        
         wsgi_app = self.app
         if req.path_info_peek() == self.profiler_path.strip('/'):
             req.path_info_pop() #pop __profiler__
-            path_info = req.path_info #save path
-            path_param = req.path_info_pop() #next reads element
-            if not path_param:
-                wsgi_app = self.list_profiles(req)
-            elif path_param == "graph":
-                wsgi_app = self.render_graph(req)
-            elif path_param == "media":
-                wsgi_app = self.media(req)
-            elif path_param == "profiles":
-                wsgi_app = self.show_profile(req)
-            elif path_param == "delete":
-                wsgi_app = self.delete_profile(req)
-            elif True:
-                # Modify PATH_INFO
-                environ['PATH_INFO'] = path_info
+            current_path_element = req.path_info_peek()
+            if current_path_element in dispatch:
+                req.path_info_pop()
+                wsgi_app = dispatch[current_path_element](req)
+            else:
+                environ['PATH_INFO'] = req.path_info #set the path
+                environ['SCRIPT_NAME'] = '' #remove __profiler__ from request
                 return self.profiler(environ, start_response)
+                            
         elif 'HTTP_X_PROFILER' in environ:
             return self.profiler(environ, start_response)
 #        else:
 #            wsgi_app = HTTPNotFound()
-            
         return wsgi_app(environ, start_response)
 
     
+    
     def profiler(self, environ, start_response):
-        _locals = locals()
+        #_locals = locals()
         prof = Profile()
         start_timestamp = datetime.now()
-        prof.runctx("app = self.app(environ, start_response)", globals(), _locals)
+        prof.enable()
+        try:
+            xres = self.app(environ, start_response)
+        finally:
+            prof.disable()
         stats = prof.getstats()
+        log.debug('profiler stats %s', stats)
         profile_data = ProfilingSession(stats, environ, start_timestamp)
         self._backend.add(profile_data)
-        return _locals['app']
-    
+        return xres
+
 DeclarativeBase = declarative_base()
       
 class Profiler_Sessions(DeclarativeBase):
@@ -135,14 +140,12 @@ class SqlAlchemyBackend(Backend):
             timestamp = time.mktime(session.timestamp.timetuple())
         else:
             timestamp = None
-        log.info('dir %s' % dir(session))
         row = Profiler_Sessions(uuid=uuid, timestamp=timestamp, session=session)
         log.info('adding row %s' % row)
         local_session = self.conn()
         local_session.add(row)
         local_session.commit()
-        local_session.close()
-#        transaction.commit()
+        local_session.remove()
         
     def delete(self, session_uuid):
         """
@@ -155,8 +158,7 @@ class SqlAlchemyBackend(Backend):
             session.delete(row)
             count +=1
         local_session.commit()
-        local_session.close()
-        #transaction.commit()
+        local_session.remove()
         return count
 
     def delete_many(self, session_uuids):
@@ -170,8 +172,7 @@ class SqlAlchemyBackend(Backend):
             local_session.delete(row)
             count +=1
         local_session.commit()
-        local_session.close()
-        #transaction.commit()
+        local_session.remove()
         return count
     
     def delete_all(self):
@@ -182,8 +183,7 @@ class SqlAlchemyBackend(Backend):
         local_session = self.conn()
         count = local_session.Profiler_Sessions.query.delete()
         local_session.commit()
-        local_session.close()
-        #transaction.commit()
+        local_session.remove()
         return count
 
     def get(self, session_uuid):
@@ -192,13 +192,9 @@ class SqlAlchemyBackend(Backend):
         `None` if no session can be found with the specified uuid.
         """
         local_session = self.conn()
-        for row in local_session.query(Profiler_Sessions).filter(Profiler_Sessions.uuid==session_uuid):
-            log.info('get %s' % row.session)
-            break
-        else:
-            return None
-        local_session.close()
-        return row.session
+        profile_data = local_session.query(Profiler_Sessions).filter(Profiler_Sessions.uuid==session_uuid).first()
+        local_session.remove()
+        return profile_data and profile_data.session
 
     def get_all(self):
         """
@@ -210,6 +206,6 @@ class SqlAlchemyBackend(Backend):
         for id, session in local_session.query(Profiler_Sessions.uuid, Profiler_Sessions.session).order_by(Profiler_Sessions.timestamp):
             od[id] = session
         log.info('get_all %s' % od)
-        local_session.close()
+        local_session.remove()
         return od
     
