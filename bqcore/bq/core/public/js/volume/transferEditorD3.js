@@ -860,13 +860,15 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 				width : 'auto',
 				enableToggle : true,
 				//cls : 'toolItem',
+                toggleGroup: 'transfer-edit',
                 itemId: 'transButton0',
 				handler : function(){
-                    var
+                    /*var
                     b1 = this.queryById('transButton1'),
                     b2 = this.queryById('transButton2');
                     if(b1.pressed) b1.toggle();
                     if(b2.pressed) b2.toggle();
+                    */
                     this.mode = 0;
                 },
 				scope : this,
@@ -875,14 +877,10 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 				text : '+',
 				width :'auto',
 				enableToggle : true,
+                toggleGroup: 'transfer-edit',
 				cls : 'toolItem',
                 itemId: 'transButton1',
 				handler : function(){
-                    var
-                    b0 = this.queryById('transButton0'),
-                    b2 = this.queryById('transButton2');
-                    if(b0.pressed) b0.toggle();
-                    if(b2.pressed) b2.toggle();
                     this.mode = 1;
                 },
                 scope : this,
@@ -891,14 +889,11 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
 				text : '-',
 				width : 'auto',
                 enableToggle : true,
+                toggleGroup: 'transfer-edit',
                 cls : 'toolItem',
                 itemId: 'transButton2',
 				handler : function(){
-                    var
-                    b1 = this.queryById('transButton1'),
-                    b0 = this.queryById('transButton0');
-                    if(b1.pressed) b1.toggle();
-                    if(b0.pressed) b0.toggle();
+
                     this.mode = 2;
                 },
                 scope : this,

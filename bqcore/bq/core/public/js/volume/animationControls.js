@@ -982,9 +982,12 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
                     }
                 },
                 cursormove: function(slider){
-                    clearState();
-                    this.queryById('anim-edit').toggle(true);
-                    this.editKey = true;
+                    if(this.removeKey) return;
+                    setTimeout(function(){
+                        clearState();
+                        me.queryById('anim-edit').toggle(true);
+                        me.editKey = true;
+                    },10);
                 },
 		        scope:me
             },
