@@ -108,8 +108,10 @@ class BisqueAppConfig(AppConfig):
 
     #kage - patch to use direct cascade
     def add_static_file_middleware(self, app):
-        static_app = StaticURLParser(config['pylons.paths']['static_files'])
-        app = DirectCascade([static_app, app])
+        from tg import config
+        if asbool(config.get ('bisque.static_files', True)):
+            static_app = StaticURLParser(config['pylons.paths']['static_files'])
+            app = DirectCascade([static_app, app])
         return app
 
 

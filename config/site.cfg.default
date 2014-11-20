@@ -26,6 +26,7 @@ h1.services_disabled = engine_service
 # h1.uwsgi.threads = 8
 # h1.uwsgi.master = true
 # h1.uwsgi.processes = 4
+# h1.bisque.static_files = false
 # Example h1 with only image service, feature and helpers
 #h1.services_enabled = blob_service, data_service, image_service, features
 
@@ -42,6 +43,8 @@ h1.services_disabled = engine_service
 # Engine on this host
 # e1.url = http://localhost:27000
 # e1.services_enabled = engine_service
+# e1.bisque.has_database = false
+# e1.bisque.static_files = false
 # Extra params uwsgi
 # e1.uwsgi.socket = unix:///tmp/engine.sock
 
@@ -227,7 +230,7 @@ who.config_file = %(here)s/who.ini
 who.log_level = error
 who.log_stream = stdout
 
-#linesmain profiler 
+#linesmain profiler
 bisque.profiler_enable = false
 bisque.profiler_path = __profiler__
 
