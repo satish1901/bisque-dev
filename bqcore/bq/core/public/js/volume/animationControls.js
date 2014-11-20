@@ -453,6 +453,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
                     click : function(thumb){
                         var val = thumb.value;
                         me.setValue(999, val, false, false);
+                        me.fireEvent('cursormove', me);
                     },
                     scope: me,
                 }
@@ -472,9 +473,13 @@ Ext.define('BQ.viewer.Volume.keySlider',{
         var me = this,
         thumbs = me.thumbs,
         thumb, len, i, values;
+
+        if(index === 0) return; // can't move the 0th key.  Ext
+
         if(index === 999){
 	        thumb = me.timeThumb;
 	    }
+
 	    else{
             if (Ext.isArray(index)) {
 		        values = index;
@@ -571,8 +576,8 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 
 	    if(rat < 0.75 && rat > 0.25){
 	        this.callParent(arguments);
-            thumb = this.getNearest(trackPoint);
-            this.fireEvent('onClickKey', this, newVal, thumb);
+            var thumb = this.getNearest(trackPoint);
+            this.fireEvent('clickkey', this, newVal, thumb);
 	    }else{
 
 	        this.setValue(999, newVal, undefined, true);
@@ -830,30 +835,30 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 
     removeKeyFrame : function(frame){
 
-	    if(frame > -1){
-	        var it = -1;
-	        var minDist = 999;
-	        for(var i = 0; i < this.thumbs.length; i++){
-		        var dist = Math.abs(frame - this.thumbs[i].value);
-		        if(dist < this.insertDist){
-		            it = i;
-		            minDist = dist;
-		        }
-	        }
-
-	        if(minDist > this.insertDist) return;
-	        if(it >= 0){
-		        var innerEl = this.thumbs[it].ownerCt.innerEl.dom;
-		        innerEl.removeChild(this.thumbs[it].el.dom);
-		        this.thumbs.splice(it,1);
-		        for(var i = 0; i < this.thumbs.length; i++){
-		            this.thumbs[i].index = i;
-		        }
-	        }
-
-	        var ik = this.getNearestFrame(frame);
-	        this.keyArray.splice(ik,1);
+	    if(frame < 1) return;
+	    var it = -1;
+	    var minDist = 999;
+	    for(var i = 0; i < this.thumbs.length; i++){
+		    var dist = Math.abs(frame - this.thumbs[i].value);
+		    if(dist < this.insertDist){
+		        it = i;
+		        minDist = dist;
+		    }
 	    }
+
+	    if(minDist > this.insertDist) return;
+        if(it < 1) return;
+
+		var innerEl = this.thumbs[it].ownerCt.innerEl.dom;
+		innerEl.removeChild(this.thumbs[it].el.dom);
+		this.thumbs.splice(it,1);
+		for(var i = 0; i < this.thumbs.length; i++){
+		    this.thumbs[i].index = i;
+		}
+
+	    var ik = this.getNearestFrame(frame);
+	    this.keyArray.splice(ik,1);
+
 	},
 
 });
@@ -896,6 +901,14 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    var me = this;
 		var controls = this.panel3D.canvas3D.controls;
         var curCamera = this.panel3D.canvas3D.camera;
+
+        var clearState = function(){
+            me.editKey = false;
+            me.addKey = false;
+            me.removeKey = false;
+            me.autoKey = false;
+        };
+
 
 	    this.keySlider = Ext.create('BQ.viewer.Volume.keySlider', {
 	        startFrame: this.startFrame,
@@ -954,41 +967,36 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 		            this.panel3D.canvas3D.controls.noRotate = false;
 		            this.panel3D.canvas3D.controls.noPan = false;
                 },
-                onClickKey: function(slider, value, key){
+                clickkey: function(slider, value, key){
                     if(this.addKey){
-                        var frame = this.keySlider.keyArray[this.keySlider.getNearestFrame()];
+                        var frame = this.keySlider.keyArray[this.keySlider.getNearestFrame(value)];
                         if(Math.abs(frame.time.value - value) > 3){
                             this.keySlider.addKeyFrame(value, this.keySlider.getInterpolatedValue);
                         }
                     }
 		            if(this.removeKey){
-                        var frame = this.keySlider.keyArray[this.keySlider.getNearestFrame()];
-                        if(Math.abs(frame.time.value - value) > 3){
+                        var frame = this.keySlider.keyArray[this.keySlider.getNearestFrame(value)];
+                        if(Math.abs(frame.time.value - value) < 3){
                             this.keySlider.removeKeyFrame(value);
                         }
                     }
                 },
+                cursormove: function(slider){
+                    clearState();
+                    this.queryById('anim-edit').toggle(true);
+                    this.editKey = true;
+                },
 		        scope:me
             },
 	    });
-        var clearState = function(){
-            me.editKey = false;
-            me.addKey = false;
-            me.removeKey = false;
-            me.autoKey = false;
-        };
 
         var editKeyButton = Ext.create('Ext.Button', {
 	        text: 'edit',
             itemId: 'anim-edit',
             enableToggle: true,
-	        handler: function(button){
+            toggleGroup: 'anim-edit',
+	        toggleHandler: function(button){
                 clearState();
-                if(button.pressed){
-                    this.queryById('anim-sub').toggle(false);
-		            this.queryById('anim-add').toggle(false);
-                    this.queryById('anim-auto').toggle(false);
-                }
 		        this.editKey = button.pressed;
                 //this.keySlider.addKeyFrame(this.keySlider.getCurrentTime());
 
@@ -1000,13 +1008,9 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	        text: '+',
             itemId: 'anim-add',
             enableToggle: true,
-	        handler:function(button){
+            toggleGroup: 'anim-edit',
+	        toggleHandler:function(button){
                 clearState();
-                if(button.pressed){
-                    this.queryById('anim-edit').toggle(false);
-		            this.queryById('anim-sub').toggle(false);
-                    this.queryById('anim-auto').toggle(false);
-                }
 		        this.addKey = button.pressed;
             },
 	        scope:me,
@@ -1016,13 +1020,9 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	        text: '-',
             itemId: 'anim-sub',
             enableToggle: true,
-	        handler:function(button){
+            toggleGroup: 'anim-edit',
+	        toggleHandler:function(button){
                 clearState();
-                if(button.pressed){
-                    this.queryById('anim-edit').toggle(false);
-		            this.queryById('anim-add').toggle(false);
-                    this.queryById('anim-auto').toggle(false);
-                }
                 this.removeKey = button.pressed;
             },
 	        scope:me,
@@ -1032,13 +1032,9 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	        enableToggle: true,
             itemId: 'anim-auto',
 	        text: 'auto',
-	        handler: function(button, pressed) {
+            toggleGroup: 'anim-edit',
+	        toggleHandler: function(button, pressed) {
                 clearState();
-                if(button.pressed){
-                    this.queryById('anim-edit').toggle(false);
-		            this.queryById('anim-add').toggle(false);
-                    this.queryById('anim-sub').toggle(false);
-                }
                 this.autoKey = button.pressed;
 		        //this.keySlider.autoKey = this.keySlider.autoKey ? false:true;
 
