@@ -335,7 +335,9 @@ Ext.define('BQ.selectors.Resource', {
                         var i = this;
                         this.tag_query = tag_query // passing the tag_query to createQueryViewer
                         var r = '/data_service/image?tag_query='+tag_query;
-						if (me.browser.browserParams.wpublic) {var r = r+'&wPublic=true';} //adds with public to query
+                        if (me.browser.browserParams.wpublic) {
+                            r += '&wpublic=true'; //adds with public to query
+                        }
                         setTimeout(function() {
                             BQFactory.request( { uri: r,
                                  cb: callback(i, 'onselectedquery'),
@@ -352,11 +354,14 @@ Ext.define('BQ.selectors.Resource', {
             //title: 'my upload',
             //maxFiles: 1,
             //dataset_configs: BQ.upload.DATASET_CONFIGS.PROHIBIT,
-            listeners: {  'uploaded': function(reslist) {
-                           //this.onselected(reslist[0]);
-                           var i = this; var r = reslist[0];
-                           setTimeout(function() { i.onselected(r); }, 100);
-                    }, scope: this },
+            listeners: {
+                scope: this,
+                uploaded: function(reslist) {
+                    //this.onselected(reslist[0]);
+                    var i = this; var r = reslist[0];
+                    setTimeout(function() { i.onselected(r); }, 100);
+                }
+            },
         });
     },
 

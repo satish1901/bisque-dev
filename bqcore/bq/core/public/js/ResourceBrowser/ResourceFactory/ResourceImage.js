@@ -765,13 +765,15 @@ Ext.define('Bisque.Resource.Image.Page', {
             }]
         });
 
-        var download = this.toolbar.queryById('btnDownload');
+        //var download = this.toolbar.queryById('btnDownload');
+        var download = BQApp.main.getToolbar().queryById('button_download');
         if (download) {
-            download.menu.insert(1, [{
+            //download.menu.add([{
+            download.menu.insert(3, [{
                 itemId: 'download_as_ometiff',
                 text: 'as OME-TIFF',
                 handler: this.download_ometiff,
-            },{
+            }, {
                 itemId: 'download_as_omebigtiff',
                 text: 'as OME-BigTIFF',
                 handler: this.download_omebigtiff,
@@ -945,7 +947,8 @@ Ext.define('Bisque.Resource.Image.Page', {
             preferences: this.viewerContainer.viewer.preferences,
         });
         var movie = cnt.queryById('main_view_movie');
-        var download = this.toolbar.queryById('btnDownload');
+        //var download = this.toolbar.queryById('btnDownload');
+        var download = BQApp.main.getToolbar().queryById('button_download');
         var qt = download.menu.queryById('download_movie_qt');
         if (!qt) {
             download.menu.add([{
