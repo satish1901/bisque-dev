@@ -971,11 +971,24 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 		        scope:me
             },
 	    });
+        var clearState = function(){
+            me.editKey = false;
+            me.addKey = false;
+            me.removeKey = false;
+            me.autoKey = false;
+        };
 
-	    var editKeyButton = Ext.create('Ext.Button', {
+        var editKeyButton = Ext.create('Ext.Button', {
 	        text: 'edit',
+            itemId: 'anim-edit',
             enableToggle: true,
 	        handler: function(button){
+                clearState();
+                if(button.pressed){
+                    this.queryById('anim-sub').toggle(false);
+		            this.queryById('anim-add').toggle(false);
+                    this.queryById('anim-auto').toggle(false);
+                }
 		        this.editKey = button.pressed;
                 //this.keySlider.addKeyFrame(this.keySlider.getCurrentTime());
 
@@ -985,8 +998,15 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 	    var addKeyButton = Ext.create('Ext.Button', {
 	        text: '+',
+            itemId: 'anim-add',
             enableToggle: true,
 	        handler:function(button){
+                clearState();
+                if(button.pressed){
+                    this.queryById('anim-edit').toggle(false);
+		            this.queryById('anim-sub').toggle(false);
+                    this.queryById('anim-auto').toggle(false);
+                }
 		        this.addKey = button.pressed;
             },
 	        scope:me,
@@ -994,17 +1014,31 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 	    var removeKeyButton = Ext.create('Ext.Button', {
 	        text: '-',
+            itemId: 'anim-sub',
             enableToggle: true,
 	        handler:function(button){
-		        this.removeKey = button.pressed;
+                clearState();
+                if(button.pressed){
+                    this.queryById('anim-edit').toggle(false);
+		            this.queryById('anim-add').toggle(false);
+                    this.queryById('anim-auto').toggle(false);
+                }
+                this.removeKey = button.pressed;
             },
 	        scope:me,
 	    });
 
 	    var autoKeyButton = Ext.create('Ext.Button', {
 	        enableToggle: true,
+            itemId: 'anim-auto',
 	        text: 'auto',
 	        handler: function(button, pressed) {
+                clearState();
+                if(button.pressed){
+                    this.queryById('anim-edit').toggle(false);
+		            this.queryById('anim-add').toggle(false);
+                    this.queryById('anim-sub').toggle(false);
+                }
                 this.autoKey = button.pressed;
 		        //this.keySlider.autoKey = this.keySlider.autoKey ? false:true;
 
