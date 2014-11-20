@@ -682,12 +682,52 @@ Ext.define('Bisque.Resource.Page',
 
     getOperations : function(resource)
     {
-        var items=[];
+        // new interface
+        var download = BQApp.main.getToolbar().queryById('button_download');
+        if (download) {
+            download.menu.add([{
+                xtype       : 'menuitem',
+                compression : 'none',
+                text        : 'Original',
+                scope       :   this,
+                handler     :   this.downloadResource,
+                operation   :   this.downloadResource,
+            }, {
+                xtype       : 'menuseparator'
+            }, {
+                compression : 'tar',
+                text        : 'as TARball',
+                scope       :   this,
+                handler     :   this.downloadResource,
+                operation   :   this.downloadResource,
+            },{
+                compression : 'gzip',
+                text        : 'as GZip archive',
+                scope       :   this,
+                handler     :   this.downloadResource,
+                operation   :   this.downloadResource,
+            },{
+                compression : 'bz2',
+                text        : 'as BZip2 archive',
+                scope       :   this,
+                handler     :   this.downloadResource,
+                operation   :   this.downloadResource,
+            },{
+                compression : 'zip',
+                text        : 'as (PK)Zip archive',
+                scope       :   this,
+                handler     :   this.downloadResource,
+                operation   :   this.downloadResource,
+            }]);
+        }
 
+        // old stuff
+        var items=[];
         items.push({
             xtype       :   'button',
             text        :   'Download',
             itemId      :   'btnDownload',
+            hidden : true,
             iconCls     :   'icon-download-small',
             needsAuth   :   false,
             compression :   'tar',
@@ -719,17 +759,16 @@ Ext.define('Bisque.Resource.Page',
                                                     text        :   'as (PK)Zip archive',
                                                 },]
                             }
-        },
-        {
+        }, {
+            xtype: 'bqresourcepermissions',
+            itemId : 'btn_permission',
+            resource: resource,
+        }, {
             itemId      :   'btnShare',
             text        :   'Share',
             iconCls     :   'icon-group',
             operation   :   this.shareResource,
             handler     :   this.testAuth1
-        }, {
-            xtype: 'bqresourcepermissions',
-            itemId : 'btn_permission',
-            resource: resource,
         }, /*{
             itemId      :   'btnPerm',
             operation   :   this.changePrivacy,

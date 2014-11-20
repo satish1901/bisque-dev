@@ -1,5 +1,6 @@
 Ext.define('BQ.Export.Panel', {
     extend : 'Ext.panel.Panel',
+    alias: 'widget.bq_export_panel',
 
     date_pattern: BQ.Date.patterns.ISO8601Long,
 
@@ -127,6 +128,9 @@ Ext.define('BQ.Export.Panel', {
         this.callParent(arguments);
         this.add(this.getResourceGrid());
         this.fetchResourceTypes();
+        if (this.resource) {
+            this.addToStore(undefined, this.resource);
+        }
     },
 
     fetchResourceTypes : function() {
@@ -277,9 +281,24 @@ Ext.define('BQ.Export.Panel', {
     },
 
     addToStore : function(rb, resource) {
+        this.setLoading(false);
         if ( resource instanceof Array) {
             for (var i = 0; i < resource.length; i++)
                 this.addToStore(rb, resource[i]);
+            return;
+        }
+
+        if ( typeof resource === 'string') {
+            this.setLoading(true);
+            var me = this;
+            BQFactory.request ({
+                uri : resource,
+                cb : function(r) { me.addToStore(undefined, r); },
+                errorcb : function(error) {
+                    BQ.ui.error('Error fetching resource types:<br>'+error.message, 4000);
+                },
+                cache : false,
+            });
             return;
         }
 
@@ -454,3 +473,44 @@ Ext.define('BQ.Export.Panel', {
         return this.resourceStore;
     }
 });
+
+
+//--------------------------------------------------------------------------------------
+// BQ.upload.Dialog
+// Instantiates upload panel in a modal window
+// Events:
+//   uploaded
+//--------------------------------------------------------------------------------------
+
+Ext.define('BQ.export.Dialog', {
+    extend : 'Ext.window.Window',
+    alias: 'widget.bq_export_dialog',
+    requires: ['BQ.Export.Panel'],
+
+    layout : 'fit',
+    modal : true,
+    border : false,
+    width : '90%',
+    height : '90%',
+
+    initComponent : function() {
+        this.items = {
+            xtype: 'bq_export_panel',
+            //border : 0,
+            //bodyStyle : 'background:#9B9',
+            resource: this.resource,
+        };
+        this.callParent();
+    },
+});
+
+
+
+
+
+
+
+
+
+
+

@@ -82,12 +82,12 @@ Ext.define('BQ.help.Video', {
     extend: 'Ext.Component',
     alias: 'widget.bq_help_video',
     componentCls: 'bq-help-video',
-  
+
     border: false,
     layout: 'fit',
     autoEl: {
         tag: 'div',
-    },    
+    },
 
     iframe_youtube: '<iframe src="{1}" frameborder="0" allowfullscreen></iframe>',
 
@@ -95,17 +95,17 @@ Ext.define('BQ.help.Video', {
         this.callParent();
         if (this.video) {
         	this.setVideo(this.video);
-        }	
-    },  
+        }
+    },
 
     setVideo : function(url) {
         this.setVideoYoutube(url);
     },
-    
+
     setVideoYoutube : function(url) {
-    	this.video = url; 
+    	this.video = url;
     	var el = this.getEl();
-    	if (el && el.dom) { 
+    	if (el && el.dom) {
     	    el.dom.innerHTML = this.iframe_youtube.replace('{1}', url);
     	}
     },
@@ -431,6 +431,8 @@ Ext.define('BQ.Application.Toolbar', {
         //--------------------------------------------------------------------------------------
         // Toolbar items
         //--------------------------------------------------------------------------------------
+        var w = Math.round(Math.min(500, (typeof BQApp !== 'undefined') ? BQApp.getCenterComponent().getWidth()*0.8 : document.body.clientWidth*0.8));
+        var h = Math.round(Math.max(500,  (typeof BQApp !== 'undefined') ? BQApp.getCenterComponent().getHeight()*0.8 : document.body.clientHeight*0.8 || 700));
         var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;
         this.items = [{
                 xtype:'tbtext',
@@ -453,21 +455,72 @@ Ext.define('BQ.Application.Toolbar', {
                 text: 'Upload',
                 itemId: 'button_upload',
                 iconCls : 'icon-import',
-                handler: Ext.Function.pass(pageAction, BQ.Server.url('/import/upload')),
                 tooltip: '',
+                //handler: Ext.Function.pass(pageAction, BQ.Server.url('/import/upload')),
+                handler: function() {
+                    var uploader = Ext.create('BQ.upload.Dialog', {
+                        /*listeners: {
+                            scope: this,
+                            uploaded: function(reslist) {
+                                   var i = this; var r = reslist[0];
+                                   setTimeout(function() { i.onselected(r); }, 100);
+                            },
+                        },*/
+                    });
+                },
             }, {
                 text: 'Download',
                 itemId: 'button_download',
                 iconCls : 'icon-export',
-                handler: Ext.Function.pass(pageAction, '/export/'),
+                //handler: Ext.Function.pass(pageAction, '/export/'),
                 tooltip: '',
+                menu: {
+                    xtype: 'menu',
+                    cls: 'toolbar-menu',
+                    plain: true,
+                    items: [{
+                        text: 'Download manager',
+                        handler: function() {
+                            //pageAction('/export/' + (BQApp.resource ? '?resource=' + BQApp.resource.uri : '') );
+                            var downloader = Ext.create('BQ.export.Dialog', {
+                                resource: BQApp.resource ? BQApp.resource.uri : undefined,
+                            }).show();
+                        },
+                    }, '-',
+                    ],
+                },
             }, {
                 xtype : 'button',
                 itemId: 'button_analysis',
                 //menu  : this.menu_services,
                 iconCls : 'icon-analysis',
                 text  : 'Analyze',
-                handler: analysisAction,
+                //handler: analysisAction,
+                menu: {
+                    xtype: 'menu',
+                    cls: 'toolbar-menu',
+                    plain: true,
+                    items: [{
+                        xtype: 'bq-resource-browser',
+                        width :  w,
+                        height:  h,
+                        layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
+                        wpublic: true,
+                        selType: 'SINGLE',
+                        viewMode: 'ModuleBrowser',
+                        showOrganizer: false,
+                        dataset : '/module_service/',
+                        listeners : {
+                            Select : function(rb, module) {
+                                if (module.available === false) return;
+                                if (BQApp.resource)
+                                    pageAction('/module_service/' + module.name + '/?resource=' + BQApp.resource.uri);
+                                else
+                                    pageAction('/module_service/' + module.name);
+                            },
+                        }
+                    }],
+                },
             }, {
                 xtype : 'button',
                 itemId: 'button_services',

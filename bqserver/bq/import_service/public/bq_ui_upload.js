@@ -731,6 +731,8 @@ Ext.define('BQ.upload.Panel', {
     layout: 'fit',
     defaults: BQ.upload.DEFAULTS,
 
+    formconf: { form_action: '/import/transfer', form_file: 'file', form_resource: 'file_resource' },
+
     processConfig: function() {
         if (this.maxFiles == 1)
             this.dataset_configs = BQ.upload.DATASET_CONFIGS.PROHIBIT;
@@ -1603,12 +1605,14 @@ Ext.define('BQ.upload.Panel', {
 
 Ext.define('BQ.upload.Dialog', {
     extend : 'Ext.window.Window',
+    alias: 'widget.bq_upload_dialog',
+    requires: ['BQ.upload.Panel'],
 
     layout : 'fit',
     modal : true,
     border : false,
-    width : '85%',
-    height : '85%',
+    width : '90%',
+    height : '90%',
 
     constructor : function(config) {
         var uploader_config = {

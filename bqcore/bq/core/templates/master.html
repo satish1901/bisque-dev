@@ -48,6 +48,7 @@
     { 'file': '/dataset_service/public/dataset_panel.css', 'path' : h.file_root() + 'bqserver/bq' },
     '/js/renderers/dataset.css',
     '/js/volume/bioWeb3D.css',
+    {'file' : '/import_service/public/bq_ui_upload.css', 'path' : h.file_root() + 'bqserver/bq'},
     {'file' : '/export_service/public/css/BQ.Export.css', 'path' : h.file_root() + 'bqserver/bq'},
     '/css/bisquik_extjs_fix.css',
 
@@ -98,7 +99,7 @@
 
     <!-- ThreeJS -->
     <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/threejs/three.min.js')}"></script>
-    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/threejs/three.js')}"></script>    
+    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/threejs/three.js')}"></script>
     <script type="text/javascript" src="${tg.url('/threejs/TypedArrayUtils.js')}"></script>
     <script type="text/javascript" src="${tg.url('/threejs/math/ColorConverter.js')}"></script>
 
@@ -106,10 +107,7 @@
     <!--<script type="text/javascript" src="${tg.url('/async/async.js')}"></script>-->
 
     <!-- jquery -->
-    <!--<script type="text/javascript" src="${tg.url('/jquery/jquery.min.js')}"></script>-->
-
-    <!-- rasterizeHTML -->
-    <script type="text/javascript" src="${tg.url('/rasterizeHTML/rasterizeHTML.allinone.js')}"></script>
+    <!-- <script type="text/javascript" src="${tg.url('/jquery/jquery.min.js')}"></script> -->
 
     <!-- BisQue UI code -->
     <?python
@@ -192,9 +190,6 @@
     '/js/TemplateManager/TemplateManager.js',
     '/js/TemplateManager/TagRenderer.js',
 
-    # -- Exporter --
-    {'file': '/export_service/public/js/BQ.Export.js', 'path': h.file_root() + 'bqserver/bq/'},
-
     # -- Tree Organizer --
     '/js/picker/Path.js',
     '/js/tree/files.js',
@@ -209,8 +204,9 @@
     '/panojs3/panojs/control_info.js',
     '/panojs3/panojs/control_svg.js',
 
-    # -- Image viewer --
+    # -- Image Service --
     { 'file' : '/image_service/public/converter.js', 'path': h.file_root() + 'bqserver/bq/'},
+    { 'file' : '/image_service/public/bq_is_formats.js', 'path': h.file_root() + 'bqserver/bq/'},
 
     '/js/slider/inversible.js',
     '/js/slider/slider.js',
@@ -256,6 +252,14 @@
     { 'file': '/dataset_service/public/dataset_panel.js','path': h.file_root() + 'bqserver/bq/'},
     '/js/renderers/dataset.js',
     '/js/resourceview.js',
+
+    # -- Import Service --
+    { 'file' : '/import_service/public/File.js', 'path': h.file_root() + 'bqserver/bq/'},
+    { 'file' : '/import_service/public/bq_file_upload.js', 'path': h.file_root() + 'bqserver/bq/'},
+    { 'file' : '/import_service/public/bq_ui_upload.js', 'path': h.file_root() + 'bqserver/bq/'},
+
+    # -- Export Service --
+    { 'file' : '/export_service/public/js/BQ.Export.js', 'path': h.file_root() + 'bqserver/bq/'},
 
     # -- WebGL viewer --
     '/js/volume/lib/whammy.js',
