@@ -131,7 +131,7 @@ def check_running (pid_file):
         else:
             return False
 
-def paster_command(command, options, cfgopt, processes, args):
+def paster_command(command, options, cfgopt, processes, cfg_file = None, *args):
     def verbose(msg):
         if options.verbose:
             print msg
@@ -143,10 +143,15 @@ def paster_command(command, options, cfgopt, processes, args):
     server_cmd.extend (['--log-file', cfgopt['logfile'], '--pid-file', cfgopt['pidfile'],
                         #                   '--deamon',
                         ])
+
+    if command in ('start', 'restart'):
+        prepare_log (cfgopt['logfile'])
+
     if options.reload:
         server_cmd.append ('--reload')
     server_cmd.extend ([
-            os.path.join(cfgopt['site_dir'], 'server.ini'),
+            #os.path.join(cfgopt['site_dir'], 'server.ini'),
+            cfg_file or '',
             command,
             'services_enabled=%s' % cfgopt['services_enabled'],
             'services_disabled=%s' % cfgopt['services_disabled'],
@@ -162,7 +167,7 @@ def paster_command(command, options, cfgopt, processes, args):
         processes.append(Popen(server_cmd))
     return processes
 
-def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
+def uwsgi_command(command, options, cfgopt, processes,  cfg_file = None, *args):
     def verbose(msg):
         if options.verbose:
             print msg
@@ -179,13 +184,13 @@ def uwsgi_command(command, cfgopt, processes, options, default_cfg_file = None):
             if os.path.exists (pidfile):
                 os.remove (pidfile)
     elif command is 'start':
-        final_cfg = find_site_cfg(default_cfg_file)
-        uwsgi_opts = cfgopt['uwsgi']
-        uwsgi_cmd = ['uwsgi', '--ini-paste', final_cfg,
+        #uwsgi_opts = cfgopt['uwsgi']
+        uwsgi_cmd = ['uwsgi', '--ini-paste', cfg_file,
 #                     '--env', 'LC_ALL=en_US.UTF-8',
 #                     '--env', 'LANG=en_US.UTF-8',
                      '--daemonize', cfgopt['logfile'],
                      '--pidfile', cfgopt['pidfile']]
+        uwsgi_cmd.extend (args)
         verbose('Executing: ' + ' '.join(uwsgi_cmd))
         if not options.dryrun:
             if call(uwsgi_cmd) != 0:
@@ -219,6 +224,11 @@ def logger_command(command, cfgopt, processes):
             print "No pid file for logging server"
 
 
+BACKENDS = {
+    'paster' : paster_command,
+    'uwsgi'  : uwsgi_command
+}
+
 def operation(command, options, *args):
     """Run a multi-server command to start several bisque jobs
     """
@@ -250,14 +260,15 @@ def operation(command, options, *args):
             print "Please check your site.cfg.  bisque.paths.root is not set correctly"
             return
         os.chdir (config['top_dir'])
-
+        # Get the backend
         backend = config.get('backend', None)
         verbose("using backend: " + str(backend))
-
         if backend == None:
             verbose("Backend not configured. defaulting to paster")
             backend = 'paster'
+        backend_command = BACKENDS[backend]
 
+        # Process non-server commands
         if command == 'list':
             print "ARGS: %s" % (args,)
             for server, params in  config['servers'].items():
@@ -289,12 +300,15 @@ def operation(command, options, *args):
             cfgopt['pidfile'] = os.path.join(config['pid_dir'], PID_TEMPL % cfgopt['port'])
             cfgopt['uwsgi']  = serverspec.pop('uwsgi', None)
 
-            if command in ('stop', 'restart'):
-                if backend == 'uwsgi':
-                    processes = uwsgi_command('stop', cfgopt, processes, options)
-                else:
-                    processes = paster_command('stop', options, cfgopt, processes, args)
+            cfg_file_name =  "%s_%s.cfg" % (key, backend)
+            cfg_file  = find_site_cfg(cfg_file_name)
+            if not cfg_file:
+                print ("Cannot find config file %s" % cfg_file_name)
+                print ("Please run bq-admin setup configuration")
+                return
 
+            if command in ('stop', 'restart'):
+                backend_command ('stop', options, cfgopt, processes, cfg_file)
                 error = None
                 for proc in processes:
                     try:
@@ -320,16 +334,7 @@ def operation(command, options, *args):
                     else:
                         print "Can't start because of existing PID file"
                         sys.exit(2)
-                if backend == 'uwsgi':
-                    def_cfg  = "%s_uwsgi.cfg" % key
-                    if not find_site_cfg(def_cfg):
-                        print ("Cannot find config file %s" % def_cfg)
-                        return
-                    processes = uwsgi_command('start', cfgopt, processes, options, def_cfg)
-                else:
-                    prepare_log (cfgopt['logfile'])
-                    processes = paster_command('start', options, cfgopt, processes, args)
-
+                processes = backend_command('start', options, cfgopt, processes, cfg_file)
 
         if not args and 'logging_server' in cfgopt:
             if command in ('stop'):

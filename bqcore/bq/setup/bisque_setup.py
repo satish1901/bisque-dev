@@ -17,6 +17,7 @@ import re
 import logging
 import time
 import pprint
+import six
 
 import pkg_resources
 from setuptools.command import easy_install
@@ -161,9 +162,9 @@ def getanswer(question, default, help=None):
 
         if a=='?':
             if help is not None:
-                print textwrap.dedent(help)
+                six.print_ (textwrap.dedent(help))
             else:
-                print "Sorry no help available currently."
+                six.print_ ("Sorry no help available currently.")
             continue
         y_n = ['Y', 'y', 'N', 'n']
         if default in y_n and a in y_n:
@@ -208,7 +209,7 @@ def sql(DBURI, statement, verbose = False):
         return 1, ''
 
 
-    print "SQL: NOT IMPLEMEMENT %s" % statement
+    six.print_ ( "SQL: NOT IMPLEMEMENT %s" % statement )
     return 0, ''
 
     command = ["psql"]
@@ -240,7 +241,7 @@ def call(cmd, echo=False, capture=False, **kw):
     """
     lines = []
     if echo:
-        print "Executing '%s'" % ' '.join (cmd)
+        six.print_( "Executing '%s'" % ' '.join (cmd))
     if not kw.has_key ('stdout'):
         p = subprocess.Popen(cmd,
                              stdout=subprocess.PIPE,
@@ -248,7 +249,7 @@ def call(cmd, echo=False, capture=False, **kw):
         while True:
             l = p.stdout.readline()
             if not l: break
-            print l,
+            six.print_ (l, end='')
             lines .append(l)
             #p.wait()
     else:
@@ -307,6 +308,7 @@ def touch(fname, times=None):
         fhandle.close()
 
 
+
 #############################################
 #  Setup some local constants
 
@@ -324,6 +326,7 @@ SITE_CFG     = config_path('site.cfg')
 SITE_DEFAULT = config_path('site.cfg.default')
 RUNTIME_CFG  = config_path('runtime-bisque.cfg')
 UWSGI_DEFAULT = config_path('uwsgi.cfg.default')
+PASTER_DEFAULT = config_path('server.ini.default')
 
 HOSTNAME = socket.getfqdn()
 
@@ -536,7 +539,7 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE
 ############################################
 # Database
 
-db_create_error = """
+DB_CREATE_ERROR = """
 *** Database creation failed ***
 Please check your db url to ensure that it is in the correct format.
 Also please ensure that the user specified can actually create/access a database.
@@ -558,7 +561,7 @@ def create_postgres (dburl):
     if dburl.password:
         stdin = StringIO.StringIO(dburl.password)
     if call (command + [ '-d', str(dburl.database), '-c', r'\q'], stdin = stdin ) == 0:
-        print "Database exists, not creating"
+        six.print_ ("Database exists, not creating")
         return False
     # http://www.faqs.org/docs/ppbook/x17149.htm
     # psql needs a database to connect to even when creating.. use template1
@@ -566,7 +569,7 @@ def create_postgres (dburl):
         stdin = StringIO.StringIO(dburl.password)
     if call (command + ['-c', 'create database %s' % dburl.database, 'template1'], echo=True,
              stdin = stdin) != 0:
-        print db_create_error
+        six.print_( DB_CREATE_ERROR)
         return False
 
     return True
@@ -585,13 +588,13 @@ def create_mysql(dburl):
     if dburl.password:
         command.append ('-p%s' % dburl.password)
 
-    print "PLEASE ignore 'ERROR (...)Unknown database ..' "
+    six.print_( "PLEASE ignore 'ERROR (...)Unknown database ..' ")
     if call (command+[dburl.database, '-e', 'quit'], echo=True) == 0:
         print "Database exists, not creating"
         return False
 
     if call (command+['-e', 'create database %s' % dburl.database], echo=True) != 0:
-        print db_create_error
+        six.print_( DB_CREATE_ERROR )
         return False
     return True
 
@@ -968,14 +971,14 @@ def install_server_defaults(params):
         server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.root']}
         server_params = update_site_cfg(server_params, 'servers', append=False)
 
-    if getanswer ('DO you want to reconfigure your servers(advanced)', 'N',
+    if getanswer ('Do you want to create new server configuations', 'Y',
                   "Use an editor to edit the server section (see http://biodev.ece.ucsb.edu/projects/bisquik/wiki/Installation/ParsingSiteCfg )") == 'Y':
-        setup_servers(params)
+        setup_server_cfg(params)
 
     return params
 
 
-def setup_servers (params):
+def setup_server_cfg (params):
     'Edit the server section of the site.cfg'
 
     server_params = read_site_cfg (SITE_CFG, 'servers')
@@ -998,8 +1001,11 @@ def setup_servers (params):
 
     server_params = read_site_cfg (SITE_CFG, 'servers')
     if server_params['backend'] == 'uwsgi':
-        setup_uwsgi(params, server_params)
+        params = setup_uwsgi(params, server_params)
+    if server_params['backend'] == 'paster':
+        params = setup_paster(params, server_params)
 
+    return params
 
 
 
@@ -1190,43 +1196,101 @@ def install_public_static(params):
     return params
 
 
-
-
 #######################################################
 #
 def setup_uwsgi(params, server_params):
-    if getanswer("Install uwsgi (application server and configs)", 'N',
+    if getanswer("Install uwsgi (application server and configs)", 'Y',
                  "Uwsgi can act as backend server when utilized with web-front end (Nginx)") != 'Y':
         return params
-
     if which ('uwsgi') is None:
         easy_install.main(['-U','uwsgi'])
 
-    from bq.util.dotnested import parse_nested
+    from bq.util.dotnested import parse_nested, unparse_nested
     servers = [ x.strip() for x in server_params['servers'].split(',') ]
     servers =  parse_nested (server_params, servers)
     print servers
-
     for server, sv in servers.items():
         cfg = config_path ("%s_uwsgi.cfg" % server)
+
+        if os.path.exists (cfg) and os.path.exists(SITE_CFG):
+            cfg_time  = os.stat(cfg).st_mtime
+            site_time = os.stat (SITE_CFG).st_mtime
+            if cfg_time - site_time > 60:
+                if getanswer ("%s looks newer than %s.. modify" % (cfg, SITE_CFG), "N",
+                              "%s may have special modifications" %cfg) == "N":
+                    continue
         install_cfg (cfg, section="*", default_cfg=UWSGI_DEFAULT)
+
+        uwsgi_vars = sv.get ('uwsgi', {})
+        bisque_vars = sv.get ('bisque', {})
+
+        if 'socket' in uwsgi_vars:
+            uwsgi_vars['socket'] =  uwsgi_vars['socket'].replace('unix://','').strip()
 
         svars = { 'bisque.root' : sv['url'],
                   'bisque.server' : sv['url'],
                   'bisque.services_disabled' : sv.get ('services_disabled', ''),
                   'bisque.services_enabled'  : sv.get ('services_enabled', ''),
                 }
-        uwsgi_vars = sv['uwsgi']
-        if 'socket' in uwsgi_vars:
-            uwsgi_vars['socket'] =  uwsgi_vars['socket'].replace('unix://','').strip()
+        for k,v in unparse_nested (bisque_vars):
+            svars["bisque.%s" % k] = v
+
         uwsgi_vars ['virtualenv'] = BQENV
         uwsgi_vars ['procname-prefix'] = "bisque_%s_" % server
-
         update_site_cfg(cfg=cfg, bisque_vars=svars)
         update_site_cfg(cfg=cfg, section='uwsgi',bisque_vars = uwsgi_vars )
+    return params
+
+#######################################################
+#
+def setup_paster(params, server_params):
+    if getanswer("Install paster (application server and configs)", 'Y',
+                 "Paster is the default backend server") != 'Y':
+        return params
+
+    from bq.util.dotnested import parse_nested, unparse_nested
+    servers = [ x.strip() for x in server_params['servers'].split(',') ]
+    servers =  parse_nested (server_params, servers)
+    print servers
+
+    for server, sv in servers.items():
+        cfg = config_path ("%s_paster.cfg" % server)
+        if os.path.exists (cfg) and os.path.exists(SITE_CFG):
+            cfg_time  = os.stat(cfg).st_mtime
+            site_time = os.stat (SITE_CFG).st_mtime
+            if cfg_time - site_time > 60:
+                if getanswer ("%s looks newer than %s.. modify" % (cfg, SITE_CFG), "N",
+                              "%s may have special modifications" %cfg) == "N":
+                    continue
+        install_cfg (cfg, section="*", default_cfg=PASTER_DEFAULT)
+
+        paster_vars = sv.get ('paster', {})
+        bisque_vars = sv.get ('bisque', {})
+
+        svars = { 'bisque.root' : sv['url'],
+                  'bisque.server' : sv['url'],
+                  'bisque.services_disabled' : sv.get ('services_disabled', ''),
+                  'bisque.services_enabled'  : sv.get ('services_enabled', ''),
+                }
+
+        for k,v in unparse_nested (bisque_vars):
+            svars["bisque.%s" % k] = str(v)
+
+        #svars.update (bisque_vars)
+
+        fullurl = urlparse.urlparse (sv['url'])
+        if 'host' not in paster_vars:
+            paster_vars['host'] = fullurl[1].split(':')[0]
+        if 'port' not in paster_vars:
+            paster_vars['port'] = str(fullurl.port)
+
+        update_site_cfg(cfg=cfg, bisque_vars=svars)
+        update_site_cfg(cfg=cfg, section='server:main',bisque_vars = paster_vars )
 
 
     return params
+
+
 
 #######################################################
 #
@@ -1813,6 +1877,7 @@ engine_options= [
 other_options = [
     "upgrade",
     'admin',
+    'configuration'
 ]
 
 all_options = list (set (install_options + engine_options + other_options))
@@ -1830,6 +1895,7 @@ SETUP_COMMANDS = {
     'preferences' : [ install_preferences ],
     'production' : [ install_public_static ],
     'upgrade' : [ kill_server, fetch_stable, fetch_external_binaries, install_dependencies, migrate, cleanup ],
+    "configuration" : [ setup_server_cfg ]
     }
 
 # Special procedures that modify runtime-bisque.cfg (for the engine)
