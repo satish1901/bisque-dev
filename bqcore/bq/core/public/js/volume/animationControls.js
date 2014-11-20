@@ -345,7 +345,11 @@ Ext.define('BQ.viewer.Volume.keySlider',{
     initComponent : function(){
 	    this.keyArray = new Array();
 	    this.autoKey = false;
-	    this.insertDist = 2;
+	    this.editKey = false;
+	    this.addKey = false;
+	    this.removeKey = false;
+
+        this.insertDist = 2;
 	    this.sampleRate = 128;
 	    this.timeValue = 0;
 	    var me = this;
@@ -521,7 +525,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
         // If vertical, the origin is the bottom of the slider track.
 
         //find the nearest thumb to the click event
-        console.log(trackPoint);
+        //console.log(trackPoint);
         thumb = me.getNearest(trackPoint);
 	    if (thumb.index == 999)
             if (!thumb.disabled) {
@@ -553,6 +557,8 @@ Ext.define('BQ.viewer.Volume.keySlider',{
     },
 
     onMouseDown : function(e) {
+        //we override the onMouseDown listener and detect if we're within a certain part of the slider
+        //if we are we emit an event: onClickKey, else we move the track thumb
 	    var ymin    = this.getY();
 	    var height = this.getHeight();
 	    var yclick = e.getPageY();
@@ -560,13 +566,20 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    var rat = yrel/height;
 	    var me = this;
 
+	    var trackPoint = this.getTrackpoint(e.getXY());
+	    var newVal =  Ext.util.Format.round(me.reversePixelValue(trackPoint), me.decimalPrecision);
+
 	    if(rat < 0.75 && rat > 0.25){
 	        this.callParent(arguments);
+            thumb = this.getNearest(trackPoint);
+            this.fireEvent('onClickKey', this, newVal, thumb);
 	    }else{
-	        trackPoint = this.getTrackpoint(e.getXY());
-	        var newVal =  Ext.util.Format.round(me.reversePixelValue(trackPoint), me.decimalPrecision);
+
 	        this.setValue(999, newVal, undefined, true);
 	    }
+        if(this.addKey){
+
+        }
     },
 
 
@@ -575,7 +588,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
     //----------------------------------------------------------------------
 
     getFloorFrame : function(value){
-	    var i0;
+	    var i0 = 0; //zero is the default floor frame
 
 	    for(var i = 0; i < this.keyArray.length - 1; i++){
 	        var x0 = this.keyArray[i].time.value;
@@ -595,6 +608,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
     },
 
     getNearestFrame : function(inTime){
+        //unlike the getNearest function, this just returns an index
 	    var i0 = 0, dist = 9999;
 	    for(var i = 0; i < this.keyArray.length; i++){
 	        var itTime = this.keyArray[i].time.value;
@@ -607,19 +621,37 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    return i0;
     },
 
-    getInterpolatedValue : function(i, val){
-	    if(this.keyArray.length < 2) return;
-	    var i0 = i;
-	    var i1 = i >= this.keyArray.length-1 ? i : i+1;
+    //----------------------------------------------------------------------
+    // Get interpolated state at a given point
+    //----------------------------------------------------------------------
+
+    getInterpolatedValue : function(val, scope){
+	    //if(scope.keyArray.length < 2) return;
+
+        var i = scope.getFloorFrame(val);
+
+        if(i == scope.keyArray.length - 1){
+
+            var q0 = (new THREE.Quaternion).setFromEuler(scope.keyArray[i].rotation);
+            var r0 = new THREE.Euler(0,0,0,'XYZ').setFromQuaternion(q0,'XYZ');
+            var t0 = scope.keyArray[i].target.clone();
+            var p0 = scope.keyArray[i].position.clone();
+            return {pos:  p0,
+                    targ: t0,
+		            rot:  r0,
+                    quat: q0};
+        }
+
+        var i0 = i;
+	    var i1 = i >= scope.keyArray.length-1 ? i : i+1;
 	    //console.log(i, i0, i1, this.keyArray.length);
-	    var t1 = this.keyArray[i1].time.value;
-	    var t0 = this.keyArray[i0].time.value;
+	    var t1 = scope.keyArray[i1].time.value;
+	    var t0 = scope.keyArray[i0].time.value;
 
-	    var t = i >= this.keyArray.length-1 ? 1 : (val-t0)/(t1-t0);
+	    var t = i >= scope.keyArray.length-1 ? 1 : (val-t0)/(t1-t0);
 
-
-	    var q0 = (new THREE.Quaternion).setFromEuler(this.keyArray[i0].rotation);
-	    var q1 = (new THREE.Quaternion).setFromEuler(this.keyArray[i1].rotation);
+	    var q0 = (new THREE.Quaternion).setFromEuler(scope.keyArray[i0].rotation);
+	    var q1 = (new THREE.Quaternion).setFromEuler(scope.keyArray[i1].rotation);
 	    var qi = q0.clone();
 	    qi.slerp(q1,t);
 	    var ri = new THREE.Euler(0,0,0,'XYZ').setFromQuaternion(qi,'XYZ');
@@ -652,12 +684,12 @@ Ext.define('BQ.viewer.Volume.keySlider',{
         */
 
 
-	    var t0 = this.keyArray[i0].target.clone();
-	    var t1 = this.keyArray[i1].target.clone();
+	    var t0 = scope.keyArray[i0].target.clone();
+	    var t1 = scope.keyArray[i1].target.clone();
 	    var ti = t0.clone(); ti.lerp(t1,t);
 
-	    var p0 = this.keyArray[i0].position.clone();
-	    var p1 = this.keyArray[i1].position.clone();
+	    var p0 = scope.keyArray[i0].position.clone();
+	    var p1 = scope.keyArray[i1].position.clone();
 
 	    var d0 = p0.clone(); d0.sub(t0);
 	    var d1 = p1.clone(); d1.sub(t1);
@@ -676,35 +708,54 @@ Ext.define('BQ.viewer.Volume.keySlider',{
     },
 
     //----------------------------------------------------------------------
+    // Get the cameras current state
+    //----------------------------------------------------------------------
+
+    getCameraState: function(value, scope){
+	    var rot  = scope.panel3D.canvas3D.camera.rotation.clone();
+	    var pos  = scope.panel3D.canvas3D.camera.position.clone();
+	    var targ = scope.panel3D.canvas3D.controls.target.clone();
+        var quat = scope.panel3D.canvas3D.camera.quaternion.clone();
+        return {pos:  pos,
+                targ: targ,
+		        rot:  rot,
+                quat: quat};
+    },
+
+    //----------------------------------------------------------------------
     // update the current keyframe array
     //----------------------------------------------------------------------
 
-    updateCurrentKeyFrame: function(rot, pos, target){
+    updateCurrentKeyFrame: function(updateFunc, insert){
 	    var curTime = this.getCurrentTime();
 	    var nearestFrame = this.getNearestFrame(curTime);
 	    var nearestTime = this.keyArray[nearestFrame].time.value;
 
 	    var dif = Math.abs(curTime - nearestTime);
-	    if(!this.autoKey) return;
-	    if(dif < this.insertDist){
+	    //if(!this.autoKey) return;
 
-	        this.keyArray[nearestFrame].rotation = rot.clone();
-	        this.keyArray[nearestFrame].position = pos.clone();
-	        this.keyArray[nearestFrame].target   = target.clone();
+	    if(dif < this.insertDist){
+            //here we are cloning the current key frame
+	        var state = updateFunc(curTime, this);
+            this.keyArray[nearestFrame].rotation = state.rot.clone();
+	        this.keyArray[nearestFrame].position = state.pos.clone();
+	        this.keyArray[nearestFrame].target   = state.targ.clone();
 	        var lastFrame = this.keyArray.length-1;
 	        if(nearestFrame == 0 && this.loop == true ){
-		        this.keyArray[lastFrame].rotation = rot.clone();
-		        this.keyArray[lastFrame].position = pos.clone();
-		        this.keyArray[lastFrame].target = target.clone();
+		        this.keyArray[lastFrame].rotation = state.rot.clone();
+		        this.keyArray[lastFrame].position = state.pos.clone();
+		        this.keyArray[lastFrame].target   = state.targ.clone();
 	        }
 	        if(nearestFrame == lastFrame && this.loop == true ){
-		        this.keyArray[0].rotation = rot.clone();
-		        this.keyArray[0].position = pos.clone();
-		        this.keyArray[0].target = target.clone();
+		        this.keyArray[0].rotation = state.rot.clone();
+		        this.keyArray[0].position = state.pos.clone();
+		        this.keyArray[0].target   = state.targ.clone();
 	        }
 	    }
-	    else
-	        this.addKeyFrame(curTime);
+	    else{
+	        if(!insert) return;
+            this.addKeyFrame(curTime, updateFunc);
+        }
     },
 
     sortKeys : function(){
@@ -736,7 +787,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
     // add and remove key frames frome array
     //----------------------------------------------------------------------
 
-    addKeyFrame : function(frame){
+    addKeyFrame : function(frame, addFunc){
 	    //this adds a keyframe based given an input slider value
 	    var hit = false;
 
@@ -750,26 +801,30 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 		        outKey =  this.keyArray[i];
 	        }
 	    }
+        if(hit) return;
 
-	    if(!hit){
-	        var rot = this.panel3D.canvas3D.camera.rotation.clone();
-	        var pos = this.panel3D.canvas3D.camera.position.clone();
-	        var targ = this.panel3D.canvas3D.controls.target.clone();
-            //var up = this.panel3D.canvas3D.controls.position.up.clone();
-	        var thumb;
-	        if(frame == 0) {
-		        thumb = this.thumbs[0];
-	        }
-	        else thumb = this.addThumb(frame);
-	        var newKey = {time:thumb,
-			              rotation: rot,
-			              position: pos,
-			              target: targ,}
-	        this.keyArray.push(newKey);
-	        this.current = this.keyArray.length - 1;
-	        outKey = newKey;
+        //var up = this.panel3D.canvas3D.controls.position.up.clone();
+	    var thumb;
+	    if(frame == 0) {
+		    thumb = this.thumbs[0];
 	    }
-	    this.sortKeys();
+	    else thumb = this.addThumb(frame);
+
+        var state = addFunc(thumb.value, this);
+
+        var rot  = state.rot;
+	    var pos  = state.pos;
+	    var targ = state.targ;
+
+        var newKey = {time:thumb,
+			          rotation: rot,
+			          position: pos,
+			          target: targ,}
+	    this.keyArray.push(newKey);
+	    this.current = this.keyArray.length - 1;
+	    outKey = newKey;
+
+        this.sortKeys();
 	    return outKey;
     },
 
@@ -848,7 +903,11 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	        tic:      this.tic,
 	        panel3D: this.panel3D,
 	        autoKey: false,
-	        flex: 1,
+	        addKey: false,
+	        removeKey: false,
+	        editKey: false,
+
+            flex: 1,
             listeners: {
                 //beforechange: f
 		        change: function(slider, value, thumb) {
@@ -864,8 +923,8 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 			            this.panel3D.setSampleRate(this.sampleRate);
                         this.panel3D.rerender(this.sampleRate);
 
-			            var nearFrame = this.keySlider.getFloorFrame(value);
-			            var interp = this.keySlider.getInterpolatedValue(nearFrame, value);
+
+			            var interp = this.keySlider.getInterpolatedValue(value, this.keySlider);
                         curCamera.rotation.copy(interp.rot);
 			            curCamera.position.copy(interp.pos);
 
@@ -888,34 +947,71 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 			            this.frameNumber.setText(volFrame + "/" + this.volumeEndFrame);
 		            }
 		        },
-		        changeComplete: function(){
+		        changeComplete: function(slider, value, thumb){
                     this.panel3D.canvas3D.controls.enabled = true;
                     //this.panel3D.canvas3D.controls.update();
 		            this.panel3D.canvas3D.controls.object = this.panel3D.canvas3D.camera;
 		            this.panel3D.canvas3D.controls.noRotate = false;
 		            this.panel3D.canvas3D.controls.noPan = false;
-		        },
+                },
+                onClickKey: function(slider, value, key){
+                    if(this.addKey){
+                        var frame = this.keySlider.keyArray[this.keySlider.getNearestFrame()];
+                        if(Math.abs(frame.time.value - value) > 3){
+                            this.keySlider.addKeyFrame(value, this.keySlider.getInterpolatedValue);
+                        }
+                    }
+		            if(this.removeKey){
+                        var frame = this.keySlider.keyArray[this.keySlider.getNearestFrame()];
+                        if(Math.abs(frame.time.value - value) > 3){
+                            this.keySlider.removeKeyFrame(value);
+                        }
+                    }
+                },
 		        scope:me
             },
+	    });
+
+	    var editKeyButton = Ext.create('Ext.Button', {
+	        text: 'edit',
+            enableToggle: true,
+	        handler: function(button){
+		        this.editKey = button.pressed;
+                //this.keySlider.addKeyFrame(this.keySlider.getCurrentTime());
+
+	        },
+	        scope:me,
 	    });
 
 	    var addKeyButton = Ext.create('Ext.Button', {
 	        text: '+',
             enableToggle: true,
-	        handler: function(){
-		        this.keySlider.addKeyFrame(this.keySlider.getCurrentTime());
-
-	        },
+	        handler:function(button){
+		        this.addKey = button.pressed;
+            },
 	        scope:me,
 	    });
 
 	    var removeKeyButton = Ext.create('Ext.Button', {
 	        text: '-',
-	        handler:function(){
-		        this.keySlider.removeKeyFrame(this.keySlider.getCurrentTime());
+            enableToggle: true,
+	        handler:function(button){
+		        this.removeKey = button.pressed;
+            },
+	        scope:me,
+	    });
+
+	    var autoKeyButton = Ext.create('Ext.Button', {
+	        enableToggle: true,
+	        text: 'auto',
+	        handler: function(button, pressed) {
+                this.autoKey = button.pressed;
+		        //this.keySlider.autoKey = this.keySlider.autoKey ? false:true;
+
 	        },
 	        scope:me,
 	    });
+
 
 	    var playButton = Ext.create('Ext.Button', {
 	        //iconCls: 'playbutton',
@@ -938,6 +1034,8 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 	        scope:me,
 	    });
+
+
 
 	    var pauseButton = Ext.create('Ext.Button', {
 	        iconCls: 'pausebutton',
@@ -963,44 +1061,6 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	        scope:me,
 	    });
 
-	    var autoKeyButton = Ext.create('Ext.Button', {
-	        enableToggle: true,
-	        text: '+',
-	        handler: function(button, pressed) {
-                this.keySlider.autoKey = button.pressed;
-		        //this.keySlider.autoKey = this.keySlider.autoKey ? false:true;
-
-	        },
-	        scope:me,
-	    });
-
-	    var setLoopButton = Ext.create('Ext.Button', {
-	        enableToggle: true,
-	        iconCls: 'loopbutton',
-
-	        handler: function(button, pressed) {
-		        this.keySlider.loop = this.keySlider.loop ? false:true;
-		        var lastFrame = this.keySlider.keyArray.length-1;
-		        if(this.keySlider.keyArray[lastFrame].time .value != this.endFrame){
-		            var newKey = this.keySlider.addKeyFrame(this.keySlider.maxValue);
-		            var cam = this.keySlider.panel3D.canvas3D.camera;
-
-		            newKey.rotation = cam.rotation.clone();
-		            newKey.position = cam.position.clone();
-		            newKey.target =   this.panel3D.canvas3D.controls.target.clone();
-		            this.keySlider.sortKeys();
-		        }
-		        else {
-		            this.keySlider.keyArray[lastFrame].rotation.copy(this.keySlider.keyArray[0].rotation);
-		            this.keySlider.keyArray[lastFrame].position.copy(this.keySlider.keyArray[0].position);
-		            this.keySlider.keyArray[lastFrame].target.copy(this.keySlider.keyArray[0].target);
-		        }
-
-	        },
-	        scope:me,
-
-	    });
-
 
 	    this.numKeyFramesField = Ext.create('Ext.form.field.Number', {
             name: 'numberfield1',
@@ -1024,9 +1084,11 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
             xtype: 'toolbar',
 			//cls : 'toolItem',
 	        items:[recordButton,
-		           autoKeyButton,
+                   editKeyButton,
+                   addKeyButton,
 		           removeKeyButton,
-		           setLoopButton,
+		           autoKeyButton,
+
 		           '->',
 		           this.numKeyFramesField
 		          ],
@@ -1059,10 +1121,10 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    this.callParent();
 	    var me = this;
 	    var listener = function(){
-            var rot  = me.keySlider.panel3D.canvas3D.camera.rotation;
-	        var pos  = me.keySlider.panel3D.canvas3D.camera.position;
-	        var targ = me.keySlider.panel3D.canvas3D.controls.target;
-	        me.keySlider.updateCurrentKeyFrame(rot,pos,targ);
+            if(me.editKey || me.autoKey)
+	            me.keySlider.updateCurrentKeyFrame(me.keySlider.getCameraState, false);
+            if(me.autoKey)
+                me.keySlider.updateCurrentKeyFrame(me.keySlider.getCameraState, true);
         }
 
         //this.keySlider.panel3D.canvas3D.el.addListener('mouseup',listener, me);
@@ -1076,7 +1138,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
     afterFirstLayout : function(){
 	    this.callParent();
-	    this.keySlider.addKeyFrame(0);
+	    this.keySlider.addKeyFrame(0, this.keySlider.getCameraState);
 	    var me = this;
 	    var width = this.panel3D.canvas3D.getWidth();
 	    var height = this.panel3D.canvas3D.getHeight();
