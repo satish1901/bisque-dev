@@ -177,7 +177,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .bq-three-container .tooloptions {
     left: 122px !important;
     top: 10px !important;
-    background-position: -136px -0px;
+    background-position: -135px 1px;
 }
 
 .bq-three-container .fullscreen {
@@ -217,7 +217,7 @@ toolbar
     z-index: 100 !important;
     border: 0px;
     border-width: 0px;
-    top: 60px;
+    top: 80px;
     height: 80% !important;
     right: 10px;
     width: 220px;
