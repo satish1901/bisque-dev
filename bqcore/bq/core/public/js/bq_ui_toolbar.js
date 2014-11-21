@@ -431,8 +431,9 @@ Ext.define('BQ.Application.Toolbar', {
         //--------------------------------------------------------------------------------------
         // Toolbar items
         //--------------------------------------------------------------------------------------
-        var w = Math.round(Math.min(500, (typeof BQApp !== 'undefined') ? BQApp.getCenterComponent().getWidth()*0.8 : document.body.clientWidth*0.8));
-        var h = Math.round(Math.max(500,  (typeof BQApp !== 'undefined') ? BQApp.getCenterComponent().getHeight()*0.8 : document.body.clientHeight*0.8 || 700));
+        // window.innerWidth window.innerHeight document.body.clientWidth document.body.clientHeight
+        var w = Math.round(Math.min(800, (typeof BQApp !== 'undefined') ? BQApp.getCenterComponent().getWidth()*0.8 : window.innerWidth*0.8));
+        var h = Math.round(Math.max(400,  (typeof BQApp !== 'undefined') ? BQApp.getCenterComponent().getHeight()*0.8 : window.innerHeight*0.8));
         var browse_vis = (this.toolbar_opts && this.toolbar_opts.browse===false) ? false : true;
         this.items = [{
                 xtype:'tbtext',
@@ -502,14 +503,17 @@ Ext.define('BQ.Application.Toolbar', {
                     plain: true,
                     items: [{
                         xtype: 'bq-resource-browser',
+                        itemId: 'analysis_browser',
                         width :  w,
                         height:  h,
                         layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
                         wpublic: true,
                         selType: 'SINGLE',
                         viewMode: 'ModuleBrowser',
-                        showOrganizer: false,
-                        dataset : '/module_service/',
+                        //showOrganizer: true,
+                        showModuleOrganizer: true,
+                        //dataset : '/module_service/',
+                        dataset: '/data_service/module',
                         listeners : {
                             Select : function(rb, module) {
                                 if (module.available === false) return;
@@ -1024,6 +1028,31 @@ Ext.define('BQ.Application.Toolbar', {
     setActiveHelpVideo: function(url) {
         var v = this.queryById('help_video_contextual');
         v.setVideo(url);
+    },
+
+    setAnalysisQuery: function(q) {
+        var a = this.queryById('analysis_browser');
+        if (!a) {
+            a = this.queryById('button_analysis');
+            a.menu[0].dataset = '/data_service/module';
+            a.menu[0].tagQuery = q;
+            a.menu[0].wpublic = 'true';
+        } else {
+            if (!a.preferences) {
+                a.browserParams.dataset = '/data_service/module';
+                a.browserParams.tagQuery = q;
+                a.browserParams.wpublic = 'true';
+            } else {
+                a.loadData({
+                    baseURL: '/data_service/module',
+                    dataset: '/data_service/module',
+                    offset: 0,
+                    tag_order: '"@ts":desc',
+                    tag_query: q,
+                    wpublic: 'true',
+                });
+            }
+        }
     },
 
 });

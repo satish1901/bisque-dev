@@ -214,6 +214,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             //this.showOrganizer = true;
             //if ('showOrganizer' in this.browserParams)
             this.showOrganizer = this.browserParams.showOrganizer || false;
+            this.showModuleOrganizer = this.browserParams.showModuleOrganizer || false;
             this.selectState = this.browserParams.selectState || 'ACTIVATE';
             this.commandBar.applyPreferences();
 
@@ -229,6 +230,9 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
 
                 var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
                 this.showOrganizer ? btnOrganize.handler.call(this.commandBar) : '';
+                if (this.showModuleOrganizer) {
+                    this.initModuleOrganizer();
+                }
             }
         }
     },
@@ -262,11 +266,11 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                 uri.tag_order = this.browserState.tag_order || '';
             if (uri.offset == undefined)
                 uri.offset = this.browserState.offset;
+            if (uri.wpublic === undefined)
+                uri.wpublic = this.browserParams.wpublic;
 
             if (!uri.baseURL)
                 uri.baseURL = this.browserState.baseURL;
-
-            uri.wpublic = this.browserParams.wpublic;
 
             function checkTS(tagOrder) {
                 if (tagOrder && tagOrder.indexOf('@ts') == -1) {
@@ -565,4 +569,123 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         var path = ft.getSelectedAsResource();
         return path;
     },
+
+    initModuleOrganizer : function() {
+        this.add({
+            xtype: 'modulegroups',
+            region : 'west',
+            title: 'Groups',
+            width: 300,
+            border: 0,
+            split : false,
+            cls : 'organizer-modules',
+            collapsible : true,
+            hideCollapseTool : true,
+            //deferredRender: true,
+            listeners : {
+                scope: this,
+                selected_group : function(group) {
+                    var q = this.browserState.tag_query,
+                        and = encodeURIComponent(' and '),
+                        pos = q.indexOf(and+'group:');
+
+                    if (pos===-1) {
+                        pos = q.indexOf('group:');
+                    }
+
+                    // remove group from query
+                    if (pos>=0) {
+                        q = q.substr(0, pos);
+                    }
+
+                    if (group) {
+                        if (q.length>0) {
+                            q += and;
+                        }
+                        q += 'group:"'+encodeURIComponent(group)+'"';
+                    }
+
+                    this.loadData({
+                        tag_query: q,
+                    });
+                },
+            }
+        });
+    },
+
 });
+
+
+//-----------------------------------------------------------------------
+// BQ.grid.ModuleGroups
+//-----------------------------------------------------------------------
+
+Ext.define('BQ.grid.ModuleGroups', {
+    extend: 'Ext.grid.Panel',
+    alias: 'widget.modulegroups',
+
+    componentCls: 'bq-organizer-module',
+    hideHeaders: true,
+    allowDeselect: true,
+    viewConfig: {
+        stripeRows: true,
+        forceFit: true,
+    },
+
+    initComponent : function() {
+        if (!BQ || !BQ.model || !BQ.model.ModuleGroups) {
+            Ext.define('BQ.model.ModuleGroups', {
+                extend: 'Ext.data.Model',
+                fields: [{ name: 'value', mapping: '@value' }],
+            });
+        }
+        this.store = Ext.create('Ext.data.Store', {
+            model: 'BQ.model.ModuleGroups',
+            autoLoad: true,
+            autoSync: false,
+
+            proxy: {
+                noCache: false,
+                type: 'rest',
+                limitParam: undefined,
+                pageParam: undefined,
+                startParam: undefined,
+
+                url: '/data_service/module?tag_values=group&wpublic=true',
+                reader: {
+                    type: 'xml',
+                    root: 'resource',
+                    record: '>tag',
+                },
+            },
+        });
+
+        this.columns = [{
+            text: "Group",
+            flex: 1,
+            dataIndex: 'value',
+            sortable: true
+        }];
+
+        this.callParent();
+        this.on('selectionchange', this.onselected, this);
+    },
+
+    onError : function() {
+        this.setLoading(false);
+        BQ.ui.error('Problem fetching available module groups');
+    },
+
+    onselected: function(me, selected) {
+        if (selected.length<1) {
+            this.fireEvent('selected_group', undefined);
+        } else {
+            this.fireEvent('selected_group', selected[0].data.value);
+        }
+    },
+
+});
+
+
+
+
