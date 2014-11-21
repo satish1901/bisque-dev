@@ -136,7 +136,7 @@ Ext.define('BQ.Application.Toolbar', {
 
     tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep','menu_user_recover' ],
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs',
-                 'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', 'button_create' ],
+                 'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', 'button_create', 'button_upload' ],
     tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],
 
     initComponent : function() {
@@ -451,12 +451,13 @@ Ext.define('BQ.Application.Toolbar', {
                 menu  : this.menu_create,
                 iconCls : 'icon-create',
                 text  : 'Create',
-                hidden: true,
+                hidden: true, // should only be visible for logged-in users
             }, {
                 text: 'Upload',
                 itemId: 'button_upload',
                 iconCls : 'icon-import',
                 tooltip: '',
+                hidden: true, // should only be visible for logged-in users
                 //handler: Ext.Function.pass(pageAction, BQ.Server.url('/import/upload')),
                 handler: function() {
                     var uploader = Ext.create('BQ.upload.Dialog', {
@@ -571,16 +572,22 @@ Ext.define('BQ.Application.Toolbar', {
             }, {
                 itemId: 'menu_query',
                 xtype:'textfield',
-                flex: 2,
+                cls: 'search_field',
+                flex: 0, // 2
                 name: 'search',
                 value: this.image_query_text,
                 hidden: !browse_vis,
-                minWidth: 60,
+                minWidth: 100,
                 tooltip: 'Query for images using Bisque expressions',
                 enableKeyEvents: true,
                 listeners: {
+                    scope: this,
                     focus: function(c) {
-                        if (c.value == toolbar.image_query_text) c.setValue('');
+                        c.flex = 2;
+                        this.doLayout();
+                        if (c.value === toolbar.image_query_text) {
+                            c.setValue('');
+                        }
                         var tip = Ext.create('Ext.tip.ToolTip', {
                             target: c.el,
                             anchor: 'top',
@@ -598,6 +605,10 @@ Ext.define('BQ.Application.Toolbar', {
                         if (e.getKey()==e.ENTER && f.value!='' && f.value != toolbar.image_query_text) {
                             document.location = BQ.Server.url('/client_service/browser?tag_query='+escape(f.value));
                         }
+                    },
+                    blur: function(c) {
+                        c.flex = 0;
+                        this.doLayout();
                     },
                 }
             }, '->', {
