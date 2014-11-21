@@ -182,7 +182,7 @@ def make_app(global_conf, full_stack=True, **app_conf):
     #    path='/__profile__'
     #    )
 
-    if 'who.config_file' in app_conf and asbool(app_conf.get('bisque.has_database')):
+    if 'who.config_file' in config and asbool(config.get('bisque.has_database')):
         app = make_middleware_with_config(
             app, global_conf,
             app_conf['who.config_file'],
@@ -223,7 +223,7 @@ def make_app(global_conf, full_stack=True, **app_conf):
                                                 )
 
     # Wrap your base TurboGears 2 application with custom middleware here
-    from tg import config
+    #from tg import config
 
     # used by engine to add module specific static files
     public_file_filter = static_app = BQStaticURLParser()

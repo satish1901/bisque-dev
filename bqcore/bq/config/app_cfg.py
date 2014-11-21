@@ -80,7 +80,7 @@ class BisqueAppConfig(AppConfig):
         return app
 
     def setup_sqlalchemy(self):
-        from tg import config
+        #from tg import config
         sqlalchemy_url = config.get ('sqlalchemy.url')
         has_database = asbool(config.get ('bisque.has_database', True))
         if not has_database or not sqlalchemy_url:
@@ -88,7 +88,9 @@ class BisqueAppConfig(AppConfig):
             config['has_database'] = False
             log.info ("NO DATABASE is configured")
             return
-        config['has_database'] = True
+        log.info ("DATABASE %s", sqlalchemy_url)
+        config['bisque.has_database'] = True
+        self.has_database = True
         if not sqlalchemy_url.startswith('sqlite://'):
             return super(BisqueAppConfig, self).setup_sqlalchemy()
         from sqlalchemy.pool import NullPool
@@ -108,7 +110,7 @@ class BisqueAppConfig(AppConfig):
 
     #kage - patch to use direct cascade
     def add_static_file_middleware(self, app):
-        from tg import config
+        #from tg import config
         if asbool(config.get ('bisque.static_files', True)):
             static_app = StaticURLParser(config['pylons.paths']['static_files'])
             app = DirectCascade([static_app, app])
