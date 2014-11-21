@@ -143,7 +143,7 @@ Ext.define('BQ.viewer.Volume.loadSlider',{
 	    var path = '';
 	    for(var i = 0; i < this.frameArray.length; i++){
 	        var x0, y0, x1, y1, w;
-	        x0 = 1.1 + 97.9*i/N + '%';
+	        x0 = 0.83 + 98.2*i/(N-1) + '%';
 	        w = 60*1/N + '%';
             x1 = x0;
 	        if(i%tic == 0){
@@ -398,14 +398,14 @@ Ext.define('BQ.viewer.Volume.keySlider',{
     },
 
     drawTicks : function(canvas){
-	    var Start = this.startFrame;
-	    var End   = this.endFrame;
+	    var Start = this.startFrame - 1;
+	    var End   = this.endFrame + 1;
 	    var tic = this.tic;
 	    var N = End - Start;
 	    var path = '';
-	    for(var i = 0; i < N+1; i++){
+	    for(var i = 0; i < N; i++){
 	        var x0, y0, x1, y1;
-	        x0 = 1 + 98*i/N + '%';
+	        x0 = 0.87 + 98.2*i/(N-1) + '%';
 	        x1 = x0;
 	        if(i%tic == 0){
 		        y0 = '25%';
@@ -883,7 +883,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
     initComponent : function(){
 	    var numFrames = 128;
 	    //console.log("number of frames: ", numFrames);
-	    this.startFrame = 0;
+	    this.startFrame = 1;
 	    this.endFrame = numFrames > 1 ? numFrames :128;
 	    this.chk      = 0;
 	    this.tic      = 10;
@@ -931,7 +931,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
                         controls.enabled = false;
 
 
-                        var ratio = (value)/(slider.maxValue-1);
+                        var ratio = (value)/(slider.maxValue);
 			            this.panel3D.setCurrentTimeRatio(ratio);
 			            this.panel3D.setSampleRate(this.sampleRate);
                         this.panel3D.rerender(this.sampleRate);
@@ -956,8 +956,12 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 			            this.keySlider.panelCamera.rotation.copy( this.panel3D.canvas3D.camera.rotation );
 			            this.keySlider.panel3D.canvas3D.camera = this.keySlider.panelCamera;
 
+                        this.panel3D.updateTextureUniform();
+                        this.panel3D.setSampleRate(this.sampleRate);
+                        this.panel3D.canvas3D.render();
+
 			            var volFrame = Math.floor(ratio*this.volumeEndFrame);
-			            this.frameNumber.setText(volFrame + "/" + this.volumeEndFrame);
+			            this.frameNumber.setText(volFrame+1 + "/" + this.volumeEndFrame);
 		            }
 		        },
 		        changeComplete: function(slider, value, thumb){
@@ -1103,8 +1107,8 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
             name: 'numberfield1',
             fieldLabel: 'Frames',
             value: this.endFrame,
-            minValue: 10,
-            maxValue: 500,
+            minValue: 4,
+            maxValue: 10000,
             width: 200,
             listeners: {
 		        change: function(field, newValue, oldValue) {
@@ -1186,6 +1190,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    this.keySlider.animCamera.position.copy( this.keySlider.panel3D.canvas3D.camera.position );
 	    this.keySlider.animCamera.rotation.copy( this.keySlider.panel3D.canvas3D.camera.rotation );
 	    this.keySlider.panelCamera = this.keySlider.panel3D.canvas3D.camera;
+        this.numKeyFramesField.setValue(this.panel3D.dims.t);
     },
 
     //----------------------------------------------------------------------
@@ -1194,12 +1199,14 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
     updateEndFrame : function(newValue){
 	    if(newValue > 9){
 	        this.keySlider.scaleKeys(newValue);
-	        this.keySlider.endFrame = newValue;
-	        this.keySlider.setMaxValue(newValue);
+	        this.keySlider.endFrame = newValue - 1;
+	        this.keySlider.setMaxValue(newValue - 1);
 	        this.keySlider.drawTicks();
 	        this.numKeyFramesField.setValue(newValue);
 	    }
     },
+
+
 
     doAnimate : function(){
 	    var me = this;

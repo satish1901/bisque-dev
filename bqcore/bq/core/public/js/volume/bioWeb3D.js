@@ -1294,7 +1294,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			return;
 		else {
 			if (this.currentTime != time) {
-				var time = Math.floor(this.dims.t * k + 0.5);
+				var time = Math.floor((this.dims.t-1) * k);
 				this.currentTime = time;
 				//this.updateFrameLabel(time);
 				this.needs_update();
