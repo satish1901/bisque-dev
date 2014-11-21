@@ -298,8 +298,8 @@ Ext.define('BQ.selectors.Resource', {
     selectExample: function() {
         var template = this.resource.template || {};
         var browser  = new Bisque.ResourceBrowser.Dialog({
-            'height' : '85%',
-            'width'  : '85%',
+            height   : '85%',
+            width    : '85%',
             selType  : 'SINGLE',
             viewMode : 'ViewerOnly',
             tagQuery : template.example_query,
