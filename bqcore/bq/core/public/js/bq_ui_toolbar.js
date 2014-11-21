@@ -515,6 +515,7 @@ Ext.define('BQ.Application.Toolbar', {
                         showModuleOrganizer: true,
                         //dataset : '/module_service/',
                         dataset: '/data_service/module',
+                        wpublic: 'true',
                         listeners : {
                             Select : function(rb, module) {
                                 if (module.available === false) return;
