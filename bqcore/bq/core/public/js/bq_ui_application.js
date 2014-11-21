@@ -198,6 +198,15 @@ Ext.define('BQ.Application', {
         tb.setActiveHelpVideo(url);
     },
 
+    setAnalysisQuery: function(q) {
+        if (!this.main) return;
+        var tb = this.main.getToolbar();
+        if (!tb) {
+            this.analysis_query = q;
+        } else {
+            tb.setAnalysisQuery(q);
+        }
+    },
 
 });
 
@@ -222,8 +231,8 @@ Ext.define('BQ.Application.Window', {
           content = undefined;
         }
 
-        this.toolbar = Ext.create('BQ.Application.Toolbar', { 
-        	toolbar_opts: BQ.Server.toolbar_opts 
+        this.toolbar = Ext.create('BQ.Application.Toolbar', {
+        	toolbar_opts: BQ.Server.toolbar_opts
         });
         this.items = [
                 this.toolbar, {

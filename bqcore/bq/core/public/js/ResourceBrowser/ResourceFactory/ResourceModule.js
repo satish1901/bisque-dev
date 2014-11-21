@@ -23,6 +23,7 @@ Ext.define('Bisque.Resource.Module.Compact', {
 
         this.callParent(arguments);
         this.addCls('compact');
+        this.addCls(['resicon', 'module']);
     },
 
     prefetch : function() {
@@ -65,6 +66,10 @@ Ext.define('Bisque.Resource.Module.Compact', {
         });
 
         this.add([name, type, value]);
+
+        this.thumbnail = BisqueServices.getURL('module_service') + this.resource.name +'/thumbnail';
+        this.getEl().dom.style.backgroundImage = "url('"+this.thumbnail+"')";
+
         this.setLoading(false);
     },
 });
