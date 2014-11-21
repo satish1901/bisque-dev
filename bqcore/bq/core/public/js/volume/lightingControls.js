@@ -137,7 +137,7 @@ lightTool.prototype.addUniforms = function(){
 };
 
 lightTool.prototype.initControls = function(){
-    this.button.tooltip = 'change light location';
+    this.button.tooltip = 'Lighting controls';
 
       ////////////////////////////////////////////
      //Manipulate the lighting of the object

@@ -584,7 +584,7 @@ BQFactory3D.ftormap = {
     polyline  : function(g) { return g;},
     line      : function(g) { return g;},
     //label    : BQGObject,
-}
+};
 
 
 
@@ -592,12 +592,13 @@ BQFactory3D.make = function(g){
     var buffer = BQFactory3D.buffermap[g.type];
     var ftor   = BQFactory3D.ftormap[g.type];
     buffer.build(g, ftor);
-}
+};
 
 
 function gObjectTool(volume, cls) {
 	//renderingTool.call(this, volume);
 	this.cls = 'gButton';
+	this.no_controls = true;
     this.base = renderingTool;
     this.name = 'gobjects';
     this.base(volume, this.cls);
@@ -1174,7 +1175,7 @@ gObjectTool.prototype.initControls = function(){
 	//this.updateScene();
 
 
-    this.button.tooltip = 'show gobjects';
+    this.button.tooltip = 'Show graphical annotations';
 
 	this.items = [this.lighting];
 };

@@ -622,12 +622,13 @@ table.x-form-color {
 }
 
 .bq-viewer-menu .x-tool img {
-    background-image: url('/images/viewer/16px_close.png');
-    background-repeat: no-repeat;
-    background-size: 10px;
     margin: 4px 4px 0px 0px;
     background-color: transparent;
-    background-position: 0px 0px;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 72px;
+    background-position: -47px -12px;
+    width: 13px;
 }
 
 /*******************************************************************************

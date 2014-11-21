@@ -56,6 +56,52 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 }
 
+.bq-volume-menu .x-tool img {
+    margin: 4px 4px 0px 0px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 72px;
+    background-position: -47px -12px;
+    width: 13px;
+}
+
+.bq-volume-toolbar .x-tool-collapse-right {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 85px;
+    background-position: -14px -13px;
+    width: 13px;
+}
+
+.bq-volume-toolbar .x-tool-expand-left {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 85px;
+    background-position: -14px 1px;
+    width: 13px;
+}
+
+.bq-volume-transfer .x-tool-collapse-bottom {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 85px;
+    background-position: -14px -13px;
+    width: 13px;
+}
+
+.bq-volume-transfer .x-tool-expand-top {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 85px;
+    background-position: -14px 1px;
+    width: 13px;
+}
+
 
 .threejsComponent {
     position: absolute;
@@ -176,6 +222,12 @@ toolbar
     right: 10px;
     width: 220px;
     padding: 0px 0px 0px 0px;
+    -webkit-border-top-left-radius: 5px;
+    -webkit-border-top-right-radius: 5px;
+    -moz-border-radius-topleft: 5px;
+    -moz-border-radius-topright: 5px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
 }
 
 .bq-volume-toolbar .x-header-text {
@@ -203,18 +255,47 @@ toolbar
 }
 
 .bq-volume-toolbar .x-panel-body {
-    background-color: rgba(0, 0, 0, 0.1);
-    padding: 5%;
-    border: 2px solid;
+    background-color: transparent; /*background-color: rgba(0, 0, 0, 0.1);*/
+    padding: 0px;
+    border: 0px; /*border: 2px solid #333333;*/
     height: 80% !important;
     border-radius: 0px 0px 5px 5px;
-    border-color: #333333;
     vertical-align: middle;
 }
 
 
 .bq-volume-toolbar label {
     color: #ffffff;
+}
+
+/*******************************************************************************
+  control panels
+*******************************************************************************/
+
+.bq-volume-adjustment-control {
+    background-color: rgba(20, 20, 20, 0.5);
+    /*-webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;*/
+    padding: 10px 10px 10px 10px;
+}
+
+.bq-volume-adjustment-control .bq-heading {
+    font-size: 16px;
+    font-family: 'Abel', tahoma, arial, verdana, sans-serif;
+    font-weight: normal;
+    margin: 0px 0px 8px 0px;
+}
+
+.bq-volume-adjustment-control .bq-heading:first-letter {
+    text-transform: capitalize;
+}
+
+.bq-volume-adjustment-control .bq-histogram {
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    margin-bottom: 5px;
 }
 
 /*******************************************************************************
@@ -243,6 +324,15 @@ transfer
     background-image: none;
     border-color: #333333;
     box-shadow: none;
+    padding-left: 240px;
+}
+
+.bq-volume-transfer .x-toolbar .x-btn {
+    margin-right: 5px;
+}
+
+.bq-volume-transfer .x-toolbar .x-field {
+    margin: 0px 10px 0px 10px;
 }
 
 .bq-volume-transfer .x-header {
@@ -269,6 +359,32 @@ transfer
 .bq-volume-transfer label {
     color: #ffffff;
 }
+
+.bq-volume-transfer .x-toolbar-spacer.record-spacer {
+    width: 50px;
+}
+
+.bq-volume-transfer .x-btn-focus {
+    background: transparent;
+    border: 1px solid transparent;
+    background-image: none;
+}
+
+.bq-volume-transfer .x-btn-over {
+    color: #CC6600 !important;
+    background: #000000;
+    border: 1px solid #000000;
+    background-image: none;
+}
+
+.bq-volume-transfer .x-btn-pressed {
+    color: #CC6600 !important;
+    background: #000000;
+    border: 1px solid #CC6600;
+    background-image: none;
+}
+
+
 /*******************************************************************************
  playback
 *******************************************************************************/
@@ -421,6 +537,31 @@ transfer
     background-position: 0px 0px;
 }
 
+
+.bq-volume-playback .x-toolbar-spacer.record-spacer {
+    width: 50px;
+}
+
+.bq-volume-playback .x-btn-focus {
+    background: transparent;
+    border: 1px solid transparent;
+    background-image: none;
+}
+
+.bq-volume-playback .x-btn-over {
+    color: #CC6600 !important;
+    background: #000000;
+    border: 1px solid #000000;
+    background-image: none;
+}
+
+.bq-volume-playback .x-btn-pressed {
+    color: #CC6600 !important;
+    background: #000000;
+    border: 1px solid #CC6600;
+    background-image: none;
+}
+
 .x-btn-icon .addbutton {
     background-image: url(/js/volume/icons/iadd16.png) !important;
     width:16px!important;
@@ -486,10 +627,13 @@ width:16px!important;
 height:16px!important;
 }
 
-.x-btn-icon .recordbutton {
-background-image: url(/js/volume/icons/ivideo16.png) !important;
-width:16px!important;
-height:16px!important;
+.bq-volume-playback .recordbutton {
+    background-image: url("/js/volume/icons/tool-icons.svg") !important;
+    background-repeat: no-repeat;
+    background-size: 260px;
+    background-position: -183px -40px;
+    width: 16px !important;
+    height: 16px !important;
 }
 
 .x-btn-icon .redbutton {

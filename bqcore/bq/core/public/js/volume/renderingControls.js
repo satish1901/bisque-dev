@@ -82,7 +82,7 @@ renderingTool.prototype.createControls = function(){
 
     this.controls = Ext.create('Ext.container.Container', {
         border : false,
-
+        cls: 'bq-volume-adjustment-control',
 		layout : {
 			type : 'vbox',
 			align : 'stretch',
@@ -92,11 +92,12 @@ renderingTool.prototype.createControls = function(){
         //mixins : ['BQ.viewer.Volume.uniformUpdate'],
     }).hide();
 
-    if(this.label){
-        this.controls.add([{
+    if (this.label) {
+        this.controls.add([/*{
             xtype: 'menuseparator',
-        },{
+        },*/ {
             xtype: 'label',
+            cls: 'bq-heading',
             text: this.label
         }]);
     }
@@ -107,7 +108,9 @@ renderingTool.prototype.createControls = function(){
 renderingTool.prototype.init = function(){
     var me = this;
     this.createButton();
-    this.createControls();
+    if (!this.no_controls===true) {
+        this.createControls();
+    }
     this.initControls();
     this.addUniforms();
     this.initUniforms();
@@ -164,13 +167,13 @@ renderingTool.prototype.loadPreferences = function(prefs){
 
 renderingTool.prototype.toggle = function(button){
     //default is just to show and hide, but can modify this as well
-    if(button.pressed) {
-        this.controls.show();
+    if (button.pressed) {
+        if (this.controls) this.controls.show();
         //this.button.cls = this.cls + '-pressed';
         this.button.setIconCls(this.cls + '-pressed');
     }
     else {
-        this.controls.hide();
+        if (this.controls) this.controls.hide();
         this.button.setIconCls(this.cls);
     }
     this.button.ownerCt.ownerCt.doLayout();
@@ -197,7 +200,7 @@ renderingTool.prototype.updateSlider = function(slider, value){
 
 function gammaTool(volume) {
 	//renderingTool.call(this, volume);
-	this.label = 'gamma';
+	this.label = 'Levels';
     this.cls = 'histoButton';
     this.base = renderingTool;
     this.base(volume, this.cls);
@@ -224,7 +227,7 @@ gammaTool.prototype.initControls = function(){
     var me = this;
 
     this.title = 'gamma';
-    this.button.tooltip = 'edit gamma';
+    this.button.tooltip = 'Intensity levels';
     //this.addUniforms();
     this.histogram = this.volume.model.histogram;
     this.gamma = this.volume.model.gamma;
@@ -237,6 +240,7 @@ gammaTool.prototype.initControls = function(){
     };
 
     this.svg = Ext.create('BQ.graph.d3', {
+        cls: 'bq-histogram',
         height : 60,
     });
 
@@ -432,7 +436,7 @@ materialTool.prototype.addUniforms = function(){
 
 materialTool.prototype.initControls = function(){
     var me = this;
-    this.button.tooltip = 'edit brightness/density';
+    this.button.tooltip = 'Brightness/density';
     /*
     this.volume.on('loaded', function () {
         me.sliders['density'].setValue(100);
@@ -449,6 +453,7 @@ materialTool.prototype.loadDefaults = function(){
 function ditherTool(volume) {
 	//renderingTool.call(this, volume);
     this.name = 'dithering';
+    this.no_controls = true;
 	this.cls = 'ditherButton';
     this.base = renderingTool;
     this.base(volume, this.cls);
@@ -464,7 +469,7 @@ ditherTool.prototype.addUniforms = function(){
 ditherTool.prototype.initControls = function(){
     var me = this;
     this.dithering = false;
-    this.button.tooltip = 'enable dithering';
+    this.button.tooltip = 'Enable dithering';
     //this.button.toggle(true);
     //this.volume.on('loaded', function () {
     //    me.button.toggle(true);
@@ -494,7 +499,7 @@ ditherTool.prototype.toggle = function(button){
 function boxTool(volume, cls) {
 	//renderingTool.call(this, volume);
     this.name = 'size';
-    this.label = 'relative dimensions';
+    this.label = 'voxel dimensions';
     this.cls = 'resizeButton';
 
 	this.base = renderingTool;
@@ -519,7 +524,7 @@ boxTool.prototype.setScale = function(){
 
 boxTool.prototype.initControls = function(){
     var me = this;
-    this.button.tooltip = 'change dimensions';
+    this.button.tooltip = 'Voxel dimensions';
     this.boxSize = new THREE.Vector3(0.5, 0.5, 0.5);
     this.rescale = new THREE.Vector3(0.5, 0.5, 0.5);
     var controlBtnSize = 22;
@@ -680,8 +685,8 @@ boxTool.prototype.initControls = function(){
 
 function clipTool(volume) {
     this.name = 'clipping_plane';
-
     this.cls = 'clipButton';
+    this.no_controls = true;
 
 	this.base = renderingTool;
     this.base(volume, this.cls);
@@ -703,7 +708,7 @@ clipTool.prototype.addUniforms = function(){
 
 clipTool.prototype.initControls = function(){
     var me = this;
-    this.button.tooltip = 'change clipping plane';
+    this.button.tooltip = 'Clipping plane';
 
 	var clipSlider = Ext.create('Ext.slider.Multi', {
 		//renderTo : thisDom,
@@ -768,6 +773,7 @@ function saveTool(volume, cls) {
 	//renderingTool.call(this, volume);
 
     this.name = 'save';
+    this.no_controls = true;
 
     this.label = 'save png';
     this.cls = 'downloadButton';
@@ -806,25 +812,10 @@ saveTool.prototype.createButton = function(){
         scope : me,
     });
 },
-/*
-saveTool.prototype.initControls = function(){
-    var me = this;
-    this.button.tooltip = 'save png';
-    var controlBtnSize = 22;
 
-    var button = Ext.create('Ext.Button', {
-        text : 'save png',
-        cls : 'volume-button',
-        handler : function (button, pressed) {
-            this.volume.canvas3D.savePng();
-        },
-        scope : me,
-    });
-    this.min = 1.0;
-    this.controls.add([button]);
-
+saveTool.prototype.initControls = function() {
+    this.button.tooltip = 'Save current view as PNG';
 };
-*/
 
 //////////////////////////////////////////////////////////////////
 //
