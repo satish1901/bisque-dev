@@ -6,7 +6,7 @@ Ext.define('BQ.ResourceViewer', {
             else
                 this.loadResource(resource);
         },
-        
+
         loadResource : function(resourceURL) {
             BQApp.setLoading('Fetching resource...');
             BQFactory.request({
@@ -16,13 +16,15 @@ Ext.define('BQ.ResourceViewer', {
                 errorcb     :   this.onError
             });
         },
-        
+
         initViewer : function(resource) {
             BQApp.setLoading(false);
             BQApp.resource = resource;
+            BQApp.setAnalysisQuery(encodeURIComponent('(accepted_type:"{1}" or "{1}":::)'.replace(/\{1\}/g, resource.resource_type)));
+
             var resourceCt = Bisque.ResourceFactoryWrapper.getResource({
                 resource    :   resource,
-                layoutKey   :   Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Page 
+                layoutKey   :   Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Page
             });
             BQApp.setCenterComponent(resourceCt);
         },
@@ -30,7 +32,7 @@ Ext.define('BQ.ResourceViewer', {
         onError: function(error) {
             BQApp.setLoading(false);
             BQ.ui.error('Error fetching resource: <br>' + error.message);
-            this.initViewer();         
+            this.initViewer();
         },
     }
 });

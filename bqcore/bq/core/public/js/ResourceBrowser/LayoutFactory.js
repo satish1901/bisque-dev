@@ -406,8 +406,8 @@ Ext.define('Bisque.ResourceBrowser.Layout.IconList', {
     constructor : function() {
         this.callParent(arguments);
 
-        this.layoutEl.iconHeight = 110;
-        this.layoutEl.iconWidth = 110;
+        this.layoutEl.iconHeight = 65;
+        this.layoutEl.iconWidth = 65;
     },
 
     getVisibleElements : function() {
