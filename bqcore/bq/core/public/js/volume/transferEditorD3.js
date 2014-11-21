@@ -897,7 +897,7 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
                     this.mode = 2;
                 },
                 scope : this,
-			},{
+			}, {
 			    boxLabel : 'snap',
 			    checked : false,
 			    cls : 'toolItem',
@@ -978,7 +978,7 @@ transferTool.prototype.initControls = function(){
         if(me.transferEditor)
             me.transferEditor.transferGraph.histogramSvg.redraw();
     });
-    this.button.tooltip = 'edit transfer function';
+    this.button.tooltip = 'Transfer function (LUT)';
     //this.volume.on('loaded', function () {});
 };
 
@@ -1057,7 +1057,8 @@ transferTool.prototype.loadDefaults = function(prefs){
 transferTool.prototype.createTransferEditor = function(){
     var data = this.transferData;
     var me = this;
-    this.transferEditor = Ext.create('BQ.viewer.volume.transfer.editor',{
+    this.transferEditor = Ext.create('BQ.viewer.volume.transfer.editor', {
+        title: 'Transfer function',
         data: data,
         histogram: this.volume.model.histogram,
         gamma:     this.volume.model.gamma,

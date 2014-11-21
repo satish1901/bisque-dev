@@ -1084,8 +1084,12 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    });
 
 	    var recordButton = Ext.create('Ext.Button', {
+            itemId: 'btn_record',
 	        iconCls: 'recordbutton',
-	        handler: function(){
+	        text: 'Record',
+	        handler: function(btn) {
+                btn.disable();
+                this.keySlider.timeThumb.value = 0;
 		        this.isRecording = true;
 		        var video = new Whammy.Video(15);
 		        this.renderSteps = 256;
@@ -1097,7 +1101,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 	    this.numKeyFramesField = Ext.create('Ext.form.field.Number', {
             name: 'numberfield1',
-            fieldLabel: 'keyframes',
+            fieldLabel: 'Frames',
             value: this.endFrame,
             minValue: 10,
             maxValue: 500,
@@ -1117,11 +1121,11 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
             xtype: 'toolbar',
 			//cls : 'toolItem',
 	        items:[recordButton,
+	               { xtype: 'tbspacer', cls: 'record-spacer' },
                    editKeyButton,
                    addKeyButton,
 		           removeKeyButton,
 		           autoKeyButton,
-
 		           '->',
 		           this.numKeyFramesField
 		          ],
@@ -1212,7 +1216,7 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
         this.panel3D.canvas3D.controls.update();
     },
 
-    doRecord : function(video){
+    doRecord : function(video) {
 	    var me = this;
 	    var context = this.panel3D.canvas3D.renderer.domElement.getContext('webgl');
 	    video.add(context);
@@ -1232,8 +1236,9 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	        window.open(url);
 	        this.isRecording = false;
 	        this.renderSteps = 8;
+	        this.queryById('btn_record').enable();
 	    }
-	    if(this.isRecording){
+	    if (this.isRecording) {
 	        requestAnimationFrame(function() {me.doRecord(video)});
 	    }
 
@@ -1303,7 +1308,7 @@ animationTool.prototype.initControls = function(){
     this.createAnimPanel();
     this.playbackPanel.hide();
     this.animPanel.hide();
-    this.button.tooltip = 'enable animation and time series playback';
+    this.button.tooltip = 'Animation and time series playback';
     //this.volume.on('loaded', function () {});
 
 
