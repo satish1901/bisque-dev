@@ -211,7 +211,7 @@ Ext.define('BQ.renderers.Botanicam.ModelViewer', {
                 //handler: Ext.Function.bind( this.download, this ),
                 listeners: {
                     click: function(me, resource) {
-                        window.open(bq.url('/client_service/view?resource='+this.file.uri));
+                        window.open('/client_service/view?resource='+this.file.uri);
                     },
                     scope: this
                 },
