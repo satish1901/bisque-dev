@@ -39,7 +39,6 @@ def add_profiler(app):
         from bq.util.LinesmanProfiler import BQProfilingMiddleware
         app = BQProfilingMiddleware(app, config.get('sqlalchemy.url', None), config.get('bisque.profiler_path', '__profiler__'))
         log.info("HOOKING profiler app")
-        return app
     return app #pass through
 
 base_config.register_hook('before_config', add_profiler)
@@ -182,12 +181,6 @@ def make_app(global_conf, full_stack=True, **app_conf):
     #    flush_at_shutdown=True,
     #    path='/__profile__'
     #    )
-
-    #adds a custom linesman profiler to the bisque app
-    if app_conf.get('bisque.profiler_enable', None) == 'true': #inialize profiler app
-        from bq.util.LinesmanProfiler import BQProfilingMiddleware
-        app = BQProfilingMiddleware(app, app_conf.get('sqlalchemy.url',None), app_conf.get('bisque.profiler_path', '__profiler__'))
-
 
     if 'who.config_file' in app_conf and asbool(app_conf.get('bisque.has_database')):
         app = make_middleware_with_config(
