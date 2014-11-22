@@ -53,7 +53,6 @@ class BQProfilingMiddleware(ProfilingMiddleware):
     def __call__(self, environ, start_response):
         #check if its the profiler ui requested
         req = Request(environ)
-        
         dispatch = {''        : self.list_profiles, 
                     'graph'   : self.render_graph, 
                     'media'   : self.media, 
@@ -90,7 +89,6 @@ class BQProfilingMiddleware(ProfilingMiddleware):
         finally:
             prof.disable()
         stats = prof.getstats()
-        log.debug('profiler stats %s', stats)
         profile_data = ProfilingSession(stats, environ, start_timestamp)
         self._backend.add(profile_data)
         return xres
