@@ -216,15 +216,14 @@ class BQServer(Session):
         u = urlparse.urlsplit(url)
 
         #root
-        if self.root and u.netloc=='':
+        if u.scheme and u.netloc:
+            scheme = u.scheme
+            netloc = u.netloc
+        elif self.root and u.netloc=='':
             #adds root request if no root is provided in the url
             r = urlparse.urlsplit(self.root)
             scheme = r.scheme
             netloc = r.netloc
-
-        elif u.scheme and u.netloc:
-            scheme = u.scheme
-            netloc = u.netloc
         else: #no root provided
             raise BQApiError("No root provided")
 
@@ -408,7 +407,6 @@ class BQSession(object):
         self._load_services()
         self.mex = self.load(mex_url, view='deep')
         return self
-
 
 
     def init_cas(self, user, pwd, moduleuri=None, bisque_root=None, create_mex=False):

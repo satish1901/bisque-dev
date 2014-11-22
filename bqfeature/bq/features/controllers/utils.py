@@ -89,6 +89,7 @@ def request_externally(url):
     session = BQServer()
     #session = root
     session.authenticate_mex(identity.mex_authorization_token())
+    session.root = request.host_url
     url = session.prepare_url(url)
     log.debug("begin routing externally: %s" % url)
     try:
