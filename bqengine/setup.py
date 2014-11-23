@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 #from bq.release import __VERSION__
-__VERSION__="0.5.6"
+__VERSION__="0.5.7"
 
 setup(
     name='bqengine',
@@ -38,5 +38,8 @@ setup(
     load_glo_engine = bq.engine.commands.load_engine:LoadEngine
     [bisque.services]
     engine_service = bq.engine.controllers.engine_service
+
+    [bq.commands]
+    module = bq.engine.commands.module_admin:module_admin
     """,
 )
