@@ -1,5 +1,6 @@
 import logging
 from paste.httpheaders import AUTHORIZATION
+from paste.deploy.converters import asbool
 from repoze.who.interfaces import IIdentifier
 from zope.interface import implements
 from tg import config
@@ -52,7 +53,7 @@ class MexAuthenticatePlugin(object):
         except KeyError:
             return None
 
-        if not config.get('has_database'):
+        if not asbool(config.get('bisque.has_database')):
             environ['repoze.what.credentials'] = { 'repoze.who.userid': mex_token }
             identity ['bisque.mex_auth'] = "%s:%s" % (identity.get('bisque.mex_user') , mex_token)
             log.debug ("NO DB mex_auth=%s", identity['bisque.mex_auth'])
