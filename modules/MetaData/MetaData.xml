@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <module name="MetaData" type="runtime">
 
-    <!-- Comments are OK -->  
+    <!-- Comments are OK -->
     <tag name="inputs">
         <tag name="image_url" type="resource">
             <template>
@@ -10,36 +10,36 @@
                 <tag name="label" value="Image to extract metadata" />
                 <tag name="prohibit_upload" value="true" type="boolean" />
             </template>
-        </tag> 
-                        
+        </tag>
+
         <tag name="mex_url"  type="system-input" />
         <tag name="bisque_token"  type="system-input" />
     </tag>
-    
+
     <tag name="outputs">
          <tag name="metadata" type="tag">
             <template>
                 <tag name="label" value="Extracted metadata" />
-            </template>             
-         </tag>   
+            </template>
+         </tag>
     </tag>
-    
+
     <tag name="execute_options">
         <tag name="iterable" value="image_url" type="dataset" />
-    </tag>    
-    
+    </tag>
+
     <tag name="module_options" >
         <tag name="version" value="3" />
     </tag>
-    
+
     <tag name="display_options" >
        <tag name="group" value="Examples" />
     </tag>
-    
-    <tag name="help" type="file" value="public/help.html" /> 
-    <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
 
-    <tag name="title" type="string" value="MetaData" /> 
-    <tag name="authors" type="string" value="The Bisque team" /> 
-    <tag name="description" type="string" value="This module annotates an image with its embedded metadata." /> 
+    <tag name="help" type="file" value="public/help.html" />
+    <tag name="thumbnail" type="file" value="public/thumbnail.png" />
+
+    <tag name="title" type="string" value="MetaData" />
+    <tag name="authors" type="string" value="The Bisque team" />
+    <tag name="description" type="string" value="This module annotates an image with its embedded metadata." />
 </module>

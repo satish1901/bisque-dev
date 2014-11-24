@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <module name="CellProfiler" type="runtime" >
-  
+
     <tag name="inputs">
 
         <tag name="mex_url"      type="system-input" />
 
         <tag name="bisque_token" type="system-input" />
-        
+
         <tag name="resource_url" type="image">
             <template>
                 <tag name="label" value="Select input image" />
@@ -28,19 +28,19 @@
                 <tag name="fail_value" value="Select a pipeline..."/>
                 <tag name="description" value="Select one of the pre-built pipelines to run on your data." />
             </template>
-        </tag>        
+        </tag>
 
     </tag>
-  
-    
+
+
     <tag name="outputs">
-        
+
         <tag name="Summary">
             <template>
                 <tag name="label" value="Summary of all analyzed image(s)" />
             </template>
         </tag>
-                
+
         <tag name="Output image" type="image">
             <template>
                 <tag name="label" value="Output image" />
@@ -53,27 +53,27 @@
                         <tag name="title">
                             <value>Distribution of cell areas</value>
                             <value>Distribution of major axis</value>
-                            <value>Distribution of minor axis</value>                                                        
-                        </tag>                           
+                            <value>Distribution of minor axis</value>
+                        </tag>
                         <tag name="xmap" value="tag-value-number" />
                         <tag name="xreduce" value="histogram" />
                         <tag name="xpath">
                             <value>//tag[@name="Area"]</value>
-                        </tag> 
+                        </tag>
                         <tag name="title">
                             <value>Area</value>
-                        </tag>                        
+                        </tag>
                         <tag name="args">
                             <tag name="numbins" value="18" type="number" />
-                        </tag>                        
+                        </tag>
                     </tag>
                 </template>
             </gobject>
         </tag>
-        
-        
+
+
     </tag>
-    
+
     <tag name="execute_options">
         <tag name="argument_style" value="named" />
         <tag name="iterable" value="resource_url" type="dataset" />
@@ -81,17 +81,17 @@
 
     <tag name="module_options" >
         <tag name="version" value="0.1" />
-    </tag>   
-       
-    <tag name="display_options" >
-        <tag name="group" value="CellProfiler" />
     </tag>
 
-    <tag name="title" value="CellProfiler" /> 
+    <tag name="display_options" >
+        <tag name="group" value="General Analysis" />
+    </tag>
+
+    <tag name="title" value="CellProfiler" />
     <tag name="authors" value="BROAD Institute, BISQUE: Utkarsh Gaur" />
     <tag name="help" type="file" value="public/help.html" />
 
-    <tag name="thumbnail" type="file" value="public/thumbnail.png" />   
-    <tag name="description" type="string" value="CellProfiler enables biologists to quantitatively measure phenotypes from thousands of images automatically." />      
-    
+    <tag name="thumbnail" type="file" value="public/thumbnail.png" />
+    <tag name="description" type="string" value="CellProfiler enables biologists to quantitatively measure phenotypes from thousands of images automatically." />
+
 </module>

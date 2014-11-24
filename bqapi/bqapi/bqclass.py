@@ -66,7 +66,9 @@ except ImportError:
 
 log = logging.getLogger('bqapi.class')
 
-__all__ = [ 'BQFactory', 'BQNode', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject', 'gobject_primitives',
+__all__ = [ 'BQFactory', 'BQNode', 'BQResource', 'BQValue', 'BQTag', 'BQVertex',
+            "BQDataset", "BQUser", "BQMex",
+            'BQGObject', 'gobject_primitives',
             'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQRectangle', 'BQSquare',] # 'toXml', 'fromXml' ]
 
 gobject_primitives = set(['point', 'label', 'polyline', 'polygon', 'circle', 'ellipse', 'rectangle', 'square'])
@@ -81,6 +83,14 @@ class BQNode (object):
     xmltag = ''
     xmlfields = []
     xmlkids = []
+
+    def __init__(self, *args, **kw):
+        for k,v in zip(self.xmlfields, args):
+            setattr(self, k, v)
+        for k in self.xmlfields:
+            if k in self.__dict__:
+                continue
+            setattr(self, k, kw.get(k, None))
 
     def initialize(self):
         'used for class post parsing initialization'
@@ -111,10 +121,8 @@ class BQValue (BQNode):
     xmltag = "value"
     xmlfields = ['value', 'type', 'index']
 
-    def __init__(self,  value=None, type=None, index=None):
-        self.value = value
-        self.type = type
-        self.index = index
+    #def __init__(self,  **kw):
+    #    super(BQValue, self).__init__(**kw)
 
     def set_parent(self, parent):
         if self.index is not None:
@@ -145,23 +153,19 @@ class BQValue (BQNode):
 class BQResource (BQNode):
     '''Base class for Bisque resources'''
     xmltag = 'resource'
-    xmlfields = ['name', 'value', 'type', 'uri', 'ts', 'resource_uniq']
-    xmlkids = ['kids', 'tags', 'gobjects']
+    xmlfields = ['name', 'type', 'uri', 'ts', 'resource_uniq']
+    xmlkids = ['kids', 'tags', 'gobjects',] #  'values'] handled differently
 
     def __repr__(self):
         return '(%s:%s)'%(self.xmltag, self.uri)
 
-    def __init__(self):
+    def __init__(self, *args, **kw):
         self.tags = []
         self.gobjects = []
         self.kids = []
         self.values = []
-        self.uri = None
-        self.ts =None
-        self.name = None
-        self.type = None
-        self.resource_uniq=None
         self.parent = None
+        super(BQResource, self).__init__(*args, **kw)
 
     def toDict (self):
         objs = {}
@@ -173,16 +177,16 @@ class BQResource (BQNode):
         self.parent = parent
         parent.kids.append(self)
 
-    def addTag(self, name='',value='', tag=None):
+    def addTag(self, name=None, value=None, tag=None):
         if tag is None:
-            tag = BQTag(name, value)
+            tag = BQTag(name=name, value=value)
         tag.set_parent (self)
         return tag
     add_tag = addTag
 
     def addGObject(self, name='', value='', gob=None):
         if gob is None:
-            gob = BQGObject(name, value)
+            gob = BQGObject(name=name, value=value)
         gob.set_parent(self)
     add_gob = addGObject
 
@@ -219,9 +223,8 @@ class BQResource (BQNode):
 
     def set_value(self, values):
         if not isinstance(values, list):
-            self.values = [ BQValue(values)]
-        else:
-            self.values = [ BQValue(v) for v in values ]
+            values = [ values ]
+        self.values =  [ BQValue(value=v) for v in values ]
 
     value = property(get_value, set_value)
 
@@ -245,11 +248,11 @@ class BQResource (BQNode):
 
 class BQImage(BQResource):
     xmltag = "image"
-    xmlfields = ['name', 'uri', 'ts' , "value", 'resource_uniq' ] #  "x", "y","z", "t", "ch"  ]
+    xmlfields = ['name', 'value', 'type', 'uri', 'ts' ,  'resource_uniq' ] #  "x", "y","z", "t", "ch"  ]
     xmlkids = ['tags', 'gobjects']
 
-    def __init__(self):
-        super(BQImage, self).__init__()
+    def __init__(self, *args,  **kw):
+        super(BQImage, self).__init__(*args, **kw)
         self._geometry = None
 
     def geometry(self):
@@ -330,16 +333,8 @@ class BQImagePixels(object):
 class BQTag (BQResource):
     '''tag resource'''
     xmltag = "tag"
-    xmlfields = ['name', 'type', 'uri', 'ts', 'value']
-    xmlkids = ['tags', 'gobjects',  ] # handle values  specially
-
-    def __init__(self, name='', value=None, type=None):
-        super(BQTag, self).__init__()
-
-        self.name = name
-        self.values = (value and [BQValue(value)]) or []
-        if type is not None:
-            self.type=type
+    xmlfields = ['name',  'value', 'type', 'uri', 'ts']
+    xmlkids = ['tags', 'gobjects', ] # handle values  specially
 
     def set_parent(self, parent):
         self.parent = parent
@@ -411,14 +406,13 @@ class BQGObject(BQResource):
     '''Gobject resource: A grpahical annotation'''
     type = 'gobject'
     xmltag = "gobject"
-    xmlfields = ['name', 'type', 'uri']
+    xmlfields = ['name', 'value', 'type', 'uri']
     xmlkids = ['tags', 'gobjects', 'vertices']
 
-    def __init__(self, name=None, type=None):
-        super(BQGObject, self).__init__()
+    def __init__(self, *args, **kw):
+        super(BQGObject, self).__init__(*args, **kw)
         self.vertices = []
-        self.name=name
-        self.type= type or self.xmltag
+        self.type= self.type or self.xmltag
 
     def __str__(self):
         return '(type: %s, name: %s, %s)'%(self.type, self.name, self.vertices)
@@ -552,7 +546,6 @@ class BQDataset(BQResource):
     #xmlfields = ['name', 'uri', 'ts']
     #xmlkids = ['kids', 'tags', 'gobjects']
 
-
 class BQUser(BQResource):
     xmltag = "user"
     #xmlfields = ['name', 'uri', 'ts']
@@ -562,8 +555,6 @@ class BQMex(BQResource):
     xmltag = "mex"
     #xmlfields = ['module', 'uri', 'ts', 'value']
     #xmlkids = ['tags', 'gobjects']
-
-
 
 ################################################################################
 # Factory
@@ -632,12 +623,15 @@ class BQFactory (object):
         return self.from_etree(et)
 
     # Generation
+
+    @classmethod
     def to_etree(self, dbo, parent=None, baseuri='', view=''):
         """Convert a BQObject to an etree object suitable for XML
         generation
         """
         node = toxmlnode(dbo, parent, baseuri, view)
         return node;
+    @classmethod
     def to_string (self, node):
         if isinstance (node, BQNode):
             node = self.to_etree(node)
@@ -654,6 +648,7 @@ def create_element(dbo, parent, baseuri, **kw):
     xtag = kw.pop('xtag', dbo.xmltag)
     if not kw:
         kw = model_fields (dbo, baseuri)
+
     if parent is not None:
         node =  etree.SubElement (parent, xtag, **kw)
     else:
