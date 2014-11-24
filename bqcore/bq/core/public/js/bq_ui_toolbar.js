@@ -461,6 +461,7 @@ Ext.define('BQ.Application.Toolbar', {
                 //handler: Ext.Function.pass(pageAction, BQ.Server.url('/import/upload')),
                 handler: function() {
                     var uploader = Ext.create('BQ.upload.Dialog', {
+                        destory_on_upload: false,
                         /*listeners: {
                             scope: this,
                             uploaded: function(reslist) {
