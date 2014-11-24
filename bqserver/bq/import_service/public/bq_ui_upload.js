@@ -1608,6 +1608,8 @@ Ext.define('BQ.upload.Dialog', {
     alias: 'widget.bq_upload_dialog',
     requires: ['BQ.upload.Panel'],
 
+    destory_on_upload: true,
+
     layout : 'fit',
     modal : true,
     border : false,
@@ -1645,12 +1647,16 @@ Ext.define('BQ.upload.Dialog', {
     onFilesUploaded : function(res, uploader) {
         if (this.upload_panel.isDatasetMode()) return;
         this.fireEvent( 'uploaded', res);
-        this.destroy();
+        if (this.destory_on_upload) {
+            this.destroy();
+        }
     },
 
     onDatasetCreated : function(dataset) {
         this.fireEvent( 'uploaded', [dataset]);
-        this.destroy();
+        if (this.destory_on_upload) {
+            this.destroy();
+        }
     },
 
 });

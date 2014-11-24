@@ -766,7 +766,7 @@ Ext.define('Bisque.Resource.Image.Page', {
         });
 
         //var download = this.toolbar.queryById('btnDownload');
-        var download = BQApp.main.getToolbar().queryById('button_download');
+        var download = BQApp.getToolbar().queryById('button_download');
         if (download) {
             //download.menu.add([{
             download.menu.insert(3, [{
@@ -871,8 +871,8 @@ Ext.define('Bisque.Resource.Image.Page', {
         }
 
         if (dims.x>15000 && dims.y>15000) {
-            this.toolbar.queryById('download_as_ometiff').setDisabled( true );
-            this.toolbar.queryById('download_as_omebigtiff').setDisabled( true );
+            BQApp.getToolbar().queryById('download_as_ometiff').setDisabled( true );
+            BQApp.getToolbar().queryById('download_as_omebigtiff').setDisabled( true );
         }
 
 
@@ -948,7 +948,7 @@ Ext.define('Bisque.Resource.Image.Page', {
         });
         var movie = cnt.queryById('main_view_movie');
         //var download = this.toolbar.queryById('btnDownload');
-        var download = BQApp.main.getToolbar().queryById('button_download');
+        var download = BQApp.getToolbar().queryById('button_download');
         var qt = download.menu.queryById('download_movie_qt');
         if (!qt) {
             download.menu.add([{
