@@ -60,9 +60,11 @@ import logging
 from urllib import quote
 from lxml import etree
 
-log = logging.getLogger('bqapi.class')
+log = logging.getLogger('bqapi.bqnode')
 
-__all__ = [ 'BQFactory', 'BQNode', 'BQImage', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject', 'gobject_primitives',
+__all__ = [ 'BQFactory', 'BQNode', 'BQImage', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject',
+            "BQDataset", "BQUser", "BQMex",
+            'gobject_primitives',
             'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQRectangle', 'BQSquare', 'toXml', 'fromXml' ]
 
 gobject_primitives = set(['point', 'label', 'polyline', 'polygon', 'circle', 'ellipse', 'rectangle', 'square'])
@@ -82,12 +84,14 @@ class BQNode (etree.ElementBase):
     def __getattr__(self, name):
         if name in self.xmlfields:
             return self.get (name)
-        return etree.ElementBase.__getattr__(self, name)
+        ###return etree.ElementBase.__getattr__(self, name)
+        #super(etree.ElementBase, self).__getattr__(name)
 
     def __setattr__(self, name, val):
         if name in self.xmlfields:
             return self.set (name, val)
-        object.__setattr__(self, val)
+        print "SETTER"
+        object.__setattr__(self, name, val)
 
     def initialize(self):
         'used for class post parsing initialization'
@@ -120,7 +124,7 @@ class BQNode (etree.ElementBase):
 class BQResource (BQNode):
     '''Base class for Bisque resources'''
     TAG = xmltag = 'resource'
-    xmlfields = ['name', 'value', 'type', 'uri', 'ts', 'resource_uniq']
+    xmlfields = ['name', 'values', 'type', 'uri', 'ts', 'resource_uniq']
     xmlkids = ['kids', 'tags', 'gobjects']
 
     #def __repr__(self):
@@ -156,12 +160,15 @@ class BQResource (BQNode):
             tag = BQTag(name=name, value=value, type=type)
         self.append(tag)
         return tag
+    addTag = add_tag
 
     def add_gob(self, name='', value='', type='', gob=None):
         if gob is None:
             gob = BQGObject(name=name, value=value, type=type)
         self.append(gob)
         return gob
+    addGObject = add_gob
+
 
     def tag(self, name):
         results = []
@@ -186,6 +193,46 @@ class BQResource (BQNode):
             return results[0]
         else:
             return results
+
+
+    def set_parent(self, parent):
+        parent.tags.append(self)
+
+    def get_values(self):
+        if 'value' in self.attrib:
+            return self.attrib['value']
+        result = [str(v.text) for v in self.iter ('value')]
+        return result
+
+    def set_values(self, values):
+        if not isinstance(values, list):
+            self.set('value', str(values))
+        else:
+            if 'value' in self.attrib:
+                del self.attrib['value']
+            for child in self:
+                self.remove (child)
+            for v in values:
+                val = etree.SubElement (self, 'value')
+                val.text = str(v)
+
+    value = property(get_values, set_values)
+
+    def toetree(self, parent, baseuri):
+        xmlkids = list(self.xmlkids)
+        if len(self.values)<=1:
+            n = create_element(self, parent, baseuri)
+        else:
+            n = create_element(self, parent, baseuri)
+            del n.attrib['value']
+            xmlkids.append('values')
+        for kid_name in xmlkids:
+            for x in getattr(self, kid_name, None):
+                toxmlnode (x, n, baseuri)
+        return n
+
+
+
 
 ################################################################################
 # Image
@@ -324,38 +371,6 @@ class BQTag (BQResource):
     #    self.values = (value and [BQValue(value)]) or []
     #    if type is not None:
     #        self.type=type
-
-    def set_parent(self, parent):
-        parent.tags.append(self)
-
-    def get_value(self):
-        if hasattr(self, 'value'):
-            return self.getattr('value')
-        return list ( self.iter ('value'))
-    def set_value(self, values):
-        if not isinstance(values, list):
-            values = [values]
-        if hasattr(self, 'value'):
-            del self.attrib['value']
-        for child in self:
-            self.remove (chile)
-        for v in values:
-            self.append(v)
-
-    value = property(get_value, set_value)
-
-    def toetree(self, parent, baseuri):
-        xmlkids = list(self.xmlkids)
-        if len(self.values)<=1:
-            n = create_element(self, parent, baseuri)
-        else:
-            n = create_element(self, parent, baseuri)
-            del n.attrib['value']
-            xmlkids.append('values')
-        for kid_name in xmlkids:
-            for x in getattr(self, kid_name, None):
-                toxmlnode (x, n, baseuri)
-        return n
 
 
 
@@ -536,6 +551,10 @@ class BQDataset(BQResource):
     #xmlkids = ['kids', 'tags', 'gobjects']
 
 
+
+
+
+
 class BQUser(BQResource):
     TAG = xmltag = "user"
     #xmlfields = ['name', 'uri', 'ts']
@@ -598,13 +617,16 @@ class BQFactory (etree.PythonElementClassLookup):
         return etree.XML(xmlstring, self.parser)
 
     # Generation
+    @classmethod
     def to_string (self, nodes):
         return etree.tostring (nodes)
 
+    @classmethod
     def to_etree(self, bqnode):
         """Convert BQNode  to elementTree"""
         return bqnode
 
+    @classmethod
     def string2etree(self, xmlstring):
         return etree.XML (xmlstring, self.parser)
 

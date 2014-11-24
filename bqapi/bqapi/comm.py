@@ -273,7 +273,7 @@ class BQServer(Session):
             if r.content:
                 raise BQCommError(r.status_code, r.headers, r.content)
             else:
-                raise BQCommError(r.status_code, r.headers) 
+                raise BQCommError(r.status_code, r.headers)
         if path:
             with open(path, 'wb') as f:
                 f.write(r.content)
@@ -304,12 +304,12 @@ class BQServer(Session):
         """
         log.debug("POST %s req %s" % (url, headers))
 
-        r = self.request(method, url, data=content, headers=headers, files=files) 
-        
+        r = self.request(method, url, data=content, headers=headers, files=files)
+
         try: #error checking
             r.raise_for_status()
         except requests.exceptions.HTTPError:
-            raise BQCommError(r.status_code, r.headers) 
+            raise BQCommError(r.status_code, r.headers)
 
         if path:
             with open(path, 'wb') as f:
@@ -346,6 +346,7 @@ class BQSession(object):
         if self.mex:
             mextoken = self.mex.resource_uniq
             self.c.authenticate_mex(mextoken, user)
+            # May not be needed
             for c in range (100):
                 try:
                     self.load(url = self.service_url('module_service', path = "/".join (['mex', mextoken])))
@@ -353,7 +354,11 @@ class BQSession(object):
                 except BQCommError:
                     pass
         return False
-
+    def _check_session(self):
+        """Used to check that session is actuall active"""
+        r = self.fetchxml (self.service_url("auth_service", 'session'))
+        users = r.findall('./tag[@name="user"]')
+        return  len(users) > 0
 
 
     def init_local(self, user, pwd, moduleuri=None, bisque_root=None, create_mex=True):
@@ -375,6 +380,10 @@ class BQSession(object):
 
         self.c.authenticate_basic(user, pwd)
         self._load_services()
+        if not self._check_session():
+            log.error("Session failed to be created.. please check credentials")
+            return None
+
         self.mex = None
 
         if create_mex:
@@ -434,6 +443,9 @@ class BQSession(object):
 
         caslogin (self.c, bisque_root + "/auth_service/login", user, pwd)
         self._load_services()
+        if not self._check_session():
+            log.error("Session failed to be created.. please check credentials")
+            return None
         self.mex = None
 
         if create_mex:
@@ -493,7 +505,8 @@ class BQSession(object):
             if path is not None:
                 return r
             return r and self.factory.string2etree(r)
-        except etree.XMLSyntaxError:
+        except etree.ParseError, e:
+            log.exception("Problem with post response %s", e)
             return r
 
     def deletexml(self, url):
@@ -513,7 +526,7 @@ class BQSession(object):
             @return: contents or filename
         """
         url = self.c.prepare_url(url, **params)
-        return self.c.fetch(url, path=path, headers={'Content-Type':'text/xml'})
+        return self.c.fetch(url, path=path )
 
 
     def postblob(self, filename, xml=None, path=None, method="POST", **params):

@@ -28,7 +28,7 @@ from subprocess import Popen, call, PIPE
 
 from bq.util.mkdir import _mkdir
 
-from bqapi.bqclass import fromXml # bisque
+#from bqapi.bqclass import fromXml # bisque
 from bqapi.comm import BQSession, BQCommError # bisque
 from bqapi.util import save_blob # bisque
 
@@ -208,7 +208,8 @@ class ImageServiceTestBase(unittest.TestCase):
     def validate_image_variant(self, resource, filename, commands, meta_required):
         path = os.path.join(local_store_tests, filename)
         try:
-            image = fromXml(resource, session=self.session)
+            #image = fromXml(resource, session=self.session)
+            image = self.session.factory.from_etree(resource)
             px = image.pixels()
             for c,a in commands:
                 px = px.command(c, a)
@@ -223,7 +224,8 @@ class ImageServiceTestBase(unittest.TestCase):
     def validate_xml(self, resource, filename, commands, xml_parts_required):
         path = os.path.join(local_store_tests, filename)
         try:
-            image = fromXml(resource, session=self.session)
+#            image = fromXml(resource, session=self.session)
+            image = self.session.factory.from_etree(resource)
             px = image.pixels()
             for c,a in commands:
                 px = px.command(c, a)

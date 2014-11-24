@@ -13,14 +13,9 @@ except Exception:
     import yacc as yacc
     import lex as lex
 
-tokens = ('NAME', 'QUOTED')
+tokens = ('NAME', )
 literals = [ '[',']', '=' , ',' ]
 
-def t_QUOTED(t):
-    r'(?s)(?P<quote>["\'])(?:\\?.)*?(?P=quote)'
-    t.type = 'QUOTED'
-    t.value = t.value[1:-1]
-    return t
 
 def t_NAME(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'

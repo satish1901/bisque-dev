@@ -763,14 +763,14 @@ class EngineResource (Resource):
                     module_def.set('uri', m.get('uri'))
                     module_def.set('ts', str(datetime.now()))
                     #module_def.set('permission', 'published')
-                    m = data_service.update(module_def, replace_all=True)
-                    log.info("Updating new module definition with: %s" , etree.tostring(m))
+                    m = data_service.update_resource(resource=m, new_resource=module_def, view='deep')
+                    log.info("Updated new module definition with: %s" , etree.tostring(m))
                 else:
                     log.debug ("Module on system is newer: remote %s < system %s " , ts, m.get('ts'))
             else:
                 # We are examining a different version of the module.
                 # Should it be disabled?
-                pass
+                log.debug ("Skipping old version %s", m_version)
 
 
         if not found:

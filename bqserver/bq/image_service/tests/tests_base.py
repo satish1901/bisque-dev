@@ -30,7 +30,7 @@ import shortuuid
 
 from bq.util.mkdir import _mkdir
 
-from bqapi.bqclass import fromXml # bisque
+#from bqapi.bqclass import fromXml # bisque
 from bqapi.comm import BQSession, BQCommError # bisque
 from bqapi.util import save_blob # bisque
 
@@ -206,8 +206,8 @@ class ImageServiceTestBase(unittest.TestCase):
             try:
                 self.session.postxml(url, etree.Element ('resource'), method='DELETE')
             except BQCommError:
-                print 'Error deleting the dataset'          
-        
+                print 'Error deleting the dataset'
+
         # delete all items
         if 'items' in package:
             for url in package['items']:
@@ -215,7 +215,7 @@ class ImageServiceTestBase(unittest.TestCase):
                 try:
                     self.session.postxml(url, etree.Element ('resource'), method='DELETE')
                 except BQCommError:
-                    print 'Error deleting the item'    
+                    print 'Error deleting the item'
 
     @classmethod
     def ensure_bisque_file(self, filename, metafile=None):
@@ -227,7 +227,7 @@ class ImageServiceTestBase(unittest.TestCase):
         else:
             metafile = self.fetch_file(metafile)
             return self.upload_file(path, resource=etree.parse(metafile).getroot())
-        
+
 
     @classmethod
     def ensure_bisque_package(self, package):
@@ -240,7 +240,7 @@ class ImageServiceTestBase(unittest.TestCase):
         #print etree.tostring(r)
         if r.tag != 'dataset':
             package['items'] = [r.get('uri')]
-        else:            
+        else:
             package['dataset'] = r.get('uri')
             values = r.xpath('value')
             if len(values) != package['count']:
@@ -248,7 +248,7 @@ class ImageServiceTestBase(unittest.TestCase):
             if r.get('name') != package['name']:
                 print 'Error: uploaded %s name is %s but should be %s'%(package['file'], r.get('name'), package['name'])
             package['items'] = [x.text for x in values]
-        
+
         package['last'] = self.session.fetchxml(package['items'][-1], view='deep')
         #print 'Last item\n'
         #print etree.tostring(package['last'])
@@ -264,7 +264,8 @@ class ImageServiceTestBase(unittest.TestCase):
     def validate_image_variant(self, resource, filename, commands, meta_required):
         path = os.path.join(local_store_tests, filename)
         try:
-            image = fromXml(resource, session=self.session)
+            #image = fromXml(resource, session=self.session)
+            image = self.session.factory.from_etree(resource)
             px = image.pixels()
             for c,a in commands:
                 px = px.command(c, a)
@@ -273,13 +274,14 @@ class ImageServiceTestBase(unittest.TestCase):
             self.fail()
 
         meta_test = metadata_read(path)
-        self.assertTrue(meta_test is not None, msg='Retrieved image can not be red')
+        self.assertTrue(meta_test is not None, msg='Retrieved image can not be read')
         self.assertTrue(compare_info(meta_required, meta_test), msg='Retrieved metadata differs from test template')
 
     def validate_xml(self, resource, filename, commands, xml_parts_required):
         path = os.path.join(local_store_tests, filename)
         try:
-            image = fromXml(resource, session=self.session)
+            #image = fromXml(resource, session=self.session)
+            image = self.session.factory.from_etree(resource)
             px = image.pixels()
             for c,a in commands:
                 px = px.command(c, a)
