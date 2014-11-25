@@ -172,12 +172,16 @@ lightTool.prototype.initControls = function(){
     //this.sceneVolume.sceneData.add(this.lightObject);
 
     var onMouseUp = function () {
+        if (!me.lightObject.visible)
+            return;
+
         this.selectLight = false;
     };
 
     var onMouseDown = function (event) {
-        if (this.state === 0)
+        if (!me.lightObject.visible)
             return;
+
         var width = this.canvas3D.getWidth();
         var height = this.canvas3D.getHeight();
         var cx = this.canvas3D.getX();
@@ -205,8 +209,10 @@ lightTool.prototype.initControls = function(){
 
     var onMouseMove = function (event) {
         event.preventDefault();
-        if (this.state === 0)
+
+        if (!me.lightObject.visible)
             return;
+
         var width = this.canvas3D.getWidth();
         var height = this.canvas3D.getHeight();
         var cx = this.canvas3D.getX();
