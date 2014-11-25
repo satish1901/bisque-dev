@@ -25,8 +25,10 @@ def check_response(session, request, response_code, xml=None, method='GET'):
     try:
         if method=='GET':
             xml = session.c.fetch(request, headers={'Content-Type':'text/xml', 'Accept':'text/xml'})
-        elif method=='POST':
+        elif method=='POST' and xml:
             xml = session.postxml(request, xml)
+        elif method=='POST' and xml is None:
+            xml = session.c.webreq(method='POST', url=request, headers={'Content-Type':'text/xml', 'Accept':'text/xml'})
         else:
             xml = session.postxml(request, xml, method=method)
     except BQCommError as e:
