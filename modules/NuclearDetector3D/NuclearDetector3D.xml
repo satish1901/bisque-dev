@@ -210,6 +210,7 @@
     <tag name="display_options" >
         <tag name="group" value="Nuclear Analysis" />
         <tag name="group" value="Cell Analysis" />
+        <tag name="group" value="Detection" />
     </tag>
 
     <tag name="interface">

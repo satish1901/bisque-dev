@@ -248,6 +248,7 @@
        
     <tag name="display_options" >
         <tag name="group" value="Nuclear analysis" />
+        <tag name="group" value="Classification" />
     </tag>
 
     <tag name="interface">        

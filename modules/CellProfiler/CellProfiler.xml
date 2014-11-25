@@ -85,6 +85,7 @@
 
     <tag name="display_options" >
         <tag name="group" value="General Analysis" />
+        <tag name="group" value="Cell Analysis" />
     </tag>
 
     <tag name="title" value="CellProfiler" />

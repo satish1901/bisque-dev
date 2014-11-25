@@ -103,6 +103,7 @@
     <tag name="display_options" >
         <tag name="group" value="Plant Analysis" />
         <tag name="group" value="Root Analysis" />
+        <tag name="group" value="Tracking" />
     </tag>
 
     <tag name="interface">

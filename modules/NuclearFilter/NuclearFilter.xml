@@ -102,6 +102,7 @@
 
     <tag name="display_options" >
         <tag name="group" value="Nuclear Analysis" />
+        <tag name="group" value="Filtering" />
     </tag>
 
     <tag name="interface">
