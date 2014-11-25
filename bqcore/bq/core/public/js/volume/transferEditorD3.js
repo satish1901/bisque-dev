@@ -394,6 +394,7 @@ Ext.define('BQ.volume.transfer.graph', {
             this.parentNode.appendChild(this);
 
             me.selected = [d.id];
+            me.fireEvent('selected', d);
             d.selected = true;
             me.data.forEach(function(di, i, a){
                 if(di.id != d.id) a[i].selected = false;
@@ -743,7 +744,7 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
         barPadding = 5,
         labelDistanceFromBar = 5;
         var me = this;
-
+        var blockChange = false;
         this.transferGraph = Ext.create('BQ.volume.transfer.graph', {
             data : this.data,
             cls : 'd3Comp',
@@ -790,6 +791,16 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
                 change: function(){
                     me.fireEvent('change', me);
                 },
+                selected: function(d){
+                    console.log(d);
+                    blockChange = true;
+                    me.colorPicker.setColorRgb(
+                        d.color[0]/255,
+                        d.color[1]/255,
+                        d.color[2]/255,
+                        d.color[3]
+                    );
+                }
                 //renderTo: Ext.getBody(),
 
             },
@@ -806,10 +817,15 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
             height: '100%',
             listeners: {
                 change: function(){
+                    if(blockChange){
+                        blockChange = false;
+                        return;
+                    }
                     me.transferGraph.selected.forEach(function(d,i,a){
                         me.transferGraph.setColor(d, me.colorPicker.getColorRgb());
                     });
-                     me.transferGraph.fireEvent('change', me);
+
+                        me.transferGraph.fireEvent('change', me);
                 }
             },
             region: 'west'
