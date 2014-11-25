@@ -16,7 +16,6 @@ import numpy as np
 from sklearn.externals import joblib
 from optparse import OptionParser
 from bqapi.comm import BQSession
-from bq.util.mkdir import _mkdir
 from bqapi.bqfeature import Feature, ParallelFeature, FeatureResource, FeatureCommError
 
 #constants
@@ -33,6 +32,28 @@ MODEL_DIR                       = 'Model'
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('bq.modules')
 
+def _mkdir(newdir):
+    """works the way a good mkdir should :)
+        - already exists, silently complete
+        - regular file in the way, raise an exception
+        - parent directory(ies) does not exist, make them as well
+        """
+    if os.path.isdir(newdir):
+        pass
+    elif os.path.isfile(newdir):
+        raise OSError("a file with the same name as the desired " \
+                          "dir, '%s', already exists." % newdir)
+    else:
+        head, tail = os.path.split(newdir)
+        if head and not os.path.isdir(head):
+            _mkdir(head)
+        #print "_mkdir %s" % repr(newdir)
+        if tail:
+            try:
+                os.mkdir(newdir)
+            except OSError, e:
+                log.warn ('mkdir: %s', str(e))
+                
 
 def image_tiles(bqsession, image_service_url, tile_size=64):
     """

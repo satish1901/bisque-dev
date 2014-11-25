@@ -3,7 +3,7 @@ import sys
 from bq.setup.module_setup import python_setup, read_config
 
 def setup(params, *args, **kw):    
-    return python_setup('BotanicamTrainerFS.py', params=params)
+    return python_setup('BotanicamTrainer.py', params=params)
     
 if __name__ =="__main__":
     params = read_config('runtime-bisque.cfg')
