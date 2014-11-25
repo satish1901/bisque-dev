@@ -78,7 +78,10 @@ Ext.define('BQ.viewer.Volume.loadSlider',{
 	    this.svgUrl = "http://www.w3.org/2000/svg";
 	    this.svgdoc = document.createElementNS(this.svgUrl, "svg");
 	    this.svgdoc.setAttributeNS(null, 'class', 'tick-slider');
-	    this.el.dom.appendChild(this.svgdoc);
+	    this.svgdoc.setAttributeNS(null, 'width', this.getWidth());
+	    this.svgdoc.setAttributeNS(null, 'height', this.getHeight());
+
+        this.el.dom.appendChild(this.svgdoc);
 	    this.svgTicks = document.createElementNS(this.svgUrl, "g");
 	    this.svgTicks.setAttributeNS(null, 'class', 'tick-slider');
 	    this.svgdoc.appendChild(this.svgTicks);
@@ -99,28 +102,38 @@ Ext.define('BQ.viewer.Volume.loadSlider',{
     },
 
     genGradient : function (config, stops) {
+        var defs = document.createElementNS(this.svgUrl, "defs");
+        var grad = document.createElementNS(this.svgUrl, "linearGradient");
+        grad.setAttributeNS(null, 'id', config.id);
 
-        var orient;
-        if (config.vertical)
-            orient = 'x1="0%" y1="0%" x2="0%" y2="100%"\n';
-        else
-            orient = '';
-
-        var grad = '<defs> <linearGradient id="' + config.id + '">\n';
-        var grad = ['<defs>',
-                    '<linearGradient id="' + config.id + '" ',
-                    orient,
-                    'gradientTransform="rotate(' + config.angle + ')">\n'
-                   ].join(' ');
-        for (var i = 0; i < stops.length; i++) {
-            grad += this.getStop(stops[i]);
+        if (config.vertical){
+            grad.setAttributeNS(null, 'x1', '0%');
+            grad.setAttributeNS(null, 'y1', '0%');
+            grad.setAttributeNS(null, 'x2', '0%');
+            grad.setAttributeNS(null, 'y2', '100%');
         }
-        grad += '</linearGradient> </defs>';
-        return grad;
+        grad.setAttributeNS(null, 'gradientTransform', 'rotate(' + config.angle + ')');
+        defs.appendChild(grad);
+        for (var i = 0; i < stops.length; i++) {
+            var color = stops[i].color;
+            var stop = document.createElementNS(this.svgUrl, "stop");
+            stop.setAttributeNS(null, 'offset', stops[i].offset + '%');
+            stop.setAttributeNS(null, 'stop-color', 'rgba(' +
+            color[0] + ', ' +
+            color[1] + ', ' +
+            color[2] + ', ' +
+            color[3] + ')');
+            grad.appendChild(stop);
+        }
+        return defs;
     },
 
     drawTicks : function(canvas){
         if (this.frameArray.length == 1) return;
+       while (this.svgdoc.lastChild) {
+            this.svgdoc.removeChild(this.svgdoc.lastChild);
+        }
+
         var grad1 = this.genGradient({
             id : 'Load-Tick',
             angle : 0,
@@ -129,13 +142,50 @@ Ext.define('BQ.viewer.Volume.loadSlider',{
             offset : 0,
             color : [0, 0, 0, 0.0]
         },{
-            offset : 35,
-            color : [60, 50, 0, 1.0]
+            offset : 20,
+            color : [200, 200, 200, 1.0]
+        },{
+            offset : 60,
+            color : [200, 200, 200, 1.0]
         },{
             offset : 100,
             color : [0, 0, 0, 0.0]
         } ]);
 
+        this.svgdoc.appendChild(grad1);
+
+        var N = this.frameArray.length;
+        var w = this.getWidth();
+	    var h = this.getHeight();
+        var path = '';
+
+        var tic = this.tic;
+        var xstart = 6;
+        var xrem = w - xstart-8;
+	    for(var i = 0; i < this.frameArray.length; i++){
+	        var x0, y0, x1, y1;
+	        //x0 = 0.87 + 98.2*i/(N-1) + '%';
+	        var op = this.frameArray[i] ? 0.9 : 0.2;
+
+            x0 = xstart + xrem*i/(N-1);
+            x1 = x0;
+            var wi = 0.6*1/N*w;
+            var rect = document.createElementNS(this.svgUrl, "rect");
+	        rect.setAttributeNS(null, 'x', x0);
+            rect.setAttributeNS(null, 'y', 0.25*h);
+            rect.setAttributeNS(null, 'width', wi);
+            rect.setAttributeNS(null, 'height', 0.5*h);
+            rect.setAttributeNS(null, 'fill-opacity', op);
+            rect.setAttributeNS(null, 'stroke', 'none');
+            //rect.setAttributeNS(null, 'stroke', 'gray');
+            rect.setAttributeNS(null, 'fill', 'url(#Load-Tick)');
+            //rect.setAttributeNS(null, 'fill', 'rgba(255,0,0,1)');
+
+            this.svgdoc.appendChild(rect);
+            //path += '<line x1=' + x0 + ' y1=' + y0 + ' x2=' + x1 + ' y2=' + y1 +
+		    //    ' stroke = gray stroke-width=1.5 opacity = 0.7 fill="none" /></line>';
+	    }
+/*
 	    var Start = this.startFrame;
 	    var End   = this.endFrame;
 	    var tic = this.tic;
@@ -158,6 +208,7 @@ Ext.define('BQ.viewer.Volume.loadSlider',{
                 'style="fill:url(#Load-Tick);stroke:none;stroke-width:1;fill-opacity:'+op+';stroke-opacity:0.9" />';
 
 	    }
+*/
         var back = ['<rect ',
                     'x="0" y="25%"',
                     'rx="6" ry="6"',
@@ -167,7 +218,7 @@ Ext.define('BQ.viewer.Volume.loadSlider',{
                     '/>'].join(' ');
         //var back = '<rect x="0%" y="25%" rx="6" ry="6" width="100%" height="50%" style="fill:#FAEBD7"></rect>';
 
-	    this.svgTicks.innerHTML = grad1 + back + path;
+	    //this.svgTick.innerHTML = grad1 + back + path;
     },
 });
 
@@ -353,7 +404,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    this.sampleRate = 128;
 	    this.timeValue = 0;
 	    var me = this;
-
+        this.on('resize', this.onresize);
 	    this.callParent();
     },
 
@@ -373,10 +424,13 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    this.svgUrl = "http://www.w3.org/2000/svg";
 	    this.svgdoc = document.createElementNS(this.svgUrl, "svg");
 	    this.svgdoc.setAttributeNS(null, 'class', 'tick-slider');
-	    this.el.dom.appendChild(this.svgdoc);
-	    this.svgTicks = document.createElementNS(this.svgUrl, "g");
-	    this.svgTicks.setAttributeNS(null, 'class', 'tick-slider');
-	    this.svgdoc.appendChild(this.svgTicks);
+	    //this.svgdoc.setAttributeNS(null, 'width', "100%");
+	    //this.svgdoc.setAttributeNS(null, 'height',"100%");
+
+        this.el.dom.appendChild(this.svgdoc);
+	    //this.svgTicks = document.createElementNS(this.svgUrl, "g");
+	    //this.svgTicks.setAttributeNS(null, 'class', 'tick-slider');
+	    //this.svgdoc.appendChild(this.svgTicks);
 	    this.drawTicks();
 
 	    var me = this;
@@ -402,25 +456,39 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 	    var End   = this.endFrame + 1;
 	    var tic = this.tic;
 	    var N = End - Start;
-	    var path = '';
+        var w = this.getWidth();
+	    var h = this.getHeight();
+        var path = '';
+
+       while (this.svgdoc.lastChild) {
+            this.svgdoc.removeChild(this.svgdoc.lastChild);
+        }
+
+        var xstart = 7;
+        var xrem = w - xstart-7;
 	    for(var i = 0; i < N; i++){
 	        var x0, y0, x1, y1;
-	        x0 = 0.87 + 98.2*i/(N-1) + '%';
-	        x1 = x0;
-	        if(i%tic == 0){
-		        y0 = '25%';
-		        y1 = '75%';
-	        } else {
-		        y0 = '40%';
-		        y1 = '60%';
-	        }
-	        path += '<line x1=' + x0 + ' y1=' + y0 + ' x2=' + x1 + ' y2=' + y1 +
-		        ' stroke = gray stroke-width=1.5 opacity = 0.7 fill="none" /></line>';
+	        //x0 = 0.87 + 98.2*i/(N-1) + '%';
+	        x0 = xstart + xrem*i/(N-1);
+            x1 = x0;
+            y0 = (i%tic == 0) ? 0.25*h : 0.4*h;
+	        y1 = (i%tic == 0) ? 0.75*h : 0.6*h;
+            var line = document.createElementNS(this.svgUrl, "line");
+	        line.setAttributeNS(null, 'x1', x0);
+            line.setAttributeNS(null, 'y1', y0);
+            line.setAttributeNS(null, 'x2', x1);
+            line.setAttributeNS(null, 'y2', y1);
+            line.setAttributeNS(null, 'opacity', 0.7);
+            line.setAttributeNS(null, 'stroke-width', 1.5);
+            line.setAttributeNS(null, 'stroke', 'gray');
+            line.setAttributeNS(null, 'fill', 'none');
+            this.svgdoc.appendChild(line);
+            //path += '<line x1=' + x0 + ' y1=' + y0 + ' x2=' + x1 + ' y2=' + y1 +
+		    //    ' stroke = gray stroke-width=1.5 opacity = 0.7 fill="none" /></line>';
 	    }
-	    var svg = ' <svg width=100% height=100% >' + path +
-	        '</svg>';
 
-	    this.svgTicks.innerHTML = path;
+	    //this.svgdoc.innerHTML = path;
+
     },
 
 
@@ -432,6 +500,10 @@ Ext.define('BQ.viewer.Volume.keySlider',{
     changecomplete: function(){
 	    this.sortKeys();
 	    this.callParent();
+    },
+
+    onresize: function(){
+        this.drawTicks();
     },
 
     /**
@@ -1092,6 +1164,12 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	        iconCls: 'recordbutton',
 	        text: 'Record',
 	        handler: function(btn) {
+                if(!Ext.isChrome){
+                    BQ.ui.warning("Unfortunately exporting movies is currently not supported on your Browser.  </br>" +
+                                "Please use Chrome.</br>");
+                    return;
+                }
+
                 btn.disable();
                 this.keySlider.timeThumb.value = 0;
 		        this.isRecording = true;
@@ -1190,7 +1268,10 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 	    this.keySlider.animCamera.position.copy( this.keySlider.panel3D.canvas3D.camera.position );
 	    this.keySlider.animCamera.rotation.copy( this.keySlider.panel3D.canvas3D.camera.rotation );
 	    this.keySlider.panelCamera = this.keySlider.panel3D.canvas3D.camera;
-        this.numKeyFramesField.setValue(this.panel3D.dims.t);
+
+        var defaultTime = this.panel3D.dims.t == 1 ? 128 : this.panel3D.dims.t;
+        this.numKeyFramesField.setValue(defaultTime);
+        //this.keySlider.drawTicks();
     },
 
     //----------------------------------------------------------------------
@@ -1225,8 +1306,9 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
     doRecord : function(video) {
 	    var me = this;
-	    var context = this.panel3D.canvas3D.renderer.domElement.getContext('webgl');
-	    video.add(context);
+	    //var context = this.panel3D.canvas3D.renderer.domElement.getContext('webgl');
+	    var context = this.panel3D.canvas3D.renderer.context;
+        video.add(context);
 	    this.chk += 1;
 
 	    var maxTime = this.keySlider.maxValue;

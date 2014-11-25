@@ -975,8 +975,9 @@ transferTool.prototype.initControls = function(){
 
 
     this.volume.on('histogramupdate', function(){
-        if(me.transferEditor)
-            me.transferEditor.transferGraph.histogramSvg.redraw();
+        if(!me.transferEditor) return;
+        if(!me.transferEditor.transferGraph.histogramSvg.component.el) return;
+        me.transferEditor.transferGraph.histogramSvg.redraw();
     });
     this.button.tooltip = 'Transfer function (LUT)';
     //this.volume.on('loaded', function () {});

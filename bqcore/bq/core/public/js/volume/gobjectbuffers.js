@@ -832,8 +832,9 @@ gObjectTool.prototype.loadGObjects = function () {
 		for (var i = 0; i < context.gobjects.length; i++) {
 			var g = context.gobjects[i];
             if(g.gobjects.length > 0) tStack.unshift(g);
-            else if (g.vertices[0].t == null)     BQFactory3D.make(g);
-            else if (g.vertices[0].t == t) BQFactory3D.make(g);
+            else if (g.vertices.length === 0)    continue;
+            else if (g.vertices[0].t   === null) BQFactory3D.make(g);
+            else if (g.vertices[0].t   === t)    BQFactory3D.make(g);
 		}
         tStack.pop();
     }
