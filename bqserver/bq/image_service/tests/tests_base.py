@@ -34,6 +34,9 @@ from bq.util.mkdir import _mkdir
 from bqapi.comm import BQSession, BQCommError # bisque
 from bqapi.util import save_blob # bisque
 
+import logging
+#logging.basicConfig(level=logging.DEBUG)
+
 IMGCNV='imgcnv'
 
 url_image_store     = 'http://hammer.ece.ucsb.edu/~bisque/test_data/images/'
@@ -195,7 +198,7 @@ class ImageServiceTestBase(unittest.TestCase):
             return
         url = r.get('uri')
         print 'Deleting id: %s url: %s'%(r.get('resource_uniq'), url)
-        self.session.postxml(url, etree.Element ('resource'), method='DELETE')
+        self.session.deletexml(url)
 
     @classmethod
     def delete_package(self, package):
@@ -204,7 +207,7 @@ class ImageServiceTestBase(unittest.TestCase):
             url = package['dataset']
             print 'Deleting dataset: %s'%(url)
             try:
-                self.session.postxml(url, etree.Element ('resource'), method='DELETE')
+                self.session.deletexml(url)
             except BQCommError:
                 print 'Error deleting the dataset'
 
@@ -213,7 +216,7 @@ class ImageServiceTestBase(unittest.TestCase):
             for url in package['items']:
                 print 'Deleting item: %s'%(url)
                 try:
-                    self.session.postxml(url, etree.Element ('resource'), method='DELETE')
+                    self.session.deletexml(url)
                 except BQCommError:
                     print 'Error deleting the item'
 
