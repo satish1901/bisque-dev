@@ -35,9 +35,9 @@ public_file_filter = None
 bisque_app = None
 
 def add_profiler(app):
-    if config.get('bisque.profiler_enable', None) == 'true': #inialize profiler app
+    if config.get('bisque.profiler.enable', None) == 'true': #inialize profiler app
         from bq.util.LinesmanProfiler import BQProfilingMiddleware
-        app = BQProfilingMiddleware(app, config.get('sqlalchemy.url', None), config.get('bisque.profiler_path', '__profiler__'))
+        app = BQProfilingMiddleware(app, config.get('sqlalchemy.url', None), config.get('bisque.profiler.path', '__profiler__'))
         log.info("HOOKING profiler app")
     return app #pass through
 
