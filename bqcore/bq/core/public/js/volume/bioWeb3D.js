@@ -945,7 +945,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                         var tmp;
                         var data = rChan[dim].innerHTML ?
                             rChan[dim].innerHTML : rChan[dim].textContent;
-                        var tmp = data.split(",");
+                        var tmp = dat.absplit(",");
                         if (this.model.histogram.hasOwnProperty(chan)) {
                             var channel = this.model.histogram[chan];
                             if(channel.length == 0) channel == tmp;
@@ -1037,7 +1037,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
             var t = this.currentTime;
             var currentState = this.state;
-			var textureAtlas = new THREE.ImageUtils.loadTexture(this.constructAtlasUrl(), undefined, function () {
+			var textureAtlas = new THREE.ImageUtils.loadTexture(
+                this.constructAtlasUrl(),
+                undefined,
+                function () {
                 //console.log(t, 'loaded!!!');
                 //me.playBack.setLoaded(t);
                 me.loadedTextures--;
@@ -1050,7 +1053,12 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 //me.rerender();
                 if(t == me.currentTime)
 				    me.rerender();
-			});
+			    },
+                function(error, msg){
+                    BQ.ui.error('Couldn\'t fetch image, please try reloading the page or check back later.');
+                    me.setLoading(false);
+                }
+            );
 			textureAtlas.generateMipmaps = false;
 			textureAtlas.magFilter = THREE.LinearFilter;
 			textureAtlas.minFilter = THREE.LinearFilter;
