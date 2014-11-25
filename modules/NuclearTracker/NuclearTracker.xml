@@ -146,6 +146,7 @@
 
     <tag name="display_options" >
         <tag name="group" value="Nuclear Analysis" />
+        <tag name="group" value="Tracking" />
     </tag>
 
     <tag name="interface">

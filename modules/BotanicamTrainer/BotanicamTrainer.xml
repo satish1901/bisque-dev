@@ -49,7 +49,7 @@
 
     <tag name="display_options" >
         <tag name="group" value="Plant Analysis" />
-        <tag name="group" value="Image Classification" />
+        <tag name="group" value="Classification" />
     </tag>
     
     <tag name="interface">        

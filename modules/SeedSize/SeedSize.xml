@@ -213,6 +213,7 @@
     <tag name="display_options" >
         <tag name="group" value="Plant Analysis" />
         <tag name="group" value="Seed Analysis" />
+        <tag name="group" value="Detection" />
     </tag>
 
     <!-- INTERFACE

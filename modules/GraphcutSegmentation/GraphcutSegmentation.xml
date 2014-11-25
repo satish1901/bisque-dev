@@ -136,7 +136,7 @@
     </tag>
 
     <tag name="display_options" >
-        <tag name="group" value="Image Segmentation" />
+        <tag name="group" value="Segmentation" />
     </tag>
 
     <tag name="interface">
