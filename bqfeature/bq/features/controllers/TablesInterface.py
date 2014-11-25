@@ -304,8 +304,8 @@ class WorkDirRows(Rows):
                error.resource.image,
                error.resource.mask,
                error.resource.gobject,
-               [0 for i in xrange(feature.length)]
-               #np.array([columns['feature'].dflt for i in xrange(feature.length)])
+               #[0 for i in xrange(feature.length)]
+               np.array([columns['feature'].dflt for i in xrange(feature.length)])
                ]
         for p in feature.parameter:
             row.append(columns[p].dflt)

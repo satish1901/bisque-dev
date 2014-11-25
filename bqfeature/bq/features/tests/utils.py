@@ -133,7 +133,7 @@ def delete_resource(bqsession, url):
         Remove uploaded resource from bisque server
     """
     print 'Deleting url: %s' % url
-    bqsession.postxml(url, etree.Element('resource') , method='DELETE')
+    bqsession.deletexml(url)
 
 
 def cleanup_dir():
