@@ -203,7 +203,7 @@ class ResourceList(object):
         """get with index, the list is always ordered """
         resource_hash = sorted(self.resource_list.keys())[index]
         resource_request = self.resource_list[resource_hash]
-        return (hash, resource_request.feature_resource, resource_request.exception)
+        return (resource_hash, resource_request.feature_resource, resource_request.exception)
 
     def __len__(self):
         return len(self.resource_list)
@@ -337,15 +337,13 @@ def operations(resource_list):
                     _id, request_resource = resource_list.get(id)
                     if row_exists is True:
                         log.debug("Returning Resource: %s from cache" % str(request_resource.feature_resource))
-                    elif request_resource.exception is None:
+                    else:
                         log.debug("Resource: %s was not found in the table" % str(request_resource.feature_resource))
                         try:
                             rows.push(request_resource)
                         except FeatureExtractionError as feature_extractor_error: #if error occured the exception is added to the resource
                             resource_list.add_exc(id, feature_extractor_error)
                             log.debug('Exception: Error Code %s : Error Message %s' % (str(feature_extractor_error.code), feature_extractor_error.message))  
-                    else:
-                        continue #skip over the exception
     
             # store features
             table.store(rows)
@@ -546,7 +544,6 @@ class Xml(Format):
             
             @yield: nodes of xml
         """
-        buffer = 0
         node_gen = self._construct_from_cache(table, resource_list, self.feature)
 
         try:
@@ -581,7 +578,6 @@ class Xml(Format):
             
             @yield: nodes of xml
         """
-        buffer = 0
         node_gen = self._construct_from_workdir(table, resource_list, self.feature)
         try:
             node_one = next(node_gen)
