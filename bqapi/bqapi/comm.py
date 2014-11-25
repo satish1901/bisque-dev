@@ -309,6 +309,7 @@ class BQServer(Session):
         try: #error checking
             r.raise_for_status()
         except requests.exceptions.HTTPError:
+            log.debug("Error body: %s" % (r.content))
             raise BQCommError(r.status_code, r.headers)
 
         if path:

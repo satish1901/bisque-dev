@@ -7,6 +7,9 @@ After plug-in converters update
 Ran 37 tests in 17.464s
 Ran 38 tests in 21.028s
 
+v 5.6
+
+
 dough: 3 servers
 
 Ran 37 tests in 25.776s
@@ -17,6 +20,9 @@ Ran 38 tests in 24.717s
 v 5.5
 Ran 38 tests in 25.901s
 Ran 38 tests in 30.769s
+
+v 5.6
+Ran 38 tests in 30.392s
 
 bovary: 1 servers
 

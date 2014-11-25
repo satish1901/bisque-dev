@@ -8,7 +8,7 @@ Ran 45 tests in 252.215s
 dough: 3 servers - v5.6
 =======================
 
-
+Ran 45 tests in 177.367s FAILED (failures=9)
 
 
 bovary: 1 servers - v5.6
