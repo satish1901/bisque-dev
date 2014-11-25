@@ -153,7 +153,7 @@ class SqlAlchemyBackend(Backend):
         local_session = self.conn()
         count = 0
         for row in local_session.query(Profiler_Sessions).filter(Profiler_Sessions.uuid==session_uuid):
-            session.delete(row)
+            local_session.delete(row)
             count +=1
         local_session.commit()
         local_session.remove()
