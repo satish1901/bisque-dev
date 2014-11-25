@@ -34,8 +34,8 @@ feature_subdirs = ['bqfeature' ]
 server_subdirs=['bqapi', 'bqcore', 'bqserver', 'bqengine' ]
 engine_subdirs=['bqapi', 'bqcore', 'bqengine' ]
 
-PREINSTALLS = {'features' : ['numpy==1.8.1', 
-                             '-r bqfeature/requirements.txt',
+PREINSTALLS = {'features' : ['numpy==1.9.1',
+                             '-r bqfeature/requirements.txt', 
                              'tables==3.1.1']
                }
 

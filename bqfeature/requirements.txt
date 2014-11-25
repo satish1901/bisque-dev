@@ -1,5 +1,9 @@
-#all require numpy
+#bqfeatures requirments 
+--index-url==http://biodev.ece.ucsb.edu/py/bisque/dev/+simple
+#numpy==1.9.1 installed in main bisque
 Cython==0.20.1
-numexpr==2.4
+numexpr==2.4 #needs be install after numpy and before tables
 mahotas==1.2.1
 pylibtiff==0.3.0-1
+#tables==3.1.1 needs to be installed after numpy and numexpr
+#need to look for a better way to install dependencies
