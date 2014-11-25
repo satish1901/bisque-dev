@@ -237,6 +237,9 @@ class CachedRows(Rows):
             
             @param feature_resource - 
         """
+        #skip exceptions already found
+        if request_resource.exception is not None:
+            return
         id = self.feature.hash_resource(request_resource.feature_resource)
         path = self.feature.localfile(id)
         rows = self.construct_row(self.feature, request_resource.feature_resource)
@@ -296,15 +299,17 @@ class WorkDirRows(Rows):
             
             @return: rows
         """
+        columns = feature.workdir_columns()
         row = [
-            error.resource.image,
-            error.resource.mask,
-            error.resource.gobject,
-            np.zeros([feature.length]),  #feature
-        ]
+               error.resource.image,
+               error.resource.mask,
+               error.resource.gobject,
+               [0 for i in xrange(feature.length)]
+               #np.array([columns['feature'].dflt for i in xrange(feature.length)])
+               ]
         for p in feature.parameter:
-            row.append(0)
-        return (tuple(row), tuple([error.code]))
+            row.append(columns[p].dflt)
+        return ([tuple(row)], [tuple([error.code])])
     
     
     def push(self, request_resource):
@@ -312,19 +317,18 @@ class WorkDirRows(Rows):
             @param: request_resource
         """
         if request_resource.exception:
-            rows, status = self.construct_error_row(self.feature, e)
+            rows, status = self.construct_error_row(self.feature, request_resource.exception)
+            log.debug('rows %s',rows)
         else:
             try:
                 rows, status = self.construct_row(self.feature, request_resource.feature_resource)
+                log.debug('rows %s',rows)
             except FeatureExtractionError as e:
                 rows, status = self.construct_error_row(self.feature, e)
-        
-        if 'feature' in self.row_queue:  # feature is used to maintain the structure
-            self.row_queue['feature'].put([rows,status])  # the row is pushed into the queue
-        else:  # creates a queue if no queue is found
-            self.row_queue['feature'] = Queue.Queue()
-            self.row_queue['feature'].put((rows,status))
-        return
+
+        if 'feature' not in self.row_queue:  # checking the first few element on the hash
+            self.row_queue['feature'] = Queue.Queue()  # build queue since none were found  
+        self.row_queue['feature'].put((rows,status))  # the row is pushed into the queue
 
 
 class Tables(object):
@@ -365,7 +369,7 @@ class Tables(object):
                     if func:
                         result = func(h5file)
                          
-                except table.exceptions.NodeError: #race condtion may occur, stop writing if table already contains table
+                except tables.exceptions.NodeError: #race condtion may occur, stop writing if table already contains table
                     log.debug('Table already exists skipping write %s'%filename)        
                 
                 except tables.exceptions.HDF5ExtError:
