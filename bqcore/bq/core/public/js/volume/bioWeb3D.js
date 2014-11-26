@@ -945,7 +945,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                         var tmp;
                         var data = rChan[dim].innerHTML ?
                             rChan[dim].innerHTML : rChan[dim].textContent;
-                        var tmp = dat.absplit(",");
+                        var tmp = data.split(",");
                         if (this.model.histogram.hasOwnProperty(chan)) {
                             var channel = this.model.histogram[chan];
                             if(channel.length == 0) channel == tmp;
