@@ -125,8 +125,8 @@ class Feature(object):
 
 class ParallelFeature(Feature):
 
-    MaxThread = 4
-    MaxChunk = 1000
+    MaxThread = 8
+    MaxChunk = 2000
     MinChunk = 100
 
     def __init__(self):
