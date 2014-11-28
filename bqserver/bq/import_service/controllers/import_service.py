@@ -875,7 +875,7 @@ class import_serviceController(ServiceController):
 #------------------------------------------------------------------------------
 # Main import for files
 # Accepts multi-part form with a file and associated tags in XML format
-# form parts should be something like this: file and file_tags
+# form parts should be something like this: file and file_resource
 #
 # The tag XML document is in the following form:
 # <resource>
@@ -934,7 +934,7 @@ class import_serviceController(ServiceController):
         :param kw: A keyword dictionary of file arguments.  The
         arguments are organized as follows: Each datafile and its tag
         document are associated by the parameters named 'x' and
-        'x_tags' where x can be any string.
+        'x_resource' where x can be any string.
 
         """
         try:
@@ -950,7 +950,7 @@ class import_serviceController(ServiceController):
         :param kw: A keyword dictionary of file arguments.  The
         arguments are organized as follows: Each datafile and its tag
         document are associated by the parameters named 'x' and
-        'x_tags' where x can be any string.
+        'x_resource' where x can be any string.
 
         """
         #log.debug("TRANSFER %s"  % kw)

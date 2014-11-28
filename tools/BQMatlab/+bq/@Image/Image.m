@@ -146,10 +146,16 @@ classdef Image < bq.File
                 filename = s{1, size(s, 2)};
                 filename = [tempdir filename];
                 bim.write_ome_tiff( image, filename, args.dim, args.res);
+                resource = ['<image name="', args.filename ,'" />'];
             else
-                filename = image;                
+                filename = image;
+                if ~exist('args', 'var') || isempty(args),
+                    resource = [];
+                else
+                    resource = ['<image name="', args.filename ,'" />']; 
+                end        
             end            
-            node = bq.File.store(filename, root_url, user, password); 
+            node = bq.File.store(filename, root_url, user, password, resource); 
         end % store          
     end % static methods    
     

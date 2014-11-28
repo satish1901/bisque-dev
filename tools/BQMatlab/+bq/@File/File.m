@@ -69,7 +69,7 @@ classdef File < bq.Node
     
     methods (Static)    
 
-        function node = store(filename, root_url, user, password)
+        function node = store(filename, root_url, user, password, resource)
         % filename - filename
         % node     - bq.Node object of the created resource            
             if ~exist('user', 'var') || isempty(user) || ~exist('password', 'var') || isempty(password),
@@ -78,7 +78,7 @@ classdef File < bq.Node
             
             url = bq.Url(root_url); 
             url.setPath('import/transfer');
-            [output, info] = bq.post_mpform(url.toString(), filename, user, password);
+            [output, info] = bq.post_mpform(url.toString(), filename, user, password, resource);
             output = char(output);
             if ~isempty(output) && info.status<300 && isempty(regexpi(output, '(<html)', 'tokenExtents')),
                 output = regexprep(output, '<resource type="uploaded">', '');
