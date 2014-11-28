@@ -17,8 +17,9 @@
   Available selectors and renderers
 *******************************************************************************/
 
-Ext.namespace('BQ.selectors');
-Ext.namespace('BQ.renderers');
+Ext.namespace('BQ.selectors.resources');
+Ext.namespace('BQ.selectors.parameters');
+Ext.namespace('BQ.renderers.resources');
 
 BQ.selectors.resources  = { 'image'            : 'BQ.selectors.Resource',
                             'dataset'          : 'BQ.selectors.Resource',
