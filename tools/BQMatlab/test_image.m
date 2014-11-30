@@ -26,6 +26,16 @@ user = 'XXXX';
 pass = 'XXXX';
 
 
+% fastest way of storing image with annotations
+filename = 'my_test_N1/my_2d_double_image.ome.tif'; % you can suggest path
+image = zeros(128, 128, 'double');
+args = struct('filename', filename);
+
+resource = bq.Factory.new('image', filename);
+resource.addTag('about', 'this is a 2D image upload from Matlab API');
+image = bq.Image.store(image, args, host, user, pass, resource.toString());
+
+
 % 2D image with no resolution
 image = zeros(128, 128, 'double');
 args = struct('filename', 'my_2d_double_image.ome.tif');
