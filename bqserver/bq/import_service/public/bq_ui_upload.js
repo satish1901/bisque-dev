@@ -1544,6 +1544,7 @@ Ext.define('BQ.upload.Panel', {
     pathBlobToUser : function(path) {
         //var user = BQApp.user.user_name;
         path = path.replace('/blob_service/store', '');
+        path = decodeURIComponent(path);
         return path;
     },
 
