@@ -1033,10 +1033,7 @@ transferTool.prototype.loadPreferences = function(prefs){
     //set toggled on start
     //////////////////////
     var me = this;
-    if(prefs.show == 'true')
-        this.button.toggle(true);
-    else
-        this.button.toggle(false);
+    this.button.toggle(prefs.show);
 
     if(!this.presets) this.presets = {}; //initialize a presets menu
     //if for some reason a default isn't available lets just make one ahead of time

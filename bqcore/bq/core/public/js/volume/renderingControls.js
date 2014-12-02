@@ -241,6 +241,7 @@ gammaTool.prototype.initControls = function(){
 
     this.svg = Ext.create('BQ.graph.d3', {
         cls: 'bq-histogram',
+        itemId: 'gamma-histo',
         height : 60,
     });
 
@@ -481,11 +482,7 @@ ditherTool.prototype.loadDefaults = function(){
 };
 
 ditherTool.prototype.loadPreferences = function(prefs){
-
-    if(prefs == 'true')
-        this.button.toggle(true);
-    else
-        this.button.toggle(false);
+    this.button.toggle(prefs);
 };
 
 ditherTool.prototype.toggle = function(button){
