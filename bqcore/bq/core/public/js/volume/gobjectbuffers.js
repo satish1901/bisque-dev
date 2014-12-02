@@ -1185,9 +1185,5 @@ gObjectTool.prototype.loadPreferences = function(prefs){
 //////////////////////
 //set toggled on start
 //////////////////////
-
-    if(prefs.show == 'true')
-        this.button.toggle(true);
-    else
-        this.button.toggle(false);
+    this.button.toggle(prefs.show);
 };

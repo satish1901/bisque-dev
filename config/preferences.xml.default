@@ -144,18 +144,29 @@
 
         </tag>
 
-        <tag name="Viewer3D">
-	    <tag name="render_quality" value="high"  type="string">
-                <template>
-                        <tag type="string" name="Type" value="ComboBox"/>
-                        <tag type="string" name="defaultValue" value="high"/>
-                        <tag type="boolean" name="allowBlank" value="false"/>
-                        <tag type="boolean" name="Editable" value="true"/>
-                        <tag type="string" name="select" value="low,medium,high"/>
-                </template>
+        <tag name="Viewer3D" >
+          <tag name="render_quality" value="medium"  type="string">
+            <template>
+              <tag type="string" name="Type" value="ComboBox"/>
+              <tag type="string" name="defaultValue" value="high"/>
+              <tag type="boolean" name="allowBlank" value="false"/>
+              <tag type="boolean" name="Editable" value="true"/>
+              <tag type="string" name="select" value="low,medium,high"/>
+            </template>
+          </tag>
+          <tag name="dithering" value="true" type="boolean"/>
+          <tag name="gobjects">
+            <tag name="show" value="true" type="boolean" />
+          </tag>
+          <tag name="transfer_editor">
+            <tag name="functions">
+              <tag name="default" value="[{&quot;id&quot;:0,&quot;offset&quot;:0,&quot;alpha&quot;:0,&quot;color&quot;:[0,0,0,0],&quot;selected&quot;:false},{&quot;id&quot;:1,&quot;offset&quot;:100,&quot;alpha&quot;:1,&quot;color&quot;:[255,255,255,1],&quot;selected&quot;:false}] "/>
+
+              <tag name="bone+muscle" value="[{&quot;id&quot;:0,&quot;offset&quot;:0,&quot;alpha&quot;:0,&quot;color&quot;:[20.400000000000002,1.44,4.96,0],&quot;selected&quot;:false},{&quot;id&quot;:1,&quot;offset&quot;:20,&quot;alpha&quot;:0,&quot;color&quot;:[0,0,0,0],&quot;selected&quot;:false},{&quot;id&quot;:2,&quot;offset&quot;:33,&quot;alpha&quot;:0.1,&quot;color&quot;:[232.05,16.38,56.42,0.1],&quot;selected&quot;:false},{&quot;id&quot;:3,&quot;offset&quot;:41,&quot;alpha&quot;:0.25,&quot;color&quot;:[242.25,193.8,28.5,0.25],&quot;selected&quot;:false},{&quot;id&quot;:4,&quot;offset&quot;:47,&quot;alpha&quot;:1,&quot;color&quot;:[221.85,214.89,173.13,1],&quot;selected&quot;:true},{&quot;id&quot;:5,&quot;offset&quot;:100,&quot;alpha&quot;:1,&quot;color&quot;:[221.85,214.89,173.13,1],&quot;selected&quot;:false}]"/>
             </tag>
+            <tag name="show" value="false" type="boolean"/>
+          </tag>
         </tag>
 
-
-    </tag>
-</system>
+      </tag>
+    </system>

@@ -1049,12 +1049,14 @@ Ext.define('Bisque.Resource.Image.Page', {
                 }
             });
         }
+
         catch(err){
             BQ.ui.error("This is strange, the volume renderer failed to load. <BR/>" +
                         "The reported error is: <BR/> " +
                         err.message);
             me.show2D();
         }
+
     },
 
 });

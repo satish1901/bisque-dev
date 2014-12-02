@@ -456,7 +456,7 @@ VolSpinnerTool.prototype.initControls = function () {
 
 function qualityTool(volume, cls) {
 	//renderingTool.call(this, volume);
-    this.name = 'quality';
+    this.name = 'render_quality';
 /*
 
 

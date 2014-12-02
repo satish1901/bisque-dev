@@ -1,1 +1,3 @@
 -Xmx4g
+-Djavax.net.ssl.trustStore=jssecacerts
+-Djavax.net.ssl.trustStorePassword=changeit
