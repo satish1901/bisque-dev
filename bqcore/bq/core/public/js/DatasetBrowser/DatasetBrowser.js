@@ -1,5 +1,6 @@
 Ext.define('Bisque.DatasetBrowser.Dialog', {
     extend : 'Ext.window.Window',
+    alias: 'widget.bq-dataset-dialog',
     modal : true,
     border : false,
     width : '85%',
