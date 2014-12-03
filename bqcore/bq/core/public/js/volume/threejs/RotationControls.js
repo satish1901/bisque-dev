@@ -3,12 +3,13 @@
  * @author Mark Lundin 		 / http://mark-lundin.com
  */
 
-THREE.TrackballControls = function ( object, domElement ) {
+THREE.RotationControls = function ( object, domElement ) {
 
 	var _this = this;
 	var STATE = { NONE: -1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM: 4, TOUCH_PAN: 5 };
 
 	this.object = object;
+    this.object.useQuaternion = true;
 	this.domElement = ( domElement !== undefined ) ? domElement : document;
 
 	// API
@@ -46,6 +47,9 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 
     _eye = new THREE.Vector3(),
+    _eyeCopy = new THREE.Vector3(),
+    _posCopy = new THREE.Vector3(),
+    _upCopy = new THREE.Vector3(),
 
 	_globalUp = new THREE.Vector3(0,1,0),
 	_rotateStart = new THREE.Vector3(),
@@ -58,9 +62,10 @@ THREE.TrackballControls = function ( object, domElement ) {
 	_touchZoomDistanceEnd = 0,
 
 	_panStart = new THREE.Vector2(),
-	_panEnd = new THREE.Vector2();
+	_panEnd = new THREE.Vector2(),
 
-
+    _quat = new THREE.Quaternion() ;
+    _quatCopy = new THREE.Quaternion() ;
 	// for reset
 
 	this.target0 = this.target.clone();
@@ -116,202 +121,54 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	};
 
-	this.getMouseProjectionOnBall = (function(){
-
-		var objectUp = new THREE.Vector3();
-        /*
-        return function(pageX, pageY, projection){
-        	var mouseOnBall = new THREE.Vector3(
-                ( pageX - _this.screen.width * 0.5 - _this.screen.left ) / (_this.screen.width*.5),
-				( _this.screen.height * 0.5 + _this.screen.top - pageY ) / (_this.screen.height*.5),
-				0.0
-			).normalize();
-            projection.copy( mouseOnBall );
-            return projection;
-        };
-        */
-		return function ( pageX, pageY, projection ) {
-
-			var mouseOnBall = new THREE.Vector3(
-				( pageX - _this.screen.width * 0.5 - _this.screen.left ) / (_this.screen.width*.5),
-				( _this.screen.height * 0.5 + _this.screen.top - pageY ) / (_this.screen.height*.5),
-				0.0
-			);
-
-			var length = 0.5*mouseOnBall.length();
-
-			if ( _this.noRoll ) {
-
-				if ( length < Math.SQRT1_2 ) {
-                    _outsideBall = false;
-					mouseOnBall.z = Math.sqrt( 1.0 - length*length );
-
-				} else {
-                    _outsideBall = true;
-					mouseOnBall.z = .5 / length;
-
-				}
-
-			} else if ( length > 1.0 ) {
-
-				mouseOnBall.normalize();
-
-			} else {
-
-				mouseOnBall.z = Math.sqrt( 1.0 - length * length );
-
-			}
-
-			_eye.copy( _this.object.position ).sub( _this.target );
-
-			projection.copy( _this.object.up ).setLength( mouseOnBall.y )
-			projection.add( objectUp.copy( _this.object.up ).cross( _eye ).setLength( mouseOnBall.x ) );
-			projection.add( _eye.setLength( mouseOnBall.z ) );
-
-			return projection;
-		}
-
-	}());
 
 	this.rotateCamera = (function(){
-        //if the camera moves on a curve, then its movement defines a frame.
-        //we want to make sure that the frame is always oriented on the
-        //longitudinal lines of the rotational sphere.
-		var
-        gUp = new THREE.Vector3(),
-        axis = new THREE.Vector3(),
-        axisB = new THREE.Vector3(),
-        axisT = new THREE.Vector3(),
-        axisN = new THREE.Vector3(),
-        axisC = new THREE.Vector3(),
-        vT0 = new THREE.Vector3(),
-        vT1 = new THREE.Vector3(),
-        vB0 = new THREE.Vector3(),
-        vB1 = new THREE.Vector3(),
-        vN0 = new THREE.Vector3(),
-        vN1 = new THREE.Vector3(),
+        //if the camera moves on a curve, then its movement definces a frame.
 
-        N = new THREE.Vector3(), //normal vector
-        T = new THREE.Vector3(), //tangent vector
-        B = new THREE.Vector3(), //tangent vector
-
-	    quaternion = new THREE.Quaternion();
-
+	    var quat = new THREE.Quaternion();
 
 		return function () {
-            var up = _this.object.up;
-            //axis.crossVectors( _rotateStart, _rotateEnd ).normalize()
-            //var up = axis;
+            if ( _state === STATE.ROTATE && !_this.noRotate ) {
+                var dc = _rotateEnd.clone();
+                dc.sub(_rotateStart);
+                //dc.multiplyScalar(0.0001);
+                var r = Math.sqrt(dc.x*dc.x + dc.y*dc.y);
+                var rs = Math.sin(r*Math.PI);
+                quat.w = -Math.cos(r*Math.PI);
+		        quat.y = 0.0;
+                quat.x = 2.0*rs*dc.y;
+                quat.y = 2.0*rs*dc.x;
 
-            if(Math.abs(up.x) > 0.5 ){
-                _globalUp.set(1,0,0);
-                if(up.x < 0.0) _globalUp.x *= -1.0;
+                quat.normalize();
+
+                _quatCopy
+                    //.set(1,0,0,0)
+                    .copy(_quat)
+                    .multiply(quat);
+               var quatInv = quat
+                    .clone()
+                    .inverse();
+
+                //_this.object.quaternion.copy(_quatCopy);
+                /*
+                _this.object.quaternion
+                    .set(1,0,0,0)
+                    .multiply(_quat)
+                    .multiply(quat);
+                */
+
+                _this.object.quaternion.copy(quat).multiply(_quat);
+                _this.object.position.copy(_posCopy).applyQuaternion(quat);
+
+
+                console.log("pos: ", _this.object.position )
+                console.log("quat: ", _quat )
+                console.log("quat: ", _quatCopy )
             }
-            if(Math.abs(up.y) >  0.5){
-                _globalUp.set(0,1,0);
-                if(up.y < 0.0) _globalUp.y *= -1.0;
-            }
-            if(Math.abs(up.z) >  0.5){
-                _globalUp.set(0,0,1);
-                if(up.z < 0.0) _globalUp.z *= -1.0;
-            }
+        }
 
-			var angle = Math.acos( _rotateStart.dot( _rotateEnd ) / _rotateStart.length() / _rotateEnd.length() );
-            var getConstrainedAxis = function(v0, v1, v0p, v1p, C, axisOut){
-                v0p.copy(v0);
-                v1p.copy(v1);
-                C0 = new THREE.Vector3().copy(C);
-                C1 = new THREE.Vector3().copy(C);
-                v0p.sub(C0.multiplyScalar(v0p.dot(C0))); //vector reject
-                v1p.sub(C1.multiplyScalar(v1p.dot(C1))); //vector reject
-                axisOut.crossVectors( v0p, v1p ).normalize();
-                return axisOut;
-            }
 
-            var up = this.object.up.normalize();
-            gUp.copy(_globalUp);
-            N.copy(_eye).normalize();
-            T.crossVectors(N, gUp).normalize();
-            B.crossVectors(N, T).normalize();
 
-            gUp.copy(_globalUp);
-            axisB = getConstrainedAxis(_rotateStart, _rotateEnd, vB0, vB1, gUp, axisB);
-            axisT = getConstrainedAxis(_rotateStart, _rotateEnd, vT0, vT1, T, axisT);
-            axisN = getConstrainedAxis(_rotateStart, _rotateEnd, vN0, vN1, _eye, axisN);
-
-            var angleB = Math.acos( vB0.dot( vB1 ) / vB0.length() / vB1.length() );
-            var angleT = Math.acos( vT0.dot( vT1 ) / vT0.length() / vT1.length() );
-            var angleN = Math.acos( vN0.dot( vN1 ) / vN0.length() / vN1.length() );
-
-			if (angleT && angleB ) {
-
-                angleT *= _this.rotateSpeed;
-				quaternion.setFromAxisAngle( axisT, -angleT );
-
-				_eye.applyQuaternion( quaternion );
-				_this.object.up.applyQuaternion( quaternion );
-				_rotateEnd.applyQuaternion( quaternion );
-
-                angleB *= _this.rotateSpeed;
-				quaternion.setFromAxisAngle( axisB, -angleB );
-
-				_eye.applyQuaternion( quaternion );
-				_this.object.up.applyQuaternion( quaternion );
-				_rotateEnd.applyQuaternion( quaternion );
-
-                //rotational correction:
-
-                N.copy(_eye).normalize();
-                gUp.copy(_globalUp);
-                T.crossVectors(N, gUp).normalize();
-                B.crossVectors(T, N).normalize();
-
-                var angleC = 0.1*Math.acos( B.dot( up ) / B.length() / up.length() );
-
-                axisC.crossVectors(up,B).normalize();
-                angleC *= _this.rotateSpeed;
-
-                if(angleC){
-				    quaternion.setFromAxisAngle( axisC, angleC );
-
-				    _eye.applyQuaternion( quaternion );
-				    _this.object.up.applyQuaternion( quaternion );
-				    _rotateEnd.applyQuaternion( quaternion );
-                }
-
-                if ( _this.staticMoving ) {
-					_rotateStart.copy( _rotateEnd );
-
-				} else {
-                    //_rotateStart.copy( _rotateEnd );
-                    if(angleC){
-                       quaternion.setFromAxisAngle( axisC, -angleC * (0.5*_this.dynamicDampingFactor - 1.0 ) );
-					   _rotateStart.applyQuaternion( quaternion );
-                    }
-
-					quaternion.setFromAxisAngle( axisT, angleT * ( _this.dynamicDampingFactor - 1.0 ) );
-					_rotateStart.applyQuaternion( quaternion );
-
-					quaternion.setFromAxisAngle( axisB, angleB * ( _this.dynamicDampingFactor - 1.0 ) );
-					_rotateStart.applyQuaternion( quaternion );
-				}
-
-			}
-            /*
-            if ( angleN  && _outsideBall) {
-
-                angleN = _rotateEnd.sub(_rotateStart).length();
-				quaternion.setFromAxisAngle( axisN, -angleN );
-
-				//_eye.applyQuaternion( quaternion );
-				_this.object.up.applyQuaternion( quaternion );
-				//_rotateEnd.applyQuaternion( quaternion );
-
-                //_rotateStart.copy( _rotateEnd );
-            }
-            */
-
-		}
 
 	}());
 
@@ -420,7 +277,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	this.update = function () {
 
-		_eye.subVectors( _this.object.position, _this.target );
+		//_eye.subVectors( _this.object.position, _this.target );
 
 		if ( !_this.noRotate ) {
 
@@ -440,12 +297,12 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		}
 
-		_this.object.position.addVectors( _this.target, _eye );
+		//_this.object.position.addVectors( _this.target, _eye );
 
-		_this.checkDistances();
+		//_this.checkDistances();
 
-		_this.object.lookAt( _this.target );
-
+		//_this.object.lookAt( _this.target );
+        /*
 		if ( lastPosition.distanceToSquared( _this.object.position ) > 0 ) {
 
 			_this.dispatchEvent( changeEvent );
@@ -453,7 +310,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 			lastPosition.copy( _this.object.position );
 
 		}
-
+        */
 	};
 
 	this.reset = function () {
@@ -526,21 +383,12 @@ THREE.TrackballControls = function ( object, domElement ) {
 		event.stopPropagation();
 
         var up = _this.object.up;
-        //axis.crossVectors( _rotateStart, _rotateEnd ).normalize()
-        //var up = axis;
-        if(Math.abs(up.x) > Math.abs(up.y) && Math.abs(up.x) > Math.abs(up.z) ){
-            _globalUp.set(1,0,0);
-            if(up.x < 0.0) _globalUp.x *= -1.0;
-        }
-        if(Math.abs(up.y) > Math.abs(up.x) && Math.abs(up.y) > Math.abs(up.z) ){
-            _globalUp.set(0,1,0);
-            if(up.y < 0.0) _globalUp.y *= -1.0;
-        }
-        if(Math.abs(up.z) > Math.abs(up.x) && Math.abs(up.z) > Math.abs(up.y) ){
-            _globalUp.set(0,0,1);
-            if(up.z < 0.0) _globalUp.z *= -1.0;
-        }
+        _quat.copy(_this.object.quaternion);
+        //_quat.copy(_quatCopy);
 
+        _posCopy.copy(_this.object.position);
+
+        console.log("mousedown: ", _quat);
 
 		if ( _state === STATE.NONE ) {
 
@@ -549,10 +397,8 @@ THREE.TrackballControls = function ( object, domElement ) {
 		}
 
 		if ( _state === STATE.ROTATE && !_this.noRotate ) {
-
-
-			_rotateStart = _this.getMouseProjectionOnBall( event.pageX, event.pageY, _rotateStart );
-			_rotateEnd.copy(_rotateStart)
+            _rotateStart = _this.getMouseOnScreen( event.pageX, event.pageY, _rotateStart );
+		    _rotateEnd.copy(_rotateStart)
 
 		} else if ( _state === STATE.ZOOM && !_this.noZoom ) {
 
@@ -582,7 +428,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		if ( _state === STATE.ROTATE && !_this.noRotate ) {
 
-			_rotateEnd = _this.getMouseProjectionOnBall( event.pageX, event.pageY, _rotateEnd );
+			_rotateEnd = _this.getMouseOnScreen( event.pageX, event.pageY, _rotateEnd );
 
 		} else if ( _state === STATE.ZOOM && !_this.noZoom ) {
 
@@ -599,7 +445,6 @@ THREE.TrackballControls = function ( object, domElement ) {
 	function mouseup( event ) {
 
 		if ( _this.enabled === false ) return;
-
 		event.preventDefault();
 		event.stopPropagation();
 
@@ -741,4 +586,4 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 };
 
-THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+THREE.RotationControls.prototype = Object.create( THREE.EventDispatcher.prototype );
