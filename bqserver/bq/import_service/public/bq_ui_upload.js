@@ -784,7 +784,7 @@ Ext.define('BQ.upload.Panel', {
                     iconCls: 'icon browse',
                     text: 'Choose files',
                     tooltip: 'Select several local files to upload',
-                    cls: 'x-btn-default-large',
+                    //cls: 'x-btn-default-large',
                 },
                 listeners: {
                     change: this.chooseFiles,
@@ -803,7 +803,7 @@ Ext.define('BQ.upload.Panel', {
                     iconCls: 'icon browse-folders',
                     text: 'Choose directory',
                     tooltip: 'Select a local directory to upload',
-                    cls: 'x-btn-default-large',
+                    //cls: 'x-btn-default-large',
                 },
                 listeners: {
                     change: this.chooseFiles,
@@ -812,7 +812,7 @@ Ext.define('BQ.upload.Panel', {
             }, {
                 xtype:'splitbutton',
                 text: 'Toggle permissions',
-                cls: 'x-btn-default-large',
+                //cls: 'x-btn-default-large',
                 tooltip: 'Toggle access right to all images, only works before the upload have started',
                 //iconCls: 'add16',
                 scope: this,
@@ -831,14 +831,14 @@ Ext.define('BQ.upload.Panel', {
             }, {
                 text: 'Formats',
                 iconCls: 'icon formats',
-                cls: 'x-btn-default-large',
+                //cls: 'x-btn-default-large',
                 tooltip: 'Show supported formats',
                 handler: this.onFormats,
                 scope: this,
             }, {
                 text: 'Help',
                 iconCls: 'icon help',
-                cls: 'x-btn-default-large',
+                //cls: 'x-btn-default-large',
                 tooltip: 'Show help page about file uploading',
                 handler: this.onHelp,
                 scope: this,
@@ -850,7 +850,7 @@ Ext.define('BQ.upload.Panel', {
             border: 0,
             defaults: {
                 scale: 'large',
-                cls: 'x-btn-default-large',
+                //cls: 'x-btn-default-large',
             },
             items: [{
                 xtype: 'button',
@@ -859,7 +859,7 @@ Ext.define('BQ.upload.Panel', {
                 disabled: true,
                 iconCls: 'icon upload',
                 scale: 'large',
-                cls: 'x-btn-default-large',
+                //cls: 'x-btn-default-large',
                 tooltip: 'Start the upload of all queued files',
                 scope: this,
                 handler: this.upload,
@@ -870,7 +870,7 @@ Ext.define('BQ.upload.Panel', {
                 disabled: true,
                 iconCls: 'icon cancel',
                 scale: 'large',
-                cls: 'x-btn-default-large',
+                //cls: 'x-btn-default-large',
                 tooltip: 'Cancel all queued and uploading files',
                 scope: this,
                 handler: this.cancel,
@@ -882,7 +882,7 @@ Ext.define('BQ.upload.Panel', {
                 hidden: true,
                 iconCls: 'icon upload',
                 scale: 'large',
-                cls: 'x-btn-default-large',
+                //cls: 'x-btn-default-large',
                 tooltip: 'Re-upload all failed files',
                 handler: Ext.Function.bind( this.reupload, this ),
             }, {
@@ -896,7 +896,7 @@ Ext.define('BQ.upload.Panel', {
                 //iconCls: 'icon cancel',
                 scale: 'large',
                 hidden: true,
-                cls: 'x-btn-default-large',
+                //cls: 'x-btn-default-large',
                 tooltip: 'Add all uploaded files to a new dataset',
                 scope: this,
                 handler: function(me) {
@@ -920,7 +920,7 @@ Ext.define('BQ.upload.Panel', {
                 //iconCls: 'icon cancel',
                 scale: 'large',
                 hidden: true,
-                cls: 'x-btn-default-large',
+                //cls: 'x-btn-default-large',
                 tooltip: 'Add all uploaded files to an existing dataset',
                 scope: this,
                 handler: function(me) {
@@ -1115,6 +1115,7 @@ Ext.define('BQ.upload.Panel', {
         if (!noui) {
             this.uploadPanel.add(fp);
             this.btn_upload.setDisabled(false);
+            this.btn_upload.getEl().highlight('ffd232', {duration:250, iterations:6});
             //this.btn_reupload.setVisible(false);
             this.btn_cancel.setDisabled(false);
             this.taggerPanel.setDisabled(false);
@@ -1157,6 +1158,7 @@ Ext.define('BQ.upload.Panel', {
                         me.progress.setVisible(false);
                         me.setLoading(false);
                         me.btn_upload.setDisabled(false);
+                        me.btn_upload.getEl().highlight('ffd232', {duration:250, iterations:6});
                         me.btn_cancel.setDisabled(false);
                         me.btn_dataset.setVisible(false);
                         me.btn_dataset_add.setVisible(false);
@@ -1199,6 +1201,7 @@ Ext.define('BQ.upload.Panel', {
             this.progress.setVisible(false);
             this.setLoading(false);
             this.btn_upload.setDisabled(false);
+            this.btn_upload.getEl().highlight('ffd232', { duration: 250, iterations: 4, });
             this.btn_cancel.setDisabled(false);
             this.taggerPanel.setDisabled(false);
             this.btn_dataset.setVisible(false);
@@ -1494,7 +1497,7 @@ Ext.define('BQ.upload.Panel', {
             return 'Upload in progress, by closing the page you will cancel all uploads!';
         }
         if (unuploaded) {
-            this.queryById('btn_upload').getEl().highlight('FF9500', {duration:250, iterations:6});
+            this.btn_upload.getEl().highlight('ffd232', {duration:250, iterations:6});
             return 'There are unuploaded files, by closing the page you will cancel all uploads!';
         }
     },

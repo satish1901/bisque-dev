@@ -115,10 +115,10 @@
     padding: 10px 10px 10px 15px;
 }
 
-.footer .x-btn-default-large {
+/*.footer .x-btn-default-large {
     border-color: #CCCCCC;
     padding: 6px;
-}
+}*/
 
 .footer .x-btn-inner {
     font-size: 14px;
@@ -160,6 +160,19 @@
     padding: 2px;
 }
 
+.bq-upload-panel .x-toolbar .x-btn {
+    border: 1px solid transparent;
+    /*background: -webkit-gradient(linear,50% 0,50% 100%,color-stop(0%,#fff),color-stop(48%,#f9f9f9),color-stop(52%,#e2e2e2),color-stop(100%,#e7e7e7));
+    background: -webkit-linear-gradient(top,#fff,#f9f9f9 48%,#e2e2e2 52%,#e7e7e7);
+    background: -moz-linear-gradient(top,#fff,#f9f9f9 48%,#e2e2e2 52%,#e7e7e7);
+    background: -o-linear-gradient(top,#fff,#f9f9f9 48%,#e2e2e2 52%,#e7e7e7);
+    background: linear-gradient(top,#fff,#f9f9f9 48%,#e2e2e2 52%,#e7e7e7);*/
+}
+
+.bq-upload-panel .x-toolbar .x-btn-over {
+    border: 1px solid #bbd5f1;
+}
+
 /*************************************************************************
   upload button
 *************************************************************************/
@@ -167,6 +180,7 @@
 .bq-upload-file {
    overflow: hidden;
 }
+
 
 /*************************************************************************
   BQ.upload.Item

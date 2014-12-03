@@ -3,10 +3,10 @@
     padding: 10px 10px 10px 15px;
 }
 
-.tools .x-btn-default-large {
+/*.tools .x-btn-default-large {
     border-color: #CCCCCC;
     padding: 6px;
-}
+}*/
 
 .tools .x-btn-inner {
     font-size: 14px;
@@ -16,10 +16,10 @@
     padding: 10px 10px 10px 15px;
 }
 
-.footer .x-btn-default-large {
+/*.footer .x-btn-default-large {
     border-color: #CCCCCC;
     padding: 6px;
-}
+}*/
 
 .footer .x-btn-inner {
     font-size: 14px;
@@ -53,16 +53,25 @@
 
 /* Icons */
 
-.icon-select-images {
-    background-image: url('../images/select-images.png') !important;
+.bq-download-panel .icon {
+    width: 34px;
+    background-image: url('icons.svg');
+    background-repeat: no-repeat;
+    background-size: 200px;
+    background-position: 0px 0px;
+    background-color: transparent;
 }
 
-.icon-select-dataset {
-    background-image: url('../images/select-dataset.png') !important;
+.bq-download-panel .icon.select-images {
+    background-position: 0px -97px;
 }
 
-.icon-download {
-    background-image: url('/images/toolbar/download.png') !important;
+.bq-download-panel .icon.select-dataset {
+    background-position: 0px -129px;
+}
+
+.bq-download-panel .icon.download {
+    background-position: 0px 0px;
 }
 
 .icon-gdocs {
