@@ -120,6 +120,12 @@ bisque.stores.local.top = file://$datadir/imagedir/
 #bisque.stores.s3.bucket_id = None
 #bisque.stores.s3.location = us-west
 
+# Feature service
+# Set if a feature is cached (all features are set to not cache by default)
+#bisque.default.cache = False
+#set for specific feature
+#bisque.HTD.cache = False
+
 # Data service
 #bisque.data_service.caching=true
 #bisque.data_service.server_cache=.server_cache

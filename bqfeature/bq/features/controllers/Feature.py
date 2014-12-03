@@ -6,10 +6,13 @@ import os
 import tables
 import logging
 import uuid
+from tg.configuration import config
 from .var import FEATURES_TABLES_FILE_DIR
 
 log = logging.getLogger("bq.features.Feature")
 
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1", "True")
 
 ###############################################################
 # Feature Object
@@ -52,8 +55,9 @@ class BaseFeature(object):
     #format the features are stored in
     feature_format = "float32"
 
-    #option for feature not to be stored to any table
-    cache = True
+    #option for feature to be stored in hdf5 cache
+    #cache = True
+    cache = False
 
     #option of turing on the index
     #index = True
@@ -77,6 +81,12 @@ class BaseFeature(object):
 
     def __init__ (self):
         self.path = os.path.join(FEATURES_TABLES_FILE_DIR, self.name)
+        
+        #set cache in site.cfg
+        self.cache = str2bool(config.get('bisque.%s.cache'%self.name, None) #checks for specific feature
+                     or config.get('bisque.default.cache', None) #checks the default
+                     or 'False') #sets a default if nothing is specified
+
 
     def localfile(self, hash):
         """
