@@ -1,6 +1,7 @@
 Ext.define('BQ.Export.Panel', {
     extend : 'Ext.panel.Panel',
     alias: 'widget.bq_export_panel',
+    componentCls: 'bq-download-panel',
 
     date_pattern: BQ.Date.patterns.ISO8601Long,
 
@@ -34,9 +35,8 @@ Ext.define('BQ.Export.Panel', {
                 html : '<h2>' + this.heading + ':</h2>'
             }, {
                 xtype : 'splitbutton',
-                cls: 'x-btn-default-large',
                 text : 'Add images',
-                iconCls : 'icon-select-images',
+                iconCls : 'icon select-images',
                 resourceType : 'image',
                 handler : this.selectImage,
                 scope : this,
@@ -46,8 +46,7 @@ Ext.define('BQ.Export.Panel', {
                 },
             }, {
                 text : 'Add dataset',
-                cls: 'x-btn-default-large',
-                iconCls : 'icon-select-dataset',
+                iconCls : 'icon select-dataset',
                 handler : this.selectDataset,
                 scope : this,
             }, /*{
@@ -64,13 +63,12 @@ Ext.define('BQ.Export.Panel', {
             border: 0,
             defaults: {
                 scale: 'large',
-                cls: 'x-btn-default-large',
             },
             items : [{
                 xtype : 'splitbutton',
                 itemId: 'button_download',
                 text : 'Download',
-                iconCls : 'icon-download',
+                iconCls : 'icon download',
                 arrowAlign : 'right',
                 menuAlign : 'bl-tl?',
                 compression : 'gzip',
