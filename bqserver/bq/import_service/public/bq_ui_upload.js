@@ -1115,6 +1115,7 @@ Ext.define('BQ.upload.Panel', {
         if (!noui) {
             this.uploadPanel.add(fp);
             this.btn_upload.setDisabled(false);
+            //this.btn_reupload.setVisible(false);
             this.btn_cancel.setDisabled(false);
             this.taggerPanel.setDisabled(false);
             this.btn_dataset.setVisible(false);
@@ -1282,6 +1283,8 @@ Ext.define('BQ.upload.Panel', {
         this._time_started = new Date();
         this.btn_upload.setDisabled(true);
         this.taggerPanel.setDisabled(true);
+        this.btn_dataset.setVisible(false);
+        this.btn_dataset_add.setVisible(false);
         this.progress.setVisible(true);
         this.progress.updateProgress(0, BQ.upload.UPLOAD_STRING);
         this.uploadPanel.items.each( function() { if (this.upload) this.upload(); } );
@@ -1359,16 +1362,17 @@ Ext.define('BQ.upload.Panel', {
             this.progress.setVisible(false);
             this.btn_upload.setDisabled(true);
             this.btn_cancel.setDisabled(true);
-            this.taggerPanel.setDisabled(true);
-            this.btn_dataset.setVisible(true);
-            this.btn_dataset_add.setVisible(true);
-            //this.doHighlight(this.btn_dataset.getEl(), '<p>You can now add all uploaded files to a dataset</p>');
-            BQ.ui.highlight(this.btn_dataset.getEl(), '<p>You can now add uploaded files to a dataset</p>', {
-                anchor:'bottom',
-                timeout: 10000,
-                //mouseOffset : [0, 10],
-                cls: 'bq-highlight',
-            });
+            if (failed<1) {
+                this.taggerPanel.setDisabled(true);
+                this.btn_dataset.setVisible(true);
+                this.btn_dataset_add.setVisible(true);
+                BQ.ui.highlight(this.btn_dataset.getEl(), '<p>You can now add uploaded files to a dataset</p>', {
+                    anchor:'bottom',
+                    timeout: 10000,
+                    //mouseOffset : [0, 10],
+                    cls: 'bq-highlight',
+                });
+            }
 
 
             // fire all files uploaded event
