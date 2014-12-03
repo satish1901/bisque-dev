@@ -268,7 +268,7 @@ class WorkDirRows(Rows):
             try:
                 results = zip(*results)
             except TypeError:
-                results = tuple([results])
+                results = [tuple([results])]
                 
             rows = []; status = []
             for (j) in results:
