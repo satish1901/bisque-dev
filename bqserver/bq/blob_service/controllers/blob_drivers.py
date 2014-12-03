@@ -257,7 +257,7 @@ class LocalDriver (StorageDriver):
         return os.path.exists(localpath) and localpath2url(localpath)
 
     # New interface
-    def push(self, storeurl, fp):
+    def push(self, fp, storeurl):
         "Push a local file (file pointer)  to the store"
 
         log.debug('local.push: %s' , storeurl)
