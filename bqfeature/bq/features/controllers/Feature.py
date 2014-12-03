@@ -83,8 +83,8 @@ class BaseFeature(object):
         self.path = os.path.join(FEATURES_TABLES_FILE_DIR, self.name)
         
         #set cache in site.cfg
-        self.cache = str2bool(config.get('bisque.%s.cache'%self.name, None) #checks for specific feature
-                     or config.get('bisque.default.cache', None) #checks the default
+        self.cache = str2bool(config.get('bisque.feature.%s.cache'%self.name, None) #checks for specific feature
+                     or config.get('bisque.feature.default.cache', None) #checks the default
                      or 'False') #sets a default if nothing is specified
 
 
