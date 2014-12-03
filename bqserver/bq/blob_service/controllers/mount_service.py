@@ -56,7 +56,6 @@ import os
 import logging
 import string
 import urllib
-import urlparse
 import shutil
 import posixpath
 
@@ -561,7 +560,7 @@ class MountServer(TGController):
                 if driver.readonly:
                     raise IllegalOperation('readonly store')
 
-                storeurl = urlparse.urljoin (driver.mount_url, storepath)
+                storeurl = posixpath.join (driver.mount_url, storepath)
                 log.debug('_save_store: %s from %s %s', storeurl, driver.mount_url, storepath)
                 storeurl, localpath = driver.push (fileobj, storeurl)
 
