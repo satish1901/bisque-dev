@@ -563,7 +563,7 @@ class MountServer(TGController):
 
                 storeurl = urlparse.urljoin (driver.mount_url, storepath)
                 log.debug('_save_store: %s from %s %s', storeurl, driver.mount_url, storepath)
-                storeurl, localpath = driver.push (storeurl, fileobj)
+                storeurl, localpath = driver.push (fileobj, storeurl)
 
                 resource.set('name', join_subpath(os.path.basename(localpath), sub))
                 resource.set('value', join_subpath(storeurl, sub))
@@ -586,7 +586,7 @@ class MountServer(TGController):
         @param resource: a resource with storeurls
         @param rooturl: the root of the storeurls
         """
-        log.debug ("_save_storerefs: %s, %s, %s, %s", store, storepath, resource, rooturl)
+        log.debug ("_save_storerefs: %s, %s, %s, %s" % ( store, storepath, etree.tostring(resource), rooturl))
 
         def setval(n, v):
             n.set('value', v)
@@ -599,7 +599,7 @@ class MountServer(TGController):
                 refs = [ (resource, setval, split_subpath(refs), storepath) ]
             else:
                 refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
-            log.debug ("_save_storerefs refs: %s", refs)
+            log.debug ("_save_storerefs refs: %s", str(refs))
 
             rootpath = storepath
             # Determine a list of URL that need to be moved to a store (these were unpacked locally)
@@ -628,8 +628,8 @@ class MountServer(TGController):
                 else:
                     log.error ("_save_storerefs: Cannot access %s as %s of %s ", storeurl, localpath, etree.tostring(node))
 
-            log.debug ("_save_storerefs movingrefs: %s", movingrefs)
-            log.debug ("_save_storerefs fixedrefs: %s", fixedrefs)
+            log.debug ("_save_storerefs movingrefs: %s", str(movingrefs))
+            log.debug ("_save_storerefs fixedrefs: %s", str(fixedrefs))
 
             # I don't a single resource will have in places references and references that need to move
             if len(fixedrefs) and len(movingrefs):
@@ -646,8 +646,9 @@ class MountServer(TGController):
 
             for node, setter, (localpath, subpath), storepath in movingrefs:
                 with open (localpath, 'rb') as fobj:
-                    storeurl = urlparse.urljoin (driver.mount_url, storepath)
-                    storeurl, localpath = driver.push (storeurl, fobj)
+                    storeurl = posixpath.join (driver.mount_url, storepath)
+                    log.debug ("_save_store_refs: push %s", storeurl)
+                    storeurl, localpath = driver.push (fobj, storeurl)
                     if first[0] is None:
                         first = (storeurl, localpath)
                     setter(node, join_subpath (storeurl, subpath))

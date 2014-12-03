@@ -350,6 +350,8 @@ class IrodsDriver(StorageDriver):
         #self.password = kw.pop('credentials.password', None) or kw.pop('password', None)
         self.readonly = asbool(readonly)
         self.options = kw
+	self.user  = self.user.strip ('"\'')
+	self.password  = self.password.strip ('"\'')
         log.debug('irods.user: %s irods.password: %s' , self.user, self.password)
         # Get the constant portion of the path
         log.info("created irods store %s " , self.mount_url)
