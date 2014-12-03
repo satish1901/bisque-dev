@@ -61,6 +61,16 @@
     user-select: none;
 }
 
+
+.bq-upload-panel .icon {
+    width: 34px;
+    background-image: url('icons.svg');
+    background-repeat: no-repeat;
+    background-size: 200px;
+    background-position: 0px 0px;
+    background-color: transparent;
+}
+
 .tools {
     /*background-color: white;*/
     padding: 10px 10px 10px 15px;
@@ -76,23 +86,23 @@
 }
 
 .tools .browse {
-    background-image: url('images/browse.png');
-    background-color: transparent;
+    background-position: 0px -97px;
+}
+
+.tools .browse-folders {
+    background-position: 0px -130px;
 }
 
 .tools .annotate {
-    background-image: url('images/annotations.png');
-    background-color: transparent;
+    background-position: 0px 0px;
 }
 
 .tools .formats {
-    background-image: url('images/formats.png');
-    background-color: transparent;
+    background-position: 0px -163px;
 }
 
 .tools .help {
-    background-image: url('images/help.png');
-    background-color: transparent;
+    background-position: 0px -66px;
 }
 
 .tools .x-toolbar-text h1 {
@@ -115,13 +125,11 @@
 }
 
 .footer .upload {
-    background-image: url('images/upload.png');
-    background-color: transparent;
+    background-position: 0px 0px;
 }
 
 .footer .cancel {
-    background-image: url('images/cancel.png');
-    background-color: transparent;
+    background-position: 0px -33px;
 }
 
 .dragging {
@@ -191,6 +199,15 @@
     /*background-image: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #eeeeee), color-stop(50%, #e5e5e5), color-stop(51%, #e0e0e0), color-stop(100%, #eeeeee));
     background-image: -moz-linear-gradient(top, #eeeeee,#e5e5e5 50%,#e0e0e0 51%,#eeeeee);
     background-image: linear-gradient(top, #eeeeee,#e5e5e5 50%,#e0e0e0 51%,#eeeeee);*/
+}
+
+.uploaditem .filename {
+    max-width: 50%;
+    display: inline-block;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding: 0px;
+    margin: 0px;
 }
 
 .uploaditem .info {

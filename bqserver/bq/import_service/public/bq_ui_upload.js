@@ -19,7 +19,7 @@
     </resource>
 
 
-    The document can also contain special tag for prosessing and additional info:
+    The document can also contain special tag for processing and additional info:
     <resource name="XXX" permission="private|published" >
         <tag name='any tag' value='any value' />
         <tag name='ingest'>
@@ -450,7 +450,7 @@ Ext.define('BQ.upload.Item', {
             this.progress.removeCls( 'error' );
             this.progress.removeCls( 'done' );
         } else
-        if (this.state==BQ.upload.STATES.DONE) {
+        if (this.state===BQ.upload.STATES.DONE) {
             this.progress.removeCls( 'error' );
             this.progress.addCls( 'done' );
         } else
@@ -589,7 +589,7 @@ Ext.define('BQ.upload.Item', {
             if (this.resource.uri) {
                 // image inserted correctly
                 this.state = BQ.upload.STATES.DONE;
-                var s = 'Uploaded <a href="'+BQ.upload.view_resource+this.resource.uri+'">'+this.file.name+'</a>'+' as <b>'+this.resource.resource_type+'</b> '+timing;
+                var s = 'Uploaded <a class="filename" href="'+BQ.upload.view_resource+this.resource.uri+'">'+this.file.name+'</a>'+' as <b>'+this.resource.resource_type+'</b> '+timing;
                 this.fileName.setText(s);
             } else { // error returned in an XML doc
                 var d = this.resource.toDict();
@@ -724,6 +724,8 @@ BQ.upload.DEFAULTS = {
 Ext.define('BQ.upload.Panel', {
     extend: 'Ext.panel.Panel',
     alias: 'widget.bq_upload',
+    componentCls: 'bq-upload-panel',
+
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'BQ.picker.Path', 'Bisque.ResourceTaggerOffline'],
 
     border: 0,
@@ -745,106 +747,14 @@ Ext.define('BQ.upload.Panel', {
         BQ.is.fetchFormatsList( callback(this, this.onFormatsList), undefined );
 
         // footer's toolbar elements
-
-        this.progress = Ext.create('Ext.ProgressBar', {
-            text: BQ.upload.UPLOAD_STRING,
-            flex: 1,
-            height: 30,
-            style: 'margin-left: 30px; margin-right: 30px;',
-            animate: false,
-            value: 0,
-        });
-        this.progress.setVisible(false);
-
-        this.btn_upload = Ext.create('Ext.button.Button', {
-            text: 'Upload',
-            disabled: true,
-            iconCls: 'upload',
-            scale: 'large',
-            cls: 'x-btn-default-large',
-            tooltip: 'Start the upload of all queued files',
-            scope: this,
-            handler: this.upload,
-        });
-
-        this.btn_cancel = Ext.create('Ext.button.Button', {
-            text: 'Cancel',
-            disabled: true,
-            iconCls: 'cancel',
-            scale: 'large',
-            cls: 'x-btn-default-large',
-            tooltip: 'Cancel all queued and uploading files',
-            scope: this,
-            handler: this.cancel,
-        });
-
-        var dataset_btn_visible = true;
-        var dataset_btn_preseed = false;
-        if (this.dataset_configs > BQ.upload.DATASET_CONFIGS.NORMAL)
+        var dataset_btn_visible = true,
+            dataset_btn_preseed = false;
+        if (this.dataset_configs > BQ.upload.DATASET_CONFIGS.NORMAL) {
             dataset_btn_visible = false;
-        if (this.dataset_configs == BQ.upload.DATASET_CONFIGS.REQUIRE)
+        }
+        if (this.dataset_configs == BQ.upload.DATASET_CONFIGS.REQUIRE) {
             dataset_btn_preseed = true;
-
-        this.btn_dataset = Ext.create('Ext.button.Button', {
-            text: 'Create a dataset',
-            //iconCls: 'cancel',
-            scale: 'large',
-            enableToggle: true,
-            pressed: dataset_btn_preseed,
-            hidden: !dataset_btn_visible,
-            cls: 'x-btn-default-large',
-            tooltip: 'Wrap all uploaded images into a dataset, if selected all images will be added into a dataset after upload',
-            scope: this,
-            handler: function(me) {
-                if (!me.pressed)
-                    BQ.ui.notification('Dataset will not be created', 1000);
-                else {
-                    //BQ.ui.notification('All images will be wraped in a dataset', 1000);
-                    this.dataset_name = this.dataset_name || ('Uploaded on '+(new Date()).toISOString());
-                    Ext.Msg.prompt('Dataset name', 'Please enter a dataset name:', function(btn, text) {
-                        if (btn == 'ok') {
-                            this.dataset_name = text;
-                        }
-                    }, this, false, this.dataset_name);
-                }
-            },
-        });
-
-        this.btn_reupload = Ext.create('Ext.button.Button', {
-            text: 'Re-upload failed',
-            //disabled: true,
-            hidden: true,
-            iconCls: 'upload',
-            scale: 'large',
-            cls: 'x-btn-default-large',
-            tooltip: 'Re-upload all failed files',
-            handler: Ext.Function.bind( this.reupload, this ),
-        });
-
-        // main elements
-        this.taggerPanel = Ext.create('Bisque.ResourceTaggerOffline', {
-            title: 'Textual annotations',
-            border: 0,
-            region:'east',
-            collapsible: true,
-            width: 350,
-            cls: 'tabs',
-            deferredRender: true,
-        });
-
-        this.uploadPanel = Ext.create('Ext.container.Container', {
-            border: 0,
-            //region:'center',
-            flex: 10,
-            autoScroll: true,
-            cls: 'upload',
-            html: '<div id="formats_background" class="background"></div><div class="background dropzone">Drop files here</div>',
-        });
-
-
-        //--------------------------------------------------------------------------------------
-        // toolbars
-        //--------------------------------------------------------------------------------------
+        }
 
         this.dockedItems = [{
             xtype: 'toolbar',
@@ -871,7 +781,7 @@ Ext.define('BQ.upload.Panel', {
                 scope: this,
                 buttonConfig: {
                     scale: 'large',
-                    iconCls: 'browse',
+                    iconCls: 'icon browse',
                     text: 'Choose files',
                     tooltip: 'Select several local files to upload',
                     cls: 'x-btn-default-large',
@@ -890,7 +800,7 @@ Ext.define('BQ.upload.Panel', {
                 handler: this.chooseFiles,
                 buttonConfig: {
                     scale: 'large',
-                    iconCls: 'browse',
+                    iconCls: 'icon browse-folders',
                     text: 'Choose directory',
                     tooltip: 'Select a local directory to upload',
                     cls: 'x-btn-default-large',
@@ -920,14 +830,14 @@ Ext.define('BQ.upload.Panel', {
                 xtype: 'tbfill',
             }, {
                 text: 'Formats',
-                iconCls: 'formats',
+                iconCls: 'icon formats',
                 cls: 'x-btn-default-large',
                 tooltip: 'Show supported formats',
                 handler: this.onFormats,
                 scope: this,
             }, {
                 text: 'Help',
-                iconCls: 'help',
+                iconCls: 'icon help',
                 cls: 'x-btn-default-large',
                 tooltip: 'Show help page about file uploading',
                 handler: this.onHelp,
@@ -942,7 +852,107 @@ Ext.define('BQ.upload.Panel', {
                 scale: 'large',
                 cls: 'x-btn-default-large',
             },
-            items: [ this.btn_dataset, this.btn_upload, this.btn_cancel, this.btn_reupload, this.progress, ]
+            items: [{
+                xtype: 'button',
+                itemId: 'btn_upload',
+                text: 'Upload',
+                disabled: true,
+                iconCls: 'icon upload',
+                scale: 'large',
+                cls: 'x-btn-default-large',
+                tooltip: 'Start the upload of all queued files',
+                scope: this,
+                handler: this.upload,
+            }, {
+                xtype: 'button',
+                itemId: 'btn_cancel',
+                text: 'Cancel',
+                disabled: true,
+                iconCls: 'icon cancel',
+                scale: 'large',
+                cls: 'x-btn-default-large',
+                tooltip: 'Cancel all queued and uploading files',
+                scope: this,
+                handler: this.cancel,
+            }, {
+                xtype: 'button',
+                itemId: 'btn_reupload',
+                text: 'Re-upload failed',
+                //disabled: true,
+                hidden: true,
+                iconCls: 'icon upload',
+                scale: 'large',
+                cls: 'x-btn-default-large',
+                tooltip: 'Re-upload all failed files',
+                handler: Ext.Function.bind( this.reupload, this ),
+            }, {
+                xtype: 'tbspacer',
+                cls: '',
+                width: 50,
+            }, {
+                xtype: 'button',
+                itemId: 'btn_dataset',
+                text: 'Add to new dataset',
+                //iconCls: 'icon cancel',
+                scale: 'large',
+                hidden: true,
+                cls: 'x-btn-default-large',
+                tooltip: 'Add all uploaded files to a new dataset',
+                scope: this,
+                handler: function(me) {
+                    Ext.Msg.prompt(
+                        'Dataset name',
+                        'Please enter a dataset name:',
+                        function(btn, text) {
+                            if (btn === 'ok') {
+                                this.createNewDataset(text);
+                            }
+                        },
+                        this,
+                        false,
+                        'Uploaded on '+(new Date()).toISOString()
+                    );
+                },
+            }, {
+                xtype: 'button',
+                itemId: 'btn_dataset_add',
+                text: 'Add to existing dataset',
+                //iconCls: 'icon cancel',
+                scale: 'large',
+                hidden: true,
+                cls: 'x-btn-default-large',
+                tooltip: 'Add all uploaded files to an existing dataset',
+                scope: this,
+                handler: function(me) {
+                    Ext.create('Bisque.DatasetBrowser.Dialog', {
+                        height: '85%',
+                        width:  '85%',
+                        listeners: {
+                            scope: this,
+                            DatasetSelect: function(me, resource) {
+                                BQFactory.request ({
+                                    uri : resource.uri,
+                                    cb : callback(this, this.addToDataset),
+                                    errorcb : function(error) {
+                                        BQ.ui.error('Error fetching dataset', 4000);
+                                    },
+                                    uri_params: { view:'deep' },
+                                });
+                            },
+                        },
+                    });
+                },
+            }, {
+                xtype: 'progressbar',
+                itemId: 'progress',
+                text: BQ.upload.UPLOAD_STRING,
+                flex: 1,
+                height: 30,
+                style: 'margin-left: 30px; margin-right: 30px;',
+                animate: false,
+                value: 0,
+                hidden: true,
+            }],
         }];
 
         //--------------------------------------------------------------------------------------
@@ -973,12 +983,27 @@ Ext.define('BQ.upload.Panel', {
                         browse: this.browsePath,
                         changed: this.onPathChanged,
                     },
-                },
-                this.uploadPanel ],
-            },
-                //this.uploadPanel,
-                this.taggerPanel,
-            ],
+                }, {
+                    xtype: 'container',
+                    itemId: 'uploadPanel',
+                    border: 0,
+                    //region:'center',
+                    flex: 10,
+                    autoScroll: true,
+                    cls: 'upload',
+                    html: '<div id="formats_background" class="background"></div><div class="background dropzone">Drop files here</div>',
+                }],
+            },{
+                xtype: 'bq-tagger-offline',
+                itemId: 'taggerPanel',
+                title: 'Textual annotations',
+                border: 0,
+                region:'east',
+                collapsible: true,
+                width: 350,
+                cls: 'tabs',
+                deferredRender: true,
+            }],
         }];
 
         this.callParent();
@@ -987,6 +1012,14 @@ Ext.define('BQ.upload.Panel', {
             key : 'Uploader',
             callback : Ext.bind(this.onPreferences, this),
         });
+        this.btn_upload      = this.queryById('btn_upload');
+        this.btn_cancel      = this.queryById('btn_cancel');
+        this.btn_reupload    = this.queryById('btn_reupload');
+        this.btn_dataset     = this.queryById('btn_dataset');
+        this.btn_dataset_add = this.queryById('btn_dataset_add');
+        this.progress        = this.queryById('progress');
+        this.taggerPanel     = this.queryById('taggerPanel');
+        this.uploadPanel     = this.queryById('uploadPanel');
     },
 
     afterRender : function() {
@@ -1002,13 +1035,30 @@ Ext.define('BQ.upload.Panel', {
 
         // this is used for capturing window closing and promting the user if upload is in progress
         //Ext.EventManager.on(window, 'beforeunload', this.onClose, this);
-        var me = this;
-        window.onbeforeunload = function(){ return me.onClose(); };
+        window.onbeforeunload = Ext.bind(this.onClose, this);
+        // dima: also listen to closing the panel
+
+
+        var el = this.queryById('upload_path').queryById('prefix').getEl(),
+            s = '<p>Uploading to folder: <b>'+this.getPreferredPath()+'</b></p>';
+        s += '<p>Press "Upload to" to change...</p>';
+        this.doHighlight(el, s);
     },
 
     onDestroy : function() {
         this.cancel(true);
         this.callParent();
+    },
+
+    doHighlight: function(el, text) {
+        setTimeout(function(){
+            BQ.ui.highlight(el, text, {
+                anchor:'top',
+                timeout: 10000,
+                mouseOffset : [0, 10],
+                cls: 'bq-highlight',
+            });
+        }, 1000);
     },
 
     chooseFiles : function(field, value, opts) {
@@ -1066,6 +1116,9 @@ Ext.define('BQ.upload.Panel', {
             this.uploadPanel.add(fp);
             this.btn_upload.setDisabled(false);
             this.btn_cancel.setDisabled(false);
+            this.taggerPanel.setDisabled(false);
+            this.btn_dataset.setVisible(false);
+            this.btn_dataset_add.setVisible(false);
         }
         this.fireEvent( 'fileadded', fp);
         return fp;
@@ -1104,6 +1157,8 @@ Ext.define('BQ.upload.Panel', {
                         me.setLoading(false);
                         me.btn_upload.setDisabled(false);
                         me.btn_cancel.setDisabled(false);
+                        me.btn_dataset.setVisible(false);
+                        me.btn_dataset_add.setVisible(false);
                     }
                 }
             });
@@ -1144,6 +1199,9 @@ Ext.define('BQ.upload.Panel', {
             this.setLoading(false);
             this.btn_upload.setDisabled(false);
             this.btn_cancel.setDisabled(false);
+            this.taggerPanel.setDisabled(false);
+            this.btn_dataset.setVisible(false);
+            this.btn_dataset_add.setVisible(false);
             this._files = undefined;
             this._fps = undefined;
             return;
@@ -1222,6 +1280,8 @@ Ext.define('BQ.upload.Panel', {
         if (total===0) return;
 
         this._time_started = new Date();
+        this.btn_upload.setDisabled(true);
+        this.taggerPanel.setDisabled(true);
         this.progress.setVisible(true);
         this.progress.updateProgress(0, BQ.upload.UPLOAD_STRING);
         this.uploadPanel.items.each( function() { if (this.upload) this.upload(); } );
@@ -1299,8 +1359,17 @@ Ext.define('BQ.upload.Panel', {
             this.progress.setVisible(false);
             this.btn_upload.setDisabled(true);
             this.btn_cancel.setDisabled(true);
-            if (this.btn_dataset.pressed)
-                this.wrapDataset();
+            this.taggerPanel.setDisabled(true);
+            this.btn_dataset.setVisible(true);
+            this.btn_dataset_add.setVisible(true);
+            //this.doHighlight(this.btn_dataset.getEl(), '<p>You can now add all uploaded files to a dataset</p>');
+            BQ.ui.highlight(this.btn_dataset.getEl(), '<p>You can now add uploaded files to a dataset</p>', {
+                anchor:'bottom',
+                timeout: 10000,
+                //mouseOffset : [0, 10],
+                cls: 'bq-highlight',
+            });
+
 
             // fire all files uploaded event
             var res = [];
@@ -1312,6 +1381,9 @@ Ext.define('BQ.upload.Panel', {
         } else {
             this.btn_upload.setDisabled(false);
             this.btn_cancel.setDisabled(false);
+            this.taggerPanel.setDisabled(false);
+            this.btn_dataset.setVisible(false);
+            this.btn_dataset_add.setVisible(false);
         }
     },
 
@@ -1337,7 +1409,7 @@ Ext.define('BQ.upload.Panel', {
         return this.btn_dataset.pressed;
     },
 
-    wrapDataset : function() {
+    createNewDataset : function(name) {
         var members = [];
         this.uploadPanel.items.each( function() {
             if (this.resource && this.resource.uri) {
@@ -1347,14 +1419,29 @@ Ext.define('BQ.upload.Panel', {
         if (members.length<1) return;
 
         var dataset = new BQDataset();
-        dataset.name = this.dataset_name || ('Uploaded on '+(new Date()).toISOString());
+        dataset.name = name;
         dataset.setMembers( members );
         dataset.save_(undefined, callback(this, 'onCreatedDataset'));
+    },
+
+    addToDataset : function(dataset) {
+        var members = dataset.values;
+        this.uploadPanel.items.each( function() {
+            if (this.resource && this.resource.uri) {
+                members.push( new BQValue( "object", this.resource.uri ) );
+            }
+        });
+        dataset.save_(undefined, callback(this, this.onDatasetSaved));
     },
 
     onCreatedDataset : function(dataset) {
         BQ.ui.notification('Dataset created: "<a href="/client_service/view?resource='+dataset.uri+'">'+dataset.name+'</a>"', 10000);
         this.fireEvent( 'datasetcreated', dataset);
+    },
+
+    onDatasetSaved : function(dataset) {
+        BQ.ui.notification('Dataset saved: "<a href="/client_service/view?resource='+dataset.uri+'">'+dataset.name+'</a>"', 10000);
+        this.fireEvent( 'datasetsaved', dataset);
     },
 
     testFailed : function () {
@@ -1373,9 +1460,9 @@ Ext.define('BQ.upload.Panel', {
     reupload : function () {
         this.uploadPanel.setLoading('Removing succeeded uploads...');
         this.uploadPanel.items.each( function() {
-            if (this.state == BQ.upload.STATES.DONE) {
-                this.destroy();
-            } else
+            //if (this.state == BQ.upload.STATES.DONE) {
+            //    this.destroy();
+            //} else
             if (this.state > BQ.upload.STATES.DONE) {
                 this.setState( BQ.upload.STATES.READY );
             }
@@ -1387,13 +1474,25 @@ Ext.define('BQ.upload.Panel', {
 
     // this is used for capturing window closing and promting the user if upload is in progress
     onClose : function() {
-        var uploading=0;
+        var uploading=false,
+            unuploaded=false;
         this.uploadPanel.items.each( function() {
-            if (this.state==BQ.upload.STATES.UPLOADING ||
-                this.state==BQ.upload.STATES.INGESTING) uploading++;
+            if (this.state>=BQ.upload.STATES.UPLOADING && this.state<BQ.upload.STATES.DONE) {
+                uploading = true;
+            }
+            if (this.state>=BQ.upload.STATES.ANNOTATING && this.state<BQ.upload.STATES.UPLOADING) {
+                unuploaded = true;
+            }
+            if (uploading || unuploaded) return false;
         });
-        if (uploading<=0) return;
-        return 'Upload in progress, by closing the page you will cancel all uploads!';
+
+        if (uploading) {
+            return 'Upload in progress, by closing the page you will cancel all uploads!';
+        }
+        if (unuploaded) {
+            this.queryById('btn_upload').getEl().highlight('FF9500', {duration:250, iterations:6});
+            return 'There are unuploaded files, by closing the page you will cancel all uploads!';
+        }
     },
 
     onHelp : function() {
@@ -1640,7 +1739,7 @@ Ext.define('BQ.upload.Dialog', {
         config.title = undefined;
 
         this.callParent(arguments);
-
+        this.on('beforeclose', this.onClose, this);
         this.show();
         return this;
     },
@@ -1658,6 +1757,30 @@ Ext.define('BQ.upload.Dialog', {
         if (this.destory_on_upload) {
             this.destroy();
         }
+    },
+
+    onClose: function(el) {
+        if (this.should_be_closed) {
+            return;
+        }
+        var s = this.upload_panel.onClose();
+        if (!s) {
+            return;
+        }
+
+        Ext.Msg.confirm(
+             'Close upload?',
+             s+'<br>Would you like to close upload?',
+             function(btn) {
+                 if (btn === 'yes') {
+                     this.should_be_closed = true;
+                     this.close();
+                 }
+             },
+             this
+        );
+
+        return false; // disable closing
     },
 
 });
