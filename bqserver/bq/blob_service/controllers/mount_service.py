@@ -142,7 +142,7 @@ def load_default_drivers():
                 path = params.pop ('path')
                 params['mounturl'] = string.Template(path).safe_substitute(OLDPARMS)
                 log.warn ("Use of deprecated path (%s) in  %s driver . Please change to mounturl and remove any from %s", path, store, OLDPARMS.keys())
-                log.info ("using mounturl = ", params['mounturl'])
+                log.info ("using mounturl = %s", params['mounturl'])
             else:
                 log.error ('cannot configure %s without the mounturl parameter' , store)
                 continue
