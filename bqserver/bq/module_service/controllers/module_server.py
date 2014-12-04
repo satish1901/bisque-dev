@@ -770,7 +770,9 @@ class EngineResource (Resource):
             else:
                 # We are examining a different version of the module.
                 # Should it be disabled?
-                log.debug ("Skipping old version %s", m_version)
+                log.debug ("Skipping and hidding old version %s", m_version)
+                m.set ('hidden', 'true')
+                data_service.update_resource (resource=m, new_resource=m, replace=False, flush=False)
 
 
         if not found:
