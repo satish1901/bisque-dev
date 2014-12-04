@@ -117,7 +117,7 @@
        if tg.config.get('bisque.js_environment', None) == 'production':
           link_kw = dict (fs_root = h.file_public(),
                           combined= '/js/b.js',
-                          filepath = h.file_root() + '/bqcore/bq/core/public/js/b.js',
+                          combined_path = h.file_root() + '/bqcore/bq/core/public/js/b.js',
                           checkts = False,
                           minify= 'minify',
                           version=bq.release.__VERSION_HASH__)
@@ -269,10 +269,10 @@
     '/js/volume/lib/polygon.js',
     '/js/volume/threejs/AnaglyphEffect.js',
     '/js/volume/threejs/RotationControls.js',
-    '/js/volume/threejs/OrbitControls.js',	
+    '/js/volume/threejs/OrbitControls.js',
     '/js/volume/threejs/TrackballControls.js',
     '/js/volume/volumeConfig.js',
-    '/js/volume/renderingControls.js',	
+    '/js/volume/renderingControls.js',
     '/js/volume/lightingControls.js',
     '/js/volume/animationControls.js',
     '/js/volume/extThreeJS.js',
