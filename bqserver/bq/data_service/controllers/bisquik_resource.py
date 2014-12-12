@@ -316,8 +316,10 @@ class BisquikResource(Resource):
             parent = False
         user_id = identity.get_user_id()
         if parent is None and view!='count':
-            limit = kw.pop ('limit', None) or 1000
-            limit = min(int(limit), 1000)
+            viewmap = { None: 1000000, 'short':1000000, 'full' : 1000, 'deep' : 1000 }
+            maxlimit = viewmap.get (view, 1000)
+            limit = kw.pop ('limit', None) or maxlimit
+            limit = min(int(limit), maxlimit)
             kw['limit'] = str(limit)
             log.debug ("limiting top level to %s", limit)
         else:
