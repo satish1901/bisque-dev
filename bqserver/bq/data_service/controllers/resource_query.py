@@ -200,7 +200,7 @@ def p_expr_term(p):
 
 
 def p_term_tagvaltype(p):
-    '''term : sexpr '''
+    '''term : tvexpr '''
 
     log.debug ('tagval %s' % list(p[1]))
     name, val, type_, rel = p[1]
@@ -269,19 +269,26 @@ def p_term_tagvaltype(p):
 
 
 ### Parsing
-#   [[TYPE ::]NAME:]VALUE
-def p_sexpr_val(p):
-    '''sexpr : reltagval'''
+#   [[TYPE ::]NAME:][<><=>===][VALUE]
+###
+## tuple is (name,value,type_, rel)
+def p_tvexpr_val(p):
+    '''tvexpr : reltagval'''
     # return (name,value,type)
     p[0] = (None, p[1][0], None, p[1][1])
-def p_sexpr_nameval (p):
-    '''sexpr : tagval SEP reltagval'''
+def p_tvexpr_nameval (p):
+    '''tvexpr : tagval SEP reltagval'''
     # return (name,value,type)
     p[0] = (p[1], p[3][0], None, p[3][1])
-def p_sexpr_namevaltype (p):
-    '''sexpr :  tagval TYSEP sexpr '''
+def p_tvexpr_typenameval (p):
+    '''tvexpr :  tagval TYSEP tagval SEP  reltagval'''
     # return (name,value,type)
-    p[0] = (p[3][0], p[3][1], p[1], p[3][2])
+    p[0] = (p[3], p[5][0], p[1], p[5][1])
+def p_tvexpr_typeval (p):
+    '''tvexpr :  tagval TYSEP SEP  reltagval'''
+    # return (name,value,type)
+    p[0] = (None, p[4][0], p[1], p[4][1])
+
 
 def p_reltagval (p):
     ''' reltagval : tagval
