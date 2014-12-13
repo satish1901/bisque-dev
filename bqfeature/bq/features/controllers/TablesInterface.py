@@ -316,6 +316,7 @@ class WorkDirRows(Rows):
         """ 
             @param: request_resource
         """
+        error_flag = 0
         if request_resource.exception:
             rows, status = self.construct_error_row(self.feature, request_resource.exception)
             log.debug('rows %s',rows)
@@ -325,10 +326,14 @@ class WorkDirRows(Rows):
                 log.debug('rows %s',rows)
             except FeatureExtractionError as e:
                 rows, status = self.construct_error_row(self.feature, e)
+                error_flag = 1 #set that theres an error that needs to be raised
 
         if 'feature' not in self.row_queue:  # checking the first few element on the hash
             self.row_queue['feature'] = Queue.Queue()  # build queue since none were found  
         self.row_queue['feature'].put((rows,status))  # the row is pushed into the queue
+        
+        if error_flag:
+            raise e #raise it to be pick up by opertions except
 
 
 class Tables(object):
@@ -344,7 +349,12 @@ class Tables(object):
             it will create a table.
         """
         self.table_plan = []
-         
+
+    def set_path(self, path):
+        """
+            Place holder for workdir
+        """
+        pass         
 
     def write_to_table(self, filename, func=None):
         """

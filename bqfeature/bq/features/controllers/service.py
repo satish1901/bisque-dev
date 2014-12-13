@@ -119,8 +119,7 @@ class ResourceList(object):
         m = hashlib.md5()
         m.update('%s::'%self.feature.name)
         for resource_hash in self.resource_list:
-            resource_request = self.resource_list[resource_hash]
-            exc = resource_request.exception
+            feature_resource, exc = self.resource_list[resource_hash]
             if exc is None:
                 status = '200'
             else:
@@ -215,7 +214,7 @@ class ResourceList(object):
 
 def clean_url(url):
     """
-        IF a quote is found that the beginning of the url
+        If a quote is found that the beginning of the url
         remove both quotes from the beginning and end of
         the url, also checks if the urls are strings
         @param: url -
@@ -321,12 +320,12 @@ def operations(resource_list):
         of resources for feature calculations
     """
     feature = resource_list.feature()
-    if resource_list.check_response_in_workdir() is False:
+    if resource_list.check_response_in_workdir() is False: #skip to format reponse if true
         if resource_list.feature.cache is True: #checks if the feature caches
             table_list = [CachedTables(feature), CachedTables(ID())]
             Rows = CachedRows
         else:
-            table_list = [WorkDirTable(feature).set_path(resource_list.path_in_workdir())]
+            table_list = [WorkDirTable(feature)]
             Rows = WorkDirRows
         
         for table in table_list:
@@ -342,9 +341,14 @@ def operations(resource_list):
                         try:
                             rows.push(request_resource)
                         except FeatureExtractionError as feature_extractor_error: #if error occured the exception is added to the resource
-                            resource_list.add_exc(id, feature_extractor_error)
+                            if not resource_list.add_exc(id, feature_extractor_error):
+                                log.debug('Exception: Resource ID: %s not found' % (str(id)))
+                                raise FeatureServiceError(500, 'Resource hash was not found')
                             log.debug('Exception: Error Code %s : Error Message %s' % (str(feature_extractor_error.code), feature_extractor_error.message))  
     
+            
+            table.set_path(resource_list.path_in_workdir())
+            
             # store features
             table.store(rows)
 
