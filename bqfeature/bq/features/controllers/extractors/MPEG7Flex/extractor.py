@@ -100,6 +100,7 @@ class MaskedMPEG7(Feature.BaseFeature):
     resource = ['image']
     additional_resource = ['mask','gobject']
     parameter = ['label']
+    disabled = True
 
     def cached_columns(self):
         """
@@ -134,6 +135,7 @@ class DCD(MaskedMPEG7):
     length = 100 
     type = ['color']
     confidence = 'good' 
+    disabled = False
 
     @calculation_lock
     def calculate(self, resource):
@@ -207,6 +209,7 @@ class CSD(MaskedMPEG7):
     length = 64 
     type = ['color']
     confidence = 'good' 
+    disabled = False
 
     @calculation_lock
     def calculate(self, resource):
@@ -261,6 +264,7 @@ class CLD(MaskedMPEG7):
     length = 120
     type = ['color']
     confidence = 'good' 
+    disabled = False
 
     @calculation_lock
     def calculate(self, resource):
@@ -312,6 +316,7 @@ class RSD(MaskedMPEG7):
     length = 35
     type = ['shape','texture']
     confidence = 'good' 
+    disabled = False
  
     @calculation_lock
     def calculate(self, resource):

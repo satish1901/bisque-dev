@@ -279,4 +279,36 @@ class SURF(KeyPointFeatures):
         
         return (descriptors, x, y, response, size, angle, octave) 
 
-            
+
+class Moments(Feature.BaseFeature):
+    
+    name = 'Moments'
+    description = """Takes a binary image and calculates Moments on it"""
+    length = 24
+    disabled = False
+    
+    def calculate(self, resource):
+        except_image_only(resource)
+        im = image2numpy(resource.image, remap='gray')
+        binary_im = np.uint8(im>0)
+        m = cv2.moments(binary_im)
+        return m.values()        
+        
+        
+class HuMoments(Feature.BaseFeature):
+    
+    name = 'HuMoments'
+    description = """Takes a binary image and calculates Hu Moments on it"""
+    length = 7
+    disable = False
+        
+    def calculate(self, resource):
+        except_image_only(resource)
+        im = image2numpy(resource.image, remap='gray')
+        binary_im = np.uint8(im>0)
+        m = cv2.moments(binary_im)
+        hu = cv2.HuMoments(m)
+        return [hu.T]
+    
+    
+    
