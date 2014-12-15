@@ -459,7 +459,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                 pt += 'g:';
             }
             if (node.data.attribute === 'type') {
-                sep = ':::';
+                sep = '::';
                 pt += 't:';
             } else if (node.data.attribute === 'name') {
                 sep = ':';
@@ -469,9 +469,9 @@ Ext.define('BQ.tree.organizer.Panel', {
             }
             this.active_query[node.data.value] = node.data.type+':'+node.data.attribute;
 
-            if ( (node.data.attribute==='value' && node.data.type==='tag') ||
-                 (node.data.attribute==='name' && node.data.type!=='tag') ) {
-                query[query.length-1] += encodeURIComponent('"'+node.data.value+'"');
+            if ( (node.data.attribute==='value' && node.data.type==='tag')
+                 || (node.data.attribute==='name' && node.data.type!=='tag') ) {
+                query[query.length-1] += encodeURIComponent('"'+node.data.value+'"' + sep);
             } else {
                 query.push(encodeURIComponent('"'+node.data.value+'"')+sep);
                 if (node.data.type==='tag')
