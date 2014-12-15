@@ -289,6 +289,12 @@ def p_tvexpr_typeval (p):
     # return (name,value,type)
     p[0] = (None, p[4][0], p[1], p[4][1])
 
+def p_tvexpr_type (p):
+    '''tvexpr :  tagval TYSEP '''
+    # return (name,value,type)
+    p[0] = (None, None, p[1], None)
+
+
 
 def p_reltagval (p):
     ''' reltagval : tagval
@@ -1137,6 +1143,9 @@ def resource_delete(resource, user_id=None):
         return
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     q.delete()
+
+
+
     # This is a *pile* of junk.. should be handled by mount_service but I cannot find a clean way to notify it.
     link = DBSession.query(Taggable).filter_by(resource_type = 'link', resource_value = resource.resource_uniq).first()
     if link:

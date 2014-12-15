@@ -316,8 +316,8 @@ class BisquikResource(Resource):
             parent = False
         user_id = identity.get_user_id()
         if parent is None and view!='count':
-            viewmap = { None: 1000000, 'short':1000000, 'full' : 1000, 'deep' : 1000 }
-            maxlimit = viewmap.get (view, 1000)
+            viewmap = { None: 1000000, 'short':1000000, 'full' : 10000, 'deep' : 1000 }
+            maxlimit = viewmap.get (view, 10000)
             limit = kw.pop ('limit', None) or maxlimit
             limit = min(int(limit), maxlimit)
             kw['limit'] = str(limit)
@@ -329,7 +329,10 @@ class BisquikResource(Resource):
         newparams = dict (view=view, offset=offset, limit=limit,
                           tag_query=tag_query, tag_order=tag_order,
                           format=format, wpublic=wpublic)
-        params.update ( [(k,v) for k,v in newparams.items() if v ])
+        #params.update ( [(k, unicode(v).encode('utf8') ) for k,v in newparams.items() if v ])
+        params.update ( newparams)
+        params = dict ( [(k, unicode(v).encode('utf8') ) for k,v in params.items() ])
+
         request_uri = "%s?%s" % ( request.path, urllib.urlencode (params))
 
         if view=='count':
