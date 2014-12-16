@@ -12,7 +12,7 @@ from .var import FEATURES_TABLES_FILE_DIR
 log = logging.getLogger("bq.features.Feature")
 
 def str2bool(v):
-  return v.lower() in ("yes", "true", "t", "1", "True")
+  return v.lower() in ("yes", "true", "t", "1")
 
 ###############################################################
 # Feature Object
