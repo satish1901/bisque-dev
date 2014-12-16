@@ -321,7 +321,7 @@ def operations(resource_list):
     """
     feature = resource_list.feature()
     if resource_list.check_response_in_workdir() is False: #skip to format reponse if true
-        if resource_list.feature.cache is True: #checks if the feature caches
+        if feature.cache is True: #checks if the feature caches
             table_list = [CachedTables(feature), CachedTables(ID())]
             Rows = CachedRows
         else:
