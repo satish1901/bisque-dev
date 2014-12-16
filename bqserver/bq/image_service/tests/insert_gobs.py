@@ -23,7 +23,7 @@ import urlparse
 import time
 from lxml import etree
 import ConfigParser
-from bqapi.comm import BQSession, BQCommError
+from bqapi import BQSession, BQCommError
 import random
 
 def int2hex(v):
@@ -55,7 +55,7 @@ for i in range(10):
     b = random.randint(0, 255)
     d1 = random.randint(10, 150)
     d2 = random.randint(10, 150)
-    d3 = random.randint(10, 150)    
+    d3 = random.randint(10, 150)
     color = '#%s%s%s'%(int2hex(r), int2hex(g), int2hex(b))
     polygon = '<polygon name="%s"><vertex x="%s" y="%s" /><vertex x="%s" y="%s" /><vertex x="%s" y="%s" /><tag name="color" value="%s" type="color" /></polygon>'%(i, x, y, x+d1, y, x+d2, y+d3, color)
     polygons.append(polygon)

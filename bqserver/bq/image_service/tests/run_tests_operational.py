@@ -21,7 +21,7 @@ else:
 import os
 import ConfigParser
 import time
-from bqapi.comm import BQSession
+from bqapi import BQSession
 
 from bq.image_service.tests.tests_base import ImageServiceTestBase
 

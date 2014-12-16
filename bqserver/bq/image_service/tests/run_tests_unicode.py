@@ -19,7 +19,7 @@ else:
     import unittest
 import os
 import ConfigParser
-from bqapi.comm import BQSession, BQCommError
+from bqapi import BQSession, BQCommError
 
 from bq.image_service.tests.tests_base import ImageServiceTestBase
 
@@ -57,9 +57,9 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         self.resource_unicode_oib   = self.ensure_bisque_file(image_unicode_oib.decode('utf-8'))
         self.resource_unicode_tiff  = self.ensure_bisque_file(image_unicode_tiff.decode('utf-8'))
         self.resource_unicode_ims   = self.ensure_bisque_file(image_unicode_ims.decode('utf-8'))
-        self.resource_unicode_dicom = self.ensure_bisque_file(image_unicode_dicom.decode('utf-8'))                                   
-        self.resource_unicode_svs   = self.ensure_bisque_file(image_unicode_svs.decode('utf-8'))   
-        
+        self.resource_unicode_dicom = self.ensure_bisque_file(image_unicode_dicom.decode('utf-8'))
+        self.resource_unicode_svs   = self.ensure_bisque_file(image_unicode_svs.decode('utf-8'))
+
     @classmethod
     def tearDownClass(self):
         self.delete_resource(self.resource_unicode_jpeg)
@@ -162,7 +162,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
             'image_pixel_depth': '8',
             'image_pixel_format': 'unsigned integer' }
         self.validate_image_variant(resource, filename, commands, meta_required)
-        
+
     def test_thumbnail_unicode_svs(self):
         resource = self.resource_unicode_svs
         filename = 'unicode.svs.thumbnail.jpg'
@@ -176,7 +176,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
             'image_num_t': '1',
             'image_pixel_depth': '8',
             'image_pixel_format': 'unsigned integer' }
-        self.validate_image_variant(resource, filename, commands, meta_required)     
+        self.validate_image_variant(resource, filename, commands, meta_required)
 
 
 #def suite():

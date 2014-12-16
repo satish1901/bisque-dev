@@ -65,7 +65,7 @@ log = logging.getLogger('bqapi.bqnode')
 __all__ = [ 'BQFactory', 'BQNode', 'BQImage', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject',
             "BQDataset", "BQUser", "BQMex",
             'gobject_primitives',
-            'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQRectangle', 'BQSquare', 'toXml', 'fromXml' ]
+            'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQRectangle', 'BQSquare']
 
 gobject_primitives = set(['point', 'label', 'polyline', 'polygon', 'circle', 'ellipse', 'rectangle', 'square'])
 
@@ -155,44 +155,48 @@ class BQResource (BQNode):
     def set_parent(self, parent):
         parent.kids.append(self)
 
-    def add_tag(self, name='',value='', type='', tag=None):
+    def add_tag(self, name=None, value=None, type=None, tag=None):
         if tag is None:
-            tag = BQTag(name=name, value=value, type=type)
+            args = dict ( name=name, value=value, type=type)
+            tag = BQTag( **dict ((k, v)  for k,v in args.items() if v is not None) )
         self.append(tag)
         return tag
     addTag = add_tag
 
-    def add_gob(self, name='', value='', type='', gob=None):
+    def add_gob(self, name=None, value=None, type=None, gob=None):
         if gob is None:
-            gob = BQGObject(name=name, value=value, type=type)
+            args = dict ( name=name, value=value, type=type)
+            gob = BQGObject( **dict ((k, v)  for k,v in args.items() if v is not None) )
         self.append(gob)
         return gob
     addGObject = add_gob
 
 
-    def tag(self, name):
-        results = []
-        for tg in self.tags:
-            if tg.name == name:
-                results.append(tg)
-        if len(results) == 0:
-            return None
-        elif len(results) == 1:
-            return results[0]
-        else:
-            return results
+    # def findall (pathexpress)
+    #     Implemented by
+    # def tag(self, name):
+    #     results = []
+    #     for tg in self.tags:
+    #         if tg.name == name:
+    #             results.append(tg)
+    #     if len(results) == 0:
+    #         return None
+    #     elif len(results) == 1:
+    #         return results[0]
+    #     else:
+    #         return results
 
-    def gob(self, name):
-        results = []
-        for tg in self.gobjects:
-            if tg.name == name:
-                results.append(tg)
-        if len(results) == 0:
-            return None
-        elif len(results) == 1:
-            return results[0]
-        else:
-            return results
+    # def gob(self, name):
+    #     results = []
+    #     for tg in self.gobjects:
+    #         if tg.name == name:
+    #             results.append(tg)
+    #     if len(results) == 0:
+    #         return None
+    #     elif len(results) == 1:
+    #         return results[0]
+    #     else:
+    #         return results
 
 
     def set_parent(self, parent):
@@ -205,6 +209,9 @@ class BQResource (BQNode):
         return result
 
     def set_values(self, values):
+        """Assign a list of values
+           Maybe single value list or a list of (value, type) tuples where type is object, integer, float, number, string
+        """
         if not isinstance(values, list):
             self.set('value', str(values))
         else:
@@ -213,7 +220,11 @@ class BQResource (BQNode):
             for child in self:
                 self.remove (child)
             for v in values:
-                val = etree.SubElement (self, 'value')
+                if isinstance (v, tuple):
+                    val = etree.SubElement (self, 'value', type=v[1])
+                    v = v[0]
+                else:
+                    val = etree.SubElement (self, 'value')
                 val.text = str(v)
 
     value = property(get_values, set_values)
@@ -626,45 +637,8 @@ class BQFactory (etree.PythonElementClassLookup):
         """Convert BQNode  to elementTree"""
         return bqnode
 
-    @classmethod
     def string2etree(self, xmlstring):
         return etree.XML (xmlstring, self.parser)
-
-
-################################################################################
-# Parsing
-################################################################################
-
-
-
-def fromXml (xmlResource, resource=None, parent=None, factory=BQFactory,session = None):
-    """ Convert an etree to a python structure"""
-    stack = [];
-    resources = [];
-    #  Initialize stack with a tuple of
-    #    1. The XML node being parsed
-    #    2. The current resource being filled outs
-    #    3. The parent resource if any
-    stack.append ( (xmlResource, resource, parent ) );
-    while stack:
-        node, resource, parent = stack.pop(0);
-        xmltag = node.tag;
-        if resource is None:
-            type_ = node.get( 'type', '');
-            resource = factory.make(xmltag, type_);
-
-        resource.session = session
-        resource.initializeXml(node)
-        resources.append (resource);
-        if parent:
-            resource.set_parent(parent);
-            #resource.doc = parent.doc;
-        for k in node:
-            stack.append( (k, None, resource) );
-
-    resources[0].initialize()
-    resources[0].xmltree = xmlResource
-    return resources[0];
 
 
 

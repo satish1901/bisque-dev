@@ -84,15 +84,8 @@ try:
 except ImportError:
     import xml.etree.ElementTree as etree
 
-USENODE = False
-if USENODE:
-    from bqapi.bqnode import  BQMex, BQNode, BQFactory
-else:
-    from bqapi.bqclass import BQMex, BQNode, BQFactory
-
-from bqapi.util import parse_qs, make_qs, xml2d, d2xml, normalize_unicode
-
-
+from .types import BQMex, BQNode, BQFactory
+from .util import parse_qs, make_qs, xml2d, d2xml, normalize_unicode
 
 
 #SERVICES = ['']
@@ -537,6 +530,7 @@ class BQSession(object):
             @param filename: filename of the blob
             @param xml: xml to be posted along with the file
             @param params: params will be added to url query
+            @return: a <resource type="uploaded" <image> uri="URI to BLOB" > </image>
         """
         import_service_url = self.service_url('import', path='transfer')
         if import_service_url is None:
@@ -744,16 +738,34 @@ class BQSession(object):
             # Find an object (or parent with a valild uri)
             url = url or bqo.uri
             if url is None:
-                url = bqo.parent.uri
                 while url is None and bqo.parent:
                     bqo = bqo.parent
                     url=  bqo.parent.uri
             if url is None:
-                raise BQApiError("Can't determine save url for %s" % original)
+                url = self.service_url ('data_service')
 
             xml =  self.factory.to_etree(bqo)
             xml = self.postxml(url, xml, **kw)
             return xml is not None and self.factory.from_etree(xml)
         except BQCommError, ce:
-            log.exception('communication issue while saving %s' % ce)
+            log.exception('communication issue while saving %s' , ce)
             return None
+
+    def saveblob(self, bqo, filename):
+        """Save a blob to the server and return metadata structure
+        """
+
+        try:
+            xml =  self.factory.to_etree(bqo)
+            xmlstr = self.postblob (filename=filename, xml= xml)
+            xmlet  = self.factory.string2etree (xmlstr)
+            if xmlet.tag == 'resource' and xmlet.get ('type') == 'uploaded':
+                # return inside
+                bqo =  self.factory.from_etree(xmlet[0])
+                return bqo
+            return None
+        except BQCommError, ce:
+            log.exception('communication issue while saving %s' , filename)
+            return None
+
+

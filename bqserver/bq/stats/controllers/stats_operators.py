@@ -75,72 +75,72 @@ import math
 import operator
 import logging
 
-from bqapi import *
+from bqapi import BQFactory, BQValue
 
 log = logging.getLogger('bisquik.SS.operators')
 
-__all__ = [ 'StatOperator' ] 
+__all__ = [ 'StatOperator' ]
 
 ################################################################################
 # Base class for operators
 ################################################################################
 
 class StatOperator (object):
-    '''Maps vector of objects into a vector of numbers or strings''' 
-    name = "StatOperator"  
+    '''Maps vector of objects into a vector of numbers or strings'''
+    name = "StatOperator"
     version = '1.0'
     def __init__(self):
         #self.server = server
         pass
 
     def __call__(self, v_in, **kw):
-        return self.do_map(v_in, **kw) 
-        
+        return self.do_map(v_in, **kw)
+
     def do_map(self, v_in, **kw):
-        # this one does nothing really                 
+        # this one does nothing really
         return v_in
 
 ################################################################################
 # misc
-################################################################################       
+################################################################################
 
 def mapflat(f, l):
     return reduce(operator.add, map(f, l))
 
 ################################################################################
 # Tag Operator implementations
-################################################################################       
+################################################################################
 
 class StatOperatorTagName (StatOperator):
-    '''maps tags into a vector of their names as strings''' 
+    '''maps tags into a vector of their names as strings'''
     name = 'tag-name-string'
-    version = '1.1'        
+    version = '1.1'
     def do_map(self, v_in, **kw):
         def nameSafe(t): return t.get('name', '')
         return map(nameSafe, v_in)
 
 class StatOperatorTagValue (StatOperator):
-    '''maps tags into a vector of their values as strings''' 
+    '''maps tags into a vector of their values as strings'''
     name = 'tag-value-string'
-    version = '1.1'        
+    version = '1.1'
     def do_map(self, v_in, **kw):
-        def valueSafe(t): 
+        def valueSafe(t):
             v = BQValue(element=t)
             return v.toString()
         return map(valueSafe, v_in)
-        
+
 class StatOperatorTagType (StatOperator):
-    '''maps tags into a vector of their types as strings''' 
+    '''maps tags into a vector of their types as strings'''
     name = 'tag-type'
-    version = '1.0'        
+    version = '1.0'
     def do_map(self, v_in, **kw):
         def nameSafe(t): return t.get('type', '')
-        return map(nameSafe, v_in)        
-        
+        return map(nameSafe, v_in)
+
 class StatOperatorTagNameNumeric (StatOperator):
-    '''maps tags into a vector of their names as numbers''' 
+    '''maps tags into a vector of their names as numbers'''
     name = 'tag-name-number'
-    version = '1.0'        
+    version = '1.0'
     def do_map(self, v_in, **kw):
         def intValueSafe(t):
             try:
@@ -148,11 +148,11 @@ class StatOperatorTagNameNumeric (StatOperator):
             except Exception:
                 return None
         return map(intValueSafe, v_in)
-        
+
 class StatOperatorTagValueNumeric (StatOperator):
-    '''maps tags into a vector of their values as numbers''' 
+    '''maps tags into a vector of their values as numbers'''
     name = 'tag-value-number'
-    version = '1.1'        
+    version = '1.1'
     def do_map(self, v_in, **kw):
         def intValueSafe(t):
             v = BQValue(element=t)
@@ -161,15 +161,15 @@ class StatOperatorTagValueNumeric (StatOperator):
             except Exception:
                 return None
         return map(intValueSafe, v_in)
-        
+
 
 ################################################################################
 # Gob Operator primitives
-################################################################################       
+################################################################################
 
 # TODO:
 # GObjects:
-# point polyline polygon circle ellipse square rectangle 
+# point polyline polygon circle ellipse square rectangle
 #
 # Features:
 # length, perimeter, area, major axis, minor axis
@@ -180,7 +180,7 @@ def gobNumber(gob):
 
 def gobType(gob):
     return str(BQFactory.make(gob).getAttr('type'))
-    
+
 def gobName(gob):
     return str(BQFactory.make(gob).getAttr('name'))
 
@@ -216,74 +216,74 @@ def gobVertexZ(gob):
     return gobVertexV(gob, lambda v: v.z)
 
 def gobVertexT(gob):
-    return gobVertexV(gob, lambda v: v.t)        
+    return gobVertexV(gob, lambda v: v.t)
 
 def gobVertexC(gob):
     return gobVertexV(gob, lambda v: v.c)
 
 def gobVertexI(gob):
     return gobVertexV(gob, lambda v: v.index)
-    
+
 #-------------------------------------------------------------------------------
 # Gob Operator implementations
-#-------------------------------------------------------------------------------       
+#-------------------------------------------------------------------------------
 
 class StatOperatorGobName (StatOperator):
-    '''maps GObjects into a vector of their names''' 
+    '''maps GObjects into a vector of their names'''
     name = 'gobject-name'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return map(gobName, v_in)
-        
+
 class StatOperatorGobType (StatOperator):
-    '''maps GObjects into a vector of their types''' 
+    '''maps GObjects into a vector of their types'''
     name = 'gobject-type'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return map(gobType, v_in)
 
 class StatOperatorGobTypePrimitive (StatOperator):
-    '''returns only present primitive types''' 
+    '''returns only present primitive types'''
     name = 'gobject-type-primitive'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         t = map(gobType, v_in)
         return [i for i in t if i in gobject_primitives]
 
 class StatOperatorGobTypeComposed (StatOperator):
-    '''maps GObjects into a vector of their types''' 
+    '''maps GObjects into a vector of their types'''
     name = 'gobject-type-composed'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
-        t = set( map(gobType, v_in) )      
+        t = set( map(gobType, v_in) )
         return [i for i in t if not i in gobject_primitives]
 
 
 class StatOperatorGobLength (StatOperator):
-    '''maps GObjects into a vector of their perimeters or lengths''' 
+    '''maps GObjects into a vector of their perimeters or lengths'''
     name = 'gobject-length'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return map(gobPerimeter, v_in)
 
 class StatOperatorGobPerimeter (StatOperator):
-    '''maps GObjects into a vector of their perimeters or lengths''' 
+    '''maps GObjects into a vector of their perimeters or lengths'''
     name = 'gobject-perimeter'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return map(gobPerimeter, v_in)
 
 class StatOperatorGobArea (StatOperator):
-    '''maps GObjects into a vector of their areas''' 
+    '''maps GObjects into a vector of their areas'''
     name = 'gobject-area'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return map(gobArea, v_in)
 
 class StatOperatorGobNumber (StatOperator):
-    '''maps GObjects into a vector of their number, each number is object + children''' 
+    '''maps GObjects into a vector of their number, each number is object + children'''
     name = 'gobject-number'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return map(gobNumber, v_in)
 
@@ -292,64 +292,64 @@ class StatOperatorGobNumber (StatOperator):
 #-------------------------------------------------------------------------------
 
 class StatOperatorGobVertexString (StatOperator):
-    '''maps gobjects into a vector of their vertices as strings: "X, Y, Z, T, C, I"''' 
+    '''maps gobjects into a vector of their vertices as strings: "X, Y, Z, T, C, I"'''
     name = 'gobject-vertex-string'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return mapflat(gobVertexStr, v_in)
 
 class StatOperatorGobVertexType (StatOperator):
-    '''maps gobjects into a vector of their types given for every vertex''' 
+    '''maps gobjects into a vector of their types given for every vertex'''
     name = 'gobject-vertex-type'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return mapflat(gobVertexType, v_in)
 
 class StatOperatorGobVertexName (StatOperator):
-    '''maps gobjects into a vector of their names given for every vertex''' 
+    '''maps gobjects into a vector of their names given for every vertex'''
     name = 'gobject-vertex-name'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return mapflat(gobVertexName, v_in)
 
 class StatOperatorGobVertexX (StatOperator):
-    '''maps gobjects into a vector of their vertices''s x coordinate''' 
+    '''maps gobjects into a vector of their vertices''s x coordinate'''
     name = 'gobject-vertex-x'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return mapflat(gobVertexX, v_in)
 
 class StatOperatorGobVertexY (StatOperator):
-    '''maps gobjects into a vector of their vertices''s y coordinate''' 
+    '''maps gobjects into a vector of their vertices''s y coordinate'''
     name = 'gobject-vertex-y'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return mapflat(gobVertexY, v_in)
-        
+
 class StatOperatorGobVertexZ (StatOperator):
-    '''maps gobjects into a vector of their vertices''s z coordinate''' 
+    '''maps gobjects into a vector of their vertices''s z coordinate'''
     name = 'gobject-vertex-z'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return mapflat(gobVertexZ, v_in)
-        
+
 class StatOperatorGobVertexT (StatOperator):
-    '''maps gobjects into a vector of their vertices''s t coordinate''' 
+    '''maps gobjects into a vector of their vertices''s t coordinate'''
     name = 'gobject-vertex-t'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
-        return mapflat(gobVertexT, v_in)                
+        return mapflat(gobVertexT, v_in)
 
 class StatOperatorGobVertexC (StatOperator):
-    '''maps gobjects into a vector of their vertices''s c coordinate''' 
+    '''maps gobjects into a vector of their vertices''s c coordinate'''
     name = 'gobject-vertex-c'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return mapflat(gobVertexC, v_in)
 
 class StatOperatorGobVertexI (StatOperator):
-    '''maps gobjects into a vector of their vertices''s index''' 
+    '''maps gobjects into a vector of their vertices''s index'''
     name = 'gobject-vertex-index'
-    version = '1.0'    
+    version = '1.0'
     def do_map(self, v_in, **kw):
         return mapflat(gobVertexI, v_in)

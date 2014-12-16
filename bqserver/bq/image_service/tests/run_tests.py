@@ -19,7 +19,7 @@ else:
     import unittest
 import os
 import ConfigParser
-from bqapi.comm import BQSession, BQCommError
+from bqapi import BQSession, BQCommError
 
 from bq.image_service.tests.tests_base import ImageServiceTestBase
 
@@ -78,7 +78,7 @@ class ImageServiceTests(ImageServiceTestBase):
 
     def test_ui_thumbnail_2d_3c_uint8(self):
         resource = self.resource_2d_uint8
-        self.assertIsNotNone(resource, 'Resource was not uploaded')        
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'im_2d_uint8.ui_thumbnail.jpg'
         commands = [('slice', ',,1,1'), ('thumbnail', '280,280')]
         meta_required = { 'format': 'JPEG',
@@ -93,7 +93,7 @@ class ImageServiceTests(ImageServiceTestBase):
 
     def test_thumbnail_3d_2c_uint16(self):
         resource = self.resource_3d_uint16
-        self.assertIsNotNone(resource, 'Resource was not uploaded')        
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'im_3d_uint16.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
@@ -123,7 +123,7 @@ class ImageServiceTests(ImageServiceTestBase):
 
     def test_thumbnail_2d_1c_float(self):
         resource = self.resource_2d_float
-        self.assertIsNotNone(resource, 'Resource was not uploaded')        
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'im_2d_float.thumbnail.jpg'
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
