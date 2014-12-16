@@ -66,9 +66,9 @@ except ImportError:
 
 log = logging.getLogger('bqapi.class')
 
-__all__ = [ 'BQFactory', 'BQNode', 'BQResource', 'BQValue', 'BQTag', 'BQVertex',
+__all__ = [ 'BQFactory', 'BQNode', 'BQImage', 'BQResource', 'BQValue', 'BQTag', 'BQVertex', 'BQGObject',
             "BQDataset", "BQUser", "BQMex",
-            'BQGObject', 'gobject_primitives',
+            'gobject_primitives',
             'BQPoint', 'BQLabel', 'BQPolyline', 'BQPolygon', 'BQCircle', 'BQEllipse', 'BQRectangle', 'BQSquare',] # 'toXml', 'fromXml' ]
 
 gobject_primitives = set(['point', 'label', 'polyline', 'polygon', 'circle', 'ellipse', 'rectangle', 'square'])
@@ -177,42 +177,46 @@ class BQResource (BQNode):
         self.parent = parent
         parent.kids.append(self)
 
-    def addTag(self, name=None, value=None, tag=None):
+    def addTag(self, name=None, value=None, type = None, tag=None):
         if tag is None:
-            tag = BQTag(name=name, value=value)
+            tag = BQTag(name=name, value=value, type = type)
         tag.set_parent (self)
         return tag
     add_tag = addTag
 
-    def addGObject(self, name='', value='', gob=None):
+    def addGObject(self, name=None, value=None, type = None, gob=None):
         if gob is None:
-            gob = BQGObject(name=name, value=value)
+            gob = BQGObject(name=name, value=value, type = type)
         gob.set_parent(self)
     add_gob = addGObject
 
-    def tag(self, name):
-        results = []
-        for tg in self.tags:
-            if tg.name == name:
-                results.append(tg)
-        if len(results) == 0:
-            return None
-        elif len(results) == 1:
-            return results[0]
-        else:
-            return results
 
-    def gob(self, name):
-        results = []
-        for tg in self.gobjects:
-            if tg.name == name:
-                results.append(tg)
-        if len(results) == 0:
-            return None
-        elif len(results) == 1:
-            return results[0]
-        else:
-            return results
+    def findall (xpath):
+        pass
+
+    # def tag(self, name):
+    #     results = []
+    #     for tg in self.tags:
+    #         if tg.name == name:
+    #             results.append(tg)
+    #     if len(results) == 0:
+    #         return None
+    #     elif len(results) == 1:
+    #         return results[0]
+    #     else:
+    #         return results
+
+    # def gob(self, name):
+    #     results = []
+    #     for tg in self.gobjects:
+    #         if tg.name == name:
+    #             results.append(tg)
+    #     if len(results) == 0:
+    #         return None
+    #     elif len(results) == 1:
+    #         return results[0]
+    #     else:
+    #         return results
 
     def get_value(self):
         if len(self.values)==0:
@@ -224,7 +228,8 @@ class BQResource (BQNode):
     def set_value(self, values):
         if not isinstance(values, list):
             values = [ values ]
-        self.values =  [ BQValue(value=v) for v in values ]
+        self.values = [ BQValue(*v) if isinstance(v, tuple) else BQValue(v) for v in values ]
+
 
     value = property(get_value, set_value)
 
@@ -234,7 +239,8 @@ class BQResource (BQNode):
             n = create_element(self, parent, baseuri)
         else:
             n = create_element(self, parent, baseuri)
-            del n.attrib['value']
+            if 'value' in n.attrib:
+                del n.attrib['value']
             xmlkids.append('values')
         for kid_name in xmlkids:
             for x in getattr(self, kid_name, None):

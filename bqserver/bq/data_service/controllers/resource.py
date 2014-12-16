@@ -374,8 +374,12 @@ class HierarchicalCache(ResponseCache):
             #log.debug ("invalidate: tuple using %s", parent) #provokes logging error
             if parent:
                 resource = parent
+                #log.debug ("CACHE parent %s", parent)
             else:
-                # The a pure form i.e. /data_service/image with a POST
+                # The a pure form i.e. /data_service/[image] with a POST
+                if resource[0] == 'resource':
+                    # special case for POST to /data_service.. resource type is unknown so remove all
+                    resource = ('', resource[1])
                 resource = Bunch(resource_uniq = None, resource_type = resource [0], permission="published")
         if isinstance(resource, Query):
             resource = resource.first()

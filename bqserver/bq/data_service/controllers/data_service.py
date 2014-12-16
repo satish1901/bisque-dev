@@ -107,7 +107,7 @@ class DataServerController(ServiceController):
     @expose(content_type='text/xml')
     def index(self, **kw):
         #resources = all_resources()
-        if kw:
+        if kw or tg.request.method != 'GET':
             # parameters where sent to index
             resource_controller = self.get_child_resource('resource')
             return resource_controller._default (**kw)

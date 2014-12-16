@@ -30,8 +30,7 @@ import shortuuid
 
 from bq.util.mkdir import _mkdir
 
-#from bqapi.bqclass import fromXml # bisque
-from bqapi.comm import BQSession, BQCommError # bisque
+from bqapi import BQSession, BQCommError # bisque
 from bqapi.util import save_blob # bisque
 
 import logging

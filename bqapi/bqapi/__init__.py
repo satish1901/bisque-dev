@@ -1,6 +1,6 @@
 #
 
-from comm import *
-from bqclass import *
+from .comm import *
+from .types import *
 
 

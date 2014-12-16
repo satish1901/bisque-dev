@@ -23,7 +23,7 @@ import urlparse
 import time
 from lxml import etree
 import ConfigParser
-from bqapi.comm import BQSession, BQCommError
+from bqapi import BQSession, BQCommError
 from bqapi.util import save_blob, localpath2url
 
 url_import  = '/data_service/image'
