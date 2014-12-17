@@ -570,6 +570,12 @@ Ext.define('Bisque.Resource.Image.Page', {
                 edit_controls_activated : function(viewer) {
                     this.gobjectTagger.deselectGobCreation();
                 },
+                position_selected: function(pt, viewer) {
+                    var map = this.queryById('map');
+                    if (map && map.isVisible()) {
+                        map.positionMarker(pt);
+                    }
+                },
                 loadedPhys: this.onImagePhys,
                 working : this.onworking,
                 done    : this.ondone,
@@ -729,6 +735,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
         var map = {
             xtype : 'bqmap',
+            itemId: 'map',
             title : 'Map',
             zoomLevel : 16,
             gmapType : 'map',

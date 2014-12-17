@@ -31,8 +31,9 @@ ImgScaleBar.prototype.updateImage = function () {
     var surf = this.parentdiv;
     if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
 
-    if (this.scalebar == null)
-      this.scalebar = new ScaleBar ( surf, imgphys.pixel_size[0] );
+    if (!this.scalebar) {
+        this.scalebar = new ScaleBar ( surf, imgphys.pixel_size[0], imgphys.units );
+    }
     this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );
 };
 

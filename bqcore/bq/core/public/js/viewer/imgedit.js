@@ -281,7 +281,43 @@ ImgEdit.prototype.mousedown = function (e) {
         // this will disable all propagation while in edit selected
         if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
         else e.cancelBubble = true;                 // IE
+    } else if (this.viewer.parameters.onposition) {
+        var view = this.viewer.current_view,
+            phys = this.viewer.imagephys,
+            p = this.renderer.getUserCoord(e),
+            pt = view.inverseTransformPoint(p.x, p.y),
+            pt = phys.coordinate_to_phys(pt, true);
+        this.viewer.parameters.onposition(pt);
     }
+};
+
+ImgEdit.prototype.print_coordinate = function(pt, show_pix, show_phys) {
+    var phys = this.viewer.imagephys,
+        text = '';
+
+    // print image coordinates
+    if (show_pix) {
+        text += '('+pt.x+','+pt.y+')px';
+    }
+
+    if (!show_phys) {
+        return text;
+    }
+
+    // print physical coordinates
+    if (phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
+        var c = phys.coordinate_to_phys(pt, false);
+        text += ' ('+c[0].toFixed(2)+','+c[1].toFixed(2)+')'+phys.units;
+    }
+    //Ext.util.Format.number("0000.00", v)
+
+    // print geo coordinates if available
+    if (phys.geo && phys.geo.proj4 && phys.geo.res && phys.geo.top_left) {
+        var c = phys.coordinate_to_phys(pt, true);
+        text += ' Geo:('+c[0].toFixed(6)+','+c[1].toFixed(6)+')';
+    }
+
+    return text;
 };
 
 ImgEdit.prototype.mousemove = function (e) {
@@ -292,19 +328,11 @@ ImgEdit.prototype.mousemove = function (e) {
           e.target===this.renderer.svggobs ||
           (this.current_gob && e.target===this.current_gob.shape.svgNode))) return;
 
-    var view = this.viewer.current_view;
-    var p = this.renderer.getUserCoord(e);
-    var pt = view.inverseTransformPoint(p.x, p.y);
-    var text = '('+pt.x+','+pt.y+')px';
-
-    var phys = this.viewer.imagephys;
-    if (phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
-        var px = pt.x*(phys.pixel_size[0]/view.scale);
-        var py = pt.y*(phys.pixel_size[1]/view.scale);
-        text += ' ('+px.toFixed(2)+','+py.toFixed(2)+')um';
-    }
-
-    var ip = this.viewer.plugins_by_name['infobar'];
+    var view = this.viewer.current_view,
+        p = this.renderer.getUserCoord(e),
+        pt = view.inverseTransformPoint(p.x, p.y),
+        text = this.print_coordinate(pt, true, true),
+        ip = this.viewer.plugins_by_name['infobar'];
     ip.posbar.innerText = text;
 };
 
@@ -330,14 +358,14 @@ ImgEdit.prototype.display_gob_info = function (gob) {
     if (perimeter_px>0)
         text += ' Length: '+perimeter_px.toFixed(2)+'px';
     if (perimeter_px>0 && phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
-        text += ' '+gob.perimeter({x: phys.pixel_size[0], y: phys.pixel_size[1]}).toFixed(2)+'um';
+        text += ' '+gob.perimeter({x: phys.pixel_size[0], y: phys.pixel_size[1]}).toFixed(2)+phys.units;
     }
 
     var area_px = gob.area();
     if (area_px>0)
         text += ' Area: '+area_px.toFixed(2)+'px²';
     if (area_px>0 && phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
-        text += ' '+gob.area({x: phys.pixel_size[0], y: phys.pixel_size[1]}).toFixed(2)+'um²';
+        text += ' '+gob.area({x: phys.pixel_size[0], y: phys.pixel_size[1]}).toFixed(2)+phys.units+'²';
     }
 
     var ip = this.viewer.plugins_by_name['infobar'];

@@ -138,20 +138,22 @@ class ConverterImaris(ConverterBase):
     # Supported
     #######################################
 
-    def supported(self, ifnm, **kw):
+    @classmethod
+    def supported(cls, ifnm, **kw):
         '''return True if the input file format is supported'''
-        if not self.installed:
+        if not cls.installed:
             return False
         log.debug('Supported for: %s', ifnm )
-        return len(self.info(ifnm, **kw))>0
+        return len(cls.info(ifnm, **kw))>0
 
 
     #######################################
     # Meta - returns a dict with all the metadata fields
     #######################################
 
-    def meta(self, ifnm, series=0, **kw):
-        if not self.installed:
+    @classmethod
+    def meta(cls, ifnm, series=0, **kw):
+        if not cls.installed:
             return {}
         series = int(series)        
         log.debug('Meta for: %s', ifnm )
@@ -161,9 +163,9 @@ class ConverterImaris(ConverterBase):
         elif os.name == 'posix':
             nulldevice = '/dev/null'
         
-        command = [self.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', nulldevice, '-ii', '%s'%series]    
-        command.extend( self.extention(**kw) ) # extend if timeout or meta are present
-        meta = self.run_read(ifnm, command)
+        command = [cls.CONVERTERCOMMAND, '-i', ifnm, '-m', '-l', nulldevice, '-ii', '%s'%series]    
+        command.extend( cls.extention(**kw) ) # extend if timeout or meta are present
+        meta = cls.run_read(ifnm, command)
         
         if meta is None:
             return {}
@@ -296,14 +298,16 @@ class ConverterImaris(ConverterBase):
     # The info command returns the "core" metadata (width, height, number of planes, etc.)
     # as a dictionary
     #######################################
-    def info(self, ifnm, series=0, **kw):
+    
+    @classmethod    
+    def info(cls, ifnm, series=0, **kw):
         '''returns a dict with file info'''
-        if not self.installed:
+        if not cls.installed:
             return {}
         log.debug('Info for: %s', ifnm )
         if not os.path.exists(ifnm):
             return {}
-        rd = self.meta(ifnm, series, **kw)
+        rd = cls.meta(ifnm, series, **kw)
         core = [ 'image_num_series', 'image_num_x', 'image_num_y', 'image_num_z', 'image_num_c', 'image_num_t',
                  'image_pixel_format', 'image_pixel_depth', 'image_series_index',
                  'pixel_resolution_x', 'pixel_resolution_y', 'pixel_resolution_z',

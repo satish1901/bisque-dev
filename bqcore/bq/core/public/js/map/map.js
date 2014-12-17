@@ -159,9 +159,29 @@ Ext.define('BQ.map.Map', {
         google.maps.event.addListener(marker, 'click', function() { me.onMarkerClick(this); } );
     },
 
+    positionMarker : function(pt) {
+        var point = new google.maps.LatLng(pt[0], pt[1]);
+        this.bound.extend(point);
+
+        if (!this.marker_position) {
+            //var color = "FE7569",
+            //    icon = new google.maps.MarkerImage("http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|" + color);
+            var icon = 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+            this.marker_position = new google.maps.Marker({
+                position: point,
+                map: this.gmap,
+                icon: icon,
+            });
+        } else {
+            this.marker_position.setPosition(point);
+        }
+
+        this.gmap.fitBounds(this.bound); // dima: this might have to be activated on timeout with histerisis
+    },
+
     onMarkerClick : function(marker) {
         var map = this.gmap;
-        var s = '<img style="height:40px;width:40px;" src= "' + marker.image.thumbnail + '" />';
+        var s = '<img style="height:80px; width:80px;" src= "' + marker.image.thumbnail + '" />';
         this.infoWindow.setContent(s);
         this.infoWindow.open(map, marker);
         map.panTo(marker.position);
@@ -176,23 +196,43 @@ Ext.define('BQ.map.Map', {
         // iPhone pix will only have two array entries, extra-precise "minutes"
         if(coordinates.length <3) Sec = 0;
         var ref = direction[0].value;
-        var gps = Deg + (Min / 60) + (Sec / 60 / 60);
+        var gps = Deg + (Min / 60) + (Sec / 3600);
         if (ref == "South" || ref =="West") gps = -1*gps;
         return gps;
     },
 
+    gpsGeoParser : function(str) {
+        if (!str) return;
+        var coordinates = str.split(',');
+        if (!coordinates || coordinates.length<2) {
+            return;
+        }
+        return [parseFloat(coordinates[0]), parseFloat(coordinates[1])];
+    },
+
     findGPS : function(xmlDoc){
         if(!xmlDoc) return;
-        var latituderef = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='GPSLatitudeRef']/@value");
-        var longituderef = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='GPSLongitudeRef']/@value");
+
+        // first try to find Geo center entry
+        var geo_center = BQ.util.xpath_nodes(xmlDoc, "resource/tag[@name='Geo']/tag[@name='Coordinates']/tag[@name='center']/@value");
+        if (geo_center && geo_center.length > 0) {
+            var c = this.gpsGeoParser(geo_center[0].value);
+            if (c) {
+                return new google.maps.LatLng(c[0], c[1]);
+            }
+        }
+
+        // next try EXIF GPS
         var latitude = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='GPSLatitude']/@value");
+        var latituderef = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='GPSLatitudeRef']/@value");
         var longitude = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='GPSLongitude']/@value");
+        var longituderef = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='GPSLongitudeRef']/@value");
 
-        var thelat = this.gpsExifParser(latitude, latituderef);
-        var thelon = this.gpsExifParser(longitude, longituderef);
-        if (!thelat || !thelon) return;
-
-        return new google.maps.LatLng(thelat,thelon);
+        var lat = this.gpsExifParser(latitude, latituderef);
+        var lon = this.gpsExifParser(longitude, longituderef);
+        if (lat && lon) {
+            return new google.maps.LatLng(lat, lon);
+        }
     },
 
     findUserGPS : function(xmlDoc){

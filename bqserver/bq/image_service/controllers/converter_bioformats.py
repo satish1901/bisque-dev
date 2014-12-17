@@ -140,14 +140,15 @@ class ConverterBioformats(ConverterBase):
     # Supported
     #######################################
 
-    def supported(self, ifnm, **kw):
+    @classmethod
+    def supported(cls, ifnm, **kw):
         '''return True if the input file format is supported'''
-        if not self.installed:
+        if not cls.installed:
             return False
-        if self.is_multifile_series(**kw) is True:
+        if cls.is_multifile_series(**kw) is True:
             return False # for now we're not using multi-file support of bioformats
         log.debug('Supported for: %s', ifnm )
-        return len(self.info(ifnm))>0
+        return len(cls.info(ifnm))>0
 
 
     #######################################
@@ -161,15 +162,16 @@ class ConverterBioformats(ConverterBase):
     #Reading metadata
     # name value fields separated with ":"
 
-    def meta(self, ifnm, series=0, **kw):
-        if not self.installed:
+    @classmethod
+    def meta(cls, ifnm, series=0, **kw):
+        if not cls.installed:
             return {}
         if not os.path.exists(ifnm):
             return {}
-        if self.is_multifile_series(**kw) is True:
+        if cls.is_multifile_series(**kw) is True:
             return {}        
         log.debug('Meta for: %s', ifnm )
-        o = self.run_read(ifnm, [self.BFINFO, '-nopix', '-omexml', '-novalid', '-no-upgrade', '-series', '%s'%series, ifnm] )
+        o = cls.run_read(ifnm, [cls.BFINFO, '-nopix', '-omexml', '-novalid', '-no-upgrade', '-series', '%s'%series, ifnm] )
         if o is None:
             return {}
 
@@ -305,16 +307,17 @@ class ConverterBioformats(ConverterBase):
     #        Metadata complete = false
     #        Thumbnail series = false
 
-    def info(self, ifnm, series=0, **kw):
+    @classmethod
+    def info(cls, ifnm, series=0, **kw):
         '''returns a dict with file info'''
-        if not self.installed:
+        if not cls.installed:
             return {}
         if not os.path.exists(ifnm):
             return {}
-        if self.is_multifile_series(**kw) is True:
+        if cls.is_multifile_series(**kw) is True:
             return {}        
         log.debug('Info for: %s', ifnm )
-        o = self.run_read(ifnm, [self.BFINFO, '-nopix', '-nometa', '-no-upgrade', '-series', '%s'%series, ifnm] )
+        o = cls.run_read(ifnm, [cls.BFINFO, '-nopix', '-nometa', '-no-upgrade', '-series', '%s'%series, ifnm] )
         if o is None:
             return {}
 
