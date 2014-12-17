@@ -607,13 +607,13 @@ class WorkDirTable(Tables):
             
             @param: query_plan - list of hashes to query the table
             
-            @return: generator([hash, False],..)
+            @return: generator([False, hash],..)
         """
         query_results = []
         for filename in query_plan.keys():
             while not query_plan[filename].empty():
                 hash = query_plan[filename].get()
-            query_results.append((False, hash))
+                query_results.append((False, hash))
         return [query_results]
     
 
