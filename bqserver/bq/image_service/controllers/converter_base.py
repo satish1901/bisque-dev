@@ -126,6 +126,7 @@ class ConverterBase(object):
         if cls.installed_formats is None:
             cls.installed_formats = OrderedDict() # OrderedDict containing Format and keyed by format name
 
+    @classmethod
     def formats(self):
         '''return the XML with supported file formats'''
         return self.installed_formats
@@ -135,7 +136,8 @@ class ConverterBase(object):
     #######################################
 
     # overwrite with appropriate implementation
-    def supported(self, ifnm, **kw):
+    @classmethod
+    def supported(cls, ifnm, **kw):
         '''return True if the input file format is supported'''
         return False
 
@@ -145,7 +147,8 @@ class ConverterBase(object):
     #######################################
 
     # overwrite with appropriate implementation
-    def meta(self, ifnm, series=0, **kw):
+    @classmethod
+    def meta(cls, ifnm, series=0, **kw):
         '''returns a dict with file metadata'''
         return {}
 
@@ -155,14 +158,15 @@ class ConverterBase(object):
     #######################################
 
     # overwrite with appropriate implementation
-    def info(self, ifnm, series=0, **kw):
+    @classmethod
+    def info(cls, ifnm, series=0, **kw):
         '''returns a dict with file info'''
-        if not self.installed:
+        if not cls.installed:
             return {}
         if not os.path.exists(ifnm):
             return {}
 
-        rd = self.meta(ifnm, series)
+        rd = cls.meta(ifnm, series)
         core = [ 'image_num_series', 'image_num_x', 'image_num_y', 'image_num_z', 'image_num_c', 'image_num_t',
                  'image_pixel_format', 'image_pixel_depth',
                  'pixel_resolution_x', 'pixel_resolution_y', 'pixel_resolution_z',

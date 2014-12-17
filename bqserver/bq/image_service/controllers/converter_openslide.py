@@ -113,12 +113,13 @@ class ConverterOpenSlide(ConverterBase):
     # Supported
     #######################################
 
-    def supported(self, ifnm, **kw):
+    @classmethod
+    def supported(cls, ifnm, **kw):
         '''return True if the input file format is supported'''
-        if not self.installed:
+        if not cls.installed:
             return False
         log.debug('Supported for: %s', ifnm )
-        if self.is_multifile_series(**kw) is True:
+        if cls.is_multifile_series(**kw) is True:
             return False
         s = openslide.OpenSlide.detect_format(ifnm)
         return (s is not None)
@@ -127,11 +128,13 @@ class ConverterOpenSlide(ConverterBase):
     # The info command returns the "core" metadata (width, height, number of planes, etc.)
     # as a dictionary
     #######################################
-    def info(self, ifnm, series=0, **kw):
+    
+    @classmethod
+    def info(cls, ifnm, series=0, **kw):
         '''returns a dict with file info'''
-        if not self.installed:
+        if not cls.installed:
             return {}
-        if self.is_multifile_series(**kw) is True:
+        if cls.is_multifile_series(**kw) is True:
             return {}
         log.debug('Info for: %s', ifnm )
         with Locks(ifnm):
@@ -143,7 +146,7 @@ class ConverterOpenSlide(ConverterBase):
             except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
                 misc.end_nounicode_win(tmp)
                 return {}
-            info = {
+            info2 = {
                 'format': slide.properties[openslide.PROPERTY_NAME_VENDOR],
                 'image_num_series': 0,
                 'image_series_index': 0,
@@ -154,15 +157,22 @@ class ConverterOpenSlide(ConverterBase):
                 'image_num_c': 3,
                 'image_num_l': slide.level_count,
                 'image_pixel_format': 'unsigned integer',
-                'image_pixel_depth': 8,
-                'pixel_resolution_x': slide.properties.get(openslide.PROPERTY_NAME_MPP_X, 0),
-                'pixel_resolution_y': slide.properties.get(openslide.PROPERTY_NAME_MPP_Y, 0),
-                'pixel_resolution_z': 0,
-                'pixel_resolution_unit_x': 'microns',
-                'pixel_resolution_unit_y': 'microns',
-                'pixel_resolution_unit_z': 'microns'
+                'image_pixel_depth': 8
             }
+            
+            if slide.properties.get(openslide.PROPERTY_NAME_MPP_X, None) is not None:
+                info2.update({
+                    'pixel_resolution_x': slide.properties.get(openslide.PROPERTY_NAME_MPP_X, 0),
+                    'pixel_resolution_y': slide.properties.get(openslide.PROPERTY_NAME_MPP_Y, 0),
+                    'pixel_resolution_unit_x': 'microns',
+                    'pixel_resolution_unit_y': 'microns'
+                })               
             slide.close()
+            
+            # read metadata using imgcnv since openslide does not decode all of the info
+            info = ConverterImgcnv.info(tmp or ifnm, series=series, **kw)
+            info.update(info2) 
+            
             misc.end_nounicode_win(tmp)
             return info
         return {}
@@ -171,10 +181,11 @@ class ConverterOpenSlide(ConverterBase):
     # Meta - returns a dict with all the metadata fields
     #######################################
 
-    def meta(self, ifnm, series=0, **kw):
-        if not self.installed:
+    @classmethod
+    def meta(cls, ifnm, series=0, **kw):
+        if not cls.installed:
             return {}
-        if self.is_multifile_series(**kw) is True:
+        if cls.is_multifile_series(**kw) is True:
             return {}
         log.debug('Meta for: %s', ifnm )
         with Locks (ifnm):
@@ -195,12 +206,6 @@ class ConverterOpenSlide(ConverterBase):
                 'image_num_l': slide.level_count,
                 'image_pixel_format': 'unsigned integer',
                 'image_pixel_depth': 8,
-                'pixel_resolution_x': slide.properties.get(openslide.PROPERTY_NAME_MPP_X),
-                'pixel_resolution_y': slide.properties.get(openslide.PROPERTY_NAME_MPP_Y),
-                'pixel_resolution_z': 0,
-                'pixel_resolution_unit_x': 'microns',
-                'pixel_resolution_unit_y': 'microns',
-                'pixel_resolution_unit_z': 'microns',
                 'magnification': slide.properties.get(openslide.PROPERTY_NAME_OBJECTIVE_POWER),
                 'channel_0_name': 'red',
                 'channel_1_name': 'green',
@@ -210,10 +215,24 @@ class ConverterOpenSlide(ConverterBase):
                 'channel_color_2': '0,0,255'
             }
 
+            if slide.properties.get(openslide.PROPERTY_NAME_MPP_X, None) is not None:
+                rd.update({
+                    'pixel_resolution_x': slide.properties.get(openslide.PROPERTY_NAME_MPP_X, 0),
+                    'pixel_resolution_y': slide.properties.get(openslide.PROPERTY_NAME_MPP_Y, 0),
+                    'pixel_resolution_unit_x': 'microns',
+                    'pixel_resolution_unit_y': 'microns'
+                }) 
+
             # custom - any other tags in proprietary files should go further prefixed by the custom parent
             for k,v in slide.properties.iteritems():
                 rd['custom/%s'%k.replace('.', '/')] = v
             slide.close()
+            
+            # read metadata using imgcnv since openslide does not decode all of the info
+            meta = ConverterImgcnv.meta(tmp or ifnm, series=series, **kw)
+            meta.update(rd)
+            rd = meta
+            
             misc.end_nounicode_win(tmp)
         return rd
 

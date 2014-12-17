@@ -7,6 +7,8 @@
    3) some objects have non-standard attributes: BQAuth
 -----------------------------------------------------------------------------*/
 
+Ext.namespace('BQ.api');
+
 BQTypeError = new Error("Bisque type error");
 BQOperationError = new Error("Bisque operation error");
 
@@ -263,8 +265,12 @@ BQFactory.on_xmlresponse = function(params, xmldoc) {
         if (errorcb) errorcb ({ xmldoc : xmldoc, message : 'parse error in BQFactory.on_xmlresponse' });
         return;
     }
-    if (cb)
+    if (cb) {
         return cb(bq);
+    }
+    if (params.cb_xml) {
+        return params.cb_xml(bq, xmldoc);
+    }
 };
 
 BQFactory.parseBQDocument = function (xmldoc) {
@@ -1559,6 +1565,77 @@ function visit_array (arr, cb) {
 // BQImagePhys - maintains a record of image physical parameters
 //-------------------------------------------------------------------------------
 
+Ext.namespace('BQ.api.Phys');
+
+// visual representation of units string
+BQ.api.Phys.units = {
+    // metric units
+    yotometers   : 'ym',
+    yotometer    : 'ym',
+    zeptometers  : 'zm',
+    zeptometer   : 'zm',
+    attometers   : 'am',
+    attometer    : 'am',
+    femtometers  : 'fm',
+    femtometer   : 'fm',
+    picometers   : 'pm',
+    picometer    : 'pm',
+    nanometers   : 'nm',
+    nanometer    : 'nm',
+    microns      : 'μm',
+    micron       : 'μm',
+    micrometers  : 'μm',
+    micrometer   : 'μm',
+    milimeters   : 'mm',
+    milimeter    : 'mm',
+    centimeters  : 'cm',
+    centimeter   : 'cm',
+    decimeters   : 'dm',
+    decimeter    : 'dm',
+    meters       : 'm',
+    meter        : 'm',
+    decameters   : 'dam',
+    decameter    : 'dam',
+    hectometers  : 'hm',
+    hectometer   : 'hm',
+    kilometers   : 'km',
+    kilometer    : 'km',
+    megameters   : 'Mm',
+    megameter    : 'Mm',
+    gigameters   : 'Gm',
+    gigameter    : 'Gm',
+    terameters   : 'Tm',
+    terameter    : 'Tm',
+    petameters   : 'Pm',
+    petameter    : 'Pm',
+    exameters    : 'Em',
+    exameter     : 'Em',
+    zettameters  : 'Zm',
+    zettameter   : 'Zm',
+    yottameters  : 'Ym',
+    yottameter   : 'Ym',
+
+    // imperial units
+    inch         : 'in',
+    inches       : 'in',
+    foot         : 'ft',
+    feet         : 'ft',
+    yard         : 'yd',
+    yards        : 'yd',
+    mile         : 'mi',
+    miles        : 'mi',
+
+    // nautical
+    fathom       : 'ftm',
+    fathoms      : 'ftm',
+    cable        : 'cb',
+    calbles      : 'cb',
+    nautical_mile    : 'nmi',
+    nautical_miles   : 'nmi',
+    'nautical mile'  : 'nmi',
+    'nautical miles' : 'nmi',
+};
+
 function BQImagePhys(bqimage) {
     this.num_channels = 0;
     this.pixel_depth = null;
@@ -1646,34 +1723,63 @@ function combineValue( v1, v2, def ) {
   return v1 || v2 || def;
 };
 
+
 BQImagePhys.prototype.normalizeMeta = function() {
-  console.log ("BQImagePhys: Aggregate metadata");
+    console.log("BQImagePhys: Aggregate metadata");
 
-  // ensure values and their types
-  for ( var i=0; i<this.pixel_size.length; i++ ) {
-    this.pixel_size[i] = combineValue( this.pixel_size_ds[i], this.pixel_size_is[i], this.pixel_size[i] );
-    this.pixel_size[i] = parseFloat( this.pixel_size[i] );
-  }
+    // ensure values and their types
+    for (var i = 0; i < this.pixel_size.length; i++) {
+        this.pixel_size[i] = combineValue(this.pixel_size_ds[i], this.pixel_size_is[i], this.pixel_size[i]);
+        this.pixel_size[i] = parseFloat(this.pixel_size[i]);
+    }
 
-  for ( var i=0; i<this.channel_names.length; i++ ) {
-    this.channel_names[i] = combineValue( this.channel_names_ds[i], this.channel_names_is[i], this.channel_names[i] );
-  }
+    for (var i = 0; i < this.channel_names.length; i++) {
+        this.channel_names[i] = combineValue(this.channel_names_ds[i], this.channel_names_is[i], this.channel_names[i]);
+    }
 
-  for ( var i=0; i<this.display_channels.length; i++ ) {
-    this.display_channels[i] = combineValue( this.display_channels_ds[i], this.display_channels_is[i], this.display_channels[i] );
-    this.display_channels[i] = parseInt( this.display_channels[i] );
-  }
+    for (var i = 0; i < this.display_channels.length; i++) {
+        this.display_channels[i] = combineValue(this.display_channels_ds[i], this.display_channels_is[i], this.display_channels[i]);
+        this.display_channels[i] = parseInt(this.display_channels[i]);
+    }
 
-  if (this.channel_colors_ds && this.channel_colors_ds.length===this.num_channels)
-      this.channel_colors = this.channel_colors_ds;
+    if (this.channel_colors_ds && this.channel_colors_ds.length === this.num_channels)
+        this.channel_colors = this.channel_colors_ds;
 
-  this.initialized = true;
+    // set computed variables
+    this.units = BQ.api.Phys.units[this.pixel_units[0]] || this.pixel_units[0] || '?';
+
+    this.initialized = true;
+};
+
+BQImagePhys.prototype.coordinate_to_phys = function(pt, use_geo) {
+    if (!this.geo) {
+        use_geo = false;
+    }
+
+    // print physical coordinates
+    if (!use_geo && this.pixel_size[0]>0 && this.pixel_size[1]>0) {
+        return [pt.x*(this.pixel_size[0]), pt.y*(this.pixel_size[1])];
+    }
+
+    // print geo coordinates if available
+    if (this.geo && this.geo.proj4 && this.geo.res && this.geo.top_left) {
+        var c = [this.geo.top_left[0] + pt.x*this.geo.res[0], this.geo.top_left[1] - pt.y*this.geo.res[1]];
+        var latlong = proj4(this.geo.proj4, 'EPSG:4326', c);
+        return [latlong[1], latlong[0]];
+    }
+
+    return [pt.x, pt.y];
 };
 
 BQImagePhys.prototype.load = function(cb) {
     this.initialized = undefined;
     this.loadcallback = cb;
-    BQFactory.load (this.image.src + "?meta", callback(this, 'onloadIS'));
+
+    BQFactory.request({
+        uri : this.image.src + '?meta',
+        cb_xml: callback(this, this.onloadIS),
+    });
+
     if (this.image.tags.length==0)
       this.image.load_tags(callback(this, 'onloadDS'));
     else
@@ -1688,7 +1794,9 @@ BQImagePhys.prototype.onload = function() {
   }
 };
 
-BQImagePhys.prototype.onloadIS = function (image) {
+
+
+BQImagePhys.prototype.onloadIS = function (image, xml) {
   console.log ("BQImagePhys: Got metadata from IS");
   var hash = {};
   for (var t in image.tags )
@@ -1744,6 +1852,36 @@ BQImagePhys.prototype.onloadIS = function (image) {
   //-------------------------------------------------------
   // additional info
   //this.pixel_depth = hash['image_pixel_depth'];
+
+  // find geo tags
+  if (xml) {
+      var geo = BQ.util.xpath_nodes(xml, "resource/tag[@name='Geo']");
+      if (geo && geo.length>0) {
+          geo = geo[0];
+          // fetch proj4 model definition
+          var v = BQ.util.xpath_nodes(geo, "tag[@name='Model']/tag[@name='proj4_definition']/@value");
+          var proj4_defn = v && v.length>0 ? v[0].value : undefined;
+
+          // fetch image 0,0 in model coordinates
+          v = BQ.util.xpath_nodes(geo, "tag[@name='Coordinates']/tag[@name='upper_left_model']/@value");
+          if (!v || v.length<1) {
+              v = BQ.util.xpath_nodes(geo, "tag[@name='Coordinates']/tag[@name='upper_left']/@value");
+          }
+          var top_left = v && v.length>0 ? BQ.util.parseStringArrayFloat(v[0].value) : undefined;
+
+          // fetch image resolution
+          v = BQ.util.xpath_nodes(geo, "tag[@name='Tags']/tag[@name='ModelPixelScaleTag']/@value");
+          var res = v && v.length>0 ? BQ.util.parseStringArrayFloat(v[0].value) : undefined;
+
+          this.geo = {
+              proj4: proj4_defn,
+              top_left: top_left,
+              res: res,
+          };
+      } else {
+          this.geo = undefined;
+      }
+  }
 
   this.is_done = true;
   this.onload();

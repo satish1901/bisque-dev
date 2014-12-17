@@ -127,10 +127,11 @@ class ConverterImgcnv(ConverterBase):
     # Supported
     #######################################
 
-    def supported(self, ifnm, **kw):
+    @classmethod
+    def supported(cls, ifnm, **kw):
         '''return True if the input file format is supported'''
         log.debug('Supported for: %s', ifnm )
-        supported = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-supported', '-i', ifnm]) 
+        supported = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-supported', '-i', ifnm]) 
         return supported.startswith('yes')
 
 
@@ -138,13 +139,14 @@ class ConverterImgcnv(ConverterBase):
     # Meta - returns a dict with all the metadata fields
     #######################################
 
-    def meta(self, ifnm, series=0, **kw):
+    @classmethod
+    def meta(cls, ifnm, series=0, **kw):
         '''returns a dict with file metadata'''
         log.debug('Meta for: %s', ifnm)
-        if not self.installed:
+        if not cls.installed:
             return {}
 
-        meta = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-meta', '-i', ifnm] )
+        meta = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-meta', '-i', ifnm] )
         if meta is None:
             return {}
         rd = {}
@@ -164,7 +166,7 @@ class ConverterImgcnv(ConverterBase):
         rd['image_num_series'] = 0
         rd['image_series_index'] = 0
         
-        if self.is_multifile_series(**kw) is True:
+        if cls.is_multifile_series(**kw) is True:
             rd.update(kw['token'].meta)
             #try:
             #    del rd['files']
@@ -177,15 +179,17 @@ class ConverterImgcnv(ConverterBase):
     # The info command returns the "core" metadata (width, height, number of planes, etc.)
     # as a dictionary
     #######################################
-    def info(self, ifnm, series=0, **kw):
+    
+    @classmethod
+    def info(cls, ifnm, series=0, **kw):
         '''returns a dict with file info'''
         log.debug('Info for: %s', ifnm)
-        if not self.installed:
+        if not cls.installed:
             return {}
         if not os.path.exists(ifnm):
             return {}
 
-        info = self.run_read(ifnm, [self.CONVERTERCOMMAND, '-info', '-i', ifnm] )
+        info = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-info', '-i', ifnm] )
         if info is None:
             return {}
         rd = {}
@@ -195,9 +199,9 @@ class ConverterImgcnv(ConverterBase):
                 tag, val = [ l.strip() for l in line.split(':',1) ]
             except ValueError:
                 continue
-            if tag not in self.info_map:
+            if tag not in cls.info_map:
                 continue
-            rd[self.info_map[tag]] = misc.safetypeparse(val.replace('\n', ''))
+            rd[cls.info_map[tag]] = misc.safetypeparse(val.replace('\n', ''))
 
         # change the image_pixel_format output, convert numbers to a fully descriptive string
         if isinstance(rd['image_pixel_format'], (long, int)):
@@ -219,7 +223,7 @@ class ConverterImgcnv(ConverterBase):
         if rd['image_num_z']==1 and rd['image_num_t']==1 and rd['image_num_p']>1:
             rd['image_num_t'] = rd['image_num_p']
         
-        if self.is_multifile_series(**kw) is True:
+        if cls.is_multifile_series(**kw) is True:
             rd.update(kw['token'].meta)
             #try:
             #    del rd['files']

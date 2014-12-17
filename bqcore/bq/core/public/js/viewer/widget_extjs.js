@@ -114,6 +114,7 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.onloaded  = callback(this, this.onloaded);
         this.parameters.onphys    = callback(this, this.onphys);
         this.parameters.oneditcontrols = callback(this, this.oneditcontrols);
+        this.parameters.onposition = callback(this, this.onposition);
 
         var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
         this.viewer = new ImgViewer(id, this.resource, this.parameters);
@@ -180,6 +181,10 @@ Ext.define('BQ.viewer.Image', {
 
     onkeyboard: function(e) {
         this.viewer.onkeyboard(e);
+    },
+
+    onposition : function(pt) {
+        this.fireEvent( 'position_selected', pt, this );
     },
 
 });
