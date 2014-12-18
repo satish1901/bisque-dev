@@ -25,6 +25,12 @@ def localpath(uniq_ident):
     server = find_server()
     return server.localpath(uniq_ident)
 
+
+def delete_blob(uniq_ident):
+    "return localpath of resource by ident (uniq)"
+    server = find_server()
+    return server.delete_blob(uniq_ident)
+
 def original_name(ident):
     "create  localpath if possible of resource by ident (uniq)"
     server = find_server()

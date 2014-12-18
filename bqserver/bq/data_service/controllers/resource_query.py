@@ -1132,6 +1132,7 @@ def resource_delete(resource, user_id=None):
         Resource.hier_cache.invalidate_resource (q, user = user_id)
         #Resource.hier_cache.invalidate ('/', user = user_id)
         return
+
     # owner so first delete all referneces.
     # ACL, values etc..
     #
@@ -1144,15 +1145,11 @@ def resource_delete(resource, user_id=None):
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     q.delete()
 
+    # We can delete the resource .. check it has an associated blob
+    if resource.resource_uniq is not None:
+        from bq import blob_service
+        blob_service.delete_blob (resource.resource_uniq)
 
-
-    # This is a *pile* of junk.. should be handled by mount_service but I cannot find a clean way to notify it.
-    link = DBSession.query(Taggable).filter_by(resource_type = 'link', resource_value = resource.resource_uniq).first()
-    if link:
-        log.debug ('removing link %s %s from store', link.resource_name, link.resource_uniq)
-        DBSession.delete(link)
-        Resource.hier_cache.invalidate_resource (link, user = user_id)
-    # Finally delete resource
     DBSession.delete(resource)
     DBSession.flush()
 

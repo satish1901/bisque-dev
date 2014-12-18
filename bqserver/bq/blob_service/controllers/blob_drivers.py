@@ -66,6 +66,7 @@ from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.compat import OrderedDict
 from bq.util.urlpaths import *
+from bq.util.hash import make_uniq_code, is_uniq_code
 
 from bq.util.io_misc import blocked_alpha_num_sort, tounicode
 
@@ -93,7 +94,7 @@ except ImportError:
 
 
 try:
-    #import smb   # neeed for exceptions
+    import smb   # neeed for exceptions
     from smb.SMBConnection import SMBConnection
     supported_storage_schemes.append('smb')
 except ImportError:
@@ -179,7 +180,7 @@ class StorageDriver(object):
     # File interface
     def valid (self, storurl):
         "Return validity of storeurl"
-    def push(self, fp, storeurl):
+    def push(self, fp, storeurl, uniq=None):
         "Push a local file (file pointer)  to the store"
     def pull (self, storeurl, localpath=None):
         "Pull a store file to a local location"
@@ -257,14 +258,16 @@ class LocalDriver (StorageDriver):
         return os.path.exists(localpath) and localpath2url(localpath)
 
     # New interface
-    def push(self, fp, storeurl):
+    def push(self, fp, storeurl, uniq=None):
         "Push a local file (file pointer)  to the store"
 
         log.debug('local.push: %s' , storeurl)
         origpath = localpath = url2localpath(storeurl)
         fpath,ext = os.path.splitext(origpath)
         _mkdir (os.path.dirname(localpath))
-        for x in range(100):
+        uniq = uniq or make_uniq_code()
+        for x in xrange(len(uniq)-7):
+        #for x in range(100):
             if not os.path.exists (localpath):
                 log.debug('local.write: %s -> %s' , tounicode(storeurl), tounicode(localpath))
                 #patch for no copy file uploads - check for regular file or file like object
@@ -276,7 +279,8 @@ class LocalDriver (StorageDriver):
                 ident = localpath2url(ident)
                 log.debug('local.blob_id: %s -> %s',  tounicode(storeurl), tounicode(localpath))
                 return ident, localpath
-            localpath = "%s-%04d%s" % (fpath , x , ext)
+            localpath = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
+            #localpath = "%s-%04d%s" % (fpath , x , ext)
             log.debug ("local.write: File exists... trying %s", tounicode(localpath))
         raise DuplicateFile(localpath)
 
@@ -310,11 +314,18 @@ class LocalDriver (StorageDriver):
         "list contents of store url"
         raise NotImplementedError("list")
 
-    def delete(self, ident):
+    def delete(self, storeurl):
         #ident,_ = split_subpath(ident) # reference counting required?
-        fullpath = os.path.join(self.top[5:], ident) # remove file
-        log.debug("deleting %s", fullpath)
-        os.remove (fullpath)
+        path,sub = split_subpath(storeurl)
+        if not path.startswith('file:///'):
+            if path.startswith('file://'):
+                path = os.path.join(self.top, path.replace('file://', ''))
+            else:
+                path = os.path.join(self.top, path)
+
+        path = url2localpath(path.replace('\\', '/'))
+        os.remove (path)
+        log.debug("deleted %s", path)
 
     def __str__(self):
         return "localstore[%s, %s]" % (self.mount_url, self.top)
@@ -360,9 +371,15 @@ class IrodsDriver(StorageDriver):
         return storeurl.startswith(self.mount_url) and storeurl
 
     # New interface
-    def push(self, fp, storeurl):
+    def push(self, fp, storeurl, uniq = None):
         "Push a local file (file pointer)  to the store"
         log.debug('irods.push: %s' , storeurl)
+        fpath,ext = os.path.splitext(storeurl)
+        uniq = uniq or make_uniq_code()
+        for x in xrange(len(uniq)-7):
+            if not irods_handler.irods_isfile (storeurl, user=self.user, password = self.password):
+                break
+            storeurl = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
         flocal = irods_handler.irods_push_file(fp, storeurl, user=self.user, password=self.password)
         return storeurl, flocal
 
@@ -446,11 +463,18 @@ class S3Driver(StorageDriver):
     def valid(self, storeurl):
         return storeurl.startswith(self.mount_url) and storeurl
 
-    def push(self, fp, storeurl):
+    def push(self, fp, storeurl, uniq=None):
         'write a file to s3'
         s3_ident,sub = split_subpath(storeurl)
+        s3_basekey,ext = os.path.splitext(s3_ident)
         log.debug('s3.write: %s -> %s' , storeurl, s3_ident)
-        s3_key = s3_ident.replace("s3://","")
+        uniq = uniq or make_uniq_code()
+        for x in xrange(len(uniq)-7):
+            s3_key = s3_ident.replace("s3://","")
+            if not s3_handler.s3_isfile (self.bucket, s3_key):
+                break
+            s3_ident = "%s-%s%s" % (s3_base , uniq[3:7+x] , ext)
+
         flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key)
         return s3_ident, flocal
 
@@ -468,7 +492,12 @@ class S3Driver(StorageDriver):
     def delete(self, storeurl):
         s3_key = storeurl.replace("s3://","")
         s3_handler.s3_delete_file(self.bucket, s3_key)
-
+    def isdir (self, storeurl):
+        "Check if a url is a container/directory"
+    def status(self, storeurl):
+        "return status of url: dir/file, readable, etc"
+    def list(self, storeurl):
+        "list contents of store url"
 
 
 ###############################################
@@ -506,7 +535,7 @@ class HttpDriver(StorageDriver):
     def valid(self, http_ident):
         return  http_ident.startswith(self.mount_url) and http_ident
 
-    def push(self, fp, filename):
+    def push(self, fp, filename, uniq=None):
         raise IllegalOperation('HTTP(S) write is not implemented')
 
     def pull(self, http_ident,  localpath=None):
@@ -585,12 +614,21 @@ class SMBNetDriver(StorageDriver):
         "Return validity of storeurl"
         return storeurl.startswith (self.mount_url) and storeurl
 
-    def push(self, fp, storeurl):
+    def push(self, fp, storeurl, uniq=None):
         "Push a local file (file pointer)  to the store"
         sharename, path = self.split_smb(storeurl)
-        if self.conn:
-            written = self.conn.storeFile (sharename, path, fp)
-            log.debug ("smb wrote %s bytes", written)
+        uniq = uniq or make_uniq_code()
+        base,ext = os.path.splitext(path)
+        for x in xrange(len(uniq)-7):
+            try:
+                if not self.conn.getAttributes (sharename, path):
+                    break
+            except smb.OperationError:
+                path = "%s-%s%s" % (base , uniq[3:7+x] , ext)
+
+        written = self.conn.storeFile (sharename, path, fp)
+        log.debug ("smb wrote %s bytes", written)
+        return "smb://%s/%s" % (sharename, path), None
 
     def pull (self, storeurl, localpath=None):
         "Pull a store file to a local location"
@@ -618,6 +656,7 @@ class SMBNetDriver(StorageDriver):
         "return status of url: dir/file, readable, etc"
     def list(self, storeurl):
         "list contents of store url"
+
 
 
 

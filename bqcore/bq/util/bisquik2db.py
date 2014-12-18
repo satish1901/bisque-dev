@@ -56,17 +56,20 @@ import urlparse
 import time
 import copy
 import io
+import posixpath
 
 from lxml import etree
 from datetime import datetime
 import sqlalchemy
 from sqlalchemy.orm import object_mapper
+from sqlalchemy.sql import and_, or_
 
 from tg import config
 
 from bq.core.model import DBSession
 from bq.data_service.model import Taggable, Value, Vertex, dbtype_from_tag
 from bq.exceptions import BQException
+from bq.util.compat import OrderedDict
 
 log = logging.getLogger('bq.db')
 
@@ -457,15 +460,19 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
     return elem
 
 
-def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
+def resource2nodes(dbo, parent=None, view=[], baseuri=None,  qfilter=None, **kw):
     'load every element associated with dbo i.e load the document'
     from bq.data_service.controllers.resource_query import resource_permission
     doc_id = dbo.document_id
-    docnodes = DBSession.query(Taggable).filter(Taggable.document_id == doc_id)
+    if qfilter is None:
+        qfilter =  (Taggable.document_id == doc_id)
+
+
+    docnodes = DBSession.query(Taggable).filter(qfilter)
     docnodes = resource_permission(docnodes)
     #docnodes = docnodes.order_by(Taggable.id)
-    log.debug("reosurce2nodes: %s",  str(docnodes))
-    log.debug('resource2nodes: %s %s doc %s' , str(docnodes), dbo.id , doc_id)
+    #log.debug("reosurce2nodes: %s",  str(docnodes))
+    #log.debug('resource2nodes: %s %s doc %s' , str(docnodes), dbo.id , doc_id)
     nodes = {}
     parents = {}
 
@@ -506,16 +513,16 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  **kw):
         if v.resource_parent_id in nodes:
             xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
 
-    log.debug('resource2nodes :read %d nodes ' % (len(nodes.keys())))
+    log.debug('resource2nodes: doc %s read %d nodes ', doc_id,  (len(nodes.keys())))
     return nodes, doc_id
 
 
-def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = None, **kw):
+def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = None, qfilter=None, **kw):
     'load an entire document tree for a particular node'
 
     try:
         if doc_id != dbo.document_id:
-            nodes, doc_id = resource2nodes(dbo, parent, view, baseuri, **kw)
+            nodes, doc_id = resource2nodes(dbo, parent, view, baseuri, qfilter, **kw)
         if parent is not None:
             log.debug ("parent %s + %s" % (parent, nodes[dbo.id]))
             parent.append ( nodes[dbo.id])
@@ -547,6 +554,8 @@ def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
         log.debug ("progressive response: max %f", max_response_time)
         starttime = time.clock()
         endtime   = starttime + max_response_time;
+    log.debug ("db2tree: %s", str(dbo))
+
     complete,r = db2tree_int(dbo, parent, view, baseuri, endtime, **kw)
 
 
@@ -581,13 +590,25 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None, **kw)
 
 
 def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
-    log.debug ("dbo=%s view=%s" % ( dbo, view))
+    log.debug ("db2node dbo=%s view=%s" % ( dbo, view))
     if dbo is None:
         log.error ("None pass to as DB object parent = %s", parent)
         return None, nodes, doc_id
     if 'deep' in view:
         n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
         return n, nodes, doc_id
+
+    # newview = filter (lambda x: x not in ('full','deep','short', 'canonical'), view)
+    # if newview:
+    #     qfilter = (Taggable.resource_parent_id == None)
+    #     for tag_name in newview:
+    #         qfilter = or_(qfilter, and_(Taggable.resource_type == 'tag',
+    #                                     Taggable.resource_name == tag_name))
+    #     qfilter = and_(Taggable.document_id == dbo.document_id, qfilter)
+
+    #     n, nodes, doc_id = resource2tree(dbo, parent, ['deep'], baseuri, nodes, doc_id, qfilter)
+    #     return n, nodes, doc_id
+
 
     node = xmlnode(dbo, parent, baseuri, view)
     if "full" in view :
@@ -679,7 +700,7 @@ def parse_uri(uri):
     '''
     url = urlparse.urlsplit(uri)
     # (scheme, host, path, ...)
-    parts = url[2].split('/')
+    parts = posixpath.normpath(url[2]).split('/')
     # paths are /class/id or /resource_uniq
     if len(parts)>=2:
         name, ida = parts[-2:]
@@ -722,13 +743,24 @@ def load_uri (uri, query=False):
         log.exception("Failed to load uri %s", uri)
         return None
 
-converters = {
-    'object' : load_uri,
-    'integer' : int,
-    'float'   : float,
-    'number'  : float,
-    'string'  : unicode_safe,
-    }
+converters = OrderedDict( (
+    ('object' , load_uri),
+    ('integer',  int),
+    ('float'  ,  float),
+    ('number'  , float),
+    ('string'  , unicode_safe),
+    ) )
+
+def try_converters (value):
+    for ty_, converter in converters.items():
+        try:
+            v = converter(value)
+            if v is not None:
+                return v
+        except ValueError:
+            pass
+    # we should never get here
+    raise ValueError
 
 def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory, replace=False):
     '''Update the database type resource with doc or tree'''
@@ -802,7 +834,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 if value is None and obj.tag == 'value':
                     value = obj.text
                 if value is not None and value != resource.value:
-                    convert = converters.get(type_, unicode_safe)
+                    convert = converters.get(type_, try_converters)
                     resource.value = convert (value.strip())
                     #log.debug (u"assigned %s = %s" % (obj.tag , unicode(value,"utf-8")))
                 stack.append (resource)

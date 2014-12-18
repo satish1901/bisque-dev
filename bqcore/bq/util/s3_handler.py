@@ -53,6 +53,10 @@ def s3_fetch_file(bucket, key):
     localname = s3_cache_fetch(bucket, key)
     return localname
 
+def s3_isfile(bucket, key):
+    key = bucket.get_key (key)
+    return key is not None
+
 def s3_push_file(fileobj, bucket , key):
     localname = s3_cache_save(fileobj, bucket, key)
     return localname
