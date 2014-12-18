@@ -164,6 +164,18 @@ BQ.util.parseStringArrayFloat = function(s) {
     return s;
 };
 
+// n - number
+// c - number of digits before .
+// d - number of digits after .
+BQ.util.formatFloat = function(n, c, d, sep) {
+    var s = n.toFixed(d),
+        p = s.indexOf('.'),
+        sep = sep || ' ';
+    if (p>=0 && p<c) {
+        s = Array(c-p+1).join(sep) + s;
+    }
+    return s;
+};
 
 /*******************************************************************************
 
