@@ -60,15 +60,17 @@ DESCRIPTION
 # Python 3 Dependencies
 #    pip install six
 
+import os
+import sys
+import csv
 import argparse
 import posixpath
-import csv
-import sys
 import requests
-from six.moves import input
 import six
 import logging
 import uuid
+import datetime
+from six.moves import input
 
 BASE = "http://www.dirt.biology.gatech.edu/sites/default/files/data/alex"
 BISQUE_ROOT = "https://loup.ece.ucsb.edu"
@@ -113,11 +115,14 @@ def transform(session, reader):
     @param reader:  a csv reader
     @return : array of tuples  ( origin URL of image, BQImage with tags initialized)
     """
+    uploaddir = str(datetime.date.today())
+
     images = []
     for row in reader:
         image_name = row['Image name'] +'.JPG'
         image_url = posixpath.join(BASE, image_name)
-        image = BQImage (name = image_name)
+        # We can store the image in a serverside directory by prepending to the name
+        image = BQImage (name = posixpath.join(uploaddir, image_name))
         for field in reader.fieldnames:
             if field in REMOVE_FIELDS:
                 continue
@@ -137,7 +142,7 @@ def transfer_images (session, image_data):
     bqimages = []
     for url, bqo in image_data:
         # This is usually reserver for bisque servers but is generic enought to work with any URL
-        tmpfile = "/tmp/%s" % bqo.name
+        tmpfile = "/tmp/%s" % os.path.basename (bqo.name)
         if not session.args.dryrun:
             session.fetchblob (url, path = tmpfile)
             image = session.saveblob (filename = tmpfile, bqo = bqo)

@@ -205,6 +205,15 @@ def irods_delete_file(url, **kw):
         f.close()
         f.delete()
 
+def irods_isfile (url, **kw):
+    with IrodsConnection(url, **kw) as ic:
+        log.debug( "irods_delete %s -> %s" % (url, ic.path))
+        f = irods.iRodsOpen(ic.conn, ic.path, 'r')
+        if f:
+            f.close()
+            return True
+        return False
+
 def irods_isdir (url, **kw):
     with IrodsConnection(url, **kw) as ic:
         coll = irods.irodsCollection(ic.conn)

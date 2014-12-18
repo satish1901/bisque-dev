@@ -562,17 +562,20 @@ class MountServer(TGController):
 
                 storeurl = posixpath.join (driver.mount_url, storepath)
                 log.debug('_save_store: %s from %s %s', storeurl, driver.mount_url, storepath)
-                storeurl, localpath = driver.push (fileobj, storeurl)
+                storeurl, localpath = driver.push (fileobj, storeurl, resource.get('resource_uniq'))
 
-                resource.set('name', join_subpath(os.path.basename(localpath), sub))
+                resource.set('name', join_subpath(os.path.basename(storeurl), sub))
                 resource.set('value', join_subpath(storeurl, sub))
                 log.debug('_save_store: %s', etree.tostring(resource))
         else:
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
-            resource.set('name', join_subpath(os.path.basename(storepath), sub))
+            resource.set('name', join_subpath(os.path.basename(storeurl), sub))
 
         if self.store_paths:
-            self.insert_mount_path (store, storepath.split('/'), resource)
+            # Update the store path reference to similar to the storeurl
+            storepath = storepath.split ('/')
+            storepath[-1] = os.path.basename(storeurl)
+            self.insert_mount_path (store, storepath, resource)
         log.debug('_save_store: %s %s %s', storeurl, localpath, etree.tostring(resource))
         return storeurl, localpath
 
@@ -632,7 +635,7 @@ class MountServer(TGController):
 
             # I don't a single resource will have in places references and references that need to move
             if len(fixedrefs) and len(movingrefs):
-                log.warn ("While storing refs found inplance refs and moving refs in same resource %s", etree.tostring(resource))
+                log.warn ("While storing refs: found inplace refs and moving refs in same resource %s", etree.tostring(resource))
 
             if len(fixedrefs):
                 # retrieve storeurl, and no localpath yet
@@ -647,7 +650,7 @@ class MountServer(TGController):
                 with open (localpath, 'rb') as fobj:
                     storeurl = posixpath.join (driver.mount_url, storepath)
                     log.debug ("_save_store_refs: push %s", storeurl)
-                    storeurl, localpath = driver.push (fobj, storeurl)
+                    storeurl, localpath = driver.push (fobj, storeurl, resource.get ('resource_uniq'))
                     if first[0] is None:
                         first = (storeurl, localpath)
                     setter(node, join_subpath (storeurl, subpath))
@@ -702,6 +705,38 @@ class MountServer(TGController):
             log.debug('fetch_blob for %s url=%s localpath=%s sub=%s', uniq, bloburls[0], files[0], sub)
             log.debug('fetch_blob %s', zip (bloburls, files))
             return blob_drivers.Blobs(files[0], sub, files)
+
+
+
+    def delete_blob(self, resource):
+        'Delete elements  for a resource'
+        log.debug ("delete_blob %s", resource.get ('resource_uniq'))
+
+        store = self._find_store (resource)
+        if  store is None:
+            log.warn ('Not a valid store ref in  %s' , etree.tostring (resource))
+            return None
+
+        with self._get_driver(store) as driver:
+            uniq     = resource.get('resource_uniq')
+            bloburls = resource.get('value')
+            if bloburls is not None:
+                bloburls = [ bloburls ]
+            else:
+                bloburls  = [ x.text for x in resource.xpath('value') ]
+
+            log.debug ("fetch_blob %s -> %s", resource.get ('resource_uniq'), bloburls)
+
+            files = []
+            sub = ''
+            for storeurl in bloburls:
+                driver.delete (storeurl)
+        # Delete the reference in the store
+        link = data_service.query ('link', parent=False, value = resource.get ('resource_uniq'), cache=False)
+        if len(link)==1:
+            log.debug ("delete_blob: delete link %s", link[0].get('uri'))
+            data_service.del_resource(link[0])
+
 
 
     def _find_store(self, resource):
@@ -777,6 +812,10 @@ class MountServer(TGController):
         log.debug ('making store driver %s: %s', store_name, driver_opts)
         driver = blob_drivers.make_storage_driver(**driver_opts)
         return driver
+
+
+
+
 
     ##############################
     # services for mounts

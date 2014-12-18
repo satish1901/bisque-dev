@@ -282,7 +282,7 @@ class BlobServer(RestController, ServiceMixin):
         self.__class__.paths  = PathService(self)
         self.__class__.mounts = mount_service.MountServer(url)
         self.__class__.store = self.__class__.mounts
-        
+
         path_root = config.get('bisque.paths.root', '')
         path_plugins = os.path.join(path_root, 'bqcore/bq/core/public/plugins')
         self.plugin_manager = ResourcePluginManager(path_plugins)
@@ -353,7 +353,7 @@ class BlobServer(RestController, ServiceMixin):
                 tg.response.headers['Content-Type']  = 'text/xml'
                 resource = etree.Element ('resource', name=filename, value=localpath)
                 return etree.tostring (resource)
-            
+
             disposition = '' if 'noattach' in kw else 'attachment; '
             try:
                 disposition = '%sfilename="%s"'%(disposition, filename.encode('ascii'))
@@ -361,7 +361,7 @@ class BlobServer(RestController, ServiceMixin):
                 disposition = '%sfilename="%s"; filename*="%s"'%(disposition, filename.encode('utf8'), filename.encode('utf8'))
 
             content_type = self.guess_mime(filename)
-            return forward(BQFileApp(localpath, 
+            return forward(BQFileApp(localpath,
                                      content_type=content_type,
                                      content_disposition=disposition,
                                      ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
@@ -488,6 +488,13 @@ class BlobServer(RestController, ServiceMixin):
             log.warn ('requested resource %s was not available/found' , uniq_ident)
             return None
         return self.mounts.fetch_blob(resource)
+
+    def delete_blob(self, uniq_ident):
+        """Delete the  blob reference defined by this resource
+           Does not delete the resource itself nor does it check that you have rights
+        """
+        resource = data_service.resource_load(uniq=uniq_ident)
+        self.mounts.delete_blob (resource)
 
     def originalFileName(self, ident):
         log.debug ('originalFileName: deprecated %s', ident)
