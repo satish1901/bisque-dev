@@ -59,6 +59,8 @@ function PanoJS(viewer, options) {
   this.viewerZoomedListeners = [];
   // listeners that are notified on a resize event
   this.viewerResizedListeners = [];
+  // listeners that are notified on a cursor move event
+  this.cursorMovedListeners = [];
 
 
   if (typeof viewer == 'string')
@@ -272,6 +274,7 @@ PanoJS.prototype.init = function() {
 
     this.ui_listener.onmousedown   = callback(this, this.mousePressedHandler);
     this.ui_listener.onmouseup     = callback(this, this.mouseReleasedHandler);
+    this.ui_listener.onmousemove   = callback(this, this.mouseMoveHandler);
     this.ui_listener.onmouseout    = callback(this, this.mouseReleasedHandler);
     this.ui_listener.oncontextmenu = function() {return false;};
     this.ui_listener.ondblclick    = callback(this, this.doubleClickHandler);
@@ -654,6 +657,10 @@ PanoJS.prototype.addViewerResizedListener = function(listener) {
     this.viewerResizedListeners.push(listener);
 };
 
+PanoJS.prototype.addCursorMovedListener = function(listener) {
+    this.cursorMovedListeners.push(listener);
+};
+
 // Notify listeners of a zoom event on the viewer.
 PanoJS.prototype.notifyViewerZoomed = function() {
     var scale = this.currentScale();
@@ -686,6 +693,13 @@ PanoJS.prototype.notifyViewerMoved = function(coords) {
                                               );
     }
 };
+
+PanoJS.prototype.notifyCursorMoved = function(pt) {
+    for (var i = 0; i < this.cursorMovedListeners.length; i++) {
+        this.cursorMovedListeners[i].cursorMoved( new PanoJS.MoveEvent(pt.x, pt.y) );
+    }
+};
+
 
 PanoJS.prototype.zoom = function(direction) {
     // ensure we are not zooming out of range
@@ -1000,9 +1014,9 @@ PanoJS.prototype.release = function(coords) {
  * layers.
  */
 PanoJS.prototype.activate = function(pressed) {
-  this.pressed = pressed;
-  this.surface.style.cursor = (pressed ? PanoJS.GRABBING_MOUSE_CURSOR : PanoJS.GRAB_MOUSE_CURSOR);
-  this.ui_listener.onmousemove = (pressed ? callback(this, this.mouseMovedHandler) : function() {});
+    this.pressed = pressed;
+    this.surface.style.cursor = (pressed ? PanoJS.GRABBING_MOUSE_CURSOR : PanoJS.GRAB_MOUSE_CURSOR);
+    this.ui_listener.onmousemove = (pressed ? callback(this, this.mouseMovedHandler) : callback(this, this.mouseMoveHandler) );
 };
 
 /**
@@ -1105,6 +1119,14 @@ PanoJS.prototype.mouseMovedHandler = function(e) {
       this.moveViewer(this.resolveCoordinates(e));
   }
   return false;
+};
+
+PanoJS.prototype.mouseMoveHandler = function(e) {
+    e = e ? e : window.event;
+    var pt = this.resolveCoordinates(e);
+    pt = this.toImageFromViewer({x: pt.x - this.x, y: pt.y - this.y});
+    this.notifyCursorMoved(pt);
+    return false;
 };
 
 PanoJS.prototype.doubleClickHandler = function(e) {

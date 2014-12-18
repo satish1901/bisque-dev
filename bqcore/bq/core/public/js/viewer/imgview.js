@@ -687,6 +687,36 @@ ImgViewer.prototype.newPhys = function (phys) {
 
 };
 
+ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
+    var phys = this.imagephys,
+        text = '',
+        sep = '&nbsp;',
+        ip = this.plugins_by_name['infobar'];
+
+    // print image coordinates
+    if (show_pix) {
+        text += '('+BQ.util.formatFloat(pt.x, 6, 2, sep)+','+BQ.util.formatFloat(pt.y, 6, 2, sep)+')px';
+    }
+
+    if (!show_phys) {
+        return text;
+    }
+
+    // print physical coordinates
+    if (phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
+        var c = phys.coordinate_to_phys(pt, false);
+        text += ' ('+BQ.util.formatFloat(c[0], 6, 2, sep)+','+BQ.util.formatFloat(c[1], 6, 2, sep)+')'+phys.units;
+    }
+
+    // print geo coordinates if available
+    if (phys.geo && phys.geo.proj4 && phys.geo.res && phys.geo.top_left) {
+        var c = phys.coordinate_to_phys(pt, true);
+        text += ' Geo:('+BQ.util.formatFloat(c[0], 4, 6, sep)+','+BQ.util.formatFloat(c[1], 4, 6, sep)+')';
+    }
+
+    ip.posbar.innerHTML = text;
+};
+
 //----------------------------------------------------------------------
 // viewer preferences
 //----------------------------------------------------------------------

@@ -291,35 +291,6 @@ ImgEdit.prototype.mousedown = function (e) {
     }
 };
 
-ImgEdit.prototype.print_coordinate = function(pt, show_pix, show_phys) {
-    var phys = this.viewer.imagephys,
-        text = '';
-
-    // print image coordinates
-    if (show_pix) {
-        text += '('+pt.x+','+pt.y+')px';
-    }
-
-    if (!show_phys) {
-        return text;
-    }
-
-    // print physical coordinates
-    if (phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
-        var c = phys.coordinate_to_phys(pt, false);
-        text += ' ('+c[0].toFixed(2)+','+c[1].toFixed(2)+')'+phys.units;
-    }
-    //Ext.util.Format.number("0000.00", v)
-
-    // print geo coordinates if available
-    if (phys.geo && phys.geo.proj4 && phys.geo.res && phys.geo.top_left) {
-        var c = phys.coordinate_to_phys(pt, true);
-        text += ' Geo:('+c[0].toFixed(6)+','+c[1].toFixed(6)+')';
-    }
-
-    return text;
-};
-
 ImgEdit.prototype.mousemove = function (e) {
     //console.log(this, e);
     if (!e) e = window.event;  // IE event model
@@ -330,10 +301,8 @@ ImgEdit.prototype.mousemove = function (e) {
 
     var view = this.viewer.current_view,
         p = this.renderer.getUserCoord(e),
-        pt = view.inverseTransformPoint(p.x, p.y),
-        text = this.print_coordinate(pt, true, true),
-        ip = this.viewer.plugins_by_name['infobar'];
-    ip.posbar.innerText = text;
+        pt = view.inverseTransformPoint(p.x, p.y);
+    this.viewer.print_coordinate(pt, true, true);
 };
 
 /*ImgEdit.prototype.mousedblclick = function (e) {

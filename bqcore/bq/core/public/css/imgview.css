@@ -348,7 +348,9 @@
 }
 
 .scalebar div#scalebar_caption {
-  margin-top: 2px;
+    margin-top: 2px;
+    overflow: hidden;
+    text-align: right;
 }
 
 
@@ -430,6 +432,10 @@
     top: initial;
     text-decoration: none;
     text-align: left;
+}
+
+.viewer .position pre {
+    margin: 0px;
 }
 
 .viewer .viewoptions {

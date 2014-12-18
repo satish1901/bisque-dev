@@ -70,6 +70,9 @@ TilesRenderer.prototype.updateImage = function (){
       // this listner will update viewer if scale has changed in the tiled viewer
       this.myZoomListener = new ZoomListner(this.tiled_viewer, this.viewer);
 
+      // this listner will update viewer if scale has changed in the tiled viewer
+      this.myCursorListner = new CursorListner(this.tiled_viewer, this.viewer);
+
       //Ext.EventManager.addListener( window, 'resize', callback(this.tiled_viewer, this.tiled_viewer.resize) );
       this.tiled_viewer.init();
       this.viewer.viewer_controls_surface = this.div;
@@ -104,3 +107,32 @@ TilesRenderer.prototype.ensureVisible = function (gob) {
 TilesRenderer.prototype.getLoadedTileUrls = function () {
     return this.tiled_viewer.loadedTileUrls();
 };
+
+TilesRenderer.prototype.mousemove = function (e) {
+    if (!e) e = window.event;  // IE event model
+    if (e == null) return;
+    //if (!(e.target===this.renderer.svgdoc ||
+    //      e.target===this.renderer.svggobs ||
+    //      (this.current_gob && e.target===this.current_gob.shape.svgNode))) return;
+
+    var view = this.viewer.current_view,
+        p = this.renderer.getUserCoord(e),
+        pt = view.inverseTransformPoint(p.x, p.y);
+    this.viewer.print_coordinate(pt, true, true);
+};
+
+
+// Cursor Move Listner
+function CursorListner(viewer, parent) {
+    this.viewer = viewer;
+    this.parent = parent;
+    this.viewer.addCursorMovedListener(this);
+}
+
+CursorListner.prototype.cursorMoved = function(e) {
+    this.parent.print_coordinate(e, true, true);
+};
+
+
+
+

@@ -38,6 +38,7 @@ ScaleBar.prototype.setValue = function ( val ) {
     this.bar_size_in_pix = this.bar.clientWidth;
     var bar_size_in_um  = this.bar_size_in_pix * this.pix_phys_size;
     var capt = '' + bar_size_in_um.toFixed(4) + ' ' + this.units;
+    //var capt = BQ.util.formatFloat(bar_size_in_um, 6, 4, '&nbsp;') + ' ' + this.units;
 
     this.caption.innerHTML = capt;
 };
