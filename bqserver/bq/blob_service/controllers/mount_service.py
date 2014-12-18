@@ -489,6 +489,7 @@ class MountServer(TGController):
 
         if len(storeurls) < 1:
             log.warn ("No value in resource trying name")
+            return None
 
         for store_name, store in stores.items():
             prefix = store.get ('value')
