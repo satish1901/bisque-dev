@@ -98,13 +98,23 @@ from urllib import quote
 from lxml import etree
 
 import tg
-from tg import request, response, session, flash, require
+from tg import request, response, session, flash, require, abort
 from repoze.what import predicates
 
 from bq.core.service import ServiceController
 from bq import data_service
+from bq import image_service
+
+from bqapi.bqclass import gobject_primitives
 
 from bq.export_service.controllers.archive_streamer import ArchiveStreamer
+
+
+# export plugins
+try:
+    import pyproj
+except ImportError:
+    pass
 
 #---------------------------------------------------------------------------------------
 # inits
@@ -127,12 +137,40 @@ class export_serviceController(ServiceController):
 
     def __init__(self, server_url):
         super(export_serviceController, self).__init__(server_url)
+        self.exporters = {}
+        if 'pyproj' in sys.modules:
+            self.exporters['kml'] = ExporterKML()
 
     @expose('bq.export_service.templates.index')
     def index(self, **kw):
         """Add your first page here.. """
         return dict(msg=_('Hello from export_service'))
 
+    def check_access(self, ident):
+        resource = data_service.resource_load (uniq = ident)
+        if resource is None:
+            if identity.not_anonymous():
+                abort(403)
+            else:
+                abort(401)
+        return resource
+
+    @expose()
+    def _default(self, *path, **kw):
+        """find export plugin and run export"""
+        uniq = path[0] if len(path)>0 else None
+        format = path[1] if len(path)>1 else None
+        if format is None:
+            format = kw.get('format')
+        
+        # check permissions
+        self.check_access(uniq)
+        
+        # export
+        if format in self.exporters:
+            return self.exporters[format].export(uniq)
+       
+        abort(400, 'Requested export format (%s) is not supported'%format )
 
 #------------------------------------------------------------------------------
 # Google Docs Export
@@ -181,11 +219,6 @@ class export_serviceController(ServiceController):
         entry = gd_client.UploadSpreadsheet(ms, m_title)
         return dict(error=None, google_url=str(entry.GetAlternateLink().href))
 
-
-#     @expose()
-#     def exportString(self, **kw):
-#         value = kw.pop('value', '')
-#         return value
 
     #------------------------------------------------------------------
     # new ArchiveStreamer - Utkarsh
@@ -273,6 +306,204 @@ class export_serviceController(ServiceController):
         archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls, dirList=dirs, export_meta=export_meta, export_mexs=export_mexs)
         return archiveStreamer.stream()
 
+
+#---------------------------------------------------------------------------------------
+# exporters
+#---------------------------------------------------------------------------------------
+
+class ExporterKML():
+
+    def __init__(self):
+        #self.primitives = {}
+        
+        pass
+
+    def export(self, uniq):
+        """Add your first page here.. """
+        resource = data_service.resource_load (uniq = uniq, view='deep')
+        #resource = data_service.get_resource(url, view='deep')
+        meta = image_service.meta(uniq)
+        
+        # if the resource is a dataset, fetch contents of documents linked in it
+        #if resource.tag == 'dataset': 
+        #    resource = data_service.get_resource('%s/value'%resource.get('uri'), view='deep')        
+        
+        #response.headers['Content-Type'] = 'text/xml'
+        response.headers['Content-Type'] = 'application/vnd.google-earth.kml+xml'
+        
+        fname = '%s.kml' % resource.get('name')
+        try:
+            fname.encode('ascii')
+            disposition = 'filename="%s"'%(fname)
+        except UnicodeEncodeError:
+            disposition = 'filename="%s"; filename*="%s"'%(fname.encode('utf8'), fname.encode('utf8'))
+        response.headers['Content-Disposition'] = disposition
+        
+        return self.bq2kml(resource, meta)
+
+    def bq2kml(self, resource, meta):
+        """ converts BisqueXML into KML """
+        
+        # get proj4
+        q = meta.xpath('tag[@name="Geo"]/tag[@name="Model"]/tag[@name="proj4_definition"]')
+        prj = q[0].get('value', None) if len(q)>0 else None 
+        
+        # get top_left
+        q = meta.xpath('tag[@name="Geo"]/tag[@name="Coordinates"]/tag[@name="upper_left_model"]')
+        top_left = q[0].get('value', None) if len(q)>0 else None
+        if top_left is None:
+            q = meta.xpath('tag[@name="Geo"]/tag[@name="Coordinates"]/tag[@name="upper_left"]')
+            top_left = q[0].get('value', None) if len(q)>0 else None               
+        if top_left:
+            top_left = [float(v) for v in top_left.split(',')]
+        
+        # get pixel res
+        q = meta.xpath('tag[@name="Geo"]/tag[@name="Tags"]/tag[@name="ModelPixelScaleTag"]')
+        res = q[0].get('value', None) if len(q)>0 else None
+        if res:
+            res = [float(v) for v in res.split(',')]         
+        
+        # define transformation
+        transform = {
+            'proj_from': pyproj.Proj(prj),
+            'proj_to': pyproj.Proj(init='EPSG:4326'),
+            'offset': top_left,
+            'res': res
+        }
+        log.debug('Transform: %s', str(transform))
+
+        # closure with current transform
+        def transform_coord(c):
+            if transform['offset'] is None or transform['res'] is None:
+                return c
+            cc = ( transform['offset'][0] + c[0]*transform['res'][0], transform['offset'][1] - c[1]*transform['res'][1] )
+            ccc = pyproj.transform(transform['proj_from'], transform['proj_to'], cc[0], cc[1])
+            #log.debug('Converting coordinate: %s -> %s -> %s', c, cc, ccc)
+            return (ccc[0], ccc[1])
+
+        
+        kml = etree.Element ('kml', xmlns='http://www.opengis.net/kml/2.2')
+        doc = etree.SubElement (kml, 'Document')
+        
+        # per image
+        folder = etree.SubElement (doc, 'Folder')
+        name = etree.SubElement (folder, 'name') # type of gobject
+        name.text = resource.get('name')
+        descr = etree.SubElement (folder, 'description') # name of gobject
+        descr.text = 'Annotations contained within image: %s'%resource.get('name')
+        
+        self.convert_node(resource, folder, transform_coord)
+        return etree.tostring(kml)
+
+    def convert_node(self, node, kml, cnvf):
+        for n in node:
+            if n.tag == 'gobject':
+                if len(n) > 1:
+                    folder = etree.SubElement (kml, 'Folder')
+                    name = etree.SubElement (folder, 'name') # type of gobject
+                    name.text = n.get('type')
+                    descr = etree.SubElement (folder, 'description') # name of gobject
+                    descr.text = n.get('name')
+                    self.convert_node(n, folder, cnvf=cnvf)
+                else:
+                    self.render(n[0], kml, n.get('type'), n.get('name'), cnvf=cnvf)
+                    #self.convert_node(n, kml)
+            
+            if n.tag in gobject_primitives:
+                self.render(n, kml, n.tag, cnvf=cnvf)
+
+    def render(self, node, kml, type=None, _val=None, cnvf=None): 
+        vrtx = node.xpath('vertex')       
+        f = getattr(self, node.tag, None)
+        if len(vrtx)>0 and callable(f):
+            
+            vrtx = [(float(v.get('x')), float(v.get('y'))) for v in vrtx]
+            if cnvf is not None:
+                vrtx = [cnvf(v) for v in vrtx]                
+            
+            f(node, kml, vrtx, type or node.tag, _val)
+
+    def point(self, node, kml, vrtx, type=None, val=None):
+        pm = etree.SubElement (kml, 'Placemark')
+        name = etree.SubElement (pm, 'name') # type of gobject
+        name.text = type or node.get('name')
+
+        if val is not None:
+            descr = etree.SubElement (pm, 'description') # name of gobject
+            descr.text = val
+
+        point = etree.SubElement (pm, 'Point')
+        coord = etree.SubElement (point, 'coordinates')
+        
+        x = vrtx[0][0]
+        y = vrtx[0][1]
+        coord.text = '%s,%s'%(x,y)
+
+    def line(self, node, kml, vrtx, type=None, val=None):
+        pm = etree.SubElement (kml, 'Placemark')
+        name = etree.SubElement (pm, 'name') # type of gobject
+        name.text = type or node.get('name')
+
+        if val is not None:
+            descr = etree.SubElement (pm, 'description') # name of gobject
+            descr.text = val
+
+        point = etree.SubElement (pm, 'LineString')
+        coord = etree.SubElement (point, 'coordinates')
+        
+        x1 = vrtx[0][0]
+        y1 = vrtx[0][1]
+        x2 = vrtx[1][0]
+        y2 = vrtx[1][1]
+        coord.text = '%s,%s %s,%s'%(x1,y1, x2,y2)
+
+    def polygon(self, node, kml, vrtx, type=None, val=None):
+        pm = etree.SubElement (kml, 'Placemark')
+        name = etree.SubElement (pm, 'name') # type of gobject
+        name.text = type or node.get('name')
+
+        if val is not None:
+            descr = etree.SubElement (pm, 'description') # name of gobject
+            descr.text = val
+
+        g = etree.SubElement (pm, 'Polygon')
+        g1 = etree.SubElement (g, 'outerBoundaryIs')
+        g2 = etree.SubElement (g1, 'LinearRing')
+        coord = etree.SubElement (g2, 'coordinates')
+        
+        coord.text = ' '.join( ['%s,%s'%(v[0], v[1]) for v in vrtx ] )
+
+    def polyline(self, node, kml, vrtx, type=None, val=None):
+        pm = etree.SubElement (kml, 'Placemark')
+        name = etree.SubElement (pm, 'name') # type of gobject
+        name.text = type or node.get('name')
+
+        if val is not None:
+            descr = etree.SubElement (pm, 'description') # name of gobject
+            descr.text = val
+
+        g = etree.SubElement (pm, 'LineString')
+        coord = etree.SubElement (g, 'coordinates')
+        
+        coord.text = ' '.join( ['%s,%s'%(v[0], v[1]) for v in vrtx ] )
+
+    def label(self, node, kml, vrtx, type=None, val=None):
+        pm = etree.SubElement (kml, 'Placemark')
+        name = etree.SubElement (pm, 'name') # type of gobject
+        name.text = type or node.get('name')
+
+        if val is not None:
+            descr = etree.SubElement (pm, 'description') # name of gobject
+            descr.text = val
+
+        point = etree.SubElement (pm, 'Point')
+        coord = etree.SubElement (point, 'coordinates')
+        
+        x = vrtx[0][0]
+        y = vrtx[0][1]
+        coord.text = '%s,%s'%(x,y)
+
+#set(['circle', 'ellipse', 'rectangle', 'square'])
 
 #---------------------------------------------------------------------------------------
 # bisque init stuff

@@ -89,14 +89,6 @@ class image_serviceController(ServiceController):
 #        url = self.makeurl( str(image_id) )
 #        return dict(src=url, x=x, y=y, ch=ch, z=z, t=t)
 #
-#    def meta(self, imgsrc, **kw):
-#        id = get_image_id(imgsrc)
-#        userId = identity.current.user_name
-#        log.debug('Meta: %s %s %s'%(imgsrc, id, userId ) )
-#        doc = self.srv.execute('meta',  id, userId, None)
-#        log.debug('Meta doc: %s'%(doc ) )
-#        return doc
-#
 #    def info(self, imgsrc, **kw):
 #        id = get_image_id(imgsrc)
 #        userId = identity.current.user_name
@@ -104,6 +96,19 @@ class image_serviceController(ServiceController):
 #        doc = self.srv.execute('info',  id, userId, None)
 #        log.debug('Info doc: %s'%(doc ) )
 #        return doc
+
+    def meta (self, uniq, **kw):
+        ''' returns etree metadata element'''
+
+        self.check_access(uniq)
+        url = '/image_service/image/%s?meta'%uniq
+        data_token = self.srv.process(url, uniq)
+
+        #first check if the output is an error
+        if data_token.isHttpError():
+            return None
+        
+        return etree.parse(data_token.data)
 
     def local_file (self, url, **kw):
         ''' returns local path if it exists otherwise None'''
