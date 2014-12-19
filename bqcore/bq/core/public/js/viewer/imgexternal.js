@@ -1,7 +1,7 @@
 function ImgExternal (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
-    
+
 
     this.viewer.addMenu([{
         itemId: 'menu_viewer_external',
@@ -135,6 +135,22 @@ ImgExternal.prototype.newImage = function () {
         var m = this.viewer.toolbar.queryById('menu_viewer_external_bioView3D');
         if (m) m.setDisabled(this.viewer.imagedim.z<2);
     }
+
+    // Add download graphical annotations as KML
+    var phys = this.viewer.imagephys,
+        download = BQApp.getToolbar().queryById('button_download'),
+        url = this.viewer.image.uri;
+    url = url.replace('/data_service/', '/export/') + '?format=kml';
+    if (phys.geo && download && phys.geo.proj4 && phys.geo.res && phys.geo.top_left) {
+        download.menu.add(['-', {
+            itemId: 'download_annotations_as_kml',
+            text: 'Graphical annotations as KML',
+            handler: function() {
+                window.open(url);
+            },
+        }]);
+    };
+
 };
 
 ImgExternal.prototype.updateImage = function () {
@@ -181,16 +197,16 @@ ImgExternal.prototype.exportTagsToGoogle = function () {
 ImgExternal.prototype.exportCurrentView = function (scale) {
 
     var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
-    
+
     //create canvas
     var canvas_view = document.createElement('canvas');
     canvas_view.height = control_surface_size.height;
     canvas_view.width = control_surface_size.width;
     ctx_view = canvas_view.getContext("2d");
     ctx_view.fillStyle = 'rgba(67, 67, 67, 1)'//"#FF0000";
-    ctx_view.fillRect(0,0,control_surface_size.width,control_surface_size.height); 
+    ctx_view.fillRect(0,0,control_surface_size.width,control_surface_size.height);
     var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
-    
+
     //iterorate through all the tiles to find the tiles in the viewer
     var inViewImages = [];
     var tile_tops = [];
@@ -230,7 +246,7 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
             }
         }
     }
-    
+
     //draw image blogs with offsets on to the canvas
     ctx_view.createImageData(canvas_view.height, canvas_view.width);
     imageData = ctx_view.getImageData(0, 0, canvas_view.width, canvas_view.height);
@@ -248,8 +264,8 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         }
         ctx_view.drawImage(inViewImages[i], xoffset, yoffset, scaled_imgwidth, scaled_imgheight);
     }
-    
-    showGobjects = true; 
+
+    showGobjects = true;
     if (showGobjects) {
         //render svg to canvas
         var renderer = this.viewer.plugins_by_name['renderer'];
@@ -260,7 +276,7 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         var xoffset = svg_data.style.left;
         var yoffset = svg_data.style.top;
         svg_data.setAttribute('style','position: abosulte; top: 0px; left: 0px; width: '+svg_data.style.width+'; height: '+svg_data.style.height);
-        
+
         //svg_data.setAttribute('width',tiled_viewer.width);
         //svg_data.setAttribute('height',tiled_viewer.height);
         svgStr = serializer.serializeToString(svg_data);
@@ -268,7 +284,7 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         ctx_view.drawImage(svgimg, parseInt(xoffset), parseInt(yoffset), parseInt(svg_data.style.width), parseInt(svg_data.style.height));
         //ctx_view.drawImage(svgimg, xoffset, yoffset, tiled_viewer.width, tiled_viewer.height);
     }
-    
+
     border = false;
     if (!border) {
         //removes border from the image
@@ -276,8 +292,8 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         var canvas_border = document.createElement('canvas');
         var width = parseInt(renderer.overlay.style.width, 10);
         var height = parseInt(renderer.overlay.style.height, 10);
-        
-        
+
+
         if (parseInt(renderer.overlay.style.left, 10)>0)
             var xoffset = -parseInt(renderer.overlay.style.left, 10);
         else {
@@ -290,15 +306,15 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
             var yoffset = 0;//arseInt(renderer.overlay.style.top, 10)
             height = height + parseInt(renderer.overlay.style.top, 10);
         }
-        
+
         if ((parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10)) > tiled_viewer.height) {
             height = height - (parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10) - tiled_viewer.height);
         }
-        
+
         if ((parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10)) > tiled_viewer.width) {
             width = width - (parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10) - tiled_viewer.width);
         }
-        
+
         canvas_border.width = width;
         canvas_border.height = height;
         var ctx_border = canvas_border.getContext('2d');
@@ -306,7 +322,7 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         canvas_view = canvas_border;
         delete canvas_border
     }
-    
+
     //scale the canvas
     if (scale!=1) {
         var canvas_scaled = document.createElement('canvas');
@@ -320,7 +336,7 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
     //request canvas
     var url = canvas_view.toDataURL("image/jpeg");
     window.open(url)
-    
+
     //remove canvas
     delete canvas_view
 

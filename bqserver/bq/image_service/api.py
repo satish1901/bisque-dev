@@ -313,12 +313,13 @@ def local_file(url):
 #        pass
 
 
-def meta(imgsrc, **kw):
+def meta(uniq, **kw):
         ''' Return meta data of image from image_server
         '''
-        server = find_server(imgsrc)
+        uri = '/image_service/%s?meta'%uniq
+        server = find_server(uri)
         if server:
-            return server.meta (imgsrc, **kw)
+            return server.meta (uniq, **kw)
 
 def info(imgsrc, **kw):
         ''' Return meta data of image from image_server
