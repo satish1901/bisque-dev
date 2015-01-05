@@ -103,3 +103,5 @@ zope.sqlalchemy==0.7.4
 #pygraphviz==1.2
 #networkx==1.7
 
+# KML export
+pyproj>=1.9.3
