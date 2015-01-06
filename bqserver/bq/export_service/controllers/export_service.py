@@ -104,6 +104,8 @@ from repoze.what import predicates
 from bq.core.service import ServiceController
 from bq import data_service
 from bq import image_service
+from bq.core import identity
+from bq.util.hash import is_uniq_code
 
 from bqapi.bqclass import gobject_primitives
 
@@ -162,14 +164,14 @@ class export_serviceController(ServiceController):
         format = path[1] if len(path)>1 else None
         if format is None:
             format = kw.get('format')
-        
+
         # check permissions
         self.check_access(uniq)
-        
+
         # export
         if format in self.exporters:
             return self.exporters[format].export(uniq)
-       
+
         abort(400, 'Requested export format (%s) is not supported'%format )
 
 #------------------------------------------------------------------------------
@@ -269,18 +271,18 @@ class export_serviceController(ServiceController):
                     urls.append(resource.text)
 
         compression = kw.pop('compression', '')
-        
+
         def extractData(kw, field):
             if field in kw:
                 vals = kw.pop(field)
                 if vals:
                     return vals.split(',')
             return []
-        
+
         jsbool   = {'true': True, 'false': False}
         export_meta = jsbool.get(kw.get('metadata', 'true'), True);
         export_mexs = jsbool.get(kw.get('analysis', 'false'), True);
-        
+
         files.extend(extractData(kw, 'files'))
         datasets.extend(extractData(kw, 'datasets'))
         urls.extend(extractData(kw, 'urls'))
@@ -291,6 +293,13 @@ class export_serviceController(ServiceController):
         archiveStreamer = ArchiveStreamer(compression)
         archiveStreamer.init(archiveName=filename, fileList=files, datasetList=datasets, urlList=urls, dirList=dirs, export_meta=export_meta, export_mexs=export_mexs)
         return archiveStreamer.stream()
+
+    @expose()
+    def initStream(self, **kw): # deprecated backward compatible name
+        if 'compressionType' in kw:
+            kw['compression'] = kw['compressionType']
+            del kw['compressionType']
+        return self.stream(**kw)
 
     def export(self, **kw):
         compression = kw.pop('compression', 'gzip')
@@ -315,7 +324,7 @@ class ExporterKML():
 
     def __init__(self):
         #self.primitives = {}
-        
+
         pass
 
     def export(self, uniq):
@@ -323,14 +332,14 @@ class ExporterKML():
         resource = data_service.resource_load (uniq = uniq, view='deep')
         #resource = data_service.get_resource(url, view='deep')
         meta = image_service.meta(uniq)
-        
+
         # if the resource is a dataset, fetch contents of documents linked in it
-        #if resource.tag == 'dataset': 
-        #    resource = data_service.get_resource('%s/value'%resource.get('uri'), view='deep')        
-        
+        #if resource.tag == 'dataset':
+        #    resource = data_service.get_resource('%s/value'%resource.get('uri'), view='deep')
+
         #response.headers['Content-Type'] = 'text/xml'
         response.headers['Content-Type'] = 'application/vnd.google-earth.kml+xml'
-        
+
         fname = '%s.kml' % resource.get('name')
         try:
             fname.encode('ascii')
@@ -338,31 +347,31 @@ class ExporterKML():
         except UnicodeEncodeError:
             disposition = 'filename="%s"; filename*="%s"'%(fname.encode('utf8'), fname.encode('utf8'))
         response.headers['Content-Disposition'] = disposition
-        
+
         return self.bq2kml(resource, meta)
 
     def bq2kml(self, resource, meta):
         """ converts BisqueXML into KML """
-        
+
         # get proj4
         q = meta.xpath('tag[@name="Geo"]/tag[@name="Model"]/tag[@name="proj4_definition"]')
-        prj = q[0].get('value', None) if len(q)>0 else None 
-        
+        prj = q[0].get('value', None) if len(q)>0 else None
+
         # get top_left
         q = meta.xpath('tag[@name="Geo"]/tag[@name="Coordinates"]/tag[@name="upper_left_model"]')
         top_left = q[0].get('value', None) if len(q)>0 else None
         if top_left is None:
             q = meta.xpath('tag[@name="Geo"]/tag[@name="Coordinates"]/tag[@name="upper_left"]')
-            top_left = q[0].get('value', None) if len(q)>0 else None               
+            top_left = q[0].get('value', None) if len(q)>0 else None
         if top_left:
             top_left = [float(v) for v in top_left.split(',')]
-        
+
         # get pixel res
         q = meta.xpath('tag[@name="Geo"]/tag[@name="Tags"]/tag[@name="ModelPixelScaleTag"]')
         res = q[0].get('value', None) if len(q)>0 else None
         if res:
-            res = [float(v) for v in res.split(',')]         
-        
+            res = [float(v) for v in res.split(',')]
+
         # define transformation
         transform = {
             'proj_from': pyproj.Proj(prj),
@@ -381,17 +390,17 @@ class ExporterKML():
             #log.debug('Converting coordinate: %s -> %s -> %s', c, cc, ccc)
             return (ccc[0], ccc[1])
 
-        
+
         kml = etree.Element ('kml', xmlns='http://www.opengis.net/kml/2.2')
         doc = etree.SubElement (kml, 'Document')
-        
+
         # per image
         folder = etree.SubElement (doc, 'Folder')
         name = etree.SubElement (folder, 'name') # type of gobject
         name.text = resource.get('name')
         descr = etree.SubElement (folder, 'description') # name of gobject
         descr.text = 'Annotations contained within image: %s'%resource.get('name')
-        
+
         self.convert_node(resource, folder, transform_coord)
         return etree.tostring(kml)
 
@@ -408,19 +417,19 @@ class ExporterKML():
                 else:
                     self.render(n[0], kml, n.get('type'), n.get('name'), cnvf=cnvf)
                     #self.convert_node(n, kml)
-            
+
             if n.tag in gobject_primitives:
                 self.render(n, kml, n.tag, cnvf=cnvf)
 
-    def render(self, node, kml, type=None, _val=None, cnvf=None): 
-        vrtx = node.xpath('vertex')       
+    def render(self, node, kml, type=None, _val=None, cnvf=None):
+        vrtx = node.xpath('vertex')
         f = getattr(self, node.tag, None)
         if len(vrtx)>0 and callable(f):
-            
+
             vrtx = [(float(v.get('x')), float(v.get('y'))) for v in vrtx]
             if cnvf is not None:
-                vrtx = [cnvf(v) for v in vrtx]                
-            
+                vrtx = [cnvf(v) for v in vrtx]
+
             f(node, kml, vrtx, type or node.tag, _val)
 
     def point(self, node, kml, vrtx, type=None, val=None):
@@ -434,7 +443,7 @@ class ExporterKML():
 
         point = etree.SubElement (pm, 'Point')
         coord = etree.SubElement (point, 'coordinates')
-        
+
         x = vrtx[0][0]
         y = vrtx[0][1]
         coord.text = '%s,%s'%(x,y)
@@ -450,7 +459,7 @@ class ExporterKML():
 
         point = etree.SubElement (pm, 'LineString')
         coord = etree.SubElement (point, 'coordinates')
-        
+
         x1 = vrtx[0][0]
         y1 = vrtx[0][1]
         x2 = vrtx[1][0]
@@ -470,7 +479,7 @@ class ExporterKML():
         g1 = etree.SubElement (g, 'outerBoundaryIs')
         g2 = etree.SubElement (g1, 'LinearRing')
         coord = etree.SubElement (g2, 'coordinates')
-        
+
         coord.text = ' '.join( ['%s,%s'%(v[0], v[1]) for v in vrtx ] )
 
     def polyline(self, node, kml, vrtx, type=None, val=None):
@@ -484,7 +493,7 @@ class ExporterKML():
 
         g = etree.SubElement (pm, 'LineString')
         coord = etree.SubElement (g, 'coordinates')
-        
+
         coord.text = ' '.join( ['%s,%s'%(v[0], v[1]) for v in vrtx ] )
 
     def label(self, node, kml, vrtx, type=None, val=None):
@@ -498,7 +507,7 @@ class ExporterKML():
 
         point = etree.SubElement (pm, 'Point')
         coord = etree.SubElement (point, 'coordinates')
-        
+
         x = vrtx[0][0]
         y = vrtx[0][1]
         coord.text = '%s,%s'%(x,y)
