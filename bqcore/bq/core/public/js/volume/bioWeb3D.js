@@ -106,6 +106,19 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 
 	initComponent : function () {},
 
+	initUniform : function (name, type, value) {
+		this.uniforms[name] = {
+			type : type,
+			value : value
+		};
+		this.canvas3D.rerender();
+	},
+
+	getMaterial : function (index) {
+		return this.materials[index];
+	},
+
+
 	setUniform : function (name, value, reset, timeOut) {
 		//console.log('bef',reset);
 		if (typeof(reset) === 'undefined')
@@ -122,20 +135,6 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
         if(!this.uniforms[name]) return;
 		this.uniforms[name].value = value;
 	},
-
-	initUniform : function (name, type, value) {
-
-		this.uniforms[name] = {
-			type : type,
-			value : value
-		};
-		this.canvas3D.rerender();
-	},
-
-	getMaterial : function (index) {
-		return this.materials[index];
-	},
-
 
 
     setConfigurable : function(materialID, shaderType, config){
@@ -249,7 +248,7 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 				vertexShader : "",
 				fragmentShader : "",
 				side : THREE.DoubleSide,
-			});
+		});
 
 		var newMaterial = {
 			name : name,
@@ -295,11 +294,457 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 
 	loadMaterial : function (object, name) {
 		object.material = this.materials[name].threeShader;
+
         this.fireEvent('materialloaded', this);
 		//this.canvas3D.rerender();
 	}
 
 });
+
+
+function volumeObject() {
+    this.uniforms = {};
+};
+
+volumeObject.prototype.initGeometry = function(){
+
+    this.sceneData = new THREE.Scene();
+
+    //------------------------------------------------------------------------
+    // initialize the main rendering cube
+    //------------------------------------------------------------------------
+
+    this.cube = new THREE.BoxGeometry(1.0, 1.0, 1.0);
+	this.cubeMesh = new THREE.Mesh(this.cube);
+
+    //------------------------------------------------------------------------
+    // Initialize the background for depth registration
+    //------------------------------------------------------------------------
+	var backGroundGeometry = new THREE.BoxGeometry(1.0, 1.0, 1.0);
+    this.backGround = new THREE.Mesh(backGroundGeometry, this.backGroundShaderMaterial);
+	//this.backGroundShaderMaterial.needsUpdate = true;
+	//backGroundGeometry.buffersNeedUpdate = true;
+	//backGroundGeometry.uvsNeedUpdate = true;
+    this.sceneData.add(this.backGround);
+};
+
+volumeObject.prototype.initBuffers = function(){
+	this.depthBuffer
+		= new THREE.WebGLRenderTarget(this.canvas.getPixelWidth(), this.canvas.getPixelHeight(), {
+			minFilter : THREE.LinearFilter,
+			magFilter : THREE.NearestFilter,
+			format : THREE.RGBAFormat
+		});
+	this.colorBuffer
+		= new THREE.WebGLRenderTarget(this.canvas.getPixelWidth(), this.canvas.getPixelHeight(), {
+			minFilter : THREE.LinearFilter,
+			magFilter : THREE.NearestFilter,
+			format : THREE.RGBAFormat
+		});
+
+	this.passBuffer
+		= new THREE.WebGLRenderTarget(this.canvas.getPixelWidth(), this.canvas.getPixelHeight(), {
+			minFilter : THREE.LinearFilter,
+			magFilter : THREE.NearestFilter,
+			format : THREE.RGBAFormat
+		});
+
+    this.initUniform('BACKGROUND_DEPTH', "t", this.depthBuffer);
+	this.initUniform('BACKGROUND_COLOR', "t", this.colorBuffer);
+};
+
+volumeObject.prototype.initMaterials = function(){
+    var me = this;
+    this.maxSteps = 4096;
+    //this.initUniforms();
+
+	//-------------------------------------
+	//Platform and browser version checking
+	//-------------------------------------
+
+	var OSX, fragUrl, usePow;
+	if (Ext.isWindows) {
+		if (Ext.isChrome) {
+			if (Ext.chromeVersion < 37)
+				usePow = false;
+            else
+                usePow = true;
+
+		} else
+			usePow = true;
+	} else
+		usePow = true;
+    if(Ext.isMac)
+        OSX = true;
+        this.shaderConfig = {
+            phong: false,
+            deep: false,
+            deepType: 'deep_shading',
+            transfer: false,
+            pow: true,
+            highlight: false,
+            //gradientType: 'sobel',
+            //gradientType: 'directional',
+            gradientType: 'finite_difference',
+            maxSteps: this.maxSteps,
+            usePow: usePow,
+            OSX: OSX,
+    };
+/*
+    this.shaderConfig = {
+        lighting: {
+            phong: false,
+            deep: false,
+            deepType: 'deep_shading'
+        },
+        transfer: false,
+        pow: true,
+        highlight: false,
+        //gradientType: 'sobel',
+        //gradientType: 'directional',
+        gradientType: 'finite_difference',
+        maxSteps: this.maxSteps,
+        usePow: usePow,
+        OSX: OSX,
+    };
+*/
+	this.shaderManager.initMaterial({
+		name : 'default_1',
+		vertex : {
+            ctor : UrlShader,
+            config : {
+				url : "/js/volume/shaders/rayCast.vs",
+                loader: this.sceneVolume,
+                onloaded: function(){
+                    me.shaderManager.updateMaterials();
+                }
+            }
+		},
+
+		fragment : {
+            ctor: VolumeShader,
+			config: this.shaderConfig,
+            //url : fragUrl,
+		},
+        uniforms: this.uniforms,
+	});
+
+    //------------------------------------------------------------------------
+    // initialize the internal object compositing
+    //------------------------------------------------------------------------
+
+    var spriteTex = THREE.ImageUtils.loadTexture('/js/volume/icons/dot.png');
+	this.near = 0.001;
+    this.far = 20.0;
+    this.useColor = 0;
+	this.pointShaderMaterial = new THREE.ShaderMaterial({
+		uniforms : {
+			tex1 : {
+				type : "t",
+				value : spriteTex
+			},
+			zoom : {
+				type : 'f',
+				value : 100.0
+			},
+			near : {
+				type : 'f',
+				value : this.near
+			},
+			far : {
+				type : 'f',
+				value : this.far
+			},
+			USE_COLOR : {
+				type : 'i',
+				value : this.useColor
+			}
+		},
+		attributes : {
+			alpha : {
+				type : 'f',
+				value : null
+			},
+		},
+		vertexShader : new DepthShader({
+            poly: false,
+            type: 'vertex',
+        }).getSource(),
+		fragmentShader : new DepthShader({
+            poly: false,
+            type: 'fragment',
+        }).getSource(),
+		side : THREE.DoubleSide,
+		alphaTest : 0.5,
+		transparent : true
+	});
+
+	this.polyShaderMaterial = new THREE.ShaderMaterial({
+		uniforms : {
+			near         : { type : 'f',value : this.near},
+			far          : { type : 'f', value : this.far},
+			CLIP_NEAR         : { type : 'f',value : this.near},
+			CLIP_FAR          : { type : 'f', value : this.far},
+            opacity : { type : 'f', value : 0.85},
+            USE_COLOR    : { type : 'i', value : this.useColor}
+		},
+        //opacity: 1.0,
+		vertexShader : new DepthShader({
+            poly: true,
+            type: 'vertex',
+        }).getSource(),
+		fragmentShader : new DepthShader({
+            poly: true,
+            type: 'fragment',
+        }).getSource(),
+		side : THREE.DoubleSide,
+
+	});
+
+    console.log(new DepthShader({
+            poly: true,
+            type: 'vertex',
+        }).getSource());
+
+	this.backGroundShaderMaterial = new THREE.ShaderMaterial({
+		uniforms : {
+			near : {
+				type : 'f',
+				value : this.near
+			},
+			far : {
+				type : 'f',
+				value : this.far
+			},
+			USE_COLOR : {
+				type : 'i',
+				value : this.useColor
+			}
+		},
+        vertexShader : new DepthShader({
+            poly: true,
+            type: 'vertex',
+        }).getSource(),
+		fragmentShader : new DepthShader({
+            poly: true,
+            type: 'fragment',
+            //back: true,
+        }).getSource(),
+		side : THREE.BackSide,
+		//transparent: true
+	});
+    this.backGround.material = this.backGroundShaderMaterial;
+
+};
+
+volumeObject.prototype.init = function () {
+    var me = this;
+
+    //this.raycaster = new THREE.Raycaster();
+	//this.raycaster.params.PointCloud.threshold = 0.005;
+	/*
+	  var sphereGeometry = new THREE.SphereGeometry( 0.01, 32, 32 );
+	  var sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, shading: THREE.FlatShading } );
+	  this.sphere =  new THREE.Mesh( sphereGeometry, backGroundShaderMaterial );
+	  this.sceneVolume.sceneData.add( this.sphere );
+	*///var backGroundGeometry = new THREE.PlaneGeometry(10,10);
+};
+
+volumeObject.prototype.set = function(key, value){
+    this[key] = value;
+};
+
+
+volumeObject.prototype.setMaxSampleRate = function (qual) {
+    if(typeof(qual) === 'undefined') qual = 4096;
+    this.maxSteps = qual;
+    this.shaderConfig.maxSteps = qual;
+    this.setUniform('maxSteps', qual);
+    /*
+    this.shaderManager.setConfigurable("default_1",
+                                       "fragment",
+                                       this.shaderConfig);
+    */
+},
+
+volumeObject.prototype.removeSet = function (set, scene) {
+
+	for (var item in set) {
+		if (!item)
+			continue;
+
+		var curMesh = set[item].mesh;
+		if (curMesh){
+			scene.remove(curMesh); // remove current point set
+            //curMesh.visible = false;
+        }
+	}
+};
+
+volumeObject.prototype.addMeshObject = function (object, clone) {
+    if(clone) object = object.clone();
+    object.material = this.polyShaderMaterial;
+    this.sceneData.add(object);
+    return object;
+};
+
+volumeObject.prototype.addSet = function (set, scene) {
+	for (var item in set) {
+		if (!item)
+			continue;
+		var curMesh = set[item].mesh;
+		if (curMesh) {
+			scene.add(curMesh); // remove current point set
+			if (this.state === 1)
+				curMesh.visible = true;
+			else
+				curMesh.visible = false;
+		}
+	}
+};
+
+volumeObject.prototype.setScale = function(scale){
+    this.backGround.scale.copy(new THREE.Vector3(2.0*scale.x,
+                                                 2.0*scale.y,
+                                                 2.0*scale.z));
+
+    this.scale = scale;
+	this.setUniform('BOX_SIZE', scale);
+
+	this.currentScale = scale.clone();
+    this.cubeMesh.scale.copy(new THREE.Vector3(2.0*scale.x,
+                                               2.0*scale.y,
+                                               2.0*scale.z));
+	this.canvas.rerender();
+	//this.fireEvent('scale', scale,  this);
+};
+
+volumeObject.prototype.setUniform  = function (name, value, reset, timeOut) {
+    this.steps = this.maxSteps/8;
+	if (typeof(reset) === 'undefined')
+		reset = true;
+
+    if(typeof(this.uniforms[name]) !== 'undefined'){
+	    this.uniforms[name].value = value;
+        this.canvas.rerender();
+    }
+    if(typeof(this.shaderConfig[name]) !== 'undefined'){
+	    this.shaderConfig[name] = value;
+        this.shaderManager.setConfigurable("default_1",
+                                          "fragment",
+                                          this.shaderConfig);
+        this.canvas.rerender();
+    }
+    //this.fireEvent('setuniform', this);
+},
+
+volumeObject.prototype.setUniformNoRerender = function (name, value, reset, timeOut) {
+	if (typeof(reset) === 'undefined')
+		reset = true;
+    if(!this.uniforms[name]) return;
+	this.uniforms[name].value = value;
+},
+
+volumeObject.prototype.initUniform = function (name, type, value) {
+	this.uniforms[name] = {
+		type : type,
+		value : value
+	};
+	this.canvas.rerender();
+},
+
+volumeObject.prototype.initUniforms = function (uniforms) {
+    var me = this;
+    uniforms.forEach(function(val,i,a){
+        me.initUniform(val.uniform, val.type, val.value);
+    });
+},
+
+volumeObject.prototype.initResolution = function(canvas){
+    var res = new THREE.Vector2(canvas.getPixelWidth(), canvas.getPixelHeight());
+	this.initUniform('iResolution', "v2", res);
+};
+
+volumeObject.prototype.setResolution = function(){
+    var res = new THREE.Vector2(this.canvas.getPixelWidth(), this.canvas.getPixelHeight());
+	this.setUniform('iResolution',  res);
+    	this.depthBuffer
+		= new THREE.WebGLRenderTarget(this.canvas.getPixelWidth(), this.canvas.getPixelWidth(), {
+			minFilter : THREE.LinearFilter,
+			magFilter : THREE.NearestFilter,
+			format : THREE.RGBAFormat
+		});
+	this.colorBuffer
+		= new THREE.WebGLRenderTarget(this.canvas.getPixelWidth(), this.canvas.getPixelWidth(), {
+			minFilter : THREE.LinearFilter,
+			magFilter : THREE.NearestFilter,
+			format : THREE.RGBAFormat
+		});
+
+	this.passBuffer
+		= new THREE.WebGLRenderTarget(this.canvas.getPixelWidth(), this.canvas.getPixelHeight(), {
+			minFilter : THREE.LinearFilter,
+			magFilter : THREE.NearestFilter,
+			format : THREE.RGBAFormat
+		});
+};
+
+volumeObject.prototype.loadMaterial = function (name) {
+	this.shaderManager.loadMaterial(this.cubeMesh, name);
+    this.canvas.rerender();
+},
+
+volumeObject.prototype.onAnimate = function () {
+
+	//if(!this.currentSet) return;
+    //if(!this.volume.sceneData) return;
+    this.uniforms['BREAK_STEPS'].value = this.steps;
+
+    var panel = this.volume;
+	//move this to background plug-in
+	var camPos = this.canvas.camera.position;
+	//this.currentSet.points.sortParticles(camPos);
+	this.canvas.renderer.clearTarget(this.accumBuffer0,
+				                     true, true, true);
+	var buffer = this.accumBuffer0;
+	var bufferColor = this.accumBuffer1;
+
+	this.pointShaderMaterial.uniforms.USE_COLOR.value = 0;
+	this.polyShaderMaterial.uniforms.USE_COLOR.value = 0;
+    this.backGroundShaderMaterial.uniforms.USE_COLOR.value = 0;
+
+	this.polyShaderMaterial.transparent = false;
+
+    this.canvas.renderer.render(this.sceneData,
+				                this.canvas.camera,
+				                this.depthBuffer);
+
+	this.pointShaderMaterial.transparent = true;
+	this.polyShaderMaterial.transparent = true;
+
+    this.pointShaderMaterial.uniforms.USE_COLOR.value = 1;
+	this.polyShaderMaterial.uniforms.USE_COLOR.value = 1;
+	this.backGroundShaderMaterial.uniforms.USE_COLOR.value = 1;
+	this.canvas.renderer.render(this.sceneData,
+				                this.canvas.camera,
+				                this.colorBuffer);
+
+
+	this.setUniformNoRerender('BACKGROUND_DEPTH', this.depthBuffer, false);
+	this.setUniformNoRerender('BACKGROUND_COLOR', this.colorBuffer, false);
+    this.setUniformNoRerender('PASS', 0, false);
+	this.canvas.renderer.render(this.canvas.scene,
+				                this.canvas.camera,
+				                this.passBuffer);
+
+    this.setUniformNoRerender('BACKGROUND_COLOR', this.passBuffer, false);
+    this.setUniformNoRerender('PASS', 1, false);
+};
+
+//-----------------------------------------------------------------------------------------------------------
+//
+//
+//-----------------------------------------------------------------------------------------------------------
 
 Ext.define('BQ.viewer.Volume.Panel', {
 	alias : 'widget.bq_volume_panel',
@@ -325,13 +770,13 @@ Ext.define('BQ.viewer.Volume.Panel', {
         var mousedown = function(event){
             if(event.button >= 0){
                 me.mousedown = true;
-                me.rerenderImmediate(me.minSampleRate);
+                me.rerender();
             }
         };
         var mousemove = function(event){
             if(me.mousedown){
                 //console.log('move');
-                me.rerenderImmediate(me.minSampleRate);
+                me.rerender();
             }
         };
 
@@ -344,6 +789,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
         //-------------------------------------
         //create the threejs canvas
         //-------------------------------------
+        this.volumeObject = new volumeObject();
 
         this.canvas3D = Ext.create('BQ.viewer.Volume.ThreejsPanel', {
 		    itemId : 'canvas3D',
@@ -366,7 +812,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 mousewheel: mousedown,
                 mouseup : mouseup,
                 mousewheelup : mouseup,
-
             },
 
             buildScene: function() {
@@ -381,18 +826,24 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 		        me.cube = new THREE.BoxGeometry(1.0, 1.0, 1.0);
 		        me.cubeMesh = new THREE.Mesh(me.cube, material);
-		        me.scene.add(me.cubeMesh);
+
+                me.volumeObject.initGeometry();
+                me.volumeObject.initMaterials();
+                me.scene.add(me.volumeObject.cubeMesh);
+
+		        //me.scene.add(me.cubeMesh);
 
 		        me.light = new THREE.PointLight(0xFFFFFF, 1, 100);
 		        me.scene.add(me.light);
 		        me.canvas3D.scene = me.scene;
-                me.setMaxSteps = me.minSampleRate;
+                me.volumeObject.maxSteps = me.minSampleRate;
 		        me.oldScale = new THREE.Vector3(0.5, 0.5, 0.5);
 		        me.currentScale = new THREE.Vector3(0.5, 0.5, 0.5);
                 this.renderer.setClearColor(0x434343,0.000);
             }
 		});
-		this.canvas3D.animate_funcs[1] = callback(this, this.onAnimate);
+        this.canvas3D.animate_funcs[1] = callback(this.volumeObject, this.volumeObject.onAnimate);
+		this.canvas3D.animate_funcs[2] = callback(this, this.onAnimate);
 
 
         //-------------------------------------
@@ -400,20 +851,23 @@ Ext.define('BQ.viewer.Volume.Panel', {
         //-------------------------------------
 
         this.sceneVolume = new BQ.viewer.Volume.volumeScene({
-			cubeMesh : this.cubeMesh,
             canvas3D : this.canvas3D,
             listeners: {
                 materialloaded : function(){
-                    me.setMaxSteps = me.minSampleRate;
-                    me.rerender()
+                    //me.volumeObject.maxSteps = me.minSampleRate;
+                    me.rerender();
                 },
                 setuniform     : function(){
-                    me.setMaxSteps = me.minSampleRate;
-                    me.rerender()
+                    //me.volumeObject.maxSteps = me.minSampleRate;
+                    me.rerender();
                 },
                 scope: this
             },
 		});
+
+
+        me.volumeObject.set('canvas', this.canvas3D);
+        me.volumeObject.set('shaderManager', this.sceneVolume);
 
 		//-------------------------------------
 		//Platform and browser version checking
@@ -442,8 +896,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
             transfer: false,
             pow: true,
             highlight: false,
-            //gradientType: 'sobel',
-            //gradientType: 'directional',
             gradientType: 'finite_difference',
             maxSteps: this.maxSteps,
             usePow: usePow,
@@ -539,67 +991,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		    }]
         });
 
-            /*
-              this.mainView = Ext.create('Ext.container.Container', {
-              region: 'center',
-              layout: 'fit',
-              items:         [this.canvas3D,{
-			  xtype : 'component',
-			  itemId : 'button-fullscreen-vol',
-			  autoEl : {
-			  tag : 'span',
-			  cls : 'control fullscreen',
-			  },
-			  listeners : {
-			  scope : this,
-			  click : {
-			  element : 'el', //bind to the underlying el property on the panel
-			  fn : this.onFullScreenClick,
-			  },
-			  },
-		      }, {
-			  xtype : 'component',
-			  itemId : 'button-menu',
-			  autoEl : {
-			  tag : 'span',
-			  cls : 'control viewoptions',
-			    },
-			    listeners : {
-				    scope : this,
-				    click : {
-					    element : 'el', //bind to the underlying el property on the panel
-					    fn : this.onMenuClick,
-				    },
-			    },
-		    }, {
-			    xtype : 'component',
-			    itemId : 'tool-menu',
-			    autoEl : {
-				    tag : 'span',
-				    cls : 'control tooloptions',
-			    },
-			    listeners : {
-				    scope : this,
-				    click : {
-					    element : 'el', //bind to the underlying el property on the panel
-					    fn : this.onToolMenuClick,
-				    },
-			    },
-		    }],
-        });
-
-       this.southView = Ext.create('Ext.panel.Panel', {
-           region: 'south',
-           layout: 'fit',
-           collapsible: true,
-           collapsed:   true,
-           split: true,
-           height: 250,
-           cls : 'bq-volume-transfer',
-        });
-        this.items = [this.mainView, this.southView];
-*/
-
         this.items = [this.mainView];
 
 		this.on({
@@ -607,8 +998,8 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
             //all this stuff happens after the layout occurs and the threejs canvas is available
             afterlayout: function () {
-                if(this.firstLoad) return;
-                this.firstLoad = true;
+                if(me.firstLoad) return;
+                me.firstLoad = true;
 
                 me.createViewMenu();
 
@@ -636,14 +1027,35 @@ Ext.define('BQ.viewer.Volume.Panel', {
             //all this stuff happens after the layout occurs and the threejs canvas is available
 			loaded : function () {
 				console.log('loaded URL from: ', this.constructAtlasUrl());
-				me.initUniforms();
+
+				me.volumeObject.initUniforms([
+                    {uniform: 'BREAK_STEPS', type: 'i', value: this.volumeObject.maxSteps},
+                    {uniform: 'PASS',        type: 'i', value: 0},
+                    {uniform: 'FOV',         type: 'f', value: this.canvas3D.fov},
+                    {uniform: 'TEX_RES_X',   type: 'i', value: this.xTexSizeRatio * this.dims.slice.x},
+                    {uniform: 'TEX_RES_Y',   type: 'i', value: this.yTexSizeRatio * this.dims.slice.y},
+                    {uniform: 'ATLAS_X',   type: 'i', value: this.dims.atlas.x / this.dims.slice.x},
+                    {uniform: 'ATLAS_Y',   type: 'i', value: this.dims.atlas.y / this.dims.slice.y},
+                    {uniform: 'SLICES',    type: 'i', value: this.dims.slice.z},
+                    {uniform: 'BLOCK_RES_X',   type: 'i', value: 1},
+                    {uniform: 'BLOCK_RES_Y',   type: 'i', value: 1},
+                    {uniform: 'BLOCK_RES_Z',   type: 'i', value: 1},
+                    {uniform: 'textureAtlas',   type: 't', value: 1},
+
+                ]);
+
+                me.volumeObject.initResolution(this.canvas3D);
+                me.volumeObject.loadMaterial('default_1');
+                me.volumeObject.initBuffers();
+
 				me.wipeTextureTimeBuffer();
 				me.updateTextureUniform();
                 me.fetchHistogram();
                 me.canvas3D.doAnimate();
+                me.canvas3D.controls.enabled = true;
 			},
 			scope : me,
-		});
+ 		});
 
 //        console.log(shaderConfig().rayCastShader);
 
@@ -651,19 +1063,19 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
 	onresize : function (comp, w, h, ow, oh, eOpts) {
-        if(!this.sceneVolume) return;
-        if(!this.sceneVolume.uniforms) return;
-		if(!this.sceneVolume.uniforms['iResolution']) return;
+        //if(!this.sceneVolume) return;
+        //if(!this.sceneVolume.uniforms) return;
+		//if(!this.sceneVolume.uniforms['iResolution']) return;
 
 		var pw = this.canvas3D.getPixelWidth();
 		var ph = this.canvas3D.getPixelHeight();
         var w = this.canvas3D.getWidth();
 		var h = this.canvas3D.getHeight();
 
-        console.log(pw,ph, w, h);
 		var newRes =
 			new THREE.Vector2(pw, ph);
-		this.sceneVolume.setUniform('iResolution', newRes);
+		//this.sceneVolume.setUniform('iResolution', newRes);
+        this.volumeObject.setResolution();
         /*
 		  this.screenBuffer
 		  = new THREE.WebGLRenderTarget(pw, ph, {
@@ -721,7 +1133,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	rerender : function () {
         var me = this;
         //me.canvas3D.rerender();
-
+        this.volumeObject.steps = this.volumeObject.maxSteps/8;
         setTimeout(callback(this, function () {
 			me.canvas3D.rerender();
 		}), this.update_delay_ms);
@@ -731,6 +1143,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	onAnimate : function () {
 		//if (this.canvas3D.mousedown)
 		//	this.setMaxSteps = 32;
+        //this.setPass(1);
 
         if(this.canvas3D.getAutoRotate()){
             this.setSampleRate(this.minSampleRate);
@@ -739,8 +1152,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 
         if(this.mousedown){
-            this.setSampleRate(this.minSampleRate);
-            this.canvas3D.needs_render = false;
+            this.rerender();
             return;
         }
 /*
@@ -751,14 +1163,15 @@ Ext.define('BQ.viewer.Volume.Panel', {
         }
 */
 
-		if (this.setMaxSteps < this.maxSteps) {
-            var newSampleRate = 1.5*this.setMaxSteps;
-            this.setSampleRate(this.setMaxSteps);
-            this.setMaxSteps = newSampleRate;
-		} else {
-            this.setSampleRate(this.maxSteps);
-			this.canvas3D.needs_render = false;
-        }
+		if (this.volumeObject.steps < this.maxSteps) {
+            this.volumeObject.steps *= 1.5;
+            if(this.volumeObject.steps >= this.maxSteps){
+                this.volumeObject.steps = this.maxSteps;
+                this.canvas3D.needs_render = false;
+            }
+            //this.setSampleRate(this.volumeObject.newSampleRate);
+            //this.volumeObject.maxSteps = newSampleRate;
+		}
 	},
 
     initHistogram : function() {
@@ -846,12 +1259,19 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		}
     },
 
+    afterRender: function() {
+        this.callParent();
+
+        // add contextual video
+        BQApp.setActiveHelpVideo('//www.youtube.com/embed/siEtbaNGxrk');
+    },
+
 	afterFirstLayout : function () {
         var me = this;
 
         /////////////////////////////////////////////////
 		// begin setup backbuffer rendering:
-		// putting it here for experimentation
+		// putting it here for experimentation... this should get moved to extThree
 		/////////////////////////////////////////////////
 
 		this.screenBuffer
@@ -1004,11 +1424,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 						//a lot of information is already loaded by the phys object:
 						//this.setLoading(false);
 						//this.sceneVolume.loadMaterial('forwardDiffuse');
-						this.tempMaterial
-							 = new THREE.MeshBasicMaterial({
-								color : 0xffffff
-							});
-						this.cubeMesh.material = this.tempMaterial;
+
 						this.sceneVolume.loadMaterial(this.cubeMesh, 'default');
 
 						this.fireEvent('loaded', this);
@@ -1069,8 +1485,9 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 			//this.uniforms.textureAtlas.value = textureAtlas;
 		}
-		this.sceneVolume.setUniform('textureAtlas', this.textureTimeBuffer[this.currentTime]);
-		this.update = true;
+		//this.sceneVolume.setUniform('textureAtlas', this.textureTimeBuffer[this.currentTime]);
+		this.volumeObject.setUniform('textureAtlas', this.textureTimeBuffer[this.currentTime]);
+        this.update = true;
 	},
 
 	initTextures : function () {
@@ -1123,45 +1540,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
         this.state++;
         this.textureTimeBuffer = new Array();
         this.fireEvent('wipetexturebuffer', this);
-	},
-
-	initUniforms : function () {
-		var res = new THREE.Vector2(this.canvas3D.getPixelWidth(), this.canvas3D.getPixelHeight());
-		this.sceneVolume.initUniform('iResolution', "v2", res);
-
-		this.sceneVolume.initUniform('BREAK_STEPS', "i", this.setMaxSteps);
-		this.sceneVolume.initUniform('FOV', "f", this.canvas3D.fov);
-
-        this.sceneVolume.initUniform('TEX_RES_X', "i", this.xTexSizeRatio * this.dims.slice.x);
-		this.sceneVolume.initUniform('TEX_RES_Y', "i", this.yTexSizeRatio * this.dims.slice.y);
-		this.sceneVolume.initUniform('ATLAS_X', "i", this.dims.atlas.x / this.dims.slice.x);
-		this.sceneVolume.initUniform('ATLAS_Y', "i", this.dims.atlas.y / this.dims.slice.y);
-		this.sceneVolume.initUniform('SLICES', "i", this.dims.slice.z);
-		this.sceneVolume.initUniform('BLOCK_RES_X', "i", 1);
-		this.sceneVolume.initUniform('BLOCK_RES_Y', "i", 1);
-		this.sceneVolume.initUniform('BLOCK_RES_Z', "i", 1);
-		this.sceneVolume.initUniform('textureAtlas', "t", 1);
-
-		this.sceneVolume.initUniform('STEP', "i", 0);
-		this.sceneVolume.initUniform('BACKGROUND_DEPTH', "t", this.screenBuffer);
-		this.sceneVolume.initUniform('BACKGROUND_COLOR', "t", this.screenBuffer);
-
-		/*
-		var pixels = new Uint8Array([0,0,0, 0,
-		50, 20, 2, 40,
-		50, 15, 20, 40,
-		80, 10, 10, 80,
-		50, 10, 1, 80,
-		40, 10, 1, 100,
-		50,50,50, 200,
-		50,50,50, 200,
-		]);
-
-		rampTex = new THREE.DataTexture( pixels, 8, 1, THREE.RGBAFormat );
-		rampTex.needsUpdate = true;
-		this.sceneVolume.initUniform('transfer', "t", rampTex);
-		this.sceneVolume.initUniform('TRANSFER_SIZE', "i", 6);
-		 */
 	},
 
 	onImage : function (resource) {
@@ -1279,10 +1657,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
     /////////////////////////////////////////////
 
     setMaxSampleRate : function (qual) {
-        this.shaderConfig.maxSteps = qual;
-        this.sceneVolume.setConfigurable("default",
-                                       "fragment",
-                                       this.shaderConfig);
+        this.volumeObject.setMaxSampleRate(qual);
         this.fireEvent('setquality', this);
         this.rerender();
     },
@@ -1316,15 +1691,16 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
 	setVolumeScale : function (inScale) {
-        //this.scale = inScale;
+        this.volumeObject.setScale(inScale);
+        this.scale = inScale;
 		this.sceneVolume.setUniform('BOX_SIZE', inScale);
 
 		this.currentScale = inScale.clone();
         this.cubeMesh.scale.copy(new THREE.Vector3(2.0*inScale.x,
                                                    2.0*inScale.y,
                                                    2.0*inScale.z));
-		this.canvas3D.rerender();
-		this.fireEvent('scale', this);
+		this.rerender();
+		this.fireEvent('scale', inScale,  this);
 	},
 
     /////////////////////////////////////////////
@@ -1341,9 +1717,12 @@ Ext.define('BQ.viewer.Volume.Panel', {
     },
 
     setSampleRate : function(sampleRate){
-        this.setMaxSteps = sampleRate;
-		this.sceneVolume.setUniformNoRerender('BREAK_STEPS',
-				                              sampleRate, false);
+        this.volumeObject.steps = sampleRate;
+		//this.volumeObject.setUniformNoRerender('BREAK_STEPS', sampleRate, false);
+    },
+
+    setPass : function(pass){
+        this.volumeObject.setUniform('PASS', pass, false);
     },
 
 	doUpdate : function () {
@@ -1468,6 +1847,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                    new saveTool(this),
 
                    //Tools in the settings menu
+                   new showGraphTool(this),
                    new autoRotateTool(this),
                    new qualityTool(this),
 

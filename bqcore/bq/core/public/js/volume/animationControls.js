@@ -790,7 +790,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 
     getCameraState: function(value, scope){
 	    var rot  = scope.panel3D.canvas3D.camera.rotation.clone();
-	    var pos  = scope.panel3D.canvas3D.camera.position.clone();
+	    var pos  = scope.panel3D.canvas3D.controls.posLocal.clone();
 	    var targ = scope.panel3D.canvas3D.controls.target.clone();
         var quat = scope.panel3D.canvas3D.camera.quaternion.clone();
         return {pos:  pos,
@@ -1010,22 +1010,23 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 
 			            var interp = this.keySlider.getInterpolatedValue(value, this.keySlider);
-                        curCamera.rotation.copy(interp.rot);
+                        //curCamera.rotation.copy(interp.rot);
+                        curCamera.quaternion.copy(interp.quat);
 			            curCamera.position.copy(interp.pos);
 
 
                         var newTarg = new THREE.Vector3(0,0,1);
                         var newUp   = new THREE.Vector3(0,1,0);
-                        newTarg.applyQuaternion(interp.quat);
-                        newUp.applyQuaternion(interp.quat);
+                        //newTarg.applyQuaternion(interp.quat);
+                        //newUp.applyQuaternion(interp.quat);
                         controls.target.copy(interp.targ);
-                        controls.object.up.copy(newUp);
-                        controls.object.position.copy(interp.pos);
+                        controls.object.quaternion.copy(interp.quat);
+                        controls.posLocal.copy(interp.pos);
 
                         //this.panel3D.canvas3D.controls.update();
 
 			            this.keySlider.panelCamera.position.copy( this.panel3D.canvas3D.camera.position );
-			            this.keySlider.panelCamera.rotation.copy( this.panel3D.canvas3D.camera.rotation );
+			            this.keySlider.panelCamera.quaternion.copy( this.panel3D.canvas3D.camera.quaternion );
 			            this.keySlider.panel3D.canvas3D.camera = this.keySlider.panelCamera;
 
                         this.panel3D.updateTextureUniform();
