@@ -159,16 +159,20 @@ class ArchiveStreamer():
                 name = str(index)
 
             path = None
+            files = None
             if uniq is not None:
                 del xml.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml
                 b = blob_service.localpath(uniq)
-                files = b.files
-                if files is not None and len(files)>0:
-                    path = files[0]
+                if b:
+                    files = b.files
+                    if files is not None and len(files)>0:
+                        path = files[0]
+                    else:
+                        path = b.path
+                    if path and not os.path.exists(path):
+                        path = None
                 else:
-                    path = b.path
-                if path and not os.path.exists(path):
-                    path = None
+                    log.warn ("Resource %s ( %s ) did not have blob", uniq, xml.tag )
 
             # if resource is just an XML doc
             content = None
@@ -196,17 +200,17 @@ class ArchiveStreamer():
                      'relpath' : relpath,
                      'outpath' : outpath,
                 }]
-            
+
             log.debug('fileInfo name: %s, path: %s, relpath: %s, outpath: %s', name, path, relpath, outpath)
             log.debug('fileInfo files: %s', files)
-            
+
             # find minimum relative path
             min_length = sys.maxint
             for f in files:
                 min_length = min(min_length, len(os.path.dirname(f)))
             minpath = files[0][:min_length+1]
             log.debug('fileInfo minpath: %s', minpath)
-            
+
             # check if file disimbiguation is needed
             subpath = files[0][min_length+1:]
             outpath = os.path.join(relpath, name, subpath).replace('\\', '/')
@@ -214,7 +218,7 @@ class ArchiveStreamer():
                 name = '%s.%s'%(name, uniq)
                 outpath = os.path.join(relpath, name, subpath).replace('\\', '/')
             fileHash[outpath] = name
-            
+
             infos = []
             first = True
             for f in files:
@@ -232,7 +236,7 @@ class ArchiveStreamer():
                     info['xml'] = xml
                     info['content'] = content
                 infos.append(info)
-                
+
             log.debug('fileInfo infos: %s', infos)
             return infos
 
