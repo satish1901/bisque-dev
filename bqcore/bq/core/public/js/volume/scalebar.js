@@ -507,6 +507,7 @@ qualityTool.prototype.setQuality = function() {
     var minVal = val/4;
     this.volume.minSampleRate = minVal;
     this.volume.maxSteps = val;
+    this.volume.volumeObject.maxSteps = val;
     this.volume.setMaxSampleRate(val);
 };
 
@@ -518,7 +519,7 @@ qualityTool.prototype.createButton = function(){
 		data : [
             {"value" : 64,   "text" : "minimal"},
             {"value" : 256,  "text" : "low"},
-            {"value" : 768,  "text" : "medium"},
+            {"value" : 1024,  "text" : "medium"},
             {"value" : 2048, "text" : "high"},
         ]
 	});
@@ -630,3 +631,5 @@ loseContextTool.prototype.createButton = function(){
 
     this.button.tooltip = 'kaboom goes the dynamite';
 };
+
+

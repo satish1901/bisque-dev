@@ -599,12 +599,24 @@ Ext.define('Bisque.Resource.Image.Page', {
                     if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects[0];
                     this.viewerContainer.viewer.highlight_gobject(gobject, true);
+
+                    var image3d = this.queryById('main_view_3d');
+                    if(image3d){
+                        image3d.highlight_gobject(gobject);
+                    }
+
                     this.viewerContainer.viewer.set_parent_gobject(gobject);
                 },
 
                 deselect : function(me, record, index, eOpts) {
                     if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects[0];
+
+                    var image3d = this.queryById('main_view_3d');
+                    if(image3d){
+                        image3d.unhighlight_gobject(gobject);
+                    }
+
                     this.viewerContainer.viewer.highlight_gobject(gobject, false);
                     this.viewerContainer.viewer.set_parent_gobject(undefined);
                 },
@@ -677,8 +689,14 @@ Ext.define('Bisque.Resource.Image.Page', {
                 },
 
                 color_gobjects : function(gobs, color) {
-                    for (var i=0; i<gobs.length; i++)
+                    var image3d = this.queryById('main_view_3d');
+                    for (var i=0; i<gobs.length; i++){
+                        if(image3d){
+                            image3d.color_gobjects(gobs[i], color);
+                        }
                         this.viewerContainer.viewer.color_gobject(gobs[i], color);
+
+                    }
                 },
 
                 create_gobject : function(gob) {
@@ -991,17 +1009,19 @@ Ext.define('Bisque.Resource.Image.Page', {
 
     show3D : function() {
         var me = this;
-        try{
-            var webGl = function (){
-                try { var canvas = document.createElement( 'canvas' );
-                      return !! ( window.WebGLRenderingContext &&
-                                  ( canvas.getContext( 'webgl' ) ||
-                                    canvas.getContext( 'experimental-webgl' ) ) ); }
-                catch( e ) { return false; }
-            };
 
-            if(!webGl()) return;
+        //we test for this and hide the object earlier but redundancy doesn't hurt
+        var webGl = function (){
+            try { var canvas = document.createElement( 'canvas' );
+                  return !! ( window.WebGLRenderingContext &&
+                              ( canvas.getContext( 'webgl' ) ||
+                                canvas.getContext( 'experimental-webgl' ) ) ); }
+            catch( e ) { return false; }
+        };
 
+        if(!webGl()) return;
+
+        //try{
             var btn = this.queryById('button_view');
             btn.setText('View: 3D');
             btn.setIconCls('view3d');
@@ -1032,6 +1052,19 @@ Ext.define('Bisque.Resource.Image.Page', {
                 phys: this.viewerContainer.viewer.imagephys,
                 preferences: this.viewerContainer.viewer.preferences,
                 listeners: {
+                    select_gobject : function(viewer, gob) {
+                        var node = me.gobjectTagger.findNodeByGob(gob);
+                        if (!node) {
+                            console.log('No node found!');
+                            return;
+                        }
+                        // dima: here expand to expose the selected node
+                        var parent = node;
+                        for (var i=0; i<node.getDepth()-1; i++)
+                            parent = parent.parentNode;
+                        me.gobjectTagger.tree.expandNode( parent, true );
+                        me.gobjectTagger.tree.getSelectionModel().select(node);
+                    },
 
                     glcontextlost: function(event){
                         var msgText = " ";
@@ -1055,15 +1088,15 @@ Ext.define('Bisque.Resource.Image.Page', {
 
                 }
             });
-        }
-
+    //}
+    /*
         catch(err){
             BQ.ui.error("This is strange, the volume renderer failed to load. <BR/>" +
                         "The reported error is: <BR/> " +
                         err.message);
             me.show2D();
         }
-
+    */
     },
 
 });
