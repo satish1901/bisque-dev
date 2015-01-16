@@ -136,20 +136,21 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
             alpha: true,
             premultipliedAlpha: false,
             sortObjects: true,
-        });
 
+        });
+        this.renderer.setBlending(THREE.NormalBlending);
         //this.setClearColor(0xC0C0C0, 1.0);
 
         var aspect = this.getWidth() / this.getHeight();
         this.fov = 20;
-        this.camera = new THREE.PerspectiveCamera(this.fov, aspect, .01, 20);
-
-        //this.controls = new THREE.TrackballControls(this.camera, thisDom);
-        this.controls = new THREE.OrbitControls(this.camera, thisDom);
-        //this.controls = new THREE.RotationControls(this.camera, thisDom);
-        this.controls.autoRotate = false;
+        this.camera = new THREE.PerspectiveCamera(this.fov, aspect, .001, 20);
 
         this.camera.position.z = 5.0;
+        //this.controls = new THREE.TrackballControls(this.camera, thisDom);
+        //this.controls = new THREE.OrbitControls(this.camera, thisDom);
+        this.controls = new THREE.RotationControls(this.camera, thisDom);
+        this.controls.autoRotate = false;
+        this.controls.enabled = true;
         this.getEl().on({
             scope : this,
             //resize : this.onresize,
@@ -313,7 +314,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
                 //this.onAnimateOverride();
             //else
             for(var i = 0; i < this.animate_funcs.length; i++){
-                this.animate_funcs[i]();
+                this.animate_funcs[i](this);
             }
             this.render();
             //this.anaglyph.render(this.scene, this.camera);
