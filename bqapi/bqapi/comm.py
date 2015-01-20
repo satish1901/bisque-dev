@@ -59,6 +59,7 @@ import itertools
 import tempfile
 import mimetypes
 import warnings
+import posixpath
 
 log = logging.getLogger('bqapi.comm')
 
@@ -109,16 +110,14 @@ class BQCommError(BQException):
             @param: content - body of the response (default: None)
 
         """
-        print 'Status: %s'%status
-        print 'Headers: %s'%headers
+        #print 'Status: %s'%status
+        #print 'Headers: %s'%headers
         self.status = status
         self.headers = headers
-        if content is not None:
-            self.content = content
-            print 'Content: [%s]'%content
+        self.content = content
 
     def __str__(self):
-        return "BQCommError(status=%s, %s)" % (self.status, self.headers)
+        return "BQCommError(status=%s, headers=%s)%s" % (self.status, self.headers, self.content)
 
 
 class MexAuth(AuthBase):
@@ -568,7 +567,7 @@ class BQSession(object):
         """
             @return
         """
-        services = self.load (self.bisque_root + "/services")
+        services = self.load (posixpath.join(self.bisque_root , "services"))
         smap = {}
         for service in services.tags:
             smap [service.type] = service.value
