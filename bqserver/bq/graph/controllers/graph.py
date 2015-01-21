@@ -35,13 +35,17 @@ class graphController(ServiceController):
         nodes = set()
         edges = set()
         checked = set()
-        unchecked = []
-        unchecked.append (query)
+        unchecked = set()
+        unchecked.add (query)
         response = etree.Element('graph', value=query)
         while unchecked:
-            node = unchecked.pop(0)
+            log.debug ( "graph unchecked %s", unchecked)
+            node = unchecked.pop()
             # Find everybody this node points to:
             xnode = data_service.resource_load (uniq=node,view='deep')
+            if xnode is None:
+                log.error ('could not load %s', node)
+                continue
             node_type = xnode.tag
             if node_type == 'resource':
                 node_type = xnode.get ('resource_type') or xnode.tag
@@ -53,6 +57,8 @@ class graphController(ServiceController):
                 if is_uniq_code (xlink):
                     log.debug ("ADDING OUT EDGE : %s" % str( (node, xlink) ))
                     edges.add( (node, xlink) )
+                    if xlink not in checked:
+                        unchecked.add (xlink)
 
 
             # Find nodes that point to me
@@ -63,13 +69,17 @@ class graphController(ServiceController):
                 log.debug ("ADDING IN EDGE : %s" % str ((sibling_uniq, node)))
                 edges.add ( (sibling_uniq, node) )
                 if sibling_uniq not in checked:
-                    unchecked.append(sibling_uniq)
+                    unchecked.add(sibling_uniq)
             log.debug ( "Nodes : %s, Edges : %s" % (nodes, edges) )
 
         for node in nodes:
             etree.SubElement (response, 'node', value = node[0], type=node[1])
+        node_uniqs = [ n[0] for n in nodes ]
         for edge in edges:
-            etree.SubElement (response, 'edge', value = "%s:%s" % edge)
+            if edge[0] in node_uniqs  and edge[1] in node_uniqs:
+                etree.SubElement (response, 'edge', value = "%s:%s" % edge)
+            else:
+                log.error ("Skipping edge %s due to missing nodes", edge)
         return etree.tostring (response)
 
 
