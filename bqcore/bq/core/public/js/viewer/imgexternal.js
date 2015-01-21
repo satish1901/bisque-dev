@@ -1,7 +1,7 @@
 function ImgExternal (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
-
+    
 
     this.viewer.addMenu([{
         itemId: 'menu_viewer_external',
@@ -15,6 +15,7 @@ function ImgExternal (viewer,name){
             defaults: {
                 scope: this,
             },
+			
             items: [{
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_export_view',
@@ -25,13 +26,20 @@ function ImgExternal (viewer,name){
                 handler: function() {
                     this.exportCurrentView(1);
                     },
-                    /*
+                /*
                 menu   : {
-                    hidden: true,
+                    //hidden: true,
                     handler: function() {return false;},
                     items   : [
-                    '<b class="menu-title">Choose a Scale</b>',
-                    {
+                    //'<b class="menu-title">Choose a Scale</b>',
+					{
+						text: '100%',
+                        handler: function() {this.exportCurrentView(1);},
+                        scope: this,
+                        checked: false,
+                        hideOnClick : false,
+                    }, /*{
+						hidden: true,
                         text: '100%',
                         handler: function() {this.exportCurrentView(1);},
                         scope: this,
@@ -40,6 +48,7 @@ function ImgExternal (viewer,name){
                         group: 'scale',
                         tooltip: 'Download current view scaled at 100%',
                     }, {
+						hidden: true,
                         text: '200%',
                         handler: function(){this.exportCurrentView(2);},
                         scope: this,
@@ -48,6 +57,7 @@ function ImgExternal (viewer,name){
                         group: 'scale',
                         tooltip: 'Download current view scaled at 200%',
                     }, {
+						hidden: true,
                         text: '400%',
                         handler: function(){this.exportCurrentView(4);},
                         scope: this,
@@ -56,7 +66,8 @@ function ImgExternal (viewer,name){
                         group: 'scale',
                         tooltip: 'Download current view scaled at 400%',
                 }]},
-                */
+				*/
+                
             },{
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_external_bioView',
@@ -100,13 +111,7 @@ function ImgExternal (viewer,name){
                 tooltip: 'Convert and download the current image',
                 scope: this,
                 handler: this.convert,
-            }, /*{
-                xtype  : 'menuitem',
-                itemId : 'menu_viewer_pixel_counting',
-                text   : 'Pixel counter',
-                //disabled: true,
-                handler: this.pixelCounter,
-            },*/ {
+            }, {
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_calibrate_resolution',
                 text   : 'Calibrate image resolution',
@@ -197,17 +202,17 @@ ImgExternal.prototype.exportTagsToGoogle = function () {
 ImgExternal.prototype.exportCurrentView = function (scale) {
 
     var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
-
+    
     //create canvas
     var canvas_view = document.createElement('canvas');
     canvas_view.height = control_surface_size.height;
     canvas_view.width = control_surface_size.width;
     ctx_view = canvas_view.getContext("2d");
     ctx_view.fillStyle = 'rgba(67, 67, 67, 1)'//"#FF0000";
-    ctx_view.fillRect(0,0,control_surface_size.width,control_surface_size.height);
+    ctx_view.fillRect(0, 0, control_surface_size.width, control_surface_size.height); 
     var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
-
-    //iterorate through all the tiles to find the tiles in the viewer
+    
+    //iterate through all the tiles to find the tiles in the viewer
     var inViewImages = [];
     var tile_tops = [];
     var tile_bottoms = [];
@@ -246,8 +251,8 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
             }
         }
     }
-
-    //draw image blogs with offsets on to the canvas
+    
+    //draw image blocks with offsets on to the canvas
     ctx_view.createImageData(canvas_view.height, canvas_view.width);
     imageData = ctx_view.getImageData(0, 0, canvas_view.width, canvas_view.height);
 
@@ -264,8 +269,9 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         }
         ctx_view.drawImage(inViewImages[i], xoffset, yoffset, scaled_imgwidth, scaled_imgheight);
     }
-
-    showGobjects = true;
+	
+    
+    var showGobjects = true; 
     if (showGobjects) {
         //render svg to canvas
         var renderer = this.viewer.plugins_by_name['renderer'];
@@ -276,7 +282,7 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         var xoffset = svg_data.style.left;
         var yoffset = svg_data.style.top;
         svg_data.setAttribute('style','position: abosulte; top: 0px; left: 0px; width: '+svg_data.style.width+'; height: '+svg_data.style.height);
-
+        
         //svg_data.setAttribute('width',tiled_viewer.width);
         //svg_data.setAttribute('height',tiled_viewer.height);
         svgStr = serializer.serializeToString(svg_data);
@@ -284,16 +290,15 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         ctx_view.drawImage(svgimg, parseInt(xoffset), parseInt(yoffset), parseInt(svg_data.style.width), parseInt(svg_data.style.height));
         //ctx_view.drawImage(svgimg, xoffset, yoffset, tiled_viewer.width, tiled_viewer.height);
     }
-
-    border = false;
+    
+    var border = false;
     if (!border) {
         //removes border from the image
         var renderer = this.viewer.plugins_by_name['renderer'];
         var canvas_border = document.createElement('canvas');
         var width = parseInt(renderer.overlay.style.width, 10);
         var height = parseInt(renderer.overlay.style.height, 10);
-
-
+        
         if (parseInt(renderer.overlay.style.left, 10)>0)
             var xoffset = -parseInt(renderer.overlay.style.left, 10);
         else {
@@ -303,18 +308,18 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         if (parseInt(renderer.overlay.style.top, 10)>0)
             var yoffset = -parseInt(renderer.overlay.style.top, 10);
         else {
-            var yoffset = 0;//arseInt(renderer.overlay.style.top, 10)
+            var yoffset = 0;
             height = height + parseInt(renderer.overlay.style.top, 10);
         }
-
+        
         if ((parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10)) > tiled_viewer.height) {
             height = height - (parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10) - tiled_viewer.height);
         }
-
+        
         if ((parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10)) > tiled_viewer.width) {
             width = width - (parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10) - tiled_viewer.width);
         }
-
+        
         canvas_border.width = width;
         canvas_border.height = height;
         var ctx_border = canvas_border.getContext('2d');
@@ -322,7 +327,49 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         canvas_view = canvas_border;
         delete canvas_border
     }
-
+	
+	var w_scale_bar = true;
+	//renders scale bar on the corner of the image
+	if (w_scale_bar) {
+		//check is scale bar is in the image
+		var scalebar = this.viewer.plugins_by_name['scalebar'];
+		var scalebar_size = scalebar.scalebar.widget.getBoundingClientRect();
+		var viewer_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
+		var viewer_top = this.viewer.plugins_by_name['tiles'].tiled_viewer.y;
+		var viewer_left = this.viewer.plugins_by_name['tiles'].tiled_viewer.x;
+		var viewer_width = this.viewer.plugins_by_name['tiles'].tiled_viewer.width;
+		var viewer_height = this.viewer.plugins_by_name['tiles'].tiled_viewer.height;
+		
+		if (viewer_top <= scalebar_size.top - viewer_size.top &&
+			viewer_left <= scalebar_size.left - viewer_size.left &&
+			viewer_left + viewer_width  >= scalebar_size.right - viewer_size.left &&
+			viewer_top + viewer_height >= scalebar_size.bottom - viewer_size.top) {
+			
+			
+			//check if image leave the view
+			if (viewer_top < 0) {
+				var offsetY = scalebar_size.top - viewer_size.top;
+			} else {
+				var offsetY = scalebar_size.top - viewer_top - viewer_size.top;
+			}
+			
+			if (viewer_left < 0) {
+				var offsetX = scalebar_size.left - viewer_size.left;
+			} else {
+				var offsetX = scalebar_size.left - viewer_left - viewer_size.left;
+			}
+			var canvas_scalebar = scalebar.scalebar.renderCanvas();
+			var ctx_view = canvas_view.getContext('2d');
+			
+			//var widget_style = window.getComputedStyle(scalebar.scalebar.widget);
+			ctx_view.globalAlpha = scalebar.scalebar.opacity;
+			
+			ctx_view.drawImage(canvas_scalebar, offsetX, offsetY, scalebar_size.width, scalebar_size.height);
+			//canvas_view = canvas_scalebar
+			//delete canvas_scalebar
+		}
+	}
+    
     //scale the canvas
     if (scale!=1) {
         var canvas_scaled = document.createElement('canvas');
@@ -334,9 +381,9 @@ ImgExternal.prototype.exportCurrentView = function (scale) {
         delete canvas_scaled
     }
     //request canvas
-    var url = canvas_view.toDataURL("image/jpeg");
+    var url = canvas_view.toDataURL("image/png");
     window.open(url)
-
+    
     //remove canvas
     delete canvas_view
 
