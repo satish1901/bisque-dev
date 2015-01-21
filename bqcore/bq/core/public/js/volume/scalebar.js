@@ -633,3 +633,49 @@ loseContextTool.prototype.createButton = function(){
 };
 
 
+function showGraphTool(volume, cls) {
+	//renderingTool.call(this, volume);
+
+    this.name = 'autoRotate';
+/*
+    this.label = 'save png';
+    //this.cls = 'downloadButton';
+*/
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+showGraphTool.prototype = new renderingTool();
+
+showGraphTool.prototype.init = function(){
+    //override the init function,
+    var me = this;
+    // all we need is the button which has a menu
+    this.createButton();
+};
+
+showGraphTool.prototype.addButton = function () {
+    this.volume.toolMenu.add(this.button);
+};
+
+showGraphTool.prototype.createButton = function(){
+    var me = this;
+
+    this.button = Ext.create('Ext.Button', {
+        width : 36,
+        height : 36,
+        cls : 'volume-button',
+		handler : function (item, checked) {
+            Ext.create('BQ.viewer.graphviewer.Dialog', {
+                title : 'gl info',
+                height : 500,
+                width : 960,
+                layout : 'fit',
+                resource: this.volume.resource,
+            }).show();
+		},
+        scope : me,
+    });
+
+    this.button.tooltip = 'graph viewer temp';
+};
