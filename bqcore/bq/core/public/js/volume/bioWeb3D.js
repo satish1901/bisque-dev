@@ -1143,7 +1143,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	onAnimate : function () {
 		//if (this.canvas3D.mousedown)
 		//	this.setMaxSteps = 32;
-        //this.setPass(1);
+        //this.setaPess(1);
 
         if(this.canvas3D.getAutoRotate()){
             this.setSampleRate(this.minSampleRate);

@@ -130,66 +130,6 @@ histogramD3.prototype.redraw = function(){
     }
 };
 
-Ext.define('BQ.graph.d3', {
-    //extend: 'Ext.container.Container',
-    extend : 'Ext.Component',
-    alias : 'widget.d3_component',
-    border : 0,
-    frame : false,
-
-    initD3 : function(){
-        var me = this;
-
-        function nozoom() {
-            d3.event.preventDefault();
-        }
-
-        var thisDom = this.getEl().dom;
-        this.handle = Math.floor(99999*Math.random());
-        this.svg = d3.select('#' + thisDom.id)
-            .on("touchstart", nozoom)
-            .on("touchmove", nozoom)
-            .append("svg:svg")
-            .attr("id", "ext_svg-"+this.handle)
-            .attr("width", "100%")
-            .attr("height","100%")
-            .append("svg:g")
-            .on("mousedown", function(){me.findInterval(me); me.fireEvent("mousedown");})
-            .on("mouseup", function(){me.fireEvent("mouseup");});
-
-        this.svg
-            .append("rect")
-            .attr("id", "background-"+this.handle)
-            .attr("width", "100%")
-            .attr("height","100%");
-
-    },
-
-    setBackgroundColor : function(color){
-        //takes a string to set the background color
-        this.svg.select("#background-" +this.handle)
-            .attr("fill", color);
-    },
-
-    redraw : function(){
-    },
-
-    afterRender : function() {
-        this.callParent();
-    },
-
-    afterFirstLayout : function() {
-        this.callParent();
-        this.addListener('resize', this.onresize, this);
-        this.initD3();
-    },
-
-    onresize : function(){
-        this.redraw();
-    }
-});
-
-
 Ext.define('BQ.volume.transfer.graph', {
     //extend: 'Ext.container.Container',
     extend : 'BQ.graph.d3',

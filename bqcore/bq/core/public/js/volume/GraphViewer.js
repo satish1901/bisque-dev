@@ -669,10 +669,48 @@ Ext.define('BQ.graphviewer', {
         this.callParent();
         this.initBrush();
         this.buildGraph();
+
     },
 
 });
 
+Ext.define('BQ.viewer.Graph.Panel', {
+	alias : 'widget.bq_graphviewer_panel',
+	extend : 'Ext.panel.Panel',
+	//border : 0,
+	cls : 'bq-graph-panel',
+	layout : 'fit',
+
+
+    initComponent: function(){
+
+        this.items = [ {
+			xtype : 'bq_graphviewer',
+			//hostName : config.hostName,
+			//resource : config.resource
+		},{
+			xtype : 'component',
+			itemId : 'button-extents',
+			autoEl : {
+				tag : 'span',
+				cls : 'zoom-extents',
+			},
+
+			listeners : {
+				scope : this,
+				click : {
+					element : 'el', //bind to the underlying el property on the panel
+					fn : this.onMenuClick,
+				},
+			},
+
+		}];
+
+
+		this.callParent();
+    },
+
+});
 //--------------------------------------------------------------------------------------
 // Dialogue Box
 //--------------------------------------------------------------------------------------
@@ -696,11 +734,11 @@ Ext.define('BQ.viewer.graphviewer.Dialog', {
 		Ext.apply(this, {
 			//title : 'Move for ' + config.resource.name,
 			items : [{
-					xtype : 'bq_graphviewer',
-					//hostName : config.hostName,
-					//resource : config.resource
-				}
-			],
+				xtype : 'bq_graphviewer_panel',
+                //xtype: 'bq_graphviewer',
+				//hostName : config.hostName,
+				//resource : config.resource
+			}],
 		}, config);
 
 		this.callParent(arguments);
@@ -708,49 +746,3 @@ Ext.define('BQ.viewer.graphviewer.Dialog', {
 	},
 });
 
-
-function showGraphTool(volume, cls) {
-	//renderingTool.call(this, volume);
-
-    this.name = 'autoRotate';
-/*
-    this.label = 'save png';
-    //this.cls = 'downloadButton';
-*/
-	this.base = renderingTool;
-    this.base(volume, this.cls);
-};
-
-showGraphTool.prototype = new renderingTool();
-
-showGraphTool.prototype.init = function(){
-    //override the init function,
-    var me = this;
-    // all we need is the button which has a menu
-    this.createButton();
-};
-
-showGraphTool.prototype.addButton = function () {
-    this.volume.toolMenu.add(this.button);
-};
-
-showGraphTool.prototype.createButton = function(){
-    var me = this;
-
-    this.button = Ext.create('Ext.Button', {
-        width : 36,
-        height : 36,
-        cls : 'volume-button',
-		handler : function (item, checked) {
-            Ext.create('BQ.viewer.graphviewer.Dialog', {
-                title : 'gl info',
-                height : 500,
-                width : 960,
-                layout : 'fit',
-            }).show();
-		},
-        scope : me,
-    });
-
-    this.button.tooltip = 'graph viewer temp';
-};
