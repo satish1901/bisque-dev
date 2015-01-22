@@ -47,6 +47,7 @@
     '/js/movie/movie.css',
     { 'file': '/dataset_service/public/dataset_panel.css', 'path' : h.file_root() + 'bqserver/bq' },
     '/js/renderers/dataset.css',
+    '/js/graphviewer/graphviewer.css',
     '/js/volume/bioWeb3D.css',
     {'file' : '/import_service/public/bq_ui_upload.css', 'path' : h.file_root() + 'bqserver/bq'},
     {'file' : '/export_service/public/css/BQ.Export.css', 'path' : h.file_root() + 'bqserver/bq'},
@@ -266,6 +267,14 @@
 
     # -- Export Service --
     { 'file' : '/export_service/public/js/BQ.Export.js', 'path': h.file_root() + 'bqserver/bq/'},
+	
+    # -- Request Animation Frame --
+    '/js/requestAnimationFrame.js',
+	
+    # -- Graph viewer --
+    '/js/d3Component.js',
+    '/js/graphviewer/dagre-d3.js',
+    '/js/graphviewer/GraphViewer.js',
 
     # -- WebGL viewer --
     '/js/volume/lib/whammy.js',
@@ -281,9 +290,6 @@
     '/js/volume/extThreeJS.js',
     '/js/volume/gobjectbuffers.js',
     '/js/picker/Excolor.js',	
-    '/js/volume/d3Component.js',
-    '/js/volume/dagre-d3.js',	
-    '/js/volume/GraphViewer.js',
     '/js/volume/transferEditorD3.js',
     '/js/volume/scalebar.js',
     '/js/volume/bioWeb3D.js',

@@ -1,5 +1,104 @@
 
 
+function ResourceCard(node) {
+    this.node = node;
+    this.fields = {};
+};
+
+
+ResourceCard.prototype.populateFields = function (xnode) {};
+
+ResourceCard.prototype.addField = function (field, attribute, className) {
+    this.fields[field] = {attribute: attribute, className:className};
+};
+
+ResourceCard.prototype.getSpan = function (field) {
+    var cname = this.fields[field].className;
+    var attr  = this.fields[field].attribute;
+    return "<span>"+field+ ":  <em class="+cname+">"  + attr + "</em></span>";
+};
+
+ResourceCard.prototype.buildHtml = function () {
+    var html = "<div>";
+    //html += "<span class=status></span>";
+
+    html += "<span class=resource>"  + this.cardType + "</span>";
+    for(var field in this.fields){
+        html += this.getSpan(field);
+    }
+    /*
+    html += "<span> module:   <em class=name>"  + this.fields['name'] + "</em></span>";
+    html += "<span> status:   <em class=value>" + this.fields['name'] xnode.getAttribute('value') + "</em></span>";
+    //html += "<span class=date><span class=counter>"+worker.count+"</span></span>";
+    html += "<span> finished: <em class=date>" + xnode.getAttribute('ts') + "</em></span>";
+    */
+    html += "</div>";
+
+    this.node.rx = this.node.ry = 5;
+    this.node.labelType = "html";
+    this.node.label = html;
+};
+
+
+function MexCard(node) {
+    this.cardType = 'mex'
+	this.node = node;
+
+    ResourceCard.call(this,node);
+};
+
+MexCard.prototype = new ResourceCard();
+
+MexCard.prototype.populateFields = function (xnode) {
+    this.addField('module', xnode.getAttribute('name'), 'name');
+    this.addField('status', xnode.getAttribute('value'), 'value');
+    this.addField('finished', xnode.getAttribute('ts').split('T')[0], 'date');
+};
+
+function DataSetCard(node) {
+    this.cardType = 'dataset'
+	this.node = node;
+    ResourceCard.call(this,node);
+};
+
+DataSetCard.prototype = new ResourceCard();
+
+DataSetCard.prototype.populateFields = function (xnode) {
+    this.addField('name', xnode.getAttribute('name'), 'name');
+};
+
+
+function ImageCard(node) {
+    this.cardType = 'image'
+	this.node = node;
+    ResourceCard.call(this,node);
+};
+
+ImageCard.prototype = new ResourceCard();
+
+ImageCard.prototype.populateFields = function (xnode) {
+    this.addField('name', xnode.getAttribute('name'), 'name');
+};
+
+
+function BQFactoryGraph(){
+};
+
+BQFactoryGraph.make = function(node){
+    this.buffermap = {
+        mex      : MexCard,
+        dataset  : DataSetCard,
+        image    : ImageCard,
+    }
+    return new this.buffermap[node.label](node);
+};
+
+BQFactoryGraph.ftormap = {
+    mex     : function(g) { return g;},
+    dataset     : function(g) { return g;},
+};
+
+
 Ext.define('BQ.graphviewer', {
     //extend: 'Ext.container.Container',
     extend : 'BQ.graph.d3',
@@ -345,67 +444,86 @@ Ext.define('BQ.graphviewer', {
         ]
     },
     */
-    initBrush: function(){
-        //var rect = this.svg.select("#background-"+this.handle);
-        var svgGroup = d3.select("#ext_svg-" + this.handle + " g");
 
 
+    fetchNode : function(resource_uniq, node){
+        var me = this;
+        var resUniqueUrl = (this.hostName ? this.hostName : '') + '/data_service/' + resource_uniq;
+        var gnode = node;
+        console.log(node);
+        var g = this.g;
+        Ext.Ajax.request({
+			url : resUniqueUrl,
+			scope : this,
+			disableCaching : false,
+			callback : function (opts, succsess, response) {
+				if (response.status >= 400)
+					BQ.ui.error(response.responseText);
+				else {
+					if (!response.responseXML)
+						return;
+					var xmlDoc = response.responseXML;
+                    console.log(xmlDoc);
+                    var xnode = xmlDoc.childNodes[0];
+                    /*
+                      var html = "<div>";
+                      //html += "<span class=status></span>";
+
+                      html += "<span class=resource>"  + 'mex' + "</span>";
+                      html += "<span> module:   <em class=name>"  + xnode.getAttribute('name') + "</em></span>";
+                      html += "<span> status:   <em class=value>" + xnode.getAttribute('value') + "</em></span>";
+                      //html += "<span class=date><span class=counter>"+worker.count+"</span></span>";
+                      html += "<span> finished: <em class=date>" + xnode.getAttribute('ts') + "</em></span>";
+
+                      html += "</div>";
+                      gnode.rx = node.ry = 5;
+                      gnode.labelType = "html";
+                      gnode.label = html;
+                    */
+                    if(gnode && gnode.card){
+                        gnode.card.populateFields(xnode);
+                        gnode.card.buildHtml();
+                    }
+
+                    me.render(me.group, g);
+                    me.forceRefresh(0);
+                    /*
+                    var graph = xmlDoc.childNodes[0];
+
+                    console.log(graph);
+                    this.graphView.graph = this.graph;
+
+                    var nodes = BQ.util.xpath_nodes(xmlDoc, "graph/node");
+                    var edges = BQ.util.xpath_nodes(xmlDoc, "graph/edge");
+                    this.graphView.buildGraph(nodes, edges)
+                    this.graphView.fetchNodeInfo();
+                    */
+                    /*
+                    for(var prop in graph.childNodes){
+                        //var nodes = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='value']/@value");
+                        if(graph.childNodes.hasOwnProperty(prop)){
+                            var child = graph.childNodes[prop];
+                            //var val = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='value']/@value")
+                            var t = child.getAttribute('type');
+                            alert(prop + " = " + value);
+                        }
+                    }*/
+				}
+			},
+		});
     },
 
-    initCrossHairs : function(){
+    fetchNodeInfo : function(){
         var me = this;
-        var xMouse = this.svg.append("svg:line")
-            .attr("stroke", "rgb(128,128,128)")
-            .attr("x1", "0%")
-            .attr("x2", "0%")
-            .attr("y1", "0%")
-            .attr("y2", "100%");
+        var g = this.g;
 
-        var yMouse = this.svg.append("svg:line")
-            .attr("stroke", "rgb(128,128,128)")
-            .attr("x1", "0%")
-            .attr("x2", "100%")
-            .attr("y1", "0%")
-            .attr("y2", "0%");
+        g.nodes().forEach(function(v) {
+            var node = g.node(v);
+            me.fetchNode(v,node);
 
-        var xText = this.svg.append("svg:text")
-            .attr("fill", "rgb(128,128,128)")
-            .attr("y", "2%")
-            .attr("dy", ".71em")
-            .attr("text-anchor", "right");
-
-        var yText = this.svg.append("svg:text")
-            .attr("fill", "rgb(128,128,128)")
-            .attr("x", "2%")
-            .attr("dy", ".71em")
-            .attr("text-anchor", "right");
-
-        this.svg
-            .on("mousemove", function(){
-                var xp = d3.event.clientX - me.getX();
-                var yp = d3.event.clientY - me.getY();
-                var offset = me.xScale.invert(xp);
-                var alpha  = me.yScale.invert(yp);
-
-                if(me.snap){
-                    offset = Math.floor(offset/me.gridSizeX + 0.5)*me.gridSizeX;
-                    alpha = Math.floor( alpha/me.gridSizeY  + 0.5)*me.gridSizeY;
-                }
-
-                xMouse
-                    .attr("x1", me.xScale(offset))
-                    .attr("x2", me.xScale(offset));
-                yMouse
-                    .attr("y1", me.yScale(alpha))
-                    .attr("y2", me.yScale(alpha));
-
-                xText
-                    .attr("x", me.xScale(offset) + 2)
-                    .text(offset.toFixed(4));
-                yText
-                    .attr("y", me.yScale(alpha) + 2)
-                    .text(alpha.toFixed(4));
-            });
+            node.rx = node.ry = 5;
+            node.padding = 1.5;
+        });
     },
 
     traverse : function(g, i, func, scope){
@@ -538,14 +656,15 @@ Ext.define('BQ.graphviewer', {
         var me = this;
         var el = this.getEl().dom;
 
-        var w = this.getWidth();
-        var h = this.getHeight();
+        var margin = 50;
+        var w = this.getWidth()  - margin;
+        var h = this.getHeight() - margin;
 
         var bbox = this.group.selectAll("g").node().getBBox();
-        var bbw = bbox.width + 20;
-        var bbh = bbox.height + 20;
+        var bbw = bbox.width;
+        var bbh = bbox.height;
         var min = w/bbw < h/bbh ? w/bbw : h/bbh;
-        var trans = [(w-min*bbw)/2, (h-min*bbh)/2];
+        var trans = [(w-min*bbw)/2 + margin/2, (h-min*bbh)/2 + margin/2];
         this.zoom.scale(min);
         this.scale = min;
         this.group
@@ -580,7 +699,9 @@ Ext.define('BQ.graphviewer', {
 
         var min = w/bbw < h/bbh ? w/bbw : h/bbh;
         var mins = bbw/bbsw < bbh/bbsh ? bbw/bbsw : bbh/bbsh;
-        var newScale = 4.0*mins;
+        var newScale = 2.0*mins;
+        if(newScale < this.scale) newScale = this.scale;
+
         var trans = [w/2 - newScale*elTrans[0],
                      h/2 - newScale*elTrans[1]];
 
@@ -644,9 +765,11 @@ Ext.define('BQ.graphviewer', {
 */
         g.nodes().forEach(function(v) {
             var node = g.node(v);
+            console.log(v, g.node(v));
             // Round the corners of the nodes
             node.rx = node.ry = 5;
             node.padding = 1.5;
+            node.card = BQFactoryGraph.make(node);
         });
 
 
@@ -655,7 +778,7 @@ Ext.define('BQ.graphviewer', {
         g.graph().edgeSep = 10;
         g.graph().rankSep = 20;
         // Create the renderer
-        var render = new dagreD3.render();
+        this.render = new dagreD3.render();
 
         // Set up an SVG group so that we can translate the final graph.
         //var svgGroup = svg.append("g");
@@ -701,7 +824,6 @@ Ext.define('BQ.graphviewer', {
                 wheel = true;
             }
 
-
             svgGroup.attr("transform", "translate(" + ctrans + ")" +
                           "scale(" + scale + ")");
 
@@ -712,7 +834,7 @@ Ext.define('BQ.graphviewer', {
         this.svg.call(this.zoom);
 
         // Run the renderer. This is what draws the final graph.
-        render(svgGroup, g);
+        this.render(svgGroup, g);
 
         var svgNodes = svgGroup.selectAll("g.node");
         var svgEdges = svgGroup.selectAll("g.edgePath");
@@ -810,7 +932,7 @@ Ext.define('BQ.graphviewer', {
 
     afterFirstLayout : function() {
         this.callParent();
-        this.initBrush();
+        //this.initBrush();
         //this.buildGraph();
 
     },
@@ -853,7 +975,7 @@ Ext.define('BQ.viewer.Graph.Panel', {
                     var nodes = BQ.util.xpath_nodes(xmlDoc, "graph/node");
                     var edges = BQ.util.xpath_nodes(xmlDoc, "graph/edge");
                     this.graphView.buildGraph(nodes, edges)
-
+                    this.graphView.fetchNodeInfo();
                     /*
                     for(var prop in graph.childNodes){
                         //var nodes = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='value']/@value");
@@ -867,7 +989,6 @@ Ext.define('BQ.viewer.Graph.Panel', {
 				}
 			},
 		});
-
     },
 
 
@@ -909,9 +1030,13 @@ Ext.define('BQ.viewer.Graph.Panel', {
 				},
 			},
 		}];
-        this.fetchGraphData();
 		this.callParent();
     },
+
+    afterFirstLayout : function(){
+        this.fetchGraphData();
+        this.callParent();
+    }
 });
 //--------------------------------------------------------------------------------------
 // Dialogue Box
