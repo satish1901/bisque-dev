@@ -56,24 +56,49 @@ text {
   font-size: 14px;
 }
 
+.node {
+  opacity: 0.25 !important;
+}
+
+.watershed  {
+  opacity: 0.75 !important;
+}
+
+.selected  {
+  opacity: 1.0 !important;
+}
+
+
 .node rect {
   stroke: #B2B2B2;
   fill: #E6E6E6;
-  stroke-width: 1.5px;
+  stroke-width: 1.0px;
 }
 
-.nodeHighlighted rect {
-  stroke: #997A5C;
-  fill: #FFE6CC;
-  stroke-width: 1.5px;
+.watershed rect {
+    stroke-width: 1.5px;
 }
 
-.nodeSelected rect {
-  stroke: #0066FF;
-  fill: #99CCFF;
-  stroke-width: 1.5px;
+.selected rect  {
+    stroke: #333333;
+    stroke-width: 1.5px;
+    box-shadow: 0 0 7px #53BE12;
 }
 
+.mex rect {
+    stroke: #005200;
+    fill: #99C299;
+}
+
+.image rect {
+    stroke: #3366FF;
+    fill: #ADC2FF;
+}
+
+.dataset rect {
+    stroke: #FF9933;
+    fill: #FFE0C2;
+}
 .edgePath path {
   stroke: #B2B2B2;
   stroke-width: 1.5px;

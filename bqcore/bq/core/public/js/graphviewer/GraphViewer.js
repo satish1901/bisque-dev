@@ -19,7 +19,7 @@ ResourceCard.prototype.getSpan = function (field) {
 };
 
 ResourceCard.prototype.buildHtml = function () {
-    var html = "<div>";
+    var html = "<div class= "+this.cardType+">";
     //html += "<span class=status></span>";
 
     html += "<span class=resource>"  + this.cardType + "</span>";
@@ -465,21 +465,6 @@ Ext.define('BQ.graphviewer', {
 					var xmlDoc = response.responseXML;
                     console.log(xmlDoc);
                     var xnode = xmlDoc.childNodes[0];
-                    /*
-                      var html = "<div>";
-                      //html += "<span class=status></span>";
-
-                      html += "<span class=resource>"  + 'mex' + "</span>";
-                      html += "<span> module:   <em class=name>"  + xnode.getAttribute('name') + "</em></span>";
-                      html += "<span> status:   <em class=value>" + xnode.getAttribute('value') + "</em></span>";
-                      //html += "<span class=date><span class=counter>"+worker.count+"</span></span>";
-                      html += "<span> finished: <em class=date>" + xnode.getAttribute('ts') + "</em></span>";
-
-                      html += "</div>";
-                      gnode.rx = node.ry = 5;
-                      gnode.labelType = "html";
-                      gnode.label = html;
-                    */
                     if(gnode && gnode.card){
                         gnode.card.populateFields(xnode);
                         gnode.card.buildHtml();
@@ -487,27 +472,6 @@ Ext.define('BQ.graphviewer', {
 
                     me.render(me.group, g);
                     me.forceRefresh(0);
-                    /*
-                    var graph = xmlDoc.childNodes[0];
-
-                    console.log(graph);
-                    this.graphView.graph = this.graph;
-
-                    var nodes = BQ.util.xpath_nodes(xmlDoc, "graph/node");
-                    var edges = BQ.util.xpath_nodes(xmlDoc, "graph/edge");
-                    this.graphView.buildGraph(nodes, edges)
-                    this.graphView.fetchNodeInfo();
-                    */
-                    /*
-                    for(var prop in graph.childNodes){
-                        //var nodes = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='value']/@value");
-                        if(graph.childNodes.hasOwnProperty(prop)){
-                            var child = graph.childNodes[prop];
-                            //var val = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='value']/@value")
-                            var t = child.getAttribute('type');
-                            alert(prop + " = " + value);
-                        }
-                    }*/
 				}
 			},
 		});
@@ -550,7 +514,7 @@ Ext.define('BQ.graphviewer', {
         var nodes = [];
         var edges = [];
         svgEdges.attr('class', 'edgePath');
-        svgNodes.attr('class', 'node');
+        svgNodes.attr('class', function(v){return 'node ' + g.node(v).card.cardType});
 
         scope.traverse(g, i, function(n,e,t){
             if(n == e.v){
@@ -576,7 +540,10 @@ Ext.define('BQ.graphviewer', {
         nodes.forEach(function(e,i,a){
             var localNodes = svgNodes
                 .filter(function(d){return (d===e) ? this : null;});
-            localNodes.attr('class', 'nodeHighlighted');
+            var node = g.node(e);
+            var selCls = 'node ' + node.card.cardType + ' watershed';
+            localNodes.attr('class', selCls);
+
         });
 
 
@@ -602,7 +569,10 @@ Ext.define('BQ.graphviewer', {
         var localNodes = svgNodes
             .filter(function(d){return (d===i) ? this : null;});
 
-        localNodes.attr('class', 'nodeSelected');
+
+        var selCls = 'node ' + node.card.cardType + ' selected';
+        localNodes.attr('class', selCls);
+
         localEdgesOut.attr('class', 'edgePathSelectedOut');
         localEdgesIn.attr('class', 'edgePathSelectedIn');
         return [localNodes,localEdgesIn,localEdgesOut];
@@ -844,7 +814,7 @@ Ext.define('BQ.graphviewer', {
             //.attr("title", function(v) { return styleTooltip(v, g.node(v).description) })
             .on("mousedown", function(d){
                 if(me.selection){
-                    me.selection[0].attr('class', 'node');
+                    me.selection[0].attr('class', 'node ' + g.node(d).card.cardType);
                     me.selection[1].attr('class', 'edgePath');
                     me.selection[2].attr('class', 'edgePath');
                     selection = [];
@@ -854,6 +824,19 @@ Ext.define('BQ.graphviewer', {
                 //force refresh:
                 me.forceRefresh(0);
             });
+
+        /*
+        svgGroup.selectAll("g.node")
+            .attr("class", function(v) {
+                return styleTooltip(v, g.node(v).description)
+            });
+        */
+
+        svgGroup.selectAll("g.node")
+            .attr("class", function(v) {
+                return 'node ' + g.node(v).card.cardType;
+            });
+
         this.zoomExtents();
     },
 
