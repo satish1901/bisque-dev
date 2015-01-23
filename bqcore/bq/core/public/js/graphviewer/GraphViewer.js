@@ -834,7 +834,9 @@ Ext.define('BQ.graphviewer', {
                 me.selection = me.highLightEdges(g, d, svgNodes, svgEdges);
                 //force refresh:
                 me.forceRefresh(0);
-                var div = this.getElementById(d);
+                var div = this.getElementByTagName('div');
+                var mouse = d3.event;
+                me.fireEvent('mousedown', d, div);
             });
 
         /*
