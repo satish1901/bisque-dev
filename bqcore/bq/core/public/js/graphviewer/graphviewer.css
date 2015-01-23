@@ -159,7 +159,7 @@ g div span
 }
 
 .bq-graph-panel .resource {
-    background-color: #888;
+    background-color: rgba(0,0,0,0.3);
     /*height: 100%;*/
     /*width: 15px;*/
     display: block;
