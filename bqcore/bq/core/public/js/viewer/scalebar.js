@@ -430,7 +430,9 @@ ScaleBar.prototype.setConstrainedPos = function (x, y) {
 }
 
 //produces a canvas image of the element
-ScaleBar.prototype.renderCanvas = function () {
+ScaleBar.prototype.renderCanvas = function (scale) {
+	
+	if (scale==undefined) {scale = 1}; 
 	
 	//get styles
 	var widget_style = window.getComputedStyle(this.widget);
@@ -444,8 +446,8 @@ ScaleBar.prototype.renderCanvas = function () {
 	//create canvas element
 	var canvas_scalebar = document.createElement('canvas');
 	canvas_scalebar.setAttributeNS(null, 'id', 'canvas_scalebar');
-	canvas_scalebar.height = widget_bound.height;
-	canvas_scalebar.width = widget_bound.width;
+	canvas_scalebar.height = scale*widget_bound.height;
+	canvas_scalebar.width = scale*widget_bound.width;
 	var ctx_scalebar = canvas_scalebar.getContext("2d");
 
 	
@@ -458,9 +460,9 @@ ScaleBar.prototype.renderCanvas = function () {
 		ctx_scalebar.fillStyle = widget_style.backgroundColor; //this.widget.style.backgroundColor;
 		var x = 0;
 		var y = 0;
-		var width = widget_bound.width;
-		var height = widget_bound.height;
-		var radius = 5;
+		var width = scale*widget_bound.width;
+		var height = scale*widget_bound.height;
+		var radius = scale*5;
 		
 		//draws round edges
 		ctx_scalebar.beginPath();
@@ -479,13 +481,14 @@ ScaleBar.prototype.renderCanvas = function () {
 	
 	//draw bar
 	ctx_scalebar.fillStyle = this.bar.style.backgroundColor;
-	ctx_scalebar.fillRect(bar_bound.left - widget_bound.left, bar_bound.top - widget_bound.top, bar_bound.width, bar_bound.height);
+	ctx_scalebar.fillRect(scale*bar_bound.left - scale*widget_bound.left, scale*bar_bound.top - scale*widget_bound.top, scale*bar_bound.width, scale*bar_bound.height);
 	
 	//draw text
 	if (!this.hideValue) {
 		ctx_scalebar.textBaseline = 'top';
-		ctx_scalebar.font = caption_style.font;
-		ctx_scalebar.fillText(this.caption.innerHTML, caption_bound.left - widget_bound.left, caption_bound.top - widget_bound.top);
+		ctx_scalebar.font = scale*parseInt(caption_style.fontSize) + 'px ' + caption_style.fontFamily;
+		//ctx_scalebar.font = caption_style.font;
+		ctx_scalebar.fillText(this.caption.innerHTML, scale*caption_bound.left - scale*widget_bound.left, scale*caption_bound.top - scale*widget_bound.top);
 	}
 	
 	return canvas_scalebar
