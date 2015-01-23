@@ -70,9 +70,8 @@ text {
 
 
 .node rect {
-  stroke: #B2B2B2;
   fill: #E6E6E6;
-  stroke-width: 1.0px;
+
 }
 
 .watershed rect {
@@ -81,22 +80,19 @@ text {
 
 .selected rect  {
     stroke: #333333;
-    stroke-width: 1.5px;
+    stroke-width: 0.5px;
     box-shadow: 0 0 7px #53BE12;
 }
 
 .mex rect {
-    stroke: #005200;
     fill: #99C299;
 }
 
 .image rect {
-    stroke: #3366FF;
     fill: #ADC2FF;
 }
 
 .dataset rect {
-    stroke: #FF9933;
     fill: #FFE0C2;
 }
 .edgePath path {
@@ -150,34 +146,43 @@ text {
 g div span
 {
     display: block;
+
+    padding-left: 3px;
+    padding-right: 3px;
 }
 
  g div {
     /*width: 200px;
     height: 40px;*/
-    color: #fff;
+     /*margin-left: 2px;
+     margin-right: 2px;
+     margin-top: 2px;
+     margin-bottom: 2px;*/
+     color: #fff;
 }
 
 .bq-graph-panel .resource {
-    background-color: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.3);
     /*height: 100%;*/
     /*width: 15px;*/
     display: block;
     /*float: left;*/
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
-    margin-right: 0px;
-    margin-left: 0px;
-    margin-bottom: 0px;
+    margin-bottom: 2px;
+
+    padding: 2px;
 }
 
 .bq-graph-panel .name {
     color: #555;
-
+    border-width: 2px
     text-shadow: 1px 1px 1px #CCC;
     font-size: 11px;
     font-weight: bold;
-    font-family: tahoma, arial, verdana, sans-serif
+    font-family: tahoma, arial, verdana, sans-serif;
+    padding-left: 1px;
+    padding-right: 1px;
 }
 
 
@@ -186,11 +191,17 @@ g div span
     text-shadow: 0px 1px 1px #DDD;
     font-size: 9px;
     font-family: tahoma, arial, verdana, sans-serif !important;
+
+    padding-left: 1px;
+    padding-right: 1px;
 }
 
 .bq-graph-panel .date {
     color: #444;
     font-size: 9px;
     font-family: tahoma, arial, verdana, sans-serif !important;
+
+    padding-left: 1px;
+    padding-right: 1px;
 }
 
