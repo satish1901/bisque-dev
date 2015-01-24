@@ -110,7 +110,8 @@ BQ.upload.ANNOTATOR_TYPES = {
     'zip-z-stack':     "one z-stack composed by a set of files (unpack and compose)",
     'zip-5d-image':    "one 5-D image composed by a set of files (unpack and compose)",
     //'zip-volocity':    "Volocity (*.mvd2) image (unpack and insert)",
-    'zip-proprietary':    "one proprietary series composed by a set of files (ex: Volocity, AndorIQ, Leica Lei, Olympus OIF, ...) (unpack and insert)",
+    'zip-proprietary': "one proprietary series composed by a set of files (ex: Volocity, AndorIQ, Leica Lei, Olympus OIF, ...) (unpack and insert)",
+    'zip-dicom':       "several DICOM files in a package (unpack and inspect)",
 };
 
 Ext.define('BQ.upload.Annotator', {
@@ -266,6 +267,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
             'zip'            : {},
             //'zip-volocity'   : {},
             'zip-proprietary': {},
+            'zip-dicom'      : {},            
             'zip-bisque'     : {},
         };
 
