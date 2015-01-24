@@ -87,6 +87,7 @@ import urllib
 import copy
 import mimetypes
 import shortuuid
+import posixpath
 
 
 from lxml import etree
@@ -105,8 +106,7 @@ from bq import image_service
 from bq.blob_service.controllers.blob_drivers import move_file
 from bq.util.io_misc import blocked_alpha_num_sort, toascii
 
-#from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
-#from bq.image_service.controllers.converter_bioformats import ConverterBioformats
+from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
 
 from bq.util.mkdir import _mkdir
 
@@ -261,6 +261,7 @@ class import_serviceController(ServiceController):
         self.filters['zip-z-stack']       = self.filter_zip_zstack
         self.filters['zip-5d-image']      = self.filter_5d_image
         self.filters['zip-proprietary']   = self.filter_zip_proprietary
+        self.filters['zip-dicom']         = self.filter_zip_dicom
         self.filters['image/proprietary'] = self.filter_series_proprietary
 
         ps = blob_service.get_import_plugins()
@@ -584,6 +585,67 @@ class import_serviceController(ServiceController):
 
 
 #------------------------------------------------------------------------------
+# dicom files
+#------------------------------------------------------------------------------
+
+    def process_packaged_dicom(self, uf, intags):
+        ''' Unpack and insert a set of DICOM files '''
+        log.debug('process_packaged_dicom: %s %s', uf, intags )
+
+        unpack_dir, members = self.unpackPackagedFile(uf)
+        members = [ m for m in members if is_filesystem_file(m) is not True ] # remove file system internal files
+        members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
+        members = [ '%s/%s'%(unpack_dir, m) for m in members ] # full paths
+        members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories
+        log.debug('process_packaged_dicom members: %s', members)
+
+        # first group dicom files based on their metadata
+        images, blobs, geometry = ConverterImgcnv.group_files_dicom(members)
+
+        log.debug('process_packaged_dicom blobs: %s', blobs)
+        log.debug('process_packaged_dicom images: %s', images)
+        log.debug('process_packaged_dicom geometry: %s', geometry)        
+
+        resources = []
+        base_name = uf.resource.get('name')
+        base_path = '%s/'%unpack_dir
+
+        # first insert blobs
+        for b in blobs:
+            name = posixpath.join(base_name, b.replace(base_path, '') )
+            value = blob_service.local2url(b)
+            resource = etree.Element ('file', name=name, resource_type='file', ts=uf.ts, value=value )
+            resource.extend (copy.deepcopy (list (uf.resource)))
+            resources.append(blob_service.store_blob(resource=resource))
+
+        # now insert images
+        for i in range(len(images)):
+            im = images[i]
+            g = geometry[i]
+
+            if len(im) == 1:
+                name = posixpath.join(base_name, im[0].replace(base_path, '') )
+                value = blob_service.local2url(im[0])
+                resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts, value=value )
+            else:
+                name = posixpath.join(base_name, im[0].replace(base_path, '') )
+                resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts)
+                for v in im:
+                    val = etree.SubElement(resource, 'value' )
+                    val.text = blob_service.local2url(v)
+
+                image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )
+                etree.SubElement(image_meta, 'tag', name='storage', value='multi_file_series' )
+                etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%g['z'], type='number' )
+                etree.SubElement(image_meta, 'tag', name='image_num_t', value='%s'%g['t'], type='number' )
+                etree.SubElement(image_meta, 'tag', name='dimensions', value='XYCZT' )
+
+            resource.extend (copy.deepcopy (list (uf.resource)))
+            resources.append(blob_service.store_blob(resource=resource))
+
+        return unpack_dir, resources
+
+#------------------------------------------------------------------------------
 # Import archives exported by a BISQUE system
 #------------------------------------------------------------------------------
     def safePath(self, path, base):
@@ -701,6 +763,11 @@ class import_serviceController(ServiceController):
 
     def filter_zip_proprietary(self, f, intags):
         unpack_dir, resources = self.process_packaged_series_proprietary(f, intags)
+        self.cleanup_packaging(unpack_dir)
+        return resources
+
+    def filter_zip_dicom(self, f, intags):
+        unpack_dir, resources = self.process_packaged_dicom(f, intags)
         self.cleanup_packaging(unpack_dir)
         return resources
 

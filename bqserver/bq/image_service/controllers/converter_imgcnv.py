@@ -435,6 +435,125 @@ class ConverterImgcnv(ConverterBase):
                     f.write(struct.pack('<Q', 100)) # histogram data, here each color has freq of 100
 
 
+    #######################################
+    # Sort and organize files
+    #
+    # DICOM files in a directory need to be sorted and combined into series
+    # we need to use the following tags in the following order to group files into series
+    # then, each group should be sorted based on instance number tag
+    #
+    #(0010, 0020) Patient ID                          LO: 'ANON85099405877'
+    #(0020, 000d) Study Instance UID                  UI: 2.16.840.1.113786.1.52.850.674495585.766
+    #(0020, 000e) Series Instance UID                 UI: 2.16.840.1.113786.1.52.850.674495585.767
+    #(0020, 0011) Series Number                       IS: '2'
+    #
+    #(0020, 0013) Instance Number                     IS: '1'
+    #
+    #######################################
+
+    @classmethod
+    def group_files_dicom(cls, files, **kw):
+        '''return list with lists containing grouped and ordered dicom file paths'''
+
+        from itertools import groupby
+        import dicom
+
+        def read_tag(ds, key, default=None):
+            t = ds.get(key)
+            if t is None:
+                return ''
+            return t.value or default
+
+        if not cls.installed:
+            return False
+        log.debug('Group files for %s files', len(files) )
+        data = []
+        groups = []
+        blobs = []
+        for f in files:
+            try:
+                ds = dicom.read_file(f)
+            except (Exception):
+                blobs.append(f)
+                continue
+
+            if 'PixelData' not in ds:
+                blobs.append(f)
+                continue                
+
+            modality     = read_tag(ds, ('0008', '0060'))
+            patient_id   = read_tag(ds, ('0010', '0020'))
+            study_uid    = read_tag(ds, ('0020', '000d'))
+            series_uid   = read_tag(ds, ('0020', '000e'))
+            series_num   = read_tag(ds, ('0020', '0012')) # 
+            acqui_num    = read_tag(ds, ('0020', '0011')) # A number identifying the single continuous gathering of data over a period of time that resulted in this image
+            instance_num = int(read_tag(ds, ('0020', '0013'), '0')) # A number that identifies this image
+
+            num_temp_p = int(read_tag(ds, ('0020', '0105'), '0') or '0') # Total number of temporal positions prescribed
+            num_frames = int(read_tag(ds, ('0028', '0008'), '0') or '0') # Number of frames in a Multi-frame Image
+
+            key = '%s/%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, series_num, acqui_num)
+            data.append((key, instance_num, f, num_temp_p or num_frames))
+        
+        # group based on a key
+        data = sorted(data, key=lambda x: x[0])
+        for k, g in groupby(data, lambda x: x[0]):
+            # sort based on an instance_num
+            groups.append( sorted(list(g), key=lambda x: x[1]) )
+        
+        # prepare groups of dicom filenames
+        images   = []
+        geometry = []
+        for g in groups:
+            l = [f[2] for f in g]
+            images.append( l )
+            if len(l) == 1:
+                geometry.append({ 't': 1, 'z': 1 })
+            elif f[3]>0:
+                z = len(l) / f[3]
+                geometry.append({ 't': f[3], 'z': z })
+            else:
+                geometry.append({ 't': 1, 'z': len(l) })
+
+        return (images, blobs, geometry)
+    
+    #######################################
+    # The info command returns the "core" metadata (width, height, number of planes, etc.)
+    # as a dictionary
+    #######################################
+    
+    @classmethod
+    def meta_dicom(cls, ifnm, series=0, **kw):
+        '''returns a dict with file info'''
+        
+        import dicom
+
+        try:
+            _, tmp = misc.start_nounicode_win(ifnm, [])
+            ds = dicom.read_file(tmp or ifnm)
+        except (Exception):
+            misc.end_nounicode_win(tmp)
+            return {}
+        
+        info2 = {
+            'format': slide.properties[openslide.PROPERTY_NAME_VENDOR],
+            'image_num_series': 0,
+            'image_series_index': 0,
+            'image_num_x': slide.dimensions[0],
+            'image_num_y': slide.dimensions[1],
+            'image_num_z': 1,
+            'image_num_t': 1,
+            'image_num_c': 3,
+            'image_num_l': slide.level_count,
+            'image_pixel_format': 'unsigned integer',
+            'image_pixel_depth': 8
+        }
+        
+        
+        misc.end_nounicode_win(tmp)
+        return info
+
+
 try:
     ConverterImgcnv.init()
 except Exception:
