@@ -466,7 +466,7 @@ class ConverterImgcnv(ConverterBase):
 
         if not cls.installed:
             return False
-        log.debug('Group files for %s files', len(files) )
+        log.debug('Group %s files', len(files) )
         data = []
         groups = []
         blobs = []
@@ -487,13 +487,15 @@ class ConverterImgcnv(ConverterBase):
             series_uid   = read_tag(ds, ('0020', '000e'))
             series_num   = read_tag(ds, ('0020', '0012')) # 
             acqui_num    = read_tag(ds, ('0020', '0011')) # A number identifying the single continuous gathering of data over a period of time that resulted in this image
+            
             instance_num = int(read_tag(ds, ('0020', '0013'), '0')) # A number that identifies this image
 
             num_temp_p = int(read_tag(ds, ('0020', '0105'), '0') or '0') # Total number of temporal positions prescribed
             num_frames = int(read_tag(ds, ('0028', '0008'), '0') or '0') # Number of frames in a Multi-frame Image
 
-            key = '%s/%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, series_num, acqui_num)
+            key = '%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, acqui_num) # series_num seems to vary in DR Systems
             data.append((key, instance_num, f, num_temp_p or num_frames))
+            log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s', key, series_num, instance_num, num_temp_p, num_frames )
         
         # group based on a key
         data = sorted(data, key=lambda x: x[0])
@@ -514,6 +516,8 @@ class ConverterImgcnv(ConverterBase):
                 geometry.append({ 't': f[3], 'z': z })
             else:
                 geometry.append({ 't': 1, 'z': len(l) })
+
+        log.debug('group_files_dicom found: %s image groups, %s blobs', len(images), len(blobs))
 
         return (images, blobs, geometry)
     
