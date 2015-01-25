@@ -616,7 +616,7 @@ class import_serviceController(ServiceController):
             value = blob_service.local2url(b)
             resource = etree.Element ('file', name=name, resource_type='file', ts=uf.ts, value=value )
             resource.extend (copy.deepcopy (list (uf.resource)))
-            resources.append(blob_service.store_blob(resource=resource))
+            resources.append(blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir)))
 
         # now insert images
         for i in range(len(images)):
@@ -630,8 +630,8 @@ class import_serviceController(ServiceController):
             else:
                 name = posixpath.join(base_name, im[0].replace(base_path, '') )
                 resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts)
-                for v in im:
-                    val = etree.SubElement(resource, 'value' )
+                for v, index in zip(im, range(len(im)):
+                    val = etree.SubElement(resource, 'value', index='%s'%index )
                     val.text = blob_service.local2url(v)
 
                 image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )
@@ -641,7 +641,7 @@ class import_serviceController(ServiceController):
                 etree.SubElement(image_meta, 'tag', name='dimensions', value='XYCZT' )
 
             resource.extend (copy.deepcopy (list (uf.resource)))
-            resources.append(blob_service.store_blob(resource=resource))
+            resources.append(blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir)))
 
         return unpack_dir, resources
 
