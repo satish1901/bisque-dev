@@ -6,6 +6,7 @@
   position: relative;
   top: 0px;
   left: 0px;
+  
 }
 
 .image_viewer_display {
@@ -322,7 +323,7 @@
 /***********************************************************/
 
 .scalebar {
-  opacity: 0.6;
+  /*opacity: 0.6;*/
   position:absolute;
   left: 6px;
   bottom: 10px;
@@ -336,6 +337,11 @@
   border-radius: 5px;
   -moz-border-radius: 5px;
   z-index: 30;
+  
+  -moz-user-select: none; 
+  -khtml-user-select: none; 
+  -webkit-user-select: none; 
+  -o-user-select: none; 
 }
 
 .scalebar div#scalebar_bar {
@@ -345,12 +351,29 @@
   color: #FFFFFF;
   background:#FFFFFF;
   opacity: 1;
+  z-index: 29;
 }
 
 .scalebar div#scalebar_caption {
-    margin-top: 2px;
-    overflow: hidden;
-    text-align: right;
+  white-space: nowrap; 
+  margin-top: 2px;
+  z-index: 28;
+}
+
+.scalebar div#scalebar_editButton {
+    /*background-color: transparent;*/
+    background-repeat: no-repeat;
+    background-position: -34px -97px;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+}
+
+.scalebar div#scalebar_rescaleButton {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/resize-handle.png');
+    /*background-size: 200px;*/
+    /*background-position: -135px -163px;*/
 }
 
 
@@ -432,10 +455,6 @@
     top: initial;
     text-decoration: none;
     text-align: left;
-}
-
-.viewer .position pre {
-    margin: 0px;
 }
 
 .viewer .viewoptions {
@@ -604,6 +623,7 @@ table.x-form-color {
 .bq-viewer-menu .x-tip-anchor {
     border-bottom-color: rgba(255,255,255,0.2);
 }
+
 
 .bq-viewer-menu .x-field {
     margin-left: 15px;

@@ -4,6 +4,7 @@ function ImgScaleBar (viewer,name){
 }
 
 ImgScaleBar.prototype = new ViewerPlugin();
+
 ImgScaleBar.prototype.create = function (parent) {
     this.parentdiv = parent;
     this.scalebar = null;
@@ -20,21 +21,20 @@ ImgScaleBar.prototype.updateImage = function () {
     var imgphys = this.viewer.imagephys;
 
     if (imgphys==null || imgphys.pixel_size[0]==undefined || imgphys.pixel_size[0]==0.0000) {
-      if (this.scalebar != null) {
-        this.div.removeChild (this.scalebar.widget);
-        delete this.scalebar;
-      }
-      this.scalebar = null;
-      return;
+		if (this.scalebar != null) {
+			this.div.removeChild (this.scalebar.widget);
+			delete this.scalebar;
+		}
+		this.scalebar = null;
+		return;
     }
 
     var surf = this.parentdiv;
     if (this.viewer.viewer_controls_surface) surf = this.viewer.viewer_controls_surface;
-
-    if (!this.scalebar) {
-        this.scalebar = new ScaleBar ( surf, imgphys.pixel_size[0], imgphys.units );
-    }
-    this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );
+    if (this.scalebar == null) this.scalebar = new ScaleBar ( surf, imgphys.pixel_size[0]/view.scale);
+	this.scalebar.setPixSize(imgphys.pixel_size[0]/view.scale);
+	this.scalebar.resetValue();
+    //this.scalebar.setValue( imgphys.pixel_size[0]/view.scale);
 };
 
 ImgScaleBar.prototype.updatePosition = function () {
@@ -42,5 +42,7 @@ ImgScaleBar.prototype.updatePosition = function () {
     var view = this.viewer.current_view;
 
     var imgphys = this.viewer.imagephys;
-    this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );
+	this.scalebar.setPixSize(imgphys.pixel_size[0]/view.scale);
+	this.scalebar.resetValue();
+    //this.scalebar.setValue( imgphys.pixel_size[0]/view.scale );
 };
