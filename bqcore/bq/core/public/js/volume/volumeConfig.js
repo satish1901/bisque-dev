@@ -136,7 +136,7 @@ VolumeShader.prototype = new ShaderSource();
 VolumeShader.prototype.getID = function(){
     var base = 12; //maximum number of allowable bits to step through volume
     var PHONG = this.settings.phong ? 1 : 0;
-    var DEEP  = this.settings.lighting.deep ? 2 : 0;
+    var DEEP  = this.settings.deep ? 2 : 0;
     var TRANS = this.settings.transfer ? 4 : 0;
     var HIGH = this.settings.highlight ? 8 : 0;
     //for now we have two gradient operators -> binary flags
@@ -155,9 +155,10 @@ VolumeShader.prototype.config = function(config){
 
         'uniform vec2 iResolution;',
         'uniform vec3 BOX_SIZE;',
-        'uniform int   NUM_CHANNELS;',
-        'uniform int   BREAK_STEPS;',
-        'uniform int   DITHERING;',
+        'uniform int BREAK_STEPS;',
+        'uniform int DITHERING;',
+        'uniform int PASS;',
+
         'uniform float GAMMA_MIN;',
         'uniform float GAMMA_MAX;',
         'uniform float GAMMA_SCALE;',
@@ -203,7 +204,7 @@ VolumeShader.prototype.config = function(config){
     ].join('\n');
 
     var transferVars = [
-        'uniform sampler2D transfer;',
+        'uniform sampler2D transfer_function;',
     ].join('\n');
 
     var powf = function(lib){
@@ -298,7 +299,7 @@ VolumeShader.prototype.config = function(config){
 
         var getTransfer = [
             'vec4 getTransfer(float density){',
-            '  vec4 col  = texture2D(transfer, vec2(density,0.0));',
+            '  vec4 col  = texture2D(transfer_function, vec2(density,0.0));',
             '  return col;',
             '}',
         ].join('\n');
@@ -637,9 +638,9 @@ VolumeShader.prototype.config = function(config){
     var unpack = [
         'float unpack (vec4 colour)',
         '{',
-        '  const vec4 bitShifts = vec4(1.0 / (256.0 * 256.0),',
-        '                              1.0 / (256.0),',
+        '  const vec4 bitShifts = vec4(1.0 / (256.0),',
         '                              1.0,',
+        '                              256.0,',
         '                              0.0);',
 
         '  return dot(colour , bitShifts);',
@@ -686,47 +687,18 @@ VolumeShader.prototype.config = function(config){
 
         var integrateInit = [
             'vec4 integrateVolume(vec4 eye_o,vec4 eye_d,',
-            '                     vec4 boxMin, vec4 boxMax,vec4 boxScale,',
+            '                     float tnear,   float tfar,',
+            '                     float clipNear, float clipFar,',
+            '                     vec4 boxScale,',
             '                     sampler2D textureAtlas,',
             '                     //sampler2D dataBase1[1],',
             '                     ivec4 nBlocks){',
+            ' vec4 C = vec4(0.0);',
+            ' float tend   = tfar;',
+            ' float tbegin = tnear;',
 
-            '  vec2 vUv = gl_FragCoord.xy/iResolution.xy;',
-            '  vec4 D = texture2D(BACKGROUND_DEPTH, vUv);',
-            '  vec4 C = texture2D(BACKGROUND_COLOR, vUv);',
-            //'return C;',
-            //' C = vec4(C.xyz, 1.0);',
-            '  float zNear = 0.01;',
-            '  float zFar = 20.0;',
-            '  float z_b = unpack(D);',
-            '  //return vec4(z_b);',
-            '  float z_n = 2.0 * z_b - 1.0;',
-            '  float z_e = 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));',
-
-            '  float tnear, tfar;',
-
-            '  bool hit = intersectBox(eye_o, eye_d, boxMin, boxMax, tnear,  tfar);',
-            '  tnear = clamp(tnear, 0.0, tnear);',
-            '  float eyeDist  = length(eye_o.xyz);',
-            '  float rayMag   = length(eye_d);',
-
-            '  //float clipNear = eyeDist - (1.0 - CLIP_NEAR);',
-            '  float clipNear = eyeDist/rayMag - 0.338 + 0.65*CLIP_NEAR;',
-            '  float clipFar = eyeDist/rayMag  + 0.338 - 0.65*CLIP_FAR;//+ (0.35 - CLIP_FAR);',
-            '  //clipFar = CLIP_FAR;',
-            '  if (!hit || tnear > clipFar || tfar < clipNear) {',
-            '     return C;',
-            '  }',
-
-            '  // march along ray from back to front, accumulating color',
-
-            '  float tobs   = z_e/rayMag;',
-            '  if(tobs < tfar) tfar = tobs;',
-
-            '  float tbegin = tfar;',
-            '  float tend   = tnear;',
+            '  // march along ray from front to back, accumulating color',
             '  //determine slice plane normal.  half between the light and the view direction',
-
 
             '  //estimate step length',
             '  const int maxSteps = ##MAXSTEPS##;',
@@ -734,15 +706,14 @@ VolumeShader.prototype.config = function(config){
             '  csteps = clamp(csteps,0.0,float(maxSteps));',
             '  float isteps = 1.0/csteps;',
             '  float r = 0.5 - 1.0*rand(eye_d.xy);',
-            '  float tstep = 1.5*isteps;',
+            '  float tstep = 0.25*isteps;',
             '  float tfarsurf = float(DITHERING)*r*tstep;',
-            '  float overflow = mod((tfarsurf - tfar),tstep);',
+            '  float overflow = mod((tfarsurf - tend),tstep);',
 
             '  float t = tbegin + overflow;',
 
-            '  //float t = 0.5*(tnear + tfar) + overflow;',
-
             '  t = clamp(t, clipNear, clipFar);',
+            '  t += float(DITHERING)*r*tstep;',
             //'  t += 1.0*float(DITHERING)*r*tstep;',
             //'  t = clamp(t, clipNear, clipFar);',
 
@@ -751,7 +722,6 @@ VolumeShader.prototype.config = function(config){
             '  const int maxStepsLight = 32;',
             '  float T = 1.0;',
             '  int numSteps = 0;',
-
             //'return (eye_o + eye_d*t)/boxScale;',
             //'return sampleStack(textureAtlas,vec4(0.25,0.5,0.5,0.5));',
             //'return vec4(t);',
@@ -775,8 +745,9 @@ VolumeShader.prototype.config = function(config){
             ' ',
             '//->compute light position and  gradient',
             '  float absorption = 1.;',
-            '  vec4 lightPos = 2.0*vec4(LIGHT_POSITION,.0);',
+            '  vec4 lightPos = 2.0*vec4(LIGHT_POSITION,0.01);',
             '  vec4 dl = lightPos - pos;',
+            '  dl *= inversesqrt(dl.x*dl.x + dl.y*dl.y + dl.z*dl.z);',
             '//->',
         ].join('\n');
 
@@ -784,9 +755,9 @@ VolumeShader.prototype.config = function(config){
 
         var gradType = config.gradientType;
         var needsN =
-            (config.lighting.phong && gradType == 'finite_difference') ||
-            (config.lighting.phong && gradType == 'sobel') ||
-            (config.lighting.deep && config.lighting.deepType == 'soft_shading');
+            (config.phong && gradType == 'finite_difference') ||
+            (config.phong && gradType == 'sobel') ||
+            (config.deep && config.deepType == 'soft_shading');
 
         var N =[
             ' ',
@@ -812,8 +783,8 @@ VolumeShader.prototype.config = function(config){
                 '//',
                 '    float lum = N[3];',
 
-                '    float dist = length(dl);',
-                '    dl = normalize(dl);',
+                //'    float dist = length(dl);',
+                //'    dl = normalize(dl);',
                 '    vec4 V = -normalize(eye_d);',
                 '    vec4 H = dl + V;',
                 '    H = normalize(H);',
@@ -830,8 +801,10 @@ VolumeShader.prototype.config = function(config){
                 '    kn = clamp(kn,0.0,1.0);',
                 '    //float kn = 1.0;',
                 '    col *= (ka + kd*vec4(vec3(lightVal),1.0));',
-                '    col += col[3]*ks*vec4(spec);',
-                '    col = clamp(col, 0.0, 1.0);',
+                //'    col += col[3]*ks*vec4(spec);',
+                //'    col = clamp(col, 0.0, 1.0);',
+
+                //'    col.xyzw = N.xyzw;',
                 //'    //col += H;',
                 //'    col = vec4(dot( N.xyz, H.xyz ));',
                 '//',
@@ -846,23 +819,16 @@ VolumeShader.prototype.config = function(config){
                 '//->phong shading computations',
                 '//',
 
-                '    float dist = length(dl);',
-                '    dl = normalize(dl);',
-                '    vec4 V = -normalize(eye_d);',
-                '    vec4 H = dl + V;',
-                '    H = normalize(H);',
+                //'    float dist = length(dl);',
+                //'    vec4 ndl = normalize(dl);',
+                //'    col.xyz = dl.xyz/dist;',
+                '    vec4 V = -normalize(eye_d);',,
                 '    float lightVal = 6.00*KD*getDirNormal(textureAtlas, pos, dl);',
-                '    float dNH      = 6.00*getDirNormal(textureAtlas, pos, H);',
-                //'    lightVal = clamp(lightVal,0.0,1.0);',
-                //'    dNH      = clamp(dNH,0.0,1.0);',
-                '    float spec = pow(dNH,SPEC_SIZE);',
-                '    spec = clamp(spec, 0.0, spec);',
 
                 '    float ka = KA;',
                 '    float kd = KD;',
                 '    float ks = 1.0*SPEC_INTENSITY;',
                 '    col *= (ka + vec4(vec3(lightVal),1.0));',
-                //'    col += ks*vec4(spec);',
                 '    col = clamp(col, 0.0, 1.0);',
                 //'    col = vec4(vec3(dNH - lightVal),col[3]);',
                 //'    col = vec4(2.0*dNH);',
@@ -878,11 +844,10 @@ VolumeShader.prototype.config = function(config){
             '    float Dl = 0.0;',
 
             '    vec3 DISP_BIAS = vec3(100.5, 200.3, 0.004);',
-            '    dl = normalize(dl);',
-
             '    vec3 dtemp = cross(dl.xyz,vec3(1.0,1.0,1.0)); dtemp = normalize(dtemp);',
             '    vec3 N1 = cross(dl.xyz,dtemp);',
             '    vec3 N2 = cross(dl.xyz,N1);',
+            '    float disp = col.w;',
             '    //N1 = normalize(N1);',
             '    //N2 = normalize(N2);',
             '      float r0 = 1.0 - 2.0*rand(pos.xy + eye_d.zx); //create three random numbers for each dimension',
@@ -903,7 +868,6 @@ VolumeShader.prototype.config = function(config){
 
             '      lpos += lti*Ni;',
             '      vec4 dens = sampleStack(textureAtlas,lpos);',
-
             '      float Kdisp = DISP_SIG;',
             '      float sl = float(maxStepsLight)/float(4);',
             '      //lti *= dens.w;',
@@ -929,10 +893,10 @@ VolumeShader.prototype.config = function(config){
             '    float lstep = LIGHT_DEPTH/float(4);',
             '    vec4 Dl = vec4(0.0);',
             '    float Da = 0.0;',
-            '    dl = -normalize(dl);',
-            '    vec4 lr = dl;',
-            '    vec4 ln = dot(dl,N)*N;', //normal component of light
-            '    vec4 lrt = dl - 2.0*ln;',   //reflected component of light
+            //'    dl = -normalize(dl);',
+            '    vec4 lr = -dl;',
+            '    vec4 ln = dot(-dl,N)*N;', //normal component of light
+            '    vec4 lrt = -dl + 2.0*ln;',   //reflected component of light
             '    vec3 Nxyz = normalize(N.xyz);',
 
             '    if(dot(lrt.xyz,N.xyz) < 0.0){', //if the normal is facing us, the light reflects
@@ -977,24 +941,24 @@ VolumeShader.prototype.config = function(config){
         var integrateLoopEnd = [
             ' ',
             '//Finish up by adding brightness/density',
-            //'col = N;',
+            //'    col.xyz = normalize(lightPos).xyz;',
             '    col.xyz *= BRIGHTNESS;',
             '    col.w *= DENSITY;',
 
             //'    float s = 1.0*float(##MAXSTEPS##)/ float(BREAK_STEPS);',
-            '    float s = 1.0*float(1024)/ float(BREAK_STEPS);',
-            '    col.w = clamp(col.w, 0.0,1.0);',
+            '    float s = 1.0*float(128)/ float(BREAK_STEPS);',
             '    float stepScale = (1.0 - powf((1.0-col.w),s));',
             '    col.w = stepScale;',
-            //'    col.w *= DENSITY;',
             '    col.xyz *= col.w;',
+            '    col = clamp(col,0.0,1.0);',
 
-            '    C = (1.0-col.w)*C + col;',
+            '    C = (1.0-C.w)*col + C;',
             '    //float r0 = 0.5 + 1.0*rand(eye_d.xy);',
-            '    t -= tstep;',
+            '    t += tstep;',
             '    numSteps = i;',
 
-            '    if (i > BREAK_STEPS || t  < tend || t < clipNear ) break;',
+            '    if (i > BREAK_STEPS || t  > tend || t > clipFar ) break;',
+            '    if (C.w > 1.0 ) break;',
             '}',
         ].join('\n');
 
@@ -1006,7 +970,7 @@ VolumeShader.prototype.config = function(config){
 
 
         var output = [intersectBox, integrateInit, integrateLoopBegin, sampleAt];
-        if(config.lighting.phong || config.lighting.deep) output.push(dl);
+        if(config.phong || config.deep) output.push(dl);
 
 
         if(needsN)
@@ -1014,9 +978,9 @@ VolumeShader.prototype.config = function(config){
         //if(config.highlight) output.push(highlight);
 
 
-        if(config.lighting.phong) output.push(phongFrag);
-        if(config.lighting.deep) {
-            if(config.lighting.deepType == 'deep_shading')
+        if(config.phong) output.push(phongFrag);
+        if(config.deep) {
+            if(config.deepType == 'deep_shading')
                 output.push(deepFrag);
             else
                 output.push(softFrag);
@@ -1029,6 +993,7 @@ VolumeShader.prototype.config = function(config){
     var main = [
         'void main()',
         '{',
+        '  gl_FragColor = vec4(0.0);',
         '  vec4 eyeRay_d, eyeRay_o;',
         '  vec2 fragCoord = gl_FragCoord.xy;',
 
@@ -1036,16 +1001,17 @@ VolumeShader.prototype.config = function(config){
         '  eyeRay_d[0] *= iResolution.x/iResolution.y;',
 
         '  float fovr = FOV*M_PI/180.;',
-        '  eyeRay_d[2] = -1.0/tan(fovr*0.5);',
+        '  float zDist = 1.0/tan(fovr*0.5);',
+        '  eyeRay_d[2] = -zDist;',
         '  eyeRay_d   = eyeRay_d*viewMatrix;',
         '  eyeRay_d[3] = 0.0;',
-        '  //ed = normalize(ed);',
-        '  eyeRay_o = vec4(cameraPosition,1.0);',
+        //'  eyeRay_d = normalize(eyeRay_d);',
+        '  eyeRay_o = vec4(cameraPosition,0.0);',
 
         '  vec4 boxMin = vec4(-1.0);',
         '  vec4 boxMax = vec4( 1.0);',
         '  vec4 boxTrans = vec4(0.0, 0.0, 0.0, 0.0);',
-        '  vec4 boxScale = vec4(BOX_SIZE,1.0);',
+        '  vec4 boxScale = vec4(BOX_SIZE,0.0);',
         '  //boxScale = vec4(0.5);',
         '  boxMin *= boxScale;',
         '  boxMax *= boxScale;',
@@ -1055,9 +1021,50 @@ VolumeShader.prototype.config = function(config){
         '                        BLOCK_RES_Y,',
         '                        BLOCK_RES_Z,1);',
 
+        '  vec2 vUv = gl_FragCoord.xy/iResolution.xy;',
+        '  vec4 D  = texture2D(BACKGROUND_DEPTH, vUv);',
+        '  vec4 C1 = texture2D(BACKGROUND_COLOR, vUv);',
+        '  float z_b = unpack(D);',
+
+        '  float tnear, tfar;',
+        '  bool hit = intersectBox(eyeRay_o, eyeRay_d, boxMin, boxMax, tnear,  tfar);',
+        '  tnear = clamp(tnear, 0.0, tnear);',
+        //'  return vec4(vec3(z_b),1.0);',
+        '  float eyeDist  = length(eyeRay_o.xyz);',
+        '  float rayMag   = length(eyeRay_d.z);',
+
+        '  vec3 eyeNorm = -normalize(eyeRay_o.xyz)/boxScale.xyz*0.5;',
+        //'  vec3 eyeNorm = -normalize(vec3(0.0, 0.0,1.0))/boxScale.xyz*0.5;',
+        '  float dNear = 1.0 - 2.0*CLIP_NEAR;',
+        '  float dFar  = 1.0 - 2.0*CLIP_FAR;',
+        '  float clipNear = -(dot(eyeRay_o.xyz, eyeNorm) + dNear) / dot(eyeRay_d.xyz, eyeNorm);',
+        '  float clipFar  = -(dot(eyeRay_o.xyz,-eyeNorm) + dFar ) / dot(eyeRay_d.xyz,-eyeNorm);',
+
+        //'  float clipNear = eyeDist/zDist - 0.125 + 0.25*CLIP_NEAR;',
+        //'  float clipFar = eyeDist/zDist  + 0.125 - 0.25*CLIP_FAR;',
+        //'  vec4 pNear = vec4();',
+
+        '  if (!hit) {',
+        '     gl_FragColor = vec4(0.0);',
+        '     return;',
+        '  }',
+
+        //'  if (PASS == 0 && (clipNear > tnear || clipFar < tnear)) {',
+        //'     C1 = vec4(0.0);',
+        //'  }',
+
+        //'  gl_FragColor = vec4(vec3(z_b/rayMag), 1.0); return;',
+        '  tfar  = (PASS == 0) ? z_b/zDist : tfar;',
+        '  tnear = (PASS == 1) ? z_b/zDist : tnear;',
+        '  float w = (PASS == 1) ? C1.w : 1.0;',
         '  vec4 C = integrateVolume(eyeRay_o, eyeRay_d,',
-        '                           boxMin, boxMax, boxScale,',
+        '                           tnear,    tfar,',
+        '                           clipNear, clipFar,',
+        '                           boxScale,',
         '                           textureAtlas,nBlocks);',
+        '  C = clamp(C, 0.0, 1.0);',
+        '  if(PASS == 0) C = (1.0-C.w)*C1.w*C1 + C;',
+        '  if(PASS == 1) C = C1 + (1.0-C1.w)*C;',
 
         '  gl_FragColor = C;',
         '  return;',
@@ -1066,11 +1073,11 @@ VolumeShader.prototype.config = function(config){
     ].join('\n');
 
     var output = [uniformVars];
-    if(config.lighting){
+    if(config.phong || config.deep){
         output.push(lightPos);
-        if(config.lighting.phong === true)
+        if(config.phong === true)
             output.push(phongVars);
-        if(config.lighting.deep === true)
+        if(config.deep === true)
             output.push(deepVars);
 
     };
@@ -1086,15 +1093,15 @@ VolumeShader.prototype.config = function(config){
     var gradType = config.gradientType ? config.gradientType : 'finite_difference';
     if(gradType == 'directional'){
         output.push(getNormal(gradType));
-        if(config.lighting.deep && config.lighting.deepType == 'soft_shading')
+        if(config.deep && config.deepType == 'soft_shading')
             output.push(getNormal('finite_difference'));
     }
 
     else{
         var needsN =
-            (config.lighting.phong && gradType == 'finite_difference') ||
-            (config.lighting.phong && gradType == 'sobel') ||
-            (config.lighting.deep && config.lighting.deepType == 'soft_shading');
+            (config.phong && gradType == 'finite_difference') ||
+            (config.phong && gradType == 'sobel') ||
+            (config.deep && config.deepType == 'soft_shading');
         if(needsN) output.push(getNormal(gradType));
     }
 
@@ -1128,18 +1135,18 @@ DepthShader.prototype.config = function(config){
 			var shift = [1 / 256 / 256 / 256, 1 / 256 / 256, 1 / 256, 1];
 			var sum = 0;
 			shift.forEach(function (e, i, a) {
-				sum += a[i] * c[i]
+				sum += a[i] * c[i];
 			})
 			return sum;
 		};
 
 		var packjs = function (d) {
-			var bitsh = [256 * 256, 256, 1, 1 / 256];
+			var bitsh = [256, 1, 1/256, 0];
 			var bitMask = [0, 1 / 256, 1 / 256, 1 / 256];
 			var comp = [bitsh[0] * d, bitsh[1] * d, bitsh[2] * d, bitsh[3] * d];
 			console.log('1: ', comp);
 			comp.forEach(function (e, i, a) {
-				a[i] = e % 1
+				a[i] = e % 1;
 			});
 			console.log('2: ', comp);
 			comp = [comp[0] - comp[0] * bitMask[0],
@@ -1151,7 +1158,7 @@ DepthShader.prototype.config = function(config){
 		};
 
 		var unpackjs = function (c) {
-			var shift = [1 / 256 / 256, 1 / 256, 1, 256];
+			var shift = [1 / 256, 1 , 256, 0];
 			var sum = 0;
 			shift.forEach(function (e, i, a) {
 				sum += a[i] * c[i]
@@ -1159,7 +1166,7 @@ DepthShader.prototype.config = function(config){
 			return sum;
 		};
 
-		var test = [1 / 255, 1 / 127, 1 / 63, 1 / 31, 1 / 15, 1 / 7, 0.0, 2.0, 4.0, 8.0, 16.0, 356 + 1 / 7];
+		var test = [1 / 255, 1 / 127, 1 / 63, 1 / 31, 1 / 15, 1 / 7, 0.0, 2.0, 4.0, 8.0, 16.0, 128 + 1 / 7];
 		test.forEach(function (e, i, a) {
 			var p = packjs(e);
 			var up = unpackjs(p);
@@ -1170,9 +1177,9 @@ DepthShader.prototype.config = function(config){
 	//24 bit precision pack that preserves the alpha value.
 	var pack = [
 		'vec4 pack (float depth){',
-		'const vec4 bitSh = vec4(256 * 256,',
-		'                        256,',
+		'const vec4 bitSh = vec4(256,',
 		'                        1.0,',
+		'                        1.0/256.0,',
 		'                        0.0);',
 		'const vec4 bitMsk = vec4(0.0,',
 		'                         1.0 / 256.0,',
@@ -1184,6 +1191,18 @@ DepthShader.prototype.config = function(config){
 		'}'
 	].join('\n');
 
+	//24 bit precision pack that preserves the alpha value.
+	var eyeZ = [
+		'float eyeZ (float depth){',
+        //'  return depth;',
+        //'  float a = far / (far - near);',
+        //'  float b = far * near / (near - far);',
+        '  return near / ( far - depth*(far - near)) * far;',
+		//'  return - d *(far - near) / 2.0 /(far * near);',
+        '}'
+	].join('\n');
+
+
     //shader for the background proxy object.  Either returns "really far away" if we're in depth mode, and v4(0.0),
     //if we're in color mode;
 	var fragDepthBack = [
@@ -1192,10 +1211,10 @@ DepthShader.prototype.config = function(config){
 		'uniform float far;',
 		'uniform int USE_COLOR;',
 		'varying vec3 vColor;',
-		pack,
+		pack, eyeZ,
 		'void main() {',
 		' if(USE_COLOR == 0){',
-		'  gl_FragColor = pack(0.999999);',
+		'  gl_FragColor = pack(eyeZ(gl_FragCoord.z));',
 		' } ',
 		' else{',
 		'  gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);',
@@ -1204,32 +1223,53 @@ DepthShader.prototype.config = function(config){
 	].join('\n');
 
 	var fragDepth = [
+        '#define M_PI 3.14159265358979323846',
+
+        'varying vec4 mvPosition;',
 		'varying vec2 vUv;',
 		'uniform float near;',
 		'uniform float far;',
-		'uniform int USE_COLOR;',
+		'uniform float FOV;',
+        'uniform float CLIP_NEAR;',
+		'uniform float CLIP_FAR;',
+		'uniform float opacity;',
+        'uniform int USE_COLOR;',
 		'varying vec3 vColor;',
-		pack,
+		pack, eyeZ,
 		'void main() {',
-		' if(USE_COLOR == 0){',
-		'  gl_FragColor = pack(gl_FragCoord.z);',
+        '  float fovr = FOV*M_PI/180.;',
+        '  float zDist = 1.0/tan(fovr*0.5);',
+        '  vec4 eyeRay_o = vec4(cameraPosition,0.0);',
+        '  float eyeDist  = length(eyeRay_o.xyz);',
+
+        '  vec4 eyeNorm = -normalize(eyeRay_o);',
+        //'  vec3 eyeNorm = -normalize(vec3(0.0, 0.0, 1.0));',
+        '  vec4 planeNear = vec4(eyeNorm.xyz, 1.0 - 2.0*CLIP_NEAR);',
+        '  vec4 planeFar  = vec4(-eyeNorm.xyz, 2.0*CLIP_FAR - 1.0);',
+        ' if(dot(mvPosition, planeNear) < 0.0) discard;',
+        ' if(dot(mvPosition, planeFar)  < 0.0) discard;',
+        ' if(USE_COLOR == 0){',
+		'  gl_FragColor = pack(eyeZ(gl_FragCoord.z));',
 		' } ',
 		' else{',
-		'  gl_FragColor.xyz = vColor;',
-        '  gl_FragColor.w = 1.0;',
-		' }',
+        '  float w = gl_FragColor.w;',
+        '    gl_FragColor.xyz += (1.0-gl_FragColor.w)*vColor;',
+        '    gl_FragColor.w   += (1.0-gl_FragColor.w)*opacity;',
+        '  }',
 		'}'
 	].join('\n');
 
 	var vertDepth = [
+        'varying vec4 mvPosition;',
 		'attribute vec3 color;',
 		'varying vec2 vUv;',
 		'varying vec3 vColor;',
 		'void main() {',
 		'  vUv = uv;',
 		'  vColor = color;',
-		'  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );',
-		'  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
+		//'  mvPosition = modelViewMatrix * vec4( position, 1.0 );',
+		'  mvPosition = vec4( position, 1.0 );',
+	    '  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
 		'}'
 	].join('\n');
 
@@ -1243,15 +1283,15 @@ DepthShader.prototype.config = function(config){
 		'varying vec3 vColor;',
 
 		//'varying float depth;',
-		pack,
+		pack, eyeZ,
 		'void main() {',
 		' float r2 = dot(gl_PointCoord - vec2(0.5),gl_PointCoord - vec2(0.5));',
 		' float sw = float(r2 < 0.25);',
 		' if(USE_COLOR == 0){',
-		'   vec4 C  = texture2D(tex1, gl_PointCoord);',
+	'   vec4 C  = texture2D(tex1, gl_PointCoord);',
 		'   float a = C.a;',
 		'   float d = gl_FragCoord.z;',
-		'   vec4 packd = pack(d);',
+		'   vec4 packd = pack(eyeZ(d));',
 		'   packd.a = a;',
 		'   gl_FragColor = packd;',
 		' }',
@@ -1272,7 +1312,8 @@ DepthShader.prototype.config = function(config){
 		'void main() {',
 		'  vColor = color;',
 		'  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );',
-		'  gl_PointSize = 0.1 * ( 300.0 / length( mvPosition.xyz ) );',
+		//'  gl_PointSize = 0.1 * ( 300.0 / length( mvPosition.xyz ) );',
+		'  gl_PointSize = 10.0;',
 		'  gl_Position = projectionMatrix * mvPosition;',
 		'}'
 	].join('\n');
@@ -1281,7 +1322,7 @@ DepthShader.prototype.config = function(config){
         output.push(transferVars);
     };
     var output = [];
-    if(config.depth === true){
+    if(config.poly === true){
          if(config.type == 'vertex'){
             output.push(vertDepth);
         }else{

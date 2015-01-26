@@ -202,6 +202,7 @@ mime_types = {
     'matroska'  : 'video/x-matroska',
     'webm'      : 'video/webm',
     'h264'      : 'video/mp4',
+    'h265'      : 'video/mp4',    
     'mpeg4'     : 'video/mp4',
     'ogg'       : 'video/ogg',
 }
@@ -233,6 +234,7 @@ class ProcessToken(object):
         self.series      = 0
         self.timeout     = None
         self.meta        = None
+        self.operations  = OrderedDict() # operation:parameters
 
     def setData (self, data_buf, content_type):
         self.data = data_buf
