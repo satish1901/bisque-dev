@@ -481,6 +481,12 @@ Ext.define('BQ.graphviewer', {
                         me.render(me.group, g);
                         me.forceRefresh(0);
                         me.zoomExtents();
+                        var svgNodes = me.group.selectAll("g.node");
+                        var svgEdges = me.group.selectAll("g.edgePath");
+
+                        me.highLightProvenance(g, me.resource.resource_uniq, svgNodes, svgEdges, me);
+                        me.selection = me.highLightEdges(g, me.resource.resource_uniq, svgNodes, svgEdges);
+
                         me.fireEvent("loaded", me);
                     }
 				}
@@ -834,9 +840,12 @@ Ext.define('BQ.graphviewer', {
                 me.selection = me.highLightEdges(g, d, svgNodes, svgEdges);
                 //force refresh:
                 me.forceRefresh(0);
-                var div = this.getElementByTagName('div');
+                var div = this.getElementsByTagName('div')[1];
                 var mouse = d3.event;
-                me.fireEvent('mousedown', d, div);
+                if(mouse.button === 0)
+                    me.fireEvent('mousedown', d, div, me);
+                if(mouse.button === 2)
+                    me.fireEvent('context', d, div, me);
             });
 
         /*
@@ -994,9 +1003,16 @@ Ext.define('BQ.viewer.Graph.Panel', {
         var me = this;
 
         this.graphView = Ext.create('BQ.graphviewer', {
+            resource : this.resource,
             listeners:{
-                loaded: function(){
+                loaded: function(res, div, comp){
                     me.setLoading(false);
+                },
+                context: function(){
+                    me.fireEvent('context',res, div, comp);
+                },
+                mousedown: function(){
+                    me.fireEvent('mousedown',res, div, comp);
                 }
             }
         });
