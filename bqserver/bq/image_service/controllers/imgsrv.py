@@ -529,7 +529,8 @@ class MetaService(object):
                     pass
 
             if meta['format'] == 'DICOM':
-                ConverterImgcnv.meta_dicom(ifile, series=data_token.series, token=data_token, xml=image)
+                node = etree.SubElement(image, 'tag', name='DICOM')  
+                ConverterImgcnv.meta_dicom(ifile, series=data_token.series, token=data_token, xml=node)
 
             log.debug('Meta %s: storing metadata into %s', image_id, metacache)
             xmlstr = etree.tostring(image)

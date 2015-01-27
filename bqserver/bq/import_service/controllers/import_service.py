@@ -615,6 +615,7 @@ class import_serviceController(ServiceController):
             name = posixpath.join(base_name, b.replace(base_path, '') )
             value = blob_service.local2url(b)
             resource = etree.Element ('file', name=name, resource_type='file', ts=uf.ts, value=value )
+            ConverterImgcnv.meta_dicom(b, xml=resource)
             resource.extend (copy.deepcopy (list (uf.resource)))
             resources.append(blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir)))
 
