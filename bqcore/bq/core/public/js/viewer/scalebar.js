@@ -4,7 +4,7 @@ function ScaleBar(parent, new_pix_size) {
 	this.parent = parent;
 
 	//default parameters 
-	me = this;
+	var me = this;
 
 	//this.dragging = false;
 	this.pix_phys_size = 0;
@@ -367,8 +367,8 @@ ScaleBar.prototype.createEditor = function() {
 //min size is defined , max is the size of the window
 ScaleBar.prototype.setConstrainedSize = function( height, width ) {
 
-	var parent_bound = me.parent.getBoundingClientRect();
-	var widget_bound = me.widget.getBoundingClientRect();
+	var parent_bound = this.parent.getBoundingClientRect();
+	var widget_bound = this.widget.getBoundingClientRect();
 
 	if (this.height_min >= height) {}
 	else if (parent_bound.bottom <= widget_bound.top + height) {} // stops when an edge is hit

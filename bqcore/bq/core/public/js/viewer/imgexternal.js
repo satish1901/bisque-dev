@@ -27,7 +27,14 @@ function ImgExternal (viewer,name){
                 handler: function() {
 						var level = this.imgCurrentView.getCurrentLevel();
 						this.imgCurrentView.setLevel(level);
-						this.imgCurrentView.returnCurrentView();
+						
+						function cb(canvas_view) {
+							var url = canvas_view.toDataURL("image/png");
+							window.open(url);
+						}
+						
+						var canvas_view = this.imgCurrentView.returnCurrentView(cb);
+
                     },
                 
                 menu   : {
@@ -42,7 +49,13 @@ function ImgExternal (viewer,name){
                         handler: function() {
 							var level = this.imgCurrentView.getCurrentLevel();
 							this.imgCurrentView.setLevel(level);
-							this.imgCurrentView.returnCurrentView();
+							
+							function callback(canvas_view) {
+								var url = canvas_view.toDataURL("image/png");
+								window.open(url);
+							}
+							
+							var canvas_view = this.imgCurrentView.returnCurrentView(callback);
 						},
                         scope: this,
                         //checked: false,
@@ -56,7 +69,13 @@ function ImgExternal (viewer,name){
                         handler: function(){
 							var level = this.imgCurrentView.getCurrentLevel();
 							this.imgCurrentView.setLevel(level - 1);
-							this.imgCurrentView.returnCurrentView();
+							
+							function callback(canvas_view) {
+								var url = canvas_view.toDataURL("image/png");
+								window.open(url);
+							}
+							
+							var canvas_view = this.imgCurrentView.returnCurrentView(callback);
 						},
                         scope: this,
                         //checked: true,
@@ -70,7 +89,13 @@ function ImgExternal (viewer,name){
                         handler: function(){
 							var level = this.imgCurrentView.getCurrentLevel();
 							this.imgCurrentView.setLevel(level - 2);
-							this.imgCurrentView.returnCurrentView();
+							
+							function callback(canvas_view) {
+								var url = canvas_view.toDataURL("image/png");
+								window.open(url);
+							}
+							
+							var canvas_view = this.imgCurrentView.returnCurrentView(callback);
 						},
                         scope: this,
                         //checked: false,
@@ -191,7 +216,6 @@ ImgExternal.prototype.updateImage = function () {
 	}
 	
 };
-
 
 ImgExternal.prototype.launchBioView = function () {
     var url = 'bioview://resource/?url='+this.viewer.image.uri;
