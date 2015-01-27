@@ -510,6 +510,7 @@ class MetaService(object):
             tags_map = {}
             for k, v in meta.iteritems():
                 if k in meta_private_fields: continue
+                if k.startswith('DICOM/'): continue
                 k = safeunicode(k)
                 v = safeunicode(v)
                 tl = k.split('/')
@@ -526,6 +527,9 @@ class MetaService(object):
                     parent.set('value', v)
                 except ValueError:
                     pass
+
+            if meta['format'] == 'DICOM':
+                ConverterImgcnv.meta_dicom(ifile, series=data_token.series, token=data_token, xml=image)
 
             log.debug('Meta %s: storing metadata into %s', image_id, metacache)
             xmlstr = etree.tostring(image)
