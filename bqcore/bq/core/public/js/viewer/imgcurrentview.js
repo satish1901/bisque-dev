@@ -5,12 +5,23 @@
 function ImgCurrentView(viewer, opt){
     this.base = ViewerPlugin;
     this.base (viewer, name);
-	if (!opt) var opt = {
-		wGobjects : true,
-		wBorders  : false,
-		wScaleBar : true,
-	} //default
-	this.opt = opt
+	
+	if (opt==undefined) var opt={};
+	
+	this.opt = {} //set up options if not provided a default is given
+	
+	this.opt.wGobjects = (typeof opt.wGobjects === 'boolean')  ?  opt.wGobjects:true;
+	this.opt.wBorders = (typeof opt.wGobjects === 'boolean')  ?  opt.wBorders:false;
+	this.opt.wScaleBar = (typeof opt.wScaleBar === 'boolean')  ?  opt.wScaleBar:true;
+	
+	/*
+	if (typeof(opt['wGobjects'])==="boolean") this.opt = opt['wGobjects'];
+	else this.opt['wGobjects'] = true;
+	if (typeof(opt['wBorders'])==="boolean") this.opt = opt['wBorders'];
+	else this.opt['wBorders'] = false;
+	if (typeof(opt['wScaleBar'])==="boolean") this.opt = opt['wScaleBar'];
+	else this.opt['wScaleBar'] = true;	
+	*/
 }
 	
 ImgCurrentView.prototype.drawGobjects = function(canvas_view) {
@@ -280,7 +291,7 @@ ImgCurrentView.prototype.divideTile = function(tile) {
 }
 
 
-ImgCurrentView.prototype.returnCurrentView = function() {
+ImgCurrentView.prototype.returnCurrentView = function(cb) {
 	
 	var inViewImages = this.getTilesInView();
 	var logScale = this.getlogScale();
@@ -311,42 +322,45 @@ ImgCurrentView.prototype.returnCurrentView = function() {
 	}
 	
 	
-	var response_count = 0;
 	var me = this;
-	for (var i=0; i < inViewImagesScaled.length; i++) {
+	var request_queue = {}
+	var count = 0;
+	for (var i = 0; i < inViewImagesScaled.length; i++) {
 		var img = new Image();
 		img.yoffset = parseInt(inViewImagesScaled[i].style.top);
 		img.xoffset = parseInt(inViewImagesScaled[i].style.left);
 		img.scaled_imgwidth = inViewImagesScaled[i].width;
 		img.scaled_imgheight = inViewImagesScaled[i].height;
+		img.id = i;
+		request_queue[i] = img;
 		
 		img.addEventListener("load", function() {
 			ctx_view.drawImage( this, this.xoffset, this.yoffset, this.scaled_imgwidth, this.scaled_imgheight);
-			response_count += 1;
-			if (response_count >= inViewImagesScaled.length) {
+			delete request_queue[this.id];
+			if (Object.getOwnPropertyNames(request_queue).length===0) {
+			
 				if (me.opt.wGobjects) canvas_view = me.drawGobjects(canvas_view);
 				if (!me.opt.wBorders) canvas_view = me.cropBorders(canvas_view);
 				if (me.opt.wScaleBar) canvas_view = me.drawScaleBar(canvas_view);
-				//request canvas
-				var url = canvas_view.toDataURL("image/png");
-				window.open(url)
+				if (cb) cb(canvas_view); //run call back
+				//var url = canvas_view.toDataURL("image/png");
+				//window.open(url)
 				//var data = canvas_view.toDataURL("image/png").replace("image/png", "image/octet-stream");
 				//window.location.href = data;
 			}
+		}.bind(img));
+		
+		img.addEventListener("error", function() { //error handling
+			delete request_queue[this.id];
+			if (Object.getOwnPropertyNames(request_queue).length===0)  {
+				if (me.opt.wGobjects) canvas_view = me.drawGobjects(canvas_view);
+				if (!me.opt.wBorders) canvas_view = me.cropBorders(canvas_view);
+				if (me.opt.wScaleBar) canvas_view = me.drawScaleBar(canvas_view);
+				if (cb) cb(canvas_view);
+			}
 		}.bind(img))
-		/*
-		img.addEventListener("error", function() {
-			response_count += 1;
-			if (response_count >= inViewImagesScaled.length) {
-				//if (me.opt.wGobjects) this.drawGobjects(canvas_view);
-				//if (!this.opt.wBorders) this.cropBorders(canvas_view);
-				//if (this.opt.wScaleBar) this.drawScaleBar(canvas_view);
-				//request canvas
-				var url = canvas_view.toDataURL("image/png");
-				window.open(url)
-			}			
-		}.bind(img))
-		*/
 		img.src = inViewImagesScaled[i].src;
+	
 	}
+	
 }
