@@ -552,22 +552,18 @@ class ConverterImgcnv(ConverterBase):
                     else:                
                         value = unicode(de.value)
                     node.set('value', value)
-        
+
         try:
             _, tmp = misc.start_nounicode_win(ifnm, [])
             ds = dicom.read_file(tmp or ifnm)
         except (Exception):
             misc.end_nounicode_win(tmp)
-            return {}
+            return
 
-        info = {}
-        # dima: here overwrite specific parsed nodes
-
-        node = etree.SubElement(xml, 'tag', name='DICOM')  
-        recurse_tree(ds, node)     
+        recurse_tree(ds, xml)     
         
         misc.end_nounicode_win(tmp)
-        return info
+        return
 
     #######################################
     # Most important DICOM metadata to be ingested directly into data service
