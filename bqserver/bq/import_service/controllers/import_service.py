@@ -630,8 +630,8 @@ class import_serviceController(ServiceController):
             else:
                 name = posixpath.join(base_name, im[0].replace(base_path, '') )
                 resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts)
-                for v, index in zip(im, range(len(im)):
-                    val = etree.SubElement(resource, 'value', index='%s'%index )
+                for v in im: #for v, index in zip(im, range(len(im))):
+                    val = etree.SubElement(resource, 'value' ) #val = etree.SubElement(resource, 'value', index='%s'%index )
                     val.text = blob_service.local2url(v)
 
                 image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )
@@ -641,6 +641,8 @@ class import_serviceController(ServiceController):
                 etree.SubElement(image_meta, 'tag', name='dimensions', value='XYCZT' )
 
             resource.extend (copy.deepcopy (list (uf.resource)))
+            ConverterImgcnv.meta_dicom_parsed(im[0], resource)
+
             resources.append(blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir)))
 
         return unpack_dir, resources

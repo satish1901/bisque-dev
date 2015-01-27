@@ -15,6 +15,7 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 import logging
 import os.path
+from itertools import groupby
 from lxml import etree
 #from subprocess import call
 from bq.util.locks import Locks
@@ -27,6 +28,13 @@ import bq.util.io_misc as misc
 from .converter_base import ConverterBase, Format
 
 log = logging.getLogger('bq.image_service.converter_imgcnv')
+
+try:
+    import dicom
+except (ImportError, OSError):
+    log.warn('pydicom needs to be installed for DICOM support...')
+    pass
+
 
 ################################################################################
 # ConverterBase
@@ -455,8 +463,7 @@ class ConverterImgcnv(ConverterBase):
     def group_files_dicom(cls, files, **kw):
         '''return list with lists containing grouped and ordered dicom file paths'''
 
-        from itertools import groupby
-        import dicom
+        import dicom # ensure an error if dicom library is not installed
 
         def read_tag(ds, key, default=None):
             t = ds.get(key)
@@ -487,14 +494,13 @@ class ConverterImgcnv(ConverterBase):
             series_uid   = read_tag(ds, ('0020', '000e'))
             series_num   = read_tag(ds, ('0020', '0012')) # 
             acqui_num    = read_tag(ds, ('0020', '0011')) # A number identifying the single continuous gathering of data over a period of time that resulted in this image
-            
             instance_num = int(read_tag(ds, ('0020', '0013'), '0')) # A number that identifies this image
-
-            num_temp_p = int(read_tag(ds, ('0020', '0105'), '0') or '0') # Total number of temporal positions prescribed
-            num_frames = int(read_tag(ds, ('0028', '0008'), '0') or '0') # Number of frames in a Multi-frame Image
+            dr_suffix    = int(read_tag(ds, ('4453', '1005'), '0')) # some DR Systems produced data seems to have a bug in writing wrong instance numbers and site locations
+            num_temp_p   = int(read_tag(ds, ('0020', '0105'), '0') or '0') # Total number of temporal positions prescribed
+            num_frames   = int(read_tag(ds, ('0028', '0008'), '0') or '0') # Number of frames in a Multi-frame Image
 
             key = '%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, acqui_num) # series_num seems to vary in DR Systems
-            data.append((key, instance_num, f, num_temp_p or num_frames))
+            data.append((key, dr_suffix or instance_num, f, num_temp_p or num_frames))
             log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s', key, series_num, instance_num, num_temp_p, num_frames )
         
         # group based on a key
@@ -522,41 +528,99 @@ class ConverterImgcnv(ConverterBase):
         return (images, blobs, geometry)
     
     #######################################
-    # The info command returns the "core" metadata (width, height, number of planes, etc.)
-    # as a dictionary
+    # DICOM metadata parser writing directly into XML tree
     #######################################
     
     @classmethod
-    def meta_dicom(cls, ifnm, series=0, **kw):
-        '''returns a dict with file info'''
+    def meta_dicom(cls, ifnm, series=0, xml=None, **kw):
+        '''appends nodes to XML'''
         
-        import dicom
+        import dicom # ensure an error if dicom library is not installed
 
+        def recurse_tree(dataset, parent):
+            for de in dataset:
+                if de.tag == ('7fe0', '0010'):
+                    continue
+                node = etree.SubElement(parent, 'tag', name=de.name, type=':///DICOM#%04.x,%04.x'%(de.tag.group, de.tag.element))
+
+                if de.VR == "SQ":   # a sequence
+                    for i, dataset in enumerate(de.value):
+                        recurse_tree(dataset, node)
+                else:
+                    if isinstance(de.value, dicom.multival.MultiValue):
+                        value = ','.join(unicode(i) for i in de.value)
+                    else:                
+                        value = unicode(de.value)
+                    node.set('value', value)
+        
         try:
             _, tmp = misc.start_nounicode_win(ifnm, [])
             ds = dicom.read_file(tmp or ifnm)
         except (Exception):
             misc.end_nounicode_win(tmp)
             return {}
-        
-        info2 = {
-            'format': slide.properties[openslide.PROPERTY_NAME_VENDOR],
-            'image_num_series': 0,
-            'image_series_index': 0,
-            'image_num_x': slide.dimensions[0],
-            'image_num_y': slide.dimensions[1],
-            'image_num_z': 1,
-            'image_num_t': 1,
-            'image_num_c': 3,
-            'image_num_l': slide.level_count,
-            'image_pixel_format': 'unsigned integer',
-            'image_pixel_depth': 8
-        }
-        
+
+        info = {}
+        # dima: here overwrite specific parsed nodes
+
+        node = etree.SubElement(xml, 'tag', name='DICOM')  
+        recurse_tree(ds, node)     
         
         misc.end_nounicode_win(tmp)
         return info
 
+    #######################################
+    # Most important DICOM metadata to be ingested directly into data service
+    #######################################
+    
+    @classmethod
+    def meta_dicom_parsed(cls, ifnm, xml=None, **kw):
+        '''appends nodes to XML'''
+        
+        import dicom # ensure an error if dicom library is not installed
+
+        def append_tag(dataset, tag, parent, name=None, fmt=None):
+            de = dataset[tag]
+            name = name or de.name
+            typ = ':///DICOM#%04.x,%04.x'%(de.tag.group, de.tag.element)
+            
+            if fmt is None:
+                if isinstance(de.value, dicom.multival.MultiValue):
+                    value = ','.join(unicode(i) for i in de.value)
+                else:                
+                    value = unicode(de.value)
+            else:
+                value = fmt(unicode(de.value))
+            node = etree.SubElement(parent, 'tag', name=name, value=value, type=typ)
+
+        try:
+            _, tmp = misc.start_nounicode_win(ifnm, [])
+            ds = dicom.read_file(tmp or ifnm)
+        except (Exception):
+            misc.end_nounicode_win(tmp)
+            return 
+
+        append_tag(ds, ('0010', '0020'), xml) # Patient ID 
+        append_tag(ds, ('0010', '0010'), xml, name='Patient\'s Last Name', fmt=lambda x: x.split('^', 1)[0] ) # Patient's Name
+        append_tag(ds, ('0010', '0010'), xml, name='Patient\'s First Name', fmt=lambda x: x.split('^', 1)[1] ) # Patient's Name        
+        append_tag(ds, ('0010', '0040'), xml) # Patient's Sex 'M'
+        append_tag(ds, ('0010', '1010'), xml) # Patient's Age '019Y'
+        append_tag(ds, ('0010', '0030'), xml, fmt=lambda x: '%s-%s-%s'%(x[0:4], x[4:6], x[6:8]) ) # Patient's Birth Date
+        append_tag(ds, ('0012', '0062'), xml) # Patient Identity Removed
+        append_tag(ds, ('0008', '0020'), xml, fmt=lambda x: '%s-%s-%s'%(x[0:4], x[4:6], x[6:8]) ) # Study Date
+        append_tag(ds, ('0008', '0030'), xml, fmt=lambda x: '%s:%s:%s'%(x[0:2], x[2:4], x[4:6]) ) # Study Time
+        append_tag(ds, ('0008', '0060'), xml) # Modality
+        append_tag(ds, ('0008', '1030'), xml) # Study Description
+        append_tag(ds, ('0008', '103e'), xml) # Series Description
+        append_tag(ds, ('0008', '0080'), xml) # Institution Name  
+        append_tag(ds, ('0008', '0090'), xml) # Referring Physician's Name
+        append_tag(ds, ('0008', '0008'), xml) # Image Type
+        append_tag(ds, ('0008', '0012'), xml, fmt=lambda x: '%s-%s-%s'%(x[0:4], x[4:6], x[6:8]) ) # Instance Creation Date
+        append_tag(ds, ('0008', '0013'), xml, fmt=lambda x: '%s:%s:%s'%(x[0:2], x[2:4], x[4:6]) ) # Instance Creation Time
+        append_tag(ds, ('0008', '1060'), xml) # Name of Physician(s) Reading Study
+        append_tag(ds, ('0008', '2111'), xml) # Derivation Description  
+        
+        misc.end_nounicode_win(tmp)
 
 try:
     ConverterImgcnv.init()
