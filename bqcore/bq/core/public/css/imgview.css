@@ -326,9 +326,8 @@
   position : absolute;
   left: 6px;
   bottom: 10px;
-  /*top: 20px;*/
   width: 100px;
-  height: 42px;
+  height: 38px;
   background-color: #222222;
   color: #FFFFFF;
   font-size: 12px;
@@ -345,7 +344,8 @@
 
 .scalebar div#scalebar_bar {
   width: 100%;
-  height: 30%
+  height: 30%;
+  position:relative;
   background-color: #FFFFFF;
   color: #FFFFFF;
   background: #FFFFFF;
@@ -355,12 +355,11 @@
 
 .scalebar div#scalebar_caption {
   white-space: nowrap; 
-  height: 70%;
+  height: 100%;
+  position:relative;
   overflow: hidden;
   margin-top: 2px;
-  /*margin-bottom: 20px;*/
   z-index: 28;
-  /*padding: 0px 8px 8px 8px;*/
 }
 
 .scalebar div#scalebar_selectionPanel {
@@ -394,9 +393,11 @@
     width: 20px;
     height: 20px;
     z-index: 32;
+    cursor: 'se-resize';
     background-repeat: no-repeat;
     background-image: url('/images/viewer/resize-handle.png');
 }
+
 /******************************************************************************/
 
 .imgview_button_selected {
