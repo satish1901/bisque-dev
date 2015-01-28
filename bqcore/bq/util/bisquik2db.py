@@ -70,6 +70,7 @@ from bq.core.model import DBSession
 from bq.data_service.model import Taggable, Value, Vertex, dbtype_from_tag
 from bq.exceptions import BQException
 from bq.util.compat import OrderedDict
+from bq.util.hash import is_uniq_code
 
 log = logging.getLogger('bq.db')
 
@@ -691,26 +692,46 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
 
 ######################################################################
 #
-def parse_uri(uri):
-    ''' Parse a bisquik uri into host , dbclass , and ID
+def parse_bisque_uri(uri):
+    ''' Parse a bisquie uri into  service, and optional dbclass , and ID
     @type  uri: string
     @param uri: a bisquik uri representation of a resourc
-    @rtype:  A triplet (host, dbclass, id)
-    @return: The parse resouece
+    @rtype:  A quad-tuple (service, dbclass, id, rest )
+    @return: The parse resource
     '''
-    url = urlparse.urlsplit(uri)
     # (scheme, host, path, ...)
-    parts = posixpath.normpath(url[2]).split('/')
+    url = urlparse.urlsplit(uri)
+    if url.scheme not in ('http', 'https', ''):
+        return None, None, None, None
+    # /service_name/ [ id or or class ]*
+    parts = posixpath.normpath(url[2]).strip('/').split('/')
     # paths are /class/id or /resource_uniq
-    if len(parts)>=2:
-        name, ida = parts[-2:]
+    if not parts :
+        return url[1], 'data_service', None, None
+
+    # should have a service name or a uniq code
+    if is_uniq_code (parts[0]):
+        service = 'data_service'
+        # class  follows or nothing
     else:
-        name, ida = 'data_service', parts[0]
-    rest = []
-    while not ida[0].isdigit() and len(parts)> 2:
-        rest.append( parts.pop() )
-        name,ida = parts[-2:]
-    return url[1], name, ida, rest
+        service = parts.pop(0)
+    # first element may be a docid
+    if is_uniq_code (parts[0]):
+        ida = parts.pop(0)
+    clname = None
+    rest   = []
+    while parts:
+        sym = parts.pop()
+        if not sym[0].isdigit():
+            rest.append(sym)
+            continue
+        ida = sym
+        if parts:
+            clname = parts.pop()
+        break
+    return service, clname, ida, rest
+
+
 
 def load_uri (uri, query=False):
     '''Load the object specified by the root tree and return a rsource
@@ -722,19 +743,17 @@ def load_uri (uri, query=False):
     # Check that we are looking at the right resource.
 
     try:
-        net, name, ida, rest = parse_uri(uri)
-        if name == 'data_service': # and ida.startswith('00-'):
+        service, clname, ida, rest = parse_bisque_uri(uri)
+        if service != 'data_service':
+            return None
+        if is_uniq_code (ida):
             log.debug("loading resource_uniq %s" % ida)
             resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
-        else:
-            if ida.startswith("00-"):
-                log.debug("loading resource_uniq %s" % ida)
-                resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
-            else:
-                name, dbcls = dbtype_from_tag(name)
-                log.debug("loading %s -> name/type (%s/%s)(%s) " %(uri, name,  str(dbcls), ida))
-                #resource = DBSession.query(dbcls).get (int (ida))
-                resource = DBSession.query(dbcls).filter (dbcls.id == int(ida))
+        elif clname:
+            name, dbcls = dbtype_from_tag(clname)
+            log.debug("loading %s -> name/type (%s/%s)(%s) " %(uri, name,  str(dbcls), ida))
+            #resource = DBSession.query(dbcls).get (int (ida))
+            resource = DBSession.query(dbcls).filter (dbcls.id == int(ida))
         if not query:
             resource = resource.first()
         log.debug ("loaded %s", str(resource))
