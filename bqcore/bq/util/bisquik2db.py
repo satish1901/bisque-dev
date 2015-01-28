@@ -744,7 +744,7 @@ def load_uri (uri, query=False):
 
     try:
         service, clname, ida, rest = parse_bisque_uri(uri)
-        if service != 'data_service':
+        if service  not in  ('data_service', 'module_service'):
             return None
         if is_uniq_code (ida):
             log.debug("loading resource_uniq %s" % ida)
