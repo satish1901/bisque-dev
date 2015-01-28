@@ -6,6 +6,7 @@
   position: relative;
   top: 0px;
   left: 0px;
+  
 }
 
 .image_viewer_display {
@@ -322,8 +323,7 @@
 /***********************************************************/
 
 .scalebar {
-  opacity: 0.6;
-  position:absolute;
+  position : absolute;
   left: 6px;
   bottom: 10px;
   width: 100px;
@@ -331,28 +331,74 @@
   background-color: #222222;
   color: #FFFFFF;
   font-size: 12px;
-  /*border: 1px solid #666666;  */
   padding: 8px 8px 8px 8px;
   border-radius: 5px;
   -moz-border-radius: 5px;
   z-index: 30;
+  
+  -moz-user-select: none; 
+  -khtml-user-select: none; 
+  -webkit-user-select: none; 
+  -o-user-select: none; 
 }
 
 .scalebar div#scalebar_bar {
-  width:100%;
-  height:5px;
+  width: 100%;
+  height: 30%;
+  position:relative;
   background-color: #FFFFFF;
   color: #FFFFFF;
-  background:#FFFFFF;
+  background: #FFFFFF;
   opacity: 1;
+  z-index: 29;
 }
 
 .scalebar div#scalebar_caption {
-    margin-top: 2px;
-    overflow: hidden;
-    text-align: right;
+  white-space: nowrap; 
+  height: 100%;
+  position:relative;
+  overflow: hidden;
+  margin-top: 2px;
+  z-index: 28;
 }
 
+.scalebar div#scalebar_selectionPanel {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    z-index: 31;
+}
+
+.scalebar div#scalebar_editButton {
+    /*background-color: transparent;*/
+    position: absolute;
+    top: 2px;
+    height: 2px;
+    width: 31px;
+    height: 31px;
+    z-index: 32;
+    background-repeat: no-repeat;
+    background-position: -34px -131px;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+}
+
+.scalebar div#scalebar_rescaleButton {
+    /*background-color: transparent;*/
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    width: 20px;
+    height: 20px;
+    z-index: 32;
+    cursor: 'se-resize';
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/resize-handle.png');
+}
+
+/******************************************************************************/
 
 .imgview_button_selected {
   border-color: #333333;
@@ -432,10 +478,6 @@
     top: initial;
     text-decoration: none;
     text-align: left;
-}
-
-.viewer .position pre {
-    margin: 0px;
 }
 
 .viewer .viewoptions {
@@ -604,6 +646,7 @@ table.x-form-color {
 .bq-viewer-menu .x-tip-anchor {
     border-bottom-color: rgba(255,255,255,0.2);
 }
+
 
 .bq-viewer-menu .x-field {
     margin-left: 15px;

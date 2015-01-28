@@ -15,6 +15,7 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 import logging
 import os.path
+from itertools import groupby
 from lxml import etree
 #from subprocess import call
 from bq.util.locks import Locks
@@ -27,6 +28,72 @@ import bq.util.io_misc as misc
 from .converter_base import ConverterBase, Format
 
 log = logging.getLogger('bq.image_service.converter_imgcnv')
+
+try:
+    import dicom
+except (ImportError, OSError):
+    log.warn('pydicom needs to be installed for DICOM support...')
+    pass
+
+
+# Map DICOM Specific Character Set to python equivalent
+dicom_encoding = {
+    '': 'iso8859',           # default character set for DICOM
+    'ISO_IR 6': 'iso8859',   # alias for latin_1 too
+    'ISO_IR 100': 'latin_1',
+    'ISO 2022 IR 87': 'iso2022_jp',
+    'ISO 2022 IR 13': 'iso2022_jp',  #XXX this mapping does not work on chrH32.dcm test files (but no others do either)
+    'ISO 2022 IR 149': 'euc_kr',   # XXX chrI2.dcm -- does not quite work -- some chrs wrong. Need iso_ir_149 python encoding
+    'ISO_IR 192': 'UTF8',     # from Chinese example, 2008 PS3.5 Annex J p1-4
+    'GB18030': 'GB18030',
+    'ISO_IR 126': 'iso_ir_126',  # Greek
+    'ISO_IR 127': 'iso_ir_127',  # Arab
+    'ISO_IR 138': 'iso_ir_138', # Hebrew
+    'ISO_IR 144': 'iso_ir_144', # Russian
+}
+
+def dicom_init_encoding(dataset):
+    encoding = dataset.get(('0008', '0005'), 'ISO_IR 6')
+    if not encoding in dicom_encoding:
+        return 'latin_1'
+    return dicom_encoding[encoding]
+
+def safedecode(s, encoding):
+    if isinstance(s, unicode) is True:
+        return s
+    if isinstance(s, basestring) is not True:
+        return u'%s'%s
+    try: 
+        return s.decode(encoding)
+    except UnicodeEncodeError:
+        try: 
+            return s.decode('utf8')
+        except UnicodeEncodeError:
+            return unicode(s.encode('ascii', 'replace'))
+
+def dicom_parse_date(v):
+    # first take care of improperly stored values
+    if len(v)<1:
+        return v
+    if '.' in v:
+        return v.replace('.', '-')
+    if '/' in v:
+        return v.replace('/', '-')
+    # format proper value
+    return '%s-%s-%s'%(v[0:4], v[4:6], v[6:8])
+
+def dicom_parse_time(v):
+    # first take care of improperly stored values
+    if len(v)<1:
+        return v
+    if ':' in v:
+        return v
+    if '.' in v:
+        return v.replace('.', ':')
+    # format proper value
+    return '%s:%s:%s'%(v[0:2], v[2:4], v[4:6])
+
+
 
 ################################################################################
 # ConverterBase
@@ -434,6 +501,198 @@ class ConverterImgcnv(ConverterBase):
                 for i in range(256):
                     f.write(struct.pack('<Q', 100)) # histogram data, here each color has freq of 100
 
+
+    #######################################
+    # Sort and organize files
+    #
+    # DICOM files in a directory need to be sorted and combined into series
+    # we need to use the following tags in the following order to group files into series
+    # then, each group should be sorted based on instance number tag
+    #
+    #(0010, 0020) Patient ID                          LO: 'ANON85099405877'
+    #(0020, 000d) Study Instance UID                  UI: 2.16.840.1.113786.1.52.850.674495585.766
+    #(0020, 000e) Series Instance UID                 UI: 2.16.840.1.113786.1.52.850.674495585.767
+    #(0020, 0011) Series Number                       IS: '2'
+    #
+    #(0020, 0013) Instance Number                     IS: '1'
+    #
+    #######################################
+
+    @classmethod
+    def group_files_dicom(cls, files, **kw):
+        '''return list with lists containing grouped and ordered dicom file paths'''
+
+        import dicom # ensure an error if dicom library is not installed
+
+        def read_tag(ds, key, default=None):
+            t = ds.get(key)
+            if t is None:
+                return ''
+            return t.value or default
+
+        if not cls.installed:
+            return False
+        log.debug('Group %s files', len(files) )
+        data = []
+        groups = []
+        blobs = []
+        for f in files:
+            try:
+                ds = dicom.read_file(f)
+            except (Exception):
+                blobs.append(f)
+                continue
+
+            if 'PixelData' not in ds:
+                blobs.append(f)
+                continue                
+
+            modality     = read_tag(ds, ('0008', '0060'))
+            patient_id   = read_tag(ds, ('0010', '0020'))
+            study_uid    = read_tag(ds, ('0020', '000d'))
+            series_uid   = read_tag(ds, ('0020', '000e'))
+            series_num   = read_tag(ds, ('0020', '0012')) # 
+            acqui_num    = read_tag(ds, ('0020', '0011')) # A number identifying the single continuous gathering of data over a period of time that resulted in this image
+            instance_num = int(read_tag(ds, ('0020', '0013'), '0') or '0') # A number that identifies this image
+            dr_suffix    = int(read_tag(ds, ('4453', '1005'), '0') or '0') # some DR Systems produced data seems to have a bug in writing wrong instance numbers and site locations
+            num_temp_p   = int(read_tag(ds, ('0020', '0105'), '0') or '0') # Total number of temporal positions prescribed
+            num_frames   = int(read_tag(ds, ('0028', '0008'), '0') or '0') # Number of frames in a Multi-frame Image
+
+            key = '%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, acqui_num) # series_num seems to vary in DR Systems
+            data.append((key, dr_suffix or instance_num, f, num_temp_p or num_frames))
+            #log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s', key, series_num, instance_num, num_temp_p, num_frames )
+        
+        # group based on a key
+        data = sorted(data, key=lambda x: x[0])
+        for k, g in groupby(data, lambda x: x[0]):
+            # sort based on an instance_num
+            groups.append( sorted(list(g), key=lambda x: x[1]) )
+        
+        # prepare groups of dicom filenames
+        images   = []
+        geometry = []
+        for g in groups:
+            l = [f[2] for f in g]
+            images.append( l )
+            if len(l) == 1:
+                geometry.append({ 't': 1, 'z': 1 })
+            elif f[3]>0:
+                z = len(l) / f[3]
+                geometry.append({ 't': f[3], 'z': z })
+            else:
+                geometry.append({ 't': 1, 'z': len(l) })
+
+        log.debug('group_files_dicom found: %s image groups, %s blobs', len(images), len(blobs))
+
+        return (images, blobs, geometry)
+    
+    #######################################
+    # DICOM metadata parser writing directly into XML tree
+    #######################################
+    
+    @classmethod
+    def meta_dicom(cls, ifnm, series=0, xml=None, **kw):
+        '''appends nodes to XML'''
+        
+        import dicom # ensure an error if dicom library is not installed
+
+        def recurse_tree(dataset, parent, encoding='latin-1'):
+            for de in dataset:
+                if de.tag == ('7fe0', '0010'):
+                    continue
+                node = etree.SubElement(parent, 'tag', name=de.name, type=':///DICOM#%04.x,%04.x'%(de.tag.group, de.tag.element))
+
+                if de.VR == "SQ":   # a sequence
+                    for i, dataset in enumerate(de.value):
+                        recurse_tree(dataset, node, encoding)
+                else:
+                    if isinstance(de.value, dicom.multival.MultiValue):
+                        value = ','.join(safedecode(i, encoding) for i in de.value)
+                    else:                
+                        value = safedecode(de.value, encoding)
+                    try:
+                        node.set('value', value)
+                    except (ValueError):
+                        pass
+
+        try:
+            _, tmp = misc.start_nounicode_win(ifnm, [])
+            ds = dicom.read_file(tmp or ifnm)
+        except (Exception):
+            misc.end_nounicode_win(tmp)
+            return
+        encoding = dicom_init_encoding(ds)
+        recurse_tree(ds, xml, encoding=encoding)     
+        
+        misc.end_nounicode_win(tmp)
+        return
+
+    #######################################
+    # Most important DICOM metadata to be ingested directly into data service
+    #######################################
+    
+    @classmethod
+    def meta_dicom_parsed(cls, ifnm, xml=None, **kw):
+        '''appends nodes to XML'''
+        
+        import dicom # ensure an error if dicom library is not installed
+
+        def append_tag(dataset, tag, parent, name=None, fmt=None, safe=True, encoding='latin-1'):
+            de = dataset.get(tag, None)
+            if de is None:
+                return
+            name = name or de.name
+            typ = ':///DICOM#%04.x,%04.x'%(de.tag.group, de.tag.element)
+            
+            if fmt is None:
+                if isinstance(de.value, dicom.multival.MultiValue):
+                    value = ','.join(safedecode(i, encoding) for i in de.value)
+                else:                
+                    value = safedecode(de.value, encoding)
+            else:
+                if safe is True:
+                    try:
+                        value = fmt(safedecode(de.value, encoding))
+                    except (Exception):
+                        value = safedecode(de.value, encoding)
+                else:
+                    value = fmt(safedecode(de.value, encoding))
+            if len(value)>0:
+                node = etree.SubElement(parent, 'tag', name=name, value=value, type=typ)
+
+        try:
+            _, tmp = misc.start_nounicode_win(ifnm, [])
+            ds = dicom.read_file(tmp or ifnm)
+        except (Exception):
+            misc.end_nounicode_win(tmp)
+            return 
+
+        encoding = dicom_init_encoding(ds)
+
+        append_tag(ds, ('0010', '0020'), xml, encoding=encoding) # Patient ID
+        try:
+            append_tag(ds, ('0010', '0010'), xml, name='Patient\'s Last Name', safe=False, fmt=lambda x: x.split('^', 1)[0], encoding=encoding ) # Patient's Name
+            append_tag(ds, ('0010', '0010'), xml, name='Patient\'s First Name', safe=False, fmt=lambda x: x.split('^', 1)[1], encoding=encoding ) # Patient's Name
+        except (Exception):
+            append_tag(ds, ('0010', '0010'), xml, encoding=encoding ) # Patient's Name
+        append_tag(ds, ('0010', '0040'), xml, encoding=encoding) # Patient's Sex 'M'
+        append_tag(ds, ('0010', '1010'), xml, encoding=encoding) # Patient's Age '019Y'
+        append_tag(ds, ('0010', '0030'), xml, fmt=dicom_parse_date ) # Patient's Birth Date
+        append_tag(ds, ('0012', '0062'), xml, encoding=encoding) # Patient Identity Removed
+        append_tag(ds, ('0008', '0020'), xml, fmt=dicom_parse_date ) # Study Date
+        append_tag(ds, ('0008', '0030'), xml, fmt=dicom_parse_time ) # Study Time
+        append_tag(ds, ('0008', '0060'), xml, encoding=encoding) # Modality
+        append_tag(ds, ('0008', '1030'), xml, encoding=encoding) # Study Description
+        append_tag(ds, ('0008', '103e'), xml, encoding=encoding) # Series Description
+        append_tag(ds, ('0008', '0080'), xml, encoding=encoding) # Institution Name  
+        append_tag(ds, ('0008', '0090'), xml, encoding=encoding) # Referring Physician's Name
+        append_tag(ds, ('0008', '0008'), xml) # Image Type
+        append_tag(ds, ('0008', '0012'), xml, fmt=dicom_parse_date ) # Instance Creation Date
+        append_tag(ds, ('0008', '0013'), xml, fmt=dicom_parse_time ) # Instance Creation Time
+        append_tag(ds, ('0008', '1060'), xml, encoding=encoding) # Name of Physician(s) Reading Study
+        append_tag(ds, ('0008', '2111'), xml, encoding=encoding) # Derivation Description  
+        
+        misc.end_nounicode_win(tmp)
 
 try:
     ConverterImgcnv.init()

@@ -153,13 +153,13 @@ def paster_command(command, options, cfgopt, processes, cfg_file = None, *args):
             #os.path.join(cfgopt['site_dir'], 'server.ini'),
             cfg_file or '',
             command,
-            'services_enabled=%s' % cfgopt['services_enabled'],
-            'services_disabled=%s' % cfgopt['services_disabled'],
-            'server=%s' % cfgopt['url'],
-            'http_port=%s' % cfgopt['port'],
-            'http_host=%s' % cfgopt['host'],
-            'rooturl=%s' % cfgopt['root'],
-            'sitecfg=%s' % cfgopt['site_cfg'],
+            #'services_enabled=%s' % cfgopt['services_enabled'],
+            #'services_disabled=%s' % cfgopt['services_disabled'],
+            #'server=%s' % cfgopt['url'],
+            #'http_port=%s' % cfgopt['port'],
+            #'http_host=%s' % cfgopt['host'],
+            #'rooturl=%s' % cfgopt['root'],
+            #'sitecfg=%s' % cfgopt['site_cfg'],
             ])
     server_cmd.extend (args)
     verbose ('Executing: %s' % ' '.join(server_cmd))
