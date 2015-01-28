@@ -35,7 +35,7 @@ ImgOperations.prototype.updateView = function (view) {
     if (this.menu) {
         this.params = {};
         this.params.enhancement = this.combo_enhancement.getValue();
-        view.addParams  ('depth=8,' + this.combo_enhancement.getValue());
+        view.addParams  ('depth=8,' + this.combo_enhancement.getValue() + ',u');
 
         /*
         var b = this.menu.queryById('slider_brightness').getValue();

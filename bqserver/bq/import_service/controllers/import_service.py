@@ -615,7 +615,8 @@ class import_serviceController(ServiceController):
             name = posixpath.join(base_name, b.replace(base_path, '') )
             value = blob_service.local2url(b)
             resource = etree.Element ('file', name=name, resource_type='file', ts=uf.ts, value=value )
-            ConverterImgcnv.meta_dicom(b, xml=resource)
+            if os.path.basename(b) != 'DICOMDIR': # skip ingesting DICOMDIR metadata
+                ConverterImgcnv.meta_dicom(b, xml=resource)
             resource.extend (copy.deepcopy (list (uf.resource)))
             resources.append(blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir)))
 
@@ -631,8 +632,8 @@ class import_serviceController(ServiceController):
             else:
                 name = posixpath.join(base_name, im[0].replace(base_path, '') )
                 resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts)
-                for v in im: #for v, index in zip(im, range(len(im))):
-                    val = etree.SubElement(resource, 'value' ) #val = etree.SubElement(resource, 'value', index='%s'%index )
+                for v in im:
+                    val = etree.SubElement(resource, 'value', type='string' )
                     val.text = blob_service.local2url(v)
 
                 image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )

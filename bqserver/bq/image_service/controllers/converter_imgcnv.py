@@ -36,6 +36,65 @@ except (ImportError, OSError):
     pass
 
 
+# Map DICOM Specific Character Set to python equivalent
+dicom_encoding = {
+    '': 'iso8859',           # default character set for DICOM
+    'ISO_IR 6': 'iso8859',   # alias for latin_1 too
+    'ISO_IR 100': 'latin_1',
+    'ISO 2022 IR 87': 'iso2022_jp',
+    'ISO 2022 IR 13': 'iso2022_jp',  #XXX this mapping does not work on chrH32.dcm test files (but no others do either)
+    'ISO 2022 IR 149': 'euc_kr',   # XXX chrI2.dcm -- does not quite work -- some chrs wrong. Need iso_ir_149 python encoding
+    'ISO_IR 192': 'UTF8',     # from Chinese example, 2008 PS3.5 Annex J p1-4
+    'GB18030': 'GB18030',
+    'ISO_IR 126': 'iso_ir_126',  # Greek
+    'ISO_IR 127': 'iso_ir_127',  # Arab
+    'ISO_IR 138': 'iso_ir_138', # Hebrew
+    'ISO_IR 144': 'iso_ir_144', # Russian
+}
+
+def dicom_init_encoding(dataset):
+    encoding = dataset.get(('0008', '0005'), 'ISO_IR 6')
+    if not encoding in dicom_encoding:
+        return 'latin_1'
+    return dicom_encoding[encoding]
+
+def safedecode(s, encoding):
+    if isinstance(s, unicode) is True:
+        return s
+    if isinstance(s, basestring) is not True:
+        return u'%s'%s
+    try: 
+        return s.decode(encoding)
+    except UnicodeEncodeError:
+        try: 
+            return s.decode('utf8')
+        except UnicodeEncodeError:
+            return unicode(s.encode('ascii', 'replace'))
+
+def dicom_parse_date(v):
+    # first take care of improperly stored values
+    if len(v)<1:
+        return v
+    if '.' in v:
+        return v.replace('.', '-')
+    if '/' in v:
+        return v.replace('/', '-')
+    # format proper value
+    return '%s-%s-%s'%(v[0:4], v[4:6], v[6:8])
+
+def dicom_parse_time(v):
+    # first take care of improperly stored values
+    if len(v)<1:
+        return v
+    if ':' in v:
+        return v
+    if '.' in v:
+        return v.replace('.', ':')
+    # format proper value
+    return '%s:%s:%s'%(v[0:2], v[2:4], v[4:6])
+
+
+
 ################################################################################
 # ConverterBase
 ################################################################################
@@ -494,14 +553,14 @@ class ConverterImgcnv(ConverterBase):
             series_uid   = read_tag(ds, ('0020', '000e'))
             series_num   = read_tag(ds, ('0020', '0012')) # 
             acqui_num    = read_tag(ds, ('0020', '0011')) # A number identifying the single continuous gathering of data over a period of time that resulted in this image
-            instance_num = int(read_tag(ds, ('0020', '0013'), '0')) # A number that identifies this image
-            dr_suffix    = int(read_tag(ds, ('4453', '1005'), '0')) # some DR Systems produced data seems to have a bug in writing wrong instance numbers and site locations
+            instance_num = int(read_tag(ds, ('0020', '0013'), '0') or '0') # A number that identifies this image
+            dr_suffix    = int(read_tag(ds, ('4453', '1005'), '0') or '0') # some DR Systems produced data seems to have a bug in writing wrong instance numbers and site locations
             num_temp_p   = int(read_tag(ds, ('0020', '0105'), '0') or '0') # Total number of temporal positions prescribed
             num_frames   = int(read_tag(ds, ('0028', '0008'), '0') or '0') # Number of frames in a Multi-frame Image
 
             key = '%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, acqui_num) # series_num seems to vary in DR Systems
             data.append((key, dr_suffix or instance_num, f, num_temp_p or num_frames))
-            log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s', key, series_num, instance_num, num_temp_p, num_frames )
+            #log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s', key, series_num, instance_num, num_temp_p, num_frames )
         
         # group based on a key
         data = sorted(data, key=lambda x: x[0])
@@ -537,7 +596,7 @@ class ConverterImgcnv(ConverterBase):
         
         import dicom # ensure an error if dicom library is not installed
 
-        def recurse_tree(dataset, parent):
+        def recurse_tree(dataset, parent, encoding='latin-1'):
             for de in dataset:
                 if de.tag == ('7fe0', '0010'):
                     continue
@@ -545,13 +604,16 @@ class ConverterImgcnv(ConverterBase):
 
                 if de.VR == "SQ":   # a sequence
                     for i, dataset in enumerate(de.value):
-                        recurse_tree(dataset, node)
+                        recurse_tree(dataset, node, encoding)
                 else:
                     if isinstance(de.value, dicom.multival.MultiValue):
-                        value = ','.join(unicode(i) for i in de.value)
+                        value = ','.join(safedecode(i, encoding) for i in de.value)
                     else:                
-                        value = unicode(de.value)
-                    node.set('value', value)
+                        value = safedecode(de.value, encoding)
+                    try:
+                        node.set('value', value)
+                    except (ValueError):
+                        pass
 
         try:
             _, tmp = misc.start_nounicode_win(ifnm, [])
@@ -559,8 +621,8 @@ class ConverterImgcnv(ConverterBase):
         except (Exception):
             misc.end_nounicode_win(tmp)
             return
-
-        recurse_tree(ds, xml)     
+        encoding = dicom_init_encoding(ds)
+        recurse_tree(ds, xml, encoding=encoding)     
         
         misc.end_nounicode_win(tmp)
         return
@@ -575,19 +637,28 @@ class ConverterImgcnv(ConverterBase):
         
         import dicom # ensure an error if dicom library is not installed
 
-        def append_tag(dataset, tag, parent, name=None, fmt=None):
-            de = dataset[tag]
+        def append_tag(dataset, tag, parent, name=None, fmt=None, safe=True, encoding='latin-1'):
+            de = dataset.get(tag, None)
+            if de is None:
+                return
             name = name or de.name
             typ = ':///DICOM#%04.x,%04.x'%(de.tag.group, de.tag.element)
             
             if fmt is None:
                 if isinstance(de.value, dicom.multival.MultiValue):
-                    value = ','.join(unicode(i) for i in de.value)
+                    value = ','.join(safedecode(i, encoding) for i in de.value)
                 else:                
-                    value = unicode(de.value)
+                    value = safedecode(de.value, encoding)
             else:
-                value = fmt(unicode(de.value))
-            node = etree.SubElement(parent, 'tag', name=name, value=value, type=typ)
+                if safe is True:
+                    try:
+                        value = fmt(safedecode(de.value, encoding))
+                    except (Exception):
+                        value = safedecode(de.value, encoding)
+                else:
+                    value = fmt(safedecode(de.value, encoding))
+            if len(value)>0:
+                node = etree.SubElement(parent, 'tag', name=name, value=value, type=typ)
 
         try:
             _, tmp = misc.start_nounicode_win(ifnm, [])
@@ -596,25 +667,30 @@ class ConverterImgcnv(ConverterBase):
             misc.end_nounicode_win(tmp)
             return 
 
-        append_tag(ds, ('0010', '0020'), xml) # Patient ID 
-        append_tag(ds, ('0010', '0010'), xml, name='Patient\'s Last Name', fmt=lambda x: x.split('^', 1)[0] ) # Patient's Name
-        append_tag(ds, ('0010', '0010'), xml, name='Patient\'s First Name', fmt=lambda x: x.split('^', 1)[1] ) # Patient's Name        
-        append_tag(ds, ('0010', '0040'), xml) # Patient's Sex 'M'
-        append_tag(ds, ('0010', '1010'), xml) # Patient's Age '019Y'
-        append_tag(ds, ('0010', '0030'), xml, fmt=lambda x: '%s-%s-%s'%(x[0:4], x[4:6], x[6:8]) ) # Patient's Birth Date
-        append_tag(ds, ('0012', '0062'), xml) # Patient Identity Removed
-        append_tag(ds, ('0008', '0020'), xml, fmt=lambda x: '%s-%s-%s'%(x[0:4], x[4:6], x[6:8]) ) # Study Date
-        append_tag(ds, ('0008', '0030'), xml, fmt=lambda x: '%s:%s:%s'%(x[0:2], x[2:4], x[4:6]) ) # Study Time
-        append_tag(ds, ('0008', '0060'), xml) # Modality
-        append_tag(ds, ('0008', '1030'), xml) # Study Description
-        append_tag(ds, ('0008', '103e'), xml) # Series Description
-        append_tag(ds, ('0008', '0080'), xml) # Institution Name  
-        append_tag(ds, ('0008', '0090'), xml) # Referring Physician's Name
+        encoding = dicom_init_encoding(ds)
+
+        append_tag(ds, ('0010', '0020'), xml, encoding=encoding) # Patient ID
+        try:
+            append_tag(ds, ('0010', '0010'), xml, name='Patient\'s Last Name', safe=False, fmt=lambda x: x.split('^', 1)[0], encoding=encoding ) # Patient's Name
+            append_tag(ds, ('0010', '0010'), xml, name='Patient\'s First Name', safe=False, fmt=lambda x: x.split('^', 1)[1], encoding=encoding ) # Patient's Name
+        except (Exception):
+            append_tag(ds, ('0010', '0010'), xml, encoding=encoding ) # Patient's Name
+        append_tag(ds, ('0010', '0040'), xml, encoding=encoding) # Patient's Sex 'M'
+        append_tag(ds, ('0010', '1010'), xml, encoding=encoding) # Patient's Age '019Y'
+        append_tag(ds, ('0010', '0030'), xml, fmt=dicom_parse_date ) # Patient's Birth Date
+        append_tag(ds, ('0012', '0062'), xml, encoding=encoding) # Patient Identity Removed
+        append_tag(ds, ('0008', '0020'), xml, fmt=dicom_parse_date ) # Study Date
+        append_tag(ds, ('0008', '0030'), xml, fmt=dicom_parse_time ) # Study Time
+        append_tag(ds, ('0008', '0060'), xml, encoding=encoding) # Modality
+        append_tag(ds, ('0008', '1030'), xml, encoding=encoding) # Study Description
+        append_tag(ds, ('0008', '103e'), xml, encoding=encoding) # Series Description
+        append_tag(ds, ('0008', '0080'), xml, encoding=encoding) # Institution Name  
+        append_tag(ds, ('0008', '0090'), xml, encoding=encoding) # Referring Physician's Name
         append_tag(ds, ('0008', '0008'), xml) # Image Type
-        append_tag(ds, ('0008', '0012'), xml, fmt=lambda x: '%s-%s-%s'%(x[0:4], x[4:6], x[6:8]) ) # Instance Creation Date
-        append_tag(ds, ('0008', '0013'), xml, fmt=lambda x: '%s:%s:%s'%(x[0:2], x[2:4], x[4:6]) ) # Instance Creation Time
-        append_tag(ds, ('0008', '1060'), xml) # Name of Physician(s) Reading Study
-        append_tag(ds, ('0008', '2111'), xml) # Derivation Description  
+        append_tag(ds, ('0008', '0012'), xml, fmt=dicom_parse_date ) # Instance Creation Date
+        append_tag(ds, ('0008', '0013'), xml, fmt=dicom_parse_time ) # Instance Creation Time
+        append_tag(ds, ('0008', '1060'), xml, encoding=encoding) # Name of Physician(s) Reading Study
+        append_tag(ds, ('0008', '2111'), xml, encoding=encoding) # Derivation Description  
         
         misc.end_nounicode_win(tmp)
 
