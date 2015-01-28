@@ -507,6 +507,7 @@ qualityTool.prototype.setQuality = function() {
     var minVal = val/4;
     this.volume.minSampleRate = minVal;
     this.volume.maxSteps = val;
+    this.volume.volumeObject.maxSteps = val;
     this.volume.setMaxSampleRate(val);
 };
 
@@ -518,7 +519,7 @@ qualityTool.prototype.createButton = function(){
 		data : [
             {"value" : 64,   "text" : "minimal"},
             {"value" : 256,  "text" : "low"},
-            {"value" : 768,  "text" : "medium"},
+            {"value" : 1024,  "text" : "medium"},
             {"value" : 2048, "text" : "high"},
         ]
 	});
@@ -629,4 +630,52 @@ loseContextTool.prototype.createButton = function(){
     });
 
     this.button.tooltip = 'kaboom goes the dynamite';
+};
+
+
+function showGraphTool(volume, cls) {
+	//renderingTool.call(this, volume);
+
+    this.name = 'autoRotate';
+/*
+    this.label = 'save png';
+    //this.cls = 'downloadButton';
+*/
+	this.base = renderingTool;
+    this.base(volume, this.cls);
+};
+
+showGraphTool.prototype = new renderingTool();
+
+showGraphTool.prototype.init = function(){
+    //override the init function,
+    var me = this;
+    // all we need is the button which has a menu
+    this.createButton();
+};
+
+showGraphTool.prototype.addButton = function () {
+    this.volume.toolMenu.add(this.button);
+};
+
+showGraphTool.prototype.createButton = function(){
+    var me = this;
+
+    this.button = Ext.create('Ext.Button', {
+        width : 36,
+        height : 36,
+        cls : 'volume-button',
+		handler : function (item, checked) {
+            Ext.create('BQ.viewer.graphviewer.Dialog', {
+                title : 'gl info',
+                height : 500,
+                width : 960,
+                layout : 'fit',
+                resource: this.volume.resource,
+            }).show();
+		},
+        scope : me,
+    });
+
+    this.button.tooltip = 'graph viewer temp';
 };

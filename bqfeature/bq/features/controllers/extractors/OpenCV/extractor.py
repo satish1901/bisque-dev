@@ -106,7 +106,7 @@ class BRISK(KeyPointFeatures):
 
         x=[]; y=[]; response=[]; size=[]; angle=[]; octave=[]
 
-        for k in kpts:
+        for k in kpts[:500]:
             x.append(k.pt[0])
             y.append(k.pt[1])
             response.append(k.response)
@@ -161,7 +161,7 @@ class ORB(KeyPointFeatures):
 
         x=[]; y=[]; response=[]; size=[]; angle=[]; octave=[]
 
-        for k in kpts:
+        for k in kpts[:500]:
             x.append(k.pt[0])
             y.append(k.pt[1])
             response.append(k.response)
@@ -213,7 +213,7 @@ class SIFT(KeyPointFeatures):
 
         x=[]; y=[]; response=[]; size=[]; angle=[]; octave=[]
 
-        for k in kpts:
+        for k in kpts[:500]:
             x.append(k.pt[0])
             y.append(k.pt[1])
             response.append(k.response)
@@ -269,7 +269,7 @@ class SURF(KeyPointFeatures):
 
         x = []; y = []; response = []; size = []; angle = []; octave = []
 
-        for k in kpts:
+        for k in kpts[:500]:
             x.append(k.pt[0])
             y.append(k.pt[1])
             response.append(k.response)

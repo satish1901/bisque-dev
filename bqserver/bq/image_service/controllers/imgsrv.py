@@ -202,6 +202,7 @@ mime_types = {
     'matroska'  : 'video/x-matroska',
     'webm'      : 'video/webm',
     'h264'      : 'video/mp4',
+    'h265'      : 'video/mp4',    
     'mpeg4'     : 'video/mp4',
     'ogg'       : 'video/ogg',
 }
@@ -233,6 +234,7 @@ class ProcessToken(object):
         self.series      = 0
         self.timeout     = None
         self.meta        = None
+        self.operations  = OrderedDict() # operation:parameters
 
     def setData (self, data_buf, content_type):
         self.data = data_buf
@@ -508,6 +510,7 @@ class MetaService(object):
             tags_map = {}
             for k, v in meta.iteritems():
                 if k in meta_private_fields: continue
+                if k.startswith('DICOM/'): continue
                 k = safeunicode(k)
                 v = safeunicode(v)
                 tl = k.split('/')
@@ -524,6 +527,10 @@ class MetaService(object):
                     parent.set('value', v)
                 except ValueError:
                     pass
+
+            if meta['format'] == 'DICOM':
+                node = etree.SubElement(image, 'tag', name='DICOM')  
+                ConverterImgcnv.meta_dicom(ifile, series=data_token.series, token=data_token, xml=node)
 
             log.debug('Meta %s: storing metadata into %s', image_id, metacache)
             xmlstr = etree.tostring(image)
