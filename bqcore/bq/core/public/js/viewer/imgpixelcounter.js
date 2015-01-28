@@ -1,7 +1,18 @@
 //modification to imageview
-function ImgPixelCounter(viewer,name) {
+/*
+*	ImgPixelCounter Viewer Plugin
+*
+*	Instantiates a ImgCurrentView for snap shots of the current 
+*	view to build. A pixel counter button is added to the operations
+*	menu.
+*
+*	@param: viewer - 
+*	@param: name - 
+*/
+function ImgPixelCounter(viewer, name) {
+
     this.base = ViewerPlugin;
-    this.base (viewer, name);
+    this.base(viewer, name);
 
     var p = viewer.parameters || {};
     this.default_threshold        = p.threshold || 0;
@@ -25,18 +36,18 @@ function ImgPixelCounter(viewer,name) {
         scope  : this,
     });
 	
+	//set all the counts to 0
 	this.r0px = 0;//number of pixels equal or below the threshold (red)
 	this.r1px = 0;//number of pixels above the threshold
 	this.g0px = 0;//number of pixels equal or below the threshold (green)
 	this.g1px = 0;//number of pixels above the threshold
 	this.b0px = 0;//number of pixels equal or below the threshold (blue)
 	this.b1px = 0;//number of pixels above the threshold
-	
-	
-	this.thresh_value = 128;
 }
 
+
 ImgPixelCounter.prototype = new ViewerPlugin();
+
 
 ImgPixelCounter.prototype.create = function (parent) {
     this.parent = parent;
@@ -46,16 +57,16 @@ ImgPixelCounter.prototype.create = function (parent) {
 /*
 *	pixelCounter
 *
-*	Initalizes the panels for the pixel counter and
+*	Initializes the panels for the pixel counter and
 *	Hides the Tag Panel and attaches a close listener
 *	to the Pixel Counter Panel to destroy the Pixel
-*	Counter Panel and show the Tag Panel
+*	Counter Panel and show the Tag Panel.
 *
 */
 ImgPixelCounter.prototype.pixelCounter = function () {
     if (!this.pixelCounterPanel) { //check if the pixel counter panel exists
 	
-         //hidding the panel
+        
         var viewerTagPanel = this.viewer.parameters.main.queryById('tabs');
         viewerTagPanel.setVisible(false);
         var pixelcounterButton = this.viewer.toolbar.queryById('menu_viewer_pixel_counting');
@@ -64,7 +75,6 @@ ImgPixelCounter.prototype.pixelCounter = function () {
         var me = this;
         //disable pixel counter menu
         this.pixelCounterPanel = Ext.create('BQ.Panel.PixelCounter',{
-            //width: this.viewer.parameters.main.queryById('tabs').width,
             pixelCounter: this,
             viewer: this.viewer,
             phys: this.viewer.imagephys,
@@ -72,6 +82,10 @@ ImgPixelCounter.prototype.pixelCounter = function () {
 			itemId: 'pixelcounter-panel',
 			id: 'pixelcounter-panel',
         });
+		
+		// When close is called on the panel this listener will
+		// break down the panel and call back the tag viewer into
+		// view.
         this.pixelCounterPanel.on('close', function() {
             this.destroyPixelCounterDisplay(); //destroys display when closed
             delete this.pixelCounterPanel; //remove the panel from ImgPixelCounter
@@ -82,17 +96,16 @@ ImgPixelCounter.prototype.pixelCounter = function () {
         this.viewer.parameters.main.queryById('viewer_container').add(this.pixelCounterPanel); //create panel
 		this.initCanvas();
 		
+		// Adds a resize listener to the window to destroy the panel
+		// when a resize occurs. The pixel counter only takes a snap
+		// shot of a current view so any-time the view is changed the
+		// pixel counter will be destroyed.
 		window.addEventListener('resize', function() {
 			if (me.pixelCounterPanel) {
 				me.pixelCounterPanel.close();
-				delete me.pixelCounterPanel;
 			}
 		});
-		
-    //pixelCounterPlugin
-    //switches disable to true
-    } //when broken down the item has to be removed
-
+    }
 };
 
 
@@ -111,7 +124,9 @@ ImgPixelCounter.prototype.pixelCounter = function () {
 *
 */
 ImgPixelCounter.prototype.initCanvas = function() {
-    var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
+    
+	var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
+	
     if (!this.canvas_mask) {
         this.canvas_mask = document.createElement('canvas');
         this.canvas_mask.setAttributeNS(null, 'class', 'pixel_counter_canvas_mask');
@@ -124,7 +139,6 @@ ImgPixelCounter.prototype.initCanvas = function() {
         this.canvas_mask.style.position = "absolute";
         this.ctx_imgmask = this.canvas_mask.getContext("2d");
         this.canvas_mask.addEventListener("click", this.onClick.bind(this), false);
-        //this.canvas_mask.style.visibility='hidden';
         this.parent.appendChild(this.canvas_mask);
     }
 
@@ -138,12 +152,11 @@ ImgPixelCounter.prototype.initCanvas = function() {
         this.canvas_image.style.top = "0px";
         this.canvas_image.style.left = "0px";
         this.canvas_image.style.position = "absolute";
-        //this.canvas_image.style.visibility='hidden';
         this.ctx_img = this.canvas_image.getContext("2d");
         this.parent.appendChild(this.canvas_image);
     }
 
-	    if (!this.canvas_theshold) {
+	if (!this.canvas_theshold) {
         this.canvas_theshold = document.createElement('canvas');
         this.canvas_theshold.setAttributeNS(null, 'class', 'pixel_counter_canvas_threshold');
         this.canvas_theshold.setAttributeNS(null, 'id', 'pixel_counter_canvas_threshold');
@@ -153,7 +166,6 @@ ImgPixelCounter.prototype.initCanvas = function() {
         this.canvas_theshold.style.top = "0px";
         this.canvas_theshold.style.left = "0px";
         this.canvas_theshold.style.position = "absolute";
-        //this.canvas_theshold.style.visibility='hidden';
         this.ctx_thresh = this.canvas_theshold.getContext("2d");
         this.parent.appendChild(this.canvas_theshold);
     }
@@ -169,7 +181,6 @@ ImgPixelCounter.prototype.initCanvas = function() {
         this.svgdoc.style.position = "absolute";
         this.svgdoc.style.top = "0px";
         this.svgdoc.style.left = "0px";
-        //this.svgdoc.style.visibility='hidden';
         this.svgdoc.style.zIndex = 315;
         this.svgdoc.addEventListener("click",this.onClick.bind(this),false);
         this.parent.appendChild(this.svgdoc);
@@ -184,9 +195,11 @@ ImgPixelCounter.prototype.initCanvas = function() {
 //initalizes only on enable select
 //updates new canvas when enable select is disabled and enabled
 /*
+*	updateCanvas
 *
-*
-*
+*	Grabs the current view saves it in the image canvas and 
+*	applies a threshold and save the filtered image to the
+* 	threshold canvas.
 */
 ImgPixelCounter.prototype.updateCanvas = function() {
     if (!this.canvas_image||!this.canvas_mask) {
@@ -213,44 +226,50 @@ ImgPixelCounter.prototype.updateCanvas = function() {
 	this.imgCurrentView.returnCurrentView(callback); // expensive
 };
 
-
+/*
+*	updateThresholdCanvas
+*
+*	Resets the threshold canvas by setting all the pixel values to
+* 	gray, opacity 0. The opacity is set to 1 for all the pixels
+*	on the tileviewer.
+*/
 ImgPixelCounter.prototype.updateThresholdCanvas = function() {
-
-	var renderer = this.viewer.plugins_by_name['renderer'];
-	var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer;
-	
-	var ctx_thresh = this.canvas_theshold.getContext("2d");
-	
-	//set transparency of the threshold convas to the location of the view
-	ctx_thresh.fillStyle = 'rgba(67, 67, 67, 0)';
-	ctx_thresh.fillRect(0, 0, this.canvas_theshold.width, this.canvas_theshold.height); //set all transparent
-	
-	var width = parseInt(renderer.overlay.style.width, 10);
-	var height = parseInt(renderer.overlay.style.height, 10);
-	
-	//getting the viewer offsets
-	if (parseInt(renderer.overlay.style.left, 10)>0)
-		var xoffset = parseInt(renderer.overlay.style.left, 10);
-	else {
-		var xoffset = 0;
+	if (this.canvas_theshold) {
+		var renderer = this.viewer.plugins_by_name['renderer'];
+		var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer;
+		var ctx_thresh = this.canvas_theshold.getContext("2d");
+		
+		//set transparency of the threshold convas to the location of the view
+		ctx_thresh.fillStyle = 'rgba(67, 67, 67, 0)';
+		ctx_thresh.fillRect(0, 0, this.canvas_theshold.width, this.canvas_theshold.height); //set all transparent
+		
+		var width = parseInt(renderer.overlay.style.width, 10);
+		var height = parseInt(renderer.overlay.style.height, 10);
+		
+		//getting the viewer offsets
+		if (parseInt(renderer.overlay.style.left, 10)>0)
+			var xoffset = parseInt(renderer.overlay.style.left, 10);
+		else {
+			var xoffset = 0;
+		}
+		
+		if (parseInt(renderer.overlay.style.top, 10)>0)
+			var yoffset = parseInt(renderer.overlay.style.top, 10);
+		else {
+			var yoffset = 0;
+		}
+		if ((parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10)) > tiled_viewer.height) {
+			var height = height - (parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10) - tiled_viewer.height);
+		}
+		
+		if ((parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10)) > tiled_viewer.width) {
+			var width = width - (parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10) - tiled_viewer.width);
+		}
+		
+		ctx_thresh.fillStyle = 'rgba(67, 67, 67, 1)';
+		ctx_thresh.fillRect(xoffset, yoffset, width, height); //set view none transparent
+		this.thresholdImage(this.pixelCounterPanel.thresholdValue);
 	}
-	
-	if (parseInt(renderer.overlay.style.top, 10)>0)
-		var yoffset = parseInt(renderer.overlay.style.top, 10);
-	else {
-		var yoffset = 0;
-	}
-	if ((parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10)) > tiled_viewer.height) {
-		var height = height - (parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10) - tiled_viewer.height);
-	}
-	
-	if ((parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10)) > tiled_viewer.width) {
-		var width = width - (parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10) - tiled_viewer.width);
-	}
-	
-	ctx_thresh.fillStyle = 'rgba(67, 67, 67, 1)';
-	ctx_thresh.fillRect(xoffset, yoffset, width, height); //set view none transparent
-	this.thresholdImage(this.pixelCounterPanel.thresholdValue);
 }
 
 /*
@@ -368,12 +387,11 @@ ImgPixelCounter.prototype.getParams = function () {
 
 //check if threshold mode is on to redraw image
 //or if selection mode is on the redraw canvas and push it to the front
-/*
 ImgPixelCounter.prototype.updateView = function (view) {
-    if (this.pixelCounterPanel && this.pixelCounterPanel.thresholdMode)
-        view.addParams('threshold='+this.pixelCounterPanel.thresholdValue+',both');
+    ///if (this.pixelCounterPanel && this.pixelCounterPanel.thresholdMode)
+    //    view.addParams('threshold='+this.pixelCounterPanel.thresholdValue+',both');
 };
-*/
+
 
 /*
 *	onClick
@@ -381,7 +399,7 @@ ImgPixelCounter.prototype.updateView = function (view) {
 *	Retrieves the points from a click event and maps
 *	it to the tile viewer. If that point has not been
 *	selected indicated by the mask a connected components
-* 	is run from that point on the thresheld image and 
+* 	is run from that point on the threshold filtered image and 
 * 	written to the mask.
 */
 ImgPixelCounter.prototype.onClick = function(e) {
@@ -425,10 +443,10 @@ ImgPixelCounter.prototype.onClick = function(e) {
 *	Converts a single index value to (x,y)
 *	coordinates on the canvas.
 *
-*	param: index - the index of a pixel on the canvas
+*	@param: index - the index of a pixel on the canvas
 *	plain
 *
-*	return: {x: - x coordinate in canvas
+*	@return: {x: - x coordinate in canvas
 *			 y: - y coordinate in canvas}
 */
 ImgPixelCounter.prototype.index2xy = function(index) {
@@ -448,10 +466,10 @@ ImgPixelCounter.prototype.index2xy = function(index) {
 *		font-family:Arial;font-size: 14; fill:blue; text-shadow: #FFFFFF 1px 1px 1px
 *	to the SVG Document
 *
-*	param: text - text to be applied at given 
-*	param: id - set element id
-*	param: x - set x coordinate in the SVG space
-*	param: y = set y coordinate in the SVG space
+*	@param: text - text to be applied at given 
+*	@param: id - set element id
+*	@param: x - set x coordinate in the SVG space
+*	@param: y = set y coordinate in the SVG space
 *
 */
 ImgPixelCounter.prototype.setText2SVG = function(text,id,x,y) {
@@ -469,7 +487,12 @@ ImgPixelCounter.prototype.setText2SVG = function(text,id,x,y) {
 /*
 *	connectedComponents
 *
+*	Set the region defined by the connected components to magenta with
+*	an opacity of 1 and set the place where the click occurred with to 
+*	the current idcount of selected elements.
 *
+*	@param: x  - x coordinate of the point to seed the connected components
+*	@param: y  - y coordinate of the point to seed the connected components
 */
 ImgPixelCounter.prototype.connectedComponents = function(x,y) {
 
@@ -526,10 +549,21 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
 
 
 //removing the connected component marked region
+/*
+*	undoConnectedComponents
+*
+*	Set the region defined by the connected components to black with
+*	an opacity of 0 and removed the tag from the SVG layer of the provided
+*	id.
+*
+*	@param: x  - x coordinate of the point to seed the connected components
+*	@param: y  - y coordinate of the point to seed the connected components
+*	@param: id - the id of the tag in the SVG layer
+*/
 ImgPixelCounter.prototype.undoConnectedComponents = function(x,y,id) {
 
     var maskColor = {r:0, g:0, b:0, a:0}; //set to black
-
+	
 	var ctx_imgmask = this.canvas_mask.getContext("2d");
     var maskData = ctx_imgmask.getImageData(0, 0, this.canvas_mask.width, this.canvas_mask.height);
     var mask_data = maskData.data;
@@ -537,9 +571,8 @@ ImgPixelCounter.prototype.undoConnectedComponents = function(x,y,id) {
 	var ctx_thresh = this.canvas_theshold.getContext("2d")
     var threshData = ctx_thresh.getImageData(0, 0, this.canvas_theshold.width, this.canvas_theshold.height);
     var thresh_data = threshData.data;	
-
+	
     var edge_points_queue = new Array();
-
     var seed = 4*(y*this.canvas_image.width+x); //enforce channel zero
 
     edge_points_queue.push(seed);
@@ -557,7 +590,17 @@ ImgPixelCounter.prototype.undoConnectedComponents = function(x,y,id) {
     this.pixelCounterPanel.updateRegionPanel();
 };
 
-
+/*
+*	checkNeighbors
+*
+*	
+*
+*	@param: edge_points_queue
+*	@param: label_list
+*	@param: maskColor
+* 	@param: threshold_data
+*	@param: mask_data
+*/
 ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue, label_list, maskColor, threshold_data, mask_data) {
     //Find the connected component
     //uses the transparency as a marker for past check pixels
@@ -570,7 +613,6 @@ ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue, label_lis
     mask_data[edge_index+2] = maskColor.b;
 	mask_data[edge_index+3] = maskColor.a;
 	
-    //this.masksrc[edge_index+3] = 255; //set transparency
     var edge_value = this.index2xy(edge_index);
 
     //check neighbors
@@ -628,6 +670,11 @@ ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue, label_lis
 
 
 //resets all the elements to the base level
+/*
+*	resetPixelRegionCounter
+*
+*	Resets mask, svg layer, and resets the region count.
+*/
 ImgPixelCounter.prototype.resetPixelRegionCounter = function() {
     this.resetsvg();
     this.resetmask();
@@ -637,6 +684,12 @@ ImgPixelCounter.prototype.resetPixelRegionCounter = function() {
 
 
 //removes all child elements
+/*
+*	resetsvg
+*
+*	Iterates through the children of the SVG
+*	elements and removes them.
+*/
 ImgPixelCounter.prototype.resetsvg = function() {
     if(this.svgdoc) {
         while(this.svgdoc.firstChild) {this.svgdoc.removeChild(this.svgdoc.firstChild);}
@@ -645,6 +698,11 @@ ImgPixelCounter.prototype.resetsvg = function() {
 
 
 //sets all values in the mask to 0
+/*
+*	resetmask
+*
+*	Sets mask to black and the opacity to 0.
+*/
 ImgPixelCounter.prototype.resetmask = function() {
     if (this.canvas_mask) {
 		var ctx_imgmask = this.canvas_mask.getContext("2d");
@@ -656,17 +714,13 @@ ImgPixelCounter.prototype.resetmask = function() {
 /*
 *	removeTextFromSVG
 *
-*	param: id - the id of the SVG element being removed
+*	Removes the id tag from the SVG layer based on it id value.
+*
+*	@param: id - the id number of the SVG element being removed
 */
 ImgPixelCounter.prototype.removeTextFromSVG = function(id){
     var svgTextElement = this.svgdoc.getElementById(id);
     if(svgTextElement) this.svgdoc.removeChild(svgTextElement);
-};
-
-ImgPixelCounter.prototype.onError = function(error) {
-    //BQApp.setLoading(false);
-    BQ.ui.error('Error fetching resource: <br>' + error.message);
-    //this.initPixelCounter();
 };
 
 
@@ -678,7 +732,6 @@ ImgPixelCounter.prototype.changed = function () {
 ImgPixelCounter.prototype.loadPreferences = function (p) {
     this.default_threshold      = 'threshold'      in p ? p.threshold      : this.default_threshold;
 };
-
 
 
 Ext.define('BQ.Panel.PixelCounter', {
@@ -746,15 +799,6 @@ Ext.define('BQ.Panel.PixelCounter', {
             },
              ],
         });
-		
-		
-        this.selectPanel = Ext.create('Ext.container.Container',{
-			padding: '8px',			
-            layout: 'fit',
-            html : '<h2>Regional Counts</h2><p>Click on any part of the image to segment out a region. The pixel count will be displayed below.</p>',
-            itemId : 'px_selectinfo_panel',
-            cls: 'threshold',
-        });
 
 
         //GRID
@@ -811,7 +855,6 @@ Ext.define('BQ.Panel.PixelCounter', {
             }]
         });
 
-		
 		this.regionCountInfo = Ext.create('Ext.container.Container', {
             //layout: 'fit',
 			padding: '8px',
@@ -821,19 +864,14 @@ Ext.define('BQ.Panel.PixelCounter', {
         });
 		
         this.regionCountGrid = Ext.create('Ext.grid.Panel', {
-            //title: 'regionCountGrid',
-			//title: 'Regional Counts',
             itemId : 'px_regioncount_grid',
             store: this.regionCountStore,
             multiSelect: true,
-
             columns: {
                 items: columns,
                 defaults: {flex: 1},
             },
-
             flex: 2,
-            //hidden: true,
             border : false,
             renderTo: Ext.getBody(),
             tbar: [{ //Delete button
@@ -940,9 +978,15 @@ Ext.define('BQ.Panel.PixelCounter', {
         return this.callParent(arguments);
     },
 
-    //parses xml of the document, creates and html page and write it to panel
-    updataGlobalPanel : function(xmlDoc) {
-        var channels = BQ.util.xpath_nodes(xmlDoc, 'resource/pixelcounts[@name="channel"]');
+
+	/*
+	*	updataGlobalPanel
+	*
+	*	Writes global pixel information obtained by the threshold.
+	*	If pixel resolution containing physical pixel information
+	*	the scale factor will be applied.
+	*/
+    updataGlobalPanel : function() {
         var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
 
         if (this.phys.isPixelResolutionValid()) {
@@ -985,7 +1029,13 @@ Ext.define('BQ.Panel.PixelCounter', {
         this.globalCountInfo.update(html); 
     },
 
-
+	/*
+	*	updateRegionPanel
+	*
+	*	Reloads the region panel and populates the graph with elements
+	*	if the count is 0 for number of elements in the graph all the 
+	*	buttons in the tool bar will be disabled.
+	*/
     updateRegionPanel : function(){
 	
 		var regionCountGrid = this.queryById('px_regioncount_grid').setVisible(true);
@@ -1004,7 +1054,12 @@ Ext.define('BQ.Panel.PixelCounter', {
 		}
 	},
 
-
+	/*
+	*	exportCSV
+	*
+	*	Downloads a csv document containing all the information
+	* 	contained in the region count panel.
+	*/
     exportCSV : function() {
         //writes the region count info to csv
         if (this.regionCount.length>0) {

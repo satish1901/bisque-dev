@@ -28,12 +28,12 @@ function ImgExternal (viewer,name){
 						var level = this.imgCurrentView.getCurrentLevel();
 						this.imgCurrentView.setLevel(level);
 						
-						function cb(canvas_view) {
+						function callback(canvas_view) {
 							var url = canvas_view.toDataURL("image/png");
 							window.open(url);
 						}
 						
-						var canvas_view = this.imgCurrentView.returnCurrentView(cb);
+						var canvas_view = this.imgCurrentView.returnCurrentView(callback);
 
                     },
                 

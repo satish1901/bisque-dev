@@ -323,16 +323,15 @@
 /***********************************************************/
 
 .scalebar {
-  /*opacity: 0.6;*/
-  position:absolute;
+  position : absolute;
   left: 6px;
   bottom: 10px;
+  /*top: 20px;*/
   width: 100px;
-  height: 38px;
+  height: 42px;
   background-color: #222222;
   color: #FFFFFF;
   font-size: 12px;
-  /*border: 1px solid #666666;  */
   padding: 8px 8px 8px 8px;
   border-radius: 5px;
   -moz-border-radius: 5px;
@@ -345,37 +344,60 @@
 }
 
 .scalebar div#scalebar_bar {
-  width:100%;
-  height:5px;
+  width: 100%;
+  height: 30%
   background-color: #FFFFFF;
   color: #FFFFFF;
-  background:#FFFFFF;
+  background: #FFFFFF;
   opacity: 1;
   z-index: 29;
 }
 
 .scalebar div#scalebar_caption {
   white-space: nowrap; 
+  height: 70%;
+  overflow: hidden;
   margin-top: 2px;
+  /*margin-bottom: 20px;*/
   z-index: 28;
+  /*padding: 0px 8px 8px 8px;*/
+}
+
+.scalebar div#scalebar_selectionPanel {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    z-index: 31;
 }
 
 .scalebar div#scalebar_editButton {
     /*background-color: transparent;*/
+    position: absolute;
+    top: 2px;
+    height: 2px;
+    width: 31px;
+    height: 31px;
+    z-index: 32;
     background-repeat: no-repeat;
-    background-position: -34px -97px;
+    background-position: -34px -131px;
     background-image: url('/images/viewer/icons_viewer.svg');
     background-size: 200px;
 }
 
 .scalebar div#scalebar_rescaleButton {
-    background-color: transparent;
+    /*background-color: transparent;*/
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    width: 20px;
+    height: 20px;
+    z-index: 32;
     background-repeat: no-repeat;
     background-image: url('/images/viewer/resize-handle.png');
-    /*background-size: 200px;*/
-    /*background-position: -135px -163px;*/
 }
-
+/******************************************************************************/
 
 .imgview_button_selected {
   border-color: #333333;
