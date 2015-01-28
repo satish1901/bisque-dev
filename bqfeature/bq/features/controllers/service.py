@@ -20,7 +20,7 @@ import hashlib
 import uuid
 from lxml import etree
 import traceback
-from collections import namedtuple 
+from collections import namedtuple
 from paste.fileapp import FileApp
 from pylons.controllers.util import forward
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
@@ -56,7 +56,7 @@ class Feature_Archive(dict):
     """
     def __init__(self):
         """
-            Looks into extractors/feature_module for extractor. Once found 
+            Looks into extractors/feature_module for extractor. Once found
             it will import the library and parse the module for all classes
             inheriting FeatureBase
         """
@@ -69,15 +69,15 @@ class Feature_Archive(dict):
                         log.debug('Imported Feature: %s' % item.name)
                         item.library = module #for the list of features
                         self[item.name] = item
-            
+
             except FeatureImportError, e:
-                log.warning('Failed to import: %s'%(module))
-                log.debug('Failed to import: %s\n%s'%(module, traceback.format_exc()))
+                log.warning('Failed to import: %s reason %s ', module, e)
+                #log.debug('Failed to import: %s\n%s'%(module, traceback.format_exc()))
                 continue
-                
+
             except StandardError, e:  # need to pick a narrower error band but not quite sure right now
-                log.warning('Failed to import: %s'%(module))
-                log.debug('Failed to import: %s\n%s'%(module, traceback.format_exc()))
+                log.warning('Failed to import: %s reason %s ', module, e)
+                #log.debug('Failed to import: %s\n%s'%(module, traceback.format_exc()))
                 continue
 
 
@@ -114,7 +114,7 @@ class ResourceList(object):
             Hashes all the resources together in order with
             their status along with the feature being
             extracted.
-            Form: feature name::resource hash:status;resource hash:...; 
+            Form: feature name::resource hash:status;resource hash:...;
         """
         m = hashlib.md5()
         m.update('%s::'%self.feature.name)
@@ -136,7 +136,7 @@ class ResourceList(object):
 
     def path_in_workdir(self):
         """
-            Returns path to a response in the workdir 
+            Returns path to a response in the workdir
         """
         filename = self.hash_response()
         return os.path.join(FEATURES_WORK_DIR, self.feature.name, filename[0], '%s.h5' % filename)
@@ -147,14 +147,14 @@ class ResourceList(object):
             on the first append the types are checked
 
             @input_dict : dictionary where the keys are the input types and the values are the uris
-        """ 
+        """
         exception = None
-        
+
         try: #check if user has access to resource
             resource = mex_validation(resource)
         except InvalidResourceError as e:
             exception = FeatureExtractionError(resource, e.code, e.message)
-            
+
         resource_hash = self.feature.hash_resource(resource) #the hash will change if redirects
         if resource_hash not in self.resource_list:
             self.resource_list[resource_hash] = ResourceRequest(feature_resource=resource, exception=exception)
@@ -162,10 +162,10 @@ class ResourceList(object):
     def add_exc(self, resource_hash, exception):
         """
             Adds an exception onto a ResourceRequest. The perfored exception is FeatureExtractionError
-            
+
             @param: resource_hash - the hash of the FeatureResource
             @param: exception - FeatureExtractionError
-            
+
             @returns: bool - False if resource is not found or True otherwise
         """
         resource_request = self.get(resource_hash)[1]
@@ -174,11 +174,11 @@ class ResourceList(object):
         else:
             self.resource_list[resource_hash] = ResourceRequest(feature_resource=resource_request, exception=exception)
             return True
-        
+
     def get(self, resource_hash):
         """
             Looks up a resource hash in the list of resources and return the resource
-            
+
             @param: resource_hash - the hash of the FeatureResource
             @return: (resource_hash, ResourceRequest), if not found returns None
         """
@@ -190,14 +190,14 @@ class ResourceList(object):
 
     def create_query_plan(self, feature):
         """
-            returns an organized query queue with all the resources in resource 
+            returns an organized query queue with all the resources in resource
             list by the first few hash elements
         """
         query_plan = QueryPlan(feature)
         for hash in self.resource_list:
             query_plan.push(hash)
         return query_plan
-            
+
     def __getitem__(self, index):
         """get with index, the list is always ordered """
         resource_hash = sorted(self.resource_list.keys())[index]
@@ -206,7 +206,7 @@ class ResourceList(object):
 
     def __len__(self):
         return len(self.resource_list)
-    
+
     def __iter__(self):
         """returns an ordered list of the hashes"""
         return iter(sorted(self.resource_list.keys()))
@@ -218,7 +218,7 @@ def clean_url(url):
         remove both quotes from the beginning and end of
         the url, also checks if the urls are strings
         @param: url -
-        
+
         @return: url without quotes
     """
     if isinstance(url, list):
@@ -226,7 +226,7 @@ def clean_url(url):
             url = url[0]
         else:
             raise FeatureServiceError(400, 'Request Error: Only one resource per resource type')
-    
+
     if url is None:
         return url
     if url.startswith('"'):
@@ -240,14 +240,14 @@ def clean_url(url):
 def parse_request(feature_name, format_name='xml', method='GET', **kw):
     """
         Parses request, constructs and returns a ResourceList
-        
-        @param: feature_name - (ex. HTD, EHD,...) 
+
+        @param: feature_name - (ex. HTD, EHD,...)
         @param: format_name - (ex. xml, csv, hdf)(default: xml)
         @param: method - method of the requests (default: GET)
         @param: kw - query of the url
-        
+
         @return: ResourceList
-    """    
+    """
     resource_list = ResourceList(feature_name, format_name)
 
     # validating request
@@ -259,11 +259,11 @@ def parse_request(feature_name, format_name='xml', method='GET', **kw):
             body = etree.fromstring(request.body)
         except etree.XMLSyntaxError:
             raise FeatureServiceError(400, 'Document Error: document was not formatted correctly')
-        
+
         def append_resource_list(feature_node):
             uri = feature_node.attrib.get('uri')
             if uri is None: #protect against malformed xml
-                return 
+                return
             o = urlparse.urlparse(uri)
             path = o.path
             query = urlparse.parse_qs(o.query)
@@ -272,34 +272,34 @@ def parse_request(feature_name, format_name='xml', method='GET', **kw):
                                        gobject=clean_url(query.get('gobject','')))
             if tuple(resource) != ('', '', ''): #skip nodes with nothing in them
                 log.debug('Resource: %s'%str(resource))
-                resource_list.append(resource)            
-        
+                resource_list.append(resource)
+
         if body.tag == 'resource':
             # iterating through elements in the dataset parsing and adding to ElementList
             for feature_node in body.xpath('feature'):
                 append_resource_list(feature_node)
-                
+
         elif body.tag == 'feature':
             append_resource_list(body)
-        
+
         else:
             raise FeatureServiceError(400, 'Document Error: document was not formatted correctly')
-        
+
         if len(resource_list)<1: #checks to see if no resourses are there or the format was not proper resulting in no elements
             raise FeatureServiceError(400, 'No resources were found!')
 
     elif method == 'GET':
-        resource = FeatureResource(image=clean_url(kw.get('image', '')), 
-                                   mask=clean_url(kw.get('mask', '')), 
+        resource = FeatureResource(image=clean_url(kw.get('image', '')),
+                                   mask=clean_url(kw.get('mask', '')),
                                    gobject=clean_url(kw.get('gobject', '')))
         if resource == ('', '', ''):
             raise FeatureServiceError(400, 'Request Error: No excepted resources were provided')
         resource_list.append(resource)
-        
+
     else:
         log.debug('Request Error: http request was not formed correctly')
         raise FeatureServiceError(400, 'http request was not formed correctly')
-    
+
     return resource_list
 
 
@@ -308,15 +308,15 @@ def operations(resource_list):
         Performs the bulk of the work in the feature service.
         Makes requests to the table for calculations and performs
         the feature calculations error handling
-        
+
         If a feature has been set to cache the feature will be stored
-        in the features cache tables otherwise the requests will be 
+        in the features cache tables otherwise the requests will be
         constructed directly in the workdir
-        
-        Also if a request has been found to be be calculated already and 
+
+        Also if a request has been found to be be calculated already and
         saved in the workdir, this function will be skipped.
-        
-        @resource_list - a ResourceList object constaining the list 
+
+        @resource_list - a ResourceList object constaining the list
         of resources for feature calculations
     """
     feature = resource_list.feature()
@@ -327,7 +327,7 @@ def operations(resource_list):
         else:
             table_list = [WorkDirTable(feature)]
             Rows = WorkDirRows
-        
+
         for table in table_list:
             query_plan = resource_list.create_query_plan(table.feature)
             rows = Rows(table.feature)
@@ -344,41 +344,41 @@ def operations(resource_list):
                             if not resource_list.add_exc(id, feature_extractor_error):
                                 log.debug('Exception: Resource ID: %s not found' % (str(id)))
                                 raise FeatureServiceError(500, 'Resource hash was not found')
-                            log.debug('Exception: Error Code %s : Error Message %s' % (str(feature_extractor_error.code), feature_extractor_error.message))  
-    
-            
+                            log.debug('Exception: Error Code %s : Error Message %s' % (str(feature_extractor_error.code), feature_extractor_error.message))
+
+
             table.set_path(resource_list.path_in_workdir())
-            
+
             # store features
             table.store(rows)
 
 
 def format_response(resource_list):
     """
-        Formats and returns a response in the format specified. 
+        Formats and returns a response in the format specified.
         If a response has been found to be stored in the workdir
         the response will be read for the workdir otherwise the
         response will be constructed for features in the cached
         table of the feature service
-        
-        @resource_list - a ResourceList object constaining the list 
+
+        @resource_list - a ResourceList object constaining the list
         of resources to be returned
-        
+
         @return: header - a dictionary of parameters provided in
         the header for a particular format
-        @return: body - the body of the requests, can either 
+        @return: body - the body of the requests, can either
         be an iter, string document or a forward FileApp
     """
     feature = resource_list.feature()
     format = resource_list.format(feature)
-    
+
     if resource_list.check_response_in_workdir() is False:
         table = CachedTables(feature) # queries for results in the feature tables
         body = format.return_from_tables(table, resource_list)
     else:
         table = WorkDirTable(feature).set_path(resource_list.path_in_workdir()) #returns unindexed table from the workdir
         body = format.return_from_workdir(table, resource_list)
-    
+
     header = format.return_header()
     return header, body
 
@@ -403,13 +403,13 @@ class Format(object):
     def _make_uri(feature, resource):
         """
             Constructs a url for a feature request
-            
+
             @param: feature - feature object provides feature
             information
             @resource - a FeatureResource containing url resource for
             one request
         """
-        query = [] 
+        query = []
         if resource.image: query.append('image=%s' % resource.image)
         if resource.mask: query.append('mask=%s' % resource.mask)
         if resource.gobject: query.append('gobject=%s' % resource.gobject)
@@ -422,20 +422,20 @@ class Format(object):
             provided in the header for a particular
             format
         """
-        return {'Content-Type': self.content_type}   
-    
+        return {'Content-Type': self.content_type}
+
     def _construct_from_cache(self, table, resource_list, feature):
         """
-            Formats a response for a feature from the feature cache 
+            Formats a response for a feature from the feature cache
             tables containing the requests provided in the resources list
-        
-            @param: table - cached table object that allows access 
+
+            @param: table - cached table object that allows access
             to the cached tables in the feature service
             @param: resource_list - the resource lists object containing
             all the resources proccessed on during the request
-            @param: feature - the feature module containing info about 
+            @param: feature - the feature module containing info about
             each specific feature
-            
+
             @yield: rows of a request
         """
         idx = 0
@@ -455,19 +455,19 @@ class Format(object):
                 else:
                     yield self.construct_error_row(idx, self.feature, error)
                     idx += 1
-    
+
     def _construct_from_workdir(self, table, resource_list, feature):
         """
-            Formats a response for a feature from a feature workir 
+            Formats a response for a feature from a feature workir
             table containing the requests provided in the resources list
-            
-            @param table - workdir table object that allows access 
+
+            @param table - workdir table object that allows access
             to the workdir table created by the feature service
             @param: resource_list - the resource lists object containing
             all the resources proccessed on during the request
-            @param: feature - the feature module containing info about 
+            @param: feature - the feature module containing info about
             each specific feature
-                        
+
             @yield: rows of a request
         """
         idx = 0
@@ -488,22 +488,22 @@ class Format(object):
 #-------------------------------------------------------------
 class Xml(Format):
     """
-        Handles responses in XML and provides 
+        Handles responses in XML and provides
         info about XML responses
     """
     name = 'XML'
     description = 'Extensible Markup Language'
     content_type = 'text/xml'
-    
+
     @staticmethod
     def construct_row(idx, feature, resource, row):
         """
-            Formats a response in xml which has returned 
+            Formats a response in xml which has returned
             the feature
-            
+
             @param: feature - feature object provided informtion for
-            the construction of the row for a specific feature 
-            @param: resource - a FeatureResource containing the uri of 
+            the construction of the row for a specific feature
+            @param: resource - a FeatureResource containing the uri of
             the request
             @param: row - a pytable row element from either
             a cached table or workdir table
@@ -519,10 +519,10 @@ class Xml(Format):
     @staticmethod
     def construct_error_row(idx, feature, error):
         """
-            Formats a response in xml which has returned 
-            an error in the feature service 
-            
-            @param: idx - the index of the specific node 
+            Formats a response in xml which has returned
+            an error in the feature service
+
+            @param: idx - the index of the specific node
             @param: feature - feature object provided informtion for
             the construction of the row for a specific feature
             @param: error -  a FeatureExtractionError object returning
@@ -532,20 +532,20 @@ class Xml(Format):
         """
         uri = Xml._make_uri(feature, error.resource)
         subelement = etree.Element('feature',uri=uri, type=str(feature.name))
-        etree.SubElement(subelement, 'tag', name='error', value='%s:%s'%(str(error.code), error.message))    
+        etree.SubElement(subelement, 'tag', name='error', value='%s:%s'%(str(error.code), error.message))
         return subelement
-                
+
     def return_from_tables(self, table, resource_list):
         """
             Wrties the output as xml. If only one nodes is returned
             from _construct_from_cache the root node will be named
             feature else the root not will be named resource
-            
-            @param: table - cached table object that allows access 
+
+            @param: table - cached table object that allows access
             to the cached tables in the feature service
             @param: resource_list - the resource lists object containing
             all the resources proccessed on during the request
-            
+
             @yield: nodes of xml
         """
         node_gen = self._construct_from_cache(table, resource_list, self.feature)
@@ -568,18 +568,18 @@ class Xml(Format):
             for n in node_gen:
                 yield etree.tostring(n)
             yield '</resource>'
-            
+
     def return_from_workdir(self, table, resource_list):
         """
-            Translates workdir response table to xml. If only one nodes 
-            is returned from _construct_from_workdir the root node will 
+            Translates workdir response table to xml. If only one nodes
+            is returned from _construct_from_workdir the root node will
             be named feature else the root not will be named resource
-            
-            @param: table - workdir table object that allows access 
+
+            @param: table - workdir table object that allows access
             to the workdir table created by the feature service
             @param: resource_list - the resource lists object containing
             all the resources proccessed on during the request
-            
+
             @yield: nodes of xml
         """
         node_gen = self._construct_from_workdir(table, resource_list, self.feature)
@@ -587,7 +587,7 @@ class Xml(Format):
             node_one = next(node_gen)
         except StopIteration: #no elements
             pass
-        
+
         try:
             node_two = next(node_gen)
             #there is more than one node
@@ -611,43 +611,43 @@ class Xml(Format):
 #-------------------------------------------------------------
 class Csv(Format):
     """
-        Handles responses in CSV and provides 
+        Handles responses in CSV and provides
         info about CSV responses
     """
     name = 'CSV'
     description = 'Returns csv file format with columns as resource ... | feature | feature attributes...'
     content_type = 'text/csv'
     ext = '.csv'
-    
+
 
     @staticmethod
     def construct_row(idx, feature, resource, row):
         """
-            Formats a response in csv which has returned 
+            Formats a response in csv which has returned
             the feature
-            
+
             @param: feature - feature object provided informtion for
-            the construction of the row for a specific feature 
-            @param: resource - a FeatureResource containing the uri of 
+            the construction of the row for a specific feature
+            @param: resource - a FeatureResource containing the uri of
             the request
             @param: row - a pytable row element from either
             a cached table or workdir table
-            
+
             @yield: csv row string
         """
         value_string = ",".join('%g' % i for i in row['feature'])  # parses the table output and returns a string of the vector separated by commas
         resource_uris = [resource.image or '', resource.mask or '', resource.gobject or '']
         parameter = ['%s'%str(row[pn]) for pn in feature.parameter]
-        line = str("%s%s"%(",".join([str(idx), feature.name] + resource_uris + ['"%s"'%value_string] + parameter + ['']),os.linesep))        
+        line = str("%s%s"%(",".join([str(idx), feature.name] + resource_uris + ['"%s"'%value_string] + parameter + ['']),os.linesep))
         return line
-        
+
     @staticmethod
     def construct_error_row(idx, feature, error):
         """
-            Formats a response in csv which has returned 
-            an error in the feature service 
-            
-            @param: idx - the index of the specific node 
+            Formats a response in csv which has returned
+            an error in the feature service
+
+            @param: idx - the index of the specific node
             @param: feature - feature object provided informtion for
             the construction of the row for a specific feature
             @param: error -  a FeatureExtractionError object returning
@@ -657,7 +657,7 @@ class Csv(Format):
         """
         resource = error.resource
         resource_uris = [resource.image or '', resource.mask or '', resource.gobject or '']
-        parameter = ['' for pn in feature.parameter] 
+        parameter = ['' for pn in feature.parameter]
         line = str("%s%s"%(",".join([str(idx), feature.name] + resource_uris + ['']  +  parameter + ['%s:%s'%(str(error.code),str(error.message))]),os.linesep))
         return line
 
@@ -675,13 +675,13 @@ class Csv(Format):
 
     def return_from_tables(self, table, resource_list):
         """
-            Wrties the output as csv. 
-            
-            @param: table - cached table object that allows access 
+            Wrties the output as csv.
+
+            @param: table - cached table object that allows access
             to the cached tables in the feature service
             @param: resource_list - the resource lists object containing
             all the resources proccessed on during the request
-            
+
             @yield: csv row string
         """
         resource_names = ['image','mask','gobject']#self.feature.resource
@@ -693,12 +693,12 @@ class Csv(Format):
     def return_from_workdir(self, table, resource_list):
         """
             Translates workdir response table to csv.
-            
-            @param: table - workdir table object that allows access 
+
+            @param: table - workdir table object that allows access
             to the workdir table created by the feature service
             @param: resource_list - the resource lists object containing
             all the resources proccessed on during the request
-            
+
             @yield: csv row string
         """
         resource_names = ['image','mask','gobject']
@@ -727,26 +727,26 @@ class Hdf(Format):
     def construct_row(idx, feature, resoure, row):
         """
             Returns rows from an hdf5 table
-            
+
             @param: feature - feature object provided informtion for
-            the construction of the row for a specific feature 
-            @param: resource - a FeatureResource containing the uri of 
+            the construction of the row for a specific feature
+            @param: resource - a FeatureResource containing the uri of
             the request
             @param: row - a pytable row element from either
             a cached table or workdir table
-            
+
             @return: feature rows and a status rows to be place into hdf5 table
         """
         return WorkDirRows(feature).construct_row(feature, resoure, row)
-    
-        
+
+
     @staticmethod
     def construct_error_row(idx, feature, error):
         """
-            Constructs and hdf5 row for a feature 
-            which has returned an error in the feature service 
-            
-            @param: idx - the index of the specific node 
+            Constructs and hdf5 row for a feature
+            which has returned an error in the feature service
+
+            @param: idx - the index of the specific node
             @param: feature - feature object provided informtion for
             the construction of the row for a specific feature
             @param: error -  a FeatureExtractionError object returning
@@ -755,30 +755,30 @@ class Hdf(Format):
             @return: feature rows and a status rows to be place into hdf5 table
         """
         return WorkDirRows(feature).construct_error_row(feature, error)
-    
+
 
     def return_from_tables(self, table, resource_list):
         """
             Builds and hdf5 table in the workdir and then
             returns that table form the workdir
-            
-            @param: table - cached table object that allows access 
+
+            @param: table - cached table object that allows access
             to the cached tables in the feature service
             @param: resource_list - the resource lists object containing
             all the resources proccessed on during the request
-            
+
             @returns: return_from_workdir(workdir_feature_table, resource_list)
         """
         row_list = []
         status_list = []
-        
+
         for (feature, status) in self._construct_from_cache(table, resource_list, self.feature):
             row_list.append(feature)
             status_list.append(status)
-            
+
         #writing the output to an uncached table
         workdir_feature_table = WorkDirTable(self.feature).set_path(resource_list.path_in_workdir())
-        workdir_rows = WorkDirRows(self.feature)        
+        workdir_rows = WorkDirRows(self.feature)
         workdir_rows.row_queue['feature'] = Queue.Queue()
         workdir_rows.row_queue['feature'].put((row_list,status_list))
         workdir_feature_table.store(workdir_rows)
@@ -788,12 +788,12 @@ class Hdf(Format):
     def return_from_workdir(self, table, resource_list):
         """
             Returns a hdf5 file from the workdir
-            
-            @param: table - workdir table object that allows access 
+
+            @param: table - workdir table object that allows access
             to the workdir table created by the feature service
             @param: resource_list - the resource lists object containing
             all the resources proccessed on during the request
-            
+
             @yield: fileapp object with path set to the hdf5 file in
             the feature workdir
         """
@@ -802,12 +802,12 @@ class Hdf(Format):
         try:
             disposition = 'attachment; filename="%s"' % (table.filename).encode('ascii')
         except UnicodeEncodeError:
-            disposition = 'attachment; filename="%s"; filename*="%s"' % ((table.filename).encode('utf8'), (table.filename).encode('utf8'))   
-        
+            disposition = 'attachment; filename="%s"; filename*="%s"' % ((table.filename).encode('utf8'), (table.filename).encode('utf8'))
+
         #waits table that is being constructed
         with Locks(table.path):
             pass
-        
+
         return forward(FileApp(table.path, allowed_methods=('GET','POST'), content_type=self.content_type, content_disposition=disposition))
 
 
@@ -832,7 +832,7 @@ class NumPy(Format):
     name = 'numpy'
     description = 'Returns numpy arrays for features'
     content_type = None
-    
+
     def return_from_tables(self, table, element_list, **kw):
         query_queue = resource_list.get_query_queue()
         numpy_response = []
@@ -852,13 +852,13 @@ class LocalPath(Format):
     name = 'localpath'
     description = 'returns the path and the hash were a feature is stored'
     content_type = None
-    
+
     def return_from_tables(self, table, element_list, **kw):
         localpath = []
         for hash in resource_list:
             localpath.append((os.path.join(table.get_path(),hash[:self.feature.hash]),hash))
         return localpath
-    
+
     def return_from_workdir(self, table, filename, **kw):
         pass
 
@@ -911,7 +911,7 @@ class FeatureDoc():
 
             if feature_module.library not in feature_library:
                 feature_library[feature_module.library] = etree.SubElement(resource, 'library', name=feature_module.library)
-                
+
             feature = etree.SubElement(
                                   feature_library[feature_module.library],
                                   'feature',
@@ -932,7 +932,7 @@ class FeatureDoc():
         except KeyError:
             #through an exception to be picked up by the main try block
             raise FeatureServiceError(404, 'Feature: %s requested was not found'%feature_name)
-        
+
         feature_module = feature_module()
         #Table = Tables(feature_module)
         xml_attributes = {
@@ -992,7 +992,7 @@ class FeatureDoc():
 
         resource = etree.Element('resource', uri=str(request.url))
         feature = etree.SubElement(resource, 'format', name=str(format.name))
-        
+
         for key, value in xml_attributes.iteritems():
             info = etree.SubElement(feature, 'tag', name=key, value=value)
         return etree.tostring(resource)
@@ -1009,7 +1009,7 @@ class featuresController(ServiceController):
         super(featuresController, self).__init__(server_url)
         self.baseurl = server_url
         _mkdir(FEATURES_TABLES_FILE_DIR)
-        
+
         log.debug('importing features')
         self.docs = FeatureDoc()
 
@@ -1045,7 +1045,7 @@ class featuresController(ServiceController):
                 operations(resource_list)
                 header, body = format_response(resource_list)
                 log.info('Content Type: %s  Returning Feature: %s'%(header['Content-Type'],args[0]))
-                
+
             except FeatureServiceError as e:
                 log.error('%s' % str(e))
                 abort(e.error_code, e.error_message)
@@ -1053,7 +1053,7 @@ class featuresController(ServiceController):
         else:
             log.error('Malformed Request: Not a valid features request')
             abort(400, 'Malformed Request: Not a valid features request')
-              
+
         response.headers.update(header)
         log.info('Response HEADERS: %s' % response.headers)
         return body
@@ -1077,24 +1077,24 @@ class featuresController(ServiceController):
             if len(args) < 1: #returning list of useable formats
                 body = self.docs.format_list()
                 header = {'Content-Type': 'text/xml'}
-                log.info('Content Type: %s  Returning Format Type List' % (header['Content-Type']))          
-                                    
+                log.info('Content Type: %s  Returning Format Type List' % (header['Content-Type']))
+
             elif len(args) < 2: #returining info on specific format
                 try:
                     body = self.docs.format(args[0])
                     header = {'Content-Type':'text/xml'}
                     log.info('Content-Type: %s  Returning Format Type: %s' % (header['Content-Type'], args[0]))
-                    
+
                 except FeatureServiceError as e:
                     log.error('%s' % str(e))
                     abort(e.error_code, e.error_message)
             else:
                 log.error('Malformed Request: Not a valid features request')
                 abort(400, 'Malformed Request: Not a valid features request')
-            
+
             response.headers.update(header)
             return body
-        
+
         else:
             log.error('Malformed Request: Not a valid features request only excepts GET method')
             abort(400, 'Malformed Request: Not a valid features request only excepts GET method')

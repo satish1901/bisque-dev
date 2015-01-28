@@ -233,8 +233,9 @@ sqlalchemy.pool_recycle = 3600
 #  log_level is  'debug', 'info', 'warning', 'error'
 #  log_file  is [ 'stdout' or path/to/who.log ]
 who.config_file = %(here)s/who.ini
-who.log_level = error
-who.log_stream = stdout
+who.log_level=error
+# log_stream can be stderr, stdout or a logger (see auth below)
+who.log_stream=auth
 
 #linesman profiler
 bisque.profiler.enable = false
@@ -298,7 +299,7 @@ keys = generic
 # If you create additional loggers, add them as a key to [loggers] above
 
 [logger_root]
-level = INFO
+level = ERROR
 #handlers = console, syslog
 handlers = console
 
@@ -373,7 +374,7 @@ qualname = sqlalchemy.engine
 # A logger for authentication, identification and authorization -- this is
 # repoze.who and repoze.what:
 [logger_auth]
-level = INFO
+level = WARN
 handlers =
 qualname = auth
 
