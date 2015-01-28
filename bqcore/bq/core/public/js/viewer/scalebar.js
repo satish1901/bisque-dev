@@ -1,14 +1,20 @@
 // <![CDATA[
-
-function ScaleBar(parent, new_pix_size) {
+/*
+*	Scalebar
+*
+*	@param: parent - div the scalebar will be attached
+*	@param: new_pix_size - the conversion from pixels to 
+*   @param: units
+*/
+function ScaleBar(parent, new_pix_size, units) {
 	this.parent = parent;
 
 	//default parameters 
 	var me = this;
-
-	//this.dragging = false;
 	this.pix_phys_size = 0;
-	this.bar_size_in_pix = 0;		
+	this.bar_size_in_phys = 0;		
+	this.units = units || 'um';
+	
 	this.pressed = false; // set if move state is on
 	
 	this.offsetX = null;
@@ -18,7 +24,8 @@ function ScaleBar(parent, new_pix_size) {
 	this.hideBackground = false;
 	this.defaultColor = '#FFFFFF';
 	this.width_min = 100;
-	this.height_min = 38;
+	//this.height_min = 38;
+	this.height_min = 42;
 	this.opacity = 0.6;
 	this.mouseover = false;
 	
@@ -26,29 +33,21 @@ function ScaleBar(parent, new_pix_size) {
 	this.widget = document.createElementNS(xhtmlns, 'div');
 	this.widget.className = 'scalebar';
 	this.widget.setAttributeNS(null, 'id', 'scalebar_widget');
-	this.widget.style.position = "absolute";
-	//this.widget.style.backgroundColor = "#222222";
-	this.widget.style.zIndex = 30;
+	//this.widget.style.position = "absolute";
+	//this.widget.style.zIndex = 30;
 	this.widget.style.backgroundColor = "rgba(34,34,34,"+this.opacity+")";
-	/*this.widget.style.opacity = 0.6;*/
 	
 	//scalebar bar div
 	this.bar = document.createElementNS(xhtmlns, 'div');
 	this.bar.setAttributeNS(null, 'id', 'scalebar_bar');		
 	this.bar.innerHTML = "&#xA0;";
-	this.bar.style.width = "100%";
-	this.bar.style.height = "30%";
 	this.bar.style.opacity = this.opacity;
 	this.bar.style.backgroundColor = this.defaultColor
-	this.bar.style.zIndex = 29;
 	
 	//scalebar caption div
 	this.caption = document.createElementNS(xhtmlns, 'div');
 	this.caption.setAttributeNS(null, 'id', 'scalebar_caption');
-	this.caption.innerHTML = '0.00 um';
-	this.caption.style.height = "70%";
-	this.caption.style.overflow = "hidden";
-	this.caption.style.zIndex = 28;
+	this.caption.innerHTML = '0.00 '+this.units;
 	this.caption.style.opacity = this.opacity;
 	this.caption.style.color = this.defaultColor;	
 	this.setPixSize(new_pix_size);
@@ -58,24 +57,11 @@ function ScaleBar(parent, new_pix_size) {
 	//panel over the scalebar so no other elements are selected
 	this.selectionPanel = document.createElementNS(xhtmlns, 'div');
 	this.selectionPanel.setAttributeNS (null, 'id', 'scalebar_selectionPanel');	
-	this.selectionPanel.style.position = "absolute";
-	this.selectionPanel.style.top = "0px";
-	this.selectionPanel.style.left = "0px";
-	this.selectionPanel.style.width = "100%";
-	this.selectionPanel.style.height = "100%";
-	this.selectionPanel.style.zIndex = 31;
 	
 	//rescale button div
 	this.editButton = document.createElementNS(xhtmlns, 'div');
 	this.editButton.setAttributeNS (null, 'id', 'scalebar_editButton');
 	this.editButton.setAttributeNS(null, 'title', 'edit');
-	this.editButton.style.position = "absolute";
-	this.editButton.style.top = "2px";
-	this.editButton.style.left = "2px";
-	this.editButton.style.width = "31px";
-	this.editButton.style.height = "31px";
-	this.editButton.style.zIndex = 32;
-	this.editButton.style.opacity = 1;
 	this.editButton.style.visibility = "hidden"	;
 	this.editButton.toggle = false;
 	
@@ -83,13 +69,6 @@ function ScaleBar(parent, new_pix_size) {
 	this.rescaleButton = document.createElementNS(xhtmlns, 'div');
 	this.rescaleButton.setAttributeNS (null, 'id', 'scalebar_rescaleButton');
 	this.rescaleButton.setAttributeNS(null, 'title', 'resize');
-	this.rescaleButton.style.position = "absolute";
-	this.rescaleButton.style.bottom = "0px";
-	this.rescaleButton.style.right = "0px";
-	this.rescaleButton.style.width = "20px";
-	this.rescaleButton.style.height = "20px";
-	this.rescaleButton.style.zIndex = 32;
-	this.rescaleButton.style.opacity = 1;
 	this.rescaleButton.style.cursor = 'nw-resize';
 	this.rescaleButton.style.visibility = "hidden";
 	
@@ -101,7 +80,6 @@ function ScaleBar(parent, new_pix_size) {
 	this.widget.addEventListener("mouseover", function(e) {
 		me.rescaleButton.style.visibility = "visible";
 		me.editButton.style.visibility = "visible";
-		//me.selectionPanel.style.border = "1px solid white";
 		me.bar.style.opacity = .3;
 		me.editButton.style.opacity = 1;
 		me.rescaleButton.style.opacity = 1;
@@ -112,7 +90,6 @@ function ScaleBar(parent, new_pix_size) {
 	this.widget.addEventListener("mouseout", function(e) {
 		if (!me.rescaleButton.pressed) {me.rescaleButton.style.visibility = "hidden";}
 		me.editButton.style.visibility = "hidden";
-		//me.selectionPanel.style.border = "";
 		me.bar.style.opacity = me.opacity;
 		me.caption.style.opacity = me.opacity; 
 		me.mouseover = false;
@@ -217,7 +194,11 @@ function ScaleBar(parent, new_pix_size) {
 	
 }
 
-
+/*
+*	createEditor
+*
+*
+*/
 ScaleBar.prototype.createEditor = function() {
 	//scalebar editor
 	me = this;
@@ -363,12 +344,23 @@ ScaleBar.prototype.createEditor = function() {
 	}
 }
 
-//sets the size of the text and the bar
-//min size is defined , max is the size of the window
-ScaleBar.prototype.setConstrainedSize = function( height, width ) {
 
+/*
+*	setConstrainedSize
+*
+*	Sets the size of the text and the bar. Min size is defined and
+*	max size is the window.
+*
+*	@param: height - sets the height of the scale bar
+*	@param: width - sets the width of the scale bar
+*/
+ScaleBar.prototype.setConstrainedSize = function(height, width) {
 	var parent_bound = this.parent.getBoundingClientRect();
 	var widget_bound = this.widget.getBoundingClientRect();
+	
+	//so the bar scales in the correct directions the top and left style myst be set
+	if(!this.widget.style.top) {this.widget.style.top = (widget_bound.top - parent_bound.top)+'px';}
+	if(!this.widget.style.left) {this.widget.style.top = (widget_bound.left - parent_bound.left)+'px';}
 
 	if (this.height_min >= height) {}
 	else if (parent_bound.bottom <= widget_bound.top + height) {} // stops when an edge is hit
@@ -386,13 +378,23 @@ ScaleBar.prototype.setConstrainedSize = function( height, width ) {
 	}
 }
 
+/*
+*	setPixSize
+*
+*	@param: val - the scale factor
+*/
 ScaleBar.prototype.setPixSize = function(val) {
 	this.pix_phys_size = val;
 }
 
+/*
+*	resetValue
+*
+*	resets the value on the bar
+*/
 ScaleBar.prototype.resetValue = function() {
-	var bar_size_in_um = this.pix_phys_size * this.bar.clientWidth;
-	var capt = '' + bar_size_in_um.toFixed(4) + ' um';
+	this.bar_size_in_phys = this.pix_phys_size * this.bar.clientWidth;
+	var capt = '' + this.bar_size_in_phys.toFixed(4) + ' ' + this.units;
 	this.caption.innerHTML = capt;
 }
 
@@ -405,8 +407,16 @@ ScaleBar.prototype.blockPropagation = function (e) {
 }
 
 //set position within the parent
+/*
+*	setConstrainedPos
+*
+*	Sets the position the scale bar except it is constrained by the
+*	parents size.
+*
+*	@param: x - sets the x (left) position of the scale bar
+* 	@param: y - sets the y (top) position of the scale bar
+*/
 ScaleBar.prototype.setConstrainedPos = function (x, y) {
-
 	parent_bound = this.parent.getBoundingClientRect()
 	widget_bound = this.widget.getBoundingClientRect()
 	
@@ -430,6 +440,14 @@ ScaleBar.prototype.setConstrainedPos = function (x, y) {
 }
 
 //produces a canvas image of the element
+/*
+*	renderCanvas
+*
+*	Draws a canvas of the scale bar.
+*
+*	@param: scale - multiplies the actual size by the scale
+*	@return: scale bar canvas
+*/
 ScaleBar.prototype.renderCanvas = function (scale) {
 	
 	if (scale==undefined) {scale = 1}; 

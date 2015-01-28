@@ -30,7 +30,7 @@ ImgScaleBar.prototype.updateImage = function () {
     }
 
     var surf = this.parentdiv;
-    if (this.scalebar == null) this.scalebar = new ScaleBar ( surf, imgphys.pixel_size[0]/view.scale);
+    if (this.scalebar == null) this.scalebar = new ScaleBar ( surf, imgphys.pixel_size[0]/view.scale, imgphys.units);
 	this.scalebar.setPixSize(imgphys.pixel_size[0]/view.scale);
 	this.scalebar.resetValue();
 };

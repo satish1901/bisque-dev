@@ -1,6 +1,27 @@
 /*
- * Downloads a scaled view of the view currently being presented in the
- * viewer.
+ *	ImgCurrentView	
+ *
+ * 	Downloads a scaled view of the view currently being presented in the
+ * 	viewer.
+ *
+ *	@param viewer - the viewer object
+ *	@param opt - {wGobjects: default - true, 
+ *				  wBorders: default - false,
+ *				  wScaleBar: default - true}
+ *
+ *
+ *	ex. of getting a current view and returning it to a new window
+ *
+ *		var currentview = ImgCurrentView(viewer,{wGobject: true, wBorders: false, wScalebar:true});
+ *
+ *		var level = currentview.getCurrentLevel();
+ * 
+ *		function callback(canvas_view) {
+ *			var url = canvas_view.toDataURL("image/png");
+ *			window.open(url);
+ *		}
+ *		currentview.returnCurrentView(callback);
+ *
  */
 function ImgCurrentView(viewer, opt){
     this.base = ViewerPlugin;
@@ -11,19 +32,17 @@ function ImgCurrentView(viewer, opt){
 	this.opt = {} //set up options if not provided a default is given
 	
 	this.opt.wGobjects = (typeof opt.wGobjects === 'boolean')  ?  opt.wGobjects:true;
-	this.opt.wBorders = (typeof opt.wGobjects === 'boolean')  ?  opt.wBorders:false;
+	this.opt.wBorders = (typeof opt.wBorders === 'boolean')  ?  opt.wBorders:false;
 	this.opt.wScaleBar = (typeof opt.wScaleBar === 'boolean')  ?  opt.wScaleBar:true;
 	
-	/*
-	if (typeof(opt['wGobjects'])==="boolean") this.opt = opt['wGobjects'];
-	else this.opt['wGobjects'] = true;
-	if (typeof(opt['wBorders'])==="boolean") this.opt = opt['wBorders'];
-	else this.opt['wBorders'] = false;
-	if (typeof(opt['wScaleBar'])==="boolean") this.opt = opt['wScaleBar'];
-	else this.opt['wScaleBar'] = true;	
-	*/
 }
-	
+
+/*
+*	drawGobjects
+*
+*	@param: canvas_view - 
+*	@return - canvas with the gobject overlaid 
+*/
 ImgCurrentView.prototype.drawGobjects = function(canvas_view) {
 	
 	var logScale = this.getlogScale();
@@ -51,7 +70,15 @@ ImgCurrentView.prototype.drawGobjects = function(canvas_view) {
 	return canvas_view;
 }
 
-//removes border from the image
+/*
+*	cropBorders
+*
+*	Removes the edges from the current view so only the image
+*	is shown.
+*
+*	@param canvas_view - a canvas of the viewers current view
+*	@return canvas containing only the tileviewer
+*/
 ImgCurrentView.prototype.cropBorders = function (canvas_view) {
 
 	var logScale = this.getlogScale();
@@ -91,47 +118,66 @@ ImgCurrentView.prototype.cropBorders = function (canvas_view) {
 	ctx_border.drawImage(canvas_view, scale*xoffset, scale*yoffset, scale*parseInt(tiled_viewer.width), scale*parseInt(tiled_viewer.height));
 	return canvas_border;
 }
-	
+
+/*
+*	drawScaleBar
+*
+*	If a scalebar is rendered over the tileviewer it will be rendered onto the
+*	canvas just as it looks in the view
+*
+*	@param: canvas_view - a canvas of the viewers current view
+*	@return: canvas with scalebar if provided
+*/
 ImgCurrentView.prototype.drawScaleBar = function(canvas_view) {
 
 	//check is scale bar is in the image
 	var scalebar = this.viewer.plugins_by_name['scalebar'];
-	var scalebar_size = scalebar.scalebar.widget.getBoundingClientRect();
-	var viewer_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
-	var svg_box = this.viewer.plugins_by_name['renderer'].svgimg.getBoundingClientRect() //gets the full image view
-	var viewer_top = this.viewer.plugins_by_name['tiles'].tiled_viewer.y;
-	var viewer_left = this.viewer.plugins_by_name['tiles'].tiled_viewer.x;
-	var viewer_width = this.viewer.plugins_by_name['tiles'].tiled_viewer.width;
-	var viewer_height = this.viewer.plugins_by_name['tiles'].tiled_viewer.height;
-	
-	if (svg_box.top - viewer_size.top <= scalebar_size.top - viewer_size.top &&
-		svg_box.left - viewer_size.left <= scalebar_size.left - viewer_size.left &&
-		svg_box.right - viewer_size.left >= scalebar_size.right - viewer_size.left &&
-		svg_box.bottom - viewer_size.top >= scalebar_size.bottom - viewer_size.top) {
+	if (scalebar.scalebar) { //no scalebar found
+		var scalebar_size = scalebar.scalebar.widget.getBoundingClientRect();
+		var viewer_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
+		var svg_box = this.viewer.plugins_by_name['renderer'].svgimg.getBoundingClientRect() //gets the full image view
+		var viewer_top = this.viewer.plugins_by_name['tiles'].tiled_viewer.y;
+		var viewer_left = this.viewer.plugins_by_name['tiles'].tiled_viewer.x;
+		var viewer_width = this.viewer.plugins_by_name['tiles'].tiled_viewer.width;
+		var viewer_height = this.viewer.plugins_by_name['tiles'].tiled_viewer.height;
 		
-		//check if image leave the view
-		if (viewer_top < 0) {
-			var offsetY = scalebar_size.top - viewer_size.top;
-		} else {
-			var offsetY = scalebar_size.top - viewer_top - viewer_size.top;
-		}
-		
-		if (viewer_left < 0) {
-			var offsetX = scalebar_size.left - viewer_size.left;
-		} else {
-			var offsetX = scalebar_size.left - viewer_left - viewer_size.left;
-		}
+		if (svg_box.top - viewer_size.top <= scalebar_size.top - viewer_size.top &&
+			svg_box.left - viewer_size.left <= scalebar_size.left - viewer_size.left &&
+			svg_box.right - viewer_size.left >= scalebar_size.right - viewer_size.left &&
+			svg_box.bottom - viewer_size.top >= scalebar_size.bottom - viewer_size.top) {
+			
+			//check if image leave the view
+			if (viewer_top < 0) {
+				var offsetY = scalebar_size.top - viewer_size.top;
+			} else {
+				var offsetY = scalebar_size.top - viewer_top - viewer_size.top;
+			}
+			
+			if (viewer_left < 0) {
+				var offsetX = scalebar_size.left - viewer_size.left;
+			} else {
+				var offsetX = scalebar_size.left - viewer_left - viewer_size.left;
+			}
 
-		var logScale = this.getlogScale();
-		var scale = Math.pow(2,logScale);
-		var canvas_scalebar = scalebar.scalebar.renderCanvas(scale);
-		var ctx_view = canvas_view.getContext('2d');
-		ctx_view.globalAlpha = scalebar.scalebar.opacity;
-		ctx_view.drawImage(canvas_scalebar, scale*offsetX, scale*offsetY, scale*scalebar_size.width, scale*scalebar_size.height);
+			var logScale = this.getlogScale();
+			var scale = Math.pow(2,logScale);
+			var canvas_scalebar = scalebar.scalebar.renderCanvas(scale);
+			var ctx_view = canvas_view.getContext('2d');
+			ctx_view.globalAlpha = scalebar.scalebar.opacity;
+			ctx_view.drawImage(canvas_scalebar, scale*offsetX, scale*offsetY, scale*scalebar_size.width, scale*scalebar_size.height);
+		}
 	}
 	return canvas_view;
 }
 
+/*
+*	getTilesInView
+*
+*	Looks into the tile viewer well to find elements that are in the current view
+*	and returns a list of them
+*
+*	@return: list of elements from the well in the view
+*/
 ImgCurrentView.prototype.getTilesInView = function() {
 	//iterate through all the tiles to find the tiles in the viewer
     var inViewImages = [];
@@ -168,6 +214,14 @@ ImgCurrentView.prototype.getTilesInView = function() {
 	return inViewImages
 }
 
+
+/*
+*	getCurrentLevel
+*	
+*	Checks the well for a tile with the level value and returns it
+*
+*	@return: level
+*/
 ImgCurrentView.prototype.getCurrentLevel = function() {
 	var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer;
 	for (var i = 0; i<tiled_viewer.well.childElementCount; i++) { //search for img with tile class
@@ -187,11 +241,26 @@ ImgCurrentView.prototype.getCurrentLevel = function() {
 	return level
 }
 
+/*
+*	setLevel
+*
+*	Sets the level for the current view. Level only scales up, must be in integer
+*	and level must be greater then zero.
+*
+*	@param: level - the newly set level
+*/
 ImgCurrentView.prototype.setLevel = function(level) {
 	if (level<0) var level = 0; //level cannot be below zero
 	this.opt.level = level;
 }
 
+/*
+*	getlogScale
+*
+*	@param: level
+*	@return: log scale of level
+*
+*/
 ImgCurrentView.prototype.getlogScale = function(level) {
 	var currentLevel = this.getCurrentLevel();
 	if (this.opt.level===undefined) this.opt.level = currentLevel;
@@ -206,6 +275,16 @@ ImgCurrentView.prototype.getlogScale = function(level) {
 }
 
 //divides tiles into 4 quadrants scaling the tile up by one
+/*
+*	divideTile
+*
+*	Tries to break the tile into 4 quadrant unless a tile is outside of the image plan
+* 	then no tile is returned for that region.
+*
+*	@param: tile - an element or an object in the format {style:{top,left},width,height}
+*
+*	@return: tiles of the same format 
+*/
 ImgCurrentView.prototype.divideTile = function(tile) {
 	var tileviewer = this.viewer.plugins_by_name['tiles'].tiled_viewer;
 	var yoffset = parseInt(tile.style.top);
@@ -291,6 +370,15 @@ ImgCurrentView.prototype.divideTile = function(tile) {
 }
 
 
+/*
+*	returnCurrentView
+*
+*	Main function of imgcurrentview. Scales the image and adds gobject, crops,
+*	and scalebar.
+*
+*	@param: cb - callback(canvas_view) function after the canvas has been returned 
+*
+*/
 ImgCurrentView.prototype.returnCurrentView = function(cb) {
 	
 	var inViewImages = this.getTilesInView();
