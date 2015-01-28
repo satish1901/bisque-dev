@@ -69,7 +69,7 @@ import transaction
 
 from bq.core.service import ServiceController
 from bq.data_service.model  import dbtype_from_tag, dbtype_from_name, all_resources
-from bq.util.bisquik2db import bisquik2db, load_uri, db2tree, updateDB, parse_uri
+from bq.util.bisquik2db import bisquik2db, load_uri, db2tree, updateDB, parse_bisque_uri
 from bq.exceptions import BadValue
 from bq.core import identity
 from bq.util.paths import data_path
@@ -246,7 +246,7 @@ class DataServerController(ServiceController):
                 except etree.XMLSyntaxError:
                     log.exception( ' while reading cached resourced %s got %s', uri, response)
 
-            net, name, ida, rest = parse_uri(uri)
+            service, clname, ida, rest = parse_bisque_uri(uri)
             resource = load_uri (uri, query=True)
             if rest:  # Fetch resource is really a query
                 resource = self.query(resource_tag=rest[-1], parent=resource,**kw)
