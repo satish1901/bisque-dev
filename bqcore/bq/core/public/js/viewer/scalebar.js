@@ -24,8 +24,7 @@ function ScaleBar(parent, new_pix_size, units) {
 	this.hideBackground = false;
 	this.defaultColor = '#FFFFFF';
 	this.width_min = 100;
-	//this.height_min = 38;
-	this.height_min = 42;
+	this.height_min = 38;
 	this.opacity = 0.6;
 	this.mouseover = false;
 	
@@ -33,8 +32,6 @@ function ScaleBar(parent, new_pix_size, units) {
 	this.widget = document.createElementNS(xhtmlns, 'div');
 	this.widget.className = 'scalebar';
 	this.widget.setAttributeNS(null, 'id', 'scalebar_widget');
-	//this.widget.style.position = "absolute";
-	//this.widget.style.zIndex = 30;
 	this.widget.style.backgroundColor = "rgba(34,34,34,"+this.opacity+")";
 	
 	//scalebar bar div
@@ -69,9 +66,7 @@ function ScaleBar(parent, new_pix_size, units) {
 	this.rescaleButton = document.createElementNS(xhtmlns, 'div');
 	this.rescaleButton.setAttributeNS (null, 'id', 'scalebar_rescaleButton');
 	this.rescaleButton.setAttributeNS(null, 'title', 'resize');
-	this.rescaleButton.style.cursor = 'nw-resize';
 	this.rescaleButton.style.visibility = "hidden";
-	
 	this.rescaleButton.pressed = false; //set if resize state is on
 
 	// EVENTS
@@ -189,6 +184,8 @@ function ScaleBar(parent, new_pix_size, units) {
 		}
 	}, true);
 	
+	
+	//add all the elements to the widget
 	this.widget.appendChild(this.rescaleButton);
 	this.widget.appendChild(this.editButton);
 	this.widget.appendChild(this.selectionPanel);
@@ -306,7 +303,6 @@ ScaleBar.prototype.createEditor = function() {
 			xtype: 'checkbox',
 			checked: false,
 			fieldLabel: 'Hide Value',
-			//padding : '10px',
 			width: '100%',
 			listeners : {
 				scope: this,
@@ -326,7 +322,6 @@ ScaleBar.prototype.createEditor = function() {
 			xtype: 'checkbox',
 			checked: false,
 			fieldLabel: 'Hide Background',
-			//padding : '10px',
 			listeners : {
 				scope: this,
 				change : function(el, newValue, oldValue) {
@@ -383,7 +378,8 @@ ScaleBar.prototype.setConstrainedSize = function(height, width) {
 	else if (parent_bound.bottom <= widget_bound.top + height) {} // stops when an edge is hit
 	else {
 		this.widget.style.height = height+"px";
-		var fontSizeRatio = height/this.height_min *100;
+		//set the font size
+		var fontSizeRatio = height/this.height_min*100;
 		this.caption.style.fontSize = fontSizeRatio + "%";
 	}
 	
