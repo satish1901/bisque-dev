@@ -157,10 +157,14 @@ function ScaleBar(parent, new_pix_size, units) {
 			var mouse_y = e.clientY || e.pageY;
 			
 			var parent_bound = me.parent.getBoundingClientRect()
+			
+			var offsetX = e.offsetX==undefined?e.layerX:e.offsetX;
+			var offsetY = e.offsetY==undefined?e.layerY:e.offsetY;
+			
 			//mouse offset from the top left corner of the object
-			me.offsetX = e.offsetX + parent_bound.left;
-			me.offsetY = e.offsetY + parent_bound.top;
-
+			me.offsetX = offsetX + parent_bound.left;
+			me.offsetY = offsetY + parent_bound.top;
+	
 			//this.parent.addEventListener("mouseleave", this.mouseUpBound, false);
 			me.selectionPanel.style.cursor = "move";
 			me.pressed = true;
@@ -346,6 +350,19 @@ ScaleBar.prototype.createEditor = function() {
 
 
 /*
+*	resetScalebar
+*
+*	Set all the default conditions on the scalebar (position, size, color, opacity, visual state)
+*
+*/
+/*
+ScaleBar.prototype.resetScalebar = function() {
+	this.setConstrainedSize(0,0); //sets to default values
+	
+}
+*/
+
+/*
 *	setConstrainedSize
 *
 *	Sets the size of the text and the bar. Min size is defined and
@@ -360,7 +377,7 @@ ScaleBar.prototype.setConstrainedSize = function(height, width) {
 	
 	//so the bar scales in the correct directions the top and left style myst be set
 	if(!this.widget.style.top) {this.widget.style.top = (widget_bound.top - parent_bound.top)+'px';}
-	if(!this.widget.style.left) {this.widget.style.top = (widget_bound.left - parent_bound.left)+'px';}
+	if(!this.widget.style.left) {this.widget.style.left = (widget_bound.left - parent_bound.left)+'px';}
 
 	if (this.height_min >= height) {}
 	else if (parent_bound.bottom <= widget_bound.top + height) {} // stops when an edge is hit
