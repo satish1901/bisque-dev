@@ -743,11 +743,11 @@ Ext.define('BQ.Panel.PixelCounter', {
     viewer: null,//requiered viewer initialized object
     activeTab : 0,
     bodyBorder : 0,
-    split : true,
+    //split : true,
+	fixed: true,
     width : 400,
     plain : true,
     autoScroll: true,
-    selectMode : false,
     thresholdValue: 128,
     //channel_names: { 0: 'red', 1: 'green', 2: 'blue' },
     regionCount: [],
@@ -969,8 +969,34 @@ Ext.define('BQ.Panel.PixelCounter', {
                 },
             },
         ];
-		
+		/*
+		var me = this;
+		this.infoContainer = Ext.create('Ext.container.Container', {
+			layout: {
+				type: 'hbox',
+				align: 'stretch'
+			},
+			items: [{
+				xtype: 'container',
+				layout: {
+					type: 'hbox',
+					align: 'stretch'
+				},				
+				title: 'Global Counts',
+				items: [me.globalCountInfo],
+			},{
+				xtype: 'container',
+				title: 'Region Counts',
+				layout: {
+					type: 'hbox',
+					align: 'stretch'
+				},
+				items: [me.regionCountInfo, me.regionCountGrid]
+			}]
+		});
+		*/
 		this.items.push(this.thresholdSlider);
+		//this.items.push(this.infoContainer);
 		this.items.push(this.globalCountInfo);
         this.items.push(this.regionCountInfo);
         this.items.push(this.regionCountGrid);
