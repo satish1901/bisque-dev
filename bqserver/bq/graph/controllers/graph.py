@@ -63,6 +63,8 @@ class graphController(ServiceController):
 
             # Find nodes that point to me
             siblings = data_service.query (None,tag_query='"*/%s"' % node)
+
+
             for snode in siblings:
                 log.debug ("sibling %s", etree.tostring (snode))
                 sibling_uniq = snode.get ('resource_uniq')
@@ -94,7 +96,7 @@ def initialize(uri):
 
 def get_static_dirs():
     """Return the static directories for this server"""
-    package = pkg_resources.Requirement.parse ("graph")
+    package = pkg_resources.Requirement.parse ("bqserver")
     package_path = pkg_resources.resource_filename(package,'bq')
     return [(package_path, os.path.join(package_path, 'graph', 'public'))]
 

@@ -285,7 +285,7 @@ reserved_io_types = ['system-input']
 
 from tg import require
 from repoze.what.predicates import not_anonymous
-from bq.config.middleware import public_file_filter
+from bq.config.app_cfg import public_file_filter
 class EngineModuleResource(BaseController):
     """Convert the local module into one accessable as a web resource"""
 
