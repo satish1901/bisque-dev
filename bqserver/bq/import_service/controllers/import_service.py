@@ -626,13 +626,16 @@ class import_serviceController(ServiceController):
         for i in range(len(images)):
             im = images[i]
             g = geometry[i]
+            updated_name = None
 
             if len(im) == 1:
                 name = posixpath.join(base_name, im[0].replace(base_path, '') )
                 value = blob_service.local2url(im[0])
                 resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts, value=value )
             else:
-                name = posixpath.join(base_name, im[0].replace(base_path, '') )
+                #name = posixpath.join(base_name, im[0].replace(base_path, '') )
+                updated_name = os.path.basename(im[0])
+                name = base_name
                 resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts)
                 for v in im:
                     val = etree.SubElement(resource, 'value', type='string' )
@@ -647,7 +650,18 @@ class import_serviceController(ServiceController):
             resource.extend (copy.deepcopy (list (uf.resource)))
             ConverterImgcnv.meta_dicom_parsed(im[0], resource)
 
-            resources.append(blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir)))
+            # store resource           
+            resource = blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir))
+
+            # a bit of funky processing for the multi-value case, we want files to be stored in the same path as all th eother files
+            # but at the same time we would like to give individual names to individual groups
+            if updated_name:
+                log.debug('Updating resource name to: %s for: %s', updated_name, etree.tostring(resource))
+                resource.set('name', updated_name)
+                log.debug('Updating resource: %s', etree.tostring(resource))
+                data_service.update_resource(resource=resource, new_resource=resource, replace=False)
+
+            resources.append(resource)
 
         return unpack_dir, resources
 

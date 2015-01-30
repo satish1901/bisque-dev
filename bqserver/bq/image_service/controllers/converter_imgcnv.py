@@ -235,10 +235,6 @@ class ConverterImgcnv(ConverterBase):
         
         if cls.is_multifile_series(**kw) is True:
             rd.update(kw['token'].meta)
-            #try:
-            #    del rd['files']
-            #except (KeyError):
-            #    pass
 
         return rd
 
@@ -587,13 +583,14 @@ class ConverterImgcnv(ConverterBase):
         for g in groups:
             l = [f[2] for f in g]
             images.append( l )
-            if f[3] is True:
-                f[3] = len(l)
+            frame_num = g[0][3]
+            if frame_num is True:
+                frame_num = len(l)
             if len(l) == 1:
                 geometry.append({ 't': 1, 'z': 1 })
-            elif f[3]>0:
-                z = len(l) / f[3]
-                geometry.append({ 't': f[3], 'z': z })
+            elif frame_num>0:
+                z = len(l) / frame_num
+                geometry.append({ 't': frame_num, 'z': z })
             else:
                 geometry.append({ 't': 1, 'z': len(l) })
 
