@@ -2306,7 +2306,7 @@ VolumeDisplay.prototype.addCommand = function (command, pars) {
 
 	if (!this.menu)
 		return;
-	command.push('depth=8,' + this.combo_enhancement.getValue());
+	command.push('depth=8,' + this.combo_enhancement.getValue() + ',u');
 
 	var fusion = '';
 	for (var i = 0; i < this.channel_colors.length; i++) {
@@ -2334,9 +2334,9 @@ VolumeDisplay.prototype.createMenu = function () {
 	this.menu = this.volume.menu;
 
 	this.createChannelMap();
-    //this.def.enhancement = 'd'; //force data range!!
-	//var enhancement = this.volume.phys && parseInt(this.volume.phys.pixel_depth) === 8 ? this.def.enhancement_8bit : this.def.enhancement;
-	var enhancement = 'd';
+	var phys = this.volume.phys;
+    var enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.def.enhancement_8bit : this.def.enhancement;
+
     this.menu.add({
 		xtype : 'displayfield',
 		fieldLabel : 'View',
@@ -2393,8 +2393,8 @@ VolumeDisplay.prototype.createMenu = function () {
 };
 
 VolumeDisplay.prototype.createChannelMap = function () {
-	var channel_count = parseInt(this.volume.phys.ch);
 	var phys = this.volume.phys;
+	var channel_count = parseInt(phys.ch);	
 
 	this.menu.add({
 		xtype : 'displayfield',
