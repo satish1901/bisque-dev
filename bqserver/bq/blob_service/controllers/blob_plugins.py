@@ -100,7 +100,9 @@ class ResourcePlugin (object):
         return '(%s, %s)'%(self.resource_type, self.ext)
 
     def is_supported(self, filename):
-        return os.path.splitext(filename)[1][1:] in self.ext
+        ext = os.path.splitext(filename)[1][1:]
+        #return os.path.splitext(filename)[1][1:] in self.ext
+        return ext.lower() == self.ext.lower()
 
     def guess_type(self, filename):
         if self.is_supported(filename):

@@ -452,6 +452,7 @@ class ConverterImgcnv(ConverterBase):
             log.debug('Slice for multi-file series')
             command.extend(['-multi'])
             files = cls.enumerate_series_files(**kw)
+            #log.debug('Slice for multi-file series: %s', files)
             if len(pages)==1 and (x1==x2 or y1==y2):
                 # in multi-file case and only one page is requested with no ROI, return with no re-conversion 
                 misc.dolink(files[pages[0]-1], ofnm)
@@ -564,12 +565,14 @@ class ConverterImgcnv(ConverterBase):
             series_num   = read_tag(ds, ('0020', '0012')) # 
             acqui_num    = read_tag(ds, ('0020', '0011')) # A number identifying the single continuous gathering of data over a period of time that resulted in this image
             instance_num = int(read_tag(ds, ('0020', '0013'), '0') or '0') # A number that identifies this image
-            dr_suffix    = int(read_tag(ds, ('4453', '1005'), '0') or '0') # some DR Systems produced data seems to have a bug in writing wrong instance numbers and site locations
+            slice_loc    = float(read_tag(ds, ('0020', '1041'), '0') or '0') # defined as the relative position of the image plane expressed in mm
+
             num_temp_p   = int(read_tag(ds, ('0020', '0105'), '0') or '0') # Total number of temporal positions prescribed
             num_frames   = int(read_tag(ds, ('0028', '0008'), '0') or '0') # Number of frames in a Multi-frame Image
+            mr_acq_typ   = read_tag(ds, ('0018', '0023')) # Number of frames in a Multi-frame Image
 
             key = '%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, acqui_num) # series_num seems to vary in DR Systems
-            data.append((key, dr_suffix or instance_num, f, num_temp_p or num_frames))
+            data.append((key, slice_loc or instance_num, f, num_temp_p or num_frames or mr_acq_typ == '2D' ))
             #log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s', key, series_num, instance_num, num_temp_p, num_frames )
         
         # group based on a key
@@ -584,6 +587,8 @@ class ConverterImgcnv(ConverterBase):
         for g in groups:
             l = [f[2] for f in g]
             images.append( l )
+            if f[3] is True:
+                f[3] = len(l)
             if len(l) == 1:
                 geometry.append({ 't': 1, 'z': 1 })
             elif f[3]>0:
