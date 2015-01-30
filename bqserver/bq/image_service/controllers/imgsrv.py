@@ -505,6 +505,10 @@ class MetaService(object):
                 meta['image_pixel_depth'] = info.get('image_pixel_depth', meta.get('image_pixel_depth', 0))
                 meta['image_num_p'] = info['image_num_t']*info['image_num_z']
 
+            # overwrite fileds forced by the fileds stored in the resource image_meta
+            if data_token.meta is not None:
+                meta.update(data_token.meta)
+
             # construct an XML tree
             image = etree.Element ('resource', uri='%s/%s?meta'%(self.server.url, image_id))
             tags_map = {}
