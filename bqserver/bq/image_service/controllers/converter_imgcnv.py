@@ -444,10 +444,12 @@ class ConverterImgcnv(ConverterBase):
         
         # separate normal and multi-file series
         if cls.is_multifile_series(**kw) is False:
+            log.debug('Slice for non-multi-file series')
             command.extend(['-i', ifnm])
             command.extend(['-multi', '-page', ','.join([str(p) for p in pages])])
         else:
             # use first image of the series, need to check for separate channels here
+            log.debug('Slice for multi-file series')
             command.extend(['-multi'])
             files = cls.enumerate_series_files(**kw)
             if len(pages)==1 and (x1==x2 or y1==y2):
@@ -455,9 +457,17 @@ class ConverterImgcnv(ConverterBase):
                 misc.dolink(files[pages[0]-1], ofnm)
                 return ofnm
             else:
-                for p in pages:
-                    command.extend(['-i', files[p-1]])
-        
+                # in case of many pages we might have to write input filenames as a file
+                if len(pages)<10:
+                    for p in pages:
+                        command.extend(['-i', files[p-1]])
+                else:
+                    # use file storage instead of potentially massive command
+                    files_pages = [files[i] for i in [p-1 for p in pages]]
+                    fl = '%s.files'%ofnm
+                    cls.write_files(files_pages, fl)
+                    command.extend(['-il', fl])
+
         # roi
         if not x1==x2 or not y1==y2:
             if not x1==x2:
@@ -594,6 +604,9 @@ class ConverterImgcnv(ConverterBase):
     def meta_dicom(cls, ifnm, series=0, xml=None, **kw):
         '''appends nodes to XML'''
         
+        if os.path.basename(ifnm) == 'DICOMDIR': # skip reading metadata for teh index file
+            return
+
         import dicom # ensure an error if dicom library is not installed
 
         def recurse_tree(dataset, parent, encoding='latin-1'):
@@ -671,8 +684,8 @@ class ConverterImgcnv(ConverterBase):
 
         append_tag(ds, ('0010', '0020'), xml, encoding=encoding) # Patient ID
         try:
-            append_tag(ds, ('0010', '0010'), xml, name='Patient\'s Last Name', safe=False, fmt=lambda x: x.split('^', 1)[0], encoding=encoding ) # Patient's Name
             append_tag(ds, ('0010', '0010'), xml, name='Patient\'s First Name', safe=False, fmt=lambda x: x.split('^', 1)[1], encoding=encoding ) # Patient's Name
+            append_tag(ds, ('0010', '0010'), xml, name='Patient\'s Last Name', safe=False, fmt=lambda x: x.split('^', 1)[0], encoding=encoding ) # Patient's Name
         except (Exception):
             append_tag(ds, ('0010', '0010'), xml, encoding=encoding ) # Patient's Name
         append_tag(ds, ('0010', '0040'), xml, encoding=encoding) # Patient's Sex 'M'

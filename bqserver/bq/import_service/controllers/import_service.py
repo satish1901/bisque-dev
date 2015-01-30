@@ -181,7 +181,7 @@ class UploadedResource(object):
     orig     = None      # original name passed by the uploader
     ts       = None      # upload timestamp
 
-    def __init__(self, resource, fileobj=None, orig=None, ts=None ):
+    def __init__(self, resource, fileobj=None, orig=None, ts=None, path=None ):
         self.resource = resource
         self.fileobj = fileobj
         self.orig = orig or resource.get('name')
@@ -189,9 +189,12 @@ class UploadedResource(object):
 
         # Set the path and filename of the UploadFile
         # A local path will be available in 'value'
-        self.path = resource.get('value')
-        if self.path:
-            self.path = blob_service.url2local(self.path)
+        if path is not None:
+            self.path = path
+        else:
+            self.path = resource.get('value')
+            if self.path:
+                self.path = blob_service.url2local(self.path)
 
         # If the uploader has given it a name, then use it, or figure a name out
         if resource.get ('name'):
@@ -264,8 +267,8 @@ class import_serviceController(ServiceController):
         self.filters['zip-dicom']         = self.filter_zip_dicom
         self.filters['image/proprietary'] = self.filter_series_proprietary
 
-        ps = blob_service.get_import_plugins()
-        for p in ps:
+        self.plugins = blob_service.get_import_plugins()
+        for p in self.plugins:
             mime_import = 'import/%s'%(p.name)
             mimetypes.add_type(mime_import, '.%s'%p.ext)
             self.filters[mime_import] = p.process_on_import
@@ -614,11 +617,10 @@ class import_serviceController(ServiceController):
         for b in blobs:
             name = posixpath.join(base_name, b.replace(base_path, '') )
             value = blob_service.local2url(b)
-            resource = etree.Element ('file', name=name, resource_type='file', ts=uf.ts, value=value )
-            if os.path.basename(b) != 'DICOMDIR': # skip ingesting DICOMDIR metadata
-                ConverterImgcnv.meta_dicom(b, xml=resource)
+            resource = etree.Element ('resource', name=name, ts=uf.ts, value=value )
             resource.extend (copy.deepcopy (list (uf.resource)))
-            resources.append(blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir)))
+            #resources.append(blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir)))
+            resources.append(self.process(UploadedResource(resource=resource, path=b)))
 
         # now insert images
         for i in range(len(images)):
@@ -920,6 +922,11 @@ class import_serviceController(ServiceController):
                 if info.get('image_num_series', 0)>1:
                     intags['type'] = 'image/proprietary'
                     intags['image_num_series'] = info.get('image_num_series', 0)
+
+        # try to annotate DICOM files
+        filename = uf.localpath()
+        if filename is not None:
+            ConverterImgcnv.meta_dicom(filename, xml=uf.resource)
 
         # no processing required
         log.debug('process intags: %s', intags)
