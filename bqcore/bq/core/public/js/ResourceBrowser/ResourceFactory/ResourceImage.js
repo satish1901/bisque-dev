@@ -805,10 +805,12 @@ Ext.define('Bisque.Resource.Image.Page', {
             download.menu.insert(3, [{
                 itemId: 'download_as_ometiff',
                 text: 'as OME-TIFF',
+                scope: this,
                 handler: this.download_ometiff,
             }, {
                 itemId: 'download_as_omebigtiff',
                 text: 'as OME-BigTIFF',
+                scope: this,
                 handler: this.download_omebigtiff,
             }]);
         };
