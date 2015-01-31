@@ -834,7 +834,7 @@ class FormatService(object):
 
             # first try first converter that supports this output format
             c = self.server.writable_formats[fmt]
-            r = c.convert(ifile, ofile, fmt, series=data_token.series, extra=extra)
+            r = c.convert(ifile, ofile, fmt, series=data_token.series, extra=extra, token=data_token)
 
             # try using other converters directly
             if r is None:

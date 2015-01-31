@@ -104,18 +104,39 @@ class ConverterImgcnv(ConverterBase):
     version = None
     installed_formats = None
     CONVERTERCOMMAND = 'imgcnv' if os.name != 'nt' else 'imgcnv.exe'
+    
+    # info_map = {
+    #     'width'      : 'image_num_x',
+    #     'height'     : 'image_num_y',
+    #     'zsize'      : 'image_num_z',
+    #     'tsize'      : 'image_num_t',
+    #     'channels'   : 'image_num_c',
+    #     'pages'      : 'image_num_p',
+    #     'format'     : 'format',
+    #     'pixelType'  : 'image_pixel_format',
+    #     'depth'      : 'image_pixel_depth',
+    #     'endian'     : 'endian',
+    #     'dimensions' : 'dimensions'
+    # }
+
     info_map = {
-        'width'      : 'image_num_x',
-        'height'     : 'image_num_y',
-        'zsize'      : 'image_num_z',
-        'tsize'      : 'image_num_t',
-        'channels'   : 'image_num_c',
-        'pages'      : 'image_num_p',
-        'format'     : 'format',
-        'pixelType'  : 'image_pixel_format',
-        'depth'      : 'image_pixel_depth',
-        'endian'     : 'endian',
-        'dimensions' : 'dimensions'
+        'image_num_x'        : 'image_num_x',
+        'image_num_y'        : 'image_num_y',
+        'image_num_z'        : 'image_num_z',
+        'image_num_t'        : 'image_num_t',
+        'image_num_c'        : 'image_num_c',
+        'image_num_p'        : 'image_num_p',
+        'format'             : 'format',
+        'image_pixel_format' : 'image_pixel_format',
+        'image_pixel_depth'  : 'image_pixel_depth',
+        'raw_endian'         : 'raw_endian',
+        'dimensions'         : 'dimensions',
+        'pixel_resolution_x' : 'pixel_resolution_x',        
+        'pixel_resolution_y' : 'pixel_resolution_y', 
+        'pixel_resolution_z' : 'pixel_resolution_z', 
+        'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
+        'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
+        'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
     }
 
 #     #######################################
@@ -252,7 +273,8 @@ class ConverterImgcnv(ConverterBase):
         if not os.path.exists(ifnm):
             return {}
 
-        info = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-info', '-i', ifnm] )
+        #info = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-info', '-i', ifnm] )
+        info = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-meta-parsed', '-i', ifnm] )
         if info is None:
             return {}
         rd = {}
@@ -267,13 +289,13 @@ class ConverterImgcnv(ConverterBase):
             rd[cls.info_map[tag]] = misc.safetypeparse(val.replace('\n', ''))
 
         # change the image_pixel_format output, convert numbers to a fully descriptive string
-        if isinstance(rd['image_pixel_format'], (long, int)):
-            pf_map = {
-                1: 'unsigned integer', 
-                2: 'signed integer', 
-                3: 'floating point'
-            }
-            rd['image_pixel_format'] = pf_map[rd['image_pixel_format']]
+        # if isinstance(rd['image_pixel_format'], (long, int)):
+        #     pf_map = {
+        #         1: 'unsigned integer', 
+        #         2: 'signed integer', 
+        #         3: 'floating point'
+        #     }
+        #     rd['image_pixel_format'] = pf_map[rd['image_pixel_format']]
 
         if 'dimensions' in rd:
             rd['dimensions'] = rd['dimensions'].replace(' ', '') # remove spaces
@@ -313,9 +335,10 @@ class ConverterImgcnv(ConverterBase):
     def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
-        command = []
         
+        command = []
         if cls.is_multifile_series(**kw) is False:
+            log.debug('convert single file: %s', ifnm)
             command.extend(['-i', ifnm])
         else:
             # use first image of the series, need to check for separate channels here
@@ -328,10 +351,13 @@ class ConverterImgcnv(ConverterBase):
             
             # provide geometry and resolution
             meta = kw['token'].meta or {}
+            meta.update(kw['token'].dims)
 
             geom = '%s,%s'%(meta.get('image_num_z', 1),meta.get('image_num_t', 1))
             command.extend(['-geometry', geom])
             
+            # dima: have to convert pixel resolution from input units into microns
+            # don't forget to update resolution in every image operation
             res = '%s,%s,%s,%s'%(meta.get('pixel_resolution_x', 0), meta.get('pixel_resolution_y', 0), meta.get('pixel_resolution_z', 0), meta.get('pixel_resolution_t', 0))
             command.extend(['-resolution', res])
         
