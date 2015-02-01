@@ -351,13 +351,15 @@ class ConverterImgcnv(ConverterBase):
             
             # provide geometry and resolution
             meta = kw['token'].meta or {}
-            meta.update(kw['token'].dims)
 
             geom = '%s,%s'%(meta.get('image_num_z', 1),meta.get('image_num_t', 1))
+            if meta.get('image_num_c', 0)>1:
+                geom = '%s,%s'%(geom, meta.get('image_num_c', 0))
             command.extend(['-geometry', geom])
             
             # dima: have to convert pixel resolution from input units into microns
             # don't forget to update resolution in every image operation
+            meta.update(kw['token'].dims)            
             res = '%s,%s,%s,%s'%(meta.get('pixel_resolution_x', 0), meta.get('pixel_resolution_y', 0), meta.get('pixel_resolution_z', 0), meta.get('pixel_resolution_t', 0))
             command.extend(['-resolution', res])
         
@@ -411,11 +413,22 @@ class ConverterImgcnv(ConverterBase):
         else:
             # use first image of the series, need to check for separate channels here
             files = cls.enumerate_series_files(**kw)
+            meta = kw['token'].meta or {}
             log.debug('thumbnail files: %s', files)
-            command.extend(['-i', files[page-1]])
+            
+            samples = meta.get('image_num_c', 0)
+            if samples<1:
+                command.extend(['-i', files[page-1]])
+            else:
+                # in case of channels being stored in separate files
+                page = (page-1) * samples
+                command.extend(['-i', files[page+0]])
+                for s in range(1, samples):
+                    command.extend(['-c', files[page+s]])
+
 
         if info.get('image_pixel_depth', 16) != 8:
-            command.extend(['-depth', '8,d'])
+            command.extend(['-depth', '8,d,u'])
 
         #command.extend(['-display'])
         command.extend(['-fusemeta'])
@@ -474,22 +487,25 @@ class ConverterImgcnv(ConverterBase):
             log.debug('Slice for multi-file series')
             command.extend(['-multi'])
             files = cls.enumerate_series_files(**kw)
+            meta = kw['token'].meta or {}
+            channels = meta.get('image_num_c', 0)
+
             #log.debug('Slice for multi-file series: %s', files)
-            if len(pages)==1 and (x1==x2 or y1==y2):
+            if len(pages)==1 and (x1==x2 or y1==y2) and channels<=1:
                 # in multi-file case and only one page is requested with no ROI, return with no re-conversion 
                 misc.dolink(files[pages[0]-1], ofnm)
                 return ofnm
             else:
                 # in case of many pages we might have to write input filenames as a file
-                if len(pages)<10:
-                    for p in pages:
-                        command.extend(['-i', files[p-1]])
-                else:
-                    # use file storage instead of potentially massive command
-                    files_pages = [files[i] for i in [p-1 for p in pages]]
-                    fl = '%s.files'%ofnm
-                    cls.write_files(files_pages, fl)
-                    command.extend(['-il', fl])
+                #files_pages = [files[i] for i in [p-1 for p in pages]]
+                fl = '%s.files'%ofnm
+                cls.write_files(files, fl)
+                command.extend(['-il', fl])
+                command.extend(['-multi', '-page', ','.join([str(p) for p in pages])])
+                if channels>1:
+                    # dima: since we are writing a non ome-tiff file, proper geometry is irrelevant but number of channels is
+                    geom = '1,1,%s'%(channels)
+                    command.extend(['-geometry', geom])
 
         # roi
         if not x1==x2 or not y1==y2:
