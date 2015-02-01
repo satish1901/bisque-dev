@@ -535,16 +535,24 @@ class BQSession(object):
         if import_service_url is None:
             raise BQApiError('Could not find import service to post blob.')
 
-        filename = normalize_unicode(filename)
         url = self.c.prepare_url(import_service_url, **params)
-        with open(filename, 'rb') as f:
-            fields = {'file': (filename, f)}
-            if xml!=None:
-                if not isinstance(xml, basestring):
-                    xml = self.factory.to_string(xml)
-                fields['file_resource'] = (None, xml, "text/xml")
 
+        if xml!=None:
+            if not isinstance(xml, basestring):
+                xml = self.factory.to_string(xml)
+
+        if filename is not None:
+            filename = normalize_unicode(filename)
+            with open(filename, 'rb') as f:
+                fields = {'file': (filename, f)}
+                if xml!=None:
+                    fields['file_resource'] = (None, xml, "text/xml")
+                return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
+        elif xml is not None:
+            fields = {'file_resource': (None, xml, "text/xml")}
             return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
+        else:
+            raise BQCommError("improper parameters for postblob")
 
 
     def service_url(self, service_type, path = "" , query=None):
