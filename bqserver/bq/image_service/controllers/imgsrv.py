@@ -654,30 +654,39 @@ class SliceService(object):
         if x1==0 and x2==0 and y1==0 and y2==0 and z1==0 and z2==0 and t1==0 and t2==0:
             return data_token
 
-        imsz = [
-            data_token.dims.get('image_num_x', 1),
-            data_token.dims.get('image_num_y', 1),
-            data_token.dims.get('image_num_z', 1),
-            data_token.dims.get('image_num_t', 1)
-        ]
-        if x1<=1 and x2>=imsz[0]: x1=0; x2=0
-        if y1<=1 and y2>=imsz[1]: y1=0; y2=0
-        if z1<=1 and z2>=imsz[2]: z1=0; z2=0
-        if t1<=1 and t2>=imsz[3]: t1=0; t2=0
+        dims = data_token.dims or {}
+        if x1<=1 and x2>=dims.get('image_num_x', 1): x1=0; x2=0
+        if y1<=1 and y2>=dims.get('image_num_y', 1): y1=0; y2=0
+        if z1<=1 and z2>=dims.get('image_num_z', 1): z1=0; z2=0
+        if t1<=1 and t2>=dims.get('image_num_t', 1): t1=0; t2=0
 
-        # if input image has only one T and Z skip slice alltogether
-        try:
-            if not data_token.dims is None:
-                skip = True
-                if   data_token.dims.get('image_num_z',0)>1: skip = False
-                elif data_token.dims.get('image_num_t',0)>1: skip = False
-                elif data_token.dims.get('image_num_p',0)>1: skip = False
-                if skip: return data_token
-        finally:
-            pass
+        # check image bounds
+        if z1>dims.get('image_num_z', 1):
+            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z1 )
+        if z2>dims.get('image_num_z', 1):
+            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z2 )
+        if t1>dims.get('image_num_t', 1):
+            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t1 )
+        if t2>dims.get('image_num_t', 1):
+            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
 
-        if z1==z2==0: z1=1; z2=data_token.dims['image_num_z']
-        if t1==t2==0: t1=1; t2=data_token.dims['image_num_t']
+        # shortcuts are only possible with no ROIs are requested
+        if x1==x2==0 and y1==y2==0:
+            # shortcut if input image has only one T and Z
+            if dims.get('image_num_z', 1)<=1 and dims.get('image_num_t', 1)<=1:
+                log.debug('Slice requested on image with no T or Z planes, skipping...')
+                return data_token
+            # shortcut if asking for all slices with only a specific time point in an image with only one time pont
+            if z1==z2==0 and t1<=1 and dims.get('image_num_t', 1)<=1:
+                log.debug('T Slice requested on image with no T planes, skipping...')
+                return data_token
+            # shortcut if asking for all time points with only a specific z slice in an image with only one z slice
+            if t1==t2==0 and z1<=1 and dims.get('image_num_z', 1)<=1:
+                log.debug('Z Slice requested on image with no Z planes, skipping...')
+                return data_token
+
+        if z1==z2==0: z1=1; z2=dims.get('image_num_z', 1)
+        if t1==t2==0: t1=1; t2=dims.get('image_num_t', 1)
 
         ifname = self.server.getInFileName( data_token, image_id )
         ofname = self.server.getOutFileName( ifname, image_id, '.%d-%d,%d-%d,%d-%d,%d-%d' % (x1,x2,y1,y2,z1,z2,t1,t2) )
@@ -698,30 +707,39 @@ class SliceService(object):
         if x1==0 and x2==0 and y1==0 and y2==0 and z1==0 and z2==0 and t1==0 and t2==0:
             return data_token
 
-        imsz = [
-            data_token.dims.get('image_num_x', 1),
-            data_token.dims.get('image_num_y', 1),
-            data_token.dims.get('image_num_z', 1),
-            data_token.dims.get('image_num_t', 1)
-        ]
-        if x1<=1 and x2>=imsz[0]: x1=0; x2=0
-        if y1<=1 and y2>=imsz[1]: y1=0; y2=0
-        if z1<=1 and z2>=imsz[2]: z1=0; z2=0
-        if t1<=1 and t2>=imsz[3]: t1=0; t2=0
+        dims = data_token.dims or {}
+        if x1<=1 and x2>=dims.get('image_num_x', 1): x1=0; x2=0
+        if y1<=1 and y2>=dims.get('image_num_y', 1): y1=0; y2=0
+        if z1<=1 and z2>=dims.get('image_num_z', 1): z1=0; z2=0
+        if t1<=1 and t2>=dims.get('image_num_t', 1): t1=0; t2=0
 
-        # if input image has only one T and Z skip slice alltogether
-        try:
-            if not data_token.dims is None:
-                skip = True
-                if   data_token.dims.get('image_num_z',0)>1: skip = False
-                elif data_token.dims.get('image_num_t',0)>1: skip = False
-                elif data_token.dims.get('image_num_p',0)>1: skip = False
-                if skip: return data_token
-        finally:
-            pass
+        # check image bounds
+        if z1>dims.get('image_num_z', 1):
+            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z1 )
+        if z2>dims.get('image_num_z', 1):
+            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z2 )
+        if t1>dims.get('image_num_t', 1):
+            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t1 )
+        if t2>dims.get('image_num_t', 1):
+            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
 
-        if z1==z2==0: z1=1; z2=data_token.dims['image_num_z']
-        if t1==t2==0: t1=1; t2=data_token.dims['image_num_t']
+        # shortcuts are only possible with no ROIs are requested
+        if x1==x2==0 and y1==y2==0:
+            # shortcut if input image has only one T and Z
+            if dims.get('image_num_z', 1)<=1 and dims.get('image_num_t', 1)<=1:
+                log.debug('Slice requested on image with no T or Z planes, skipping...')
+                return data_token
+            # shortcut if asking for all slices with only a specific time point in an image with only one time pont
+            if z1==z2==0 and t1<=1 and dims.get('image_num_t', 1)<=1:
+                log.debug('T Slice requested on image with no T planes, skipping...')
+                return data_token
+            # shortcut if asking for all time points with only a specific z slice in an image with only one z slice
+            if t1==t2==0 and z1<=1 and dims.get('image_num_z', 1)<=1:
+                log.debug('Z Slice requested on image with no Z planes, skipping...')
+                return data_token
+
+        if z1==z2==0: z1=1; z2=dims.get('image_num_z', 1)
+        if t1==t2==0: t1=1; t2=dims.get('image_num_t', 1)
 
         # construct a sliced filename
         ifname = self.server.getInFileName( data_token, image_id )

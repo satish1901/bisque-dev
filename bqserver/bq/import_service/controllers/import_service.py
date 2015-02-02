@@ -1159,6 +1159,7 @@ class import_serviceController(ServiceController):
 
         return dict(error = 'Some problem uploading the file have occured')
 
+    # DEPRECATED ENTRY POINT !
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
     def insert(self, url, filename=None, permission='private',  user=None, **kw):
