@@ -242,7 +242,7 @@ class BQServer(Session):
 
 
 
-    def webreq(self, method, url, headers = None, path=None, ):
+    def webreq(self, method, url, headers = None, path=None, **params):
         """
             Makes a http GET to the url given
 
@@ -250,14 +250,15 @@ class BQServer(Session):
             @param headers: headers provided for this specific fetch (default: None)
             @param path: the location to where the contents will be stored on the file system (default:None)
             if no path is provided the contents of the response will be returned
+            @param timeout: (optional) How long to wait for the server to send data before giving up, as a float, or a (connect timeout, read timeout) tuple
 
             @return returns either the contents of the rests or the file name if a path is provided
 
             @exception: BQCommError if the requests returns an error code and message
         """
         log.debug("%s: %s req  header=%s" , method, url, headers)
-
-        r = self.request(method=method, url=url, headers=headers, stream = (path is not None))
+        timeout = params.get('timeout', None)
+        r = self.request(method=method, url=url, headers=headers, stream = (path is not None), timeout=timeout)
 
         try:
             r.raise_for_status()

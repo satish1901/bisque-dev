@@ -674,15 +674,15 @@ class SliceService(object):
         if x1==x2==0 and y1==y2==0:
             # shortcut if input image has only one T and Z
             if dims.get('image_num_z', 1)<=1 and dims.get('image_num_t', 1)<=1:
-                log.debug('Slice requested on image with no T or Z planes, skipping...')
+                log.debug('Slice: plane requested on image with no T or Z planes, skipping...')
                 return data_token
             # shortcut if asking for all slices with only a specific time point in an image with only one time pont
             if z1==z2==0 and t1<=1 and dims.get('image_num_t', 1)<=1:
-                log.debug('T Slice requested on image with no T planes, skipping...')
+                log.debug('Slice: T plane requested on image with no T planes, skipping...')
                 return data_token
             # shortcut if asking for all time points with only a specific z slice in an image with only one z slice
             if t1==t2==0 and z1<=1 and dims.get('image_num_z', 1)<=1:
-                log.debug('Z Slice requested on image with no Z planes, skipping...')
+                log.debug('Slice: Z plane requested on image with no Z planes, skipping...')
                 return data_token
 
         if z1==z2==0: z1=1; z2=dims.get('image_num_z', 1)
@@ -727,15 +727,15 @@ class SliceService(object):
         if x1==x2==0 and y1==y2==0:
             # shortcut if input image has only one T and Z
             if dims.get('image_num_z', 1)<=1 and dims.get('image_num_t', 1)<=1:
-                log.debug('Slice requested on image with no T or Z planes, skipping...')
+                log.debug('Slice: plane requested on image with no T or Z planes, skipping...')
                 return data_token
             # shortcut if asking for all slices with only a specific time point in an image with only one time pont
             if z1==z2==0 and t1<=1 and dims.get('image_num_t', 1)<=1:
-                log.debug('T Slice requested on image with no T planes, skipping...')
+                log.debug('Slice: T plane requested on image with no T planes, skipping...')
                 return data_token
             # shortcut if asking for all time points with only a specific z slice in an image with only one z slice
             if t1==t2==0 and z1<=1 and dims.get('image_num_z', 1)<=1:
-                log.debug('Z Slice requested on image with no Z planes, skipping...')
+                log.debug('Slice: Z plane requested on image with no Z planes, skipping...')
                 return data_token
 
         if z1==z2==0: z1=1; z2=dims.get('image_num_z', 1)
@@ -925,6 +925,18 @@ class ResizeService(object):
         if len(ss)>3:
             textAddition = ss[3].upper()
 
+        if size[0]<=0 and size[1]<=0:
+            abort(400, 'Resize: size is unsupported: [%s]'%arg )
+
+        if method not in ['NN', 'BL', 'BC']:
+            abort(400, 'Resize: method is unsupported: [%s]'%arg )
+
+        # if the image is smaller and MX is used, skip resize
+        dims = data_token.dims or {}
+        if maxBounding and dims.get('image_num_x',0)<=size[0] and dims.get('image_num_y',0)<=size[1]:
+            log.debug('Resize: Max bounding resize requested on a smaller image, skipping...')
+            return data_token        
+
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.size_%d,%d,%s,%s' % (size[0], size[1], method, textAddition) )
         return data_token.setImage(ofile, fmt=default_format)
@@ -962,7 +974,9 @@ class ResizeService(object):
             abort(400, 'Resize: method is unsupported: [%s]'%arg )
 
         # if the image is smaller and MX is used, skip resize
-        if maxBounding and data_token.dims['image_num_x']<=size[0] and data_token.dims['image_num_y']<=size[1]:
+        dims = data_token.dims or {}
+        if maxBounding and dims.get('image_num_x',0)<=size[0] and dims.get('image_num_y',0)<=size[1]:
+            log.debug('Resize: Max bounding resize requested on a smaller image, skipping...')
             return data_token
 
         ifile = self.server.getInFileName( data_token, image_id )
@@ -975,8 +989,12 @@ class ResizeService(object):
 
         try:
             info = self.server.getImageInfo(filename=ofile)
-            if 'image_num_x' in info: data_token.dims['image_num_x'] = info['image_num_x']
-            if 'image_num_y' in info: data_token.dims['image_num_y'] = info['image_num_y']
+            rx = data_token.dims['image_num_x'] / info.get('image_num_x', 1)
+            ry = data_token.dims['image_num_y'] / info.get('image_num_y', 1)
+            data_token.dims['image_num_x'] = info.get('image_num_x', data_token.dims['image_num_x'])
+            data_token.dims['image_num_y'] = info.get('image_num_y', data_token.dims['image_num_y'])
+            data_token.dims['pixel_resolution_x'] *= rx
+            data_token.dims['pixel_resolution_y'] *= ry
         finally:
             pass
 
@@ -1079,12 +1097,20 @@ class Resize3DService(object):
 
         try:
             info = self.server.getImageInfo(filename=ofile)
-            if 'image_num_x' in info: data_token.dims['image_num_x'] = info['image_num_x']
-            if 'image_num_y' in info: data_token.dims['image_num_y'] = info['image_num_y']
+            rx = data_token.dims['image_num_x'] / info.get('image_num_x', 1)
+            ry = data_token.dims['image_num_y'] / info.get('image_num_y', 1)
+            data_token.dims['image_num_x'] = info.get('image_num_x', data_token.dims['image_num_x'])
+            data_token.dims['image_num_y'] = info.get('image_num_y', data_token.dims['image_num_y'])
+            data_token.dims['pixel_resolution_x'] *= rx
+            data_token.dims['pixel_resolution_y'] *= ry
             if z>0:
+                rz = data_token.dims['image_num_z'] / size[2]
                 data_token.dims['image_num_z'] = size[2]
+                data_token.dims['pixel_resolution_z'] *= rz
             elif t>0:
+                rt = data_token.dims['image_num_t'] / size[2]                
                 data_token.dims['image_num_t'] = size[2]
+                data_token.dims['pixel_resolution_t'] *= rt
         finally:
             pass
 
