@@ -1393,30 +1393,40 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		Ext.Ajax.request({
 			url : url,
 			scope : this,
+			timeout : 120000, // two minutes timeout
 			disableCaching : false,
 			callback : function (opts, succsess, response) {
-				if (response.status >= 400)
+				if (response.status >= 400 || !response.responseXML)
 					BQ.ui.error(response.responseText);
 				else {
-					if (!response.responseXML)
-						return;
 					var xmlDoc = response.responseXML;
-					if (type == 'slice' || type == 'atlas' || type == 'resized') {
-						var xRes = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='image_num_x']/@value");
-						var yRes = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='image_num_y']/@value");
+
+					if (type == 'slice' || type == 'atlas' || type == 'resized' || type == 'update_dims') {
+						var nx = parseInt(BQ.util.xpath_string(xmlDoc, "//tag[@name='image_num_x']/@value"));
+						var ny = parseInt(BQ.util.xpath_string(xmlDoc, "//tag[@name='image_num_y']/@value"));
+
 						if (type == 'atlas') {
 							this.loadedDimFullAtlas = true;
-							this.dims.atlas.x = xRes[0].value;
-							this.dims.atlas.y = yRes[0].value;
-						}
-						if (type == 'resized') {
+							this.dims.atlas.x = nx;
+							this.dims.atlas.y = ny;
+						} else if (type == 'resized') {
 							this.loadedDimResizedAtlas = true;
-							this.dims.atlasResized.x = xRes[0].value;
-							this.dims.atlasResized.y = yRes[0].value;
+							this.dims.atlasResized.x = nx;
+							this.dims.atlasResized.y = ny;
+						} else if (type == 'update_dims') {
+							// dima: safeguard resize case may alter the the size of the perceived plane size
+							this.loadedDimFull = true;
+							var rx = this.dims.slice.x / nx;
+							var ry = this.dims.slice.y / ny;
+							this.dims.slice.x = nx;
+							this.dims.slice.y = ny;
+							this.dims.pixel.x *= rx;
+							this.dims.pixel.y *= ry;
+							this.dims.pixel.z *= rx; // dima: scaling Z to keep aspect ratio
 						}
 					}
 
-					if (this.loadedDimFullAtlas && this.loadedDimResizedAtlas) {
+					if (this.loadedDimFullAtlas && this.loadedDimResizedAtlas && this.loadedDimFull) {
 
 						this.xTexSizeRatio = this.dims.atlasResized.x / this.dims.atlas.x;
 						this.yTexSizeRatio = this.dims.atlasResized.y / this.dims.atlas.y;
@@ -1516,20 +1526,24 @@ Ext.define('BQ.viewer.Volume.Panel', {
             if(this.dims.t === 1)
                 this.useAnimation = false;
         }
-		var dims = '&dims';
-		var meta = '&meta';
-		var atlas = '&textureatlas';
+		
+		var dims = 'dims';
+		var meta = 'meta';
+		var atlas = 'textureatlas';
+		var resize_safeguard = 'resize=1024,1024,BC,MX'; // resize designed to safeguard against very large planar images
+		// we probably need to add safeguard against very large Z series
 		var maxTexture = this.getMaxTextureSize();
-		var resize = '&resize=' + this.maxTextureSize + ',' + this.maxTextureSize + ',BC,MX';
-		var baseUrl = resUniqueUrl + '?' + dims;
-		var sliceUrl = resUniqueUrl + '?' + slice + dims;
-		var sliceUrlMeta = resUniqueUrl + '?' + slice + meta;
-		var fullAtlasUrl = resUniqueUrl + '?' + slice + atlas + dims;
-		var resizeAtlasUrl = resUniqueUrl + '?' + slice + atlas + resize + dims;
+		var resize = 'resize=' + this.maxTextureSize + ',' + this.maxTextureSize + ',BC,MX';
+
+		var fullUrl = resUniqueUrl + '?' + [slice, resize_safeguard, dims].join('&');
+		var fullAtlasUrl = resUniqueUrl + '?' + [slice, resize_safeguard, atlas, dims].join('&');
+		var resizeAtlasUrl = resUniqueUrl + '?' + [slice, resize_safeguard, atlas, resize, dims].join('&');
+
 		this.loadedDimFullAtlas = false;
 		this.loadedDimResizeAtlas = false;
 
 		//Ajax request the values pertinent to the volume atlases
+		this.fetchDimensions(fullUrl, 'update_dims');		
 		this.fetchDimensions(fullAtlasUrl, 'atlas');
 		this.fetchDimensions(resizeAtlasUrl, 'resized');
         //this.fetchHistogram();
@@ -2271,10 +2285,10 @@ VolumeAtlas.prototype = new VolumePlugin();
 VolumeAtlas.prototype.init = function () {};
 
 VolumeAtlas.prototype.addCommand = function (command, pars) {
+	command.push('resize=1024,1024,BC,MX'); // resize designed to safeguard against very large planar images
+	command.push('textureatlas');	
 	var maxTexture = this.volume.getMaxTextureSize();
-	var resize = '&resize=' + maxTexture + ',' + maxTexture + ',BC,MX';
-	command.push('textureatlas&' + resize);
-	//command.push('textureatlas&resize=4096,4096,BC,MX');
+	command.push('resize=' + maxTexture + ',' + maxTexture + ',BC,MX');
 };
 
 //--------------------------------------------------------------------------------------
@@ -2318,9 +2332,9 @@ VolumeDisplay.prototype.addCommand = function (command, pars) {
 	fusion += ':' + this.combo_fusion.getValue();
 	command.push('fuse=' + fusion);
 
-	var ang = this.combo_rotation.getValue();
+	/*var ang = this.combo_rotation.getValue();
 	if (ang && ang !== '' && ang !== 0)
-		command.push('rotate=' + ang);
+		command.push('rotate=' + ang);*/
 
 	if (this.combo_negative.getValue()) {
 		command.push(this.combo_negative.getValue());
@@ -2376,7 +2390,7 @@ VolumeDisplay.prototype.createMenu = function () {
 				},
 			], this.def.negative, this, this.changed);
 
-	this.combo_rotation = this.volume.createCombo('Rotation', [{
+	/*this.combo_rotation = this.volume.createCombo('Rotation', [{
 					"value" : 0,
 					"text" : "No"
 				}, {
@@ -2389,7 +2403,7 @@ VolumeDisplay.prototype.createMenu = function () {
 					"value" : 180,
 					"text" : "180deg"
 				},
-			], this.def.rotate, this, this.changed);
+			], this.def.rotate, this, this.changed);*/
 };
 
 VolumeDisplay.prototype.createChannelMap = function () {
