@@ -290,6 +290,7 @@ class MountServer(TGController):
         'create/find hidden root store for each user'
 
         root = data_service.query('store', resource_unid='(root)', view='full')
+        #root = data_service.query('store', resource_unid='(root)', view='short')
         if len(root) == 0:
             return  self._create_default_mounts()
         if len(root) == 1:
@@ -396,6 +397,7 @@ class MountServer(TGController):
     def _load_root_mount(self):
         "fetch the root mount and submounts"
         root = data_service.query('store', resource_unid='(root)', view='full', cache=False)
+        #root = data_service.query('store', resource_unid='(root)', view='short', cache=False)
         if len(root) == 1:
             return self._create_default_mounts(root[0])
         elif len(root) == 0:
@@ -426,7 +428,8 @@ class MountServer(TGController):
         while q is not None and path:
             el= path.pop(0)
             el = urllib.unquote (el)
-            q = data_service.query(parent=q, resource_unid=el, view='full', )
+            #q = data_service.query(parent=q, resource_unid=el, view='full', )
+            q = data_service.query(parent=q, resource_unid=el, view='short', )
             if len(q) != 1:
                 log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
                 return None
@@ -468,6 +471,27 @@ class MountServer(TGController):
         if value is not None:
             data_service.del_resource(q.get ('value'))
         return True
+
+
+    def _walk_path (self, root):
+        """Emulate OS walk on a store
+
+        usage : for dird, sibdird, links in mount_service.walk_path ('/store/dir')
+                   print ("in dir ",  dird)
+                   for fname in links:
+                      pass
+        """
+        value = None
+        if len(path) and path[-1] == 'value':
+            value = path.pop()
+        if len(path)==0:
+            return False
+        q = self._load_mount_path (store_name, path)
+        if q is None:
+            log.debug ("Cannot find %s in %s", path, store_name)
+            return False
+        log.debug ("delete from %s of %s = %s", store_name, path, etree.tostring(q))
+
 
 
 
@@ -721,16 +745,24 @@ class MountServer(TGController):
         with self._get_driver(store) as driver:
             uniq     = resource.get('resource_uniq')
             bloburls = resource.get('value')
-            if bloburls is not None:
+            if bloburls is None:
+                bloburls  = [ x.text for x in resource.xpath('value') ]
+            elif bloburls:
                 bloburls = [ bloburls ]
             else:
-                bloburls  = [ x.text for x in resource.xpath('value') ]
+                bloburls = []
 
             log.debug ("fetch_blob %s -> %s", resource.get ('resource_uniq'), bloburls)
 
             files = []
             sub = ''
             for storeurl in bloburls:
+                # sanity check . ensure exactly one reference to store url before delete
+                # Since storeurl can contain '#' marks for series files
+                # What about directory URL.. this may match too many
+                blobrefs = data_service.query(parent= False, value = storeurl, cache=False)
+                if len(blobrefs) != 1:
+                    continue
                 driver.delete (storeurl)
         # Delete the reference in the store
         link = data_service.query ('link', parent=False, value = resource.get ('resource_uniq'), cache=False)
@@ -841,7 +873,8 @@ class MountServer(TGController):
             el = path.pop(0)
             if not el:
                 continue
-            q  = data_service.query(parent=parent, resource_unid=el, view='full', cache=False)
+            #q  = data_service.query(parent=parent, resource_unid=el, view='full', cache=False)
+            q  = data_service.query(parent=parent, resource_unid=el, view='short', cache=False)
             if len(q) == 0:
                 # no element we are done
                 path.insert(0, el)
