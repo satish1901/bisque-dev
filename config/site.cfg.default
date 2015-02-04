@@ -87,12 +87,11 @@ bisque.js_environment = production
 #bisque.static_files = true
 
 # server defaults
-bisque.root = http://localhost:8080
 bisque.server = http://localhost:8080
 bisque.services_disabled = engine_service
 #bisque.services_enabled = client_service
-bisque.site = http://localhost:8080
-bisque.installed = pending
+#bisque.site = http://localhost:8080
+bisque.installed =
 bisque.paths.root  =
 #bisque.paths.data  = installationdir/data
 #bisque.paths.config  = installationdir/config

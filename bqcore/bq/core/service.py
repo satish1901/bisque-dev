@@ -60,7 +60,7 @@ import pkg_resources
 
 from urllib import urlencode
 import urlparse
-from tg import config, expose
+from tg import config, expose, request
 from bq.core.lib.base import BaseController
 
 log = logging.getLogger ("bq.service")
@@ -160,7 +160,7 @@ def mount_services (root, enabled = None, disabled = None):
     for ty, entry in service_registry.get_services().items():
         if (not enabled or  ty in enabled) and ty not in disabled:
             if  hasattr(entry.module, "initialize"):
-                service_url = root + '/' + entry.name
+                service_url = urlparse.urljoin (root , entry.name)
                 #service_url = '/' + entry.name
                 log.debug ('activating %s at %s' % (str(entry.name), service_url))
                 service = entry.module.initialize(service_url)
@@ -211,8 +211,8 @@ class ServiceMixin(object):
         if uri[-1] != '/':
             uri += '/'
         self.fulluri = uri
-        self.baseuri = uri
-        #self.baseuri = urlparse.urlparse(uri).path
+        #self.baseuri = uri
+        self.baseuri = urlparse.urlparse(uri).path
         log.debug ("creating %s at %s" % (self.service_type, self.baseuri))
         urituple = urlparse.urlparse(uri)
         self.host, self.path = urituple.netloc , urituple.path
@@ -226,7 +226,14 @@ class ServiceMixin(object):
 
 
     def get_uri(self):
-        return self.baseuri
+        try:
+            host_url = request.host_url
+            log.debug ("REQUEST %s" , host_url)
+        except TypeError:
+            log.warn ("TYPEERROR on request")
+            host_url = ''
+        return urlparse.urljoin (host_url, self.baseuri)
+
     uri = property (get_uri)
     url = property (get_uri)
 
