@@ -49,6 +49,7 @@ else:
 capture = None
 answer_file = None
 save_answers = False
+use_defaults = False
 
 try:
     import sqlalchemy as sa
@@ -158,7 +159,10 @@ def getanswer(question, default, help=None):
         elif capture is not None:
             a =  capture.logged_input ("%s [%s]? " % (question, default))
         else:
-            a =  raw_input ("%s [%s]? " % (question, default))
+            if not use_defaults:
+                a =  raw_input ("%s [%s]? " % (question, default))
+            else:
+                a = default
 
         if a=='?':
             if help is not None:
@@ -848,7 +852,7 @@ def install_matlab(params, cfg = RUNTIME_CFG):
         params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
         if  os.path.exists(params['runtime.matlab_home']):
             break
-        if  getanswer("Matlab not found: Try again", 'Y',
+        if  getanswer("Matlab not found: Try again", 'N',
                       "Matlab (and compile) is needed for many modules") == 'Y':
             continue
         print "Matlab must be provided to install modules"
@@ -964,7 +968,7 @@ def install_server_defaults(params):
             params[k] = SITE_VARS[k]
         print "  %s=%s" % (k,params[k])
 
-    if getanswer("Change a site variable", 'Y')=='Y':
+    if getanswer("Change a site variable", 'N')=='Y':
         params = modify_site_cfg(SITE_QUESTIONS, params)
 
     if new_install:
@@ -2046,6 +2050,7 @@ def setup(options, args):
 
     cancelled = False
     global answer_file, save_answers
+    global use_defaults
     global BQENV
     global BQBIN
     global SITE_PACKAGES
@@ -2068,6 +2073,8 @@ def setup(options, args):
         print "Saving answers to %s" % options.write
         answer_file = open (options.write, "wb")
         save_answers = True
+    elif options.yes:
+        use_defaults = True
     elif has_script and not options.inscript:
         script = ['bq-admin', 'setup', '--inscript']
         script.extend (args)

@@ -171,6 +171,7 @@ class setup(object):
         parser.add_option("--inscript", action="store_true", help="we are running under typescript" )
         parser.add_option("-r", "--read", action="store", help="Read answers from given file" )
         parser.add_option("-w", "--write", action="store", help="Write answers from given file" )
+        parser.add_option("-y", "--yes", action="store_true", help="Use default answers for all questions" )
         options, args = parser.parse_args()
         for arg in args:
             if arg not in all_options + ['bisque', 'engine']:
