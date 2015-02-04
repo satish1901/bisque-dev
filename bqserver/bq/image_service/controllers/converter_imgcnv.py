@@ -256,6 +256,9 @@ class ConverterImgcnv(ConverterBase):
         
         if cls.is_multifile_series(**kw) is True:
             rd.update(kw['token'].meta)
+            if kw['token'].meta.get('image_num_c', 0)>1:
+                if 'channel_color_0' in rd: del rd['channel_color_0']
+                if 'channel_0_name' in rd: del rd['channel_0_name']            
 
         return rd
 
@@ -417,7 +420,7 @@ class ConverterImgcnv(ConverterBase):
             log.debug('thumbnail files: %s', files)
             
             samples = meta.get('image_num_c', 0)
-            if samples<1:
+            if samples<2:
                 command.extend(['-i', files[page-1]])
             else:
                 # in case of channels being stored in separate files
