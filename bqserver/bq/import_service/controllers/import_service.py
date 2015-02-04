@@ -418,6 +418,8 @@ class import_serviceController(ServiceController):
 #------------------------------------------------------------------------------
 
     def process_packaged_5D(self, uf, **kw):
+        log.debug('process_packaged_5D: %s', kw)
+
         unpack_dir, members = self.unpackPackagedFile(uf)
         members = [ m for m in members if is_filesystem_file(m) is not True ] # remove file system internal files
         members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
@@ -425,35 +427,43 @@ class import_serviceController(ServiceController):
         #members = [ m for m in members if os.path.exists(m) is True ] # remove missing files
         members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories
 
-        num_pages = len(members)
-        z=None; t=None
-        if 'number_z' in kw: z = int(kw['number_z'])
-        if 'number_t' in kw: t = int(kw['number_t'])
-        if z==0: z=num_pages; t=1
-        if t==0 or z is None or t is None: t=num_pages; z=1
+        z = int(kw['number_z']) if 'number_z' in kw else None
+        t = int(kw['number_t']) if 'number_t' in kw else None
+        c = int(kw.get('number_c', 0))
 
-        res = { 'resolution_x':0, 'resolution_y':0, 'resolution_z':0, 'resolution_t':0 }
-        params = {'z': z, 't': t}
-        params.update(res)
-        params.update(kw)
-        log.debug('process_packaged_5D, params: %s', params )
+        # try to guess automatically the number of planes for only Z or only T series
+        num_pages = len(members)/c if c>1 else len(members)
+        if z==0 and t is None:
+            z=num_pages
+            t=1
+        elif t==0 and z is None:
+            t=num_pages
+            z=1
 
         resource = etree.Element ('image', name='%s.series'%uf.resource.get('name'), resource_type='image')
         for v in members:
             val = etree.SubElement(resource, 'value' )
-            #val.text = 'file://%s'%v if os.name != 'nt' else 'file:///%s'%v
             val.text = blob_service.local2url(v)
 
         image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )
         etree.SubElement(image_meta, 'tag', name='storage', value='multi_file_series' )
-        etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%params['z'], type='number' )
-        etree.SubElement(image_meta, 'tag', name='image_num_t', value='%s'%params['t'], type='number' )
+        etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%z, type='number' )
+        etree.SubElement(image_meta, 'tag', name='image_num_t', value='%s'%t, type='number' )
+        if c>1:
+            etree.SubElement(image_meta, 'tag', name='image_num_c', value='%s'%c, type='number' )
         etree.SubElement(image_meta, 'tag', name='dimensions', value='XYCZT' )
-        if sum([float(params[k]) for k in res.keys()])>0:
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_x', value='%s'%params['resolution_x'], type='number' )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_y', value='%s'%params['resolution_y'], type='number' )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_z', value='%s'%params['resolution_z'], type='number' )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_t', value='%s'%params['resolution_t'], type='number' )
+        if float(kw.get('resolution_x', 0))>0:
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_x', value='%s'%kw['resolution_x'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_x', value='microns' )
+        if float(kw.get('resolution_y', 0))>0:
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_y', value='%s'%kw['resolution_y'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_y', value='microns' )
+        if float(kw.get('resolution_z', 0))>0:
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_z', value='%s'%kw['resolution_z'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_z', value='microns' )
+        if float(kw.get('resolution_t', 0))>0:
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_t', value='%s'%kw['resolution_t'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_t', value='seconds' )
 
         # append all other input annotations
         resource.extend (copy.deepcopy (list (uf.resource)))

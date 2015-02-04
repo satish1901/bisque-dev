@@ -166,11 +166,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
         });
 
         var description = 'Please, tell us how to import compressed file "<b>'+this.file.name+'</b>". '+
-                          'See "help" for more information.';
-
-        var resolution_question = 'It would also be very nice if you could provide pixel resolution, '+
-            'although it\'s optional:';
-
+                          'See "Help" for more information about types of acceptable archives.';
         this.items = [ {
                 xtype: 'label',
                 html: description,
@@ -207,8 +203,22 @@ Ext.define('BQ.upload.ZipAnnotator', {
                 //maxValue: 50
             }, {
                 xtype: 'displayfield',
+                name: 'channels_title',
+                value: 'If your channels are stored as separate files, we need to know the number of channels (keep 0 otherwise):',
+                cls: 'question',
+                hidden: true,
+            }, {
+                xtype: 'numberfield',
+                name: 'number_c',
+                fieldLabel: 'Number of channels (samples)',
+                value: 0,
+                minValue: 0,
+                hidden: true,
+                //maxValue: 50
+            }, {
+                xtype: 'displayfield',
                 name: 'resolution_title',
-                html: resolution_question,
+                value: 'It would be nice if you could also provide pixel resolution (keep 0 otherwise):',
                 cls: 'question',
                 hidden: true,
             }, {
@@ -255,14 +265,14 @@ Ext.define('BQ.upload.ZipAnnotator', {
     },
 
     onTypeSelected: function(combo, records) {
-        var togglable_fileds = { 'number_z':null, 'number_t':null, 'resolution_title':null,
+        var togglable_fileds = { 'number_z':null, 'number_t':null, channels_title: null, number_c: null, 'resolution_title':null,
             'resolution_x':null, 'resolution_y':null, 'resolution_z':null, 'resolution_t':null };
 
         var my_types = {
             'zip-multi-file' : {},
-            'zip-time-series': {'resolution_title':null, 'resolution_x':null, 'resolution_y':null, 'resolution_t':null},
-            'zip-z-stack'    : {'resolution_title':null, 'resolution_x':null, 'resolution_y':null, 'resolution_z':null},
-            'zip-5d-image'   : {'number_z':null, 'number_t':null, 'resolution_title':null,
+            'zip-time-series': {channels_title: null, 'number_c':0, 'resolution_title':null, 'resolution_x':null, 'resolution_y':null, 'resolution_t':null},
+            'zip-z-stack'    : {channels_title: null, 'number_c':0, 'resolution_title':null, 'resolution_x':null, 'resolution_y':null, 'resolution_z':null},
+            'zip-5d-image'   : {'number_z':null, 'number_t':null, channels_title: null, 'number_c':0, 'resolution_title':null,
                                 'resolution_x':null, 'resolution_y':null, 'resolution_z':null, 'resolution_t':null},
             'zip'            : {},
             //'zip-volocity'   : {},
