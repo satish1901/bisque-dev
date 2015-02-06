@@ -34,8 +34,14 @@ ImgOperations.prototype.updateView = function (view) {
     if (!this.menu) this.createMenu();
     if (this.menu) {
         this.params = {};
-        this.params.enhancement = this.combo_enhancement.getValue();
-        view.addParams  ('depth=8,' + this.combo_enhancement.getValue() + ',u');
+        var enh = this.combo_enhancement.getValue();
+        this.params.enhancement = enh;
+        if (enh.indexOf('hounsfield') != 0) {
+            view.addParams  ('depth=8,' + this.combo_enhancement.getValue() + ',u');
+        } else {
+            var a = enh.split(':');
+            view.addParams  ('depth=8,hounsfield,u,,'+a[1]);
+        }
 
         /*
         var b = this.menu.queryById('slider_brightness').getValue();
@@ -139,12 +145,45 @@ ImgOperations.prototype.createMenu = function () {
         {"value":"m", "text":"Maximum"},
     ], fusion, this, this.changed);
 
-    this.combo_enhancement = this.viewer.createCombo( 'Enhancement', [
+    var enhancement_options = [
         {"value":"d", "text":"Data range"},
         {"value":"f", "text":"Full range"},
         {"value":"t", "text":"Data + tolerance"},
-        {"value":"e", "text":"Equalized"}
-    ], enhancement, this, this.changed);
+        {"value":"e", "text":"Equalized"},
+    ];
+    if (phys.dicom && (phys.dicom.modality == 'CT' || phys.dicom.wnd_center)) {
+        var prefferred = ''+phys.dicom.wnd_center+','+phys.dicom.wnd_width;
+        // preferred may be lists
+
+        dicom_options = [
+            { value:"hounsfield:"+prefferred, text: "CT: Preferred ("+prefferred+")" },        
+            { value:"hounsfield:40,80", text: "CT: Head Soft Tissue (40/80)" },
+            { value:"hounsfield:30,110", text: "CT: Brain (30/110)" },
+            { value:"hounsfield:60,300", text: "CT: Neck Soft Tissue (60/300)" },
+            { value:"hounsfield:400,2000", text: "CT: Bone (400/2000)" },
+            { value:"hounsfield:400,4000", text: "CT: Temporal bones (400/4000)" },
+            { value:"hounsfield:350,2500", text: "CT: Bone body (350/2500)" },
+            { value:"hounsfield:40,500", text: "CT: Soft Tissue (40/500)" },
+            { value:"hounsfield:40,400", text: "CT: Soft Tissue, pediatric (40/400)" },
+            { value:"hounsfield:400,1800", text: "CT: Mediastinum (400/1800)" },
+            { value:"hounsfield:-180,2600", text: "CT: Bronchial (-180/2600)" },
+            { value:"hounsfield:-350,2000", text: "CT: Lung (-350/2000)" },
+            { value:"hounsfield:-700,1200", text: "CT: Lung (-700/1200)" },
+            { value:"hounsfield:-20,400", text: "CT: Abdomen (-20/400)" },
+            { value:"hounsfield:60,180", text: "CT: Liver (60/180)" },
+            { value:"hounsfield:40,150", text: "CT: Liver without contrast (40/150)" },
+            { value:"hounsfield:100,150", text: "CT: Liver with contrast (100/150)" },
+            { value:"hounsfield:30,180", text: "CT: P Fossa (30/180)" },
+            { value:"hounsfield:40,250", text: "CT: Cervical spine without contrast (40/250)" },
+            { value:"hounsfield:40,500", text: "CT: Thoracic and Lumbar spine (40/500)" },
+            { value:"hounsfield:40,60", text: "CT: Infarct (40/60)" },
+            { value:"hounsfield:200,700", text: "CT: OBLIQUE MIP (200/700)" },
+            { value:"hounsfield:60,650", text: "CT: MYELOGRAM W/L (60/650)" },
+        ];
+        enhancement = "hounsfield:"+prefferred;
+        enhancement_options.push.apply(enhancement_options, dicom_options);
+    }
+    this.combo_enhancement = this.viewer.createCombo( 'Enhancement', enhancement_options, enhancement, this, this.changed, 300);
 
     this.combo_negative = this.viewer.createCombo( 'Negative', [
         {"value":"", "text":"No"},

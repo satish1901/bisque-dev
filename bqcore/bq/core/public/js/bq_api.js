@@ -1883,6 +1883,23 @@ BQImagePhys.prototype.onloadIS = function (image, xml) {
       }
   }
 
+  // find DICOM tags
+  if (xml) {
+      var dicom = BQ.util.xpath_nodes(xml, "resource/tag[@name='DICOM']");
+      if (dicom && dicom.length>0) {
+          dicom = dicom[0];
+          this.dicom = {
+              modality:   BQ.util.xpath_string(dicom, "tag[@name='Modality' and @type=':///DICOM#0008,0060']/@value"),
+              wnd_center: BQ.util.xpath_string(dicom, "tag[@name='Window Center' and @type=':///DICOM#0028,1050']/@value"),
+              wnd_width:  BQ.util.xpath_string(dicom, "tag[@name='Window Width' and @type=':///DICOM#0028,1051']/@value"),
+          };
+          // preferred may be lists
+
+      } else {
+          this.dicom = undefined;
+      }
+  }
+
   this.is_done = true;
   this.onload();
 };
