@@ -1438,6 +1438,7 @@ class DepthService(object):
          d - data range
          t - data range with tolerance
          e - equalized
+         hounsfield - hounsfield space enhancement
        format is: u, s or f, if unset keeps image original
          u - unsigned integer
          s - signed integer
@@ -1445,6 +1446,8 @@ class DepthService(object):
        channel mode is: cs or cc
          cs - channels separate
          cc - channels combined
+       window center, window width - only used for hounsfield enhancement
+         ex: depth=8,hounsfield,u,40,80
        ex: depth=8,d'''
 
     def __init__(self, server):
@@ -1460,8 +1463,8 @@ class DepthService(object):
         return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
-        ms = 'f|d|t|e|c|n'.split('|')
-        ds = '8|16|32|64'.split('|')
+        ms = ['f', 'd', 't', 'e', 'c', 'n', 'hounsfield']
+        ds = ['8', '16', '32', '64']
         fs = ['u', 's', 'f']
         cm = ['cs', 'cc']
         d=None; m=None; f=None; c=None
@@ -1469,8 +1472,10 @@ class DepthService(object):
         args = arg.split(',')
         if len(args)>0: d = args[0]
         if len(args)>1: m = args[1]
-        if len(args)>2: f = args[2]
-        if len(args)>3: c = args[3]
+        if len(args)>2: f = args[2] or 'u'
+        if len(args)>3: c = args[3] or 'cs'
+        if len(args)>4: window_center = args[4] or None
+        if len(args)>5: window_width = args[5] or None
 
         if d is None or d not in ds:
             abort(400, 'Depth: depth is unsupported: %s'%d)
@@ -1480,6 +1485,8 @@ class DepthService(object):
             abort(400, 'Depth: format is unsupported: %s'%f )
         if c is not None and c not in cm:
             abort(400, 'Depth: channel mode is unsupported: %s'%c )
+        if m == 'hounsfield' and (window_center is None or window_width is None):
+            abort(400, 'Depth: hounsfield enhancement requires window center and width' )
 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.depth_%s'%arg)
@@ -1487,7 +1494,12 @@ class DepthService(object):
         log.debug('Depth %s: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         if not os.path.exists(ofile):
-            extra=['-multi', '-depth', arg]
+            extra=['-multi']
+            if m == 'hounsfield':
+                extra.extend(['-hounsfield', '%s,%s,%s,%s'%(d,f,window_center,window_width)])
+            else:
+                extra.extend(['-depth', arg])
+
             if data_token.histogram is not None:
                 extra.extend([ '-ihst', data_token.histogram, '-ohst', ohist])
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=extra, token=data_token)
