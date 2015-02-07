@@ -341,7 +341,7 @@ HOSTNAME = "localhost"
 #################################################
 ## Initial values
 SITE_VARS = {
-#    'bisque.root' : 'http://%s:8080' % HOSTNAME,
+    'bisque.root' : 'http://%s:8080' % HOSTNAME,
     'bisque.organization': 'Your Organization',
     'bisque.title': 'Image Repository',
     'bisque.admin_email' : 'YourEmail@YourOrganization',
@@ -359,7 +359,7 @@ ENGINE_VARS  ={
 # you run bisque-setup
 initial_vars = {
     'bisque.paths.root' : os.getcwd(),
-#    'bisque.root' : 'http://localhost:8080',
+    'bisque.root' : 'http://localhost:8080',
     'bisque.organization': 'Your Organization',
     'bisque.title': 'Image Repository',
     'bisque.admin_email' : 'YourEmail@YourOrganization',
@@ -388,8 +388,8 @@ linked_vars = {
 
 
 SITE_QUESTIONS = [
-#('bisque.root' , 'Enter the root URL of the server ',
-#                   """A complete URL where your application will be mounted i.e. http://someserver:8080/
+('bisque.root' , 'Enter the root URL of the server ',
+                   """A complete URL where your application will be mounted i.e. http://someserver:8080/
 #If you server will be mounted behind a proxy, please enter
 #the proxy address and see AdvancedInstalls"""),
                   ('bisque.admin_displayname', 'Your real name  administrator account', None),
