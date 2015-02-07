@@ -152,11 +152,28 @@ ImgOperations.prototype.createMenu = function () {
         {"value":"e", "text":"Equalized"},
     ];
     if (phys.dicom && (phys.dicom.modality == 'CT' || phys.dicom.wnd_center)) {
-        var prefferred = ''+phys.dicom.wnd_center+','+phys.dicom.wnd_width;
-        // preferred may be lists
+        var dicom_options = [];
+
+        if (phys.dicom.wnd_center.indexOf(',')>=0) {
+            // if wnd_center is a list
+            var cntrs = phys.dicom.wnd_center.split(',');
+            var widths = phys.dicom.wnd_width.split(',');            
+            var prefferred = cntrs[0]+','+widths[0];
+            for (var i=0; i<cntrs.length; ++i) {
+                dicom_options.push(
+                    { value:"hounsfield:"+cntrs[i]+','+widths[i], text: "CT: Preferred ("+cntrs[i]+','+widths[i]+")" } 
+                );
+            }
+        } else {
+            var prefferred = phys.dicom.wnd_center+','+phys.dicom.wnd_width;
+            dicom_options.push(
+                { value:"hounsfield:"+prefferred, text: "CT: Preferred ("+prefferred+")" }
+            );
+        }
+        enhancement_options.push.apply(enhancement_options, dicom_options);
+        enhancement = "hounsfield:"+prefferred;        
 
         dicom_options = [
-            { value:"hounsfield:"+prefferred, text: "CT: Preferred ("+prefferred+")" },        
             { value:"hounsfield:40,80", text: "CT: Head Soft Tissue (40/80)" },
             { value:"hounsfield:30,110", text: "CT: Brain (30/110)" },
             { value:"hounsfield:60,300", text: "CT: Neck Soft Tissue (60/300)" },
@@ -180,7 +197,6 @@ ImgOperations.prototype.createMenu = function () {
             { value:"hounsfield:200,700", text: "CT: OBLIQUE MIP (200/700)" },
             { value:"hounsfield:60,650", text: "CT: MYELOGRAM W/L (60/650)" },
         ];
-        enhancement = "hounsfield:"+prefferred;
         enhancement_options.push.apply(enhancement_options, dicom_options);
     }
     this.combo_enhancement = this.viewer.createCombo( 'Enhancement', enhancement_options, enhancement, this, this.changed, 300);

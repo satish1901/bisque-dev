@@ -429,7 +429,7 @@ class ConverterImgcnv(ConverterBase):
                 for s in range(1, samples):
                     command.extend(['-c', files[page+s]])
 
-
+        command.extend(['-enhancemeta']) # right now only CT data is enhanced
         if info.get('image_pixel_depth', 16) != 8:
             command.extend(['-depth', '8,d,u'])
 
