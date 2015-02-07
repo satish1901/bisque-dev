@@ -2049,7 +2049,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	// view menu
 	//----------------------------------------------------------------------
 
-	createCombo : function (label, items, def, scope, cb, id) {
+	createCombo : function (label, items, def, scope, cb, id, min_width) {
 		var ot
 		var options = Ext.create('Ext.data.Store', {
 				fields : ['value', 'text'],
@@ -2067,6 +2067,9 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				forceSelection : true,
 				editable : false,
 				value : def,
+	            listConfig : {
+	                minWidth: min_width || 70,
+	            },
 				listeners : {
 					scope : scope,
 					'select' : cb,
@@ -2320,7 +2323,14 @@ VolumeDisplay.prototype.addCommand = function (command, pars) {
 
 	if (!this.menu)
 		return;
-	command.push('depth=8,' + this.combo_enhancement.getValue() + ',u');
+
+    var enh = this.combo_enhancement.getValue();
+    if (enh.indexOf('hounsfield') != 0) {
+        command.push ('depth=8,' + this.combo_enhancement.getValue() + ',u');
+    } else {
+        var a = enh.split(':');
+        command.push ('depth=8,hounsfield,u,,'+a[1]);
+    }
 
 	var fusion = '';
 	for (var i = 0; i < this.channel_colors.length; i++) {
@@ -2366,20 +2376,9 @@ VolumeDisplay.prototype.createMenu = function () {
 				},
 			], this.def.fusion, this, this.changed);
 
-	this.combo_enhancement = this.volume.createCombo('Enhancement', [{
-					"value" : "d",
-					"text" : "Data range"
-				}, {
-					"value" : "f",
-					"text" : "Full range"
-				}, {
-					"value" : "t",
-					"text" : "Data + tolerance"
-				}, {
-					"value" : "e",
-					"text" : "Equalized"
-				}
-			], enhancement, this, this.changed);
+    var enhancement_options = phys.getEnhancementOptions();
+    enhancement = enhancement_options.prefferred || enhancement;
+	this.combo_enhancement = this.volume.createCombo('Enhancement', enhancement_options, enhancement, this, this.changed, undefined, 300);
 
 	this.combo_negative = this.volume.createCombo('Negative', [{
 					"value" : "",

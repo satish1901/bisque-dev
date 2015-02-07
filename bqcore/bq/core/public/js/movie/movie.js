@@ -243,7 +243,7 @@ Ext.define('BQ.viewer.Movie', {
     // view menu
     //----------------------------------------------------------------------
 
-    createCombo : function (label, items, def, scope, cb, id) {
+    createCombo : function (label, items, def, scope, cb, id, min_width) {
         var options = Ext.create('Ext.data.Store', {
             fields: ['value', 'text'],
             data : items
@@ -260,6 +260,9 @@ Ext.define('BQ.viewer.Movie', {
             forceSelection: true,
             editable: false,
             value: def,
+            listConfig : {
+                minWidth: min_width || 70,
+            },            
             listeners:{
                 scope: scope,
                 select: cb,
@@ -557,7 +560,13 @@ PlayerDisplay.prototype.addCommand = function (command, pars) {
         return;
     }
 
-    command.push ('depth=8,' + this.combo_enhancement.getValue());
+    var enh = this.combo_enhancement.getValue();
+    if (enh.indexOf('hounsfield') != 0) {
+        command.push ('depth=8,' + this.combo_enhancement.getValue() + ',u');
+    } else {
+        var a = enh.split(':');
+        command.push ('depth=8,hounsfield,u,,'+a[1]);
+    }
 
     var b = this.menu.queryById('slider_brightness').getValue();
     var c = this.menu.queryById('slider_contrast').getValue();
@@ -589,7 +598,8 @@ PlayerDisplay.prototype.createMenu = function () {
 
     this.createChannelMap( );
 
-    var enhancement = this.player.phys && parseInt(this.player.phys.pixel_depth)===8 ? this.def.enhancement_8bit : this.def.enhancement;
+    var phys = this.player.phys;
+    var enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.def.enhancement_8bit : this.def.enhancement;
     this.menu.add({
         xtype: 'displayfield',
         fieldLabel: 'View',
@@ -628,23 +638,24 @@ PlayerDisplay.prototype.createMenu = function () {
         },
     });
 
+    // fusion
     this.combo_fusion = this.player.createCombo( 'Fusion', [
         {"value":"a", "text":"Average"},
         {"value":"m", "text":"Maximum"},
     ], this.def.fusion, this, this.changed);
 
-    this.combo_enhancement = this.player.createCombo( 'Enhancement', [
-        {"value":"d", "text":"Data range"},
-        {"value":"f", "text":"Full range"},
-        {"value":"t", "text":"Data + tolerance"},
-        {"value":"e", "text":"Equalized"}
-    ], enhancement, this, this.changed);
+    // enhancement
+    var enhancement_options = phys.getEnhancementOptions();
+    enhancement = enhancement_options.prefferred || enhancement;
+    this.combo_enhancement = this.player.createCombo( 'Enhancement', enhancement_options, enhancement, this, this.changed, undefined, 300);
 
+    // negative
     this.combo_negative = this.player.createCombo( 'Negative', [
         {"value":"", "text":"No"},
         {"value":"negative", "text":"Negative"},
     ], this.def.negative, this, this.changed);
 
+    // rotations
     this.combo_rotation = this.player.createCombo( 'Rotation', [
         {"value":0, "text":"No"},
         {"value":90, "text":"Right 90deg"},
