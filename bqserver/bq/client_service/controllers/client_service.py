@@ -245,6 +245,11 @@ class ClientServer(ServiceController):
 
         return dict(resource=resource)
 
+    @expose("bq.client_service.templates.embedded")
+    def embedded(self, **kw):
+        log.debug ("EMBEDDED")
+        return dict()
+
     @expose("bq.client_service.templates.view")
     def create(self, **kw):
         query = ''

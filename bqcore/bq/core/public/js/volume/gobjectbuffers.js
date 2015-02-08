@@ -651,7 +651,11 @@ function gObjectTool(volume, cls) {
     this.base = renderingTool;
     this.name = 'gobjects';
     this.base(volume, this.cls);
-    this.gobjects = this.volume.phys.image.gobjects;
+    try {
+        this.gobjects = this.volume.phys.image.gobjects;
+    } catch (e) {
+    	this.gobjects = [];
+    }
 };
 
 gObjectTool.prototype = new renderingTool();
