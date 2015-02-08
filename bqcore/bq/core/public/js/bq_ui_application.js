@@ -233,7 +233,8 @@ Ext.define('BQ.Application.Window', {
         }
 
         this.toolbar = Ext.create('BQ.Application.Toolbar', {
-        	toolbar_opts: BQ.Server.toolbar_opts
+        	toolbar_opts: BQ.Server.toolbar_opts,
+            hidden: BQ.config ? BQ.config.toolbar_visibility : false,
         });
         this.items = [
                 this.toolbar, {
