@@ -471,6 +471,16 @@
     padding: 0px;
 }
 
+.viewer .name.logo {
+    width: 90px;
+    height: 24px !important;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/bisque_logo_gray.svg');
+    background-size: 90px;
+    background-position: 0px 0px;
+}
+
 .viewer .position {
     height: 20px;
     left: 130px;

@@ -29,6 +29,8 @@
         var q = Ext.Object.fromQueryString(location.search);
         var view = (q.view || '2d').toLowerCase();
         var resource = q.resource;
+        q.logo = true;
+        q.simpleview = true;
 
         if (view == '2d') {
             BQApp.setCenterComponent({
@@ -37,9 +39,7 @@
                 itemId: 'main_view_2d',
                 height: '100%',
                 resource : resource,
-                parameters : {
-                    simpleview: '',
-                },
+                parameters : q,
             });
         } else if (view == '3d') {
             BQApp.setCenterComponent({
@@ -47,7 +47,7 @@
                 xtype: 'bq_volume_panel',
                 itemId: 'main_view_3d',
                 resource: resource,
-                //preferences: this.viewerContainer.viewer.preferences,
+                parameters : q,
             });
         } else if (view == 'movie') {
             BQApp.setCenterComponent({
@@ -55,7 +55,7 @@
                 xtype: 'bq_movie_viewer',
                 itemId: 'main_view_movie',
                 resource: resource,
-                //preferences: this.viewerContainer.viewer.preferences,              
+                parameters : q,
             });
         }
     });
