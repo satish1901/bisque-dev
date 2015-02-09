@@ -815,6 +815,17 @@ Ext.define('Bisque.Resource.Image.Page', {
             }]);
         };
 
+        var export_btn = this.toolbar.queryById('menu_viewer_external');
+        if (export_btn) {
+            export_btn.menu.insert(1, [{
+                xtype  : 'menuitem',
+                itemId : 'menu_viewer_embed_code',
+                text   : 'Get embed code',
+                scope  : this,
+                handler: this.getEmbedCode,
+            }]);
+        };
+
         this.toolbar.insert(5, [{
             itemId: 'button_view',
             xtype:'button',
@@ -1107,6 +1118,22 @@ Ext.define('Bisque.Resource.Image.Page', {
             me.show2D();
         }
     */
+    },
+
+    getEmbedCode : function() {
+        var movie = this.queryById('main_view_movie'),
+            image3d = this.queryById('main_view_3d'),
+            host = location.origin,
+            url = this.resource.uri,
+            view = '2d',
+            embed = '<iframe width="854" height="510" src="{0}/client_service/embedded?view={1}&resource={2}" frameborder="0" allowfullscreen></iframe>';
+        if (image3d) {
+            view = '3d';
+        } else if (movie) {
+            view = 'movie';
+        }
+        embed = Ext.String.format(embed, host, view, url);
+        Ext.Msg.prompt('Embed code', 'Embed code:', null, this, false, embed);
     },
 
 });
