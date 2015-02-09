@@ -988,7 +988,15 @@ Ext.define('BQ.viewer.Volume.Panel', {
 					    fn : this.onToolMenuClick,
 				    },
 			    },
-		    }]
+		    }, {
+	            xtype: 'component',
+	            itemId: 'logo',
+	            hidden: this.parameters && this.parameters.logo ? false : true,
+	            autoEl: {
+	                tag: 'a',
+	                cls: 'control logo',
+	            },
+	        }]
         });
 
         this.items = [this.mainView];
@@ -1586,6 +1594,12 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		if (!resource)
 			return;
 		this.resource = resource;
+
+        var logo = this.queryById('logo');
+        if (logo) {
+            logo.getEl().dom.href = '/client_service/view?resource='+resource.uri;
+        } 
+
 		if (!this.phys) {
 			var phys = new BQImagePhys(this.resource);
 			phys.load(callback(this, this.onPhys));

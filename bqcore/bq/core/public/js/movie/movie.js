@@ -81,6 +81,14 @@ Ext.define('BQ.viewer.Movie', {
                     fn: this.onFullScreenClick
                 }
             }
+        }, {
+            xtype: 'component',
+            itemId: 'logo',
+            hidden: this.parameters && this.parameters.logo ? false : true,
+            autoEl: {
+                tag: 'a',
+                cls: 'logo',
+            },
         }];
         //this.on('resize', this.onResize, this);
         this.callParent();
@@ -125,6 +133,12 @@ Ext.define('BQ.viewer.Movie', {
     onImage: function(resource) {
         if (!resource) return;
         this.resource = resource;
+
+        var logo = this.queryById('logo');
+        if (logo) {
+            logo.getEl().dom.href = '/client_service/view?resource='+resource.uri;
+        }        
+
         if (!this.phys) {
             var phys = new BQImagePhys (this.resource);
             phys.load (callback (this, this.onPhys) );
