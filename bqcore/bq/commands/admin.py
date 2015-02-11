@@ -24,17 +24,12 @@ def load_config(filename):
 def load_bisque_services():
     from tg import config
     from bq.util.fakerequestenv import create_fake_env
+    from bq.core.controllers.root import RootController
 
+    root = config.get ('bisque.root', '/')
     create_fake_env()
-
-    root = config.get ('bisque.root')
-    #enabled = config.get('bisque.services_enabled', None)
-    #disabled = config.get('bisque.services_disabled', None)
-    #enabled  = enabled and [ x.strip() for x in enabled.split(',') ] or []
-    #disabled = disabled and [ x.strip() for x in disabled.split(',') ] or []
     enabled = [ 'data_service' ]
     disabled= []
-    from bq.core.controllers.root import RootController
     RootController.mount_local_services(root, enabled, disabled)
 
 
@@ -311,27 +306,8 @@ class preferences (object):
         from bq import data_service
         from bq.core.identity import set_admin_mode
         import transaction
-        from paste.registry import Registry
-        from beaker.session import Session, SessionObject
-        from pylons.controllers.util import Request
+        load_bisque_services()
 
-        registry = Registry()
-        registry.prepare()
-        registry.register(session, SessionObject({}))
-        registry.register(request, Request.blank('/bootstrap'))
-        request.identity = {}
-
-
-        root = config.get ('bisque.root')
-        #enabled = config.get('bisque.services_enabled', None)
-        #disabled = config.get('bisque.services_disabled', None)
-        #enabled  = enabled and [ x.strip() for x in enabled.split(',') ] or []
-        #disabled = disabled and [ x.strip() for x in disabled.split(',') ] or []
-        enabled = [ 'data_service' ]
-        disabled= []
-
-        from bq.core.controllers.root import RootController
-        RootController.mount_local_services(root, enabled, disabled)
         prefs = 'config/preferences.xml'
 
         set_admin_mode(True)
@@ -460,15 +436,14 @@ class stores(object):
         ''
         #engine = config['pylons.app_globals'].sa_engine
         #print engine
+        #from bq.util.fakerequestenv import create_fake_env
+        #session, request = create_fake_env()
         load_config(self.options.config)
         load_bisque_services()
-
-        from bq.util.fakerequestenv import create_fake_env
 
         import transaction
         from bq.commands.stores import init_stores, list_stores, fill_stores, update_stores
 
-        session, request = create_fake_env()
 
         command = self.command.lower()
         username = None

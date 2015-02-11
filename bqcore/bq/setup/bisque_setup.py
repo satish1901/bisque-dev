@@ -341,7 +341,7 @@ HOSTNAME = "localhost"
 #################################################
 ## Initial values
 SITE_VARS = {
-    'bisque.root' : 'http://%s:8080' % HOSTNAME,
+    'bisque.server' : 'http://%s:8080' % HOSTNAME,
     'bisque.organization': 'Your Organization',
     'bisque.title': 'Image Repository',
     'bisque.admin_email' : 'YourEmail@YourOrganization',
@@ -378,17 +378,17 @@ initial_vars = {
     }
 
 linked_vars = {
-    'h1.url' : '${bisque.root}',
+    'h1.url' : '${bisque.server}',
     'smtp_server' : '${mail.smtp.server}',
-    'registration.site_name' : '${bisque.title} (${bisque.root})',
-    'registration.host' : '${bisque.root}',
+    'registration.site_name' : '${bisque.title} (${bisque.server})',
+    'registration.host' : '${bisque.server}',
     'registration.mail.smtp_server' : '${mail.smtp.server}',
     'registration.mail.admin_email' : '${bisque.admin_email}',
 }
 
 
 SITE_QUESTIONS = [
-('bisque.root' , 'Enter the root URL of the server ',
+('bisque.server' , 'Enter the root URL of the server ',
                    """A complete URL where your application will be mounted i.e. http://someserver:8080/
 #If you server will be mounted behind a proxy, please enter
 #the proxy address and see AdvancedInstalls"""),
@@ -978,8 +978,11 @@ def install_server_defaults(params):
     if getanswer("Change a site variable", 'N')=='Y':
         params = modify_site_cfg(SITE_QUESTIONS, params)
 
+        path = urlparse.urlparse(params['bisque.server']).path
+        params['bisque.root'] = path
+
     if new_install:
-        server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.root']}
+        server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.server']}
         server_params = update_site_cfg(server_params, 'servers', append=False)
 
     if getanswer ('Do you want to create new server configuations', 'Y',
