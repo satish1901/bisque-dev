@@ -982,7 +982,7 @@ def install_server_defaults(params):
         params['bisque.root'] = path
 
     if new_install:
-        server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.server']}
+        server_params = {  'h1.url' : params['bisque.server']}
         server_params = update_site_cfg(server_params, 'servers', append=False)
 
     if getanswer ('Do you want to create new server configuations', 'Y',
@@ -1847,7 +1847,7 @@ Initialize your database with:
 You can start bisque with:
    $$ bq-admin server start
 then point your browser to:
-    ${bisque.root}
+    ${bisque.server}
 If you need to shutdown the servers, then use:
    $$ bq-admin server stop
 You can login as admin and change the default password.
