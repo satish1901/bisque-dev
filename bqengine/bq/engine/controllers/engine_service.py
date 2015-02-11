@@ -199,7 +199,7 @@ def initialize_available_modules(engines):
     for g in os.listdir(MODULE_PATH):
         module_path = os.path.join(MODULE_PATH, g, g + '.xml')
         module_root = load_module(module_path, engines)
-        if module_root:
+        if module_root is not None:
             available.append(module_root)
         else:
             unavailable.append ( g )

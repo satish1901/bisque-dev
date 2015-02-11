@@ -272,7 +272,7 @@ class import_serviceController(ServiceController):
             mime_import = 'import/%s'%(p.name)
             mimetypes.add_type(mime_import, '.%s'%p.ext)
             self.filters[mime_import] = p.process_on_import
-        
+
 
     @expose('bq.import_service.templates.upload')
     @require(predicates.not_anonymous())
@@ -617,7 +617,7 @@ class import_serviceController(ServiceController):
 
         log.debug('process_packaged_dicom blobs: %s', blobs)
         log.debug('process_packaged_dicom images: %s', images)
-        log.debug('process_packaged_dicom geometry: %s', geometry)        
+        log.debug('process_packaged_dicom geometry: %s', geometry)
 
         resources = []
         base_name = uf.resource.get('name')
@@ -660,7 +660,7 @@ class import_serviceController(ServiceController):
             resource.extend (copy.deepcopy (list (uf.resource)))
             ConverterImgcnv.meta_dicom_parsed(im[0], resource)
 
-            # store resource           
+            # store resource
             resource = blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir))
 
             # a bit of funky processing for the multi-value case, we want files to be stored in the same path as all th eother files
@@ -921,7 +921,7 @@ class import_serviceController(ServiceController):
         mime = mimetypes.guess_type(sanitize_filename(uf.filename))[0]
         if mime in self.filters:
             intags['type'] = mime
-        
+
         # take care of no extension case: force deep guessing
         ext = os.path.splitext(uf.filename)[1]
         noext = (ext == '' or len(ext)>6)
@@ -930,7 +930,7 @@ class import_serviceController(ServiceController):
             mime = 'image/series'
 
         # check if an image can be a series
-        log.debug('process uf: %s', uf)        
+        log.debug('process uf: %s', uf)
         if mime == 'image/series' and uf.fileobj is not None:
             filename = uf.localpath()
             if filename is None:
@@ -1117,7 +1117,7 @@ class import_serviceController(ServiceController):
                     log.debug ("Merging resources %s with %s" ,
                                etree.tostring(resource),
                                etree.tostring(payload_resource))
-                    resource = merge_resources (resource, payload_resource)
+                    resource = merge_resources (payload_resource, resource )
                 upload_resource  = UploadedResource(resource=resource)
                 files.append(upload_resource)
                 log.debug ("UPLOADED %s %s" , upload_resource, etree.tostring(resource))

@@ -77,7 +77,7 @@ def load_config(filename):
 log = logging.getLogger('bq.engine.command.module_admin')
 
 usage = """
-%prog module [register|unregister/list-engine/list-server] [-u user:pass] [-p] [-a] http://myengnine.org/engine_service/[MyModule] [http://bisque_server/data_service/module_uri]
+%prog module [register|unregister/list-engine/list-server] [-u user:pass] [-r bisque_root_url]  [-p] [-a] http://myengnine.org/engine_service/[MyModule]
   Version 2
 
   Register or unregister and bisque analysis (Engine) on a bisque server.
@@ -133,6 +133,9 @@ class module_admin(object):
             site_cfg = find_site_cfg('site.cfg')
             cfile = ConfigFile (site_cfg)
             self.root = posixpath.join (cfile.get ('app:main', 'bisque.root'), '')
+
+        if not self.root:
+            print ("need a bisque server to contact.. please specify with -r ")
 
         self.session = BQSession()
         if self.credentials:
