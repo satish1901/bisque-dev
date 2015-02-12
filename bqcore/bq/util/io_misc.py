@@ -69,6 +69,8 @@ def safetypeparse(v):
             v = float(v)
         except ValueError:
             pass
+    except TypeError: #in case of Nonetype
+        pass
     return v
 
 def safeencode(s):
