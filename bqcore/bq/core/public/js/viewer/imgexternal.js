@@ -115,7 +115,7 @@ function ImgExternal (viewer,name){
                 itemId : 'menu_viewer_external_bioView3D',
                 text   : 'View in bioView3D',
                 handler: this.launchBioView3D,
-            }, {
+            }, /*{
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_export_gobs_gdocs',
                 text   : 'Export GObjects to Google Docs',
@@ -125,7 +125,7 @@ function ImgExternal (viewer,name){
                 itemId : 'menu_viewer_export_tags_gdocs',
                 text   : 'Export Tags to Google Docs',
                 handler: this.exportTagsToGoogle,
-            }]
+            }*/]
         },
     }]);
 
@@ -181,14 +181,21 @@ ImgExternal.prototype.newImage = function () {
     // Add download graphical annotations as KML
     var phys = this.viewer.imagephys,
         download = BQApp.getToolbar().queryById('button_download'),
-        url = this.viewer.image.uri;
-    url = url.replace('/data_service/', '/export/') + '?format=kml';
+        url = this.viewer.image.uri,
+        url_kml = url.replace('/data_service/', '/export/') + '?format=kml',
+        url_geojson = url.replace('/data_service/', '/export/') + '?format=geojson';
     if (phys.geo && download && phys.geo.proj4 && phys.geo.res && phys.geo.top_left) {
         download.menu.add(['-', {
             itemId: 'download_annotations_as_kml',
             text: 'Graphical annotations as KML',
             handler: function() {
-                window.open(url);
+                window.open(url_kml);
+            },
+        }, {
+            itemId: 'download_annotations_as_geojson',
+            text: 'Graphical annotations as GeoJson',
+            handler: function() {
+                window.open(url_geojson);
             },
         }]);
     };
