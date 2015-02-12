@@ -32,7 +32,7 @@ log = logging.getLogger('bq.image_service.converter_imgcnv')
 try:
     import dicom
 except (ImportError, OSError):
-    log.warn('pydicom needs to be installed for DICOM support...')
+    log.warn('pydicom is needed for DICOM support, skipping support...')
     pass
 
 
@@ -654,7 +654,11 @@ class ConverterImgcnv(ConverterBase):
         if os.path.basename(ifnm) == 'DICOMDIR': # skip reading metadata for teh index file
             return
 
-        import dicom # ensure an error if dicom library is not installed
+        try:
+            import dicom
+        except (ImportError, OSError):
+            log.warn('pydicom is needed for DICOM support, skipping DICOM metadata...')
+            return
 
         def recurse_tree(dataset, parent, encoding='latin-1'):
             for de in dataset:
@@ -695,7 +699,11 @@ class ConverterImgcnv(ConverterBase):
     def meta_dicom_parsed(cls, ifnm, xml=None, **kw):
         '''appends nodes to XML'''
         
-        import dicom # ensure an error if dicom library is not installed
+        try:
+            import dicom
+        except (ImportError, OSError):
+            log.warn('pydicom is needed for DICOM support, skipping DICOM metadata...')
+            return
 
         def append_tag(dataset, tag, parent, name=None, fmt=None, safe=True, encoding='latin-1'):
             de = dataset.get(tag, None)
