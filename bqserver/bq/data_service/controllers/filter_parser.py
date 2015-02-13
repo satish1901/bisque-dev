@@ -41,10 +41,11 @@ def p_expr(p):
 
 def p_filter(p) :
     ''' filter : NAME '[' select_list ']' '''
+    #     P0      P1   P2   P3         P4
     #print p[1]
     columns = [col[0] for col in p[3]][::-1]
     filters = [ col[1] for col in p[3][1:] ]
-    filters.append (Taggable.resource_type == p[1])
+    #filters.append (Taggable.resource_type == p[1])
     dbclass = dbtype_from_tag(p[1])[1]
     #p[0] = (p[1], DBSession.query (*columns).filter (*filters).group_by(*columns).order_by(*columns))
     p[0] = (dbclass, columns, filters)
@@ -76,7 +77,11 @@ def p_filter_expr(p):
     """ filter_expr : NAME '=' NAME
     """
     column = getattr(Taggable, p[1])
-    p[0] = (column,  operators.eq (column, p[3]))
+    if '*' in p[3]:
+        p[0] = (column,  operators.like (column, p[3].replace ('*', '%')))
+    else:
+        p[0] = (column,  operators.eq (column, p[3]))
+
 
 
 
