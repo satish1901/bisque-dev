@@ -1989,7 +1989,7 @@ BQImagePhys.prototype.getEnhancementOptions = function () {
         {"value":"t", "text":"Data + tolerance"},
         {"value":"e", "text":"Equalized"},
     ];
-    if (this.dicom && (this.dicom.modality == 'CT' || this.dicom.wnd_center)) {
+    if (this.dicom && (this.dicom.modality == 'CT' && this.dicom.wnd_center)) {
         var dicom_options = [];
 
         if (this.dicom.wnd_center.indexOf(',')>=0) {
