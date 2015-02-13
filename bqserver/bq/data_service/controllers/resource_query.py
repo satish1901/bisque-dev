@@ -567,6 +567,7 @@ def tags_special(dbtype, query, params):
         sq1 = query.with_labels().subquery()
         results = []
         for (dbclass, columns, filters) in filter_parse(tn):
+            #log.debug ("class %s columns %s filters %s", dbclass, columns, filters)
 
             filters.append (dbclass.document_id == sq1.c.taggable_document_id)
             query = DBSession.query(func.count(columns[-1]).label('count'), *columns)
