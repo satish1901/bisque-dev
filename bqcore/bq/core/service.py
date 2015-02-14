@@ -228,9 +228,9 @@ class ServiceMixin(object):
     def get_uri(self):
         try:
             host_url = request.host_url
-            log.debug ("REQUEST %s" , host_url)
+            #log.debug ("REQUEST %s" , host_url)
         except TypeError:
-            log.warn ("TYPEERROR on request")
+            #log.warn ("TYPEERROR on request")
             host_url = ''
         return urlparse.urljoin (host_url, self.baseuri)
 
