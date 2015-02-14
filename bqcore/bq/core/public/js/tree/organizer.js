@@ -18,12 +18,14 @@
 // Proxy to perform queries for tag_values, tag_names, gob_names, gob_types
 //--------------------------------------------------------------------------------------
 
+/*
+
 Ext.define('BQ.data.proxy.OrganizerProxy', {
     extend: 'Ext.data.proxy.Ajax',
     alternateClassName: 'BQ.data.OrganizerProxy',
     alias : 'proxy.bq-organizer',
 
-    batchActions: true,
+    batchActions: false, // true
     noCache : true,
     appendId: false,
     //limitParam : 'limit',
@@ -171,6 +173,76 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
 
 });
 
+*/
+
+Ext.define('BQ.data.proxy.OrganizerProxy', {
+    extend: 'Ext.data.proxy.Rest',
+    alternateClassName: 'BQ.data.OrganizerProxy',
+    alias : 'proxy.bq-organizer',
+
+    batchActions: false,
+    noCache : false,
+    appendId: false,
+    limitParam : 'limit',
+    pageParam: undefined,
+    startParam: 'offset',
+
+    sortParam : undefined,
+    filterParam : undefined,
+
+    actionMethods: {
+        create : 'POST', // 'PUT'
+        read   : 'GET',
+        update : 'POST',
+        destroy: 'DELETE'
+    },
+
+    projections: {
+        'tag_values': null,
+        'gob_names': null,
+        'tag_names': 'true',
+        'gob_types': 'true'
+    },
+    projections_order : ['tag_values', 'gob_names', 'tag_names', 'gob_types'],
+    query : '',
+    projections_map: {
+        'tag_values': 'tag[value,name={0}]',
+        'gob_names': 'gobject[name,type={0}]',
+        'tag_names': 'tag[name]',
+        'gob_types': 'gobject[type]'
+    },    
+
+    buildUrl: function(request) {
+        // extjs attempts adding ?node=NAME to all requests
+        if (request.params && request.params.node) {
+            delete request.params.node;
+        }
+        // extjs attempts adding sorters as well
+        if (request.params && request.params.sort) {
+            delete request.params.sort;
+        }
+
+        // create a URL with all required projections        
+        var url = this.url;
+        if (this.query && this.query.length>0) {
+            url += '?tag_query='+this.query+'&';
+        } else {
+            url += '?';
+        }
+        
+        var extracts = [];
+        for (i=0; (name=this.projections_order[i]); i++ ) {
+            if (!this.projections[name]) continue;
+            var v = encodeURIComponent(this.projections[name]);
+            extracts.push( Ext.String.format(this.projections_map[name], v));
+        }
+        //    /data_service/image?extract=tag[name],tag[value,name=qqq],gobject[type],gobject[name,type=aa]
+        url += "extract=" + extracts.join(',');
+
+        request.url = url + '&wpublic='+this.browserParams.wpublic;
+        return request.url;
+    }
+});
 
 
 //--------------------------------------------------------------------------------------
@@ -220,17 +292,13 @@ Ext.define('BQ.tree.organizer.Panel', {
     deferRowRender: true,
     folderSort: false,
     singleExpand : false,
-    viewConfig : {
-        stripeRows : true,
-        enableTextSelection: false,
-    },
     multiSelect: false,
     lines : false,
-    columnLines : true,
+    columnLines : false,
     rowLines : true,
     useArrows : true,
     frame : true,
-    hideHeaders : true,
+    hideHeaders : true, // true
     border : false,
     rootVisible : false,
     disableSelection: false,
@@ -242,16 +310,43 @@ Ext.define('BQ.tree.organizer.Panel', {
         border : false,
     },
 
-    /*plugins: [{ // dima: unfortunately this is giving issues in the tree
-        ptype: 'bufferedrenderer'
-    }],*/
 
-    /*viewConfig: {
-        plugins: {
+
+    viewConfig : {
+        stripeRows : true,
+        enableTextSelection: false,
+        getRowClass: function(record, rowIndex, rowParams, store) {
+            var t = record.data.type==='tag' ? 'tag' : 'gobject',
+                icon = t+'_'+record.data.attribute;
+            if (icon in BQ.tree.organizer.icons)
+                return BQ.tree.organizer.icons[icon];
+        },
+        /*plugins: {
             ptype: 'treeviewdragdrop',
             allowParentInserts: true,
-        }
-    },*/
+        },*/
+    },
+
+    plugins: [{ // dima: unfortunately this is giving issues in the tree
+        ptype: 'bufferedrenderer'
+    }],
+
+
+    columns: [{
+        xtype: 'treecolumn', //this is so we know which column will show the tree
+        text: '',
+        flex: 2,
+        dataIndex: 'value',
+        sortable: true,
+    }, {
+        text: 'Count',
+        width: 40,
+        dataIndex: 'count',
+        sortable: true,
+        tdCls: 'counts',
+        //align: 'center',
+        align: 'right',
+    }],
 
     initComponent : function () {
         this.url_selected = this.url;
@@ -297,6 +392,85 @@ Ext.define('BQ.tree.organizer.Panel', {
                 iconCls: 'icon-values',
                 handler: this.updateVisibility,
                 tooltip: 'Use values for organization',
+            }, '->', {
+                itemId: 'btnSort',
+                text: 'Sort',
+                iconCls: 'icon-sort',
+                tooltip: 'Sort columns',
+
+                enableToggle: false,
+                pressed: false,
+                cls: undefined,
+
+                menu: [{
+                    text: 'by Text',
+                    scope: this,
+                    checked: false,
+                    group: 'sort',
+                    direction: 'DESC',
+                    handler: function(item) {
+                        item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
+                        //this.store.sort('value', item.direction);
+                        this.store.sort([{
+                            property : 'value',
+                            direction: item.direction
+                        }, {
+                            property : 'type',
+                            direction: item.direction
+                        }, {
+                            property : 'attribute',
+                            direction: item.direction
+                        }, {
+                            property : 'count',
+                            direction: item.direction
+                        }]);                          
+                    },
+                }, {
+                    text: 'by Counts',
+                    scope: this,
+                    checked: false,
+                    group: 'sort',
+                    direction: 'ASC',
+                    handler: function(item) {
+                        item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
+                        //this.store.sort('count', item.direction);
+                        this.store.sort([{
+                            property : 'count',
+                            direction: item.direction
+                        }, {
+                            property : 'type',
+                            direction: item.direction
+                        }, {
+                            property : 'attribute',
+                            direction: item.direction
+                        }, {
+                            property : 'value',
+                            direction: item.direction
+                        }]);                        
+                    },
+                }, {
+                    text: 'by Type',
+                    scope: this,
+                    checked: true,
+                    group: 'sort',
+                    direction: 'DESC',
+                    handler: function(item) {
+                        item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC'; 
+                        this.store.sort([{
+                            property : 'type',
+                            direction: item.direction
+                        }, {
+                            property : 'attribute',
+                            direction: item.direction
+                        }, {
+                            property : 'value',
+                            direction: item.direction
+                        }, {
+                            property : 'count',
+                            direction: item.direction
+                        }]);
+                    },
+                }],
             }],
         }, {
             xtype:'bq-picker-path',
@@ -318,6 +492,7 @@ Ext.define('BQ.tree.organizer.Panel', {
             defaultRootId: 'organizer',
             autoLoad: false,
             autoSync: false,
+            appendId: false,
             //lazyFill: true,
             filterOnLoad: true,
             remoteFilter: false,
@@ -326,6 +501,7 @@ Ext.define('BQ.tree.organizer.Panel', {
             proxy : {
                 type : 'bq-organizer',
                 url : this.url,
+                batchActions: false,
                 ownerPanel: this,
                 browserParams: this.browserParams,
                 reader : {
@@ -334,6 +510,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                     record: '>*',
                 },
             },
+
             fields : [{
                 name : 'type',
                 convert : function (value, record) {
@@ -365,31 +542,30 @@ Ext.define('BQ.tree.organizer.Panel', {
                     return r.getAttribute('type') || r.tagName;
                 },
             }, {
+                name : 'count',
+                type: 'int',
+                convert : function (value, record) {
+                    if (!(record.raw instanceof Node)) return '';
+                    var r = record.raw;
+                    return parseInt(r.textContent);
+                },
+            }/*, {
                 name : 'text',
                 convert : function (value, record) {
                     if (!(record.raw instanceof Node)) return '';
-                    //return record.data.type+':'+record.data.attribute+':'+record.data.value;
-                    return record.data.value;
+                    return Ext.String.format('{0}<span class="counts">{1}</span>', record.data.value, record.data.count); 
+                    //return record.data.value;
                 },
-            }, {
-                name : 'iconCls',
-                type : 'string',
-                convert : function (value, record) {
-                    var t = record.data.type==='tag' ? 'tag' : 'gobject',
-                        icon = t+'_'+record.data.attribute;
-                    if (icon in BQ.tree.organizer.icons)
-                        return BQ.tree.organizer.icons[icon];
-                }
-            }],
+            }*/],
 
-            filters: [
+            /*filters: [
                 function (item) {
                     if (me.active_query && item.data.value in me.active_query &&
                         me.active_query[item.data.value] === item.data.type+':'+item.data.attribute)
                         return false;
                     return true;
                 }
-            ],
+            ],*/
 
             listeners: {
                 scope: this,
