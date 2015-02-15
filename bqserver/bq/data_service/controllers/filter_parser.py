@@ -56,10 +56,10 @@ def p_filter(p) :
     ''' filter : TAGVAL '[' select_list ']' '''
     #     P0      P1   P2   P3         P4
     #print p[1]
-    columns = [col[0] for col in p[3]][::-1]
-    filters = [ col[1] for col in p[3][1:] ]
-    filters.append (Taggable.resource_type == p[1])
     dbclass = dbtype_from_tag(p[1])[1]
+    columns = [getattr(dbclass, col[0]) for col in p[3]][::-1]
+    filters = [ getattr(dbclass, col[0]) == col[1] for col in p[3][1:] ]
+    #filters.append (Taggable.resource_type == p[1])
     #p[0] = (p[1], DBSession.query (*columns).filter (*filters).group_by(*columns).order_by(*columns))
     p[0] = (dbclass, columns, filters)
 
@@ -68,7 +68,8 @@ def p_select_list(p):
     """ select_list : NAME
                     | NAME ',' filter_list
     """
-    column = getattr(Taggable, p[1])
+    #column = getattr(Taggable, p[1])
+    column = p[1]
     if len(p) > 2:
         p[3].insert(0, (column, None) )
         p[0] = p[3]
@@ -89,11 +90,12 @@ def p_filter_list(p):
 def p_filter_expr(p):
     """ filter_expr : NAME '=' tagval
     """
-    column = getattr(Taggable, p[1])
-    if '*' in p[3]:
-        p[0] = (column,  column.ilike ( p[3].replace ('*', '%')))
-    else:
-        p[0] = (column,  operators.eq (column, p[3]))
+    #column = getattr(Taggable, p[1])
+    column =  (p[1],p[3])
+    #if '*' in p[3]:
+    #    p[0] = (column,  column.ilike ( p[3].replace ('*', '%')))
+    #else:
+    #    p[0] = (column,  operators.eq (column, p[3]))
 
 
 def p_tagval(p):
