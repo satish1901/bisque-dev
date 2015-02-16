@@ -2173,6 +2173,10 @@ function BQModule () {
                      'description': 'description',
                      'display_options/group': 'group',
                      'module_options/version': 'version',
+                     /*'interface': 'interface', // will be missing a tag type
+                     'execute_options/type': 'type',
+                     'execute_options/parameters': 'parameters',
+                     'execute_options/application': 'application',*/
                    };
 
     BQObject.call(this);
@@ -2214,6 +2218,7 @@ BQModule.prototype.afterInitialized = function () {
             this.outputs_index[name] = r;
         }
     }
+    this.tags_index = dict;
 
     this.updateTemplates();
 };
