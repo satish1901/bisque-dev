@@ -327,9 +327,9 @@ Ext.define('BQ.tree.organizer.Panel', {
         },*/
     },
 
-    plugins: [{ // dima: unfortunately this is giving issues in the tree
+    /*plugins: [{ // dima: unfortunately this is giving issues in the tree
         ptype: 'bufferedrenderer'
-    }],
+    }],*/
 
 
     columns: [{
@@ -595,7 +595,7 @@ Ext.define('BQ.tree.organizer.Panel', {
             listeners: {
                 scope: this,
                 load: function () {
-                    this.setLoading(false);
+                    //this.setLoading(false);
                     if (this.initialized) return;
                     this.initialized = true;
                     if (this.path)
