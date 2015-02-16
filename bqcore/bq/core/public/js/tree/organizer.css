@@ -131,3 +131,31 @@
 }
 
 
+.organizer .icon-sorting {
+    background-image: url('images/organizer_icons.svg');
+    background-repeat: no-repeat;
+    background-size: 100px;
+    background-position: 0px -106px !important;
+}
+
+.organizer .menu-heading {
+    margin: 4px 0px 4px 0px;
+    display: block;
+}
+
+.organizer .icon-sort {
+    background-image: url('images/organizer_icons.svg');
+    background-repeat: no-repeat;
+    background-size: 75px;
+    background-position: -20px -80px !important;
+}
+
+.organizer .DESC .icon-sort {
+    background-position: -40px -80px !important;
+}
+
+.organizer .x-menu-item-unchecked .icon-sort {
+    opacity: 0.3;
+    filter: alpha(opacity=30);
+}
+
