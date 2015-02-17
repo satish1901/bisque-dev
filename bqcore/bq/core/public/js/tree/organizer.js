@@ -241,7 +241,63 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
 
         request.url = url + '&wpublic='+this.browserParams.wpublic;
         return request.url;
-    }
+    },
+
+    // dima: fix the absense of local filtering by replacing processResponse
+    // with our version with filering added, this may require updates for
+    // extjs 5
+    processResponse: function (success, operation, request, response, callback, scope) {
+        if (Ext.getVersion().major>=5) {
+            Ext.log({ level: "warn" }, 'Overwrite of processResponse is designed for ExtJS 4.2.1, needs replacement!');
+        }
+
+        var me = this,
+            reader,
+            result;
+
+        if (success === true) {
+            reader = me.getReader();
+
+            // Apply defaults to incoming data only for read operations.
+            // For create and update, there will already be a client-side record
+            // to match with which will contain any defaulted in values.
+            reader.applyDefaults = operation.action === 'read';
+
+            result = reader.read(me.extractResponseData(response));
+
+            if (result.success !== false) {
+                //see comment in buildRequest for why we include the response object here
+                Ext.apply(operation, {
+                    response: response,
+                    resultSet: result
+                });
+
+                // dima: begin adding filters
+                var filters = operation.filters;
+                if (filters && filters.length) {
+                    result.records = Ext.Array.filter(result.records, Ext.util.Filter.createFilterFn(filters));
+                }
+                // dima: end adding filters
+
+                operation.commitRecords(result.records);
+                operation.setCompleted();
+                operation.setSuccessful();
+            } else {
+                operation.setException(result.message);
+                me.fireEvent('exception', this, response, operation);
+            }
+        } else {
+            me.setException(operation, response);
+            me.fireEvent('exception', this, response, operation);
+        }
+
+        //this callback is the one that was passed to the 'read' or 'write' function above
+        if (typeof callback == 'function') {
+            callback.call(scope || me, operation);
+        }
+
+        me.afterRequest(request, success);
+    },    
 });
 
 
@@ -330,7 +386,6 @@ Ext.define('BQ.tree.organizer.Panel', {
     /*plugins: [{ // dima: unfortunately this is giving issues in the tree
         ptype: 'bufferedrenderer'
     }],*/
-
 
     columns: [{
         xtype: 'treecolumn', //this is so we know which column will show the tree
@@ -583,14 +638,14 @@ Ext.define('BQ.tree.organizer.Panel', {
                 },
             }*/],
 
-            /*filters: [
+            filters: [
                 function (item) {
                     if (me.active_query && item.data.value in me.active_query &&
                         me.active_query[item.data.value] === item.data.type+':'+item.data.attribute)
                         return false;
                     return true;
                 }
-            ],*/
+            ],
 
             listeners: {
                 scope: this,
@@ -606,6 +661,7 @@ Ext.define('BQ.tree.organizer.Panel', {
 
         this.callParent();
         this.on('select', this.onSelect, this);
+        this.on('beforeitemexpand', this.onBeforeItemExpand, this);
         this.on('afteritemexpand', this.onAfterItemExpand, this);
         this.on('afteritemcollapse', this.onAfterItemExpand, this);
     },
@@ -640,7 +696,11 @@ Ext.define('BQ.tree.organizer.Panel', {
     },
 
     onSelect : function (me, record, index, eOpts) {
-        if (this.no_selects===true) return;
+        record.expand();
+    },
+
+    onBeforeItemExpand: function (record, eOpts) {       
+        if (this.no_selects===true || record.data.loaded===true) return;
         var node = record,
             nodes=[];
         while (node) {
@@ -718,13 +778,11 @@ Ext.define('BQ.tree.organizer.Panel', {
             proxy.projections.tag_values = null;
         }
 
-
         var url = path.join('/');
         if (this.url_selected !== url) {
             this.url_selected = url;
             this.fireEvent('selected', url, this);
         }
-        record.expand();
     },
 
     onAfterItemExpand : function ( node, index, item, eOpts ) {
