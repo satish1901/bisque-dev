@@ -206,8 +206,8 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
     projections_order : ['tag_values', 'gob_names', 'tag_names', 'gob_types'],
     query : '',
     projections_map: {
-        'tag_values': 'tag[value,name={0}]',
-        'gob_names': 'gobject[name,type={0}]',
+        'tag_values': 'tag[value,name="{0}"]',
+        'gob_names': 'gobject[name,type="{0}"]',
         'tag_names': 'tag[name]',
         'gob_types': 'gobject[type]'
     },    
@@ -233,8 +233,8 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
         var extracts = [];
         for (i=0; (name=this.projections_order[i]); i++ ) {
             if (!this.projections[name]) continue;
-            var v = encodeURIComponent(this.projections[name]);
-            extracts.push( Ext.String.format(this.projections_map[name], v));
+            var v = this.projections[name].replace('"', '\\"').replace("'", "\\'");
+            extracts.push( Ext.String.format(this.projections_map[name], encodeURIComponent(v)));
         }
         //    /data_service/image?extract=tag[name],tag[value,name=qqq],gobject[type],gobject[name,type=aa]
         url += "extract=" + extracts.join(',');
