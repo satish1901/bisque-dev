@@ -70,9 +70,6 @@ from bqapi import *
 
 logging.basicConfig(level = logging.WARN)
 
-def load_config(filename):
-    conf = appconfig('config:' + os.path.abspath(filename))
-    load_environment(conf.global_conf, conf.local_conf)
 
 log = logging.getLogger('bq.engine.command.module_admin')
 
@@ -128,7 +125,7 @@ class module_admin(object):
 
     def run(self):
         if self.options.root:
-            self.root = options.root
+            self.root = self.options.root
         else:
             site_cfg = find_site_cfg('site.cfg')
             cfile = ConfigFile (site_cfg)
