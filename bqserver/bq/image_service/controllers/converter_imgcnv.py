@@ -675,8 +675,8 @@ class ConverterImgcnv(ConverterBase):
                     else:                
                         value = safedecode(de.value, encoding)
                     try:
-                        node.set('value', value)
-                    except (ValueError):
+                        node.set('value', value.strip())
+                    except (ValueError, Exception):
                         pass
 
         try:
@@ -725,6 +725,7 @@ class ConverterImgcnv(ConverterBase):
                         value = safedecode(de.value, encoding)
                 else:
                     value = fmt(safedecode(de.value, encoding))
+            value = value.strip()
             if len(value)>0:
                 node = etree.SubElement(parent, 'tag', name=name, value=value, type=typ)
 
