@@ -22,6 +22,7 @@ def t_QUOTED(t):
     t.type = 'TAGVAL'
     t.value = t.value[1:-1]
     return t
+
 def t_TAGVAL(t):
     r'[^:=<>\[\],\t\n\r\f\v()" ]+'
     if t.value in LEGAL_ATTRIBUTES:
@@ -57,6 +58,7 @@ def p_filter(p) :
     #     P0      P1   P2   P3         P4
     #print p[1]
     dbclass = dbtype_from_tag(p[1])[1]
+    #print "FILTER", p[3]
     columns = [getattr(dbclass, col[0]) for col in p[3]][::-1]
     filters = [ getattr(dbclass, col[0]) == col[1] for col in p[3][1:] ]
     #filters.append (Taggable.resource_type == p[1])
@@ -85,13 +87,14 @@ def p_filter_list(p):
         p[0] = p[1]
     else:
         p[0] = [ p[1] ]
-    print "BEFORE", p[-1]
+    #print "BEFORE", p[-1], p[1]
 
 def p_filter_expr(p):
     """ filter_expr : NAME '=' tagval
     """
     #column = getattr(Taggable, p[1])
     column =  (p[1],p[3])
+    p[0] = column
     #if '*' in p[3]:
     #    p[0] = (column,  column.ilike ( p[3].replace ('*', '%')))
     #else:
@@ -102,6 +105,7 @@ def p_tagval(p):
     '''tagval : TAGVAL
               | NAME
     '''
+    print "tagval"
     p[0] = p[1]
 
 
