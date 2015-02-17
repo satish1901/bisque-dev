@@ -856,6 +856,8 @@ class FormatService(object):
 
             # try using other converters directly
             if r is None:
+                log.debug('ImageConvert could not connvert [%s] to [%s] format'%(ifile, fmt))
+                log.debug('Trying other converters directly')
                 for n,c in self.server.converters.iteritems():
                     if n=='imgcnv':
                         continue
@@ -863,9 +865,11 @@ class FormatService(object):
                     if r is not None and os.path.exists(ofile):
                         break
 
-            # using ome-tiff as intermediate
+            # using ome-tiff as intermediate if everything failed
             if r is None:
-                self.server.imageconvert(image_id, ifile, ofile, fmt=fmt, series=data_token.series, extra=['-multi'], token=data_token)
+                log.debug('All converters could not connvert [%s] to [%s] format'%(ifile, fmt))
+                log.debug('Converting to OME-TIFF and then to desired output')                
+                r = self.server.imageconvert(image_id, ifile, ofile, fmt=fmt, series=data_token.series, extra=['-multi'], token=data_token, try_imgcnv=False)
 
             if r is None:
                 log.error('Format %s: %s could not convert with [%s] format [%s] -> [%s]', image_id, c.CONVERTERCOMMAND, fmt, ifile, ofile)
@@ -2665,10 +2669,12 @@ class ImageServer(object):
             return data_token
         return info
 
-    def imageconvert(self, image_id, ifnm, ofnm, fmt=None, extra=[], series=0, **kw):
-        r = self.converters['imgcnv'].convert( ifnm, ofnm, fmt=fmt, series=series, extra=extra, **kw)
-        if r is not None:
-            return r
+    def imageconvert(self, image_id, ifnm, ofnm, fmt=None, extra=[], series=0, try_imgcnv=True, **kw):
+        if try_imgcnv is True:
+            r = self.converters['imgcnv'].convert( ifnm, ofnm, fmt=fmt, series=series, extra=extra, **kw)
+            if r is not None:
+                return r            
+
         # if the conversion failed, convert input to OME-TIFF using other converts
         ometiff = self.getOutFileName( ifnm, image_id, '.ome.tif' )
         for n,c in self.converters.iteritems():

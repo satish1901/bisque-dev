@@ -384,7 +384,7 @@ class ConverterBioformats(ConverterBase):
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
         command = [ifnm, ofnm, '-no-upgrade', '-overwrite']
         tmp = None
-        if fmt is not None:
+        try:
             fmt2 = fmt
             if fmt in cls.format_map:
                 fmt2 = cls.format_map[fmt]['name']
@@ -392,6 +392,9 @@ class ConverterBioformats(ConverterBase):
             if ofnm.endswith(ext) is False:
                 tmp = '%s.%s'%(ofnm, ext)
                 command = [ifnm, tmp, '-no-upgrade', '-overwrite']
+        except KeyError:
+            return None
+
         if series>=0:
             command.extend(['-series', '%s'%series])
 
