@@ -18,9 +18,12 @@ literals = [ '[',']', '=' , ',' ]
 
 
 def t_QUOTED(t):
-    r'(?s)(?P<quote>["\'])(?:\\?.)*?(?P=quote)'
+    #r'(?s)(?P<quote>["\'])(?:\\?.)*?(?P=quote)'
+    #r'((?<![\\])[\'"])((?:.(?!(?<![\\])\1))*.?)\1'
+    r"('(\\'|[^'])*')|(\"(\\\"|[^\"])*\")"
     t.type = 'TAGVAL'
-    t.value = t.value[1:-1]
+    t.value = t.value[1:-1].replace (r"\'","'").replace (r'\"', '"')
+
     return t
 
 def t_TAGVAL(t):
@@ -58,7 +61,7 @@ def p_filter(p) :
     #     P0      P1   P2   P3         P4
     #print p[1]
     dbclass = dbtype_from_tag(p[1])[1]
-    #print "FILTER", p[3]
+    print "FILTER", p[3]
     columns = [getattr(dbclass, col[0]) for col in p[3]][::-1]
     filters = [ getattr(dbclass, col[0]) == col[1] for col in p[3][1:] ]
     #filters.append (Taggable.resource_type == p[1])
@@ -137,7 +140,7 @@ def lexit (text):
 
 
 if __name__ == "__main__":
-    text = 'tag[name],gobject[type,name=aa]'
+    text = 'tag[name],gobject[type,name="aa bb xx"]'
 
     #lexit(text)
     qs =  filter_parse (text)
