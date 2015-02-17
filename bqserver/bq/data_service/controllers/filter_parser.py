@@ -104,6 +104,7 @@ def p_filter_expr(p):
 def p_tagval(p):
     '''tagval : TAGVAL
               | NAME
+              | QUOTED
     '''
     print "tagval"
     p[0] = p[1]
