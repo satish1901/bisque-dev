@@ -67,11 +67,13 @@ Ext.define('BQ.graph.d3', {
             .append("svg:svg")
             .attr("id", "ext_svg-"+this.handle)
             .attr("width", "100%")
-            .attr("height","100%");
+            .attr("height","100%")
+            .on("mousedown", function(){me.fireEvent("mousedown");})
+            .on("mouseup", function(){me.fireEvent("mouseup");});;
 
-        this.group = this.svg.append("svg:g")
-            .on("mousedown", function(){me.findInterval(me); me.fireEvent("mousedown");})
-            .on("mouseup", function(){me.fireEvent("mouseup");});
+        this.group = this.svg.append("svg:g");
+            //.on("mousedown", function(){me.findInterval(me); me.fireEvent("mousedown");})
+            //735.on("mouseup", function(){me.fireEvent("mouseup");});
 
     },
 

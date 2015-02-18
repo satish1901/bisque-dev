@@ -1444,7 +1444,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 						//this.sceneVolume.loadMaterial('forwardDiffuse');
 
 						this.sceneVolume.loadMaterial(this.cubeMesh, 'default');
-
+                        this.loaded = true;
 						this.fireEvent('loaded', this);
 
 					}
@@ -1534,7 +1534,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
             if(this.dims.t === 1)
                 this.useAnimation = false;
         }
-		
+
 		var dims = 'dims';
 		var meta = 'meta';
 		var atlas = 'textureatlas';
@@ -1551,7 +1551,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		this.loadedDimResizeAtlas = false;
 
 		//Ajax request the values pertinent to the volume atlases
-		this.fetchDimensions(fullUrl, 'update_dims');		
+		this.fetchDimensions(fullUrl, 'update_dims');
 		this.fetchDimensions(fullAtlasUrl, 'atlas');
 		this.fetchDimensions(resizeAtlasUrl, 'resized');
         //this.fetchHistogram();
@@ -1598,7 +1598,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
         var logo = this.queryById('logo');
         if (logo) {
             logo.getEl().dom.href = '/client_service/view?resource='+resource.uri;
-        } 
+        }
 
 		if (!this.phys) {
 			var phys = new BQImagePhys(this.resource);
@@ -2303,7 +2303,7 @@ VolumeAtlas.prototype.init = function () {};
 
 VolumeAtlas.prototype.addCommand = function (command, pars) {
 	command.push('resize=1024,1024,BC,MX'); // resize designed to safeguard against very large planar images
-	command.push('textureatlas');	
+	command.push('textureatlas');
 	var maxTexture = this.volume.getMaxTextureSize();
 	command.push('resize=' + maxTexture + ',' + maxTexture + ',BC,MX');
 };
@@ -2421,7 +2421,7 @@ VolumeDisplay.prototype.createMenu = function () {
 
 VolumeDisplay.prototype.createChannelMap = function () {
 	var phys = this.volume.phys;
-	var channel_count = parseInt(phys.ch);	
+	var channel_count = parseInt(phys.ch);
 
 	this.menu.add({
 		xtype : 'displayfield',
@@ -2447,4 +2447,3 @@ VolumeDisplay.prototype.createChannelMap = function () {
 		});
 	}
 };
-
