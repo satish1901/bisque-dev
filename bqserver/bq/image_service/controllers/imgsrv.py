@@ -997,8 +997,11 @@ class ResizeService(object):
             ry = data_token.dims['image_num_y'] / info.get('image_num_y', 1)
             data_token.dims['image_num_x'] = info.get('image_num_x', data_token.dims['image_num_x'])
             data_token.dims['image_num_y'] = info.get('image_num_y', data_token.dims['image_num_y'])
-            data_token.dims['pixel_resolution_x'] *= rx
-            data_token.dims['pixel_resolution_y'] *= ry
+            try:
+                data_token.dims['pixel_resolution_x'] *= rx
+                data_token.dims['pixel_resolution_y'] *= ry
+            except KeyError:
+                pass
         finally:
             pass
 
@@ -1105,16 +1108,25 @@ class Resize3DService(object):
             ry = data_token.dims['image_num_y'] / info.get('image_num_y', 1)
             data_token.dims['image_num_x'] = info.get('image_num_x', data_token.dims['image_num_x'])
             data_token.dims['image_num_y'] = info.get('image_num_y', data_token.dims['image_num_y'])
-            data_token.dims['pixel_resolution_x'] *= rx
-            data_token.dims['pixel_resolution_y'] *= ry
+            try:
+                data_token.dims['pixel_resolution_x'] *= rx
+                data_token.dims['pixel_resolution_y'] *= ry
+            except KeyError:
+                pass
             if z>0:
                 rz = data_token.dims['image_num_z'] / size[2]
                 data_token.dims['image_num_z'] = size[2]
-                data_token.dims['pixel_resolution_z'] *= rz
+                try:
+                    data_token.dims['pixel_resolution_z'] *= rz
+                except KeyError:
+                    pass
             elif t>0:
                 rt = data_token.dims['image_num_t'] / size[2]                
                 data_token.dims['image_num_t'] = size[2]
-                data_token.dims['pixel_resolution_t'] *= rt
+                try:
+                    data_token.dims['pixel_resolution_t'] *= rt
+                except KeyError:
+                    pass
         finally:
             pass
 
