@@ -97,7 +97,7 @@ text {
 }
 .edgePath path {
   stroke: #B2B2B2;
-  fill: #B2B2B2;
+  fill: #
   stroke-width: 1.5px;
 }
 
@@ -124,7 +124,6 @@ text {
     z-index: 30;
     width: 32px !important;
     height: 32px !important;
-    background-color: transparent;
     background-repeat: no-repeat;
     background-image: url('/images/viewer/icons_viewer.svg');
     background-size: 200px;

@@ -16,6 +16,12 @@ ResourceCard.prototype.addField = function (field, attribute, className) {
 ResourceCard.prototype.getSpan = function (field) {
     var cname = this.fields[field].className;
     var attr  = this.fields[field].attribute;
+    var max = 15;
+    if(attr.length > max){
+        var sub = attr.substring(0,max);
+        sub += '...';
+        var attr = sub;
+    }
     return "<span>"+field+ ":  <em class="+cname+">"  + attr + "</em></span>";
 };
 
@@ -842,10 +848,14 @@ Ext.define('BQ.graphviewer', {
                 me.forceRefresh(0);
                 var div = this.getElementsByTagName('div')[1];
                 var mouse = d3.event;
-                if(mouse.button === 0)
+                if(mouse.button === 0){
                     me.fireEvent('mousedown', d, div, me);
-                if(mouse.button === 2)
+                    this.zoom.interrupt();
+                }
+                if(mouse.button === 2){
                     me.fireEvent('context', d, div, me);
+                    this.zoom.interrupt();
+                }
             });
 
         /*
@@ -1008,10 +1018,10 @@ Ext.define('BQ.viewer.Graph.Panel', {
                 loaded: function(res, div, comp){
                     me.setLoading(false);
                 },
-                context: function(){
+                context: function(res,div,comp){
                     me.fireEvent('context',res, div, comp);
                 },
-                mousedown: function(){
+                mousedown: function(res,div,comp){
                     me.fireEvent('mousedown',res, div, comp);
                 }
             }
