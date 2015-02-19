@@ -398,6 +398,58 @@
     background-image: url('/images/viewer/resize-handle.png');
 }
 
+/******************************************************************** 
+ * 
+ * image meta editor
+ * 
+ ********************************************************************/
+
+.imgmetaeditor p{
+    /*text-indent: 15px;*/
+    font: Consolas, Arial, san-serif;
+    font-size: 12px;
+    /*padding-right: 5px;*/
+    /*padding-left: 5px;*/
+    /*padding-top: 5px;*/
+    /*padding: 15px;*/
+}
+
+.imgmetaeditor h2{
+    /*margin-left: 15px;*/
+}
+/*
+.imgmetaeditor_channel_grid_colorpicker div#imgmetaeidtor_colorpicker {
+    height: 25px;
+    width: 100%;
+}
+
+
+.imgmetaeditor_channel_grid .x-grid-cell-inner {
+    height: 33px;
+    overflow: hidden;
+    padding: 3px 6px;
+    white-space: nowrap;
+}
+
+.imgmetaeditor_channel_grid .x-grid-row-editor .x-panel-body{
+    height: 38px !important;
+}
+
+.imgmetaeditor_channel_grid .x-grid-editor .x-form-text,
+.imgmetaeditor_channel_grid .x-panel-body .x-box-inner{
+    height: 30px !important;
+}
+
+.imgmetaeditor_channel_grid .x-grid-row-editor-buttons-default-bottom{
+    top: 39px !important;
+}
+
+.imgmetaeditor_channel_grid .x-grid-row-editor-buttons-default-top{
+    bottom: 39px !important;
+}
+
+*/
+
 /******************************************************************************/
 
 .imgview_button_selected {
