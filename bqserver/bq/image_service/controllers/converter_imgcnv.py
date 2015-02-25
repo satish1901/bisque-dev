@@ -15,6 +15,7 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 import logging
 import os.path
+from itertools import groupby
 from lxml import etree
 #from subprocess import call
 from bq.util.locks import Locks
@@ -28,6 +29,72 @@ from .converter_base import ConverterBase, Format
 
 log = logging.getLogger('bq.image_service.converter_imgcnv')
 
+try:
+    import dicom
+except (ImportError, OSError):
+    log.warn('pydicom is needed for DICOM support, skipping support...')
+    pass
+
+
+# Map DICOM Specific Character Set to python equivalent
+dicom_encoding = {
+    '': 'iso8859',           # default character set for DICOM
+    'ISO_IR 6': 'iso8859',   # alias for latin_1 too
+    'ISO_IR 100': 'latin_1',
+    'ISO 2022 IR 87': 'iso2022_jp',
+    'ISO 2022 IR 13': 'iso2022_jp',  #XXX this mapping does not work on chrH32.dcm test files (but no others do either)
+    'ISO 2022 IR 149': 'euc_kr',   # XXX chrI2.dcm -- does not quite work -- some chrs wrong. Need iso_ir_149 python encoding
+    'ISO_IR 192': 'UTF8',     # from Chinese example, 2008 PS3.5 Annex J p1-4
+    'GB18030': 'GB18030',
+    'ISO_IR 126': 'iso_ir_126',  # Greek
+    'ISO_IR 127': 'iso_ir_127',  # Arab
+    'ISO_IR 138': 'iso_ir_138', # Hebrew
+    'ISO_IR 144': 'iso_ir_144', # Russian
+}
+
+def dicom_init_encoding(dataset):
+    encoding = dataset.get(('0008', '0005'), 'ISO_IR 6')
+    if not encoding in dicom_encoding:
+        return 'latin_1'
+    return dicom_encoding[encoding]
+
+def safedecode(s, encoding):
+    if isinstance(s, unicode) is True:
+        return s
+    if isinstance(s, basestring) is not True:
+        return u'%s'%s
+    try: 
+        return s.decode(encoding)
+    except UnicodeEncodeError:
+        try: 
+            return s.decode('utf8')
+        except UnicodeEncodeError:
+            return unicode(s.encode('ascii', 'replace'))
+
+def dicom_parse_date(v):
+    # first take care of improperly stored values
+    if len(v)<1:
+        return v
+    if '.' in v:
+        return v.replace('.', '-')
+    if '/' in v:
+        return v.replace('/', '-')
+    # format proper value
+    return '%s-%s-%s'%(v[0:4], v[4:6], v[6:8])
+
+def dicom_parse_time(v):
+    # first take care of improperly stored values
+    if len(v)<1:
+        return v
+    if ':' in v:
+        return v
+    if '.' in v:
+        return v.replace('.', ':')
+    # format proper value
+    return '%s:%s:%s'%(v[0:2], v[2:4], v[4:6])
+
+
+
 ################################################################################
 # ConverterBase
 ################################################################################
@@ -37,18 +104,39 @@ class ConverterImgcnv(ConverterBase):
     version = None
     installed_formats = None
     CONVERTERCOMMAND = 'imgcnv' if os.name != 'nt' else 'imgcnv.exe'
+    
+    # info_map = {
+    #     'width'      : 'image_num_x',
+    #     'height'     : 'image_num_y',
+    #     'zsize'      : 'image_num_z',
+    #     'tsize'      : 'image_num_t',
+    #     'channels'   : 'image_num_c',
+    #     'pages'      : 'image_num_p',
+    #     'format'     : 'format',
+    #     'pixelType'  : 'image_pixel_format',
+    #     'depth'      : 'image_pixel_depth',
+    #     'endian'     : 'endian',
+    #     'dimensions' : 'dimensions'
+    # }
+
     info_map = {
-        'width'      : 'image_num_x',
-        'height'     : 'image_num_y',
-        'zsize'      : 'image_num_z',
-        'tsize'      : 'image_num_t',
-        'channels'   : 'image_num_c',
-        'pages'      : 'image_num_p',
-        'format'     : 'format',
-        'pixelType'  : 'image_pixel_format',
-        'depth'      : 'image_pixel_depth',
-        'endian'     : 'endian',
-        'dimensions' : 'dimensions'
+        'image_num_x'        : 'image_num_x',
+        'image_num_y'        : 'image_num_y',
+        'image_num_z'        : 'image_num_z',
+        'image_num_t'        : 'image_num_t',
+        'image_num_c'        : 'image_num_c',
+        'image_num_p'        : 'image_num_p',
+        'format'             : 'format',
+        'image_pixel_format' : 'image_pixel_format',
+        'image_pixel_depth'  : 'image_pixel_depth',
+        'raw_endian'         : 'raw_endian',
+        'dimensions'         : 'dimensions',
+        'pixel_resolution_x' : 'pixel_resolution_x',        
+        'pixel_resolution_y' : 'pixel_resolution_y', 
+        'pixel_resolution_z' : 'pixel_resolution_z', 
+        'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
+        'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
+        'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
     }
 
 #     #######################################
@@ -168,10 +256,9 @@ class ConverterImgcnv(ConverterBase):
         
         if cls.is_multifile_series(**kw) is True:
             rd.update(kw['token'].meta)
-            #try:
-            #    del rd['files']
-            #except (KeyError):
-            #    pass
+            if kw['token'].meta.get('image_num_c', 0)>1:
+                if 'channel_color_0' in rd: del rd['channel_color_0']
+                if 'channel_0_name' in rd: del rd['channel_0_name']            
 
         return rd
 
@@ -189,7 +276,8 @@ class ConverterImgcnv(ConverterBase):
         if not os.path.exists(ifnm):
             return {}
 
-        info = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-info', '-i', ifnm] )
+        #info = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-info', '-i', ifnm] )
+        info = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-meta-parsed', '-i', ifnm] )
         if info is None:
             return {}
         rd = {}
@@ -204,13 +292,13 @@ class ConverterImgcnv(ConverterBase):
             rd[cls.info_map[tag]] = misc.safetypeparse(val.replace('\n', ''))
 
         # change the image_pixel_format output, convert numbers to a fully descriptive string
-        if isinstance(rd['image_pixel_format'], (long, int)):
-            pf_map = {
-                1: 'unsigned integer', 
-                2: 'signed integer', 
-                3: 'floating point'
-            }
-            rd['image_pixel_format'] = pf_map[rd['image_pixel_format']]
+        # if isinstance(rd['image_pixel_format'], (long, int)):
+        #     pf_map = {
+        #         1: 'unsigned integer', 
+        #         2: 'signed integer', 
+        #         3: 'floating point'
+        #     }
+        #     rd['image_pixel_format'] = pf_map[rd['image_pixel_format']]
 
         if 'dimensions' in rd:
             rd['dimensions'] = rd['dimensions'].replace(' ', '') # remove spaces
@@ -250,9 +338,10 @@ class ConverterImgcnv(ConverterBase):
     def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
-        command = []
         
+        command = []
         if cls.is_multifile_series(**kw) is False:
+            log.debug('convert single file: %s', ifnm)
             command.extend(['-i', ifnm])
         else:
             # use first image of the series, need to check for separate channels here
@@ -267,8 +356,13 @@ class ConverterImgcnv(ConverterBase):
             meta = kw['token'].meta or {}
 
             geom = '%s,%s'%(meta.get('image_num_z', 1),meta.get('image_num_t', 1))
+            if meta.get('image_num_c', 0)>1:
+                geom = '%s,%s'%(geom, meta.get('image_num_c', 0))
             command.extend(['-geometry', geom])
             
+            # dima: have to convert pixel resolution from input units into microns
+            # don't forget to update resolution in every image operation
+            meta.update(kw['token'].dims)            
             res = '%s,%s,%s,%s'%(meta.get('pixel_resolution_x', 0), meta.get('pixel_resolution_y', 0), meta.get('pixel_resolution_z', 0), meta.get('pixel_resolution_t', 0))
             command.extend(['-resolution', res])
         
@@ -322,11 +416,22 @@ class ConverterImgcnv(ConverterBase):
         else:
             # use first image of the series, need to check for separate channels here
             files = cls.enumerate_series_files(**kw)
+            meta = kw['token'].meta or {}
             log.debug('thumbnail files: %s', files)
-            command.extend(['-i', files[page-1]])
+            
+            samples = meta.get('image_num_c', 0)
+            if samples<2:
+                command.extend(['-i', files[page-1]])
+            else:
+                # in case of channels being stored in separate files
+                page = (page-1) * samples
+                command.extend(['-i', files[page+0]])
+                for s in range(1, samples):
+                    command.extend(['-c', files[page+s]])
 
+        command.extend(['-enhancemeta']) # right now only CT data is enhanced
         if info.get('image_pixel_depth', 16) != 8:
-            command.extend(['-depth', '8,d'])
+            command.extend(['-depth', '8,d,u'])
 
         #command.extend(['-display'])
         command.extend(['-fusemeta'])
@@ -377,20 +482,34 @@ class ConverterImgcnv(ConverterBase):
         
         # separate normal and multi-file series
         if cls.is_multifile_series(**kw) is False:
+            log.debug('Slice for non-multi-file series')
             command.extend(['-i', ifnm])
             command.extend(['-multi', '-page', ','.join([str(p) for p in pages])])
         else:
             # use first image of the series, need to check for separate channels here
+            log.debug('Slice for multi-file series')
             command.extend(['-multi'])
             files = cls.enumerate_series_files(**kw)
-            if len(pages)==1 and (x1==x2 or y1==y2):
+            meta = kw['token'].meta or {}
+            channels = meta.get('image_num_c', 0)
+
+            #log.debug('Slice for multi-file series: %s', files)
+            if len(pages)==1 and (x1==x2 or y1==y2) and channels<=1:
                 # in multi-file case and only one page is requested with no ROI, return with no re-conversion 
                 misc.dolink(files[pages[0]-1], ofnm)
                 return ofnm
             else:
-                for p in pages:
-                    command.extend(['-i', files[p-1]])
-        
+                # in case of many pages we might have to write input filenames as a file
+                #files_pages = [files[i] for i in [p-1 for p in pages]]
+                fl = '%s.files'%ofnm
+                cls.write_files(files, fl)
+                command.extend(['-il', fl])
+                command.extend(['-multi', '-page', ','.join([str(p) for p in pages])])
+                if channels>1:
+                    # dima: since we are writing a non ome-tiff file, proper geometry is irrelevant but number of channels is
+                    geom = '1,1,%s'%(channels)
+                    command.extend(['-geometry', geom])
+
         # roi
         if not x1==x2 or not y1==y2:
             if not x1==x2:
@@ -434,6 +553,215 @@ class ConverterImgcnv(ConverterBase):
                 for i in range(256):
                     f.write(struct.pack('<Q', 100)) # histogram data, here each color has freq of 100
 
+
+    #######################################
+    # Sort and organize files
+    #
+    # DICOM files in a directory need to be sorted and combined into series
+    # we need to use the following tags in the following order to group files into series
+    # then, each group should be sorted based on instance number tag
+    #
+    #(0010, 0020) Patient ID                          LO: 'ANON85099405877'
+    #(0020, 000d) Study Instance UID                  UI: 2.16.840.1.113786.1.52.850.674495585.766
+    #(0020, 000e) Series Instance UID                 UI: 2.16.840.1.113786.1.52.850.674495585.767
+    #(0020, 0011) Series Number                       IS: '2'
+    #
+    #(0020, 0013) Instance Number                     IS: '1'
+    #
+    #######################################
+
+    @classmethod
+    def group_files_dicom(cls, files, **kw):
+        '''return list with lists containing grouped and ordered dicom file paths'''
+
+        import dicom # ensure an error if dicom library is not installed
+
+        def read_tag(ds, key, default=None):
+            t = ds.get(key)
+            if t is None:
+                return ''
+            return t.value or default
+
+        if not cls.installed:
+            return False
+        log.debug('Group %s files', len(files) )
+        data = []
+        groups = []
+        blobs = []
+        for f in files:
+            try:
+                ds = dicom.read_file(f)
+            except (Exception):
+                blobs.append(f)
+                continue
+
+            if 'PixelData' not in ds:
+                blobs.append(f)
+                continue                
+
+            modality     = read_tag(ds, ('0008', '0060'))
+            patient_id   = read_tag(ds, ('0010', '0020'))
+            study_uid    = read_tag(ds, ('0020', '000d'))
+            series_uid   = read_tag(ds, ('0020', '000e'))
+            series_num   = read_tag(ds, ('0020', '0012')) # 
+            acqui_num    = read_tag(ds, ('0020', '0011')) # A number identifying the single continuous gathering of data over a period of time that resulted in this image
+            instance_num = int(read_tag(ds, ('0020', '0013'), '0') or '0') # A number that identifies this image
+            slice_loc    = float(read_tag(ds, ('0020', '1041'), '0') or '0') # defined as the relative position of the image plane expressed in mm
+
+            num_temp_p   = int(read_tag(ds, ('0020', '0105'), '0') or '0') # Total number of temporal positions prescribed
+            num_frames   = int(read_tag(ds, ('0028', '0008'), '0') or '0') # Number of frames in a Multi-frame Image
+            mr_acq_typ   = read_tag(ds, ('0018', '0023')) # Number of frames in a Multi-frame Image
+
+            key = '%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, acqui_num) # series_num seems to vary in DR Systems
+            data.append((key, slice_loc or instance_num, f, num_temp_p or num_frames or mr_acq_typ == '2D' ))
+            #log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s', key, series_num, instance_num, num_temp_p, num_frames )
+        
+        # group based on a key
+        data = sorted(data, key=lambda x: x[0])
+        for k, g in groupby(data, lambda x: x[0]):
+            # sort based on an instance_num
+            groups.append( sorted(list(g), key=lambda x: x[1]) )
+        
+        # prepare groups of dicom filenames
+        images   = []
+        geometry = []
+        for g in groups:
+            l = [f[2] for f in g]
+            images.append( l )
+            frame_num = g[0][3]
+            if frame_num is True:
+                frame_num = len(l)
+            if len(l) == 1:
+                geometry.append({ 't': 1, 'z': 1 })
+            elif frame_num>0:
+                z = len(l) / frame_num
+                geometry.append({ 't': frame_num, 'z': z })
+            else:
+                geometry.append({ 't': 1, 'z': len(l) })
+
+        log.debug('group_files_dicom found: %s image groups, %s blobs', len(images), len(blobs))
+
+        return (images, blobs, geometry)
+    
+    #######################################
+    # DICOM metadata parser writing directly into XML tree
+    #######################################
+    
+    @classmethod
+    def meta_dicom(cls, ifnm, series=0, xml=None, **kw):
+        '''appends nodes to XML'''
+        
+        if os.path.basename(ifnm) == 'DICOMDIR': # skip reading metadata for teh index file
+            return
+
+        try:
+            import dicom
+        except (ImportError, OSError):
+            log.warn('pydicom is needed for DICOM support, skipping DICOM metadata...')
+            return
+
+        def recurse_tree(dataset, parent, encoding='latin-1'):
+            for de in dataset:
+                if de.tag == ('7fe0', '0010'):
+                    continue
+                node = etree.SubElement(parent, 'tag', name=de.name, type=':///DICOM#%04.x,%04.x'%(de.tag.group, de.tag.element))
+
+                if de.VR == "SQ":   # a sequence
+                    for i, dataset in enumerate(de.value):
+                        recurse_tree(dataset, node, encoding)
+                else:
+                    if isinstance(de.value, dicom.multival.MultiValue):
+                        value = ','.join(safedecode(i, encoding) for i in de.value)
+                    else:                
+                        value = safedecode(de.value, encoding)
+                    try:
+                        node.set('value', value.strip())
+                    except (ValueError, Exception):
+                        pass
+
+        try:
+            _, tmp = misc.start_nounicode_win(ifnm, [])
+            ds = dicom.read_file(tmp or ifnm)
+        except (Exception):
+            misc.end_nounicode_win(tmp)
+            return
+        encoding = dicom_init_encoding(ds)
+        recurse_tree(ds, xml, encoding=encoding)     
+        
+        misc.end_nounicode_win(tmp)
+        return
+
+    #######################################
+    # Most important DICOM metadata to be ingested directly into data service
+    #######################################
+    
+    @classmethod
+    def meta_dicom_parsed(cls, ifnm, xml=None, **kw):
+        '''appends nodes to XML'''
+        
+        try:
+            import dicom
+        except (ImportError, OSError):
+            log.warn('pydicom is needed for DICOM support, skipping DICOM metadata...')
+            return
+
+        def append_tag(dataset, tag, parent, name=None, fmt=None, safe=True, encoding='latin-1'):
+            de = dataset.get(tag, None)
+            if de is None:
+                return
+            name = name or de.name
+            typ = ':///DICOM#%04.x,%04.x'%(de.tag.group, de.tag.element)
+            
+            if fmt is None:
+                if isinstance(de.value, dicom.multival.MultiValue):
+                    value = ','.join(safedecode(i, encoding) for i in de.value)
+                else:                
+                    value = safedecode(de.value, encoding)
+            else:
+                if safe is True:
+                    try:
+                        value = fmt(safedecode(de.value, encoding))
+                    except (Exception):
+                        value = safedecode(de.value, encoding)
+                else:
+                    value = fmt(safedecode(de.value, encoding))
+            value = value.strip()
+            if len(value)>0:
+                node = etree.SubElement(parent, 'tag', name=name, value=value, type=typ)
+
+        try:
+            _, tmp = misc.start_nounicode_win(ifnm, [])
+            ds = dicom.read_file(tmp or ifnm)
+        except (Exception):
+            misc.end_nounicode_win(tmp)
+            return 
+
+        encoding = dicom_init_encoding(ds)
+
+        append_tag(ds, ('0010', '0020'), xml, encoding=encoding) # Patient ID
+        try:
+            append_tag(ds, ('0010', '0010'), xml, name='Patient\'s First Name', safe=False, fmt=lambda x: x.split('^', 1)[1], encoding=encoding ) # Patient's Name
+            append_tag(ds, ('0010', '0010'), xml, name='Patient\'s Last Name', safe=False, fmt=lambda x: x.split('^', 1)[0], encoding=encoding ) # Patient's Name
+        except (Exception):
+            append_tag(ds, ('0010', '0010'), xml, encoding=encoding ) # Patient's Name
+        append_tag(ds, ('0010', '0040'), xml, encoding=encoding) # Patient's Sex 'M'
+        append_tag(ds, ('0010', '1010'), xml, encoding=encoding) # Patient's Age '019Y'
+        append_tag(ds, ('0010', '0030'), xml, fmt=dicom_parse_date ) # Patient's Birth Date
+        append_tag(ds, ('0012', '0062'), xml, encoding=encoding) # Patient Identity Removed
+        append_tag(ds, ('0008', '0020'), xml, fmt=dicom_parse_date ) # Study Date
+        append_tag(ds, ('0008', '0030'), xml, fmt=dicom_parse_time ) # Study Time
+        append_tag(ds, ('0008', '0060'), xml, encoding=encoding) # Modality
+        append_tag(ds, ('0008', '1030'), xml, encoding=encoding) # Study Description
+        append_tag(ds, ('0008', '103e'), xml, encoding=encoding) # Series Description
+        append_tag(ds, ('0008', '0080'), xml, encoding=encoding) # Institution Name  
+        append_tag(ds, ('0008', '0090'), xml, encoding=encoding) # Referring Physician's Name
+        append_tag(ds, ('0008', '0008'), xml) # Image Type
+        append_tag(ds, ('0008', '0012'), xml, fmt=dicom_parse_date ) # Instance Creation Date
+        append_tag(ds, ('0008', '0013'), xml, fmt=dicom_parse_time ) # Instance Creation Time
+        append_tag(ds, ('0008', '1060'), xml, encoding=encoding) # Name of Physician(s) Reading Study
+        append_tag(ds, ('0008', '2111'), xml, encoding=encoding) # Derivation Description  
+        
+        misc.end_nounicode_win(tmp)
 
 try:
     ConverterImgcnv.init()

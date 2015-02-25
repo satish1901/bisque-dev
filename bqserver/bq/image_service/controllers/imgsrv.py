@@ -202,6 +202,7 @@ mime_types = {
     'matroska'  : 'video/x-matroska',
     'webm'      : 'video/webm',
     'h264'      : 'video/mp4',
+    'h265'      : 'video/mp4',    
     'mpeg4'     : 'video/mp4',
     'ogg'       : 'video/ogg',
 }
@@ -233,6 +234,7 @@ class ProcessToken(object):
         self.series      = 0
         self.timeout     = None
         self.meta        = None
+        self.operations  = OrderedDict() # operation:parameters
 
     def setData (self, data_buf, content_type):
         self.data = data_buf
@@ -503,11 +505,16 @@ class MetaService(object):
                 meta['image_pixel_depth'] = info.get('image_pixel_depth', meta.get('image_pixel_depth', 0))
                 meta['image_num_p'] = info['image_num_t']*info['image_num_z']
 
+            # overwrite fileds forced by the fileds stored in the resource image_meta
+            if data_token.meta is not None:
+                meta.update(data_token.meta)
+
             # construct an XML tree
             image = etree.Element ('resource', uri='%s/%s?meta'%(self.server.url, image_id))
             tags_map = {}
             for k, v in meta.iteritems():
                 if k in meta_private_fields: continue
+                if k.startswith('DICOM/'): continue
                 k = safeunicode(k)
                 v = safeunicode(v)
                 tl = k.split('/')
@@ -524,6 +531,10 @@ class MetaService(object):
                     parent.set('value', v)
                 except ValueError:
                     pass
+
+            if meta['format'] == 'DICOM':
+                node = etree.SubElement(image, 'tag', name='DICOM')  
+                ConverterImgcnv.meta_dicom(ifile, series=data_token.series, token=data_token, xml=node)
 
             log.debug('Meta %s: storing metadata into %s', image_id, metacache)
             xmlstr = etree.tostring(image)
@@ -643,30 +654,39 @@ class SliceService(object):
         if x1==0 and x2==0 and y1==0 and y2==0 and z1==0 and z2==0 and t1==0 and t2==0:
             return data_token
 
-        imsz = [
-            data_token.dims.get('image_num_x', 1),
-            data_token.dims.get('image_num_y', 1),
-            data_token.dims.get('image_num_z', 1),
-            data_token.dims.get('image_num_t', 1)
-        ]
-        if x1<=1 and x2>=imsz[0]: x1=0; x2=0
-        if y1<=1 and y2>=imsz[1]: y1=0; y2=0
-        if z1<=1 and z2>=imsz[2]: z1=0; z2=0
-        if t1<=1 and t2>=imsz[3]: t1=0; t2=0
+        dims = data_token.dims or {}
+        if x1<=1 and x2>=dims.get('image_num_x', 1): x1=0; x2=0
+        if y1<=1 and y2>=dims.get('image_num_y', 1): y1=0; y2=0
+        if z1<=1 and z2>=dims.get('image_num_z', 1): z1=0; z2=0
+        if t1<=1 and t2>=dims.get('image_num_t', 1): t1=0; t2=0
 
-        # if input image has only one T and Z skip slice alltogether
-        try:
-            if not data_token.dims is None:
-                skip = True
-                if   data_token.dims.get('image_num_z',0)>1: skip = False
-                elif data_token.dims.get('image_num_t',0)>1: skip = False
-                elif data_token.dims.get('image_num_p',0)>1: skip = False
-                if skip: return data_token
-        finally:
-            pass
+        # check image bounds
+        if z1>dims.get('image_num_z', 1):
+            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z1 )
+        if z2>dims.get('image_num_z', 1):
+            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z2 )
+        if t1>dims.get('image_num_t', 1):
+            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t1 )
+        if t2>dims.get('image_num_t', 1):
+            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
 
-        if z1==z2==0: z1=1; z2=data_token.dims['image_num_z']
-        if t1==t2==0: t1=1; t2=data_token.dims['image_num_t']
+        # shortcuts are only possible with no ROIs are requested
+        if x1==x2==0 and y1==y2==0:
+            # shortcut if input image has only one T and Z
+            if dims.get('image_num_z', 1)<=1 and dims.get('image_num_t', 1)<=1:
+                log.debug('Slice: plane requested on image with no T or Z planes, skipping...')
+                return data_token
+            # shortcut if asking for all slices with only a specific time point in an image with only one time pont
+            if z1==z2==0 and t1<=1 and dims.get('image_num_t', 1)<=1:
+                log.debug('Slice: T plane requested on image with no T planes, skipping...')
+                return data_token
+            # shortcut if asking for all time points with only a specific z slice in an image with only one z slice
+            if t1==t2==0 and z1<=1 and dims.get('image_num_z', 1)<=1:
+                log.debug('Slice: Z plane requested on image with no Z planes, skipping...')
+                return data_token
+
+        if z1==z2==0: z1=1; z2=dims.get('image_num_z', 1)
+        if t1==t2==0: t1=1; t2=dims.get('image_num_t', 1)
 
         ifname = self.server.getInFileName( data_token, image_id )
         ofname = self.server.getOutFileName( ifname, image_id, '.%d-%d,%d-%d,%d-%d,%d-%d' % (x1,x2,y1,y2,z1,z2,t1,t2) )
@@ -687,30 +707,39 @@ class SliceService(object):
         if x1==0 and x2==0 and y1==0 and y2==0 and z1==0 and z2==0 and t1==0 and t2==0:
             return data_token
 
-        imsz = [
-            data_token.dims.get('image_num_x', 1),
-            data_token.dims.get('image_num_y', 1),
-            data_token.dims.get('image_num_z', 1),
-            data_token.dims.get('image_num_t', 1)
-        ]
-        if x1<=1 and x2>=imsz[0]: x1=0; x2=0
-        if y1<=1 and y2>=imsz[1]: y1=0; y2=0
-        if z1<=1 and z2>=imsz[2]: z1=0; z2=0
-        if t1<=1 and t2>=imsz[3]: t1=0; t2=0
+        dims = data_token.dims or {}
+        if x1<=1 and x2>=dims.get('image_num_x', 1): x1=0; x2=0
+        if y1<=1 and y2>=dims.get('image_num_y', 1): y1=0; y2=0
+        if z1<=1 and z2>=dims.get('image_num_z', 1): z1=0; z2=0
+        if t1<=1 and t2>=dims.get('image_num_t', 1): t1=0; t2=0
 
-        # if input image has only one T and Z skip slice alltogether
-        try:
-            if not data_token.dims is None:
-                skip = True
-                if   data_token.dims.get('image_num_z',0)>1: skip = False
-                elif data_token.dims.get('image_num_t',0)>1: skip = False
-                elif data_token.dims.get('image_num_p',0)>1: skip = False
-                if skip: return data_token
-        finally:
-            pass
+        # check image bounds
+        if z1>dims.get('image_num_z', 1):
+            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z1 )
+        if z2>dims.get('image_num_z', 1):
+            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z2 )
+        if t1>dims.get('image_num_t', 1):
+            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t1 )
+        if t2>dims.get('image_num_t', 1):
+            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
 
-        if z1==z2==0: z1=1; z2=data_token.dims['image_num_z']
-        if t1==t2==0: t1=1; t2=data_token.dims['image_num_t']
+        # shortcuts are only possible with no ROIs are requested
+        if x1==x2==0 and y1==y2==0:
+            # shortcut if input image has only one T and Z
+            if dims.get('image_num_z', 1)<=1 and dims.get('image_num_t', 1)<=1:
+                log.debug('Slice: plane requested on image with no T or Z planes, skipping...')
+                return data_token
+            # shortcut if asking for all slices with only a specific time point in an image with only one time pont
+            if z1==z2==0 and t1<=1 and dims.get('image_num_t', 1)<=1:
+                log.debug('Slice: T plane requested on image with no T planes, skipping...')
+                return data_token
+            # shortcut if asking for all time points with only a specific z slice in an image with only one z slice
+            if t1==t2==0 and z1<=1 and dims.get('image_num_z', 1)<=1:
+                log.debug('Slice: Z plane requested on image with no Z planes, skipping...')
+                return data_token
+
+        if z1==z2==0: z1=1; z2=dims.get('image_num_z', 1)
+        if t1==t2==0: t1=1; t2=dims.get('image_num_t', 1)
 
         # construct a sliced filename
         ifname = self.server.getInFileName( data_token, image_id )
@@ -823,10 +852,12 @@ class FormatService(object):
 
             # first try first converter that supports this output format
             c = self.server.writable_formats[fmt]
-            r = c.convert(ifile, ofile, fmt, series=data_token.series, extra=extra)
+            r = c.convert(ifile, ofile, fmt, series=data_token.series, extra=extra, token=data_token)
 
             # try using other converters directly
             if r is None:
+                log.debug('ImageConvert could not connvert [%s] to [%s] format'%(ifile, fmt))
+                log.debug('Trying other converters directly')
                 for n,c in self.server.converters.iteritems():
                     if n=='imgcnv':
                         continue
@@ -834,9 +865,11 @@ class FormatService(object):
                     if r is not None and os.path.exists(ofile):
                         break
 
-            # using ome-tiff as intermediate
+            # using ome-tiff as intermediate if everything failed
             if r is None:
-                self.server.imageconvert(image_id, ifile, ofile, fmt=fmt, series=data_token.series, extra=['-multi'], token=data_token)
+                log.debug('All converters could not connvert [%s] to [%s] format'%(ifile, fmt))
+                log.debug('Converting to OME-TIFF and then to desired output')                
+                r = self.server.imageconvert(image_id, ifile, ofile, fmt=fmt, series=data_token.series, extra=['-multi'], token=data_token, try_imgcnv=False)
 
             if r is None:
                 log.error('Format %s: %s could not convert with [%s] format [%s] -> [%s]', image_id, c.CONVERTERCOMMAND, fmt, ifile, ofile)
@@ -896,6 +929,18 @@ class ResizeService(object):
         if len(ss)>3:
             textAddition = ss[3].upper()
 
+        if size[0]<=0 and size[1]<=0:
+            abort(400, 'Resize: size is unsupported: [%s]'%arg )
+
+        if method not in ['NN', 'BL', 'BC']:
+            abort(400, 'Resize: method is unsupported: [%s]'%arg )
+
+        # if the image is smaller and MX is used, skip resize
+        dims = data_token.dims or {}
+        if maxBounding and dims.get('image_num_x',0)<=size[0] and dims.get('image_num_y',0)<=size[1]:
+            log.debug('Resize: Max bounding resize requested on a smaller image, skipping...')
+            return data_token        
+
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.size_%d,%d,%s,%s' % (size[0], size[1], method, textAddition) )
         return data_token.setImage(ofile, fmt=default_format)
@@ -933,7 +978,9 @@ class ResizeService(object):
             abort(400, 'Resize: method is unsupported: [%s]'%arg )
 
         # if the image is smaller and MX is used, skip resize
-        if maxBounding and data_token.dims['image_num_x']<=size[0] and data_token.dims['image_num_y']<=size[1]:
+        dims = data_token.dims or {}
+        if maxBounding and dims.get('image_num_x',0)<=size[0] and dims.get('image_num_y',0)<=size[1]:
+            log.debug('Resize: Max bounding resize requested on a smaller image, skipping...')
             return data_token
 
         ifile = self.server.getInFileName( data_token, image_id )
@@ -946,8 +993,15 @@ class ResizeService(object):
 
         try:
             info = self.server.getImageInfo(filename=ofile)
-            if 'image_num_x' in info: data_token.dims['image_num_x'] = info['image_num_x']
-            if 'image_num_y' in info: data_token.dims['image_num_y'] = info['image_num_y']
+            rx = data_token.dims['image_num_x'] / info.get('image_num_x', 1)
+            ry = data_token.dims['image_num_y'] / info.get('image_num_y', 1)
+            data_token.dims['image_num_x'] = info.get('image_num_x', data_token.dims['image_num_x'])
+            data_token.dims['image_num_y'] = info.get('image_num_y', data_token.dims['image_num_y'])
+            try:
+                data_token.dims['pixel_resolution_x'] *= rx
+                data_token.dims['pixel_resolution_y'] *= ry
+            except KeyError:
+                pass
         finally:
             pass
 
@@ -1050,12 +1104,29 @@ class Resize3DService(object):
 
         try:
             info = self.server.getImageInfo(filename=ofile)
-            if 'image_num_x' in info: data_token.dims['image_num_x'] = info['image_num_x']
-            if 'image_num_y' in info: data_token.dims['image_num_y'] = info['image_num_y']
+            rx = data_token.dims['image_num_x'] / info.get('image_num_x', 1)
+            ry = data_token.dims['image_num_y'] / info.get('image_num_y', 1)
+            data_token.dims['image_num_x'] = info.get('image_num_x', data_token.dims['image_num_x'])
+            data_token.dims['image_num_y'] = info.get('image_num_y', data_token.dims['image_num_y'])
+            try:
+                data_token.dims['pixel_resolution_x'] *= rx
+                data_token.dims['pixel_resolution_y'] *= ry
+            except KeyError:
+                pass
             if z>0:
+                rz = data_token.dims['image_num_z'] / size[2]
                 data_token.dims['image_num_z'] = size[2]
+                try:
+                    data_token.dims['pixel_resolution_z'] *= rz
+                except KeyError:
+                    pass
             elif t>0:
+                rt = data_token.dims['image_num_t'] / size[2]                
                 data_token.dims['image_num_t'] = size[2]
+                try:
+                    data_token.dims['pixel_resolution_t'] *= rt
+                except KeyError:
+                    pass
         finally:
             pass
 
@@ -1383,6 +1454,7 @@ class DepthService(object):
          d - data range
          t - data range with tolerance
          e - equalized
+         hounsfield - hounsfield space enhancement
        format is: u, s or f, if unset keeps image original
          u - unsigned integer
          s - signed integer
@@ -1390,6 +1462,8 @@ class DepthService(object):
        channel mode is: cs or cc
          cs - channels separate
          cc - channels combined
+       window center, window width - only used for hounsfield enhancement
+         ex: depth=8,hounsfield,u,40,80
        ex: depth=8,d'''
 
     def __init__(self, server):
@@ -1405,8 +1479,8 @@ class DepthService(object):
         return data_token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, image_id, data_token, arg):
-        ms = 'f|d|t|e|c|n'.split('|')
-        ds = '8|16|32|64'.split('|')
+        ms = ['f', 'd', 't', 'e', 'c', 'n', 'hounsfield']
+        ds = ['8', '16', '32', '64']
         fs = ['u', 's', 'f']
         cm = ['cs', 'cc']
         d=None; m=None; f=None; c=None
@@ -1414,8 +1488,10 @@ class DepthService(object):
         args = arg.split(',')
         if len(args)>0: d = args[0]
         if len(args)>1: m = args[1]
-        if len(args)>2: f = args[2]
-        if len(args)>3: c = args[3]
+        if len(args)>2: f = args[2] or 'u'
+        if len(args)>3: c = args[3] or 'cs'
+        if len(args)>4: window_center = args[4] or None
+        if len(args)>5: window_width = args[5] or None
 
         if d is None or d not in ds:
             abort(400, 'Depth: depth is unsupported: %s'%d)
@@ -1425,6 +1501,8 @@ class DepthService(object):
             abort(400, 'Depth: format is unsupported: %s'%f )
         if c is not None and c not in cm:
             abort(400, 'Depth: channel mode is unsupported: %s'%c )
+        if m == 'hounsfield' and (window_center is None or window_width is None):
+            abort(400, 'Depth: hounsfield enhancement requires window center and width' )
 
         ifile = self.server.getInFileName(data_token, image_id)
         ofile = self.server.getOutFileName(ifile, image_id, '.depth_%s'%arg)
@@ -1432,7 +1510,12 @@ class DepthService(object):
         log.debug('Depth %s: %s to %s with [%s]', image_id, ifile, ofile, arg)
 
         if not os.path.exists(ofile):
-            extra=['-multi', '-depth', arg]
+            extra=['-multi']
+            if m == 'hounsfield':
+                extra.extend(['-hounsfield', '%s,%s,%s,%s'%(d,f,window_center,window_width)])
+            else:
+                extra.extend(['-depth', arg])
+
             if data_token.histogram is not None:
                 extra.extend([ '-ihst', data_token.histogram, '-ohst', ohist])
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=extra, token=data_token)
@@ -2598,10 +2681,12 @@ class ImageServer(object):
             return data_token
         return info
 
-    def imageconvert(self, image_id, ifnm, ofnm, fmt=None, extra=[], series=0, **kw):
-        r = self.converters['imgcnv'].convert( ifnm, ofnm, fmt=fmt, series=series, extra=extra, **kw)
-        if r is not None:
-            return r
+    def imageconvert(self, image_id, ifnm, ofnm, fmt=None, extra=[], series=0, try_imgcnv=True, **kw):
+        if try_imgcnv is True:
+            r = self.converters['imgcnv'].convert( ifnm, ofnm, fmt=fmt, series=series, extra=extra, **kw)
+            if r is not None:
+                return r            
+
         # if the conversion failed, convert input to OME-TIFF using other converts
         ometiff = self.getOutFileName( ifnm, image_id, '.ome.tif' )
         for n,c in self.converters.iteritems():
