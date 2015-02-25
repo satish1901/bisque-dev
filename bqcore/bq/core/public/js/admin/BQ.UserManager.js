@@ -113,7 +113,7 @@ Ext.define('BQ.ResourceTagger.User', {
             }
             
             //PUT the modified xml back into the db
-            var id = this.resource.uri;
+            var id = this.resource.resource_uniq;
             var xmlBody = this.resource.toXML();
             Ext.Ajax.request({
                 url: '/admin/user/'+id,
@@ -154,7 +154,7 @@ Ext.define('BQ.ResourceTagger.User', {
         if (this.store.applyModifications()) {
             this.setProgress('Saving');
             var xmlBody = resource.toXML();
-            var id = resource.uri; //we want to put the entire body back for now
+            var id = resource.resource_uniq; //we want to put the entire body back for now
             Ext.Ajax.request({
                 url: '/admin/user/'+id,
                 method: 'PUT',
@@ -328,7 +328,7 @@ Ext.define('BQ.admin.UserTable', {
                 limitParam: undefined,
                 pageParam: undefined,
                 startParam: undefined,
-                url: '/admin/user', 
+                url: '/admin/user?view=full', 
                 reader: {
                     type: 'xml',
                     root: 'resource',
@@ -610,10 +610,10 @@ Ext.define('BQ.admin.UserInfo', {
             tpl: [
                 '<h2>Welcome to the Administrators User Manager</h2>',
                 '<p>This page allows for an admin to create, delete, modify and manage users in the system with normal bisque credentials. If the user is registered to bisque with another system like cas or google this page will not be able to modify those users with the current iteration. Below is some information on how this page can be used to manage users.</p>',
-                '<p><b>Create User:</b> Select the add button at the top of the User List.</p>',
-                '<p><b>Delete User:</b> Select a user and then select the Delete ad the pot of the User List</p>',
+                '<p><b>Create User:</b> Select the add button at the top of the User List and a form will pop up. Enter the neccessary user information.</p>',
+                '<p><b>Delete User:</b> Select a user and then select the Delete at the top of the User List</p>',
                 '<p><b>Modify User:</b> Select a user and tags for the user will appear in the User View. Modify the tags you want to modify. <i>Note: The email, password and display name tags cannot be delete.</i></p>',
-                '<p><b>Login As User:</b> Select a user and press the Login As button at the top of the User List. This will log in the currect user as the selected user and go to the front page.</p>',
+                '<p><b>Login As User:</b> Select a user and press the Login As button at the top of the User List. This will log in the currect user as the selected user and return to the front page.</p>',
             ],
             data: {},
         });
@@ -629,7 +629,7 @@ Ext.define('BQ.admin.UserInfo', {
     
     selectUser: function(resource_uri) {
         this.layout.setActiveItem(this.tagger);
-        this.tagger.setResource(resource_uri);
+        this.tagger.setResource(resource_uri+'?view=deep');
         
     },
     deselectUser: function() {
