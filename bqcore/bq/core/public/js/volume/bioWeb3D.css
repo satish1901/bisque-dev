@@ -189,6 +189,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 }
 
+.bq-three-container .logo {
+    width: 90px !important;
+    height: 24px !important;
+    right: 10px !important;
+    bottom: 6px !important;
+    top: auto !important;
+    left: auto !important;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/bisque_logo_gray.svg');
+    background-size: 90px;
+    background-position: 0px 0px;
+}
 
 /*******************************************************************************
  toolbar selecter

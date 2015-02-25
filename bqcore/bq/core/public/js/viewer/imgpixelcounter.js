@@ -1,15 +1,32 @@
 //modification to imageview
-function ImgPixelCounter(viewer,name) {
+/*
+*	ImgPixelCounter Viewer Plugin
+*
+*	Instantiates a ImgCurrentView for snap shots of the current 
+*	view to build. A pixel counter button is added to the operations
+*	menu.
+*
+*	@param: viewer - 
+*	@param: name - 
+*/
+function ImgPixelCounter(viewer, name) {
+
     this.base = ViewerPlugin;
-    this.base (viewer, name);
+    this.base(viewer, name);
 
     var p = viewer.parameters || {};
     this.default_threshold        = p.threshold || 0;
     this.default_autoupdate       = false;
-
+	
+	this.imgCurrentView = new ImgCurrentView(viewer, {
+		wGobjects: false,
+		wBorders: true,
+		wScaleBar: false,
+	});
+	
     var tb = this.viewer.toolbar;
     if (!tb) return;
-    var operations = tb.queryById('menu_viewer_operations');
+    var operations = tb.queryById('menu_viewer_operations'); 
     if (!operations) return;
     operations.menu.insert(1, {
         xtype  : 'menuitem',
@@ -18,74 +35,114 @@ function ImgPixelCounter(viewer,name) {
         handler: this.pixelCounter,
         scope  : this,
     });
+	
+	//set all the counts to 0
+	this.r0px = 0;//number of pixels equal or below the threshold (red)
+	this.r1px = 0;//number of pixels above the threshold
+	this.g0px = 0;//number of pixels equal or below the threshold (green)
+	this.g1px = 0;//number of pixels above the threshold
+	this.b0px = 0;//number of pixels equal or below the threshold (blue)
+	this.b1px = 0;//number of pixels above the threshold
 }
 
 
 ImgPixelCounter.prototype = new ViewerPlugin();
+
 
 ImgPixelCounter.prototype.create = function (parent) {
     this.parent = parent;
     return parent;
 };
 
+/*
+*	pixelCounter
+*
+*	Initializes the panels for the pixel counter and
+*	Hides the Tag Panel and attaches a close listener
+*	to the Pixel Counter Panel to destroy the Pixel
+*	Counter Panel and show the Tag Panel.
+*
+*/
 ImgPixelCounter.prototype.pixelCounter = function () {
-    if (!this.pixelCounterPanel) { //check if the pixel coutner panel exists
-        //var pixelCounterPlugin = this.viewer.plugins_by_name['pixelcounter'];
-         //hidding the panel
+    if (!this.pixelCounterPanel) { //check if the pixel counter panel exists
+	
+        
         var viewerTagPanel = this.viewer.parameters.main.queryById('tabs');
         viewerTagPanel.setVisible(false);
         var pixelcounterButton = this.viewer.toolbar.queryById('menu_viewer_pixel_counting');
         pixelcounterButton.setDisabled(true);
-        me = this;
+		
+        var me = this;
         //disable pixel counter menu
         this.pixelCounterPanel = Ext.create('BQ.Panel.PixelCounter',{
-            //width: this.viewer.parameters.main.queryById('tabs').width,
             pixelCounter: this,
             viewer: this.viewer,
             phys: this.viewer.imagephys,
             autoDestroy: false,
+			itemId: 'pixelcounter-panel',
+			id: 'pixelcounter-panel',
         });
-        this.pixelCounterPanel.on('close',function() {
-            this.resetPixelRegionCounter();
+		
+		// When close is called on the panel this listener will
+		// break down the panel and call back the tag viewer into
+		// view.
+        this.pixelCounterPanel.on('close', function() {
             this.destroyPixelCounterDisplay(); //destroys display when closed
             delete this.pixelCounterPanel; //remove the panel from ImgPixelCounter
-            this.changed(); //removes threshold from image
             viewerTagPanel.setVisible(true);
             pixelcounterButton.setDisabled(false); //enable pixel counter menu
             //brings back the metadata panel
-        },this)
+		}, this);
         this.viewer.parameters.main.queryById('viewer_container').add(this.pixelCounterPanel); //create panel
-
-    //pixelCounterPlugin
-    //switches disable to true
-    } //when broken down the item has to be removed from ImgExternal
-
+		this.initCanvas();
+		
+		// Adds a resize listener to the window to destroy the panel
+		// when a resize occurs. The pixel counter only takes a snap
+		// shot of a current view so any-time the view is changed the
+		// pixel counter will be destroyed.
+		window.addEventListener('resize', function() {
+			if (me.pixelCounterPanel) {
+				me.pixelCounterPanel.close();
+			}
+		});
+    }
 };
 
 
-//initalized 2 layers of canvas
-//initalized on the creation of the pixel counter panel
-//iinitlizs the pixel counter overlay
+/*
+*	initCanvas
+*	
+*	Creates and overlays 4 panels over the images viewer
+*
+*	1. The canvas image - an image constructed from 
+*	all the tiles in the view
+*	2. The canvas threshold - the threshold image of the
+*	canvas image
+*	3. The canvas mask - a mask that handles the clicks
+*	and shows the regions that have been selected.
+*	4. The SVG layer - shows the highlighted elements tag.
+*
+*/
 ImgPixelCounter.prototype.initCanvas = function() {
-    var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
+    
+	var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
+	
     if (!this.canvas_mask) {
-
         this.canvas_mask = document.createElement('canvas');
         this.canvas_mask.setAttributeNS(null, 'class', 'pixel_counter_canvas_mask');
         this.canvas_mask.setAttributeNS(null, 'id', 'pixel_counter_canvas_mask');
         this.canvas_mask.height = control_surface_size.height;
         this.canvas_mask.width = control_surface_size.width;
-        this.canvas_mask.style.zIndex = 305;
+        this.canvas_mask.style.zIndex = 310;
         this.canvas_mask.style.top = "0px";
         this.canvas_mask.style.left = "0px";
         this.canvas_mask.style.position = "absolute";
         this.ctx_imgmask = this.canvas_mask.getContext("2d");
-        this.canvas_mask.addEventListener("click",this.onClick.bind(this),false);
-        this.canvas_mask.style.visibility='hidden';
+        this.canvas_mask.addEventListener("click", this.onClick.bind(this), false);
         this.parent.appendChild(this.canvas_mask);
     }
 
-    if (!this.canvas_image ) {
+    if (!this.canvas_image) {
         this.canvas_image = document.createElement('canvas');
         this.canvas_image.setAttributeNS(null, 'class', 'pixel_counter_canvas_image');
         this.canvas_image.setAttributeNS(null, 'id', 'pixel_counter_canvas_image');
@@ -95,9 +152,22 @@ ImgPixelCounter.prototype.initCanvas = function() {
         this.canvas_image.style.top = "0px";
         this.canvas_image.style.left = "0px";
         this.canvas_image.style.position = "absolute";
-        this.canvas_image.style.visibility='hidden';
         this.ctx_img = this.canvas_image.getContext("2d");
         this.parent.appendChild(this.canvas_image);
+    }
+
+	if (!this.canvas_theshold) {
+        this.canvas_theshold = document.createElement('canvas');
+        this.canvas_theshold.setAttributeNS(null, 'class', 'pixel_counter_canvas_threshold');
+        this.canvas_theshold.setAttributeNS(null, 'id', 'pixel_counter_canvas_threshold');
+        this.canvas_theshold.height = control_surface_size.height;
+        this.canvas_theshold.width = control_surface_size.width;
+        this.canvas_theshold.style.zIndex = 305;
+        this.canvas_theshold.style.top = "0px";
+        this.canvas_theshold.style.left = "0px";
+        this.canvas_theshold.style.position = "absolute";
+        this.ctx_thresh = this.canvas_theshold.getContext("2d");
+        this.parent.appendChild(this.canvas_theshold);
     }
 
     //marking of the ids
@@ -111,198 +181,187 @@ ImgPixelCounter.prototype.initCanvas = function() {
         this.svgdoc.style.position = "absolute";
         this.svgdoc.style.top = "0px";
         this.svgdoc.style.left = "0px";
-        this.svgdoc.style.visibility='hidden';
-        this.svgdoc.style.zIndex = 310;
+        this.svgdoc.style.zIndex = 315;
         this.svgdoc.addEventListener("click",this.onClick.bind(this),false);
         this.parent.appendChild(this.svgdoc);
     }
+	
+	this.updateCanvas();
 };
 
-/*
-ImgPixelCounter.prototype.updataGlobalPixelCounterCanvas = function() {
-    var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
-    if (!this.canvas_image) {
-        this.canvas_image = document.createElement('canvas');
-        this.canvas_image.setAttributeNS(null, 'class', 'pixel_counter_canvas_image');
-        this.canvas_image.setAttributeNS(null, 'id', 'pixel_counter_canvas_image');
-        this.canvas_image.height = control_surface_size.height;
-        this.canvas_image.width = control_surface_size.width;
-        this.canvas_image.style.zIndex = 300;
-        this.canvas_image.style.top = "0px";
-        this.canvas_image.style.left = "0px";
-        this.canvas_image.style.position = "absolute";
-        this.canvas_image.style.visibility='hidden';
-        this.ctx_img = this.canvas_image.getContext("2d");
-        this.parent.appendChild(this.canvas_image);
-    }
-    var me = this;
-    function waitTillFinished() {
-        var finished = me.constructCanvasFromWell();
-        if (finished) {
-
-            me.imageData = me.ctx_img.getImageData(0, 0, me.canvas_image.width, me.canvas_image.height);
-            me.imagesrc = me.imageData.data;
-
-            //background of the image viewer
-            var globalThresholdCount = {r:{a:0,b:0},g:{a:0,b:0},b:{a:0,b:0}};
-
-            for (var i = 0; i<(me.canvas_image.width*me.canvas_image.height*4); i+=4) {
-                if (me.pixelCounterPanel.thresholdValue>me.imagesrc[i]) globalThresholdCount['r']['a']+=1;
-                else globalThresholdCount['r']['b']+=1;
-                if (me.pixelCounterPanel.thresholdValue>me.imagesrc[i+1]) globalThresholdCount['b']['a']+=1;
-                else globalThresholdCount['b']['b']+=1;
-                if (me.pixelCounterPanel.thresholdValue>me.imagesrc[i+2]) globalThresholdCount['g']['a']+=1;
-                else globalThresholdCount['g']['b']+=1;
-            }
-
-            me.pixelCounterPanel.updataGlobalPanel(globalThresholdCount);
-        }
-        else {
-            setTimeout(function(){waitTillFinished();}, 50);
-        }
-    }
-    waitTillFinished();
-
-
-
-}
-*/
 
 //updates when rescaling the images
 //pulls in the tiled images from the tile render
 //initalizes only on enable select
 //updates new canvas when enable select is disabled and enabled
+/*
+*	updateCanvas
+*
+*	Grabs the current view saves it in the image canvas and 
+*	applies a threshold and save the filtered image to the
+* 	threshold canvas.
+*/
 ImgPixelCounter.prototype.updateCanvas = function() {
     if (!this.canvas_image||!this.canvas_mask) {
         this.initCanvas();
     }
 
     // load image from data url
-    this.canvas_mask.style.visibility='hidden';
     this.viewer.parameters.main.viewerContainer.setLoading(true);
-    //var finished = this.constructCanvasFromWell(); //returns false if the image view is not
     var me = this;
 
-    function waitTillFinished() {
-        var finished = me.constructCanvasFromWell();
-        if (finished) {
-            me.viewer.parameters.main.viewerContainer.setLoading(false);
-            me.canvas_mask.style.visibility='visible';
-            me.returnFromCanvas();
-        }
-        else {
-            setTimeout(function(){waitTillFinished();}, 50);
-        }
-    }
-    waitTillFinished();
+	var level = this.imgCurrentView.getCurrentLevel();
+	this.imgCurrentView.setLevel(level);
+	
+	//get canvas back and build threshold
+	function callback(canvas_view) {
+	
+		me.viewer.parameters.main.viewerContainer.setLoading(false);
+		var ctx_img = me.canvas_image.getContext("2d");
+		ctx_img.drawImage(canvas_view, 0, 0, me.canvas_image.width, me.canvas_image.height)
+		me.updateThresholdCanvas();
+		
+	}
+	
+	this.imgCurrentView.returnCurrentView(callback); // expensive
 };
 
+/*
+*	updateThresholdCanvas
+*
+*	Resets the threshold canvas by setting all the pixel values to
+* 	gray, opacity 0. The opacity is set to 1 for all the pixels
+*	on the tileviewer.
+*/
+ImgPixelCounter.prototype.updateThresholdCanvas = function() {
+	if (this.canvas_theshold) {
+		var renderer = this.viewer.plugins_by_name['renderer'];
+		var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer;
+		var ctx_thresh = this.canvas_theshold.getContext("2d");
+		
+		//set transparency of the threshold convas to the location of the view
+		ctx_thresh.fillStyle = 'rgba(67, 67, 67, 0)';
+		ctx_thresh.fillRect(0, 0, this.canvas_theshold.width, this.canvas_theshold.height); //set all transparent
+		
+		var width = parseInt(renderer.overlay.style.width, 10);
+		var height = parseInt(renderer.overlay.style.height, 10);
+		
+		//getting the viewer offsets
+		if (parseInt(renderer.overlay.style.left, 10)>0)
+			var xoffset = parseInt(renderer.overlay.style.left, 10);
+		else {
+			var xoffset = 0;
+		}
+		
+		if (parseInt(renderer.overlay.style.top, 10)>0)
+			var yoffset = parseInt(renderer.overlay.style.top, 10);
+		else {
+			var yoffset = 0;
+		}
+		if ((parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10)) > tiled_viewer.height) {
+			var height = height - (parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10) - tiled_viewer.height);
+		}
+		
+		if ((parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10)) > tiled_viewer.width) {
+			var width = width - (parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10) - tiled_viewer.width);
+		}
+		
+		ctx_thresh.fillStyle = 'rgba(67, 67, 67, 1)';
+		ctx_thresh.fillRect(xoffset, yoffset, width, height); //set view none transparent
+		this.thresholdImage(this.pixelCounterPanel.thresholdValue);
+	}
+}
 
-ImgPixelCounter.prototype.returnFromCanvas = function() {
-    if (this.ctx_img) {
-        this.imageData = this.ctx_img.getImageData(0, 0, this.canvas_image.width, this.canvas_image.height);
-        this.imagesrc = this.imageData.data;
-    }
-    if (this.ctx_imgmask) {
-        this.ctx_imgmask.createImageData(this.canvas_mask.height,this.canvas_mask.width);
-        this.maskData = this.ctx_imgmask.getImageData(0, 0, this.canvas_mask.width, this.canvas_mask.height);
-        this.masksrc = this.maskData.data;
-    }
-};
+/*
+*	thresholdImage
+*	
+*	Thresholds Image and write it to the threshold canvas and resets the global pixel counts
+*
+*	@param: value_th - the threshold value
+*/
+ImgPixelCounter.prototype.thresholdImage = function(value_th) {
+	
+	var ctx_thresh = this.canvas_theshold.getContext("2d");
+	var threshData = ctx_thresh.getImageData(0, 0, this.canvas_theshold.width, this.canvas_theshold.height);
+	var td = threshData.data;
+	
+	var ctx_img = this.canvas_image.getContext("2d");
+	var imageData = ctx_img.getImageData(0, 0, this.canvas_image.width, this.canvas_image.height);
+	var id = imageData.data;
+	
+	//reset global pixel counters
+	this.r0px = 0;
+	this.r1px = 0;
+	this.g0px = 0;
+	this.g1px = 0;
+	this.b0px = 0;
+	this.b1px = 0;
+	
+	//threshold and count the pixels
+	for (var i=0; i<id.length; i+=4) {
+		if (td[i+3] > 0) { // alpha
+			if (id[i] > value_th) { //red
+				td[i] = 255;
+				this.r1px += 1;
+			} else {
+				td[i] = 0;
+				this.r0px += 1;
+			}
+			if (id[i+1] > value_th) { //green
+				td[i+1] = 255
+				this.g1px += 1;
+			} else {
+				td[i+1] = 0;
+				this.g0px += 1;	
+			}
+			if (id[i+2] > value_th) { //blue
+				td[i+2] = 225
+				this.b1px += 1;
+			} else {
+				td[i+2] = 0;
+				this.b0px += 1;	
+			}
+		}
+	}
+	ctx_thresh.putImageData(threshData, 0, 0);
+	
+	var scale = this.viewer.view().scale;
+	
+	//scale the pixels by the view at the time
+	this.r0px *= scale;
+	this.r1px *= scale;
+	this.g0px *= scale;
+	this.g1px *= scale;
+	this.b0px *= scale;
+	this.b1px *= scale;
+	
+	
+	if (this.pixelCounterPanel) {
+		this.pixelCounterPanel.updataGlobalPanel();
+	}
+}
 
 
-//looks through all the images in the well returns true if all the images where loaded properly
-ImgPixelCounter.prototype.constructCanvasFromWell = function() {
-
-    var control_surface_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
-    var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
-
-    //iterorate through all the tiles to find the tiles in the viewer
-    var inViewImages = [];
-    var tile_tops = [];
-    var tile_bottoms = [];
-    var tile_rights = [];
-    var tile_lefts = [];
-
-    for (var i = 0; i<tiled_viewer.well.childElementCount; i++) {
-        var tile_size = tiled_viewer.well.children[i].getBoundingClientRect();
-        if (
-            //if edge
-            ((tile_size.right <= control_surface_size.right && tile_size.right >= control_surface_size.left)||
-            (tile_size.left >= control_surface_size.left && tile_size.left <= control_surface_size.right)) &&
-            ((tile_size.bottom <= control_surface_size.bottom && tile_size.bottom >= control_surface_size.top) ||
-            (tile_size.top >= control_surface_size.top && tile_size.top <= control_surface_size.bottom)) ||
-            //if line
-            (tile_size.right <= control_surface_size.right && tile_size.right >= control_surface_size.left &&
-             tile_size.top <= control_surface_size.top && tile_size.bottom >= control_surface_size.bottom) ||
-            (tile_size.bottom <= control_surface_size.bottom && tile_size.bottom >= control_surface_size.top &&
-             tile_size.left <= control_surface_size.left && tile_size.right >= control_surface_size.right) ||
-            (tile_size.left >= control_surface_size.left && tile_size.left <= control_surface_size.right &&
-             tile_size.top <= control_surface_size.top && tile_size.bottom >= control_surface_size.bottom) ||
-            (tile_size.top >= control_surface_size.top && tile_size.top <= control_surface_size.bottom &&
-             tile_size.left <= control_surface_size.left && tile_size.right >= control_surface_size.right) ||
-            //if inside
-            (tile_size.right >= control_surface_size.right && tile_size.left <= control_surface_size.left &&
-             tile_size.bottom >= control_surface_size.bottom && tile_size.top <= control_surface_size.top)
-
-            ) {
-
-            if (tiled_viewer.well.children[i].className=='tile') {
-                inViewImages.push(tiled_viewer.well.children[i]); //add to the list
-                tile_tops.push(tile_size.top);
-                tile_bottoms.push(tile_size.bottom);
-                tile_lefts.push(tile_size.left);
-                tile_rights.push(tile_size.right);
-            }
-        }
-    }
-
-    //sizing the canvas
-    this.image_view_top = tile_tops.min(); //finding the top most tile
-    this.image_view_left = tile_lefts.min();
-    this.image_view_right = tile_rights.max();
-    this.image_view_bottom = tile_bottoms.max();
-
-    //draw width offsets on to the canvas
-    this.ctx_img.createImageData(this.canvas_image.height,this.canvas_image.width);
-    this.imageData = this.ctx_img.getImageData(0, 0, this.canvas_image.width, this.canvas_image.height);
-    this.imagesrc = this.imageData.data;
-
-    //reset image
-    this.resetimage();
-    this.ctx_img.putImageData(this.imageData,0,0);
-
-    for (var i = 0; i<inViewImages.length ; i++){
-        var yoffset = parseInt(inViewImages[i].style.top);
-        var xoffset = parseInt(inViewImages[i].style.left);
-        var scaled_imgwidth = inViewImages[i].width;
-        var scaled_imgheight = inViewImages[i].height;
-        //var scale = this.viewer.view().scale;
-        if (location.origin+this.viewer.plugins_by_name['tiles'].tiled_viewer.loadingTile==inViewImages[i].src) { // a tile is not completely loaded
-            return false
-        }
-        this.ctx_img.drawImage(inViewImages[i], xoffset, yoffset,scaled_imgwidth,scaled_imgheight);
-    }
-    return true
-};
-
-
-//destroy canvas panel when pixel counter panen is destroy
+/*
+*	destroyPixelCounterDisplay
+*
+*	Removes all the 4 elements from the viewer
+*/
 ImgPixelCounter.prototype.destroyPixelCounterDisplay = function() {
-    var pixelCounterCanvasMask = document.getElementById('pixel_counter_canvas_mask');
-    var pixelCounterCanvasImage = document.getElementById('pixel_counter_canvas_image');
-    var pixelCounterSGVOverlay = document.getElementById('pixel_counter_svg_id_label_surface');
-
-    if (pixelCounterCanvasMask) {
-        pixelCounterCanvasMask.remove();
+    if (this.canvas_mask) {
+        this.canvas_mask.remove();
         delete this.canvas_mask;
     }
-    if (pixelCounterCanvasImage){
-        pixelCounterCanvasImage.remove();
+    if (this.canvas_image){
+        this.canvas_image.remove();
         delete this.canvas_image;
     }
-    if (pixelCounterSGVOverlay){
-        pixelCounterSGVOverlay.remove();
+    if (this.canvas_theshold){
+        this.canvas_theshold.remove();
+        delete this.canvas_theshold;
+    }
+    if (this.svgdoc){
+        this.svgdoc.remove();
         delete this.svgdoc;
     }
 };
@@ -312,40 +371,13 @@ ImgPixelCounter.prototype.newImage = function () {
     this.phys_inited = false;
 };
 
-
+/*
+*	updateImage
+*
+*	A callback when the image in the viewer is changed.
+*
+*/
 ImgPixelCounter.prototype.updateImage = function () {
-    var view = this.viewer.current_view;
-    //check if pixel counter panel is there
-    if (this.pixelCounterPanel) {
-        if (this.pixelCounterPanel.thresholdMode) {
-
-            if (this.pixelCounterPanel.selectMode) {
-                this.updateCanvas(); //if canvas isnt initalized, will initalize canvas
-                this.canvas_mask.style.visibility = 'visible'; //
-                this.canvas_image.style.visibility = 'visible';
-                this.svgdoc.style.visibility = 'visible';
-                this.pixelCounterPanel.updateRegionPanel();
-
-            } else {
-                if (this.canvas_mask) {
-                    this.canvas_mask.style.visibility = 'hidden';
-                    this.canvas_image.style.visibility = 'hidden';
-                    this.svgdoc.style.visibility = 'hidden';
-                    this.resetPixelRegionCounter();
-
-                }
-                this.pixelCounterPanel.lookupThreshold();
-            }
-        } else {
-            this.pixelCounterPanel.lookupThreshold();
-            if (this.canvas_mask) {
-                this.canvas_mask.style.visibility = 'hidden';
-                this.canvas_image.style.visibility = 'hidden';
-                this.svgdoc.style.visibility = 'hidden';
-                this.resetPixelRegionCounter();
-            }
-        }
-    }
 };
 
 
@@ -356,30 +388,43 @@ ImgPixelCounter.prototype.getParams = function () {
 //check if threshold mode is on to redraw image
 //or if selection mode is on the redraw canvas and push it to the front
 ImgPixelCounter.prototype.updateView = function (view) {
-    if (this.pixelCounterPanel && this.pixelCounterPanel.thresholdMode)
-        view.addParams('threshold='+this.pixelCounterPanel.thresholdValue+',both');
+    ///if (this.pixelCounterPanel && this.pixelCounterPanel.thresholdMode)
+    //    view.addParams('threshold='+this.pixelCounterPanel.thresholdValue+',both');
 };
 
 
-
+/*
+*	onClick
+*
+*	Retrieves the points from a click event and maps
+*	it to the tile viewer. If that point has not been
+*	selected indicated by the mask a connected components
+* 	is run from that point on the threshold filtered image and 
+* 	written to the mask.
+*/
 ImgPixelCounter.prototype.onClick = function(e) {
 
     //find the offsets to canvas
     //set loading when clicked
+	
+	var ctx_imgmask = this.canvas_mask.getContext("2d");
+    var maskData = ctx_imgmask.getImageData(0, 0, this.canvas_mask.width, this.canvas_mask.height);
+    var mask_data = maskData.data;	
+
+	var ctx_thresh = this.canvas_theshold.getContext("2d")
+    var threshData = ctx_thresh.getImageData(0, 0, this.canvas_theshold.width, this.canvas_theshold.height);
+    var thresh_data = threshData.data;	
 
     var xClick = e.pageX-parseInt(this.canvas_mask.style.left)-this.viewer.plugins_by_name['tiles'].tiled_viewer.left; //clicks mapped to canvas
     var yClick = e.pageY-parseInt(this.canvas_mask.style.top)-this.viewer.plugins_by_name['tiles'].tiled_viewer.top; //clicks mapped to canvas
 
-    if(!(!(this.image_view_top<e.pageY&&this.image_view_bottom>e.pageY)||!(this.image_view_left<e.pageX&&this.image_view_right>e.pageX))){ //check if the click is on the image
-        if (this.masksrc[4*(yClick*this.canvas_mask.width+xClick)+3]!=255) { //check to see if region has already been selected
-            this.canvas_mask.style.visibility = 'hidden';
+	if (thresh_data[4*(yClick*this.canvas_mask.width+xClick)+3]==255) {
+        if (mask_data[4*(yClick*this.canvas_mask.width+xClick)+3]!=255) { //check to see if region has already been selected
             this.viewer.parameters.main.viewerContainer.setLoading(true);
             var me = this;
             setTimeout(function(){ //set time out to allow for the loading screen to be shown
                me.connectedComponents(xClick,yClick);
                me.viewer.parameters.main.viewerContainer.setLoading(false);
-               me.canvas_mask.style.visibility = 'visible';
-
             },5);
         }
     }
@@ -391,6 +436,19 @@ ImgPixelCounter.prototype.onClick = function(e) {
  *      Connected components
  *
  *************************************/
+ 
+/*
+*	index2xy
+*
+*	Converts a single index value to (x,y)
+*	coordinates on the canvas.
+*
+*	@param: index - the index of a pixel on the canvas
+*	plain
+*
+*	@return: {x: - x coordinate in canvas
+*			 y: - y coordinate in canvas}
+*/
 ImgPixelCounter.prototype.index2xy = function(index) {
 
     index = parseInt(index);
@@ -400,6 +458,20 @@ ImgPixelCounter.prototype.index2xy = function(index) {
 
 };
 
+/*
+*	setText2SVG
+*	
+*	Creates a new text element and attaches 
+* 	provided attributes with style : 
+*		font-family:Arial;font-size: 14; fill:blue; text-shadow: #FFFFFF 1px 1px 1px
+*	to the SVG Document
+*
+*	@param: text - text to be applied at given 
+*	@param: id - set element id
+*	@param: x - set x coordinate in the SVG space
+*	@param: y = set y coordinate in the SVG space
+*
+*/
 ImgPixelCounter.prototype.setText2SVG = function(text,id,x,y) {
     var textelement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     textelement.setAttribute("id", id);
@@ -408,24 +480,31 @@ ImgPixelCounter.prototype.setText2SVG = function(text,id,x,y) {
     textelement.setAttribute('style', "font-family:Arial;font-size: 14; fill:blue; text-shadow: #FFFFFF 1px 1px 1px ;");//rgba(0,0,0,0.1) #FFFFFF
     textelement.textContent = text;
     this.svgdoc.appendChild(textelement);
-    //textelement.addEventListener("click", svgclick, false);
-    //textelement.addEventListener("keypress", onkeypress, false);
 };
 
-ImgPixelCounter.prototype.removeTextFromSVG = function(id){
-    var svgTextElement = this.svgdoc.getElementById(id);
 
-    if(svgTextElement) this.svgdoc.removeChild(svgTextElement);
-};
 
+/*
+*	connectedComponents
+*
+*	Set the region defined by the connected components to magenta with
+*	an opacity of 1 and set the place where the click occurred with to 
+*	the current idcount of selected elements.
+*
+*	@param: x  - x coordinate of the point to seed the connected components
+*	@param: y  - y coordinate of the point to seed the connected components
+*/
 ImgPixelCounter.prototype.connectedComponents = function(x,y) {
 
-    var maskColor = {r:255,g:0,b:255}; //magenta
-    var transparency = 255;
+    var maskColor = {r:255, g:0, b:255, a:225}; //magenta
 
-    //this.resetmask();
-    this.masksrc = this.maskData.data;
-
+	var ctx_imgmask = this.canvas_mask.getContext("2d");
+    var maskData = ctx_imgmask.getImageData(0, 0, this.canvas_mask.width, this.canvas_mask.height);
+    var mask_data = maskData.data;
+	
+	var ctx_thresh = this.canvas_theshold.getContext("2d")
+    var threshData = ctx_thresh.getImageData(0, 0, this.canvas_theshold.width, this.canvas_theshold.height);
+    var thresh_data = threshData.data;
 
     var edge_points_queue = new Array();
 
@@ -433,25 +512,19 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
 
     edge_points_queue.push(seed);
     var label_list = {
-        r:(this.imagesrc[seed]>=128),
-        g:(this.imagesrc[seed+1]>=128),
-        b:(this.imagesrc[seed+2]>=128)
+        r:(thresh_data[seed] >= 128),
+        g:(thresh_data[seed+1] >= 128),
+        b:(thresh_data[seed+2] >= 128)
     };
-    var label = this.imagesrc[seed];
-    if (
-        typeof label_list.r === "undefined"||
-        typeof label_list.g === "undefined"||
-        typeof label_list.b === "undefined"
-        ){
-        return
-    }
+	
     var count = 0;
     while (edge_points_queue.length>0) {
-        this.checkNeighbors(edge_points_queue,label_list,transparency, maskColor);
+        this.checkNeighbors(edge_points_queue, label_list, maskColor, thresh_data, mask_data);
         count+=1;
     }
 
-    this.ctx_imgmask.putImageData(this.maskData,0,0);
+    ctx_imgmask.putImageData(maskData, 0, 0);
+	
     // remap
     var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
     var p = tiled_viewer.toImageFromViewer({x: x - tiled_viewer.x, y: y - tiled_viewer.y});
@@ -463,123 +536,145 @@ ImgPixelCounter.prototype.connectedComponents = function(x,y) {
 
     if (phys.isPixelResolutionValid()) {
         var area = (parseFloat(scaled_count)*parseFloat(phys.pixel_size[0])*parseFloat(phys.pixel_size[1])).toFixed(2);
-        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.idCount, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y,svgid:'svg_text_element_'+(this.pixelCounterPanel.idCount), area:area});
+        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.idCount, pixels:scaled_count, x:p.x, y:p.y, xclick:x, yclick:y,svgid:'svg_text_element_' + (this.pixelCounterPanel.idCount), area:area});
     } else {
-        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.idCount, pixels:scaled_count, x:p.x, y:p.y, xclick:x,yclick:y,svgid:'svg_text_element_'+(this.pixelCounterPanel.idCount)});
+        this.pixelCounterPanel.regionCount.push({index:this.pixelCounterPanel.idCount, pixels:scaled_count, x:p.x, y:p.y, xclick:x, yclick:y, svgid:'svg_text_element_' + (this.pixelCounterPanel.idCount)});
     }
 
     //update svg element
     this.setText2SVG((this.pixelCounterPanel.idCount).toString(),'svg_text_element_'+(this.pixelCounterPanel.idCount),x,y)
-    this.pixelCounterPanel.idCount+=1; //setting for the next region
+    this.pixelCounterPanel.idCount += 1; //setting for the next region
     this.pixelCounterPanel.updateRegionPanel();
 };
 
 
 //removing the connected component marked region
+/*
+*	undoConnectedComponents
+*
+*	Set the region defined by the connected components to black with
+*	an opacity of 0 and removed the tag from the SVG layer of the provided
+*	id.
+*
+*	@param: x  - x coordinate of the point to seed the connected components
+*	@param: y  - y coordinate of the point to seed the connected components
+*	@param: id - the id of the tag in the SVG layer
+*/
 ImgPixelCounter.prototype.undoConnectedComponents = function(x,y,id) {
 
-    var transparency = 0; //making mask transparent
-    var maskColor = {r:0,g:0,b:255,a:0}; //set to black
-
-    //this.resetmask();
-    this.maskData = this.ctx_imgmask.getImageData(0, 0, this.canvas_mask.width, this.canvas_mask.height);
-    this.masksrc = this.maskData.data;
-
+    var maskColor = {r:0, g:0, b:0, a:0}; //set to black
+	
+	var ctx_imgmask = this.canvas_mask.getContext("2d");
+    var maskData = ctx_imgmask.getImageData(0, 0, this.canvas_mask.width, this.canvas_mask.height);
+    var mask_data = maskData.data;
+	
+	var ctx_thresh = this.canvas_theshold.getContext("2d")
+    var threshData = ctx_thresh.getImageData(0, 0, this.canvas_theshold.width, this.canvas_theshold.height);
+    var thresh_data = threshData.data;	
+	
     var edge_points_queue = new Array();
-
     var seed = 4*(y*this.canvas_image.width+x); //enforce channel zero
 
     edge_points_queue.push(seed);
     var label_list = {
-        r:(this.imagesrc[seed]>=128),
-        g:(this.imagesrc[seed+1]>=128),
-        b:(this.imagesrc[seed+2]>=128)
+        r : (thresh_data[seed] >= 128),
+        g : (thresh_data[seed+1] >= 128),
+        b : (thresh_data[seed+2] >= 128)
     };
-    var label = this.imagesrc[seed];
-    if (
-        typeof label_list.r === "undefined"||
-        typeof label_list.g === "undefined"||
-        typeof label_list.b === "undefined"
-        ){
-        return
-    }
-    //var count = 0;
+	
     while (edge_points_queue.length>0) {
-        this.checkNeighbors(edge_points_queue,label_list,transparency,maskColor);
-        //this.ctx_imgmask.putImageData(this.maskData,0,0);
-        //count+=1;
+        this.checkNeighbors(edge_points_queue, label_list, maskColor, thresh_data, mask_data);
     }
     this.removeTextFromSVG(id);
-    this.ctx_imgmask.putImageData(this.maskData,0,0);
+    ctx_imgmask.putImageData(maskData, 0, 0);
     this.pixelCounterPanel.updateRegionPanel();
 };
 
-
-ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue,label_list, transparency, maskColor) {
+/*
+*	checkNeighbors
+*
+*	
+*
+*	@param: edge_points_queue
+*	@param: label_list
+*	@param: maskColor
+* 	@param: threshold_data
+*	@param: mask_data
+*/
+ImgPixelCounter.prototype.checkNeighbors = function(edge_points_queue, label_list, maskColor, threshold_data, mask_data) {
     //Find the connected component
     //uses the transparency as a marker for past check pixels
-
+	
     var edge_index = parseInt(edge_points_queue.shift());
 
     //set color of the mask
-    this.masksrc[edge_index]   = maskColor.r;
-    this.masksrc[edge_index+1] = maskColor.g;
-    this.masksrc[edge_index+2] = maskColor.b;
-    //this.masksrc[edge_index+3] = 255; //set transparency
-
-    edge_value = this.index2xy(edge_index);
+    mask_data[edge_index]   = maskColor.r;
+    mask_data[edge_index+1] = maskColor.g;
+    mask_data[edge_index+2] = maskColor.b;
+	mask_data[edge_index+3] = maskColor.a;
+	
+    var edge_value = this.index2xy(edge_index);
 
     //check neighbors
-    x = edge_value.x;
-    y = edge_value.y;
-    var control_surface_size =  this.viewer.viewer_controls_surface.getBoundingClientRect();
-    if (x+1 < this.canvas_image.width && x+1 < this.image_view_right-control_surface_size.left) { //check if out of the image
-        var new_edge_index = edge_index+4; //check on pixel infont
-        if ((this.imagesrc[new_edge_index]>=128) == label_list.r &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list.g &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list.b &&
-            this.masksrc[new_edge_index+3] != transparency ) { //has been put in the queue at sometime
+	var new_edge_index = edge_index + 4; //check right
+    if (threshold_data[new_edge_index+3] == 255) { //check if out of the image
+        if ((threshold_data[new_edge_index]>=128) == label_list.r &&
+            (threshold_data[new_edge_index+1]>=128) == label_list.g &&
+            (threshold_data[new_edge_index+2]>=128) == label_list.b &&
+            mask_data[new_edge_index+3] != maskColor.a ) { //has been put in the queue at sometime
             edge_points_queue.push(new_edge_index); //check transparency to see if it
-            this.masksrc[new_edge_index+3] = transparency; //set transparency
+            mask_data[new_edge_index+3] = maskColor.a; //set transparency
+        }
+    }
+	
+	var new_edge_index = edge_index-4; //check left
+    if (threshold_data[new_edge_index+3] == 255) { //check if out of the image
+        if ((threshold_data[new_edge_index]>=128) == label_list.r &&
+            (threshold_data[new_edge_index+1]>=128) == label_list.g &&
+            (threshold_data[new_edge_index+2]>=128) == label_list.b &&
+            mask_data[new_edge_index+3] != maskColor.a ) {
+            edge_points_queue.push(new_edge_index);
+            mask_data[new_edge_index+3] = maskColor.a; //set transparency
+        }
+    }
+	
+	var new_edge_index = edge_index+this.canvas_image.width*4; //check above
+    if (threshold_data[new_edge_index+3] == 255) { //check if out of the image
+        if ((threshold_data[new_edge_index]>=128) == label_list.r &&
+            (threshold_data[new_edge_index+1]>=128) == label_list.g &&
+            (threshold_data[new_edge_index+2]>=128) == label_list.b &&
+            mask_data[new_edge_index+3] != maskColor.a  ) {
+            edge_points_queue.push(new_edge_index);
+            mask_data[new_edge_index+3] = maskColor.a; //set transparency
         }
     }
 
-    if (0 <= x-1 && x-1 >= this.image_view_left-control_surface_size.left) { //check if out of the image
-        var new_edge_index = edge_index-4; //check on pixel behind
-        if ((this.imagesrc[new_edge_index]>=128) == label_list.r &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list.g &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list.b &&
-            this.masksrc[new_edge_index+3] != transparency ) {
+	var new_edge_index = edge_index-this.canvas_image.width*4; //check below
+    if (threshold_data[new_edge_index+3] == 255) { //check if out of the image
+        if ((threshold_data[new_edge_index]>=128) == label_list.r &&
+            (threshold_data[new_edge_index+1]>=128) == label_list.g &&
+            (threshold_data[new_edge_index+2]>=128) == label_list.b &&
+            mask_data[new_edge_index+3] != maskColor.a )  {
             edge_points_queue.push(new_edge_index);
-            this.masksrc[new_edge_index+3] = transparency; //set transparency
-        }
-    }
-
-    if (y+1 < this.canvas_image.height && y+1 < this.image_view_bottom-control_surface_size.top) { //check if out of the image
-        var new_edge_index = edge_index+this.canvas_image.width*4; //check on pixel above
-        if ((this.imagesrc[new_edge_index]>=128) == label_list.r &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list.g &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list.b &&
-            this.masksrc[new_edge_index+3] != transparency  ) {
-            edge_points_queue.push(new_edge_index);
-            this.masksrc[new_edge_index+3] = transparency; //set transparency
-        }
-    }
-
-    if (0 <= y-1 && y-1 >= this.image_view_top-control_surface_size.top) { //check if out of the image
-        var new_edge_index = edge_index-this.canvas_image.width*4; //check on pixel below
-        if ((this.imagesrc[new_edge_index]>=128) == label_list.r &&
-            (this.imagesrc[new_edge_index+1]>=128) == label_list.g &&
-            (this.imagesrc[new_edge_index+2]>=128) == label_list.b &&
-            this.masksrc[new_edge_index+3] != transparency )  {
-            edge_points_queue.push(new_edge_index);
-            this.masksrc[new_edge_index+3] = transparency; //set transparency
+            mask_data[new_edge_index+3] = maskColor.a; //set transparency
         }
     }
 };
 
 
+/******************************
+*
+*	Reset Elements
+*
+*******************************/
+
+
 //resets all the elements to the base level
+/*
+*	resetPixelRegionCounter
+*
+*	Resets mask, svg layer, and resets the region count.
+*/
 ImgPixelCounter.prototype.resetPixelRegionCounter = function() {
     this.resetsvg();
     this.resetmask();
@@ -588,24 +683,13 @@ ImgPixelCounter.prototype.resetPixelRegionCounter = function() {
 };
 
 
-//sets the background to the same color as the tile viewer
-ImgPixelCounter.prototype.resetimage = function() {
-
-    //background of the image viewer
-
-    var imgViewerBackground = {r:67, g:67, b:67, a:255};
-    if (this.canvas_image) {
-        for (var i = 0; i<(this.canvas_image.width*this.canvas_image.height*4); i+=4) {
-            this.imagesrc[i]     = imgViewerBackground.r; //r
-            this.imagesrc[i+1]   = imgViewerBackground.g; //g
-            this.imagesrc[i+2]   = imgViewerBackground.b; //b
-            this.imagesrc[i+3]   = imgViewerBackground.a;//a
-        }
-    }
-};
-
-
 //removes all child elements
+/*
+*	resetsvg
+*
+*	Iterates through the children of the SVG
+*	elements and removes them.
+*/
 ImgPixelCounter.prototype.resetsvg = function() {
     if(this.svgdoc) {
         while(this.svgdoc.firstChild) {this.svgdoc.removeChild(this.svgdoc.firstChild);}
@@ -614,19 +698,29 @@ ImgPixelCounter.prototype.resetsvg = function() {
 
 
 //sets all values in the mask to 0
+/*
+*	resetmask
+*
+*	Sets mask to black and the opacity to 0.
+*/
 ImgPixelCounter.prototype.resetmask = function() {
     if (this.canvas_mask) {
-        this.masksrc = this.maskData.data;
-        for(var i = 0; i<(this.canvas_mask.width*this.canvas_mask.height*4); i++) {this.masksrc[i] = 0;}
-        this.ctx_imgmask.putImageData(this.maskData,0,0);
+		var ctx_imgmask = this.canvas_mask.getContext("2d");
+		ctx_imgmask.fillStyle = "rgba(0, 0, 0, 0)";
+		ctx_imgmask.clearRect(0, 0, this.canvas_mask.width, this.canvas_mask.height); //set all transparent	
     }
 };
 
-
-ImgPixelCounter.prototype.onError = function(error) {
-    //BQApp.setLoading(false);
-    BQ.ui.error('Error fetching resource: <br>' + error.message);
-    //this.initPixelCounter();
+/*
+*	removeTextFromSVG
+*
+*	Removes the id tag from the SVG layer based on it id value.
+*
+*	@param: id - the id number of the SVG element being removed
+*/
+ImgPixelCounter.prototype.removeTextFromSVG = function(id){
+    var svgTextElement = this.svgdoc.getElementById(id);
+    if(svgTextElement) this.svgdoc.removeChild(svgTextElement);
 };
 
 
@@ -640,7 +734,6 @@ ImgPixelCounter.prototype.loadPreferences = function (p) {
 };
 
 
-
 Ext.define('BQ.Panel.PixelCounter', {
     extend: 'Ext.Panel',
     itemId: 'pixelcounter-panel',
@@ -649,16 +742,14 @@ Ext.define('BQ.Panel.PixelCounter', {
     layout: { type: 'vbox', pack: 'start', align: 'stretch' },
     viewer: null,//requiered viewer initialized object
     activeTab : 0,
-    //border : false,
     bodyBorder : 0,
-    split : true,
+    //split : true,
+	fixed: true,
     width : 400,
     plain : true,
     autoScroll: true,
-    thresholdMode: true,
-    selectMode : false,
     thresholdValue: 128,
-    channel_names: { 0: 'red', 1: 'green', 2: 'blue' },
+    //channel_names: { 0: 'red', 1: 'green', 2: 'blue' },
     regionCount: [],
     idCount: 0, //keeps track of the ids for each region
 
@@ -667,71 +758,46 @@ Ext.define('BQ.Panel.PixelCounter', {
         this.items = []; //reset panel items
         this.regionCount = []; //reset regionCount
 
-        var thresholdSlider = Ext.create('Ext.slider.Single',{
+        this.thresholdSlider = Ext.create('Ext.slider.Single',{
             width: '85%',
             fieldLabel: 'Threshold Value',
             value: this.thresholdValue,
             increment: 1,
             minValue: 0, //needs to adjust with the image
             maxValue: 256,    //needs to adjust with the image
-            hysteresis: 100,  // delay before firing change event to the listener
+            hysteresis: 250,  // delay before firing change event to the listener
+			padding: '16px',
             listeners: {
                 scope: this,
                 afterrender: function() { //populate panel
-                    this.lookupThreshold();
                 },
                 change : function(self,event,thumb){
                     //set a delay to refresh the values on the panel
-                    if (thresholdSlider.event_timeout) clearTimeout (thresholdSlider.event_timeout);
-                    var me=this;
-                    thresholdSlider.event_timeout = setTimeout(function(){
-                        //this.me.threshold_value.setValue(thumb.value.toString());
+                    if (this.thresholdSlider.event_timeout) clearTimeout (this.thresholdSlider.event_timeout);
+                    var me = this;
+                    this.thresholdSlider.event_timeout = setTimeout(function(){
+						//clear the regional pixel count store
+						me.pixelCounter.resetPixelRegionCounter();
+						me.updateRegionPanel();
                         me.thresholdValue = thumb.value.toString(); //set pixel counter value
-                        me.selectMode = false; //reset flag
-                        me.pixelCounter.changed();
-                    },  thresholdSlider.hysteresis );
+						me.pixelCounter.thresholdImage(me.thresholdValue);
+                    },  this.thresholdSlider.hysteresis );
                 }
             }
         });
 
-        this.thresholdPanel = Ext.create('Ext.container.Container',{
+        this.globalCountInfo = Ext.create('Ext.container.Container',{
             itemId : 'px_threshold_panel',
             borders: false,
             frame: false,
             cls: 'thresholdelements',
+			padding: '8px',
             items: [{
-                    xtype: 'box',
-                    html: '<h2>Global Counts</h2><p>Move the slider to set a threshold value. The pixel counts above and below the threshold will be computed from the fused RGB image in the viewer per channel.</p>',
-                    cls: 'threshold',
-                },{ //threshold checkbox
-                    itemId : 'threshold_checkbox',
-                    xtype: 'checkbox',
-                    fieldLabel: 'View Threshold',
-                    checked   : true,
-                    listeners: {
-                        scope: this,
-                        change: function(self,newValue,oldValue) {
-                            this.thresholdMode = !this.thresholdMode;
-                            this.pixelCounter.changed();
-                        }
-                    },
-                },
-                thresholdSlider
+				xtype: 'box',
+				html: '<h2>Global Counts</h2><p>Move the slider to set a threshold value. The pixel counts above and below the threshold will be computed from the fused RGB image in the viewer per channel.</p>',
+				cls: 'threshold',
+            },
              ],
-        });
-
-        this.selectPanel = Ext.create('Ext.container.Container',{
-            layout: 'fit',
-            html : '<h2>Regional Counts</h2><p>Click on any part of the image to segment out a region. The pixel count will be displayed below.</p>',
-            itemId : 'px_selectinfo_panel',
-            cls: 'threshold',
-        });
-
-        this.thresholdInfoPanel = Ext.create('Ext.container.Container', {
-            //layout: 'fit',
-            html: '',
-            cls: 'threshold',
-            //ayout: 'anchor',
         });
 
 
@@ -750,12 +816,14 @@ Ext.define('BQ.Panel.PixelCounter', {
             header: 'pixels',
             dataIndex: 'pixels',
         }];
+		
         var fields = [
             {name: 'index', type: 'float'},
             {name: 'x', type: 'float'},
             {name: 'y', type: 'float'},
             {name: 'pixels', type: 'float'}
-        ]
+        ];
+		
         if (this.phys.isPixelResolutionValid()) {
             fieldList.push('area');
             columns.push({
@@ -764,8 +832,6 @@ Ext.define('BQ.Panel.PixelCounter', {
             });
             fields.push({name: 'area', type: 'float'});
         }
-
-
 
         Ext.define('bq.pixelcount.RegionCounts', {
             extend: 'Ext.data.Model',
@@ -789,19 +855,23 @@ Ext.define('BQ.Panel.PixelCounter', {
             }]
         });
 
+		this.regionCountInfo = Ext.create('Ext.container.Container', {
+            //layout: 'fit',
+			padding: '8px',
+            html : '<h2>Regional Counts</h2><p>Click on any part of the image to segment out a region. The pixel count will be displayed below.</p>',
+            cls: 'threshold',
+            //layout: 'anchor',
+        });
+		
         this.regionCountGrid = Ext.create('Ext.grid.Panel', {
-            //title: 'regionCountGrid',
             itemId : 'px_regioncount_grid',
             store: this.regionCountStore,
             multiSelect: true,
-
             columns: {
                 items: columns,
                 defaults: {flex: 1},
             },
-
             flex: 2,
-            hidden: true,
             border : false,
             renderTo: Ext.getBody(),
             tbar: [{ //Delete button
@@ -843,10 +913,9 @@ Ext.define('BQ.Panel.PixelCounter', {
                            }
                            me.viewer.parameters.main.viewerContainer.setLoading(false);
                            me.pixelCounter.canvas_mask.style.visibility = 'visible';
-                        },5);
+                        }, 5);
                         this.regionCount = regionCount;
                         this.updateRegionPanel();
-
                     }
                 },
             },
@@ -857,13 +926,13 @@ Ext.define('BQ.Panel.PixelCounter', {
                 text: 'Reset',
                 scale: 'large',
                 disabled: true,
-                //hidden: true,
                 listeners : {
                     scope: this,
                     click: function() {
                         //clears table and displayed segmentation
                         this.pixelCounter.resetPixelRegionCounter();
-                        this.pixelCounter.changed();
+                        //this.pixelCounter.changed();
+						this.updateRegionPanel();
                     }
                 }
             },
@@ -886,24 +955,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             }],
         });
 
-        this.tbar= [{//toggle button
-                xtype:'button',
-                itemId : 'select_region_toggle_button',
-                scale: 'large',
-                text: 'Regional counts',
-                iconCls: 'icon-pipette',
-                enableToggle: true,
-                //pressedCls: 'px-PressedStyle',
-                listeners: {
-                    scope: this,
-                    click : function() {
-                       this.selectMode = !this.selectMode;
-                       if(this.selectMode) this.queryById('threshold_checkbox').setValue(true);
-                       if(!this.selectMode) this.pixelCounter.resetPixelRegionCounter()
-                       this.pixelCounter.changed();
-                    },
-                }
-            },'->',{//close button
+        this.tbar= ['->',{//close button
                 xtype: 'button',
                 text: 'Close',
                 scale: 'large',
@@ -917,180 +969,123 @@ Ext.define('BQ.Panel.PixelCounter', {
                 },
             },
         ];
-
-        this.items.push(this.thresholdPanel);
-        this.items.push(this.selectPanel);
-        this.items.push(this.thresholdInfoPanel);
+		/*
+		var me = this;
+		this.infoContainer = Ext.create('Ext.container.Container', {
+			layout: {
+				type: 'hbox',
+				align: 'stretch'
+			},
+			items: [{
+				xtype: 'container',
+				layout: {
+					type: 'hbox',
+					align: 'stretch'
+				},				
+				title: 'Global Counts',
+				items: [me.globalCountInfo],
+			},{
+				xtype: 'container',
+				title: 'Region Counts',
+				layout: {
+					type: 'hbox',
+					align: 'stretch'
+				},
+				items: [me.regionCountInfo, me.regionCountGrid]
+			}]
+		});
+		*/
+		this.items.push(this.thresholdSlider);
+		//this.items.push(this.infoContainer);
+		this.items.push(this.globalCountInfo);
+        this.items.push(this.regionCountInfo);
         this.items.push(this.regionCountGrid);
-
-        //beforeresize
-
-        this.pixelCounter.changed(); //initialize threshold
-
 
         return this.callParent(arguments);
     },
 
-    listeners: {
-        resize: function(){ //returns to global count mode
-            if(this.selectMode){ //disables select mode
-                this.selectMode = false; //reset flag
-                this.queryById('select_region_toggle_button').toggle(false);
-                this.pixelCounter.changed();
-            }
-        }
-    },
 
-    lookupThreshold : function() {
-        //parsing the request
-
-        //set limit on the global counts if image is too large
-        if(this.viewer.imagedim.x>10000&&this.viewer.imagedim.y>10000) {
-            this.queryById('px_selectinfo_panel').setVisible(false);
-            this.queryById('px_threshold_panel').setVisible(true);
-            this.queryById('px_regioncount_grid').setVisible(false);
-            this.thresholdInfoPanel.update('<p>The global count will not be displayed since image is too large.</p>');
-            return;
-        }
-
-        var param = {};
-        var args = this.viewer.current_view.src_args;
-        var request = [];
-        var a=undefined;
-        for (var i=0; (a=args[i]); i++) {
-            if (a.indexOf('threshold=')<0 && a.indexOf('tile=')<0)
-                request.push(a);
-        }
-        request.push('pixelcounter='+this.thresholdValue);
-
-        var image_uri = this.viewer.imagesrc +'?'+request.join('&');
-
-        if (this.request_uri === image_uri) {
-            this.updataGlobalPanel(this.response_doc);
-            return;
-        }
-        this.request_uri = image_uri;
-
-        Ext.Ajax.request({
-            url: image_uri,
-            scope: this,
-            disableCaching: false,
-            timeout: 120000,
-            callback: function(opts, succsess, response) {
-                if (response.status>=400)
-                    BQ.ui.error(response.responseText);
-                else if (response.responseXML) {
-                    this.response_doc = response.responseXML;
-                    this.updataGlobalPanel(response.responseXML);
-                }
-            },
-        });
-
-    },
-
-/*
-
-    updataGlobalPanel : function(globalThresholdCount) {
-        this.queryById('px_selectinfo_panel').setVisible(false);
-        this.queryById('px_threshold_panel').setVisible(true);
-        this.queryById('px_regioncount_grid').setVisible(false);
-
+	/*
+	*	updataGlobalPanel
+	*
+	*	Writes global pixel information obtained by the threshold.
+	*	If pixel resolution containing physical pixel information
+	*	the scale factor will be applied.
+	*/
+    updataGlobalPanel : function() {
         var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
 
         if (this.phys.isPixelResolutionValid()) {
             globalTitle += '<th>'+this.phys.pixel_units[0]+'<sup>2</sup>'+'</th>';
         }
+		
         globalTitle = globalTitle + '</tr>';
         var globalRows = '';
-        var channels = ['r','g','b'];
-        for (var c = 0; c<3; c++) { //updates panel values
+		var globalRowAbove = '<td>red</td><td>above</td><td >'+this.pixelCounter.r1px.toString()+'</td>';
+		var globalRowBelow = '<td>red</td><td>below</td><td >'+this.pixelCounter.r0px.toString()+'</td>';		
+		if (this.phys.isPixelResolutionValid()) {
+			var area_above = (parseFloat(this.pixelCounter.r1px)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+			var area_below = (parseFloat(this.pixelCounter.r0px)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+			globalRowAbove += '<td>'+area_above.toString()+'</td>';
+			globalRowBelow += '<td>'+area_below.toString()+'</td>';
+		}
+		globalRows += '<tr>'+globalRowAbove+'</tr><tr>'+globalRowBelow+'</tr>';		
 
-            var scale = this.viewer.view().scale;
-            var above = globalThresholdCount[channels[c]].a/(scale*scale);
-            var below = globalThresholdCount[channels[c]].b/(scale*scale);
+		var globalRowAbove = '<td>green</td><td>above</td><td >'+this.pixelCounter.g1px.toString()+'</td>';
+		var globalRowBelow = '<td>green</td><td>below</td><td >'+this.pixelCounter.g0px.toString()+'</td>';		
+		if (this.phys.isPixelResolutionValid()) {
+			var area_above = (parseFloat(this.pixelCounter.g1px)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+			var area_below = (parseFloat(this.pixelCounter.g0px)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+			globalRowAbove += '<td>'+area_above.toString()+'</td>';
+			globalRowBelow += '<td>'+area_below.toString()+'</td>';
+		}
+		globalRows += '<tr>'+globalRowAbove+'</tr><tr>'+globalRowBelow+'</tr>';		
+		
+		var globalRowAbove = '<td>blue</td><td>above</td><td >'+this.pixelCounter.b1px.toString()+'</td>';
+		var globalRowBelow = '<td>blue</td><td>below</td><td >'+this.pixelCounter.b0px.toString()+'</td>';		
+		if (this.phys.isPixelResolutionValid()) {
+			var area_above = (parseFloat(this.pixelCounter.b1px)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+			var area_below = (parseFloat(this.pixelCounter.b0px)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
+			globalRowAbove += '<td>'+area_above.toString()+'</td>';
+			globalRowBelow += '<td>'+area_below.toString()+'</td>';
+		}
+		globalRows += '<tr>'+globalRowAbove+'</tr><tr>'+globalRowBelow+'</tr>';		
+        var html = '<center><table cellspacing="8">'+globalTitle+globalRows+"</table></center>";
 
-            var channel_name = this.channel_names[c];
-            var globalRowAbove = '<td>'+channel_name+'</td><td>above</td><td >'+above.toString()+'</td>';
-            var globalRowBelow = '<td>'+channel_name+'</td><td>below</td><td >'+below.toString()+'</td>';
-            //if found resolution points add to panel
-            if (this.phys.isPixelResolutionValid()) {
-                var area_above = (parseFloat(above)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
-                var area_below = (parseFloat(below)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
-                globalRowAbove += '<td>'+area_above.toString()+'</td>';
-                globalRowBelow += '<td>'+area_below.toString()+'</td>';
-            }
-            globalRows += '<tr>'+globalRowAbove+'</tr><tr>'+globalRowBelow+'</tr>';
-        }
-        var html = '<table>'+globalTitle+globalRows+"</table>";
-
-        this.thresholdInfoPanel.update(html);
-    },
-*/
-    //parses xml of the document, creates and html page and write it to panel
-    updataGlobalPanel : function(xmlDoc) {
-        this.queryById('px_selectinfo_panel').setVisible(false);
-        this.queryById('px_threshold_panel').setVisible(true);
-        this.queryById('px_regioncount_grid').setVisible(false);
-
-
-        var channels = BQ.util.xpath_nodes(xmlDoc, 'resource/pixelcounts[@name="channel"]');
-        var globalTitle = '<tr><th>channel</th><th >threshold</th><th>pixels</th>';
-
-        if (this.phys.isPixelResolutionValid()) {
-            globalTitle += '<th>'+this.phys.pixel_units[0]+'<sup>2</sup>'+'</th>';
-        }
-        globalTitle = globalTitle + '</tr>';
-        var globalRows = '';
-        if (channels.length==3) { //check if atleast one value
-            for (var c = 0; c<channels.length; c++) { //updates panel values
-                var above = BQ.util.xpath_nodes(channels[c],'tag[@name="above"]/@value')[0].value;
-                var below = BQ.util.xpath_nodes(channels[c],'tag[@name="below"]/@value')[0].value;
-
-                var channel_name = this.channel_names[c];
-                var globalRowAbove = '<td>'+channel_name+'</td><td>above</td><td >'+above.toString()+'</td>';
-                var globalRowBelow = '<td>'+channel_name+'</td><td>below</td><td >'+below.toString()+'</td>';
-                //if found resolution points add to panel
-                if (this.phys.isPixelResolutionValid()) {
-                    var area_above = (parseFloat(above)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
-                    var area_below = (parseFloat(below)*parseFloat(this.phys.pixel_size[0])*parseFloat(this.phys.pixel_size[1])).toFixed(2);
-                    globalRowAbove += '<td>'+area_above.toString()+'</td>';
-                    globalRowBelow += '<td>'+area_below.toString()+'</td>';
-                }
-                globalRows += '<tr>'+globalRowAbove+'</tr><tr>'+globalRowBelow+'</tr>';
-            }
-        }
-        else {
-            //error didnt not find image service pixel counter
-            //BQ.ui.error('Didnt not find image service pixel counter information from image service');
-        }
-        var html = '<table>'+globalTitle+globalRows+"</table>";
-
-        this.thresholdInfoPanel.update(html);
+        this.globalCountInfo.update(html); 
     },
 
+	/*
+	*	updateRegionPanel
+	*
+	*	Reloads the region panel and populates the graph with elements
+	*	if the count is 0 for number of elements in the graph all the 
+	*	buttons in the tool bar will be disabled.
+	*/
     updateRegionPanel : function(){
-        this.queryById('px_selectinfo_panel').setVisible(true);
-        this.queryById('px_threshold_panel').setVisible(false);
+	
+		var regionCountGrid = this.queryById('px_regioncount_grid').setVisible(true);
+		regionCountGrid.store.loadData(this.regionCount);
+		regionCountGrid.getView().refresh();
 
-        var regionCountGrid = this.queryById('px_regioncount_grid').setVisible(true);
+		//set usability of the buttons
+		if (this.regionCount.length>0){
+			this.queryById('px_reset_button').setDisabled(false);
+			this.queryById('px_export_button').setDisabled(false);
+			this.queryById('px_delete_button').setDisabled(false);
+		} else {
+			this.queryById('px_reset_button').setDisabled(true);
+			this.queryById('px_export_button').setDisabled(true);
+			this.queryById('px_delete_button').setDisabled(true);
+		}
+	},
 
-        var html = '';
-        this.thresholdInfoPanel.update(html);
-        regionCountGrid.store.loadData(this.regionCount);
-        regionCountGrid.getView().refresh();
-
-        //set usability of the buttons
-        if (this.regionCount.length>0){
-            this.queryById('px_reset_button').setDisabled(false);
-            this.queryById('px_export_button').setDisabled(false);
-            this.queryById('px_delete_button').setDisabled(false);
-        } else {
-            this.queryById('px_reset_button').setDisabled(true);
-            this.queryById('px_export_button').setDisabled(true);
-            this.queryById('px_delete_button').setDisabled(true);
-        }
-    },
-
+	/*
+	*	exportCSV
+	*
+	*	Downloads a csv document containing all the information
+	* 	contained in the region count panel.
+	*/
     exportCSV : function() {
         //writes the region count info to csv
         if (this.regionCount.length>0) {
@@ -1105,7 +1100,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                 //row
                 CsvDocument += this.regionCount[r].index + ',' + this.regionCount[r].x + ',' + this.regionCount[r].y + ',' + this.regionCount[r].pixels;
                 if (this.phys.isPixelResolutionValid()) {
-                    CsvDocument += ','+this.regionCount[r].area;;
+                    CsvDocument += ','+this.regionCount[r].area;
                 }
                 CsvDocument += '\r\n';
             }

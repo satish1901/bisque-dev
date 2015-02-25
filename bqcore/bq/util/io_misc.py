@@ -69,6 +69,8 @@ def safetypeparse(v):
             v = float(v)
         except ValueError:
             pass
+    except TypeError: #in case of Nonetype
+        pass
     return v
 
 def safeencode(s):
@@ -93,7 +95,10 @@ def tounicode(s):
     try: 
         return s.decode('utf8')
     except UnicodeEncodeError:
-        return unicode(s.encode('ascii', 'replace'))
+        try: 
+            return s.decode('latin1')
+        except UnicodeEncodeError:
+            return unicode(s.encode('ascii', 'replace'))
 
 def run_command(command):
     '''returns a string of a successfully executed command, otherwise None'''
