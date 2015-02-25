@@ -217,7 +217,7 @@ class RootController(BaseController):
         if is_uniq_code(service_type):
           log.debug ("uniq code %s", request.path_qs)
           # Skip 1st /
-          redirect(urlparse.urljoin(config.get ('bisque.root'), '/data_service/%s' % request.path_qs[1:]))
+          redirect(urlparse.urljoin(config.get ('bisque.root',''), '/data_service/%s' % request.path_qs[1:]))
 
         abort(404)
         #return super(RootController, self)._lookup(service_type, *rest)
@@ -230,7 +230,7 @@ class RootController(BaseController):
 
     @expose()
     def index(self, **kw):
-        redirect (config.get('bisque.root') + "/client_service/")
+        redirect (config.get('bisque.root','') + "/client_service/")
 
 
 #from bq.util.http import http_client
@@ -280,7 +280,7 @@ def update_remote_proxies (proxy):
 
 
 def startup():
-    root = config.get ('bisque.root')
+    root = config.get ('bisque.root', '/')
     if not root:
         raise ConfigurationError ('bisque.root not set')
     #proxy = config.get('bisque.site', None)

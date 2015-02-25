@@ -59,6 +59,7 @@ import itertools
 import tempfile
 import mimetypes
 import warnings
+import posixpath
 
 log = logging.getLogger('bqapi.comm')
 
@@ -109,16 +110,14 @@ class BQCommError(BQException):
             @param: content - body of the response (default: None)
 
         """
-        print 'Status: %s'%status
-        print 'Headers: %s'%headers
+        #print 'Status: %s'%status
+        #print 'Headers: %s'%headers
         self.status = status
         self.headers = headers
-        if content is not None:
-            self.content = content
-            print 'Content: [%s]'%content
+        self.content = content
 
     def __str__(self):
-        return "BQCommError(status=%s, %s)" % (self.status, self.headers)
+        return "BQCommError(status=%s, headers=%s)%s" % (self.status, self.headers, self.content)
 
 
 class MexAuth(AuthBase):
@@ -243,7 +242,7 @@ class BQServer(Session):
 
 
 
-    def webreq(self, method, url, headers = None, path=None, ):
+    def webreq(self, method, url, headers = None, path=None, **params):
         """
             Makes a http GET to the url given
 
@@ -251,14 +250,15 @@ class BQServer(Session):
             @param headers: headers provided for this specific fetch (default: None)
             @param path: the location to where the contents will be stored on the file system (default:None)
             if no path is provided the contents of the response will be returned
+            @param timeout: (optional) How long to wait for the server to send data before giving up, as a float, or a (connect timeout, read timeout) tuple
 
             @return returns either the contents of the rests or the file name if a path is provided
 
             @exception: BQCommError if the requests returns an error code and message
         """
         log.debug("%s: %s req  header=%s" , method, url, headers)
-
-        r = self.request(method=method, url=url, headers=headers, stream = (path is not None))
+        timeout = params.get('timeout', None)
+        r = self.request(method=method, url=url, headers=headers, stream = (path is not None), timeout=timeout)
 
         try:
             r.raise_for_status()
@@ -536,16 +536,24 @@ class BQSession(object):
         if import_service_url is None:
             raise BQApiError('Could not find import service to post blob.')
 
-        filename = normalize_unicode(filename)
         url = self.c.prepare_url(import_service_url, **params)
-        with open(filename, 'rb') as f:
-            fields = {'file': (filename, f)}
-            if xml!=None:
-                if not isinstance(xml, basestring):
-                    xml = self.factory.to_string(xml)
-                fields['file_resource'] = (None, xml, "text/xml")
 
+        if xml!=None:
+            if not isinstance(xml, basestring):
+                xml = self.factory.to_string(xml)
+
+        if filename is not None:
+            filename = normalize_unicode(filename)
+            with open(filename, 'rb') as f:
+                fields = {'file': (filename, f)}
+                if xml!=None:
+                    fields['file_resource'] = (None, xml, "text/xml")
+                return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
+        elif xml is not None:
+            fields = {'file_resource': (None, xml, "text/xml")}
             return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
+        else:
+            raise BQCommError("improper parameters for postblob")
 
 
     def service_url(self, service_type, path = "" , query=None):
@@ -568,7 +576,7 @@ class BQSession(object):
         """
             @return
         """
-        services = self.load (self.bisque_root + "/services")
+        services = self.load (posixpath.join(self.bisque_root , "services"))
         smap = {}
         for service in services.tags:
             smap [service.type] = service.value

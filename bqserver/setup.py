@@ -48,7 +48,7 @@ The bisque server
     [bisque.services]
     client_service   = bq.client_service.controllers.service
     auth_service     = bq.client_service.controllers.auth_service
-    admin            = bq.client_service.controllers.admin_service
+    admin            = bq.admin_service.controllers.service
     notebook_service = bq.client_service.controllers.dn_service
     data_service     = bq.data_service.controllers.data_service
     blob_service     = bq.blob_service.controllers.blobsrv
@@ -61,6 +61,7 @@ The bisque server
     ingest_service   = bq.ingest.controllers.ingest_server
     dataset_service  = bq.dataset_service.controllers.dataset_service
     usage            = bq.usage.controllers.usage
+    graph            = bq.graph.controllers.graph
 
 
     [bq.commands]

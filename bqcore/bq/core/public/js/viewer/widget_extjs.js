@@ -48,6 +48,7 @@ Ext.define('BQ.viewer.Image', {
     requires: ['ImgViewer'],
     border: 0,
     cls: 'bq-image-viewer',
+    layout: 'fit',
 
     constructor: function(config) {
         this.addEvents({
@@ -116,7 +117,8 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.oneditcontrols = callback(this, this.oneditcontrols);
         this.parameters.onposition = callback(this, this.onposition);
 
-        var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
+        //var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
+        var id = this.getId();
         this.viewer = new ImgViewer(id, this.resource, this.parameters);
         this.viewer.resize();
 
