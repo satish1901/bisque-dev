@@ -6,7 +6,7 @@ from repoze.who.interfaces import IAuthenticator, IMetadataProvider
 
 from bq.core import model
 
-log = logging.getLogger('bq.auth.autoreg')
+log = logging.getLogger('auth.autoreg')
 
 class AutoRegister (object):
     """This plugin attempts to register users that are so far unknown

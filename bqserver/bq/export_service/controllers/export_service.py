@@ -117,6 +117,10 @@ try:
     import pyproj
 except ImportError:
     pass
+try:
+    import json
+except ImportError:
+    pass
 
 #---------------------------------------------------------------------------------------
 # inits
@@ -142,6 +146,8 @@ class export_serviceController(ServiceController):
         self.exporters = {}
         if 'pyproj' in sys.modules:
             self.exporters['kml'] = ExporterKML()
+            if 'json' in sys.modules:
+                self.exporters['geojson'] = ExporterGeoJson()
 
     @expose('bq.export_service.templates.index')
     def index(self, **kw):
@@ -317,30 +323,29 @@ class export_serviceController(ServiceController):
 
 
 #---------------------------------------------------------------------------------------
-# exporters
+# exporters: Geo base
 #---------------------------------------------------------------------------------------
 
-class ExporterKML():
+class ExporterGeo():
+    '''Supports exporting Bisque documents into geographical formats'''
+
+    version = '1.0'
+    ext = 'txt'
+    mime_type = 'text/plain'
 
     def __init__(self):
-        #self.primitives = {}
-
         pass
 
     def export(self, uniq):
         """Add your first page here.. """
         resource = data_service.resource_load (uniq = uniq, view='deep')
-        #resource = data_service.get_resource(url, view='deep')
-        meta = image_service.meta(uniq)
-
+        fname = '%s.%s' % (resource.get('name'), self.ext)
+             
         # if the resource is a dataset, fetch contents of documents linked in it
-        #if resource.tag == 'dataset':
-        #    resource = data_service.get_resource('%s/value'%resource.get('uri'), view='deep')
+        if resource.tag == 'dataset':
+            resource = data_service.get_resource('%s/value'%resource.get('uri'), view='deep')
 
-        #response.headers['Content-Type'] = 'text/xml'
-        response.headers['Content-Type'] = 'application/vnd.google-earth.kml+xml'
-
-        fname = '%s.kml' % resource.get('name')
+        response.headers['Content-Type'] = self.mime_type
         try:
             fname.encode('ascii')
             disposition = 'filename="%s"'%(fname)
@@ -348,10 +353,14 @@ class ExporterKML():
             disposition = 'filename="%s"; filename*="%s"'%(fname.encode('utf8'), fname.encode('utf8'))
         response.headers['Content-Disposition'] = disposition
 
-        return self.bq2kml(resource, meta)
+        return self.bq2format(resource)
 
-    def bq2kml(self, resource, meta):
+    def create_transform_function(self, resource, meta=None):
         """ converts BisqueXML into KML """
+
+        if meta is None:
+            uniq = resource.get('resource_uniq')
+            meta = image_service.meta(uniq)
 
         # get proj4
         q = meta.xpath('tag[@name="Geo"]/tag[@name="Model"]/tag[@name="proj4_definition"]')
@@ -373,8 +382,13 @@ class ExporterKML():
             res = [float(v) for v in res.split(',')]
 
         # define transformation
+        try:
+            pproj = pyproj.Proj(prj)
+        except (RuntimeError):
+            pproj = None
+
         transform = {
-            'proj_from': pyproj.Proj(prj),
+            'proj_from': pproj,
             'proj_to': pyproj.Proj(init='EPSG:4326'),
             'offset': top_left,
             'res': res
@@ -383,45 +397,86 @@ class ExporterKML():
 
         # closure with current transform
         def transform_coord(c):
-            if transform['offset'] is None or transform['res'] is None:
+            if transform['offset'] is None or transform['res'] is None or transform['proj_from'] is None:
                 return c
             cc = ( transform['offset'][0] + c[0]*transform['res'][0], transform['offset'][1] - c[1]*transform['res'][1] )
             ccc = pyproj.transform(transform['proj_from'], transform['proj_to'], cc[0], cc[1])
-            #log.debug('Converting coordinate: %s -> %s -> %s', c, cc, ccc)
             return (ccc[0], ccc[1])
 
+        return transform_coord
+
+
+#---------------------------------------------------------------------------------------
+# exporters: KML
+#---------------------------------------------------------------------------------------
+
+class ExporterKML (ExporterGeo):
+    '''Supports exporting Bisque documents into KML''' 
+
+    version = '1.0'
+    ext = 'kml'
+    #mime_type = 'text/xml'
+    mime_type = 'application/vnd.google-earth.kml+xml'
+
+    def __init__(self):
+        pass
+
+    def bq2format(self, resource):
+        """ converts BisqueXML into KML """
 
         kml = etree.Element ('kml', xmlns='http://www.opengis.net/kml/2.2')
         doc = etree.SubElement (kml, 'Document')
 
-        # per image
-        folder = etree.SubElement (doc, 'Folder')
-        name = etree.SubElement (folder, 'name') # type of gobject
-        name.text = resource.get('name')
-        descr = etree.SubElement (folder, 'description') # name of gobject
-        descr.text = 'Annotations contained within image: %s'%resource.get('name')
-
-        self.convert_node(resource, folder, transform_coord)
+        self.convert_node(resource, doc)
         return etree.tostring(kml)
 
-    def convert_node(self, node, kml, cnvf):
-        for n in node:
-            if n.tag == 'gobject':
-                if len(n) > 1:
-                    folder = etree.SubElement (kml, 'Folder')
-                    name = etree.SubElement (folder, 'name') # type of gobject
-                    name.text = n.get('type')
-                    descr = etree.SubElement (folder, 'description') # name of gobject
-                    descr.text = n.get('name')
+    def convert_node(self, node, kml, cnvf=None):
+        if node.tag in gobject_primitives or node.tag == 'gobject' and node.get('type') in gobject_primitives:
+            self.render_gobjects(node, kml, node.tag, cnvf=cnvf)
+        elif node.tag == 'gobject' and len(node)==1: # special case of a gobject wrapper of a primitive
+            self.render_gobjects(node[0], kml, node.get('type'), node.get('name'), cnvf=cnvf)
+        elif node.tag == 'tag':
+            # skip any tags, they were added beforehand
+            pass
+        elif node.tag not in ['vertex', 'value']: # any other node type is a folder
+            if node.tag == 'image':
+                # load metadata and create coordinate transformation function
+                cnvf = self.create_transform_function(node)
+            folder = self.render_resouces(node, kml)
+            if len(node) > 1:
+                for n in node:
                     self.convert_node(n, folder, cnvf=cnvf)
-                else:
-                    self.render(n[0], kml, n.get('type'), n.get('name'), cnvf=cnvf)
-                    #self.convert_node(n, kml)
 
-            if n.tag in gobject_primitives:
-                self.render(n, kml, n.tag, cnvf=cnvf)
+    def render_resouces(self, node, kml):
+        folder = etree.SubElement (kml, 'Folder')
+        name = etree.SubElement (folder, 'name') # type of gobject
+        descr = etree.SubElement (folder, 'description') # name of gobject
 
-    def render(self, node, kml, type=None, _val=None, cnvf=None):
+        if node.tag == 'image':
+            name.text = node.get('name')
+            descr.text = 'Annotations contained within image: %s'%node.get('name')
+        else:
+            name.text = node.get('type') or node.get('resource_type') or node.tag
+            descr.text = node.get('name')
+        
+        self.render_tags(node, folder)
+        return folder
+
+    def render_tags(self, node, kml, ed=None, path=None):
+        tags = node.xpath('tag')
+        if len(tags)>0:
+            if ed is None:
+                ed = etree.SubElement (kml, 'ExtendedData')
+            for t in tags:
+                name = '%s/%s'%(path, t.get('name')) if path is not None else t.get('name')
+                d = etree.SubElement (ed, 'Data', name=name)
+                v = etree.SubElement (d, 'value')
+                v.text = t.get('value')
+                self.render_tags(t, kml, ed=ed, path=name)
+            return ed
+        return None
+
+    def render_gobjects(self, node, kml, type=None, _val=None, cnvf=None):
         vrtx = node.xpath('vertex')
         f = getattr(self, node.tag, None)
         if len(vrtx)>0 and callable(f):
@@ -430,7 +485,10 @@ class ExporterKML():
             if cnvf is not None:
                 vrtx = [cnvf(v) for v in vrtx]
 
-            f(node, kml, vrtx, type or node.tag, _val)
+            folder = f(node, kml, vrtx, type or node.tag, _val)
+            self.render_tags(node, folder)
+            return folder
+        return None
 
     def point(self, node, kml, vrtx, type=None, val=None):
         pm = etree.SubElement (kml, 'Placemark')
@@ -447,24 +505,10 @@ class ExporterKML():
         x = vrtx[0][0]
         y = vrtx[0][1]
         coord.text = '%s,%s'%(x,y)
+        return pm
 
     def line(self, node, kml, vrtx, type=None, val=None):
-        pm = etree.SubElement (kml, 'Placemark')
-        name = etree.SubElement (pm, 'name') # type of gobject
-        name.text = type or node.get('name')
-
-        if val is not None:
-            descr = etree.SubElement (pm, 'description') # name of gobject
-            descr.text = val
-
-        point = etree.SubElement (pm, 'LineString')
-        coord = etree.SubElement (point, 'coordinates')
-
-        x1 = vrtx[0][0]
-        y1 = vrtx[0][1]
-        x2 = vrtx[1][0]
-        y2 = vrtx[1][1]
-        coord.text = '%s,%s %s,%s'%(x1,y1, x2,y2)
+        return self.polyline(node, kml, vrtx, type, val)        
 
     def polygon(self, node, kml, vrtx, type=None, val=None):
         pm = etree.SubElement (kml, 'Placemark')
@@ -481,6 +525,7 @@ class ExporterKML():
         coord = etree.SubElement (g2, 'coordinates')
 
         coord.text = ' '.join( ['%s,%s'%(v[0], v[1]) for v in vrtx ] )
+        return pm        
 
     def polyline(self, node, kml, vrtx, type=None, val=None):
         pm = etree.SubElement (kml, 'Placemark')
@@ -495,11 +540,13 @@ class ExporterKML():
         coord = etree.SubElement (g, 'coordinates')
 
         coord.text = ' '.join( ['%s,%s'%(v[0], v[1]) for v in vrtx ] )
+        return pm        
 
     def label(self, node, kml, vrtx, type=None, val=None):
         pm = etree.SubElement (kml, 'Placemark')
         name = etree.SubElement (pm, 'name') # type of gobject
         name.text = type or node.get('name')
+        val = node.get('value') or val
 
         if val is not None:
             descr = etree.SubElement (pm, 'description') # name of gobject
@@ -511,8 +558,194 @@ class ExporterKML():
         x = vrtx[0][0]
         y = vrtx[0][1]
         coord.text = '%s,%s'%(x,y)
+        return pm        
 
-#set(['circle', 'ellipse', 'rectangle', 'square'])
+    def circle(self, node, kml, vrtx, type=None, val=None):
+        pm = etree.SubElement (kml, 'Placemark')
+        name = etree.SubElement (pm, 'name') # type of gobject
+        name.text = type or node.get('name')
+
+        if val is not None:
+            descr = etree.SubElement (pm, 'description') # name of gobject
+            descr.text = val
+
+        # there are no circles in KML, store custom field
+        coords = ' '.join( ['%s,%s'%(v[0], v[1]) for v in vrtx ] )
+        ed = etree.SubElement (pm, 'ExtendedData')
+        d = etree.SubElement (ed, 'Data', name='coordinates')
+        v = etree.SubElement (d, 'value')
+        v.text = coords
+
+        return pm
+
+    def ellipse(self, node, kml, vrtx, type=None, val=None):
+        return self.circle(node, kml, vrtx, type, val)
+
+    def rectangle(self, node, kml, vrtx, type=None, val=None):
+        return self.circle(node, kml, vrtx, type, val)
+
+    def square(self, node, kml, vrtx, type=None, val=None):
+        return self.circle(node, kml, vrtx, type, val)
+
+#---------------------------------------------------------------------------------------
+# exporters: GeoJson
+#---------------------------------------------------------------------------------------
+
+class ExporterGeoJson (ExporterGeo):
+    '''Supports exporting Bisque documents into GeoJson''' 
+
+    version = '1.0'
+    ext = 'geojson'
+    #mime_type = 'application/json'
+    mime_type = 'application/vnd.geo+json'
+
+    def __init__(self):
+        pass
+
+    def bq2format(self, resource):
+        """ converts BisqueXML into GeoJson """
+        geoj = { 
+            "type": "FeatureCollection",
+            "features": [],
+        }
+        self.convert_node(resource, geoj['features'])
+        return json.dumps(geoj)
+
+    def convert_node(self, node, kml, cnvf=None):
+        if node.tag in gobject_primitives or node.tag == 'gobject' and node.get('type') in gobject_primitives:
+            self.render_gobjects(node, kml, node.tag, cnvf=cnvf)
+        elif node.tag == 'gobject' and len(node)==1: # special case of a gobject wrapper of a primitive
+            self.render_gobjects(node[0], kml, node.get('type'), node.get('name'), cnvf=cnvf)
+        elif node.tag == 'tag':
+            # skip any tags, they were added beforehand
+            pass
+        elif node.tag not in ['vertex', 'value']: # any other node type is a folder
+            if node.tag == 'image':
+                # load metadata and create coordinate transformation function
+                cnvf = self.create_transform_function(node)
+            # geojson does not have hierarchical elements, dum all as a flat list
+            #folder = self.render_resouces(node, kml) 
+            if len(node) > 1:
+                for n in node:
+                    self.convert_node(n, kml, cnvf=cnvf)
+
+    def render_resouces(self, node, features):
+        feature = { 
+            'type': 'GeometryCollection',
+            'properties': {
+                'type': node.get('type') or node.get('resource_type') or node.tag,
+                'name': node.get('name'),
+            },
+            'geometry': None,
+            'geometries': []
+        }
+        if node.get('resource_uniq') is not None:
+            feature['id'] = node.get('resource_uniq')
+
+        self.render_tags(node, feature)
+
+        features.append(feature)
+        return feature['geometries']
+
+    def render_gobjects(self, node, features, type=None, _val=None, cnvf=None):
+        vrtx = node.xpath('vertex')
+        f = getattr(self, node.tag, None)
+        if len(vrtx)>0 and callable(f):
+            feature = { 
+                'type': 'Feature',
+                'properties': {
+                    'type': node.get('type') or node.get('resource_type') or node.tag,
+                },
+            }
+            if node.get('name') is not None:
+                feature['properties']['name'] = node.get('name')
+
+
+            vrtx = [(float(v.get('x')), float(v.get('y'))) for v in vrtx]
+            if cnvf is not None:
+                vrtx = [cnvf(v) for v in vrtx]
+
+            f(node, feature, vrtx, type or node.tag, _val)
+            self.render_tags(node, feature)
+            features.append(feature)
+        return None
+
+    def render_tags(self, node, feature, ed=None, path=None):
+        tags = node.xpath('tag')
+        if len(tags)>0:
+            for t in tags:
+                name = '%s/%s'%(path, t.get('name')) if path is not None else t.get('name')
+                feature['properties'][name] = t.get('value')
+                self.render_tags(t, feature, ed=ed, path=name)
+            return feature
+        return None
+
+    def point(self, node, feature, vrtx, type=None, val=None):
+        feature['properties']['type'] = type or node.get('name')
+        if val is not None:
+            feature['properties']['description'] = val
+
+        geom = {  
+            'type': 'Point',
+            'coordinates': [vrtx[0][0], vrtx[0][1]],
+        }
+        feature['geometry'] = geom
+        return geom
+
+    def line(self, node, feature, vrtx, type=None, val=None):
+        return self.polyline(node, feature, vrtx, type, val)
+
+    def polygon(self, node, feature, vrtx, type=None, val=None):
+        feature['properties']['type'] = type or node.get('name')
+        if val is not None:
+            feature['properties']['description'] = val
+
+        crds = [[v[0], v[1]] for v in vrtx]
+        crds.append(crds[0])
+        geom = {  
+            'type': 'Polygon',
+            'coordinates': [crds],
+        }
+        feature['geometry'] = geom
+        return geom
+
+    def polyline(self, node, feature, vrtx, type=None, val=None):
+        feature['properties']['type'] = type or node.get('name')
+        if val is not None:
+            feature['properties']['description'] = val
+
+        geom = {  
+            'type': 'LineString',
+            'coordinates': [[v[0], v[1]] for v in vrtx ],
+        }
+        feature['geometry'] = geom
+        return geom
+
+    def label(self, node, feature, vrtx, type=None, val=None):
+        feature['properties']['type'] = type or node.get('name')
+        val = node.get('value') or val
+        if val is not None:
+            feature['properties']['description'] = val
+
+        geom = {  
+            'type': 'Point',
+            'coordinates': [vrtx[0][0], vrtx[0][1]],
+        }
+        feature['geometry'] = geom
+        return geom
+
+    # def circle(self, node, feature, vrtx, type=None, val=None):
+    #     # there are no circles in GeoJsoon, skip
+    #     return None        
+
+    # def ellipse(self, node, feature, vrtx, type=None, val=None):
+    #     return self.circle(node, feature, vrtx, type, val)
+
+    # def rectangle(self, node, feature, vrtx, type=None, val=None):
+    #     return self.circle(node, feature, vrtx, type, val)
+
+    # def square(self, node, feature, vrtx, type=None, val=None):
+    #     return self.circle(node, feature, vrtx, type, val)
 
 #---------------------------------------------------------------------------------------
 # bisque init stuff

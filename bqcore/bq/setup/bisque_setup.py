@@ -49,6 +49,7 @@ else:
 capture = None
 answer_file = None
 save_answers = False
+use_defaults = False
 
 try:
     import sqlalchemy as sa
@@ -158,7 +159,10 @@ def getanswer(question, default, help=None):
         elif capture is not None:
             a =  capture.logged_input ("%s [%s]? " % (question, default))
         else:
-            a =  raw_input ("%s [%s]? " % (question, default))
+            if not use_defaults:
+                a =  raw_input ("%s [%s]? " % (question, default))
+            else:
+                a = default
 
         if a=='?':
             if help is not None:
@@ -328,7 +332,8 @@ RUNTIME_CFG  = config_path('runtime-bisque.cfg')
 UWSGI_DEFAULT = config_path('uwsgi.cfg.default')
 PASTER_DEFAULT = config_path('server.ini.default')
 
-HOSTNAME = socket.getfqdn()
+#HOSTNAME = socket.getfqdn()
+HOSTNAME = "localhost"
 
 
 
@@ -336,7 +341,7 @@ HOSTNAME = socket.getfqdn()
 #################################################
 ## Initial values
 SITE_VARS = {
-    'bisque.root' : 'http://%s:8080' % HOSTNAME,
+    'bisque.server' : 'http://%s:8080' % HOSTNAME,
     'bisque.organization': 'Your Organization',
     'bisque.title': 'Image Repository',
     'bisque.admin_email' : 'YourEmail@YourOrganization',
@@ -345,8 +350,7 @@ SITE_VARS = {
     }
 
 ENGINE_VARS  ={
-    'bisque.engine': 'http://%s:27000'  % HOSTNAME,
-    # 'bisque.root' : 'http://%s:8080' % HOSTNAME,
+#    'bisque.engine': 'http://%s:27000'  % HOSTNAME,
     'bisque.paths.root' : os.getcwd(),
     # 'bisque.admin_email' : 'YourEmail@YourOrganization',
     }
@@ -374,19 +378,20 @@ initial_vars = {
     }
 
 linked_vars = {
-    'h1.url' : '${bisque.root}',
+    'h1.url' : '${bisque.server}',
     'smtp_server' : '${mail.smtp.server}',
-    'registration.site_name' : '${bisque.title} (${bisque.root})',
-    'registration.host' : '${bisque.root}',
+    'registration.site_name' : '${bisque.title} (${bisque.server})',
+    'registration.host' : '${bisque.server}',
     'registration.mail.smtp_server' : '${mail.smtp.server}',
     'registration.mail.admin_email' : '${bisque.admin_email}',
 }
 
 
-SITE_QUESTIONS = [('bisque.root' , 'Enter the root URL of the server ',
+SITE_QUESTIONS = [
+('bisque.server' , 'Enter the root URL of the server ',
                    """A complete URL where your application will be mounted i.e. http://someserver:8080/
-If you server will be mounted behind a proxy, please enter
-the proxy address and see AdvancedInstalls"""),
+#If you server will be mounted behind a proxy, please enter
+#the proxy address and see AdvancedInstalls"""),
                   ('bisque.admin_displayname', 'Your real name  administrator account', None),
                   ('bisque.admin_id', 'A login ID for the administrator account', None),
                   ('bisque.admin_email' , 'An email for the administrator', None),
@@ -401,8 +406,8 @@ the proxy address and see AdvancedInstalls"""),
 ENGINE_QUESTIONS=[
     #    ('bisque.root' , 'Enter the root URL of the BISQUE server ',
     #     "A URL of Bisque site where this engine will register modules"),
-    ('bisque.engine', "Enter the URL of this bisque module engine",
-     "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
+#    ('bisque.engine', "Enter the URL of this bisque module engine",
+#     "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
     ('bisque.paths.root', 'Installation Directory',
      'Location of bisque installation.. used for find configuration and data'),]
 
@@ -742,11 +747,18 @@ def install_database(params):
 
     # Step 1: check whether database driver is available (install it if needed)
     if not install_driver(DBURL):
-        print(
-            """Database was NOT prepared due to absence of database driver
+        print("""Database   driver was bit installed.  Missing packages?
 Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         return params
 
+    if getanswer("Create and initialize database", "N", "Create, initialize or upgrade database") == "Y":
+        params = setup_database (params)
+    return params
+
+
+def setup_database (params):
+    dburi = params.get('sqlalchemy.url', None)
+    DBURL = sa.engine.url.make_url (dburi)
     # Step 2: check whether the database exists and is accessible
     if not create_database(DBURL):
         return params
@@ -788,7 +800,6 @@ def create_database(DBURL):
         return False
     return True
 
-    # Step 3: find out whether the database needs initialization
 
 def initialize_database(params, DBURL=None):
     "Initialize the database with tables"
@@ -848,7 +859,7 @@ def install_matlab(params, cfg = RUNTIME_CFG):
         params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
         if  os.path.exists(params['runtime.matlab_home']):
             break
-        if  getanswer("Matlab not found: Try again", 'Y',
+        if  getanswer("Matlab not found: Try again", 'N',
                       "Matlab (and compile) is needed for many modules") == 'Y':
             continue
         print "Matlab must be provided to install modules"
@@ -964,11 +975,14 @@ def install_server_defaults(params):
             params[k] = SITE_VARS[k]
         print "  %s=%s" % (k,params[k])
 
-    if getanswer("Change a site variable", 'Y')=='Y':
+    if getanswer("Change a site variable", 'N')=='Y':
         params = modify_site_cfg(SITE_QUESTIONS, params)
 
+        path = urlparse.urlparse(params['bisque.server']).path
+        params['bisque.root'] = path
+
     if new_install:
-        server_params = { 'bisque.root' : params['bisque.root'], 'h1.url' : params['bisque.root']}
+        server_params = {  'h1.url' : params['bisque.server']}
         server_params = update_site_cfg(server_params, 'servers', append=False)
 
     if getanswer ('Do you want to create new server configuations', 'Y',
@@ -1004,7 +1018,6 @@ def setup_server_cfg (params):
         params = setup_uwsgi(params, server_params)
     if server_params['backend'] == 'paster':
         params = setup_paster(params, server_params)
-
     return params
 
 
@@ -1227,7 +1240,7 @@ def setup_uwsgi(params, server_params):
         if 'socket' in uwsgi_vars:
             uwsgi_vars['socket'] =  uwsgi_vars['socket'].replace('unix://','').strip()
 
-        svars = { 'bisque.root' : sv['url'],
+        svars = { #'bisque.root' : sv['url'],
                   'bisque.server' : sv['url'],
                   'bisque.services_disabled' : sv.get ('services_disabled', ''),
                   'bisque.services_enabled'  : sv.get ('services_enabled', ''),
@@ -1267,7 +1280,7 @@ def setup_paster(params, server_params):
         paster_vars = sv.get ('paster', {})
         bisque_vars = sv.get ('bisque', {})
 
-        svars = { 'bisque.root' : sv['url'],
+        svars = { #'bisque.root' : sv['url'],
                   'bisque.server' : sv['url'],
                   'bisque.services_disabled' : sv.get ('services_disabled', ''),
                   'bisque.services_enabled'  : sv.get ('services_enabled', ''),
@@ -1828,11 +1841,14 @@ def send_installation_report(params):
 #
 
 start_msg = """
-You can start bisque with
+Initialize your database with:
+   $$ bq-admin setup createdb
+
+You can start bisque with:
    $$ bq-admin server start
-then point your browser to
-    ${bisque.root}
-If you need to shutdown the servers, then use
+then point your browser to:
+    ${bisque.server}
+If you need to shutdown the servers, then use:
    $$ bq-admin server stop
 You can login as admin and change the default password.
 """
@@ -1861,7 +1877,7 @@ install_options= [
     'server',
     'mail',
     'preferences',
-    'production'
+    'production',
     ]
 
 # engine install packages
@@ -1877,7 +1893,8 @@ engine_options= [
 other_options = [
     "upgrade",
     'admin',
-    'configuration'
+    'configuration',
+    'createdb',
 ]
 
 all_options = list (set (install_options + engine_options + other_options))
@@ -1895,7 +1912,8 @@ SETUP_COMMANDS = {
     'preferences' : [ install_preferences ],
     'production' : [ install_public_static ],
     'upgrade' : [ kill_server, fetch_stable, fetch_external_binaries, install_dependencies, migrate, cleanup ],
-    "configuration" : [ setup_server_cfg ]
+    "configuration" : [ setup_server_cfg ],
+    "createdb" : [ setup_database ],
     }
 
 # Special procedures that modify runtime-bisque.cfg (for the engine)
@@ -2046,6 +2064,7 @@ def setup(options, args):
 
     cancelled = False
     global answer_file, save_answers
+    global use_defaults
     global BQENV
     global BQBIN
     global SITE_PACKAGES
@@ -2068,6 +2087,8 @@ def setup(options, args):
         print "Saving answers to %s" % options.write
         answer_file = open (options.write, "wb")
         save_answers = True
+    elif options.yes:
+        use_defaults = True
     elif has_script and not options.inscript:
         script = ['bq-admin', 'setup', '--inscript']
         script.extend (args)

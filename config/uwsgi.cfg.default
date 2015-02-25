@@ -15,7 +15,6 @@ cookie_secret = 670cbb6c-641d-4089-95a4-7128e2e23d75
 [app:main]
 use = config:site.cfg
 bisque.server =
-bisque.root =
 bisque.services_enabled =
 bisque.services_disabled = engine_service
 
