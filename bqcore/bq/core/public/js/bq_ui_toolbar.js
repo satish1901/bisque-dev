@@ -156,7 +156,7 @@ Ext.define('BQ.Application.Toolbar', {
     tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep','menu_user_recover' ],
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs',
                  'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', 'button_create', 'button_upload' ],
-    tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],
+    tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_admin_page','menu_user_admin_prefs', ],
 
     initComponent : function() {
         this.images_base_url = this.images_base_url || BQ.Server.url('/images/toolbar/');
@@ -348,12 +348,17 @@ Ext.define('BQ.Application.Toolbar', {
                 xtype:'menuseparator',
                 itemId: 'menu_user_admin_separator',
                 hidden: true,
-            }, {
+            }, /*{
                 text: 'Website admin',
                 itemId: 'menu_user_admin',
                 hidden: true,
                 handler: Ext.Function.pass(pageAction, BQ.Server.url('/admin')),
-            }, {
+            },*/{
+                text: 'Admin Page',
+                itemId: 'menu_admin_page',
+                hidden: true,
+                handler: this.adminPage,
+            },{
                 text: 'User preferences',
                 itemId: 'menu_user_prefs',
                 handler: this.userPrefs,
@@ -706,6 +711,15 @@ Ext.define('BQ.Application.Toolbar', {
         }*/
     },
 
+    adminPage: function() {
+        var admin = Ext.create('BQ.admin.MainPage', {
+            height : '85%',
+            width : '85%',
+            modal : true, 
+        });
+        admin.show();
+    },
+    
     userPrefs : function() {
         var preferences = Ext.create('BQ.Preferences.Dialog');
     },

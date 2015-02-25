@@ -72,6 +72,7 @@ from bq.util.paths import data_path
 from bq.core.model import   User,Group #, Visit
 from bq.core.model import DBSession
 from bq.data_service.model import  BQUser, Image, TaggableAcl
+from bq.util.bisquik2db import bisquik2db, db2tree
 
 #from bq.image_service.model import  FileAcl
 from tg import redirect
@@ -101,7 +102,7 @@ class AdminController(ServiceController):
     #admin = BisqueAdminController([User, Group], DBSession)
 
     @expose(content_type='text/xml')
-    def _default(self, **kw):
+    def _default(self, *arg, **kw):
         """
             Returns some command information
         """
@@ -113,45 +114,20 @@ class AdminController(ServiceController):
         return etree.tostring(index_xml)
     
     
-    def user_xml_formatter(self, user):
+    def add_admin_info2node(self, user_node, view=[]):
         """
-            constructs xml doc for user
+            adds email and password tags and remove the email value
+        """
+        if view and 'short' not in view:
+            email = user_node.attrib.get('value', '')
+            etree.SubElement(user_node, 'tag', name='email', value=email)
+            etree.SubElement(user_node, 'tag', name='password', value='******')
             
-            @param: user - etree node of the user
-            @return user etree node
-        """
-        attribute = ['name','ts','permission','value']
-        user_node = etree.Element('user', 
-            name=user.name,
-            owner=user.owner.uri, 
-            permission=user.permission, 
-            resource_uniq=user.resource_uniq,
-            ts=str(user.ts),
-            uri=user.uri
-        )
-        etree.SubElement(user_node, 'tag', name='email', value=user.value)
-        etree.SubElement(user_node, 'tag', name='password', value='******')
+        try: #try to remove value from user node
+            user_node.attrib.pop('value')
+        except KeyError:
+            pass
         
-        
-        def construct_node(bqnode, etree_node):
-            """
-                builds a user node iterating through the children
-                @param: bqnode - 
-                @param: etree_node - 
-            """
-            for c in bqnode.children:
-                 tag_node = etree.SubElement(etree_node, 'tag',                 
-                    name = c.name, 
-                    owner = c.owner.uri,
-                    permission = c.permission,
-                    ts = str(c.ts), 
-                    uri = c.uri,
-                    value = c.value,
-                 )
-                 construct_node(c, tag_node)
-                
-        construct_node(user, user_node) #returns all the children
-             
         return user_node
     
     
@@ -189,7 +165,7 @@ class AdminController(ServiceController):
         """
         if len(arg)==1:
             if request.method == 'GET':
-                return self.get_user(arg[0])
+                return self.get_user(arg[0], **kw)
             elif request.method == 'PUT':
                 if request.body:
                     return self.put_user(arg[0], request.body)
@@ -240,11 +216,18 @@ class AdminController(ServiceController):
         users = BQUser.query.all()
         resource = etree.Element('resource', uri=str(request.url))
         for u in users:
-            resource.append(self.user_xml_formatter(u))
+            view = kw.get('view', None)
+            if view:
+                view = [x.strip() for x in view.split(',')]
+            else:
+                view = []
+            user = db2tree(u, baseuri=self.url, view=view)
+            user = self.add_admin_info2node(user, view)
+            resource.append(user)
         return etree.tostring(resource)
     
     
-    def get_user(self, uniq):
+    def get_user(self, uniq, **kw):
         """
             Returns requested user in xml with password and diplay name.
             (Note: may be removed in version 0.6 due to redundant functionality 
@@ -261,7 +244,13 @@ class AdminController(ServiceController):
         """
         u = BQUser.query.filter(BQUser.resource_uniq == uniq).first()
         if u:
-            user = self.user_xml_formatter(u)
+            view = kw.get('view', None)
+            if view:
+                view = [x.strip() for x in view.split(',')]
+            else:
+                view = []
+            user = db2tree(u,baseuri=self.url, view=view)
+            user = self.add_admin_info2node(user, view)
             return etree.tostring(user)
         else: 
             abort(403)
