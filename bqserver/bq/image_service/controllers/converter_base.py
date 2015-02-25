@@ -229,8 +229,10 @@ class ConverterBase(object):
         except (KeyError, TypeError, AttributeError):
             return []
         
-        files = list(set(files)) # ensure unique names
-        files = sorted(files, key=misc.blocked_alpha_num_sort) # use alpha-numeric sort
+        # we can't possibly sort files since they are in order defined by the ingest
+        # store drivers might have to sort stuff if they get a directory instead of a file
+        #files = list(set(files)) # ensure unique names
+        #files = sorted(files, key=misc.blocked_alpha_num_sort) # use alpha-numeric sort
         return files
 
     #######################################
