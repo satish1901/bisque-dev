@@ -16,6 +16,35 @@ figure; imagesc(im2(:,:,6));
 image = bq.Factory.fetch(imurl);
 filename = image.fetch([]);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% reading an image with user and password and show its metadata
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+url = 'http://HOST/data_service/00-mS4EJgtBdWC838EQyG5nCY';
+user = 'XXX';
+pass = 'XXX';
+
+% image will contain metadata resource describing the image
+image = bq.Factory.fetch([url '?view=deep'], [], user, pass); 
+
+% m will contain an N-D matrix with image data
+m = image.fetch();
+
+% show annotations
+
+% use xpath to find a value of a specific annotation by name
+v = image.findValue('tag[@name="Patient ID"]');
+
+% use xpath to find a value of a specific annotation by type
+% here we use a specific DICOM tag type for Patient's Age
+v = image.findValue('tag[@type=":///DICOM#0010,1010"]');
+
+% use xpath to find several annotations, here we find all tags
+% returned as a Map object
+s = image.getNameValueMap('tag');
+% for visualization construct a cell array
+c = s.keys;
+c(2, :) = s.values;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

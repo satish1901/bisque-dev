@@ -52,7 +52,7 @@ def readhostconfig (site_cfg):
     #vars = { 'here' : os.getcwd() }
     config = SafeConfigParser ()
     config.read (site_cfg)
-    root = config.get ('app:main', 'bisque.root')
+    #root = config.get ('app:main', 'bisque.root')
     top_dir = config.get ('app:main', 'bisque.paths.root')
     service_items = config.items ('servers')
     hosts = [ x.strip() for x in config.get  ('servers', 'servers').split(',') ]
@@ -77,7 +77,7 @@ def readhostconfig (site_cfg):
 
     servers = parse_nested (service_items, hosts)
 
-    bisque = { 'top_dir': top_dir,  'root': root, 'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
+    bisque = { 'top_dir': top_dir,  'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
     if config.has_option('servers', 'log_dir'):
         bisque['log_dir'] = os.path.join (top_dir, config.get ('servers', 'log_dir'))
     if config.has_option('servers', 'pid_dir'):
@@ -153,13 +153,13 @@ def paster_command(command, options, cfgopt, processes, cfg_file = None, *args):
             #os.path.join(cfgopt['site_dir'], 'server.ini'),
             cfg_file or '',
             command,
-            'services_enabled=%s' % cfgopt['services_enabled'],
-            'services_disabled=%s' % cfgopt['services_disabled'],
-            'server=%s' % cfgopt['url'],
-            'http_port=%s' % cfgopt['port'],
-            'http_host=%s' % cfgopt['host'],
-            'rooturl=%s' % cfgopt['root'],
-            'sitecfg=%s' % cfgopt['site_cfg'],
+            #'services_enabled=%s' % cfgopt['services_enabled'],
+            #'services_disabled=%s' % cfgopt['services_disabled'],
+            #'server=%s' % cfgopt['url'],
+            #'http_port=%s' % cfgopt['port'],
+            #'http_host=%s' % cfgopt['host'],
+            #'rooturl=%s' % cfgopt['root'],
+            #'sitecfg=%s' % cfgopt['site_cfg'],
             ])
     server_cmd.extend (args)
     verbose ('Executing: %s' % ' '.join(server_cmd))
@@ -246,9 +246,9 @@ def operation(command, options, *args):
     verbose('using config : %s' % site_cfg)
     try:
         config = readhostconfig(site_cfg)
-        verbose("ROOT %s SERVERS %s" % (config['root'], config['servers'].keys()))
+        verbose("SERVERS %s" % (config['servers'].keys()))
         processes = []
-        cfgopt = {'root': config['root']}
+        cfgopt = {} # {'root': config['root']}
         cfgopt['site_dir'] = site_dir
         cfgopt['site_cfg'] = site_cfg
         cfgopt['virtualenv'] = os.getenv('VIRTUAL_ENV')

@@ -44,7 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Ext.define('BQ.viewer.Volume.uniformUpdate', {
   updateSlider : function (slider, value) {
-    this.volume.sceneVolume.setUniform(slider.uniform_var, slider.convert(value), true, true);
+    this.volume.volumeObject.setUniform(slider.uniform_var, slider.convert(value), true, true);
   },
 });
 
@@ -117,7 +117,7 @@ renderingTool.prototype.init = function(){
 };
 
 renderingTool.prototype.initUniforms = function(){
-    var shaderManager = this.volume.sceneVolume;
+    var shaderManager = this.volume.volumeObject;
     var me = this;
     this.sliders = {};
     for(var key in this.uniforms ){
@@ -189,7 +189,7 @@ renderingTool.prototype.addControls = function(){
 };
 
 renderingTool.prototype.updateSlider = function(slider, value){
-    this.volume.sceneVolume.setUniform(slider.uniform_var, slider.convert(value), true, true);
+    this.volume.volumeObject.setUniform(slider.uniform_var, slider.convert(value), true, true);
 };
 
 //////////////////////////////////////////////////////////////////
@@ -335,9 +335,9 @@ gammaTool.prototype.initControls = function(){
 
                     var p = 4;
 
-                    this.volume.sceneVolume.setUniform('GAMMA_MIN', vals.min, true, true);
-                    this.volume.sceneVolume.setUniform('GAMMA_MAX', vals.max, true, true);
-                    this.volume.sceneVolume.setUniform('GAMMA_SCALE', vals.scale, true, true);
+                    this.volume.volumeObject.setUniform('GAMMA_MIN', vals.min, true, true);
+                    this.volume.volumeObject.setUniform('GAMMA_MAX', vals.max, true, true);
+                    this.volume.volumeObject.setUniform('GAMMA_SCALE', vals.scale, true, true);
 
                     this.data = vals;
                     this.volume.model.gamma = vals;
@@ -405,7 +405,7 @@ materialTool.prototype.addUniforms = function(){
                                    updateSlider : function (slider, value) {
                                        var val = 0.025*(value - 100);
                                        var setVal = Math.exp(val);
-                                       this.volume.sceneVolume.setUniform(
+                                       this.volume.volumeObject.setUniform(
                                            slider.uniform_var, setVal, true, true);
                                    },
                                   };
@@ -429,7 +429,7 @@ materialTool.prototype.addUniforms = function(){
                                        */
                                        var val = 0.025*(value - 100);
                                        var setVal = Math.exp(val);
-                                       this.volume.sceneVolume.setUniform(
+                                       this.volume.volumeObject.setUniform(
                                            slider.uniform_var, setVal, true, true);
                                    },
                                   };
@@ -487,7 +487,7 @@ ditherTool.prototype.loadPreferences = function(prefs){
 
 ditherTool.prototype.toggle = function(button){
     this.dithering ^= 1;
-    this.volume.sceneVolume.setUniform('DITHERING', this.dithering, true, true);
+    this.volume.volumeObject.setUniform('DITHERING', this.dithering, true, true);
     this.base.prototype.toggle.call(this,button);
 
 };
@@ -721,11 +721,18 @@ clipTool.prototype.initControls = function(){
 		increment : 0.25,
 		listeners : {
 			change : function (slider, value, thumb) {
-
+                var camera = this.volume.canvas3D.camera;
+                var fov = camera.fov;
+                var fovr = fov*Math.PI/180;
+                var zDist = 1.0/Math.tan(fovr*0.5);
+                var eDist = camera.position.length();
+                var clipNear = eDist/zDist - 0.125 + 0.25*value / 100;
 				if (thumb.index == 0) {
-					me.volume.sceneVolume.setUniform('CLIP_NEAR', value / 100);
+                    me.volume.volumeObject.polyShaderMaterial.uniforms['CLIP_NEAR'].value = value / 100;
+					me.volume.volumeObject.setUniform('CLIP_NEAR', value / 100);
 				} else {
-					me.volume.sceneVolume.setUniform('CLIP_FAR', 1 - value / 100);
+                    me.volume.volumeObject.polyShaderMaterial.uniforms['CLIP_FAR'].value = value / 100;
+					me.volume.volumeObject.setUniform('CLIP_FAR', 1 - value / 100);
 				}
 			},
 			scope : me,
