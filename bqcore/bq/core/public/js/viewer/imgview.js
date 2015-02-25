@@ -731,7 +731,7 @@ ImgViewer.prototype.onPreferences = function(pref) {
 // view menu
 //----------------------------------------------------------------------
 
-ImgViewer.prototype.createCombo = function (label, items, def, scope, cb) {
+ImgViewer.prototype.createCombo = function (label, items, def, scope, cb, min_width) {
     var options = Ext.create('Ext.data.Store', {
         fields: ['value', 'text'],
         data : items
@@ -746,6 +746,9 @@ ImgViewer.prototype.createCombo = function (label, items, def, scope, cb) {
         forceSelection: true,
         editable: false,
         value: def,
+        listConfig : {
+            minWidth: min_width || 70,
+        },
         listeners:{
             scope: scope,
             'select': cb,
