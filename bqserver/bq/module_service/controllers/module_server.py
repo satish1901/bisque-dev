@@ -83,7 +83,7 @@ from lxml import etree
 from datetime import datetime
 from paste.proxy import make_proxy
 from pylons.controllers.util import abort
-from tg import controllers, expose, config, override_template
+from tg import controllers, expose, config, request, override_template
 from tg import require
 # pylint: disable=E0611,F0401
 from repoze.what.predicates import not_anonymous
@@ -106,6 +106,15 @@ from bq.data_service.model import  ModuleExecution
 
 log = logging.getLogger('bq.module_server')
 
+def request_host():
+    "Return host of current request"
+    try:
+        host_url = request.host_url
+        log.debug ("REQUEST %s" , host_url)
+    except TypeError:
+        log.warn ("TYPEERROR on request")
+        host_url = ''
+    return host_url
 
 
 class MexDelegate (Resource):
@@ -117,6 +126,7 @@ class MexDelegate (Resource):
     def remap_uri (self, mex):
         uri = mex.get('uri')
         if uri:
+            #host_url = request_host()
             mexid = uri.rsplit('/',1)[1]
             log.debug ('remap -> %s' , self.url)
             mex.set ('uri', "%s%s" % (self.url, mexid))
@@ -487,9 +497,10 @@ class ServiceDelegate(controllers.WSGIAppController):
         return etree.tostring (mex)
 
     def remap_uri (self, mex):
+        host_url = request_host()
         mexid = mex.get('uri').rsplit('/',1)[1]
         log.debug ('delegate remap -> %s' % self.mexurl)
-        mex.set ('uri', "%s%s" % (self.mexurl, mexid))
+        mex.set ('uri', "%s%s%s" % (host_url, self.mexurl, mexid))
 
     # Example process
     #from lxml.html import builder as E

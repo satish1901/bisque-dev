@@ -169,7 +169,7 @@ class ResourceAuth(Resource):
     def new(self, factory,  xml, notify=True, **kw):
         'Create/Modify resource auth records'
         format = None
-        baseuri = self.baseuri
+        baseuri = self.uri
         #resource = force_dbload(request.bisque.parent)
         #baseuri = resource.uri
         resource = check_access( request.bisque.parent, RESOURCE_EDIT)
@@ -277,13 +277,14 @@ class BisquikResource(Resource):
     def resource_output (self, resource, response=None, view=None,
                          format=None, progressive=False, **kw):
         #if response is None:
+        log.debug ("resource_outtput %s", self.uri)
         if isinstance(resource , list):
             response = etree.Element('response')
             db2tree (resource, view = view, parent = response,
-                     baseuri=self.baseurl)
+                     baseuri=self.uri)
         else:
             response = db2tree (resource, view = view, parent = response,
-                                baseuri=self.baseurl, **kw)
+                                baseuri=self.uri, **kw)
         transaction.commit()
         formatter, content_type  = find_formatter (format)
         tg.response.headers['Content-Type'] = content_type
@@ -308,7 +309,7 @@ class BisquikResource(Resource):
         progressive = kw.pop('progressive', False)
         permcheck = kw.pop('permcheck', None)  # disallow from web side as will be pass in kw
         #limit = kw.pop('limit', None)
-        log.info ('DIR  %s' % (request.url))
+        log.info ('DIR  %s %s' , request.url, self.uri)
         #  Do not use loading
         parent = getattr(request.bisque,'parent', None)
         #specials = set(['tag_names', 'tag_values', 'gob_types'])
@@ -361,7 +362,7 @@ class BisquikResource(Resource):
             db2tree (resources,
                      parent=response,
                      view=view,
-                     baseuri = self.baseurl,
+                     baseuri = self.uri,
                      progressive=progressive,
                      **kw)
 

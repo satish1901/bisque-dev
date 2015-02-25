@@ -147,11 +147,11 @@ lightTool.prototype.initControls = function(){
     this.sceneVolume = this.volume.sceneVolume;
     this.canvas3D = this.volume.canvas3D;
 
-    var sphere = new THREE.SphereGeometry(0.05, 3, 3);
+    var sphere = new THREE.SphereGeometry(0.05, 16, 16);
     this.lightObject = new THREE.Mesh(sphere,
                                       new THREE.MeshBasicMaterial({
                                           color : 0xFFFF33,
-                                          wireframe : true,
+                                          wireframe : false,
                                       }));
 
     this.plane = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000, 8, 8),
@@ -168,8 +168,10 @@ lightTool.prototype.initControls = function(){
     this.lightObject.position.x = 0.0;
     this.lightObject.position.y = 0.0;
     this.lightObject.position.z = 1.0;
+    //this.lightClone = this.lightObject.clone();
     this.volume.scene.add(this.lightObject);
-    //this.sceneVolume.sceneData.add(this.lightObject);
+    //this.volume.scene.add(this.lightClone);
+    this.lightClone = this.volume.volumeObject.addMeshObject(this.lightObject, true);
 
     var onMouseUp = function () {
         if (!me.lightObject.visible)
@@ -235,6 +237,7 @@ lightTool.prototype.initControls = function(){
         if (this.selectLight) {
             var intersects = raycaster.intersectObject(this.plane);
             this.lightObject.position.copy(intersects[0].point.sub(this.offset));
+            this.lightClone.position.copy(intersects[0].point.sub(this.offset));
             return;
         }
         if (intersects.length > 0) {
@@ -255,11 +258,8 @@ lightTool.prototype.initControls = function(){
     var differenceHandler = function(item, checked){
 
         if(checked){
-            me.volume.shaderConfig.gradientType = item.text;
+            me.volume.volumeObject.setUniform('gradientType', item.text);
         }
-        me.volume.sceneVolume.setConfigurable("default",
-                                              "fragment",
-                                              me.volume.shaderConfig);
 	};
 
     var gradMenu = Ext.create('Ext.menu.Menu', {
@@ -302,10 +302,7 @@ lightTool.prototype.initControls = function(){
 
     var shadingToggle = function(item, checked){
         if(checked === false) return;
-        me.volume.shaderConfig.lighting.deepType = item.text;
-        me.volume.sceneVolume.setConfigurable("default",
-                                              "fragment",
-                                              me.volume.shaderConfig);
+        me.volume.volumeObject.setUniform('deepType', item.text);
     };
 
     var typeMenu = Ext.create('Ext.menu.Menu', {
@@ -353,11 +350,8 @@ lightTool.prototype.initControls = function(){
         itemId: 'show-light',
         boxLabel: 'show light',
         handler: function(item, checked){
-            if (checked) {
-                me.lightObject.visible = true;
-            } else {
-                me.lightObject.visible = false;
-            }
+            me.lightObject.visible = checked;
+            me.lightClone.visible = checked;
             me.volume.rerender();
 
         }
@@ -369,25 +363,21 @@ lightTool.prototype.initControls = function(){
         boxLabel: 'show phong',
         handler: function(item, checked){
             var menubutton = me.controls.queryById('grad-type');
+            me.volume.volumeObject.setUniform('phong', checked);
+
             if (checked) {
                 menubutton.show();
-                me.volume.shaderConfig.lighting.phong = true;
                 me.sliders['ambient'].show();
                 me.sliders['diffuse'].show();
                 me.sliders['size'].show();
                 me.sliders['intensity'].show();
             } else {
                 menubutton.hide();
-                me.volume.shaderConfig.lighting.phong = false;
                 me.sliders['ambient'].hide();
                 me.sliders['diffuse'].hide();
                 me.sliders['size'].hide();
                 me.sliders['intensity'].hide();
             }
-
-            me.volume.sceneVolume.setConfigurable("default",
-                                                    "fragment",
-                                                    me.volume.shaderConfig);
             me.volume.rerender();
         }
     });
@@ -406,25 +396,20 @@ lightTool.prototype.initControls = function(){
                 this.setValue(false);
                 return;
             }
+            me.volume.volumeObject.setUniform('deep', checked);
 
             var menubutton = me.controls.queryById('shade-type');
             if (checked) {
                 menubutton.show();
-                me.volume.shaderConfig.lighting.deep = true;
                 me.sliders['depth'].show();
                 me.sliders['dispersion'].show();
                 me.sliders['absorption'].show();
             } else {
                 menubutton.hide();
-                me.volume.shaderConfig.lighting.deep = false;
                 me.sliders['depth'].hide();
                 me.sliders['dispersion'].hide();
                 me.sliders['absorption'].hide();
             }
-
-            me.volume.sceneVolume.setConfigurable("default",
-                                                    "fragment",
-                                                    me.volume.shaderConfig);
             me.volume.rerender();
         }
     });
@@ -501,271 +486,4 @@ function phongTool(volume, cls) {
     this.name = 'phong_rendering';
 	this.base = renderingTool;
     this.base(volume, this.cls);
-};
-
-phongTool.prototype = new renderingTool();
-
-phongTool.prototype.addUniforms = function(){
-    this.uniforms['ambient']    = {name: 'KA',
-                                   type: 'f',
-                                   val: 0.5,
-                                   slider: true,
-                                   min: 0,
-                                   max: 100,
-                                   def: 50,
-                                   K: 0.01};
-    this.uniforms['diffuse']    = {name: 'KD',
-                                   type: 'f',
-                                   val: 0.5,
-                                   slider: true,
-                                   min: 0,
-                                   max: 100,
-                                   def: 50,
-                                   K: 0.01};
-    this.uniforms['size']    = {name: 'SPEC_SIZE',
-                                type: 'f',
-                                val: 0.5,
-                                slider: true,
-                                min: 1,
-                                max: 100,
-                                def: 50,
-                                K: 1.0};
-    this.uniforms['intensity']    = {name: 'SPEC_INTENSITY',
-                                     type: 'f',
-                                     val: 0.5,
-                                     slider: true,
-                                     min: 0,
-                                     max: 100,
-                                     def: 50,
-                                     K: 0.25};
-    //this.initUniforms();
-};
-
-phongTool.prototype.initControls = function(){
-    this.button.tooltip = 'enable phong rendering';
-
-    var me = this;
-    this.phong = 0;
-    this.controls.add();
-    this.volume.on('loaded', function () {
-        me.sliders['ambient'].setValue(10);
-        me.sliders['diffuse'].setValue(100);
-        me.sliders['size'].setValue(0);
-        me.sliders['intensity'].setValue(0);
-    });
-
-
-    var differenceHandler = function(item, checked){
-
-        if(checked){
-            me.volume.shaderConfig.gradientType = item.text;
-        }
-        me.volume.sceneVolume.setConfigurable("default",
-                                              "fragment",
-                                              me.volume.shaderConfig);
-	};
-
-    var gradMenu = Ext.create('Ext.menu.Menu', {
-        itemId: 'gradMenu',
-        style: {
-            overflow: 'visible'     // For the Combo popup
-        },
-        items: [
-            {
-                text: 'finite_difference',
-                checked: true,
-                group: 'grad',
-                tooltip : 'standard difference gradient calculation (slow)',
-                checkHandler: differenceHandler
-            }, {
-                text: 'sobel',
-                checked: false,
-                group: 'grad',
-                tooltip : 'smoothed difference gradient calculation (very slow)',
-                checkHandler: differenceHandler
-            }, {
-                text: 'directional',
-                checked: false,
-                group: 'grad',
-                tooltip : 'approximate calculation using directional gradient.  Highlights not supported. (fast)',
-                checkHandler: differenceHandler
-            },
-
-        ]
-    });
-
-    var gradButton = {
-		xtype : 'button',
-        text : 'gradient type',
-		//checked : false,
-		width : 100,
-		cls : 'toolItem',
-        menu : gradMenu,
-        /*
-		  handler : function (item, checked) {
-          if(checked){
-          me.volume.shaderConfig.gradientType = 'sobel';
-          }
-          else
-          me.volume.shaderConfig.gradientType = 'std';
-          me.volume.sceneVolume.setConfigurable("default",
-          "fragment",
-          me.volume.shaderConfig);
-		  },
-        */
-	};
-
-    this.controls.add(gradButton);
-};
-
-phongTool.prototype.toggle = function(button){
-    this.phong ^= 1;
-    if(this.phong){
-        this.volume.shaderConfig.lighting.phong = true;
-    }
-    else
-        this.volume.shaderConfig.lighting.phong = false;
-    this.volume.sceneVolume.setConfigurable("default",
-                                            "fragment",
-                                            this.volume.shaderConfig);
-    this.base.prototype.toggle.call(this,button);
-};
-
-
-function deepTool(volume, cls) {
-	//renderingTool.call(this, volume);
-    this.label = 'deep rendering';
-    this.cls = 'deepButton';
-    this.name = 'deep_rendering';
-	this.base = renderingTool;
-    this.base(volume, this.cls);
-};
-
-deepTool.prototype = new renderingTool();
-
-deepTool.prototype.addUniforms = function(){
-
-    this.uniforms['samples']    = {name: 'LIGHT_SAMPLES',
-                                   type: 'i',
-                                   val: 4};
-    this.uniforms['depth']    = {name: 'LIGHT_DEPTH',
-                                 type: 'f',
-                                 val: 0.5,
-                                 slider: true,
-                                 min: 0,
-                                 max: 100,
-                                 def: 50,
-                                 K: 0.02};
-
-    this.uniforms['dispersion']    = {name: 'DISPERSION',
-                                      type: 'f',
-                                      val: 0.5,
-                                      slider: true,
-                                      min: 0,
-                                      max: 100,
-                                      def: 50,
-                                      K: 0.02};
-
-    this.uniforms['absorption']    = {name: 'ABSORPTION',
-                                      type: 'f',
-                                      val: 0.5,
-                                      slider: true,
-                                      min: 0,
-                                      max: 100,
-                                      def: 50,
-                                      K: 0.05};
-    //this.initUniforms();
-};
-
-deepTool.prototype.initControls = function(){
-    this.button.tooltip = 'enable deep rendering';
-
-    var me = this;
-    this.state = 0;
-
-    this.button.tooltip = 'save png';
-    var controlBtnSize = 22;
-
-
-
-    var shadingToggle = function(item, checked){
-        if(checked === false) return;
-        me.volume.shaderConfig.lighting.deepType = item.text;
-        me.volume.sceneVolume.setConfigurable("default",
-                                              "fragment",
-                                              me.volume.shaderConfig);
-    };
-
-    var typeMenu = Ext.create('Ext.menu.Menu', {
-        itemId: 'shadingType',
-        style: {
-            overflow: 'visible'     // For the Combo popup
-        },
-        items: [
-            {
-                text: 'deep_shading',
-                checked: true,
-                group: 'theme',
-                checkHandler: shadingToggle
-            }, {
-                text: 'soft_shading',
-                checked: false,
-                group: 'theme',
-                checkHandler: shadingToggle
-            }
-        ]
-    });
-
-    var sampleField = Ext.create('Ext.form.field.Number', {
-        name : 'numberfield2',
-        fieldLabel : 'samples',
-        value : 4,
-        minValue : 0,
-        maxValue : 16,
-        width : 150,
-        listeners : {
-            change : function (field, newValue, oldValue) {
-                this.volume.sceneVolume.setUniform('LIGHT_SAMPLES', newValue, true, true);
-            },
-            scope : me
-        },
-    }).hide();
-
-
-
-    this.controls.add({
-        xtype: 'button',
-        width : 100,
-        text:'shading model',
-        //iconCls: 'bmenu',  // <-- icon
-        menu: typeMenu  // assign menu by instance
-    }, sampleField);
-    this.controls.on('afterlayout', function () {
-    });
-};
-
-deepTool.prototype.toggle = function(button){
-
-    var l = this.volume.canvas3D.camera.position.length();
-    console.log(l);
-    if( this.state == 0 && l < 2.2){
-        BQ.ui.error("setting the deep rendering tool while too close </br>" +
-                    "to the objet being rendered can result in context loss.</br>" +
-                    "zoom out and try again.");
-        this.button.toggle(false);
-        return;
-    }
-
-    this.state ^= 1;
-    if(this.state){
-        this.volume.shaderConfig.lighting.deep = true;
-    }
-    else
-        this.volume.shaderConfig.lighting.deep = false;
-    this.volume.sceneVolume.setConfigurable("default",
-                                            "fragment",
-                                            this.volume.shaderConfig);
-    this.base.prototype.toggle.call(this,button);
-    //if(button.pressed) this.controls.show();
-    //else this.controls.hide();
 };

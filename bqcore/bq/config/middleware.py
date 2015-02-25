@@ -6,16 +6,8 @@ import logging
 import pkg_resources
 #from webtest import TestApp
 
-from paste.httpexceptions import HTTPNotFound
 #from paste.cascade import Cascade
-from paste.fileapp import FileApp
-from paste.urlparser import StaticURLParser
-from paste.httpheaders import ETAG
 from paste.registry import RegistryManager
-from paste.deploy.converters import asbool
-
-#from repoze.who.config import make_middleware_with_config
-from repoze.who.plugins.testutil import make_middleware_with_config
 
 from bq.config.app_cfg import base_config
 from bq.config.environment import load_environment
@@ -25,13 +17,10 @@ from bq.util.proxy import Proxy
 from tg.configuration import config
 from .direct_cascade import DirectCascade
 
-
 __all__ = ['make_app', 'bisque_app']
 
 log = logging.getLogger("bq.config.middleware")
 
-
-public_file_filter = None
 bisque_app = None
 
 def add_profiler(app):
@@ -55,60 +44,6 @@ base_config.register_hook('before_config', save_bisque_app)
 # make_base_app will wrap the TG2 app with all the middleware it needs.
 make_base_app = base_config.setup_tg_wsgi_app(load_environment)
 
-
-class BQStaticURLParser (object):
-
-    def __init__(self):
-        self.files = {}
-
-    def add_path(self, top, local, prefix=None):
-        """add a set of files to static file server
-
-        @param top: a portion of the filepath to be removed from the web path
-        @param local: the  directory path to be served
-        @param prefix:
-        """
-        log.info('static path %s -> %s' % (local, top))
-        for root, dirs, files in os.walk(local):
-            for f in files:
-                pathname = os.path.join(root,f)
-                partpath = pathname[len(top):]
-                if prefix:
-                    #print "PREFIX: ", prefix
-                    partpath  = os.path.join(prefix, partpath[1:])
-
-                partpath = partpath.replace('\\', '/')
-                if partpath in self.files:
-                    log.error("static files : %s will overwrite previous %s "
-                              % (pathname, self.files[partpath]))
-                    continue
-                #log.debug(  "ADDING %s -> %s " % (partpath, pathname) )
-                self.files[partpath] = (pathname, None)
-
-
-    def __call__(self, environ, start_response):
-        path_info = environ['PATH_INFO']
-        #log.debug ('static search for %s' % path_info)
-        if path_info in self.files:
-            path, app = self.files.get(path_info)
-            if not app:
-                app = FileApp (path).cache_control (max_age=60*60*24*7*6) #6 weeks
-                self.files[path_info] = (path, app)
-            log.info ( "STATIC REQ %s" %  path_info)
-            if_none_match = environ.get('HTTP_IF_NONE_MATCH')
-            if if_none_match:
-                mytime = os.stat(path).st_mtime
-                if str(mytime) == if_none_match:
-                    headers = []
-                    ETAG.update(headers, mytime)
-                    start_response('304 Not Modified', headers)
-                    return [''] # empty body
-        else:
-            app = HTTPNotFound(comment=path_info)
-        return app(environ, start_response)
-
-
-        #return StaticURLParser.__call__(self, environ, start_response)
 
 
 class LogWSGIErrors(object):
@@ -164,8 +99,6 @@ def make_app(global_conf, full_stack=True, **app_conf):
     """
     site_cfg = site_cfg_path()
     logging.config.fileConfig(site_cfg)
-
-    global public_file_filter
     global bisque_app
 
     app = make_base_app(global_conf, full_stack=True, **app_conf)
@@ -182,89 +115,17 @@ def make_app(global_conf, full_stack=True, **app_conf):
     #    path='/__profile__'
     #    )
 
-    if 'who.config_file' in config and asbool(config.get('bisque.has_database')):
-        app = make_middleware_with_config(
-            app, global_conf,
-            app_conf['who.config_file'],
-            app_conf['who.log_stream'],
-            app_conf['who.log_level'],
-            skip_authentication=app_conf.get('skip_authentication', False),
-            )
-    else:
-        log.info ("MEX auth only")
-        # Add mex only authentication
-        from repoze.who.middleware import PluggableAuthenticationMiddleware
-        from repoze.who.plugins.basicauth import BasicAuthPlugin
-        from bq.core.lib.mex_auth import make_plugin
-        from repoze.who.classifiers import default_request_classifier
-        from repoze.who.classifiers import default_challenge_decider
-        basicauth = BasicAuthPlugin('repoze.who')
-        mexauth   = make_plugin ()
-
-        _LEVELS = {'debug': logging.DEBUG,
-                   'info': logging.INFO,
-                   'warning': logging.WARNING,
-                   'error': logging.ERROR,
-                   }
-        identifiers = [('mexauth', mexauth)]
-        authenticators = [('mexauth', mexauth)]
-        challengers = []
-        mdproviders = []
-        aa = app_conf['who.log_stream'],
-        app = PluggableAuthenticationMiddleware(app,
-                                                identifiers,
-                                                authenticators,
-                                                challengers,
-                                                mdproviders,
-                                                default_request_classifier,
-                                                default_challenge_decider,
-                                                log_stream = sys.stdout,
-                                                log_level = _LEVELS[app_conf['who.log_level']],
-                                                )
-
     # Wrap your base TurboGears 2 application with custom middleware here
     #from tg import config
 
-    # used by engine to add module specific static files
-    public_file_filter = static_app = BQStaticURLParser()
-    app = DirectCascade([static_app, app])
-    # Add services static files
-    if asbool(config.get ('bisque.static_files', True)):
-        log.info( "LOADING STATICS")
-        ###staticfilters = []
-        for x in pkg_resources.iter_entry_points ("bisque.services"):
-            try:
-                log.info ('found static service: ' + str(x))
-                service = x.load()
-                if not hasattr(service, 'get_static_dirs'):
-                    continue
-                staticdirs  = service.get_static_dirs()
-                for d,r in staticdirs:
-                    log.debug( "adding static: %s %s" % ( d,r ))
-                    static_app.add_path(d,r)
-            except Exception:
-                log.exception ("Couldn't load bisque service %s" % x)
-                continue
-            #    static_app = BQStaticURLParser(d)
-            #    staticfilters.append (static_app)
-        #cascade = staticfilters + [app]
-        #print ("CASCADE", cascade)
-        log.info( "END STATICS: discovered %s static files " % len(static_app.files.keys()))
-    else:
-        log.info( "NO STATICS")
-
     app = ProxyApp(app)
     bisque_app = app
-
+    app = LogWSGIErrors(app, logging.getLogger('bq.middleware'), logging.ERROR)
 
     # Call the loader in the root controller
     log.info ("wsgi - Application : complete")
     root.startup()
     log.info ("Root-Controller: startup complete")
-
-    app = LogWSGIErrors(app, logging.getLogger('bq.middleware'), logging.ERROR)
-
-
 
     return app
 

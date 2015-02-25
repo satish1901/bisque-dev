@@ -1,9 +1,9 @@
 #!/usr/bin/python
 import os, sys
-
 import urlparse
 from optparse import OptionParser
-from bq.util import http
+import requests
+
 import logging
 
 logging.basicConfig(level = logging.WARN)
@@ -31,16 +31,25 @@ DESTINATION = "/import/transfer"
 def upload(dest, filename, userpass, tags=None):
     files = []
     if tags:
-        files.append( ('file_resource', tags ) )
+        files.append( ('file_resource', (None, tags, "text/xml")  ) )
     files.append( ("file",  open(filename, "rb")) )
 
-    headers, content = http.post_files (dest, files, userpass = userpass)
-    if headers['status'] != '200':
-        print "error while copying %s: Server response %s" % (filename, headers['status'])
+    response = requests.post (dest, files=files, auth = requests.auth.HTTPBasicAuth(*userpass),verify=False)
+    if response.status_code != 200:
+        print "error while copying %s: Server response %s" % (filename, response.headers)
         print "saving error information to ", filename , "-transfer.err"
         open(filename + "-transfer.err",'wb').write(content)
         return
-    return content
+    return response.content
+
+
+def walk_deep(path):
+    """Splits sub path that follows # sign if present
+    """
+    for root, _, filenames in os.walk(path):
+        for f in filenames:
+            yield os.path.join(root, f).replace('\\', '/')
+
 
 
 def main():
