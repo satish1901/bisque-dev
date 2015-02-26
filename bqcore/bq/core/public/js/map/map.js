@@ -70,12 +70,13 @@ Ext.define('BQ.map.Map', {
             });
         } else if (this.resource instanceof BQImage) {
             var id  = this.resource.resource_uniq;
-            var uri = this.resource.uri;
-            var uri_meta = '/image_service/images/' + id + '?meta';
+            var uri_meta = '/image_service/' + id + '?meta';
             var image = {
                 id: id,
-                uri: uri,
-                thumbnail : '/image_service/images/' + id + '?slice=,,0,0&thumbnail=280,280&format=jpeg',
+                name: this.resource.name,
+                uri: this.resource.uri,
+                thumbnail : '/image_service/' + id + '?thumbnail=280,280',
+                view: '/client_service/view?resource=/data_service/'+id, 
             };
             this.requestEmbeddedMeta(uri_meta, image);
         }
@@ -87,16 +88,16 @@ Ext.define('BQ.map.Map', {
     },
 
     onImagesLoaded : function(xml) {
-        var unqs = BQ.util.xpath_nodes(xml, "//image/@resource_uniq");
-        var uris = BQ.util.xpath_nodes(xml, "//image/@uri");
-        for (var i=0; i<unqs.length; ++i) {
-            var id  = unqs[i].value;
-            var uri = uris[i].value;
-            var uri_meta = '/image_service/images/' + id + '?meta';
+        var nodes = BQ.util.xpath_nodes(xml, "*/image");
+        for (var i=0; i<nodes.length; ++i) {
+            var id  = nodes[i].getAttribute('resource_uniq');
+            var uri_meta = '/image_service/' + id + '?meta';
             var image = {
                 id: id,
-                uri: uri,
-                thumbnail : '/image_service/images/' + id + '?slice=,,0,0&thumbnail=280,280&format=jpeg',
+                name: nodes[i].getAttribute('name'),
+                uri: nodes[i].getAttribute('uri'),
+                thumbnail : '/image_service/' + id + '?thumbnail=280,280',
+                view: '/client_service/view?resource=/data_service/'+id, 
             };
             this.requestEmbeddedMeta(uri_meta, image);
         }
@@ -181,7 +182,8 @@ Ext.define('BQ.map.Map', {
 
     onMarkerClick : function(marker) {
         var map = this.gmap;
-        var s = '<img style="height:80px; width:80px;" src= "' + marker.image.thumbnail + '" />';
+        var s = Ext.String.format('<div><img style="height:150px; width:150px;" src="{0}" /></div><div style="padding-top: 5px; text-align: center;"><a href="{1}">{2}</a></div>', 
+            marker.image.thumbnail, marker.image.view, marker.image.name);
         this.infoWindow.setContent(s);
         this.infoWindow.open(map, marker);
         map.panTo(marker.position);
@@ -213,7 +215,7 @@ Ext.define('BQ.map.Map', {
     findGPS : function(xmlDoc){
         if(!xmlDoc) return;
 
-        // first try to find Geo center entry
+        // first try to find Geo center entry in embedded meta
         var geo_center = BQ.util.xpath_nodes(xmlDoc, "resource/tag[@name='Geo']/tag[@name='Coordinates']/tag[@name='center']/@value");
         if (geo_center && geo_center.length > 0) {
             var c = this.gpsGeoParser(geo_center[0].value);
@@ -237,6 +239,17 @@ Ext.define('BQ.map.Map', {
 
     findUserGPS : function(xmlDoc){
         if(!xmlDoc) return;
+
+        // first try to find Geo center entry in embedded meta
+        var geo_center = BQ.util.xpath_nodes(xmlDoc, "*/tag[@name='Geo']/tag[@name='Coordinates']/tag[@name='center']/@value");
+        if (geo_center && geo_center.length > 0) {
+            var c = this.gpsGeoParser(geo_center[0].value);
+            if (c) {
+                return new google.maps.LatLng(c[0], c[1]);
+            }
+        }
+
+        // then try CLEF standard
         var latitude = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='GPSLocality']/tag[@name='Latitude']/@value");
         var longitude = BQ.util.xpath_nodes(xmlDoc, "//tag[@name='GPSLocality']/tag[@name='Longitude']/@value");
 

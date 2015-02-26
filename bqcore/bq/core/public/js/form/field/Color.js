@@ -125,10 +125,10 @@ Ext.define('BQ.form.field.Color', {
     },
            
     onColorSelected: function(picker, color) {
-        this.setValue(color);
+        this.setValue(color); //must be hex without #
         var c = Ext.draw.Color.fromString('#'+color);
-        this.inputEl.setStyle( 'background-color', c.toString());        
-        this.inputEl.set({value: 'R:'+c.getRed()+', G:'+c.getGreen()+', B:'+c.getBlue() });
+        this.inputEl.setStyle( 'background-color', c.toString());  
+        this.inputEl.set({value: 'R:'+c.getRed()+', G:'+c.getGreen()+', B:'+c.getBlue() }); //resets the element label and value, must be run after setValue
 
         if (c.getHSL()[2]>0.45)                
             this.inputEl.setStyle( 'color', '#000000');
@@ -147,7 +147,7 @@ Ext.define('BQ.form.field.Color', {
         if (this.checkbox.dom.checked) {
             this.onColorSelected(undefined, this.color_stored);            
         } else {
-            this.color_stored = this.value;
+            this.color_stored = this.color; //must be hex without #  (chris - use to assign from this.value)
             this.onColorSelected(undefined, '000000');
         }
     },

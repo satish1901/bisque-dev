@@ -790,7 +790,7 @@ Ext.define('BQ.viewer.Volume.keySlider',{
 
     getCameraState: function(value, scope){
 	    var rot  = scope.panel3D.canvas3D.camera.rotation.clone();
-	    var pos  = scope.panel3D.canvas3D.camera.position.clone();
+	    var pos  = scope.panel3D.canvas3D.controls.posLocal.clone();
 	    var targ = scope.panel3D.canvas3D.controls.target.clone();
         var quat = scope.panel3D.canvas3D.camera.quaternion.clone();
         return {pos:  pos,
@@ -1010,22 +1010,23 @@ Ext.define('BQ.viewer.Volume.animationcontroller',{
 
 
 			            var interp = this.keySlider.getInterpolatedValue(value, this.keySlider);
-                        curCamera.rotation.copy(interp.rot);
+                        //curCamera.rotation.copy(interp.rot);
+                        curCamera.quaternion.copy(interp.quat);
 			            curCamera.position.copy(interp.pos);
 
 
                         var newTarg = new THREE.Vector3(0,0,1);
                         var newUp   = new THREE.Vector3(0,1,0);
-                        newTarg.applyQuaternion(interp.quat);
-                        newUp.applyQuaternion(interp.quat);
+                        //newTarg.applyQuaternion(interp.quat);
+                        //newUp.applyQuaternion(interp.quat);
                         controls.target.copy(interp.targ);
-                        controls.object.up.copy(newUp);
-                        controls.object.position.copy(interp.pos);
+                        controls.object.quaternion.copy(interp.quat);
+                        controls.posLocal.copy(interp.pos);
 
                         //this.panel3D.canvas3D.controls.update();
 
 			            this.keySlider.panelCamera.position.copy( this.panel3D.canvas3D.camera.position );
-			            this.keySlider.panelCamera.rotation.copy( this.panel3D.canvas3D.camera.rotation );
+			            this.keySlider.panelCamera.quaternion.copy( this.panel3D.canvas3D.camera.quaternion );
 			            this.keySlider.panel3D.canvas3D.camera = this.keySlider.panelCamera;
 
                         this.panel3D.updateTextureUniform();
@@ -1392,12 +1393,7 @@ animationTool.prototype.createPlaybackPanel = function () {
 
 animationTool.prototype.initControls = function(){
     var me = this;
-
-    this.createPlaybackPanel();
-    this.createAnimPanel();
-    this.playbackPanel.hide();
-    this.animPanel.hide();
-    this.button.tooltip = 'Animation and time series playback';
+    me.button.tooltip = 'Animation and time series playback';
     //this.volume.on('loaded', function () {});
 
 
@@ -1420,8 +1416,8 @@ animationTool.prototype.initControls = function(){
 
 	var toolMenuRadioHandler = function () {
 		var
-        radio1 = this.controls.queryById('toolRadio1'),
-		radio2 = this.controls.queryById('toolRadio2');
+        radio1 = me.controls.queryById('toolRadio1'),
+		radio2 = me.controls.queryById('toolRadio2');
 		if (radio2.getValue()) {
             me.animStyle = 1;
 		} else {
@@ -1440,7 +1436,7 @@ animationTool.prototype.initControls = function(){
 			name : 'tools',
 			cls : 'toolItem',
             handler : toolMenuRadioHandler,
-            scope : this,
+            scope : me,
         },
 
         items:[{
@@ -1448,7 +1444,7 @@ animationTool.prototype.initControls = function(){
 			itemId : 'toolRadio1',
 		}, {
 			fieldLabel : 'animation player',
-            checked : true,
+            checked : me,
 			itemId : 'toolRadio2',
 		},]
     });
@@ -1456,17 +1452,25 @@ animationTool.prototype.initControls = function(){
     this.controls.add([radioOpts]);
     this.volume.on({
         loaded: function(){
+
+            me.createPlaybackPanel();
+            me.createAnimPanel();
+            me.playbackPanel.hide();
+            me.animPanel.hide();
+
             if(me.volume.dims.t > 1){
                 me.button.toggle(true);
             }
             else
                 me.button.toggle(false);
         },
+
         atlasloadedat: function (t) {
             me.playBack.setLoaded(t);
         },
         wipetexturebuffer: function () {
-            me.playBack.resetBuffers();
+            if(me.playback)
+                me.playBack.resetBuffers();
         }
     });
 };
@@ -1547,4 +1551,3 @@ animationTool.prototype.toggle = function(button){
     this.base.prototype.toggle.call(this,button);
 
 };
-

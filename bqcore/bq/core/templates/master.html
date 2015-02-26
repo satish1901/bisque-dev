@@ -5,8 +5,8 @@
       py:strip="">
 
 <py:match path="head" once="true">
-<head py:attrs="select('@*')">
-
+<head py:attrs="select('@*')" profile="http://www.w3.org/2005/10/profile">
+    <link rel="icon" type="image/png" href="/images/bisque_icon.png" />
     <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
     <meta name = "viewport" content="width=900, maximum-scale=1" />
 
@@ -47,6 +47,7 @@
     '/js/movie/movie.css',
     { 'file': '/dataset_service/public/dataset_panel.css', 'path' : h.file_root() + 'bqserver/bq' },
     '/js/renderers/dataset.css',
+    '/js/graphviewer/graphviewer.css',
     '/js/volume/bioWeb3D.css',
     {'file' : '/import_service/public/bq_ui_upload.css', 'path' : h.file_root() + 'bqserver/bq'},
     {'file' : '/export_service/public/css/BQ.Export.css', 'path' : h.file_root() + 'bqserver/bq'},
@@ -145,6 +146,8 @@
     '/js/bq_ui_misc.js',
     '/js/date.js',
     '/js/encoder.js',
+    # -- Raphael --
+    '/raphael/raphael.js',
 
     # -- ResourceBrowser code --
     '/js/ResourceBrowser/Browser.js',
@@ -186,6 +189,9 @@
     '/js/Preferences/BQ.Preferences.js',
     '/js/Preferences/PreferenceViewer.js',
     '/js/Preferences/PreferenceTagger.js',
+    # -- Admin Page --
+    '/js/admin/BQ.UserManager.js',
+    '/js/admin/BQ.AdminPage.js',
 
     #-- DatasetBrowser --
     {'file': '/dataset_service/public/dataset_service.js', 'path': h.file_root() + 'bqserver/bq/'},
@@ -240,6 +246,8 @@
     '/js/viewer/progressbar.js',
     '/js/viewer/widget_extjs.js',
     '/js/viewer/imgpixelcounter.js',
+    '/js/viewer/imgcurrentview.js',
+    '/js/viewer/imgcalibration.js',
 
 
     #-- Movie player --
@@ -266,6 +274,14 @@
 
     # -- Export Service --
     { 'file' : '/export_service/public/js/BQ.Export.js', 'path': h.file_root() + 'bqserver/bq/'},
+	
+    # -- Request Animation Frame --
+    '/js/requestAnimationFrame.js',
+	
+    # -- Graph viewer --
+    '/js/d3Component.js',
+    '/js/graphviewer/dagre-d3.js',
+    '/js/graphviewer/GraphViewer.js',
 
     # -- WebGL viewer --
     '/js/volume/lib/whammy.js',
@@ -280,7 +296,7 @@
     '/js/volume/animationControls.js',
     '/js/volume/extThreeJS.js',
     '/js/volume/gobjectbuffers.js',
-    '/js/picker/Excolor.js',
+    '/js/picker/Excolor.js',	
     '/js/volume/transferEditorD3.js',
     '/js/volume/scalebar.js',
     '/js/volume/bioWeb3D.js',
