@@ -256,6 +256,8 @@ def fetch_image_pixels(session, uri, dest, uselocalpath=False):
         dest = os.path.join(dest, os.path.basename(name))
     else:
         dest = os.path.join('.', os.path.basename(name))
+    if not dest.lower().endswith ('.tif'):
+        dest = "%s.tif" % dest
 
 
     if uselocalpath:
