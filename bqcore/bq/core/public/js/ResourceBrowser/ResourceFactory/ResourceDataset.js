@@ -280,6 +280,30 @@ Ext.define('Bisque.Resource.Dataset.Page', {
         });
 
         this.add(renderer);
+
+        var download = BQApp.getToolbar().queryById('button_download'),
+            url = this.resource.uri,
+            url_kml = url.replace('/data_service/', '/export/') + '?format=kml',
+            url_geojson = url.replace('/data_service/', '/export/') + '?format=geojson';
+        download.menu.add(['-', {
+            itemId: 'download_annotations_as_xml',
+            text: 'Graphical annotations as XML',
+            handler: function() {
+                window.open(url+'/value?view=deep,clean');
+            },
+        }, {
+            itemId: 'download_annotations_as_kml',
+            text: 'Graphical annotations as KML',
+            handler: function() {
+                window.open(url_kml);
+            },
+        }, {
+            itemId: 'download_annotations_as_geojson',
+            text: 'Graphical annotations as GeoJson',
+            handler: function() {
+                window.open(url_geojson);
+            },
+        }]);        
     }
 });
 

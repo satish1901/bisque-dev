@@ -13,9 +13,11 @@ convert them into boolean, for example, you should use the
 
 """
 import os
+import sys
 import tg
 import logging
 import transaction
+import pkg_resources
 
 from paste.deploy.converters import asbool
 from pylons.middleware import StatusCodeRedirect
@@ -25,15 +27,30 @@ from tg.configuration import AppConfig, config
 from tg.util import  Bunch
 from tg.error import ErrorHandler
 #import tgscheduler
+#from repoze.who.config import make_middleware_with_config
+from repoze.who.middleware import PluggableAuthenticationMiddleware
+from repoze.who.plugins.testutil import AuthenticationForgerPlugin
+from repoze.who.config import WhoConfig
 
 import bq
 from bq.core import model
 from bq.core.lib import app_globals, helpers
+from bq.core.lib.statics import BQStaticURLParser
 from bq.util.etreerender import render_etree
-from direct_cascade import DirectCascade
+from .direct_cascade import DirectCascade
 from paste.urlparser import StaticURLParser
 
 log = logging.getLogger("bq.config")
+
+# Needed for engine statics
+public_file_filter = BQStaticURLParser()
+LOG_LEVELS = {'debug': logging.DEBUG,
+                       'info': logging.INFO,
+                       'warning': logging.WARNING,
+                       'error': logging.ERROR,
+                       }
+LOG_STREAMS = dict (stdout = sys.stdout, stderr = sys.stderr)
+
 
 
 def transaction_retry_wrapper(app_config, controller):
@@ -108,13 +125,113 @@ class BisqueAppConfig(AppConfig):
         config['pylons.response_options']['headers'].pop('Pragma', None)
         ##print "DATA", config.get('use_sqlalchemy'), config.get('bisque.use_database')
 
-    #kage - patch to use direct cascade
     def add_static_file_middleware(self, app):
         #from tg import config
+        log.info ("ADDING STATIC MIDDLEWARE")
+        global public_file_filter
+        static_app = public_file_filter
+        app = DirectCascade([static_app, app])
+
         if asbool(config.get ('bisque.static_files', True)):
-            static_app = StaticURLParser(config['pylons.paths']['static_files'])
-            app = DirectCascade([static_app, app])
+            # used by engine to add module specific static files
+            # Add services static files
+            log.info( "LOADING STATICS")
+            static_app.add_path (config['pylons.paths']['static_files'],
+                                 config['pylons.paths']['static_files']
+                                 )
+
+            ###staticfilters = []
+            for x in pkg_resources.iter_entry_points ("bisque.services"):
+                try:
+                    log.info ('found static service: ' + str(x))
+                    service = x.load()
+                    if not hasattr(service, 'get_static_dirs'):
+                        continue
+                    staticdirs  = service.get_static_dirs()
+                    for d,r in staticdirs:
+                        log.debug( "adding static: %s %s" % ( d,r ))
+                        static_app.add_path(d,r)
+                except Exception:
+                    log.exception ("Couldn't load bisque service %s" % x)
+                    continue
+                #    static_app = BQStaticURLParser(d)
+                #    staticfilters.append (static_app)
+            #cascade = staticfilters + [app]
+            #print ("CASCADE", cascade)
+            log.info( "END STATICS: discovered %s static files " % len(static_app.files.keys()))
+        else:
+            log.info( "NO STATICS")
         return app
+
+
+    def add_auth_middleware(self, app, skip_authentication):
+        """
+        """
+        log_stream = config.get ('who.log_stream', 'stdout')
+        log_stream = LOG_STREAMS.get (log_stream, log_stream)
+        if isinstance(log_stream, basestring ):
+            log_stream  = logging.getLogger (log_stream)
+        log_level = LOG_LEVELS.get (config['who.log_level'], logging.ERROR)
+        log.debug ("LOG_STREAM %s LOG_LEVEL %s" , log_stream, log_level)
+
+        if 'who.config_file' in config and asbool(config.get('bisque.has_database')):
+            parser = WhoConfig(config['here'])
+            parser.parse(open(config['who.config_file']))
+
+            if not asbool (skip_authentication):
+                app =  PluggableAuthenticationMiddleware(
+                           app,
+                           parser.identifiers,
+                           parser.authenticators,
+                           parser.challengers,
+                           parser.mdproviders,
+                           parser.request_classifier,
+                           parser.challenge_decider,
+                           log_stream = log_stream,
+                           log_level = log_level,
+                           remote_user_key=parser.remote_user_key,
+                           )
+            else:
+                app = AuthenticationForgerMiddleware(
+                           app,
+                           parser.identifiers,
+                           parser.authenticators,
+                           parser.challengers,
+                           parser.mdproviders,
+                           parser.request_classifier,
+                           parser.challenge_decider,
+                           log_stream = log_stream,
+                           log_level = log_level,
+                           remote_user_key=parser.remote_user_key,
+                           )
+        else:
+            log.info ("MEX auth only")
+            # Add mex only authentication
+            from repoze.who.plugins.basicauth import BasicAuthPlugin
+            from bq.core.lib.mex_auth import make_plugin
+            from repoze.who.classifiers import default_request_classifier
+            from repoze.who.classifiers import default_challenge_decider
+            basicauth = BasicAuthPlugin('repoze.who')
+            mexauth   = make_plugin ()
+
+            identifiers = [('mexauth', mexauth)]
+            authenticators = [('mexauth', mexauth)]
+            challengers = []
+            mdproviders = []
+            app = PluggableAuthenticationMiddleware(app,
+                                                    identifiers,
+                                                    authenticators,
+                                                    challengers,
+                                                    mdproviders,
+                                                    default_request_classifier,
+                                                    default_challenge_decider,
+                                                    log_stream = log_stream,
+                                                    log_level = log_level,
+                                                    )
+        return app
+
+
+
 
 
 base_config = BisqueAppConfig()

@@ -10,8 +10,8 @@ function ImgSlicer (viewer, name){
     this.default_projection  = p.projection || '';
     this.plane_buffer_sz = 80;  // number of tiles to cache in both z and t
     this.cache_tile_delay_ms = 10; // Delay before requesting a specific tile
-    this.update_delay_ms = 150; // Delay before requesting new frames
-    this.cache_delay_ms = 350;  // Delay before pre-caching new frames
+    this.update_delay_ms = 30; // Delay before requesting new frames, 150
+    this.cache_delay_ms = 200;  // Delay before pre-caching new frames
 
     this.base = ViewerPlugin;
     this.base (viewer, name);

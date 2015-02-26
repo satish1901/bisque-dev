@@ -195,7 +195,7 @@ class DatasetServer(ServiceController):
 
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
-    def add_query(self, duri, resource_tag, tag_query):
+    def add_query(self, duri, resource_tag, tag_query, **kw):
         """Append query results to a dataset
 
         @param duri: dataset uri of an existing dataset
@@ -209,7 +209,7 @@ class DatasetServer(ServiceController):
         for n, val in enumerate(members):
             val.set('index', str(n))
 
-        items = data_service.query (resource_tag, tag_query=tag_query)
+        items = data_service.query (resource_tag, tag_query=tag_query, **kw)
         count = len(members)
         for resource in items:
             # check  if already there:

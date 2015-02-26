@@ -25,9 +25,7 @@ cookie_secret = 670cbb6c-641d-4089-95a4-7128e2e23d75
 [app:main]
 use = config:site.cfg
 bisque.server=%(server)s
-bisque.root=%(rooturl)s
 bisque.services_enabled=%(services_enabled)s
 bisque.services_disabled=%(services_disabled)s
-#bisque.proxyroot= %(proxyroot)s
 
 
