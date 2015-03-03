@@ -23,7 +23,6 @@ THREE.RotationControls = function ( object, domElement ) {
 	this.panSpeed = 0.3;
 
     this.autoRotate = false;
-	this.noRotate = false;
 	this.noZoom = false;
 	this.noPan = false;
 	this.noRoll = false;
@@ -184,10 +183,10 @@ THREE.RotationControls = function ( object, domElement ) {
     this.setRadius = function (radius) {
 
         _this.object.position.normalize();
-        _posCopy.normalize();
+        _this.posLocal.normalize();
 
         _this.object.position.multiplyScalar( radius );
-        _posCopy.multiplyScalar( radius );
+        _this.posLocal.multiplyScalar( radius );
 
 	};
 
