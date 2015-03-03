@@ -228,7 +228,7 @@ class ResponseCache(object):
         if '?' in url:
             url = url.split('?',1)[0]
         cachename = self._cache_name(url, user)
-        log.info ('cache invalidate ( %s )' % cachename )
+        log.info ('cache invalidate ( %s )' , cachename )
         if exact:
             # current cache names file-system safe versions of urls
             # /data_service/images/1?view=deep
@@ -391,15 +391,15 @@ class HierarchicalCache(ResponseCache):
             resource = resource.first()
         if isinstance(resource, Taggable):
             resource = resource.document
-        if not hasattr (resource, 'resource_uniq'):
+        if resource and not hasattr (resource, 'resource_uniq'):
             log.error ("invalidate: Cannot determine resource %s",  resource)
             return
-        log.debug ("CACHE invalidate: %s %s", resource.resource_uniq, user)
+        log.debug ("CACHE invalidate: resource %s user %s", resource and resource.resource_uniq, user)
 
         files = os.listdir(self.cachepath)
         cache_name = self._resource_cache_name(resource, user)
         query_names = self._resource_query_names(resource, user, 'tag_values', 'tag_query', 'tag_names', 'gob_types')
-        log.info ("CACHE invalidate %s for %s %s:%s" , resource.resource_uniq , user, cache_name, query_names)
+        log.info ("CACHE invalidate %s for %s %s:%s" , resource and resource.resource_uniq , user, cache_name, query_names)
         # invalidate cached resource varients
         def delete_matches (files, names, user):
             for f in list(files):

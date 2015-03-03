@@ -396,9 +396,9 @@ ImgCurrentView.prototype.returnCurrentView = function(cb) {
 	
 	
 	//scaled images in view
-	var inViewImagesScaled = []
+	var inViewImagesScaled = [];
 	while (inViewImages.length>0) {
-		tile = inViewImages.shift();
+		var tile = inViewImages.shift();
 		var tileList = this.divideTile(tile);
 		for (var t=0; t < tileList.length; t++) {
 			if (tileList[t].level == this.opt.level) {

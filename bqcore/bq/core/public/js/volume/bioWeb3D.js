@@ -2421,7 +2421,7 @@ VolumeDisplay.prototype.createMenu = function () {
 
 VolumeDisplay.prototype.createChannelMap = function () {
 	var phys = this.volume.phys;
-	var channel_count = parseInt(phys.ch);
+	var channel_count = parseInt(phys.ch);	
 
 	this.menu.add({
 		xtype : 'displayfield',
