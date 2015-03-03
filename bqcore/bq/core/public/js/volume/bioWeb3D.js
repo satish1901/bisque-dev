@@ -1973,6 +1973,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 						scale = scale < 0.25 ? 0.25 : scale;
 						me.canvas3D.controls.enabled = false;
 						me.canvas3D.controls.setRadius(scale);
+                        console.log('zoom');
                         //me.canvas3D.controls.enabled = false;;
 						//me.canvas3D.controls.noPan = true;
 						me.rerender();
@@ -2421,7 +2422,7 @@ VolumeDisplay.prototype.createMenu = function () {
 
 VolumeDisplay.prototype.createChannelMap = function () {
 	var phys = this.volume.phys;
-	var channel_count = parseInt(phys.ch);	
+	var channel_count = parseInt(phys.ch);
 
 	this.menu.add({
 		xtype : 'displayfield',
