@@ -12,14 +12,14 @@
 
 /* ctyles for browser */
 
-.text {
+.LightShadow.text {
     background-image: url('text.svg');
     background-position: center center;
     background-size: 150px;
     background-repeat: no-repeat;
 }
 
-.text .x-panel {
+.LightShadow.text .x-panel {
     opacity: 0.8;
 }
 
