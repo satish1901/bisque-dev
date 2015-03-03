@@ -150,9 +150,9 @@ function ImgExternal (viewer,name){
                 handler: this.convert,
             }, {
                 xtype  : 'menuitem',
-                itemId : 'menu_viewer_calibrate_resolution',
-                text   : 'Calibrate image resolution',
-                disabled: true,
+                itemId : 'menu_viewer_calibrate_image',
+                text   : 'Calibrate Image',
+                //disabled: true,
                 handler: this.calibrateResolution,
             }/*, {
                 xtype  : 'menuitem',
@@ -206,14 +206,13 @@ ImgExternal.prototype.newImage = function () {
 ImgExternal.prototype.updateImage = function () {
 
 	//set the options for the export at different scales
-	if (this.imgCurrentView) {
+	if (this.imgCurrentView && this.viewer.toolbar) {
 		var level = this.imgCurrentView.getCurrentLevel(); //level can not drop below 0
 		var m200 = this.viewer.toolbar.queryById('menu_viewer_export_view_button_200');
 		var m400 = this.viewer.toolbar.queryById('menu_viewer_export_view_button_400');
 		if (level) {
 			if (level<1) m200.setDisabled(true);
 			else m200.setDisabled(false);
-
 			if (level<2) m400.setDisabled(true);
 			else m400.setDisabled(false);
 		} else {
@@ -282,6 +281,14 @@ ImgExternal.prototype.convert = function () {
 };
 
 ImgExternal.prototype.calibrateResolution = function () {
-
+    var image = this.viewer.image;
+    var imageMetaEditor = Ext.create('BQ.viewer.Calibration',{
+        //layout : 'fit',
+        height : '85%',
+        width : '85%',
+        modal : true,
+        image_resource: image.uri, //accepts a data_service uri
+    })
+    imageMetaEditor.show();
 };
 

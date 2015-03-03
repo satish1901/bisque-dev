@@ -210,7 +210,7 @@ ImgEdit.prototype.cancelEdit = function () {
 ImgEdit.prototype.startEdit = function () {
     if (this.editing_gobjects) return;
     this.editing_gobjects = true;
-    this.renderer.stage.content.style.zIndex = this.zindex_high;
+    this.renderer.svgdoc.style.zIndex = this.zindex_high;
     this.viewer.viewer_controls_surface.style.zIndex = this.zindex_low;
 
     this.renderer.setmousedown(callback(this, this.mousedown));
@@ -219,12 +219,6 @@ ImgEdit.prototype.startEdit = function () {
 
     this.renderer.setmousemove(callback(this, this.mousemove));
     this.viewer.viewer_controls_surface.onmousemove = callback(this, this.mousemove);
-    /*
-    this.renderer.setmouseup(callback(this, function(e){
-        this.renderer.setMode('edit');
-        this.renderer.selectLayer.moveToBottom();
-    }));
-    */
 
     //this.renderer.setdblclick(callback(this, this.mousedblclick));
     //this.viewer.viewer_controls_surface.ondblclick = callback(this, this.mousedblclick);
@@ -239,13 +233,13 @@ ImgEdit.prototype.startEdit = function () {
 };
 
 ImgEdit.prototype.endEdit = function () {
-    this.renderer.stage.content.style.zIndex = this.zindex_low;
+    this.renderer.svgdoc.style.zIndex = this.zindex_low;
     this.viewer.viewer_controls_surface.style.zIndex = this.zindex_high;
 
     if (this.surface_original_onmousedown)
         this.viewer.viewer_controls_surface.onmousedown = this.surface_original_onmousedown;
     this.renderer.setmousedown(null);
-    //this.renderer.setmousemove(null);
+
     //this.renderer.setdblclick(null);
     //this.viewer.viewer_controls_surface.ondblclick = null;
 
@@ -274,23 +268,20 @@ ImgEdit.prototype.dochange = function () {
 };
 
 ImgEdit.prototype.mousedown = function (e) {
-    if(!e.evt) return;
-    e.evt.cancelBubble = true;
     if (!e) e = window.event;  // IE event model
     if (e == null) return;
-    /*
-    if (!(e.target===this.renderer.currentLayer.getCanvas()._canvas ||
+    if (!(e.target===this.renderer.svgdoc ||
           e.target===this.renderer.svggobs ||
           (this.current_gob && e.target===this.current_gob.shape.svgNode))) return;
-    */
+
     if (this.mode) {
         var svgPoint = this.renderer.getUserCoord(e);
         this.mode (e, svgPoint.x, svgPoint.y);
+
         // this will disable all propagation while in edit selected
         if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
         else e.cancelBubble = true;                 // IE
     } else if (this.viewer.parameters.onposition) {
-        //this.renderer.setMode('select');
         var view = this.viewer.current_view,
             phys = this.viewer.imagephys,
             p = this.renderer.getUserCoord(e),
@@ -304,7 +295,6 @@ ImgEdit.prototype.mousemove = function (e) {
     //console.log(this, e);
     if (!e) e = window.event;  // IE event model
     if (e == null) return;
-
     if (!(e.target===this.renderer.svgdoc ||
           e.target===this.renderer.svggobs ||
           (this.current_gob && e.target===this.current_gob.shape.svgNode))) return;
@@ -329,13 +319,11 @@ ImgEdit.prototype.mousemove = function (e) {
 };*/
 
 ImgEdit.prototype.display_gob_info = function (gob) {
-    /*
     var view = this.viewer.current_view;
     var phys = this.viewer.imagephys;
 
     var text = '';
     var perimeter_px = gob.perimeter();
-
     if (perimeter_px>0)
         text += ' Length: '+perimeter_px.toFixed(2)+'px';
     if (perimeter_px>0 && phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
@@ -351,7 +339,6 @@ ImgEdit.prototype.display_gob_info = function (gob) {
 
     var ip = this.viewer.plugins_by_name['infobar'];
     ip.posbar.innerText = text;
-    */
 };
 
 ImgEdit.prototype.test_save_permission = function (uri) {
@@ -461,39 +448,21 @@ ImgEdit.prototype.on_selected = function (gob) {
 };
 
 ImgEdit.prototype.on_move = function (gob) {
-    if(!gob.shape.postEnabled) return;
-
     this.display_gob_info(gob);
     var me = this;
     var pars = this.viewer.parameters || {};
-    if(!this.gobQueue) this.gobQueue = [];
-    this.gobQueue.push(gob);
-
-    var timeOut = function() {
-        console.log('post');
-        if(me.gobQueue.length === 0) return;
-        var lastGob = me.gobQueue.pop();
-        lastGob.save_me(pars.ondone, pars.onerror ); // check why save_ should not be used
-        if(me.gobQueue.length > 0)
-            timeOut();
-        else return;
-    }
-
-    setTimeout( timeOut, 10 )
-    /*
     if (this.saving_timeout) clearTimeout (this.saving_timeout);
     this.saving_timeout = setTimeout( function() {
         me.saving_timeout=undefined;
         if (!me.test_save_permission(gob.uri))
             return;
         gob.save_me(pars.ondone, pars.onerror ); // check why save_ should not be used
-    }, 10 );*/
+    }, 1000 );
 };
 
 ImgEdit.prototype.setmode = function (type, mode_fun) {
     if (mode_fun) this.startEdit();
     this.mode = mode_fun;
-    this.renderer.setMode('add');
     this.mode_type = type;
     if (type)
         this.createButtonsDeselect();
@@ -502,7 +471,6 @@ ImgEdit.prototype.setmode = function (type, mode_fun) {
 ImgEdit.prototype.select = function (e, x, y) {
     this.setmode (null);
     this.mode_type = 'select';
-    this.renderer.setMode('edit');
     this.current_gob = null;
     this.startEdit();
     if (this.viewer.parameters.oneditcontrols)
@@ -544,11 +512,8 @@ ImgEdit.prototype.new_point = function (parent, e, x, y) {
 };
 
 ImgEdit.prototype.new_rectangle = function (parent, e, x, y) {
-    e.evt.cancelBubble = true;
-
-    var me = this;
-    var v =  this.viewer.current_view;
-    var g =  new BQGObject('rectangle');
+    var v = this.viewer.current_view;
+    var g = new BQGObject('rectangle');
     parent = parent || this.global_parent;
 
     if (parent)
@@ -557,33 +522,16 @@ ImgEdit.prototype.new_rectangle = function (parent, e, x, y) {
         this.viewer.image.addgobjects(g);
 
     var pt = v.inverseTransformPoint(x,y);
-    var pt2 = v.inverseTransformPoint(x+1,y+1);
+    var pt2 = v.inverseTransformPoint(x+50,y+50);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     g.vertices.push (new BQVertex (pt2.x, pt2.y, v.z, v.t, null, 1));
 
-    this.current_gob = g;
+    this.current_gob = null;
     this.visit_render.visitall(g, [v]);
     this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-
-
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    this.renderer.setmouseup(callback(this, function(e){
-        me.on_move(me.current_gob);
-        me.current_gob = null;
-        me.renderer.setmousemove(null);
-        me.renderer.setmouseup(null);
-    }));
-
-    if(g.shape){
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-    }
 };
 
 ImgEdit.prototype.new_square = function (parent, e, x, y) {
-    var me = this;
-
     var v = this.viewer.current_view;
     var g = new BQGObject('square');
     parent = parent || this.global_parent;
@@ -598,29 +546,13 @@ ImgEdit.prototype.new_square = function (parent, e, x, y) {
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     g.vertices.push (new BQVertex (pt2.x, pt2.y, v.z, v.t, null, 1));
 
-    this.current_gob = g;
+    this.current_gob = null;
     this.renderer.square( undefined, g, v, true); // there's no SVG element square, force specific shape
     this.visit_render.visitall(g, [v]);
     this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-
-
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    this.renderer.setmouseup(callback(this, function(e){
-        me.on_move(me.current_gob);
-        me.current_gob = null;
-        me.renderer.setmousemove(null);
-        me.renderer.setmouseup(null);
-    }));
-
-    if(g.shape){
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-    }
 };
 
 ImgEdit.prototype.new_polygon = function (parent, e, x, y) {
-
     var v = this.viewer.current_view;
     var g = this.current_gob;
     parent = parent || this.global_parent;
@@ -637,50 +569,18 @@ ImgEdit.prototype.new_polygon = function (parent, e, x, y) {
     var pt = v.inverseTransformPoint(x,y);
     var index = g.vertices.length;
     var prev = index>0?g.vertices[index-1]:{x:-1,y:-1};
-
-
-    //if we want to close this sucker without adding more points
-    if(index > 2){
-        //var ip = v.inverseTransformPoint(g.vertices[0].x,g.vertices[0].y);
-        var dx = g.vertices[0].x - pt.x;
-        var dy = g.vertices[0].y - pt.y;
-        var dp = dx*dx + dy*dy;
-
-        if(dp < 16){
-            this.current_gob = null;
-            this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-            g.shape.postEnabled = true;
-            this.renderer.setmousemove(null);
-            this.renderer.resetShapeCornerFill();
-            return;
-        };
-    }
-    if (e.evt.detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
+    if (e.detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
         g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
 
     // Double click ends the object otherwise add points
-    this.current_gob = (e.evt.detail > 1)?null:g;
-
-    if (!this.current_gob){
+    this.current_gob = (e.detail > 1)?null:g;
+    if (!this.current_gob)
         this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-        g.shape.postEnabled = true;
-        this.renderer.setmousemove(null);
-        return;
-    }
-    else{
-        if(g.shape)
-            g.shape.sprite.remove();
+    else
         this.visit_render.visitall(g, [v]);
-        g.shape.postEnabled = false;
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-        this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    }
 };
 
 ImgEdit.prototype.new_polyline = function (parent, e, x, y) {
-
     var v = this.viewer.current_view;
     var g = this.current_gob;
     parent = parent || this.global_parent;
@@ -697,47 +597,16 @@ ImgEdit.prototype.new_polyline = function (parent, e, x, y) {
     var pt = v.inverseTransformPoint(x,y);
     var index = g.vertices.length;
     var prev = index>0?g.vertices[index-1]:{x:-1,y:-1};
-
-    //
-    //this little bit allows the user to close the loop
-    if(index > 2){
-        //var ip = v.inverseTransformPoint(g.vertices[0].x,g.vertices[0].y);
-        var dx = g.vertices[0].x - pt.x;
-        var dy = g.vertices[0].y - pt.y;
-        var dp = dx*dx + dy*dy;
-
-        if(dp < 16){
-            this.current_gob = null;
-            this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-            g.shape.postEnabled = true;
-            this.renderer.setmousemove(null);
-            this.renderer.resetShapeCornerFill();
-            return;
-        };
-    }
-
-    if (e.evt.detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
+    if (e.detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
         g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
 
     // Double click ends the object otherwise add points
-    this.current_gob = (e.evt.detail > 1)?null:g;
-
-    if (!this.current_gob){
+    this.current_gob = (e.detail > 1)?null:g;
+    if (!this.current_gob)
         this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-        g.shape.postEnabled = true;
-        this.renderer.setmousemove(null);
-        return;
-    }
-    else{
-        if(g.shape)
-            g.shape.sprite.remove();
+    else
         this.visit_render.visitall(g, [v]);
-        g.shape.postEnabled = false;
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-        this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    }
+
 };
 
 ImgEdit.prototype.new_line = function (parent, e, x, y) {
@@ -762,20 +631,9 @@ ImgEdit.prototype.new_line = function (parent, e, x, y) {
     this.current_gob = finish?null:g;
     if (!this.current_gob) {
         this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-        g.shape.postEnabled = true;
-        this.renderer.setmousemove(null);
     } else {
-        //if (!g.shape)
-        //    this.renderer.polyline( undefined, g, v, true); // there's no SVG element square, force specific shape
-
-        if(g.shape)
-            g.shape.sprite.remove();
-        this.visit_render.visitall(g, [v]);
-        g.shape.postEnabled = false;
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-        this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
+        if (!g.shape)
+            this.renderer.polyline( undefined, g, v, true); // there's no SVG element square, force specific shape
     }
     this.visit_render.visitall(g, [v]);
 };
@@ -789,10 +647,6 @@ ImgEdit.prototype.new_line = function (parent, e, x, y) {
 };*/
 
 ImgEdit.prototype.new_circle = function (parent, e, x, y) {
-    var me = this;
-
-    e.evt.cancelBubble = true;
-
     var v = this.viewer.current_view;
     var g = new BQGObject('circle');
     parent = parent || this.global_parent;
@@ -807,33 +661,14 @@ ImgEdit.prototype.new_circle = function (parent, e, x, y) {
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     g.vertices.push (new BQVertex (ptR.x, ptR.y, v.z, v.t, null, 1));
 
-    //this.current_gob = null;
-    this.current_gob = g;
+    this.current_gob = null;
     this.visit_render.visitall(g, [v]);
     this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    this.renderer.setmouseup(callback(this, function(e){
-        me.on_move(me.current_gob);
-        me.current_gob = null;
-        me.renderer.setmousemove(null);
-        me.renderer.setmouseup(null);
-    }));
-
-    if(g.shape){
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-    }
 };
 
 ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
-    e.evt.cancelBubble = true;
-
-    var me = this;
     var v = this.viewer.current_view;
     var g = new BQGObject('ellipse');
-
     parent = parent || this.global_parent;
 
     if (parent)
@@ -842,34 +677,16 @@ ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
         this.viewer.image.addgobjects(g);
 
     var pt = v.inverseTransformPoint(x,y);
-    var ptX = v.inverseTransformPoint(x,y);
-    var ptY = v.inverseTransformPoint(x,y);
+    var ptX = v.inverseTransformPoint(x+50,y);
+    var ptY = v.inverseTransformPoint(x,y+30);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
-    g.vertices.push (new BQVertex (ptX.x + 1, ptX.y, v.z, v.t, null, 1));
-    g.vertices.push (new BQVertex (ptY.x, ptY.y + 1, v.z, v.t, null, 2));
+    g.vertices.push (new BQVertex (ptX.x, ptX.y, v.z, v.t, null, 1));
+    g.vertices.push (new BQVertex (ptY.x, ptY.y, v.z, v.t, null, 2));
 
-    //this.current_gob = null;
-    this.current_gob = g;
+    this.current_gob = null;
     this.visit_render.visitall(g, [v]);
     this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-
-    //this.startCoord = [x,y];
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    this.renderer.setmouseup(callback(this, function(e){
-        me.on_move(me.current_gob);
-        me.current_gob = null;
-        me.renderer.setmousemove(null);
-        me.renderer.setmouseup(null);
-    }));
-
-    if(g.shape){
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-    }
 };
-
-
 
 ImgEdit.prototype.new_label = function (parent, e, x, y) {
     var v = this.viewer.current_view;
