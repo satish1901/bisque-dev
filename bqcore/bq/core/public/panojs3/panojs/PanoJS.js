@@ -294,8 +294,8 @@ PanoJS.prototype.init = function() {
     this.ui_listener.ongestureend    = callback(this, this.gestureEndHandler);
 
     // notify listners
-    this.notifyViewerZoomed();
-    this.notifyViewerMoved();
+    //this.notifyViewerZoomed();
+    //this.notifyViewerMoved();
 };
 
 PanoJS.prototype.viewerDomElement = function() {
