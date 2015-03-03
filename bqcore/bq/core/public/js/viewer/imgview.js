@@ -354,7 +354,9 @@ function ImgViewer (parentid, image_or_uri, parameters) {
             "tiles"       : TilesRenderer, // TILES RENDERER MUST BE BEFORE SVGRenderer
             "ops"         : ImgOperations, // Ops should be after tiler
             "pixelcounter": ImgPixelCounter,
-            "renderer"    : SVGRenderer,   // RENDERER MUST BE LAST
+            //"renderer"    : SVGRenderer,   // RENDERER MUST BE LAST
+            "renderer"    : CanvasRenderer,   // RENDERER MUST BE LAST
+
         };
 
     var plugin_names = plugin_list.split(',');
@@ -515,8 +517,12 @@ ImgViewer.prototype.doUpdateImage = function () {
 
 ImgViewer.prototype.updateImage = function () {
     this.requires_update = undefined;
+    this.doUpdateImage();
+
     if (this.update_needed) clearTimeout(this.update_needed);
-    this.update_needed = setTimeout(callback(this, 'doUpdateImage'), this.update_delay_ms);
+    //this.update_needed = setTimeout(callback(this, 'doUpdateImage'), this.update_delay_ms);
+    this.update_needed = setTimeout(callback(this, 'doUpdateImage'), 0);
+
 };
 
 ImgViewer.prototype.findPlugin = function(name) {
@@ -599,12 +605,16 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
     // reposition the image to expose the object
     if (selection) {
         // 3D position
+        //if(this.tiles.cur_z != gob.vertices[0].z)
         this.slicer.ensureVisible(gob);
         // 2D position
+        //if(this.tiles.cur_z != gob.vertices[0].z)
         this.tiles.ensureVisible(gob);
+
         this.editor.display_gob_info(gob);
     }
-    this.doUpdateImage();
+    if(this.tiles.cur_z != gob.vertices[0].z)
+        this.doUpdateImage();
 
     // highlight the selected object
     this.renderer.highlight(gob, selection);
@@ -823,4 +833,3 @@ SimpleImgRenderer.prototype.updateImage = function () {
     var src = this.viewer.image_url();
     this.image.setAttributeNS(null, "src",   src);
 };
-

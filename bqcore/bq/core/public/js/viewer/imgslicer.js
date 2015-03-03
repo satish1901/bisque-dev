@@ -222,6 +222,7 @@ ImgSlicer.prototype.sliceZ = function (val) {
 };
 
 ImgSlicer.prototype.setPosition = function (z, t) {
+    if(this.z === z && this.t === t) return;
     if (z) {
         this.z = z;
         if (this.zslider)
@@ -406,5 +407,3 @@ ImgSlicer.prototype.loadPreferences = function (p) {
     if (!p) return;
     this.default_projection  = 'projection'  in p ? p.projection  : this.default_projection;
 };
-
-
