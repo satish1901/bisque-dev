@@ -732,7 +732,6 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
                     me.fireEvent('change', me);
                 },
                 selected: function(d){
-                    console.log(d);
                     blockChange = true;
                     me.colorPicker.setColorRgb(
                         d.color[0]/255,

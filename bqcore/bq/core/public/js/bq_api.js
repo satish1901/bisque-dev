@@ -949,6 +949,7 @@ BQObject.prototype.save_ = function (parenturi, cb, errorcb, method) {
 };
 
 BQObject.prototype.save_me = function (cb, errorcb) {
+    console.log('save me');
     this.testReadonly();
     var req = this.toXML();
     errorcb = errorcb || default_error_callback;
@@ -1995,11 +1996,11 @@ BQImagePhys.prototype.getEnhancementOptions = function () {
         if (this.dicom.wnd_center.indexOf(',')>=0) {
             // if wnd_center is a list
             var cntrs = this.dicom.wnd_center.split(',');
-            var widths = this.dicom.wnd_width.split(',');            
+            var widths = this.dicom.wnd_width.split(',');
             var prefferred = cntrs[0]+','+widths[0];
             for (var i=0; i<cntrs.length; ++i) {
                 dicom_options.push(
-                    { value:"hounsfield:"+cntrs[i]+','+widths[i], text: "CT: Preferred ("+cntrs[i]+','+widths[i]+")" } 
+                    { value:"hounsfield:"+cntrs[i]+','+widths[i], text: "CT: Preferred ("+cntrs[i]+','+widths[i]+")" }
                 );
             }
         } else {
@@ -2657,6 +2658,3 @@ BQDir.prototype = new BQObject();
 /*BQDir.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);
 };*/
-
-
-

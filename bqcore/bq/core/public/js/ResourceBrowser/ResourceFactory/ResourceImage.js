@@ -555,17 +555,26 @@ Ext.define('Bisque.Resource.Image.Page', {
                     this.gobjectTagger.tree.getView().refresh();
                 },
                 select : function(viewer, gob) {
-                    var node = this.gobjectTagger.findNodeByGob(gob);
-                    if (!node) {
-                        console.log('No node found!');
-                        return;
-                    }
-                    // dima: here expand to expose the selected node
-                    var parent = node;
-                    for (var i=0; i<node.getDepth()-1; i++)
-                        parent = parent.parentNode;
-                    this.gobjectTagger.tree.expandNode( parent, true );
-                    this.gobjectTagger.tree.getSelectionModel().select(node);
+                    var nodes = [];
+                    var me = this;
+
+                    gob.forEach(function(e,i,a){
+                        var node = me.gobjectTagger.findNodeByGob(e.gob);
+                        nodes.push(node);
+                        if (!node) {
+                            console.log('No node found!');
+                            return;
+                        }
+                        // dima: here expand to expose the selected node
+                        var parent = node;
+                        for (var i=0; i<node.getDepth()-1; i++)
+                            parent = parent.parentNode;
+                        me.gobjectTagger.tree.expandNode( parent, true );
+                    })
+                    if(nodes.length === 1)
+                        this.gobjectTagger.tree.getSelectionModel().select(nodes[0]);
+                    else
+                        this.gobjectTagger.tree.getSelectionModel().select(nodes);
                 },
                 edit_controls_activated : function(viewer) {
                     this.gobjectTagger.deselectGobCreation();
@@ -723,7 +732,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             showOrganizer : false,
             mexLoaded : false,
             listeners : {
-                'browserLoad' : function(me, resQ) {
+                'browserLoad' : function(me, resQ){ e
                     me.mexLoaded = true;
                 },
                 'Select' : function(me, resource) {
@@ -766,6 +775,19 @@ Ext.define('Bisque.Resource.Image.Page', {
             xtype : 'bq_graphviewer_panel',
             itemId: 'graph',
             title : 'Graph',
+            listeners:{
+                'context' : function(res, div, graph) {
+                    var node = graph.g.node(res);
+                    if(node.card.cardType=='mex'){
+                        window.open(BQ.Server.url('/module_service/MetaData' + '/?mex=/data_service/' + res));
+
+                    }
+                    if(node.card.cardType=='image'){
+                        window.open(BQ.Server.url('/client_service/view?resource=/data_service/' + res));
+
+                    }
+                },
+            },
             resource : this.resource,
         };
 

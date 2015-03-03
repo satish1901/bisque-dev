@@ -460,12 +460,25 @@ polyBuffer.prototype.push = function (g) {
     g.index3DStart = idStart;
 
     this.shapeIndex.push(g);
+	if (!this.isClockWise(poly)){
+        try{
+		    lindex = POLYGON.tessellate(poly, []);
+        }
+        catch(e){
+            BQ.ui.error("some polygons could not be renderered: <BR/> " +
+                        e.message);
+        }
+    }
+	else{
+        try{
+		    lindex = POLYGON.tessellate(poly.reverse(), []);
+        }
 
-	if (!this.isClockWise(poly))
-		lindex = POLYGON.tessellate(poly, []);
-	else
-		lindex = POLYGON.tessellate(poly.reverse(), []);
-
+        catch(e){
+            BQ.ui.error("some polygons could not be renderered: <BR/> " +
+                        e.message);
+        }
+    }
 	for (var j = 0; j < lindex.length; j++) {
 		lindex[j] += this.position.length;
 	}
