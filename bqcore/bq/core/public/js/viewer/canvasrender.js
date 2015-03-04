@@ -1837,6 +1837,11 @@ CanvasRenderer.prototype.initPoints = function(gobs){
         e.on('mouseup',function(evt){
             me.selectedSet.forEach(function(e,i,d){
                 e.dirty = true;
+
+                me.selectedSet.forEach(function(e,i,d){
+                    if(e.dirty)
+                        me.move_shape(e.gob);
+                });
             });
         })
 
@@ -1900,6 +1905,11 @@ CanvasRenderer.prototype.select = function (gobs) {
 
         e.on('mouseup',function(evt){
             e.dirty = true;
+
+            me.selectedSet.forEach(function(e,i,d){
+                if(e.dirty)
+                    me.move_shape(e.gob);
+            });
         });
     });
     this.currentLayer.draw();
@@ -2058,6 +2068,11 @@ CanvasRenderer.prototype.viewShape = function (gob, move, select){
 
     poly.on('mouseup', function() {
         gob.shape.sprite.setDraggable(false);
+
+        me.selectedSet.forEach(function(e,i,d){
+            if(e.dirty)
+                me.move_shape(e.gob);
+        });
         //me.selectedSet.forEach(function(e,i,d){
         //     me.move_shape(e.gob);
         //});
