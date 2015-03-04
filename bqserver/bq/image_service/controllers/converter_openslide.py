@@ -146,6 +146,7 @@ class ConverterOpenSlide(ConverterBase):
             except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
                 misc.end_nounicode_win(tmp)
                 return {}
+
             info2 = {
                 'format': slide.properties[openslide.PROPERTY_NAME_VENDOR],
                 'image_num_series': 0,
@@ -155,7 +156,8 @@ class ConverterOpenSlide(ConverterBase):
                 'image_num_z': 1,
                 'image_num_t': 1,
                 'image_num_c': 3,
-                'image_num_l': slide.level_count,
+                'image_num_resolution_levels': slide.level_count,
+                'image_resolution_level_scales': ','.join([str(1.0/i) for i in slide.level_downsamples]),
                 'image_pixel_format': 'unsigned integer',
                 'image_pixel_depth': 8
             }
@@ -203,7 +205,8 @@ class ConverterOpenSlide(ConverterBase):
                 'image_num_z': 1,
                 'image_num_t': 1,
                 'image_num_c': 3,
-                'image_num_l': slide.level_count,
+                'image_num_resolution_levels': slide.level_count,
+                'image_resolution_level_scales': ','.join([str(1.0/i) for i in slide.level_downsamples]),
                 'image_pixel_format': 'unsigned integer',
                 'image_pixel_depth': 8,
                 'magnification': slide.properties.get(openslide.PROPERTY_NAME_OBJECTIVE_POWER),
@@ -312,6 +315,39 @@ class ConverterOpenSlide(ConverterBase):
         # make sure the file was written
         with Locks(ofnm):
             pass
+        return ofnm
+
+    @classmethod
+    def writeHistogram(cls, ifnm, ofnm, **kw):
+        '''writes Histogram in libbioimage format'''
+        log.debug('Writing histogram for %s into: %s', ifnm, ofnm )
+      
+        # currently openslide only supports 8 bit 3 channel images
+        # need to generate a histogram file uniformely distributed from 0..255
+        channels = 3
+
+        import struct
+        with open(ofnm, 'wb') as f:
+            f.write(struct.pack('<cccc', 'B', 'I', 'M', '1')) # header
+            f.write(struct.pack('<cccc', 'I', 'H', 'S', '1')) # spec
+            f.write(struct.pack('<L', channels)) # number of histograms
+            # write histograms
+            for c in range(channels):
+                f.write(struct.pack('<cccc', 'B', 'I', 'M', '1')) # header
+                f.write(struct.pack('<cccc', 'H', 'S', 'T', '1')) # spec
+                
+                # write bim::HistogramInternal 
+                f.write(struct.pack('<H', 8)) # uint16 data_bpp; // bits per pixel
+                f.write(struct.pack('<H', 1)) # uint16 data_fmt; // signed, unsigned, float
+                f.write(struct.pack('<d', 0.0)) # double shift;
+                f.write(struct.pack('<d', 1.0)) # double scale;
+                f.write(struct.pack('<d', 0.0)) # double value_min;
+                f.write(struct.pack('<d', 255.0)) # double value_max;
+                
+                # write data
+                f.write(struct.pack('<L', 256)) # histogram size, here 256
+                for i in range(256):
+                    f.write(struct.pack('<Q', 100)) # histogram data, here each color has freq of 100
         return ofnm
 
 try:

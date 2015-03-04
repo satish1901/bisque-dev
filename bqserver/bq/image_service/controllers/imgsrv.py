@@ -1606,19 +1606,44 @@ class TileService(object):
         hist_name = '%s_histogram'%(base_name)
         hstl_name = hist_name
 
-        # tile the openslide supported file, special case here
-        processed = False
-        if data_token.dims is not None and data_token.dims.get('converter', '')=='openslide':
-            processed = True
-            if not os.path.exists(hstl_name):
-                with Locks(ifname, hstl_name) as l:
-                    if l.locked: # the file is not being currently written by another process
-                        # need to generate a histogram file uniformely distributed from 0..255
-                        self.server.converters['imgcnv'].writeHistogram(channels=3, ofnm=hstl_name)
-            if not os.path.exists(ofname):
-                self.server.converters['openslide'].tile(ifname, ofname, level, tnx, tny, tsz)
+        # # tile the openslide supported file, special case here
+        # processed = False
+        # if data_token.dims is not None and data_token.dims.get('converter', '')=='openslide':
+        #     processed = True
+        #     if not os.path.exists(hstl_name):
+        #         with Locks(ifname, hstl_name) as l:
+        #             if l.locked: # the file is not being currently written by another process
+        #                 # need to generate a histogram file uniformely distributed from 0..255
+        #                 self.server.converters['imgcnv'].writeHistogram(channels=3, ofnm=hstl_name)
+        #     if not os.path.exists(ofname):
+        #         self.server.converters['openslide'].tile(ifname, ofname, level, tnx, tny, tsz)
 
-        # tile the image
+        # extract individual tile if available
+        processed = False
+        if data_token.dims is not None and data_token.dims.get('image_num_resolution_levels', 0)>0:
+            if os.path.exists(ofname):
+                processed = True
+            else:
+                r = None
+                for n,c in self.server.converters.iteritems():
+                    log.debug('Converter: %s', n)
+                    if callable( getattr(c, "tile", None) ):
+                        log.debug('Trying to extract tile')
+                        with Locks(ifname, ofname) as l:
+                            if l.locked: # the file is not being currently written by another process
+                                r = c.tile(ifname, ofname, level, tnx, tny, tsz, series=data_token.series, token=data_token)
+                            else:
+                                r = ifnm
+                        if r is not None:
+                            # write the histogram file if missing
+                            if not os.path.exists(hstl_name):
+                                with Locks(ifname, hstl_name) as l:
+                                    if l.locked: # the file is not being currently written by another process
+                                        c.writeHistogram(ifnm=ifname, ofnm=hstl_name, series=data_token.series, token=data_token)
+                            break
+                processed = r is not None
+
+        # tile the whole image
         tiles_name = '%s.tif' % (base_name)
         if not processed and not os.path.exists(hist_name):
             with Locks(ifname, hstl_name) as l:
