@@ -2,7 +2,7 @@ Ext.define('BQ.admin.MainPage', {
     extend : 'Ext.window.Window',
     requires: [
         'BQ.admin.UserManager', 
-        'BQ.admin.ModuleManager',
+        //'BQ.admin.ModuleManager',
     ],
     //xtype: 'BQAdminViewer',
     title : 'Admin Page',
