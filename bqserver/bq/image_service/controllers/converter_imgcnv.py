@@ -15,6 +15,7 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 import logging
 import os.path
+import math
 from itertools import groupby
 from lxml import etree
 #from subprocess import call
@@ -137,6 +138,10 @@ class ConverterImgcnv(ConverterBase):
         'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
         'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
         'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
+        'image_num_resolution_levels': 'image_num_resolution_levels',
+        'image_resolution_level_scales': 'image_resolution_level_scales',
+        'tile_num_x': 'tile_num_x',
+        'tile_num_y': 'tile_num_y',
     }
 
 #     #######################################
@@ -402,13 +407,28 @@ class ConverterImgcnv(ConverterBase):
         
         num_z = info.get('image_num_z', 1)
         num_t = info.get('image_num_t', 1)
+        num_l = info.get('image_num_resolution_levels', 1)
         page=1
         if preproc == 'mid':
             mx = num_z if num_z>1 else num_t
             page = min(max(1, mx/2), mx)
         elif preproc != '':
             return None
-        
+
+        # if image has multiple resolution levels find the closest one and request it
+        if num_l>1:
+            try:
+                num_x = int(info.get('image_num_x', 1))
+                num_y = int(info.get('image_num_y', 1))
+                scales = [float(i) for i in info.get('image_resolution_level_scales', '').split(',')]
+                sizes = [(round(num_x*i),round(num_y*i)) for i in scales]
+                relatives = [max(width/sz[0], height/sz[1]) for sz in sizes]
+                relatives = [i if i<=1 else 0 for i in relatives]
+                level = relatives.index(max(relatives))
+                command.extend(['-res-level', str(level)])
+            except (Exception):
+                pass
+
         # separate normal and multi-file series
         if cls.is_multifile_series(**kw) is False:
             command.extend(['-i', ifnm])
@@ -433,6 +453,9 @@ class ConverterImgcnv(ConverterBase):
         if info.get('image_pixel_depth', 16) != 8:
             command.extend(['-depth', '8,d,u'])
 
+        method = kw.get('method', 'BC')
+        command.extend([ '-resize', '%s,%s,%s,AR'%(width,height,method)])
+
         #command.extend(['-display'])
         command.extend(['-fusemeta'])
         if info.get('image_num_c', 1)<4:
@@ -440,8 +463,6 @@ class ConverterImgcnv(ConverterBase):
         else:
             command.extend(['-fusemethod', 'm']) # 'a'
             
-        method = kw.get('method', 'BC')
-        command.extend([ '-resize', '%s,%s,%s,AR'%(width,height,method)])
         if fmt == 'jpeg':
             command.extend([ '-options', 'quality 95 progressive yes'])
 
@@ -522,36 +543,97 @@ class ConverterImgcnv(ConverterBase):
 
         return cls.run(ifnm, ofnm, command )
 
+    @classmethod
+    def tile(cls, ifnm, ofnm, level, x, y, sz, series=0, **kw):
+        '''extract tile Level,X,Y tile from input filename into output in OME-TIFF format'''
+        log.debug('Tile: %s %s %s %s %s for [%s]', level, x, y, sz, series, ifnm)
+        level = misc.safeint(level, 0)
+        x  = misc.safeint(x, 0)
+        y  = misc.safeint(y, 0)
+        sz = misc.safeint(sz, 0)
+        page = 0
+       
+        try:
+            token = kw.get('token', None)
+            info = token.dims or {}
+        except (TypeError, AttributeError):
+            info = {}
+        log.debug('info: %s', info)
+        tile_w = info.get('tile_num_x', 0)
+        tile_h = info.get('tile_num_y', 0)
+        num_l = info.get('image_num_resolution_levels', 1)
+
+        if num_l<=1 or tile_w<1 or tile_h<1:
+            log.debug('Image does not contain tiles, skipping...')
+            return None
+
+        # images may have different resolution levels embedded, find the right scale
+        # this will later be hidden in the imgcnv tile level and size interface
+        try:
+            scales = info.get('image_resolution_level_scales', '')
+            scales = [float(i) for i in scales.split(',')]
+            level = scales.index(1.0 / math.pow(2, level))
+        except (ValueError):
+            return None
+
+        command = ['-o', ofnm, '-t', 'tiff']
+
+        # separate normal and multi-file series
+        if cls.is_multifile_series(**kw) is False:
+            command.extend(['-i', ifnm])
+            command.extend(['-page', str(page)])
+        else:
+            # use first image of the series, need to check for separate channels here
+            files = cls.enumerate_series_files(**kw)
+            meta = kw['token'].meta or {}
+            samples = meta.get('image_num_c', 0)
+            if samples<2:
+                command.extend(['-i', files[page-1]])
+            else:
+                # in case of channels being stored in separate files
+                page = (page-1) * samples
+                command.extend(['-i', files[page+0]])
+                for s in range(1, samples):
+                    command.extend(['-c', files[page+s]])
+
+        command.extend([ '-tile', '%s,%s,%s,%s'%(sz,x,y,level)])
+
+        return cls.run(ifnm, ofnm, command )
+
     #######################################
     # Special methods
     #######################################
-
-    def writeHistogram(self, channels, ofnm):
+    
+    @classmethod
+    def writeHistogram(cls, ifnm, ofnm, **kw):
         '''writes Histogram in libbioimage format'''
-        log.debug('Writing histogram into: %s', ofnm )
+        log.debug('Writing histogram for %s into: %s', ifnm, ofnm )
+        command = ['-i', ifnm, '-ohst', ofnm]
+
+        # use resolution level to limit the scope
+        try:
+            token = kw.get('token', None)
+            info = token.dims or {}
+        except (TypeError, AttributeError):
+            info = {}
         
-        import struct
-        with open(ofnm, 'wb') as f:
-            f.write(struct.pack('<cccc', 'B', 'I', 'M', '1')) # header
-            f.write(struct.pack('<cccc', 'I', 'H', 'S', '1')) # spec
-            f.write(struct.pack('<L', channels)) # number of histograms
-            # write histograms
-            for c in range(channels):
-                f.write(struct.pack('<cccc', 'B', 'I', 'M', '1')) # header
-                f.write(struct.pack('<cccc', 'H', 'S', 'T', '1')) # spec
-                
-                # write bim::HistogramInternal 
-                f.write(struct.pack('<H', 8)) # uint16 data_bpp; // bits per pixel
-                f.write(struct.pack('<H', 1)) # uint16 data_fmt; // signed, unsigned, float
-                f.write(struct.pack('<d', 0.0)) # double shift;
-                f.write(struct.pack('<d', 1.0)) # double scale;
-                f.write(struct.pack('<d', 0.0)) # double value_min;
-                f.write(struct.pack('<d', 255.0)) # double value_max;
-                
-                # write data
-                f.write(struct.pack('<L', 256)) # histogram size, here 256
-                for i in range(256):
-                    f.write(struct.pack('<Q', 100)) # histogram data, here each color has freq of 100
+        num_l = info.get('image_num_resolution_levels', 1)
+        if num_l>1:
+            try:
+                width = 500 # preferred size for the histogram estimation, try not to be too small
+                height = 500
+                num_x = int(info.get('image_num_x', 1))
+                num_y = int(info.get('image_num_y', 1))
+                scales = [float(i) for i in info.get('image_resolution_level_scales', '').split(',')]
+                sizes = [(round(num_x*i),round(num_y*i)) for i in scales]
+                relatives = [max(width/sz[0], height/sz[1]) for sz in sizes]
+                relatives = [i if i<=1 else 0 for i in relatives]
+                level = relatives.index(max(relatives))
+                command.extend(['-res-level', str(level)])
+            except (Exception):
+                pass        
+
+        return cls.run(ifnm, ofnm, command )
 
 
     #######################################
