@@ -668,7 +668,7 @@ CanvasCircle.prototype.drag = function(evt, corner){
         sprite.x(corner.x());
         sprite.y(corner.y());
     }
-    else {
+    else if (i === 1){
 
         var p1 = [sprite.x(), sprite.y()];
         var p2 = [corner.x(), corner.y()];
@@ -847,6 +847,7 @@ CanvasPoint.prototype.drag = function(evt, corner){
     //me.editBbox(gobs,i,evt, e);
     evt.cancelBubble = true;
     var i = corner.shapeId;
+
     var sprite = this.sprite;
     //var points = sprite.points();
 
@@ -863,6 +864,244 @@ CanvasPoint.prototype.moveLocal = function(){
 
 CanvasPoint.prototype.points = function(){
     return [0,0];
+}
+
+
+///////////////////////////////////////////////
+// label
+//
+//  *
+//   \_____label
+///////////////////////////////////////////////
+
+function CanvasLabel(gob, renderer) {
+	this.renderer = renderer;
+    this.gob = gob;
+    this.init(gob);
+    CanvasShape.call(this, gob, renderer);
+};
+
+CanvasLabel.prototype = new CanvasShape();
+
+CanvasLabel.prototype.init = function(gob){
+
+
+    var scale = this.renderer.stage.scale();
+    var color = 'rgba(255,0,0,0.5)';
+    this.sprite = new Kinetic.Circle({
+        //radius: {x: rx, y: ry},
+        //x: p1.x,
+        //y: p1.y,
+        fill: color,
+        stroke: 'red',
+        strokeWidth: 1.5/scale.x,
+    });
+    this.text = new Kinetic.Text({
+        text: gob.value,
+        fontSize: 14/scale.x,
+        fill: 'red',
+    });;
+    gob.shape = this;
+    this.gob = gob;
+    this.sprite.shape = this;
+    this.text.shape = this;
+    /*
+    this.renderer.viewShape (gob,
+                             callback(this,'move_sprite'),
+                             callback(this,'select_sprite'));
+*/
+}
+
+
+CanvasLabel.prototype.setLayer = function (layer) {
+    this.currentLayer = layer;
+    this.sprite.remove();
+    this.text.remove();
+    this.arrow.remove();
+
+    this.currentLayer.add(this.sprite);
+    this.currentLayer.add(this.text);
+    this.currentLayer.add(this.arrow);
+
+    this.text.shapeId = -1;
+
+};
+
+
+CanvasLabel.prototype.getBbox = function () {
+    var sprite = this.sprite;
+    var px = sprite.x();
+    var py = sprite.y();
+    var r = 2.0/this.renderer.stage.scale().x;
+    var w = this.text.width();
+    var h = this.text.height();
+    var x0 = px;
+    var x1 = px + this.offset.x;
+    var x2 = px + this.offset.x + w;
+    var xmin = Math.min(x0, Math.min(x1, x2));
+    var xmax = Math.max(x0, Math.max(x1, x2));
+
+    var y0 = py;
+    var y1 = py + this.offset.y;
+    var y2 = py + this.offset.y + h;
+    var ymin = Math.min(y0, Math.min(y1, y2));
+    var ymax = Math.max(y0, Math.max(y1, y2));
+
+    return {min: [xmin, ymin],
+            max: [xmax, ymax]};
+};
+
+CanvasLabel.prototype.updateArrow = function(){
+    var scale = this.renderer.stage.scale();
+
+    if(!this.arrow)
+        this.arrow = new Kinetic.Line({
+            points: [0,0, 1,0, 1,1],
+            closed: false,
+            stroke: 'red',
+            strokeWidth: 1/scale.x,
+        });
+
+    var dx = this.offset.x;
+    var dy = this.offset.y;
+    var w = this.text.width();
+    if(this.offset.x + 0.5*w < 0)
+        dx += w;
+    var tip = 0.75*dx;
+    if (this.offset.x < 0 && this.offset.x + 0.5*w > 0)
+        tip -= 10;
+    else if (this.offset.x < 0 && this.offset.x + w > 0)
+        tip += 10;
+
+    if(dx*dx + dy*dy > 25){
+        this.currentLayer.add(this.arrow);
+        this.arrow.moveToBottom();
+        var points = this.arrow.points();
+        points[0] = this.sprite.x();
+        points[1] = this.sprite.y();
+
+        points[2] = this.sprite.x() + tip;
+        points[3] = this.sprite.y() + dy + 0.5*this.text.height();
+
+        points[4] = this.sprite.x() + dx;
+        points[5] = this.sprite.y() + dy + 0.5*this.text.height();
+    }
+
+    else this.arrow.remove();
+};
+
+CanvasLabel.prototype.update = function () {
+    var viewstate = this.renderer.viewer.current_view;
+
+    var pnt1 = this.gob.vertices[0];
+
+    if (!test_visible(pnt1, viewstate)){
+        this.sprite.remove();
+        return;
+    }
+    var scale = this.renderer.stage.scale();
+
+    var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
+    var r = 3.0/scale.x;
+
+    var color = 'rgba(255,0,0,1.0)';
+    var strokeColor = 'rgba(255,0,0,0.5)';
+    if(this.gob.color_override){
+        var c = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
+        color = 'rgba('+
+            c.r+','+
+            c.g+','+
+            c.b+','+
+            1.0+')';
+        strokeColor = 'rgba('+
+            c.r+','+
+            c.g+','+
+            c.b+','+
+            0.5+')';
+        //color = ;
+    }
+
+    this.sprite.fill(color);
+    this.sprite.stroke(strokeColor);
+
+    var sprite = this.sprite;
+    var text = this.text;
+    if(!this.offset)
+        this.offset = {x: 4, y: 0};
+
+    if(this.gob.vertices.length > 1){
+        var p2 = this.gob.vertices[1];
+        this.offset.x = (p2.x - p1.x);
+        this.offset.y = (p2.y - p1.y);
+    }
+
+
+    text.x(p1.x + this.offset.x);
+    text.y(p1.y + this.offset.y);
+
+    text.fontSize(14/scale.x);
+    sprite.x(p1.x);
+    sprite.y(p1.y);
+    sprite.radius(r);
+    sprite.strokeWidth(6.0/scale.x);
+    this.updateArrow();
+    this.currentLayer.add(this.sprite);
+    this.currentLayer.add(this.text);
+}
+
+
+CanvasLabel.prototype.drag = function(evt, corner){
+    //me.editBbox(gobs,i,evt, e);
+    evt.cancelBubble = true;
+    var i = corner.shapeId;
+    var sprite = this.sprite;
+    //var points = sprite.points();
+    var text = this.text;
+
+    var p1 = this.gob.vertices[0];
+
+    if(i == -1){ //this means the text itself is being passed as a manipulator
+
+        text.x(corner.x());
+        text.y(corner.y());
+
+        sprite.x(corner.x() - this.offset.x);
+        sprite.y(corner.y() - this.offset.y);
+    }
+
+    if(i == 0){
+        text.x(corner.x() + this.offset.x);
+        text.y(corner.y() + this.offset.y);
+
+        sprite.x(corner.x());
+        sprite.y(corner.y());
+    }
+
+    if(i == 1){
+
+        text.x(this.sprite.x() + this.offset.x);
+        text.y(this.sprite.y() + this.offset.y);
+
+        this.offset.x = corner.x() - this.sprite.x();
+        this.offset.y = corner.y() - this.sprite.y();
+    }
+    this.updateArrow();
+}
+
+
+CanvasLabel.prototype.moveLocal = function(){
+    var p1 = this.gob.vertices[0];
+    p1.x = this.sprite.x();
+    p1.y = this.sprite.y();
+    if(this.gob.vertices[0].length > 1){
+        var p2 = this.gob.vertices[1];
+        p2.x = this.sprite.x() + this.offset.x;
+        p2.y = this.sprite.y() + this.offset.y;
+    }
+}
+
+CanvasLabel.prototype.points = function(){
+    return [0,0, this.offset.x, this.offset.y];
 }
 
 
@@ -910,9 +1149,13 @@ CanvasRectangle.prototype.getBbox = function () {
     var py = rect.y();
     var w = rect.width();
     var h = rect.height();
+    var xmin = Math.min(px, px + w);
+    var xmax = Math.max(px, px + w);
+    var ymin = Math.min(py, py + h);
+    var ymax = Math.max(py, py + h);
 
-    return {min: [px,     py],
-            max: [px + w, py + h]};
+    return {min: [xmin, ymin],
+            max: [xmax, ymax]};
 };
 
 CanvasRectangle.prototype.update = function () {
@@ -969,13 +1212,14 @@ CanvasRectangle.prototype.drag = function(evt, corner){
     //me.editBbox(gobs,i,evt, e);
     evt.cancelBubble = true;
     var i = corner.shapeId;
+
     var sprite = this.sprite;
     //var points = sprite.points();
     if(i === 0) {
         sprite.x(corner.x());
         sprite.y(corner.y());
     }
-    else {
+    else if (i === 1){
 
 
         var p1 = [sprite.x(), sprite.y()];
@@ -1042,10 +1286,10 @@ CanvasRectangle.prototype.points = function(){
 
 
 ///////////////////////////////////////////////
-// rectangle:
-// *------------
-// |           |
-// ------------*
+// sqyare:
+// *-----
+// |    |
+// -----*
 ///////////////////////////////////////////////
 
 function CanvasSquare(gob, renderer) {
@@ -1080,14 +1324,19 @@ CanvasSquare.prototype.init = function(gob){
 }
 
 CanvasSquare.prototype.getBbox = function () {
-    var rect = this.sprite;
+    var rect = this.sprite
     var px = rect.x();
     var py = rect.y();
     var w = rect.width();
     var h = rect.height();
+    var xmin = Math.min(px, px + w);
+    var xmax = Math.max(px, px + w);
+    var ymin = Math.min(py, py + h);
+    var ymax = Math.max(py, py + h);
 
-    return {min: [px,     py],
-            max: [px + w, py + h]};
+    return {min: [xmin, ymin],
+            max: [xmax, ymax]};
+
 };
 
 CanvasSquare.prototype.update = function () {
@@ -1145,15 +1394,14 @@ CanvasSquare.prototype.drag = function(evt, corner){
     //me.editBbox(gobs,i,evt, e);
     evt.cancelBubble = true;
     var i = corner.shapeId;
+    //if(!i) return;
     var sprite = this.sprite;
     //var points = sprite.points();
     if(i === 0) {
         sprite.x(corner.x());
         sprite.y(corner.y());
     }
-    else {
-
-
+    else if (i === 1){
         var p1 = [sprite.x(), sprite.y()];
         var dim = [corner.x() - sprite.x(),
                    corner.y() - sprite.y()];
@@ -1285,6 +1533,7 @@ CanvasRenderer.prototype.create = function (parent) {
         'polygon': CanvasPolyLine,
         'rectangle': CanvasRectangle,
         'square': CanvasSquare,
+        'label': CanvasLabel,
     };
 
     this.stage = new Kinetic.Stage({
@@ -1407,6 +1656,7 @@ CanvasRenderer.prototype.lassoSelect = function(x0,y0, x1,y1){
     shapes.forEach(function(e,i,d){
         var x = e.x();
         var y = e.y();
+        if(!e.shape) return;
         var bbox = e.shape.getBbox();
         if(!bbox) return;
         if(bbox.min[0] > x0 && bbox.min[1] > y0 &&
@@ -1479,6 +1729,7 @@ CanvasRenderer.prototype.setMode = function (mode){
         this.selectLayer.moveToBottom();
         this.editLayer.moveToTop();
     }
+
 };
 
 CanvasRenderer.prototype.setmousedown = function (cb ){
@@ -1798,7 +2049,7 @@ CanvasRenderer.prototype.initPoints = function(gobs){
         for(var j = 0; j < points.length; j+=2){
 
             var pnt =     new Kinetic.Circle({
-                radius: 3/scale.x,
+                radius: 4/scale.x,
                 fill: 'red',
                 stroke: 'white',
                 strokeWidth: 1/scale.x,
@@ -1990,20 +2241,8 @@ CanvasRenderer.prototype.default_move = function (view, gob) {
         this.callback_move(view, gob);
 };
 
-CanvasRenderer.prototype.viewShape = function (gob, move, select){
+CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
     var me = this;
-    var r = this;
-    var g = gob;
-    if(!gob.shape) return;
-    var poly = gob.shape.sprite;
-    this.currentLayer.add(poly);
-    var dragMove = false;
-    var dragStart = false;
-    var dragEnd = false;
-
-    //poly.setDraggable(true);
-
-
     poly.on('mousedown', function(evt) {
         //select(view, gob);
 
@@ -2018,7 +2257,7 @@ CanvasRenderer.prototype.viewShape = function (gob, move, select){
             me.selectedSet[0] = gob.shape;
         }
 
-        gob.shape.sprite.setDraggable(true);
+        poly.setDraggable(true);
         me.editLayer.moveToTop();
 
         me.mouseselect = true;
@@ -2058,6 +2297,7 @@ CanvasRenderer.prototype.viewShape = function (gob, move, select){
             }
         }
         me.updateBbox(me.selectedSet);
+        this.shape.drag(evt,this);
         //me.currentLayer.draw();
         me.editLayer.draw();
     });
@@ -2067,7 +2307,7 @@ CanvasRenderer.prototype.viewShape = function (gob, move, select){
     });
 
     poly.on('mouseup', function() {
-        gob.shape.sprite.setDraggable(false);
+        poly.setDraggable(false);
 
         me.selectedSet.forEach(function(e,i,d){
             if(e.dirty)
@@ -2078,6 +2318,21 @@ CanvasRenderer.prototype.viewShape = function (gob, move, select){
         //});
     });
 
+};
+
+CanvasRenderer.prototype.viewShape = function (gob, move, select){
+    var me = this;
+    var r = this;
+    var g = gob;
+    if(!gob.shape) return;
+    var poly = gob.shape.sprite;
+    this.currentLayer.add(poly);
+    var dragMove = false;
+    var dragStart = false;
+    var dragEnd = false;
+    this.addSpriteEvents(poly, gob);
+    if(gob.shape.text)
+        this.addSpriteEvents(gob.shape.text, gob);
     /*
     this.appendSvg ( gob );
     gob.shape.init(svgNode);
@@ -2221,81 +2476,12 @@ CanvasRenderer.prototype.square = function (visitor, gob,  viewstate, visibility
 CanvasRenderer.prototype.point = function (visitor, gob,  viewstate, visibility) {
     this.makeShape(gob, viewstate, 'point');
 };
+
+CanvasRenderer.prototype.label = function (visitor, gob,  viewstate, visibility) {
+    this.makeShape(gob, viewstate, 'label');
+};
+
 /*
-CanvasRenderer.prototype.point = function ( visitor, gob, viewstate, visibility) {
-
-    // Visibility of this gob (create/destroy gob.shape)
-    // Create or destroy SVGElement for 2D.js
-    // Update SVGElement with current view state ( scaling, etc )
-
-    // viewstate
-    // scale  : double (current scaling factor)
-    // z, t, ch: current view planes (and channels)
-    // svgdoc : the SVG document
-    var offset_x  = viewstate.offset_x;
-    var offset_y  = viewstate.offset_y;
-
-    var pnt = gob.vertices[0];
-    var visible = test_visible(pnt, viewstate);
-
-    if (visibility!=undefined)
-    	gob.visible=visibility;
-    else if (gob.visible==undefined)
-    	gob.visible=true;
-
-    if (visible && gob.visible) {
-        if (gob.shape == null ) {
-            var rect = document.createElementNS(svgns, "rect");
-            rect.setAttributeNS(null, "width", "8");
-            rect.setAttributeNS(null, "height", "8");
-            rect.setAttributeNS(null, "display", "none");
-            rect.setAttributeNS(null, 'fill-opacity', 1.0);
-            rect.setAttributeNS(null, 'stroke', 'black');
-            rect.setAttributeNS(null, 'stroke-width', 1);
-            rect.setAttributeNS(null, 'rx', 4);
-            rect.setAttributeNS(null, 'ry', 4);
-            gob.shape = new Pnt(rect);
-        }
-
-		// scale to size
-        var p = viewstate.transformPoint (pnt.x, pnt.y);
-        var rect = gob.shape.svgNode;
-        if (gob.color_override)
-            rect.setAttributeNS(null, "fill", '#'+gob.color_override);
-        else
-            rect.setAttributeNS(null, "fill", 'orangered');
-		rect.setAttributeNS(null, "x", p.x -4);
-		rect.setAttributeNS(null, "y", p.y -4);
-        this.viewShape (viewstate, gob,
-                        callback(this,"move_point"),
-                        callback(this,"select_point"));
-
-    } else {
-        this.hideShape (gob, viewstate);
-    }
-};
-
-CanvasRenderer.prototype.move_point = function (state){
-    var gob = state.gob;
-    var v   = state.view;
-    //gob.shape.refresh();
-    var x = gob.shape.svgNode.getAttributeNS(null,"x");
-    var y = gob.shape.svgNode.getAttributeNS(null,"y");
-
-    var newpnt = v.inverseTransformPoint (x, y);
-    var pnt = gob.vertices[0] ;
-    pnt.x = newpnt.x;
-    pnt.y = newpnt.y;
-    this.default_move(gob);
-};
-
-CanvasRenderer.prototype.select_point = function (state){
-    var gob = state.gob;
-    this.default_select(gob);
-};
-
-*/
-
 ///////////////////////////////////////
 // LABEL is not really implemented .. need to extend 2D.js
 // with SVG Text tag
@@ -2373,3 +2559,4 @@ CanvasRenderer.prototype.select_label = function (state){
     var gob = state.gob;
     this.default_select(gob);
 };
+*/

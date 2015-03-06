@@ -594,7 +594,7 @@ ImgEdit.prototype.new_square = function (parent, e, x, y) {
         this.viewer.image.addgobjects(g);
 
     var pt = v.inverseTransformPoint(x,y);
-    var pt2 = v.inverseTransformPoint(x+50,y+50);
+    var pt2 = v.inverseTransformPoint(x+5,y+5);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     g.vertices.push (new BQVertex (pt2.x, pt2.y, v.z, v.t, null, 1));
 
@@ -877,7 +877,8 @@ ImgEdit.prototype.new_label = function (parent, e, x, y) {
     parent = parent || this.global_parent;
 
     var pt = v.inverseTransformPoint(x,y);
-    g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
+    g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0)); //label location
+    g.vertices.push (new BQVertex (pt.x + 2, pt.y, v.z, v.t, null, 0)); //label offset
 
     this.current_gob = null;
     var me = this;
