@@ -923,6 +923,7 @@ CanvasLabel.prototype.setLayer = function (layer) {
     this.currentLayer.add(this.text);
     this.currentLayer.add(this.arrow);
 
+    this.sprite.shapeId = 0;
     this.text.shapeId = -1;
 
 };
@@ -1059,7 +1060,7 @@ CanvasLabel.prototype.drag = function(evt, corner){
     var text = this.text;
 
     var p1 = this.gob.vertices[0];
-
+    console.log('drag');
     if(i == -1){ //this means the text itself is being passed as a manipulator
 
         text.x(corner.x());
