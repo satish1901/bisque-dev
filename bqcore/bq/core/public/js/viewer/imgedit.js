@@ -568,8 +568,6 @@ ImgEdit.prototype.new_rectangle = function (parent, e, x, y) {
 
     this.current_gob = g;
     this.visit_render.visitall(g, [v]);
-    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-
 
     this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
     this.renderer.setmouseup(callback(this, function(e){
@@ -577,6 +575,7 @@ ImgEdit.prototype.new_rectangle = function (parent, e, x, y) {
         me.current_gob = null;
         me.renderer.setmousemove(null);
         me.renderer.setmouseup(null);
+        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
     }));
 
     if(g.shape){
@@ -606,8 +605,6 @@ ImgEdit.prototype.new_square = function (parent, e, x, y) {
     this.current_gob = g;
     this.renderer.square( undefined, g, v, true); // there's no SVG element square, force specific shape
     this.visit_render.visitall(g, [v]);
-    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-
 
     this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
     this.renderer.setmouseup(callback(this, function(e){
@@ -615,6 +612,7 @@ ImgEdit.prototype.new_square = function (parent, e, x, y) {
         me.current_gob = null;
         me.renderer.setmousemove(null);
         me.renderer.setmouseup(null);
+        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
     }));
 
     if(g.shape){
@@ -816,7 +814,6 @@ ImgEdit.prototype.new_circle = function (parent, e, x, y) {
     //this.current_gob = null;
     this.current_gob = g;
     this.visit_render.visitall(g, [v]);
-    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
 
     this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
     this.renderer.setmouseup(callback(this, function(e){
@@ -824,6 +821,7 @@ ImgEdit.prototype.new_circle = function (parent, e, x, y) {
         me.current_gob = null;
         me.renderer.setmousemove(null);
         me.renderer.setmouseup(null);
+        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
     }));
 
     if(g.shape){
@@ -857,7 +855,6 @@ ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
     //this.current_gob = null;
     this.current_gob = g;
     this.visit_render.visitall(g, [v]);
-    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
 
     //this.startCoord = [x,y];
     this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
@@ -866,6 +863,8 @@ ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
         me.current_gob = null;
         me.renderer.setmousemove(null);
         me.renderer.setmouseup(null);
+        me.store_new_gobject ((parent && !parent.uri) ? parent : g);
+
     }));
 
     if(g.shape){

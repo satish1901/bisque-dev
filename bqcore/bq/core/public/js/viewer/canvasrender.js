@@ -141,6 +141,8 @@ CanvasPolyLine.prototype.init = function(gob){
     gob.shape = this; //we store a reference to the shape on the gobject
     this.gob = gob;   //and extend the shape to have a reference back to the gobject
     this.sprite = poly;
+    this.sprite.shapeId = 0;
+
     poly.shape = this;
     /*
     this.renderer.viewShape (gob,
@@ -344,6 +346,8 @@ CanvasEllipse.prototype.init = function(gob){
     gob.shape = this;
     this.gob = gob;
     this.sprite = ellipse;
+    this.sprite.shapeId = 0;
+
     ellipse.shape = this;
     /*
     this.renderer.viewShape (gob,
@@ -583,6 +587,8 @@ CanvasCircle.prototype.init = function(gob){
     gob.shape = this;
     this.gob = gob;
     this.sprite = sprite;
+    this.sprite.shapeId = 0;
+
     sprite.shape = this;
     /*
     this.renderer.viewShape (gob,
@@ -781,6 +787,8 @@ CanvasPoint.prototype.init = function(gob){
     gob.shape = this;
     this.gob = gob;
     this.sprite = sprite;
+    this.sprite.shapeId = 0;
+
     sprite.shape = this;
     /*
     this.renderer.viewShape (gob,
@@ -1136,6 +1144,8 @@ CanvasRectangle.prototype.init = function(gob){
     gob.shape = this;
     this.gob = gob;
     this.sprite = rect;
+    this.sprite.shapeId = 0;
+
     rect.shape = this;
     /*
     this.renderer.viewShape (gob,
@@ -1316,6 +1326,8 @@ CanvasSquare.prototype.init = function(gob){
     gob.shape = this;
     this.gob = gob;
     this.sprite = rect;
+    this.sprite.shapeId = 0;
+
     rect.shape = this;
     /*
     this.renderer.viewShape (gob,
@@ -2305,9 +2317,11 @@ CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
             f.dirty = true;
             var dxy = {x:pos.x - me.dragCache.x,
                        y:pos.y - me.dragCache.y,};
-            if(f._id != gob.shape._id){
-                f.x(me.shapeCache[j].x + dxy.x);
-                f.y(me.shapeCache[j].y + dxy.y);
+            var gsprite = gob.shape.sprite;
+            var fsprite = f.sprite;
+            if(fsprite._id != gsprite._id){
+                fsprite.x(me.shapeCache[j].x + dxy.x);
+                fsprite.y(me.shapeCache[j].y + dxy.y);
             }
         }
         me.updateBbox(me.selectedSet);
