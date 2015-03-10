@@ -466,15 +466,20 @@ ImgEdit.prototype.on_move = function (gob) {
     this.display_gob_info(gob);
     var me = this;
     var pars = this.viewer.parameters || {};
-    if(!this.gobQueue) this.gobQueue = [];
-    this.gobQueue.push(gob);
+    if(!this.gobQueue) this.gobQueue = {};
+    if(gob.uri)//only save if object has been awarded a uri from the database
+        this.gobQueue[gob.uri] = gob; //store a unique
 
     var timeOut = function() {
         console.log('post');
-        if(me.gobQueue.length === 0) return;
-        var lastGob = me.gobQueue.pop();
+        var keys = Object.keys(me.gobQueue);
+
+        if(keys.length === 0) return;
+        var lastKey = keys.pop();
+        var lastGob = me.gobQueue[lastKey];
         lastGob.save_me(pars.ondone, pars.onerror ); // check why save_ should not be used
-        if(me.gobQueue.length > 0)
+        delete me.gobQueue[lastKey];
+        if(keys.length > 0)
             timeOut();
         else return;
     }
@@ -655,6 +660,7 @@ ImgEdit.prototype.new_polygon = function (parent, e, x, y) {
             return;
         };
     }
+
     if (e.evt.detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
         g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
 
