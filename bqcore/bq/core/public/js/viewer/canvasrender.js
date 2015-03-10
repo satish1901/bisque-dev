@@ -2019,7 +2019,7 @@ CanvasRenderer.prototype.updatePoints = function(gobs){
         var l = points.length;
         for(var j = 0; j < points.length; j+=2){
             me.shapeCorners[totalPoints + j/2].radius(3.0/scale.x);
-            me.shapeCorners[totalPoints + j/2].strokeWidth(1.5/scale.x);
+            me.shapeCorners[totalPoints + j/2].strokeWidth(4/scale.x);
             me.shapeCorners[totalPoints + j/2].x(x + sx*points[j + 0]);
             me.shapeCorners[totalPoints + j/2].y(y + sy*points[j + 1]);
         };
@@ -2044,24 +2044,26 @@ CanvasRenderer.prototype.resetShapeCornerFill = function(){
 CanvasRenderer.prototype.initPoints = function(gobs){
     var me = this;
     this.shapeCorners = [];
+    this.shapeCornerMasks = [];
+
     var scale = this.stage.scale();
     for(var i = 0; i < gobs.length; i++){
         var points = gobs[i].points();
         for(var j = 0; j < points.length; j+=2){
 
             var pnt =     new Kinetic.Circle({
-                radius: 4/scale.x,
+                radius: 5/scale.x,
                 fill: 'red',
-                stroke: 'white',
-                strokeWidth: 1/scale.x,
+                stroke: 'rgba(255,255,255,0.25)',
                 listening: true,
-                gob: gobs[i],
 
             });
+
             pnt.gob = gobs[i];
             pnt.shapeId = j/2;
             me.shapeCorners.push(pnt);
         }
+
     }
 
     this.shapeCorners.forEach(function(e,i,d){
@@ -2074,10 +2076,21 @@ CanvasRenderer.prototype.initPoints = function(gobs){
 
         });
 
+        e.on('mouseover', function(evt) {
+            e.fill('rgba(255,128,128,1.0)');
+            me.editLayer.batchDraw();
+        });
+
+
+        e.on('mouseleave', function(evt) {
+            e.fill('red');
+            me.editLayer.batchDraw();
+
+        });
+
         e.on('dragmove', function(evt) {
             //me.editBbox(gobs,i,evt, e)
             //if(me.mode != 'edit') return;;
-
             var i = this.shapeId;
             this.gob.drag(evt, this);
 
