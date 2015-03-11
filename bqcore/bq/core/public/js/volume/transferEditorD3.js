@@ -130,66 +130,6 @@ histogramD3.prototype.redraw = function(){
     }
 };
 
-Ext.define('BQ.graph.d3', {
-    //extend: 'Ext.container.Container',
-    extend : 'Ext.Component',
-    alias : 'widget.d3_component',
-    border : 0,
-    frame : false,
-
-    initD3 : function(){
-        var me = this;
-
-        function nozoom() {
-            d3.event.preventDefault();
-        }
-
-        var thisDom = this.getEl().dom;
-        this.handle = Math.floor(99999*Math.random());
-        this.svg = d3.select('#' + thisDom.id)
-            .on("touchstart", nozoom)
-            .on("touchmove", nozoom)
-            .append("svg:svg")
-            .attr("id", "ext_svg-"+this.handle)
-            .attr("width", "100%")
-            .attr("height","100%")
-            .append("svg:g")
-            .on("mousedown", function(){me.findInterval(me); me.fireEvent("mousedown");})
-            .on("mouseup", function(){me.fireEvent("mouseup");});
-
-        this.svg
-            .append("rect")
-            .attr("id", "background-"+this.handle)
-            .attr("width", "100%")
-            .attr("height","100%");
-
-    },
-
-    setBackgroundColor : function(color){
-        //takes a string to set the background color
-        this.svg.select("#background-" +this.handle)
-            .attr("fill", color);
-    },
-
-    redraw : function(){
-    },
-
-    afterRender : function() {
-        this.callParent();
-    },
-
-    afterFirstLayout : function() {
-        this.callParent();
-        this.addListener('resize', this.onresize, this);
-        this.initD3();
-    },
-
-    onresize : function(){
-        this.redraw();
-    }
-});
-
-
 Ext.define('BQ.volume.transfer.graph', {
     //extend: 'Ext.container.Container',
     extend : 'BQ.graph.d3',
@@ -792,7 +732,6 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
                     me.fireEvent('change', me);
                 },
                 selected: function(d){
-                    console.log(d);
                     blockChange = true;
                     me.colorPicker.setColorRgb(
                         d.color[0]/255,
@@ -981,9 +920,9 @@ transferTool.prototype = new renderingTool();
 
 transferTool.prototype.addUniforms = function(){
 
-    this.uniforms['transfer']    = {name: 'transfer',
-                                    type: 't',
-                                    val: null};
+    this.uniforms['transfer_function']    = {name: 'transfer_function',
+                                             type: 't',
+                                             val: null};
 };
 
 transferTool.prototype.initControls = function(){
@@ -1054,6 +993,8 @@ transferTool.prototype.loadPreferences = function(prefs){
         //parse the jason in the key and store it
         var transfer = prefs.functions[key];
         this.presets[key] = JSON.parse(transfer);
+        //for future use:
+        //console.log(JSON.stringify(this.presets[key]));
     }
 };
 
@@ -1129,23 +1070,24 @@ transferTool.prototype.toggle = function(button){
     this.transfer ^= 1;
     //this.changed(); //don't want to call this until after layout since the editor stores the data
     //this..sceneVolume.setUniform('USE_TRANSFER', this.transfer);
-
+    this.volume.volumeObject.setUniform('transfer', button.pressed);
+    /*
     if (button.pressed) {
-        this.volume.shaderConfig.transfer = true;
-        this.volume.sceneVolume.setConfigurable("default",
+        this.volume.volumeObject.shaderConfig.transfer = true;
+        this.volume.sceneVolume.setConfigurable("default_1",
                                                 "fragment",
-                                                this.volume.shaderConfig);
+                                                this.volume.volumeObject.shaderConfig);
 
         this.volume.setModel('transfer', true);
     } else{
-        this.volume.shaderConfig.transfer = false;
-        this.volume.sceneVolume.setConfigurable("default",
+        this.volume.volumeObject.shaderConfig.transfer = false;
+        this.volume.sceneVolume.setConfigurable("default_1",
                                                 "fragment",
-                                                this.volume.shaderConfig);
+                                                this.volume.volumeObject.shaderConfig);
 
         this.volume.setModel('false', true);
     }
-
+    */
     if(this.transfer){
         var me = this;
         this.createTransferEditor();
@@ -1207,7 +1149,7 @@ transferTool.prototype.changed = function () {
     var rampTex = this.volume.rampTex;
     rampTex = new THREE.DataTexture(pixels, this.tSize, 1, THREE.RGBAFormat);
     rampTex.needsUpdate = true;
-    this.volume.sceneVolume.setUniform('transfer', rampTex);
+    this.volume.volumeObject.setUniform('transfer_function', rampTex);
     //this.volume.sceneVolume.setUniform('TRANSFER_SIZE', this.tSize);
 
 };

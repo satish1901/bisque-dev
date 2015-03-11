@@ -10,8 +10,8 @@ function ImgSlicer (viewer, name){
     this.default_projection  = p.projection || '';
     this.plane_buffer_sz = 80;  // number of tiles to cache in both z and t
     this.cache_tile_delay_ms = 10; // Delay before requesting a specific tile
-    this.update_delay_ms = 150; // Delay before requesting new frames
-    this.cache_delay_ms = 350;  // Delay before pre-caching new frames
+    this.update_delay_ms = 30; // Delay before requesting new frames, 150
+    this.cache_delay_ms = 200;  // Delay before pre-caching new frames
 
     this.base = ViewerPlugin;
     this.base (viewer, name);
@@ -222,6 +222,7 @@ ImgSlicer.prototype.sliceZ = function (val) {
 };
 
 ImgSlicer.prototype.setPosition = function (z, t) {
+    if(this.z === z && this.t === t) return;
     if (z) {
         this.z = z;
         if (this.zslider)
@@ -406,5 +407,3 @@ ImgSlicer.prototype.loadPreferences = function (p) {
     if (!p) return;
     this.default_projection  = 'projection'  in p ? p.projection  : this.default_projection;
 };
-
-

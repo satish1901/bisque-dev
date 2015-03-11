@@ -34,8 +34,15 @@ ImgOperations.prototype.updateView = function (view) {
     if (!this.menu) this.createMenu();
     if (this.menu) {
         this.params = {};
-        this.params.enhancement = this.combo_enhancement.getValue();
-        view.addParams  ('depth=8,' + this.combo_enhancement.getValue());
+        
+        var enh = this.combo_enhancement.getValue();
+        this.params.enhancement = enh;
+        if (enh.indexOf('hounsfield') != 0) {
+            view.addParams  ('depth=8,' + this.combo_enhancement.getValue() + ',u');
+        } else {
+            var a = enh.split(':');
+            view.addParams  ('depth=8,hounsfield,u,,'+a[1]);
+        }
 
         /*
         var b = this.menu.queryById('slider_brightness').getValue();
@@ -139,12 +146,9 @@ ImgOperations.prototype.createMenu = function () {
         {"value":"m", "text":"Maximum"},
     ], fusion, this, this.changed);
 
-    this.combo_enhancement = this.viewer.createCombo( 'Enhancement', [
-        {"value":"d", "text":"Data range"},
-        {"value":"f", "text":"Full range"},
-        {"value":"t", "text":"Data + tolerance"},
-        {"value":"e", "text":"Equalized"}
-    ], enhancement, this, this.changed);
+    var enhancement_options = phys.getEnhancementOptions();
+    enhancement = enhancement_options.prefferred || enhancement;
+    this.combo_enhancement = this.viewer.createCombo( 'Enhancement', enhancement_options, enhancement, this, this.changed, 300);
 
     this.combo_negative = this.viewer.createCombo( 'Negative', [
         {"value":"", "text":"No"},

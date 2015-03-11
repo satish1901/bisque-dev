@@ -22,7 +22,7 @@ THREE.RotationControls = function ( object, domElement ) {
 	this.zoomSpeed = 1.2;
 	this.panSpeed = 0.3;
 
-	this.noRotate = false;
+    this.autoRotate = false;
 	this.noZoom = false;
 	this.noPan = false;
 	this.noRoll = false;
@@ -48,12 +48,10 @@ THREE.RotationControls = function ( object, domElement ) {
 
     _eye = new THREE.Vector3(),
     _eyeCopy = new THREE.Vector3(),
-    _posCopy = new THREE.Vector3(),
-    _upCopy = new THREE.Vector3(),
+    _posCopy = this.object.position.clone(),
 
-	_globalUp = new THREE.Vector3(0,1,0),
-	_rotateStart = new THREE.Vector3(),
-	_rotateEnd = new THREE.Vector3(),
+	_rotateStart = new THREE.Vector2(),
+	_rotateEnd = new THREE.Vector2(),
 
 	_zoomStart = new THREE.Vector2(),
 	_zoomEnd = new THREE.Vector2(),
@@ -64,10 +62,12 @@ THREE.RotationControls = function ( object, domElement ) {
 	_panStart = new THREE.Vector2(),
 	_panEnd = new THREE.Vector2(),
 
-    _quat = new THREE.Quaternion() ;
-    _quatCopy = new THREE.Quaternion() ;
+    _axisAuto = new THREE.Vector3(1,0,0),
+    _qAuto = new  THREE.Quaternion(),
+    _quat = new THREE.Quaternion();
 	// for reset
 
+    this.posLocal = this.object.position.clone();
 	this.target0 = this.target.clone();
 	this.position0 = this.object.position.clone();
 	this.up0 = this.object.up.clone();
@@ -126,45 +126,53 @@ THREE.RotationControls = function ( object, domElement ) {
         //if the camera moves on a curve, then its movement definces a frame.
 
 	    var quat = new THREE.Quaternion();
-
+        var vec = new THREE.Vector3();
+        var dc =  new THREE.Vector2();
+        var r = 0.0, rs = 0.0, rc = 1.0;
+        var theta = 0.0;
 		return function () {
-            if ( _state === STATE.ROTATE && !_this.noRotate ) {
-                var dc = _rotateEnd.clone();
+            if (_this.noRotate)  return;
+
+            if ( _state === STATE.ROTATE ) {
+                dc = _rotateEnd.clone();
                 dc.sub(_rotateStart);
-                //dc.multiplyScalar(0.0001);
-                var r = Math.sqrt(dc.x*dc.x + dc.y*dc.y);
-                var rs = Math.sin(r*Math.PI);
-                quat.w = -Math.cos(r*Math.PI);
-		        quat.y = 0.0;
-                quat.x = 2.0*rs*dc.y;
-                quat.y = 2.0*rs*dc.x;
 
-                quat.normalize();
-
-                _quatCopy
-                    //.set(1,0,0,0)
-                    .copy(_quat)
-                    .multiply(quat);
-               var quatInv = quat
-                    .clone()
-                    .inverse();
-
-                //_this.object.quaternion.copy(_quatCopy);
-                /*
-                _this.object.quaternion
-                    .set(1,0,0,0)
-                    .multiply(_quat)
-                    .multiply(quat);
-                */
-
-                _this.object.quaternion.copy(quat).multiply(_quat);
-                _this.object.position.copy(_posCopy).applyQuaternion(quat);
-
-
-                console.log("pos: ", _this.object.position )
-                console.log("quat: ", _quat )
-                console.log("quat: ", _quatCopy )
+                r =  Math.sqrt(dc.x*dc.x + dc.y*dc.y);
+                dc.normalize();
+                theta = r;
             }
+            else if(this.autoRotate){
+                vec.copy(_axisAuto);
+                theta += 0.1*r;
+                theta = theta%1.0;
+                //rc += rc;
+            }
+            else return;
+
+            rs = Math.sin(theta*Math.PI);
+            rc = Math.cos(theta*Math.PI);
+
+            var cQuat = _quat
+                .clone();
+            //var cQuat = _this.object.quaternion
+            //    .clone();
+            //.inverse();
+
+            vec.z = 0.0;
+            vec.y = rs*dc.x;
+            vec.x = rs*dc.y;
+            vec.applyQuaternion(cQuat);
+            _axisAuto.copy(vec);
+            //vec.normalize();
+
+            quat.x = vec.x;
+            quat.y = vec.y;
+            quat.z = vec.z;
+            quat.w = -rc;
+            //quat.normalize();
+
+            _this.object.quaternion.copy(quat).multiply(_quat);
+            _this.posLocal.copy(_posCopy).applyQuaternion(quat);
         }
 
 
@@ -173,17 +181,13 @@ THREE.RotationControls = function ( object, domElement ) {
 	}());
 
     this.setRadius = function (radius) {
-        //this is to control the trackball externally
-        _eye.subVectors( _this.object.position, _this.target );
-        _eye.normalize();
-        _eye.multiplyScalar( radius );
-		_this.object.position.addVectors( _this.target, _eye );
-		_this.checkDistances();
-		_this.object.lookAt( _this.target );
-		if ( lastPosition.distanceToSquared( _this.object.position ) > 0 ) {
-			_this.dispatchEvent( changeEvent );
-			lastPosition.copy( _this.object.position );
-		}
+
+        _this.object.position.normalize();
+        _this.posLocal.normalize();
+
+        _this.object.position.multiplyScalar( radius );
+        _this.posLocal.multiplyScalar( radius );
+
 	};
 
 
@@ -194,7 +198,11 @@ THREE.RotationControls = function ( object, domElement ) {
 
 			var factor = _touchZoomDistanceStart / _touchZoomDistanceEnd;
 			_touchZoomDistanceStart = _touchZoomDistanceEnd;
-			_eye.multiplyScalar( factor );
+			//_eye.multiplyScalar( factor );
+            //_this.object.position.multiplyScalar( factor );
+            _this.posLocal.multiplyScalar( factor );
+            _posCopy.multiplyScalar( factor );
+
 
 		} else {
 
@@ -202,7 +210,10 @@ THREE.RotationControls = function ( object, domElement ) {
 
 			if ( factor !== 1.0 && factor > 0.0 ) {
 
-				_eye.multiplyScalar( factor );
+				//_eye.multiplyScalar( factor );
+                //_this.object.position.multiplyScalar( factor );
+                _this.posLocal.multiplyScalar( factor );
+                _posCopy.multiplyScalar( factor );
 
 				if ( _this.staticMoving ) {
 
@@ -223,22 +234,22 @@ THREE.RotationControls = function ( object, domElement ) {
 	this.panCamera = (function(){
 
 		var mouseChange = new THREE.Vector2(),
-			objectUp = new THREE.Vector3(),
-			pan = new THREE.Vector3();
-
+		objectUp = new THREE.Vector3(),
+		pan = new THREE.Vector3(),
+        up = new THREE.Vector3(0,1,0),
+        left = new THREE.Vector3(-1,0,0);
 		return function () {
 
 			mouseChange.copy( _panEnd ).sub( _panStart );
 
 			if ( mouseChange.lengthSq() ) {
 
-				mouseChange.multiplyScalar( _eye.length() * _this.panSpeed );
+				mouseChange.multiplyScalar( _this.posLocal.length() * _this.panSpeed );
+                pan.copy(left.set(-mouseChange.x,mouseChange.y,0).applyQuaternion(_this.object.quaternion));
+				//pan.add(up.set(0,1,0).applyQuaternion(_this.object.quaternion).setLength( mouseChange.y ));
+                _this.target.add( pan );
 
-				pan.copy( _eye ).cross( _this.object.up ).setLength( mouseChange.x );
-				pan.add( objectUp.copy( _this.object.up ).setLength( mouseChange.y ) );
 
-				_this.object.position.add( pan );
-				_this.target.add( pan );
 
 				if ( _this.staticMoving ) {
 
@@ -279,23 +290,18 @@ THREE.RotationControls = function ( object, domElement ) {
 
 		//_eye.subVectors( _this.object.position, _this.target );
 
-		if ( !_this.noRotate ) {
-
-			_this.rotateCamera();
-
-		}
-
 		if ( !_this.noZoom ) {
-
 			_this.zoomCamera();
-
 		}
 
 		if ( !_this.noPan ) {
-
 			_this.panCamera();
-
 		}
+
+		if ( !_this.noRotate || _this.autoRotate) {
+			_this.rotateCamera();
+		}
+         _this.object.position.copy(_this.posLocal).add(_this.target);
 
 		//_this.object.position.addVectors( _this.target, _eye );
 
@@ -382,13 +388,8 @@ THREE.RotationControls = function ( object, domElement ) {
 		event.preventDefault();
 		event.stopPropagation();
 
-        var up = _this.object.up;
         _quat.copy(_this.object.quaternion);
-        //_quat.copy(_quatCopy);
-
-        _posCopy.copy(_this.object.position);
-
-        console.log("mousedown: ", _quat);
+        _posCopy.copy(_this.posLocal);
 
 		if ( _state === STATE.NONE ) {
 
