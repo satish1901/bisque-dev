@@ -69,6 +69,8 @@ def safetypeparse(v):
             v = float(v)
         except ValueError:
             pass
+    except TypeError: #in case of Nonetype
+        pass
     return v
 
 def safeencode(s):
@@ -90,10 +92,14 @@ def tounicode(s):
         return s
     if isinstance(s, basestring) is not True:
         return u'%s'%s
-    try: 
+    try:
         return s.decode('utf8')
-    except UnicodeEncodeError:
-        return unicode(s.encode('ascii', 'replace'))
+
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        try:
+            return s.decode('latin1')
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            return unicode(s.encode('ascii', 'replace'))
 
 def run_command(command):
     '''returns a string of a successfully executed command, otherwise None'''
@@ -122,9 +128,9 @@ def isascii(s):
         return False
     return True
 
-# dima: We have to do some ugly stuff to get all unicode filenames to work correctly 
+# dima: We have to do some ugly stuff to get all unicode filenames to work correctly
 # under windows, although imgcnv and ImarisConvert support unicode filenames
-# bioformats and openslide do not, moreover in python <3 subprocess package 
+# bioformats and openslide do not, moreover in python <3 subprocess package
 # does not support unicode either, thus we decided to link unicode filenames
 # prior to operations and unlink them right after, this is a windows only problem!
 if os.name != 'nt':
@@ -132,13 +138,13 @@ if os.name != 'nt':
         log.debug('Hard link %s -> %s', source, link_name)
         #return os.symlink(source, link_name)
         return os.link(source, link_name)
-    
+
     def start_nounicode_win(ifnm, command):
         return command, None
-    
+
     def end_nounicode_win(tmp):
         pass
-    
+
 else:
     def hardlink(source, link_name):
         source = unicode(os.path.normpath(source))
@@ -146,17 +152,17 @@ else:
         csl = ctypes.windll.kernel32.CreateHardLinkW
         if csl(link_name, source, 0) == 0:
             raise ctypes.WinError()
-    
+
     def dolink(source, link_name):
-        log.debug('Hard link %s -> %s', source, link_name)        
+        log.debug('Hard link %s -> %s', source, link_name)
         return hardlink(source, link_name)
-    
+
     def start_nounicode_win(ifnm, command):
         if isascii(ifnm):
             return command, None
         ext = os.path.splitext(ifnm)[1]
         uniq = hashlib.md5('%s%s'%(ifnm.encode('ascii', 'xmlcharrefreplace'),datetime.datetime.now())).hexdigest()
-        
+
         # preserve drive letter to create hard link on the same drive
         # dima: os.path.join does not join drive letters correctly
         tmp_path = os.path.splitdrive(ifnm)[0]
@@ -164,15 +170,15 @@ else:
             tmp_path = '%s\\temp'%tmp_path
         _mkdir(tmp_path)
         tmp = str(os.path.join(tmp_path, 'bq_temp_%s%s'%(uniq, ext)))
-        
+
         log.debug('start_nounicode_win hardlink: [%s] -> [%s]', ifnm, tmp)
         try:
             hardlink(ifnm, tmp)
         except OSError:
-            log.debug('Failed creating a hard link: %s', tmp)            
+            log.debug('Failed creating a hard link: %s', tmp)
             return command, None
         command = [tmp if x==ifnm else x for x in command]
-        log.debug('Created a new command: %s', command)            
+        log.debug('Created a new command: %s', command)
         return command, tmp
 
     def purge(dir, pattern):
@@ -186,22 +192,22 @@ else:
                 except Exception:
                     log.debug('Could not remove temp link: %s', tmp)
                     pass
-    
+
     def end_nounicode_win(tmp):
         if tmp is None:
             return
         log.debug('end_nounicode_win unlink: [%s]', tmp)
         try:
             os.remove(tmp)
-            tmp = None            
+            tmp = None
         except OSError:
             #log.warning('Could not remove temp link: %s', tmp)
             #log.exception('Could not remove temp link: %s', tmp)
-        
+
             # dima: after subprocess call many files are still open and
             # cant be removed, so instead match a specific patter and remove
             # all that match in the temp dir, under windows this is be ok
-            # since files would be locked for removal while being used 
+            # since files would be locked for removal while being used
             purge(os.path.dirname(tmp), "^bq_temp_*")
 
 
