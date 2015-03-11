@@ -1316,6 +1316,7 @@ BQGObject.primitives = {
     point    : 'point',
     polygon  : 'polygon',
     polyline : 'polyline',
+    freehand : 'freehand',
     rectangle: 'rectangle',
     square   : 'square',
 };
