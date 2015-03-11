@@ -11,6 +11,25 @@ var pageAction = function(url) {
     document.location = url;
 };
 
+var iframeAction = function( url, title ) {
+   var w = Ext.create('Ext.window.Window', {
+       title: (title && typeof title == 'string') ? title : undefined,
+       modal: true,
+       width: BQApp?BQApp.getCenterComponent().getWidth()/1.05:document.width/1.05,
+       height: BQApp?BQApp.getCenterComponent().getHeight()/1.05:document.height/1.05,
+
+       buttonAlign: 'center',
+       //autoScroll: true,
+       border: 0,
+       html: Ext.String.format('<iframe style="border: 0px; width: 100%; height: 100%; padding: 10px;" src="{0}"></iframe>', url),
+       buttons: [{
+           text: 'Ok',
+           handler: function () { w.close(); }
+       }],
+   });
+   w.show();
+};
+
 var htmlAction = function( url, title ) {
    var w = Ext.create('Ext.window.Window', {
        title: (title && typeof title == 'string') ? title : undefined,
@@ -137,7 +156,7 @@ Ext.define('BQ.Application.Toolbar', {
     tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep','menu_user_recover' ],
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs',
                  'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', 'button_create', 'button_upload' ],
-    tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_user_admin_prefs', ],
+    tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_admin_page','menu_user_admin_prefs', ],
 
     initComponent : function() {
         this.images_base_url = this.images_base_url || BQ.Server.url('/images/toolbar/');
@@ -329,12 +348,17 @@ Ext.define('BQ.Application.Toolbar', {
                 xtype:'menuseparator',
                 itemId: 'menu_user_admin_separator',
                 hidden: true,
-            }, {
+            }, /*{
                 text: 'Website admin',
                 itemId: 'menu_user_admin',
                 hidden: true,
                 handler: Ext.Function.pass(pageAction, BQ.Server.url('/admin')),
-            }, {
+            },*/{
+                text: 'Admin Page',
+                itemId: 'menu_admin_page',
+                hidden: true,
+                handler: this.adminPage,
+            },{
                 text: 'User preferences',
                 itemId: 'menu_user_prefs',
                 handler: this.userPrefs,
@@ -518,13 +542,8 @@ Ext.define('BQ.Application.Toolbar', {
                         dataset: '/data_service/module',
                         wpublic: 'true',
                         listeners : {
-                            Select : function(rb, module) {
-                                if (module.available === false) return;
-                                if (BQApp.resource)
-                                    pageAction('/module_service/' + module.name + '/?resource=' + BQApp.resource.uri);
-                                else
-                                    pageAction('/module_service/' + module.name);
-                            },
+                            scope: this,
+                            Select : this.dispatch_module,
                         }
                     }],
                 },
@@ -692,6 +711,15 @@ Ext.define('BQ.Application.Toolbar', {
         }*/
     },
 
+    adminPage: function() {
+        var admin = Ext.create('BQ.admin.MainPage', {
+            height : '85%',
+            width : '85%',
+            modal : true, 
+        });
+        admin.show();
+    },
+    
     userPrefs : function() {
         var preferences = Ext.create('BQ.Preferences.Dialog');
     },
@@ -1066,6 +1094,22 @@ Ext.define('BQ.Application.Toolbar', {
                 });
             }
         }
+    },
+
+    dispatch_module : function(rb, module) {
+        if (module.available === false) return;
+        if (module.tags_index['execute_options/type'] === 'external') {
+            var url = module.tags_index['interface'];
+            if (BQApp.resource)
+                url += '?resource=' + BQApp.resource.uri;
+            iframeAction( url, '' );
+            return;
+        }
+
+        if (BQApp.resource)
+            pageAction('/module_service/' + module.name + '/?resource=' + BQApp.resource.uri);
+        else
+            pageAction('/module_service/' + module.name);
     },
 
 });

@@ -156,7 +156,7 @@ Ext.define('Bisque.Resource.Module.List', {
 
     loadResourceTags : function(resource) {
         this.setData('tags', resource.tags);
-
+        this.resource = resource;
         BQFactory.request({
             uri : this.resource.owner,
             cb : Ext.bind(this.loadResource, this),
@@ -170,8 +170,10 @@ Ext.define('Bisque.Resource.Module.List', {
         // 1 = Loaded
 
         var renderedRef = this.getData('renderedRef');
-        if (renderedRef)
+        if (renderedRef) {
+            renderedRef.resource = this.resource;
             renderedRef.updateContainer();
+        }
     },
 
     updateContainer : function() {

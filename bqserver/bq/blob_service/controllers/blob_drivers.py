@@ -277,7 +277,7 @@ class LocalDriver (StorageDriver):
                     ident = ident[1:]
                 #ident = "file://%s" % localpath
                 ident = localpath2url(ident)
-                log.debug('local.blob_id: %s -> %s',  tounicode(storeurl), tounicode(localpath))
+                log.debug('local.blob_id: %s -> %s',  tounicode(ident), tounicode(localpath))
                 return ident, localpath
             localpath = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
             #localpath = "%s-%04d%s" % (fpath , x , ext)
@@ -324,8 +324,9 @@ class LocalDriver (StorageDriver):
                 path = os.path.join(self.top, path)
 
         path = url2localpath(path.replace('\\', '/'))
-        os.remove (path)
-        log.debug("deleted %s", path)
+        log.debug("deleting %s", path)
+        if os.path.isfile (path):
+            os.remove (path)
 
     def __str__(self):
         return "localstore[%s, %s]" % (self.mount_url, self.top)

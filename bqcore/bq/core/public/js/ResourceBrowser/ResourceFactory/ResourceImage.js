@@ -555,17 +555,26 @@ Ext.define('Bisque.Resource.Image.Page', {
                     this.gobjectTagger.tree.getView().refresh();
                 },
                 select : function(viewer, gob) {
-                    var node = this.gobjectTagger.findNodeByGob(gob);
-                    if (!node) {
-                        console.log('No node found!');
-                        return;
-                    }
-                    // dima: here expand to expose the selected node
-                    var parent = node;
-                    for (var i=0; i<node.getDepth()-1; i++)
-                        parent = parent.parentNode;
-                    this.gobjectTagger.tree.expandNode( parent, true );
-                    this.gobjectTagger.tree.getSelectionModel().select(node);
+                    var nodes = [];
+                    var me = this;
+
+                    gob.forEach(function(e,i,a){
+                        var node = me.gobjectTagger.findNodeByGob(e.gob);
+                        nodes.push(node);
+                        if (!node) {
+                            console.log('No node found!');
+                            return;
+                        }
+                        // dima: here expand to expose the selected node
+                        var parent = node;
+                        for (var i=0; i<node.getDepth()-1; i++)
+                            parent = parent.parentNode;
+                        me.gobjectTagger.tree.expandNode( parent, true );
+                    })
+                    if(nodes.length === 1)
+                        this.gobjectTagger.tree.getSelectionModel().select(nodes[0]);
+                    else
+                        this.gobjectTagger.tree.getSelectionModel().select(nodes);
                 },
                 edit_controls_activated : function(viewer) {
                     this.gobjectTagger.deselectGobCreation();
@@ -599,12 +608,24 @@ Ext.define('Bisque.Resource.Image.Page', {
                     if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects[0];
                     this.viewerContainer.viewer.highlight_gobject(gobject, true);
+
+                    var image3d = this.queryById('main_view_3d');
+                    if(image3d){
+                        image3d.highlight_gobject(gobject);
+                    }
+
                     this.viewerContainer.viewer.set_parent_gobject(gobject);
                 },
 
                 deselect : function(me, record, index, eOpts) {
                     if (!(record.raw instanceof BQObject) && !record.raw.loaded) return;
                     var gobject = (record.raw instanceof BQGObject) ? record.raw : record.raw.gobjects[0];
+
+                    var image3d = this.queryById('main_view_3d');
+                    if(image3d){
+                        image3d.unhighlight_gobject(gobject);
+                    }
+
                     this.viewerContainer.viewer.highlight_gobject(gobject, false);
                     this.viewerContainer.viewer.set_parent_gobject(undefined);
                 },
@@ -677,8 +698,14 @@ Ext.define('Bisque.Resource.Image.Page', {
                 },
 
                 color_gobjects : function(gobs, color) {
-                    for (var i=0; i<gobs.length; i++)
+                    var image3d = this.queryById('main_view_3d');
+                    for (var i=0; i<gobs.length; i++){
+                        if(image3d){
+                            image3d.color_gobjects(gobs[i], color);
+                        }
                         this.viewerContainer.viewer.color_gobject(gobs[i], color);
+
+                    }
                 },
 
                 create_gobject : function(gob) {
@@ -705,7 +732,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             showOrganizer : false,
             mexLoaded : false,
             listeners : {
-                'browserLoad' : function(me, resQ) {
+                'browserLoad' : function(me, resQ){ e
                     me.mexLoaded = true;
                 },
                 'Select' : function(me, resource) {
@@ -743,6 +770,27 @@ Ext.define('Bisque.Resource.Image.Page', {
             resource : this.resource,
         };
 
+
+        var graph = {
+            xtype : 'bq_graphviewer_panel',
+            itemId: 'graph',
+            title : 'Graph',
+            listeners:{
+                'context' : function(res, div, graph) {
+                    var node = graph.g.node(res);
+                    if(node.card.cardType=='mex'){
+                        window.open(BQ.Server.url('/module_service/MetaData' + '/?mex=/data_service/' + res));
+
+                    }
+                    if(node.card.cardType=='image'){
+                        window.open(BQ.Server.url('/client_service/view?resource=/data_service/' + res));
+
+                    }
+                },
+            },
+            resource : this.resource,
+        };
+
         var resTab = {
             xtype: 'tabpanel',
             itemId: 'tabs',
@@ -756,7 +804,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             split : true,
             width : 400,
             plain : true,
-            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, map]
+            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, graph, map]
         };
 
         this.add({
@@ -779,11 +827,24 @@ Ext.define('Bisque.Resource.Image.Page', {
             download.menu.insert(3, [{
                 itemId: 'download_as_ometiff',
                 text: 'as OME-TIFF',
+                scope: this,
                 handler: this.download_ometiff,
             }, {
                 itemId: 'download_as_omebigtiff',
                 text: 'as OME-BigTIFF',
+                scope: this,
                 handler: this.download_omebigtiff,
+            }]);
+        };
+
+        var export_btn = this.toolbar.queryById('menu_viewer_external');
+        if (export_btn) {
+            export_btn.menu.insert(1, [{
+                xtype  : 'menuitem',
+                itemId : 'menu_viewer_embed_code',
+                text   : 'Get embed code',
+                scope  : this,
+                handler: this.getEmbedCode,
             }]);
         };
 
@@ -991,17 +1052,19 @@ Ext.define('Bisque.Resource.Image.Page', {
 
     show3D : function() {
         var me = this;
-        try{
-            var webGl = function (){
-                try { var canvas = document.createElement( 'canvas' );
-                      return !! ( window.WebGLRenderingContext &&
-                                  ( canvas.getContext( 'webgl' ) ||
-                                    canvas.getContext( 'experimental-webgl' ) ) ); }
-                catch( e ) { return false; }
-            };
 
-            if(!webGl()) return;
+        //we test for this and hide the object earlier but redundancy doesn't hurt
+        var webGl = function (){
+            try { var canvas = document.createElement( 'canvas' );
+                  return !! ( window.WebGLRenderingContext &&
+                              ( canvas.getContext( 'webgl' ) ||
+                                canvas.getContext( 'experimental-webgl' ) ) ); }
+            catch( e ) { return false; }
+        };
 
+        if(!webGl()) return;
+
+        //try{
             var btn = this.queryById('button_view');
             btn.setText('View: 3D');
             btn.setIconCls('view3d');
@@ -1032,6 +1095,19 @@ Ext.define('Bisque.Resource.Image.Page', {
                 phys: this.viewerContainer.viewer.imagephys,
                 preferences: this.viewerContainer.viewer.preferences,
                 listeners: {
+                    select_gobject : function(viewer, gob) {
+                        var node = me.gobjectTagger.findNodeByGob(gob);
+                        if (!node) {
+                            console.log('No node found!');
+                            return;
+                        }
+                        // dima: here expand to expose the selected node
+                        var parent = node;
+                        for (var i=0; i<node.getDepth()-1; i++)
+                            parent = parent.parentNode;
+                        me.gobjectTagger.tree.expandNode( parent, true );
+                        me.gobjectTagger.tree.getSelectionModel().select(node);
+                    },
 
                     glcontextlost: function(event){
                         var msgText = " ";
@@ -1055,15 +1131,31 @@ Ext.define('Bisque.Resource.Image.Page', {
 
                 }
             });
-        }
-
+    //}
+    /*
         catch(err){
             BQ.ui.error("This is strange, the volume renderer failed to load. <BR/>" +
                         "The reported error is: <BR/> " +
                         err.message);
             me.show2D();
         }
+    */
+    },
 
+    getEmbedCode : function() {
+        var movie = this.queryById('main_view_movie'),
+            image3d = this.queryById('main_view_3d'),
+            host = location.origin,
+            url = this.resource.uri,
+            view = '2d',
+            embed = '<iframe width="854" height="510" src="{0}/client_service/embedded?view={1}&resource={2}" frameborder="0" allowfullscreen></iframe>';
+        if (image3d) {
+            view = '3d';
+        } else if (movie) {
+            view = 'movie';
+        }
+        embed = Ext.String.format(embed, host, view, url);
+        Ext.Msg.prompt('Embed code', 'Embed code:', null, this, false, embed);
     },
 
 });

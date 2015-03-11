@@ -1503,7 +1503,8 @@ Ext.define('Bisque.GObjectTagger', {
             }
             gobs.push(r.raw);
             var node = view.getNode(r);
-            node.style.setProperty( 'color', '#'+color);
+            if(node)
+                node.style.setProperty( 'color', '#'+color);
         }
         if (color==='000000')
             color = undefined;
@@ -1512,13 +1513,27 @@ Ext.define('Bisque.GObjectTagger', {
     },
 
     onColorSelectedGobs: function() {
+        var me = this;
+
         var sel = this.tree.getSelectionModel().getSelection();
+
         if (sel.length<1) {
             BQ.ui.notification('You first need to select some annotations in the tree...');
             return;
         }
         var item = this.tree.getView().getNode(sel[0]);
-        this.selectColor(item);
+        var selvis;
+        sel.forEach(function(e,i,a){
+            me.tree.expandNode(e);
+            var item = me.tree.getView().getNode(e);
+            if(item)
+                selvis = item;
+            //me.selectColor(item);
+        });
+        this.selectColor(selvis);
+        //if(selvis) //JD: this is a quick fix, but still doesn't work properly
+
+
     },
 
     onStats: function(type) {
@@ -1851,6 +1866,3 @@ Ext.define('BQ.grid.GobsPanel', {
 //-----------------------------------------------------------------------
 // Form MessageBox
 //-----------------------------------------------------------------------
-
-
-
