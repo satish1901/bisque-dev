@@ -31,6 +31,7 @@ function CanvasShape(gob, renderer) {
         this.currentLayer = renderer.currentLayer;
     this.gob = gob;
     this.postEnabled = true;
+    this.selfAnchor = false;
 };
 
 CanvasShape.prototype.rescale = function (scale) {
@@ -85,6 +86,8 @@ CanvasShape.prototype.applyColor = function () {
     this.sprite.fill(color);
     this.sprite.stroke(strokeColor);
 };
+
+
 
 
 function CanvasPolyLine(gob, renderer) {
@@ -287,6 +290,52 @@ CanvasPolyLine.prototype.onDragCreate = function(e){
     //console.log(g);
 }
 
+
+CanvasPolyLine.prototype.onDragFree = function(e){
+    e.evt.cancelBubble = true;
+
+    //this is a callback with a uniqe scope which defines the shape and the start of the bounding box
+    var start = this.start;
+
+    var me = this.shape;
+
+    var v = me.renderer.viewer.current_view;
+
+    var g = me.gob;
+    var v = me.renderer.viewer.current_view;
+    var cx = me.sprite.x();
+    var cy = me.sprite.y();
+    var index = g.vertices.length;
+
+    var points = me.sprite.points();
+    var ept = me.renderer.getUserCoord(e);
+    var pte = v.inverseTransformPoint(ept.x, ept.y);
+
+    var ex = pte.x - cx;
+    var ey = pte.y - cy;
+    points[2*index + 0] = ex;
+    points[2*index + 1] = ey;
+
+    var bx = points[2*index - 2] = ex;
+    var by = points[2*index - 1] = ey;
+    //var bx = points[0];
+    //var by = points[1];
+    var dx = ex - bx;
+    var dy = ey - by;
+
+    //var n = g.vertices.length;
+    //var dx = start.x - pte.x;
+    //var dy = start.y - pte.y;
+    var dp = dx*dx + dy*dy;
+    if(dp < 100){
+        points.push(ex,ey);
+        //start = [cex,ey];
+        g.vertices.push (new BQVertex (cx + ex, cy + ey, v.z, v.t, null, index));
+    }
+
+    me.renderer.editLayer.batchDraw();
+    //console.log(g);
+}
 
 CanvasPolyLine.prototype.moveLocal = function(){
     var points = this.sprite.points();
@@ -886,7 +935,9 @@ function CanvasLabel(gob, renderer) {
 	this.renderer = renderer;
     this.gob = gob;
     this.init(gob);
+
     CanvasShape.call(this, gob, renderer);
+    this.selfAnchor = true;
 };
 
 CanvasLabel.prototype = new CanvasShape();
@@ -960,17 +1011,17 @@ CanvasLabel.prototype.getBbox = function () {
             max: [xmax, ymax]};
 };
 
-CanvasLabel.prototype.updateArrow = function(){
+CanvasLabel.prototype.updateArrow = function(strokeColor){
     var scale = this.renderer.stage.scale();
 
     if(!this.arrow)
         this.arrow = new Kinetic.Line({
             points: [0,0, 1,0, 1,1],
             closed: false,
-            stroke: 'red',
+            stroke: strokeColor,
             strokeWidth: 1/scale.x,
         });
-
+    this.arrow.stroke(strokeColor);
     var dx = this.offset.x;
     var dy = this.offset.y;
     var w = this.text.width();
@@ -1032,6 +1083,7 @@ CanvasLabel.prototype.update = function () {
 
     this.sprite.fill(color);
     this.sprite.stroke(strokeColor);
+    this.text.fill(color);
 
     var sprite = this.sprite;
     var text = this.text;
@@ -1053,7 +1105,7 @@ CanvasLabel.prototype.update = function () {
     sprite.y(p1.y);
     sprite.radius(r);
     sprite.strokeWidth(6.0/scale.x);
-    this.updateArrow();
+    this.updateArrow(strokeColor);
     this.currentLayer.add(this.sprite);
     this.currentLayer.add(this.text);
 }
@@ -1112,6 +1164,16 @@ CanvasLabel.prototype.moveLocal = function(){
 CanvasLabel.prototype.points = function(){
     return [0,0, this.offset.x, this.offset.y];
 }
+
+
+CanvasLabel.prototype.destroy = function () {
+    this.isDestroyed = true;
+    this.sprite.destroy();
+    this.text.destroy();
+    this.arrow.destroy();
+    //delete this.sprite;
+    //this.sprite = undefined;
+};
 
 
 ///////////////////////////////////////////////
@@ -1273,6 +1335,7 @@ CanvasRectangle.prototype.onDragCreate = function(e){
     me.renderer.editLayer.batchDraw();
     //console.log(g);
 }
+
 
 CanvasRectangle.prototype.moveLocal = function(){
 
@@ -1551,8 +1614,6 @@ CanvasRenderer.prototype.create = function (parent) {
 
     this.stage = new Kinetic.Stage({
         container: parent,
-        width: 100,
-        height: 100, //set these later
     });
 
     this.stage.content.style.setProperty('z-index', 15);
@@ -1715,9 +1776,13 @@ CanvasRenderer.prototype.enable_edit = function (enabled) {
 
 
 CanvasRenderer.prototype.getUserCoord = function (e ){
+    var evt;
     if(e.evt)
-        return {x: e.evt.offsetX, y: e.evt.offsetY}
-    return {x: e.offsetX, y: e.offsetY};
+        evt = e.evt;
+    var x = evt.offsetX==undefined?evt.layerX:evt.offsetX;
+    var y = evt.offsetY==undefined?evt.layerY:evt.offsetY;
+
+    return {x: x, y: y};
 	//return mouser.getUserCoordinate(this.svgimg, e);
     //the old command got the e.x, e.y and applied a transform to localize them to the svg area using a matrix transform.
 };
@@ -1825,11 +1890,16 @@ CanvasRenderer.prototype.updateImage = function (e) {
             this.selectedSet = [];
         }
     }
+
     this.stage.content.style.left = x + 'px';
     this.stage.content.style.top = y + 'px';
 
     this.stage.setWidth(viewstate.width);
     this.stage.setHeight(viewstate.height);
+
+    this.selectRect.width(viewstate.width/scale);
+    this.selectRect.height(viewstate.height/scale);
+
     //this.stage.content.style.setProperty('z-index', 15);
     this.currentLayer.removeChildren();
 
@@ -1842,8 +1912,6 @@ CanvasRenderer.prototype.updateImage = function (e) {
     this.visit_render.visit_array(gobs, [this.viewer.current_view]);
     this.rendered_gobjects = gobs;
 
-    this.selectRect.width(this.stage.width());
-    this.selectRect.height(this.stage.height());
     this.updateBbox(this.selectedSet);
     this.stage.batchDraw();
 };
@@ -2031,7 +2099,7 @@ CanvasRenderer.prototype.updatePoints = function(gobs){
         var l = points.length;
         for(var j = 0; j < points.length; j+=2){
             me.shapeCorners[totalPoints + j/2].radius(3.0/scale.x);
-            me.shapeCorners[totalPoints + j/2].strokeWidth(4/scale.x);
+            me.shapeCorners[totalPoints + j/2].strokeWidth(6.0/scale.x);
             me.shapeCorners[totalPoints + j/2].x(x + sx*points[j + 0]);
             me.shapeCorners[totalPoints + j/2].y(y + sy*points[j + 1]);
         };
@@ -2066,7 +2134,7 @@ CanvasRenderer.prototype.initPoints = function(gobs){
             var pnt =     new Kinetic.Circle({
                 radius: 5/scale.x,
                 fill: 'red',
-                stroke: 'rgba(255,255,255,0.25)',
+                stroke: 'rgba(255,255,255,0.05)',
                 listening: true,
 
             });
@@ -2325,7 +2393,8 @@ CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
             }
         }
         me.updateBbox(me.selectedSet);
-        this.shape.drag(evt,this);
+        if(this.shape.selfAnchor)
+           this.shape.drag(evt,this);
         //me.currentLayer.draw();
         me.editLayer.draw();
     });

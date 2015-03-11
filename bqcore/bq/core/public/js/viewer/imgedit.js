@@ -14,6 +14,7 @@ ImgViewer.gobFunction = {
     'line'      : 'new_line',
     'polyline'  : 'new_polyline',
     'polygon'   : 'new_polygon',
+    'freehand'  : 'new_freehand',
     'circle'    : 'new_circle',
     'ellipse'   : 'new_ellipse',
     'label'     : 'new_label',
@@ -29,7 +30,7 @@ function ImgEdit (viewer,name){
   this.zindex_low  = 15;
 
   //parse input parameters
-  var primitives = 'Point,Rectangle,Square,Polyline,Line,Polygon,Circle,Ellipse,Label'.toLowerCase().split(',');
+  var primitives = 'Point,Rectangle,Square,Polyline,Line,Polygon,freehand,Circle,Ellipse,Label'.toLowerCase().split(',');
   if ('editprimitives' in this.viewer.parameters && this.viewer.parameters.editprimitives)
     primitives = this.viewer.parameters.editprimitives.toLowerCase().split(',');
   this.editprimitives = {};
@@ -612,7 +613,7 @@ ImgEdit.prototype.new_square = function (parent, e, x, y) {
         me.current_gob = null;
         me.renderer.setmousemove(null);
         me.renderer.setmouseup(null);
-        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
+        me.store_new_gobject ((parent && !parent.uri) ? parent : g);
     }));
 
     if(g.shape){
@@ -742,6 +743,70 @@ ImgEdit.prototype.new_polyline = function (parent, e, x, y) {
         this.renderer.select(this.renderer.selectedSet);
         this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
     }
+};
+
+ImgEdit.prototype.new_freehand = function (parent, e, x, y) {
+    var me = this;
+    var v = this.viewer.current_view;
+    var g = this.current_gob;
+    parent = parent || this.global_parent;
+
+    if (g == null) {
+        g = new BQGObject('polygon');
+        if (parent) {
+            parent.addgobjects(g);
+            g.edit_parent = parent;
+        } else
+            this.viewer.image.addgobjects(g);
+    }
+
+    var pt = v.inverseTransformPoint(x,y);
+    var index = g.vertices.length;
+    var prev = index>0?g.vertices[index-1]:{x:-1,y:-1};
+
+
+    //if we want to close this sucker without adding more points
+    //var ip = v.inverseTransformPoint(g.vertices[0].x,g.vertices[0].y);
+
+
+    if (e.evt.detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
+        g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
+
+    // Double click ends the object otherwise add points
+    this.current_gob = (e.evt.detail > 1)?null:g;
+
+    this.visit_render.visitall(g, [v]);
+    g.shape.postEnabled = false;
+    this.renderer.unselectCurrent();
+    this.renderer.selectedSet = [g.shape];
+    this.renderer.select(this.renderer.selectedSet);
+    var n = g.vertices.length;
+    var dx = g.vertices[n-1].x - pt.x;
+    var dy = g.vertices[n-1].y - pt.y;
+    var dp = dx*dx + dy*dy;
+    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]},g.shape.onDragFree));
+    this.renderer.setmouseup(callback(this,function(e){
+        me.on_move(me.current_gob);
+        me.current_gob = null;
+        me.renderer.setmousemove(null);
+        me.renderer.setmouseup(null);
+        me.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
+    }));
+
+    if(g.shape){
+        this.renderer.unselectCurrent();
+        this.renderer.selectedSet = [g.shape];
+        this.renderer.select(this.renderer.selectedSet);
+    }
+    /*
+    if (!this.current_gob){
+        this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
+        g.shape.postEnabled = true;
+        this.renderer.setmousemove(null);
+        return;
+    }
+    else{
+    }*/
 };
 
 ImgEdit.prototype.new_line = function (parent, e, x, y) {
