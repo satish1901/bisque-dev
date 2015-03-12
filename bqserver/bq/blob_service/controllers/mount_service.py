@@ -78,6 +78,7 @@ from bq.util.paths import data_path
 from bq.util.compat import OrderedDict
 from bq.util.bisquik2db import  load_uri  # needed for identity stuff
 from bq.util.urlpaths import *
+from bq.util.io_misc import   tounicode
 
 from bq import data_service
 
@@ -589,12 +590,12 @@ class MountServer(TGController):
                 log.debug('_save_store: %s from %s %s', storeurl, driver.mount_url, storepath)
                 storeurl, localpath = driver.push (fileobj, storeurl, resource.get('resource_uniq'))
 
-                resource.set('name', join_subpath(url2localpath(os.path.basename(storeurl)), sub))
+                resource.set('name', join_subpath(tounicode(url2localpath(os.path.basename(storeurl))), sub))
                 resource.set('value', join_subpath(storeurl, sub))
                 log.debug('_save_store: %s', etree.tostring(resource))
         else:
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
-            resource.set('name', join_subpath(url2localpath(os.path.basename(storeurl)), sub))
+            resource.set('name', join_subpath(tounicode(url2localpath(os.path.basename(storeurl))), sub))
 
         if self.store_paths:
             # Update the store path reference to similar to the storeurl
