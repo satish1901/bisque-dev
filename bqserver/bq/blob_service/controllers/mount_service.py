@@ -589,12 +589,12 @@ class MountServer(TGController):
                 log.debug('_save_store: %s from %s %s', storeurl, driver.mount_url, storepath)
                 storeurl, localpath = driver.push (fileobj, storeurl, resource.get('resource_uniq'))
 
-                resource.set('name', join_subpath(os.path.basename(storeurl), sub))
+                resource.set('name', join_subpath(url2localpath(os.path.basename(storeurl)), sub))
                 resource.set('value', join_subpath(storeurl, sub))
                 log.debug('_save_store: %s', etree.tostring(resource))
         else:
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
-            resource.set('name', join_subpath(os.path.basename(storeurl), sub))
+            resource.set('name', join_subpath(url2localpath(os.path.basename(storeurl)), sub))
 
         if self.store_paths:
             # Update the store path reference to similar to the storeurl
@@ -690,7 +690,7 @@ class MountServer(TGController):
         """
         # KGK: temporary simplification
         if storeurl.startswith ('file://'):
-            return blob_drivers.url2localpath(storeurl)
+            return url2localpath(storeurl)
         return None
 
     def fetch_blob(self, resource):
