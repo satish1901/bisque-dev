@@ -37,8 +37,11 @@ function BQFileUpload(f, conf) {
 BQFileUpload.prototype.upload = function () {
 
     var fd = new FormData();
-    if (this.conf.resource)
+    if (this.conf.resource) {
         fd.append(this.form_resource, this.conf.resource );
+        //var blob = new Blob([unescape(encodeURIComponent(this.conf.resource))], { type: "text/xml"});
+        //fd.append(this.form_resource, blob);
+    }
     fd.append(this.form_file, this.file );
 
     this.xhr = BQ.util.create_xhr();
