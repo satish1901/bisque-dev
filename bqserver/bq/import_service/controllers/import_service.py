@@ -104,7 +104,7 @@ from bq import data_service
 from bq import blob_service
 from bq import image_service
 from bq.blob_service.controllers.blob_drivers import move_file
-from bq.util.io_misc import blocked_alpha_num_sort, toascii
+from bq.util.io_misc import blocked_alpha_num_sort, toascii, tounicode
 
 from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
 
@@ -812,7 +812,7 @@ class import_serviceController(ServiceController):
         # try inserting the file in the blob service
         try:
             # determine if resource is already on a blob_service store
-            log.debug('Inserting %s', toascii(uf))
+            log.debug('Inserting %s', uf)
             resource = blob_service.store_blob(resource=uf.resource, fileobj=uf.fileobj)
             log.debug('Inserted resource :::::\n %s', etree.tostring(resource) )
         except Exception, e:
@@ -964,7 +964,7 @@ class import_serviceController(ServiceController):
         """
         response = etree.Element ('resource', type='uploaded')
         for f in files:
-            log.info ("processing %s", toascii(f))
+            log.info ("processing %s", f)
             x = self.process(f)
             log.info ("processed %s -> %s", toascii(f), toascii(x))
             if x is not None:
@@ -1069,7 +1069,7 @@ class import_serviceController(ServiceController):
             log.debug ("transfers %s " , str(transfers))
 
             resource = transfers.pop(pname+'_resource', None) #or transfers.pop(pname+'_tags', None)
-            log.debug ("found %s _resource/_tags %s ", pname, toascii(resource))
+            log.debug ("found %s _resource/_tags %s ", pname, tounicode(resource))
             if resource is not None:
                 try:
                     if hasattr(resource, 'file'):
@@ -1117,7 +1117,7 @@ class import_serviceController(ServiceController):
                     log.debug ("Merging resources %s with %s" ,
                                etree.tostring(resource),
                                etree.tostring(payload_resource))
-                    resource = merge_resources (payload_resource, resource )
+                    resource = merge_resources (resource, payload_resource )
                 upload_resource  = UploadedResource(resource=resource)
                 files.append(upload_resource)
                 log.debug ("UPLOADED %s %s" , upload_resource, etree.tostring(resource))
@@ -1139,7 +1139,7 @@ class import_serviceController(ServiceController):
         # process the file list see if some files need special processing
         # e.g. ZIP needs to be unpacked
         # then ingest all
-        log.debug ('ingesting files %s' % [o.filename.encode('utf8') for o in files])
+        log.debug ('ingesting files %s' % [tounicode (o.filename) for o in files])
         response = self.ingest(files)
         # respopnd with an XML containing links to created resources
         return etree.tostring(response)
