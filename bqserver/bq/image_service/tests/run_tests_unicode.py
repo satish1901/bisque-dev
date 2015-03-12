@@ -30,7 +30,7 @@ image_unicode_oib   = 'ретина.oib' #utf-8 encoded filename
 image_unicode_tiff  = 'рыбы.tif' #utf-8 encoded filename
 image_unicode_dicom = 'сердце.dcm' #utf-8 encoded filename
 image_unicode_svs   = 'сму_регион.svs' #utf-8 encoded filename
-
+image_latin1_tiff   = 'test_latin1_chars_°µÀÁÂÃÄÅ¿ÇÆÈÉÊËÌÍÎÏÑÐÒÓÔÕÖØÙÚÛÜÝßßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ.tif' #utf-8 encoded filename
 
 ##################################################################
 # ImageServiceTests
@@ -59,6 +59,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         self.resource_unicode_ims   = self.ensure_bisque_file(image_unicode_ims.decode('utf-8'))
         self.resource_unicode_dicom = self.ensure_bisque_file(image_unicode_dicom.decode('utf-8'))
         self.resource_unicode_svs   = self.ensure_bisque_file(image_unicode_svs.decode('utf-8'))
+        self.resource_latin1_tiff   = self.ensure_bisque_file(image_latin1_tiff.decode('utf-8'))
 
     @classmethod
     def tearDownClass(self):
@@ -69,6 +70,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         self.delete_resource(self.resource_unicode_ims)
         self.delete_resource(self.resource_unicode_dicom)
         self.delete_resource(self.resource_unicode_svs)
+        self.delete_resource(self.resource_latin1_tiff)
         self.cleanup_tests_dir()
 
     # tests
@@ -77,6 +79,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         resource = self.resource_unicode_jpeg
         filename = 'unicode.jpeg.thumbnail.jpg'
         self.assertIsNotNone(resource, 'Resource was not uploaded')
+        self.assertEqual(resource.get('name').encode('utf8'), image_unicode_jpeg)
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
             'image_num_x': '128',
@@ -92,6 +95,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         resource = self.resource_unicode_mov
         filename = 'unicode.mov.thumbnail.jpg'
         self.assertIsNotNone(resource, 'Resource was not uploaded')
+        self.assertEqual(resource.get('name').encode('utf8'), image_unicode_mov)
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
             'image_num_x': '128',
@@ -107,6 +111,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         resource = self.resource_unicode_oib
         filename = 'unicode.oib.thumbnail.jpg'
         self.assertIsNotNone(resource, 'Resource was not uploaded')
+        self.assertEqual(resource.get('name').encode('utf8'), image_unicode_oib)
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
             'image_num_x': '128',
@@ -122,13 +127,14 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         resource = self.resource_unicode_tiff
         filename = 'unicode.tiff.thumbnail.jpg'
         self.assertIsNotNone(resource, 'Resource was not uploaded')
+        self.assertEqual(resource.get('name').encode('utf8'), image_unicode_tiff)
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
             'image_num_x': '128',
             'image_num_y': '96',
             'image_num_c': '3',
             'image_num_z': '1',
-            'image_num_t': '1',
+            'image_num_t': '1', 
             'image_pixel_depth': '8',
             'image_pixel_format': 'unsigned integer' }
         self.validate_image_variant(resource, filename, commands, meta_required)
@@ -137,6 +143,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         resource = self.resource_unicode_ims
         filename = 'unicode.ims.thumbnail.jpg'
         self.assertIsNotNone(resource, 'Resource was not uploaded')
+        self.assertEqual(resource.get('name').encode('utf8'), image_unicode_ims)
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
             'image_num_x': '128',
@@ -152,6 +159,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         resource = self.resource_unicode_dicom
         filename = 'unicode.dicom.thumbnail.jpg'
         self.assertIsNotNone(resource, 'Resource was not uploaded')
+        self.assertEqual(resource.get('name').encode('utf8'), image_unicode_dicom)
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
             'image_num_x': '128',
@@ -167,6 +175,7 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
         resource = self.resource_unicode_svs
         filename = 'unicode.svs.thumbnail.jpg'
         self.assertIsNotNone(resource, 'Resource was not uploaded')
+        self.assertEqual(resource.get('name').encode('utf8'), image_unicode_svs)
         commands = [('thumbnail', None)]
         meta_required = { 'format': 'JPEG',
             'image_num_x': '95',
@@ -178,6 +187,21 @@ class ImageServiceTestsUnicode(ImageServiceTestBase):
             'image_pixel_format': 'unsigned integer' }
         self.validate_image_variant(resource, filename, commands, meta_required)
 
+    def test_thumbnail_latin1_tiff(self):
+        resource = self.resource_latin1_tiff
+        filename = 'latin1_tiff.thumbnail.jpg'
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
+        self.assertEqual(resource.get('name').encode('utf8'), image_latin1_tiff)
+        commands = [('thumbnail', None)]
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '128',
+            'image_num_y': '96',
+            'image_num_c': '3',
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' }
+        self.validate_image_variant(resource, filename, commands, meta_required)
 
 #def suite():
 #    tests = ['test_thumbnail']
