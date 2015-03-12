@@ -87,6 +87,7 @@ import urllib
 import copy
 import mimetypes
 import shortuuid
+import posixpath
 
 
 from lxml import etree
@@ -103,10 +104,9 @@ from bq import data_service
 from bq import blob_service
 from bq import image_service
 from bq.blob_service.controllers.blob_drivers import move_file
-from bq.util.io_misc import blocked_alpha_num_sort, toascii
+from bq.util.io_misc import blocked_alpha_num_sort, toascii, tounicode
 
-#from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
-#from bq.image_service.controllers.converter_bioformats import ConverterBioformats
+from bq.image_service.controllers.converter_imgcnv import ConverterImgcnv
 
 from bq.util.mkdir import _mkdir
 
@@ -181,7 +181,7 @@ class UploadedResource(object):
     orig     = None      # original name passed by the uploader
     ts       = None      # upload timestamp
 
-    def __init__(self, resource, fileobj=None, orig=None, ts=None ):
+    def __init__(self, resource, fileobj=None, orig=None, ts=None, path=None ):
         self.resource = resource
         self.fileobj = fileobj
         self.orig = orig or resource.get('name')
@@ -189,9 +189,12 @@ class UploadedResource(object):
 
         # Set the path and filename of the UploadFile
         # A local path will be available in 'value'
-        self.path = resource.get('value')
-        if self.path:
-            self.path = blob_service.url2local(self.path)
+        if path is not None:
+            self.path = path
+        else:
+            self.path = resource.get('value')
+            if self.path:
+                self.path = blob_service.url2local(self.path)
 
         # If the uploader has given it a name, then use it, or figure a name out
         if resource.get ('name'):
@@ -261,14 +264,15 @@ class import_serviceController(ServiceController):
         self.filters['zip-z-stack']       = self.filter_zip_zstack
         self.filters['zip-5d-image']      = self.filter_5d_image
         self.filters['zip-proprietary']   = self.filter_zip_proprietary
+        self.filters['zip-dicom']         = self.filter_zip_dicom
         self.filters['image/proprietary'] = self.filter_series_proprietary
 
-        ps = blob_service.get_import_plugins()
-        for p in ps:
+        self.plugins = blob_service.get_import_plugins()
+        for p in self.plugins:
             mime_import = 'import/%s'%(p.name)
             mimetypes.add_type(mime_import, '.%s'%p.ext)
             self.filters[mime_import] = p.process_on_import
-        
+
 
     @expose('bq.import_service.templates.upload')
     @require(predicates.not_anonymous())
@@ -414,6 +418,8 @@ class import_serviceController(ServiceController):
 #------------------------------------------------------------------------------
 
     def process_packaged_5D(self, uf, **kw):
+        log.debug('process_packaged_5D: %s', kw)
+
         unpack_dir, members = self.unpackPackagedFile(uf)
         members = [ m for m in members if is_filesystem_file(m) is not True ] # remove file system internal files
         members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
@@ -421,35 +427,43 @@ class import_serviceController(ServiceController):
         #members = [ m for m in members if os.path.exists(m) is True ] # remove missing files
         members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories
 
-        num_pages = len(members)
-        z=None; t=None
-        if 'number_z' in kw: z = int(kw['number_z'])
-        if 'number_t' in kw: t = int(kw['number_t'])
-        if z==0: z=num_pages; t=1
-        if t==0 or z is None or t is None: t=num_pages; z=1
+        z = int(kw['number_z']) if 'number_z' in kw else None
+        t = int(kw['number_t']) if 'number_t' in kw else None
+        c = int(kw.get('number_c', 0))
 
-        res = { 'resolution_x':0, 'resolution_y':0, 'resolution_z':0, 'resolution_t':0 }
-        params = {'z': z, 't': t}
-        params.update(res)
-        params.update(kw)
-        log.debug('process_packaged_5D, params: %s', params )
+        # try to guess automatically the number of planes for only Z or only T series
+        num_pages = len(members)/c if c>1 else len(members)
+        if z==0 and t is None:
+            z=num_pages
+            t=1
+        elif t==0 and z is None:
+            t=num_pages
+            z=1
 
         resource = etree.Element ('image', name='%s.series'%uf.resource.get('name'), resource_type='image')
         for v in members:
             val = etree.SubElement(resource, 'value' )
-            #val.text = 'file://%s'%v if os.name != 'nt' else 'file:///%s'%v
             val.text = blob_service.local2url(v)
 
         image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )
         etree.SubElement(image_meta, 'tag', name='storage', value='multi_file_series' )
-        etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%params['z'], type='number' )
-        etree.SubElement(image_meta, 'tag', name='image_num_t', value='%s'%params['t'], type='number' )
+        etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%z, type='number' )
+        etree.SubElement(image_meta, 'tag', name='image_num_t', value='%s'%t, type='number' )
+        if c>1:
+            etree.SubElement(image_meta, 'tag', name='image_num_c', value='%s'%c, type='number' )
         etree.SubElement(image_meta, 'tag', name='dimensions', value='XYCZT' )
-        if sum([float(params[k]) for k in res.keys()])>0:
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_x', value='%s'%params['resolution_x'], type='number' )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_y', value='%s'%params['resolution_y'], type='number' )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_z', value='%s'%params['resolution_z'], type='number' )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_t', value='%s'%params['resolution_t'], type='number' )
+        if float(kw.get('resolution_x', 0))>0:
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_x', value='%s'%kw['resolution_x'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_x', value='microns' )
+        if float(kw.get('resolution_y', 0))>0:
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_y', value='%s'%kw['resolution_y'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_y', value='microns' )
+        if float(kw.get('resolution_z', 0))>0:
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_z', value='%s'%kw['resolution_z'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_z', value='microns' )
+        if float(kw.get('resolution_t', 0))>0:
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_t', value='%s'%kw['resolution_t'], type='number' )
+            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_t', value='seconds' )
 
         # append all other input annotations
         resource.extend (copy.deepcopy (list (uf.resource)))
@@ -584,6 +598,84 @@ class import_serviceController(ServiceController):
 
 
 #------------------------------------------------------------------------------
+# dicom files
+#------------------------------------------------------------------------------
+
+    def process_packaged_dicom(self, uf, intags):
+        ''' Unpack and insert a set of DICOM files '''
+        log.debug('process_packaged_dicom: %s %s', uf, intags )
+
+        unpack_dir, members = self.unpackPackagedFile(uf)
+        members = [ m for m in members if is_filesystem_file(m) is not True ] # remove file system internal files
+        members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
+        members = [ '%s/%s'%(unpack_dir, m) for m in members ] # full paths
+        members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories
+        log.debug('process_packaged_dicom members: %s', members)
+
+        # first group dicom files based on their metadata
+        images, blobs, geometry = ConverterImgcnv.group_files_dicom(members)
+
+        log.debug('process_packaged_dicom blobs: %s', blobs)
+        log.debug('process_packaged_dicom images: %s', images)
+        log.debug('process_packaged_dicom geometry: %s', geometry)
+
+        resources = []
+        base_name = uf.resource.get('name')
+        base_path = '%s/'%unpack_dir
+
+        # first insert blobs
+        for b in blobs:
+            name = posixpath.join(base_name, b.replace(base_path, '') )
+            value = blob_service.local2url(b)
+            resource = etree.Element ('resource', name=name, ts=uf.ts, value=value )
+            resource.extend (copy.deepcopy (list (uf.resource)))
+            #resources.append(blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir)))
+            resources.append(self.process(UploadedResource(resource=resource, path=b)))
+
+        # now insert images
+        for i in range(len(images)):
+            im = images[i]
+            g = geometry[i]
+            updated_name = None
+
+            if len(im) == 1:
+                name = posixpath.join(base_name, im[0].replace(base_path, '') )
+                value = blob_service.local2url(im[0])
+                resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts, value=value )
+            else:
+                #name = posixpath.join(base_name, im[0].replace(base_path, '') )
+                updated_name = os.path.basename(im[0])
+                name = base_name
+                resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts)
+                for v in im:
+                    val = etree.SubElement(resource, 'value', type='string' )
+                    val.text = blob_service.local2url(v)
+
+                image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )
+                etree.SubElement(image_meta, 'tag', name='storage', value='multi_file_series' )
+                etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%g['z'], type='number' )
+                etree.SubElement(image_meta, 'tag', name='image_num_t', value='%s'%g['t'], type='number' )
+                etree.SubElement(image_meta, 'tag', name='dimensions', value='XYCZT' )
+
+            resource.extend (copy.deepcopy (list (uf.resource)))
+            ConverterImgcnv.meta_dicom_parsed(im[0], resource)
+
+            # store resource
+            resource = blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir))
+
+            # a bit of funky processing for the multi-value case, we want files to be stored in the same path as all th eother files
+            # but at the same time we would like to give individual names to individual groups
+            if updated_name:
+                log.debug('Updating resource name to: %s for: %s', updated_name, etree.tostring(resource))
+                resource.set('name', updated_name)
+                log.debug('Updating resource: %s', etree.tostring(resource))
+                data_service.update_resource(resource=resource, new_resource=resource, replace=False)
+
+            resources.append(resource)
+
+        return unpack_dir, resources
+
+#------------------------------------------------------------------------------
 # Import archives exported by a BISQUE system
 #------------------------------------------------------------------------------
     def safePath(self, path, base):
@@ -704,6 +796,11 @@ class import_serviceController(ServiceController):
         self.cleanup_packaging(unpack_dir)
         return resources
 
+    def filter_zip_dicom(self, f, intags):
+        unpack_dir, resources = self.process_packaged_dicom(f, intags)
+        self.cleanup_packaging(unpack_dir)
+        return resources
+
 #------------------------------------------------------------------------------
 # file ingestion support functions
 #------------------------------------------------------------------------------
@@ -715,7 +812,7 @@ class import_serviceController(ServiceController):
         # try inserting the file in the blob service
         try:
             # determine if resource is already on a blob_service store
-            log.debug('Inserting %s', toascii(uf))
+            log.debug('Inserting %s', uf)
             resource = blob_service.store_blob(resource=uf.resource, fileobj=uf.fileobj)
             log.debug('Inserted resource :::::\n %s', etree.tostring(resource) )
         except Exception, e:
@@ -824,7 +921,7 @@ class import_serviceController(ServiceController):
         mime = mimetypes.guess_type(sanitize_filename(uf.filename))[0]
         if mime in self.filters:
             intags['type'] = mime
-        
+
         # take care of no extension case: force deep guessing
         ext = os.path.splitext(uf.filename)[1]
         noext = (ext == '' or len(ext)>6)
@@ -833,7 +930,7 @@ class import_serviceController(ServiceController):
             mime = 'image/series'
 
         # check if an image can be a series
-        log.debug('process uf: %s', uf)        
+        log.debug('process uf: %s', uf)
         if mime == 'image/series' and uf.fileobj is not None:
             filename = uf.localpath()
             if filename is None:
@@ -850,6 +947,11 @@ class import_serviceController(ServiceController):
                     intags['type'] = 'image/proprietary'
                     intags['image_num_series'] = info.get('image_num_series', 0)
 
+        # try to annotate DICOM files
+        #filename = uf.localpath()
+        #if filename is not None:
+        #    ConverterImgcnv.meta_dicom(filename, xml=uf.resource)
+
         # no processing required
         log.debug('process intags: %s', intags)
         if intags.get('type') not in self.filters:
@@ -862,7 +964,7 @@ class import_serviceController(ServiceController):
         """
         response = etree.Element ('resource', type='uploaded')
         for f in files:
-            log.info ("processing %s", toascii(f))
+            log.info ("processing %s", f)
             x = self.process(f)
             log.info ("processed %s -> %s", toascii(f), toascii(x))
             if x is not None:
@@ -967,7 +1069,7 @@ class import_serviceController(ServiceController):
             log.debug ("transfers %s " , str(transfers))
 
             resource = transfers.pop(pname+'_resource', None) #or transfers.pop(pname+'_tags', None)
-            log.debug ("found %s _resource/_tags %s ", pname, toascii(resource))
+            log.debug ("found %s _resource/_tags %s ", pname, tounicode(resource))
             if resource is not None:
                 try:
                     if hasattr(resource, 'file'):
@@ -1015,7 +1117,7 @@ class import_serviceController(ServiceController):
                     log.debug ("Merging resources %s with %s" ,
                                etree.tostring(resource),
                                etree.tostring(payload_resource))
-                    resource = merge_resources (resource, payload_resource)
+                    resource = merge_resources (resource, payload_resource )
                 upload_resource  = UploadedResource(resource=resource)
                 files.append(upload_resource)
                 log.debug ("UPLOADED %s %s" , upload_resource, etree.tostring(resource))
@@ -1037,7 +1139,7 @@ class import_serviceController(ServiceController):
         # process the file list see if some files need special processing
         # e.g. ZIP needs to be unpacked
         # then ingest all
-        log.debug ('ingesting files %s' % [o.filename.encode('utf8') for o in files])
+        log.debug ('ingesting files %s' % [tounicode (o.filename) for o in files])
         response = self.ingest(files)
         # respopnd with an XML containing links to created resources
         return etree.tostring(response)
@@ -1067,6 +1169,7 @@ class import_serviceController(ServiceController):
 
         return dict(error = 'Some problem uploading the file have occured')
 
+    # DEPRECATED ENTRY POINT !
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
     def insert(self, url, filename=None, permission='private',  user=None, **kw):
