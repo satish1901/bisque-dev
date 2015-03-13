@@ -377,11 +377,12 @@ CanvasPolyLine.prototype.onDragFree = function(e){
 
     var ex = pte.x - cx;
     var ey = pte.y - cy;
-    points[2*index + 0] = ex;
-    points[2*index + 1] = ey;
+    points.push(ex,ey);
+    //points[2*index + 0] = ex;
+    //points[2*index + 1] = ey;
 
-    var bx = points[2*index - 2] = ex;
-    var by = points[2*index - 1] = ey;
+    var bx = points[2*index - 2];
+    var by = points[2*index - 1];
     //var bx = points[0];
     //var by = points[1];
     var dx = ex - bx;
