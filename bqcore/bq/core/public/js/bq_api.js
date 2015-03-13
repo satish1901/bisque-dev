@@ -425,7 +425,6 @@ BQXml.prototype.toXML = function (){
     return this.xmlNode ();
 };
 
-/*
 BQXml.prototype.xmlNode = function (content) {
     var tag_name = 'resource';
 
@@ -450,30 +449,6 @@ BQXml.prototype.xmlNode = function (content) {
     }
 
     return v;
-};
-*/
-
-BQXml.prototype.xmlNode = function (content) {
-    var tag_name = (this.resource_type in BQFactory.objects) ? this.resource_type : 'resource';
-    var doc = document.implementation.createDocument('', tag_name);
-    var resource = doc.childNodes[0];
-
-    if (!(this.resource_type in BQFactory.objects)) {
-        resource.setAttribute('resource_type', this.resource_type);
-    }
-
-    var fields = this.xmlfields;
-    for (var f in fields ){
-        if (this[fields[f]] != undefined  &&  this[fields[f]] != null )
-            resource.setAttribute(fields[f], this[fields[f]]);
-    }
-    
-    if (content && content != "") {
-        resource.textContent = content;
-    } 
-
-    var serializer = new XMLSerializer();
-    return serializer.serializeToString(doc);
 };
 
 //-----------------------------------------------------------------------------
@@ -1341,7 +1316,8 @@ BQGObject.primitives = {
     point    : 'point',
     polygon  : 'polygon',
     polyline : 'polyline',
-    freehand : 'freehand',
+    freehand_line : 'freehand_line',
+    freehand_shape: 'freehand_shapse',
     rectangle: 'rectangle',
     square   : 'square',
 };
