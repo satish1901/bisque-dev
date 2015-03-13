@@ -24,6 +24,70 @@ function test_visible (pos, viewstate, tolerance_z ) {
     return true;
 }
 
+function minHeap(compare) {
+  var heap = {},
+      array = [];
+
+  heap.size = function(){
+      return heap.length;
+  };
+
+  heap.push = function() {
+    for (var i = 0, n = arguments.length; i < n; ++i) {
+      var object = arguments[i];
+      up(object.heapIndex = array.push(object) - 1);
+    }
+    return array.length;
+  };
+
+  heap.pop = function() {
+    var removed = array[0],
+        object = array.pop();
+    if (array.length) {
+      array[object.heapIndex = 0] = object;
+      down(0);
+    }
+    return removed;
+  };
+
+  heap.remove = function(removed) {
+    var i = removed.heapIndex,
+        object = array.pop();
+    if (i !== array.length) {
+      array[object.heapIndex = i] = object;
+      (compare(object, removed) < 0 ? up : down)(i);
+    }
+    return i;
+  };
+
+  function up(i) {
+    var object = array[i];
+    while (i > 0) {
+      var up = ((i + 1) >> 1) - 1,
+          parent = array[up];
+      if (compare(object, parent) >= 0) break;
+      array[parent.heapIndex = i] = parent;
+      array[object.heapIndex = i = up] = object;
+    }
+  }
+
+  function down(i) {
+    var object = array[i];
+    while (true) {
+      var right = (i + 1) << 1,
+          left = right - 1,
+          down = i,
+          child = array[down];
+      if (left < array.length && compare(array[left], child) < 0) child = array[down = left];
+      if (right < array.length && compare(array[right], child) < 0) child = array[down = right];
+      if (down === i) break;
+      array[child.heapIndex = i] = child;
+      array[object.heapIndex = i = down] = object;
+    }
+  }
+
+  return heap;
+}
 
 function CanvasShape(gob, renderer) {
 	this.renderer = renderer;
@@ -330,12 +394,93 @@ CanvasPolyLine.prototype.onDragFree = function(e){
     if(dp < 100){
         points.push(ex,ey);
         //start = [cex,ey];
-        g.vertices.push (new BQVertex (cx + ex, cy + ey, v.z, v.t, null, index));
+        //g.vertices.push (new BQVertex (cx + ex, cy + ey, v.z, v.t, null, index));
     }
-
     me.renderer.editLayer.batchDraw();
     //console.log(g);
-}
+};
+
+CanvasPolyLine.prototype.visvalingamSimplify = function(){
+    var points = this.sprite.points();
+    var heap = new minHeap(function(x,y){
+        if(x === undefined) debugger;
+        return x.area - y.area;
+    });
+
+    var areas = [];
+    //the goal is to calculate the area of each point prior to its removal as the minimal area in the set
+    //we'll use a min heap to keep the current smallest triangle at the top.  Once we're done we can choose
+    //a threshold and pull only triangles that are above that threshold for display.
+    var area = function(A,B,C){
+        return Math.abs((B[0] - A[0])*(C[1] - A[1]) - (C[0] - A[0])*(B[1] - A[1]));
+    };
+
+    var triArea = function(tri){
+        var i = tri.index;
+        var p = tri.prev;
+        var n = tri.next;
+        var a = points.slice(2*p, 2*p + 2);
+        var b = points.slice(2*i, 2*i + 2);
+        var c = points.slice(2*n, 2*n + 2);
+        return area(a,b,c);
+    };
+
+    //we create a linked list of triangles so that we can efficiently remove them
+    //without
+    var triangles = [];
+    for(var i = 0; i < points.length; i+=2){
+        var tri = {index: i/2, prev: i/2-1, next: i/2+1};
+        tri.area = triArea(tri);
+        triangles.push(tri);
+    };
+
+    for(var i = 1; i < triangles.length-1; i++){
+        heap.push(triangles[i]);
+    };
+
+    while(heap.size() > 3){
+        var tri = heap.pop();
+        var index = tri.index;
+
+        var next = tri.next;
+        var prev = tri.prev;
+        var hSize = heap.size();
+
+        //if(triN === undefined || triP === undefined) debugger;
+        //console.log(index,triN.index, triP.index, triN.heapIndex, triP.heapIndex);
+        console.log(tri);
+        if(next < points.length/2-1){
+            var triN = triangles[next];
+
+            var nArea = triArea(triN);
+            triP.area = nArea > triArea(triN) ? nArea : triArea(triN);
+
+            heap.sinkDown(triN.heapIndex);
+            triN.prev = prev;
+        }
+
+        if(prev - 1 > 0){
+            var triP = triangles[prev];
+            var nArea = triArea(triP);
+            triP.area = nArea > triArea(triP) ? nArea : triArea(triP);
+            heap.down(triP.heapIndex);
+            //if(triN.prev === next) debugger;
+            triP.next = next;
+        }
+
+    }
+    var thresh = 1.0/this.renderer.stage.scale().x;
+    var pointsNew = [points[0], points[1]];
+    for(var i = 1; i < triangles.length-1; i++){
+        if(triangles[i].area > thresh){
+            var id = triangles[i].index;
+            pointsNew.push(points[2*id + 0]);
+            pointsNew.push(points[2*id + 1]);
+        };
+    }
+    this.sprite.points(pointsNew);
+};
+
 
 CanvasPolyLine.prototype.moveLocal = function(){
     var points = this.sprite.points();
@@ -1557,15 +1702,36 @@ function CanvasControl(viewer, element) {
 CanvasControl.prototype.viewerMoved = function(e) {
     //this.viewer.stage.setPosition({x: e.x, y: e.y});
     //var canvas = this.viewer.currentLayer.getCanvas()._canvas;
-    this.viewer.stage.content.style.left = e.x + 'px';
-    this.viewer.stage.content.style.top = e.y + 'px';
+    var scale = this.viewer.stage.scale();
+    this.viewer.stage.x(e.x);
+    this.viewer.stage.y(e.y);
+    /*
+    this.viewer.currentLayer.x(e.x/scale.x);
+    this.viewer.currentLayer.y(e.y/scale.x);
+
+    this.viewer.editLayer.x(e.x/scale.x);
+    this.viewer.editLayer.y(e.y/scale.x);
+    */
+    this.viewer.stage.batchDraw();
+    //this.viewer.stage.content.style.left = e.x + 'px';
+    //this.viewer.stage.content.style.top = e.y + 'px';
 
 };
 
 CanvasControl.prototype.viewerZoomed = function(e) {
-    this.viewer.stage.content.style.left = e.x + 'px';
-    this.viewer.stage.content.style.top = e.y + 'px';
+    //this.viewer.stage.content.style.left = e.x + 'px';
+    //this.viewer.stage.content.style.top = e.y + 'px';
     this.viewer.stage.scale({x:e.scale,y:e.scale});
+    this.viewer.stage.x(e.x);
+    this.viewer.stage.y(e.y);
+
+    //var scale = this.viewer.stage.scale();
+    //this.viewer.currentLayer.x(e.x/scale.x);
+    //this.viewer.currentLayer.y(e.y/scale.x);
+
+    //this.viewer.editLayer.x(e.x/scale.x);
+    //this.viewer.editLayer.y(e.y/scale.x);
+    this.viewer.stage.batchDraw();
     //this.viewer.stage.batchDraw();
     //this.viewer.stage.removeChildren();
 
@@ -1661,19 +1827,24 @@ CanvasRenderer.prototype.initSelectLayer = function(){
     });
     this.selectLayer.add(this.selectRect);
 
-
+    var
+    stage = this.stage,
+    lassoRect = this.lassoRect;
     var mousemove = function(e) {
         if(me.mode != 'edit') return;
         var evt = e.evt;
-        var scale = me.stage.scale();
-        var x = evt.offsetX/scale.x;
-        var y = evt.offsetY/scale.y;
-        var x0 = me.lassoRect.x();
-        var y0 = me.lassoRect.y();
+        var scale = stage.scale();
 
-        me.lassoRect.width((x - x0));
-        me.lassoRect.height((y - y0));
-        var lassoRect = me.lassoRect;
+        var stageX = stage.x();
+        var stageY = stage.y();
+        var x = (evt.offsetX - stageX)/scale.x;
+        var y = (evt.offsetY - stageY)/scale.y;
+
+        var x0 = lassoRect.x();
+        var y0 = lassoRect.y();
+
+        lassoRect.width((x - x0));
+        lassoRect.height((y - y0));
         me.editLayer.draw();
     };
 
@@ -1682,9 +1853,15 @@ CanvasRenderer.prototype.initSelectLayer = function(){
         me.unselect(me.selectedSet);
 
         var evt = e.evt;
-        var scale = me.stage.scale()
-        var x = evt.offsetX/scale.x;
-        var y = evt.offsetY/scale.y;
+        var scale = stage.scale();
+
+        var stageX = stage.x();
+        var stageY = stage.y();
+        var x = (evt.offsetX - stageX)/scale.x;
+        var y = (evt.offsetY - stageY)/scale.y;
+
+        //console.log(evt);
+
         me.currentLayer.draw();
         me.editLayer.draw();
         me.selectedSet = []; //clear out current selection set
@@ -1692,16 +1869,15 @@ CanvasRenderer.prototype.initSelectLayer = function(){
         me.editLayer.add(me.lassoRect);
         me.selectLayer.moveToTop();
 
-        me.lassoRect.width(0);
-        me.lassoRect.height(0);
-        me.lassoRect.x(x);
-        me.lassoRect.y(y);
+        lassoRect.width(0);
+        lassoRect.height(0);
+        lassoRect.x(x);
+        lassoRect.y(y);
 
         me.selectRect.on('mousemove', mousemove);
     }
 
     var mouseup = function(e) {
-        console.log('up');
         if(me.mode != 'edit') return;
         me.selectRect.off('mousemove');
         me.lassoRect.remove();
@@ -1777,10 +1953,18 @@ CanvasRenderer.prototype.enable_edit = function (enabled) {
 
 CanvasRenderer.prototype.getUserCoord = function (e ){
     var evt;
+
+
     if(e.evt)
         evt = e.evt;
     var x = evt.offsetX==undefined?evt.layerX:evt.offsetX;
     var y = evt.offsetY==undefined?evt.layerY:evt.offsetY;
+    var scale = this.stage.scale();
+
+    var stageX = this.stage.x();
+    var stageY = this.stage.y();
+    var x = (x - stageX);
+    var y = (y - stageY);
 
     return {x: x, y: y};
 	//return mouser.getUserCoordinate(this.svgimg, e);
@@ -1891,14 +2075,27 @@ CanvasRenderer.prototype.updateImage = function (e) {
         }
     }
 
-    this.stage.content.style.left = x + 'px';
-    this.stage.content.style.top = y + 'px';
+    //this.stage.content.style.left = x + 'px';
+    //this.stage.content.style.top = y + 'px';
 
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
+
+    this.stage.setWidth(width);
+    this.stage.setHeight(height);
+
+    //this.selectRect.width(width);
+    //this.selectRect.height(height);
+    this.selectRect.width(viewstate.width/scale);
+    this.selectRect.height(viewstate.height/scale);
+    /*
     this.stage.setWidth(viewstate.width);
     this.stage.setHeight(viewstate.height);
 
     this.selectRect.width(viewstate.width/scale);
     this.selectRect.height(viewstate.height/scale);
+    */
 
     //this.stage.content.style.setProperty('z-index', 15);
     this.currentLayer.removeChildren();
@@ -2086,10 +2283,11 @@ CanvasRenderer.prototype.updateBbox = function (gobs){
 
 CanvasRenderer.prototype.updatePoints = function(gobs){
     if(!gobs) return;
-    var me = this;
 
+    var me = this;
     var totalPoints = 0;
     var scale = this.stage.scale();
+
     for(var i = 0; i < gobs.length; i++){
         var points = gobs[i].points();
         var x = gobs[i].sprite.x();

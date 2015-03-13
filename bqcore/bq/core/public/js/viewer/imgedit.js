@@ -790,14 +790,20 @@ ImgEdit.prototype.new_freehand = function (parent, e, x, y) {
         me.current_gob = null;
         me.renderer.setmousemove(null);
         me.renderer.setmouseup(null);
+        g.shape.visvalingamSimplify();
+        g.shape.moveLocal();
+        me.renderer.unselectCurrent();
+        me.renderer.selectedSet = [g.shape];
+        me.renderer.select(me.renderer.selectedSet);
         me.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
     }));
-
+    /*
     if(g.shape){
         this.renderer.unselectCurrent();
         this.renderer.selectedSet = [g.shape];
         this.renderer.select(this.renderer.selectedSet);
     }
+    */
     /*
     if (!this.current_gob){
         this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
