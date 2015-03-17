@@ -89,6 +89,25 @@ function minHeap(compare) {
   return heap;
 }
 
+function RTree(){
+
+    var nodes = [{
+        parent: null,
+        children:[],
+        bbox: {min: [0,0], max: [0,0]}
+    }];
+    var maxChildren = 16;
+};
+
+RTree.prototype.insert = function(gobs){
+    //I like static integer pointer trees, but a dymanic pointer tree seems appropriate here, so
+    // we can pull data on and off the tree without having to do our own
+    //var
+};
+
+RTree.prototype.draw = function(gobs){
+};
+
 function CanvasShape(gob, renderer) {
 	this.renderer = renderer;
     if(renderer)
@@ -101,8 +120,27 @@ function CanvasShape(gob, renderer) {
 CanvasShape.prototype.rescale = function (scale) {
 };
 
-CanvasShape.prototype.getBbox = function () {
+CanvasShape.prototype.calcBbox = function () {
 };
+
+CanvasShape.prototype.dragStart = function () {
+    if(!this.bboxCache || !this.spriteCache ){
+        this.bboxCache = {min: [0,0], max:[0,0]};
+        this.spriteCache = [0,0];
+    }
+    this.spriteCache[0] = this.sprite.x();
+    this.spriteCache[1] = this.sprite.y();
+
+    this.bboxCache.min[0] = this.bbox.min[0];
+    this.bboxCache.max[0] = this.bbox.max[0];
+    this.bboxCache.min[1] = this.bbox.min[1];
+    this.bboxCache.max[1] = this.bbox.max[1];
+};
+
+CanvasShape.prototype.getBbox = function () {
+    return this.bbox;
+};
+
 
 CanvasShape.prototype.update = function () {
 };
@@ -163,7 +201,7 @@ function CanvasPolyLine(gob, renderer) {
 
 CanvasPolyLine.prototype = new CanvasShape();
 
-CanvasPolyLine.prototype.getBbox = function () {
+CanvasPolyLine.prototype.calcBbox = function () {
     var min = [ 9999, 9999];
     var max = [-9999,-9999];
 
@@ -304,6 +342,7 @@ CanvasPolyLine.prototype.update = function () {
 
     this.sprite.points(vertices);
     this.currentLayer.add(this.sprite);
+    this.bbox = this.calcBbox();
 
     if(gob.dirty)
         this.renderer.stage.draw();
@@ -318,6 +357,8 @@ CanvasPolyLine.prototype.drag = function(evt, corner){
     points[2*i+0] = corner.x() - sprite.x();
     points[2*i+1] = corner.y() - sprite.y();
     sprite.points(points);
+    this.bbox = this.calcBbox();
+
 }
 
 CanvasPolyLine.prototype.onDragCreate = function(e){
@@ -350,7 +391,9 @@ CanvasPolyLine.prototype.onDragCreate = function(e){
         me.renderer.shapeCorners[0].fill('rgba(255,0,0,1)');
     }
 
-    me.renderer.editLayer.batchDraw();
+    me.bbox = me.calcBbox();
+    me.renderer.drawEditLayer();
+
     //console.log(g);
 }
 
@@ -397,7 +440,9 @@ CanvasPolyLine.prototype.onDragFree = function(e){
         //start = [cex,ey];
         //g.vertices.push (new BQVertex (cx + ex, cy + ey, v.z, v.t, null, index));
     }
-    me.renderer.editLayer.batchDraw();
+
+    me.bbox = me.calcBbox();
+    me.renderer.drawEditLayer();
     //console.log(g);
 };
 
@@ -551,7 +596,7 @@ CanvasEllipse.prototype.init = function(gob){
 */
 }
 
-CanvasEllipse.prototype.getBbox = function () {
+CanvasEllipse.prototype.calcBbox = function () {
     var ellipse = this.sprite;
     var px = ellipse.x();
     var py = ellipse.y();
@@ -624,6 +669,8 @@ CanvasEllipse.prototype.update = function () {
     ellipse.radiusY(ry);
     ellipse.rotation(ang);
     ellipse.strokeWidth(1.0/scale.x);
+
+    this.bbox = this.calcBbox();
     this.currentLayer.add(this.sprite);
 }
 
@@ -674,6 +721,8 @@ CanvasEllipse.prototype.drag = function(evt, corner){
         ellipse.radiusY(ry);
         ellipse.rotation(ang + 180);
     }
+    this.bbox = this.calcBbox();
+
 }
 
 CanvasEllipse.prototype.onDragCreate = function(e){
@@ -702,8 +751,10 @@ CanvasEllipse.prototype.onDragCreate = function(e){
     g.vertices[2].x = ptc[0];
     g.vertices[2].y = ptc[1] + 0.5*dpt[1];
     g.shape.update();
-    me.renderer.updateBbox(me.renderer.selectedSet);
-    me.renderer.editLayer.batchDraw();
+
+    me.bbox = me.calcBbox();
+    me.renderer.drawEditLayer();
+
     //console.log(g);
 }
 
@@ -792,7 +843,7 @@ CanvasCircle.prototype.init = function(gob){
 */
 }
 
-CanvasCircle.prototype.getBbox = function () {
+CanvasCircle.prototype.calcBbox = function () {
     var sprite = this.sprite;
     var px = sprite.x();
     var py = sprite.y();
@@ -855,6 +906,7 @@ CanvasCircle.prototype.update = function () {
     sprite.radius(r);
     sprite.rotation(ang + 180);
     sprite.strokeWidth(1.0/scale.x);
+    this.bbox = this.calcBbox();
     this.currentLayer.add(this.sprite);
 }
 
@@ -885,6 +937,7 @@ CanvasCircle.prototype.drag = function(evt, corner){
         sprite.rotation(ang + 180);
         //ellipse.rotation(ang + 180);
     }
+    this.bbox = this.calcBbox();
 }
 
 
@@ -909,8 +962,8 @@ CanvasCircle.prototype.onDragCreate = function(e){
     g.vertices[1].y = pte.y;
 
     g.shape.update();
-    me.renderer.updateBbox(me.renderer.selectedSet);
-    me.renderer.editLayer.batchDraw();
+    me.bbox = me.calcBbox();
+    me.renderer.drawEditLayer();
     //console.log(g);
 }
 
@@ -992,13 +1045,12 @@ CanvasPoint.prototype.init = function(gob){
 */
 }
 
-CanvasPoint.prototype.getBbox = function () {
+CanvasPoint.prototype.calcBbox = function () {
     var sprite = this.sprite;
     var px = sprite.x();
     var py = sprite.y();
-    var r = 2.0/this.renderer.stage.scale().x;
-    return {min: [px - r, py - r],
-            max: [px + r, py + r]};
+    return {min: [px, py],
+            max: [px, py]};
 };
 
 CanvasPoint.prototype.update = function () {
@@ -1042,6 +1094,7 @@ CanvasPoint.prototype.update = function () {
     sprite.y(p1.y);
     sprite.radius(r);
     sprite.strokeWidth(6.0/scale.x);
+    this.bbox = this.calcBbox();
     this.currentLayer.add(this.sprite);
 }
 
@@ -1056,6 +1109,7 @@ CanvasPoint.prototype.drag = function(evt, corner){
 
     sprite.x(corner.x());
     sprite.y(corner.y());
+    this.bbox = this.calcBbox();
 }
 
 
@@ -1134,7 +1188,7 @@ CanvasLabel.prototype.setLayer = function (layer) {
 };
 
 
-CanvasLabel.prototype.getBbox = function () {
+CanvasLabel.prototype.calcBbox = function () {
     var sprite = this.sprite;
     var px = sprite.x();
     var py = sprite.y();
@@ -1252,6 +1306,7 @@ CanvasLabel.prototype.update = function () {
     sprite.radius(r);
     sprite.strokeWidth(6.0/scale.x);
     this.updateArrow(strokeColor);
+    this.bbox = this.calcBbox();
     this.currentLayer.add(this.sprite);
     this.currentLayer.add(this.text);
 }
@@ -1292,6 +1347,7 @@ CanvasLabel.prototype.drag = function(evt, corner){
         this.offset.x = corner.x() - this.sprite.x();
         this.offset.y = corner.y() - this.sprite.y();
     }
+    this.bbox = this.calcBbox();
     this.updateArrow();
 }
 
@@ -1362,7 +1418,7 @@ CanvasRectangle.prototype.init = function(gob){
 */
 }
 
-CanvasRectangle.prototype.getBbox = function () {
+CanvasRectangle.prototype.calcBbox = function () {
     var rect = this.sprite;
     var px = rect.x();
     var py = rect.y();
@@ -1421,8 +1477,8 @@ CanvasRectangle.prototype.update = function () {
 
     this.sprite.fill(color);
     this.sprite.stroke(strokeColor);
-
     this.sprite.strokeWidth(1.0/scale.x);
+    this.bbox = this.calcBbox();
     this.currentLayer.add(this.sprite);
 }
 
@@ -1450,6 +1506,7 @@ CanvasRectangle.prototype.drag = function(evt, corner){
         rect.width(dim[0]);
         rect.height(dim[1]);
     }
+    this.bbox = this.calcBbox();
 }
 
 
@@ -1477,8 +1534,9 @@ CanvasRectangle.prototype.onDragCreate = function(e){
     g.vertices[1].y = ptc[1] + 0.5*dpt[1];
 
     g.shape.update();
-    me.renderer.updateBbox(me.renderer.selectedSet);
-    me.renderer.editLayer.batchDraw();
+
+    me.bbox = me.calcBbox();
+    me.renderer.drawEditLayer();
     //console.log(g);
 }
 
@@ -1545,7 +1603,7 @@ CanvasSquare.prototype.init = function(gob){
 */
 }
 
-CanvasSquare.prototype.getBbox = function () {
+CanvasSquare.prototype.calcBbox = function () {
     var rect = this.sprite
     var px = rect.x();
     var py = rect.y();
@@ -1608,6 +1666,7 @@ CanvasSquare.prototype.update = function () {
     this.sprite.stroke(strokeColor);
 
     this.sprite.strokeWidth(1.0/scale.x);
+    this.bbox = this.calcBbox();
     this.currentLayer.add(this.sprite);
 }
 
@@ -1634,6 +1693,7 @@ CanvasSquare.prototype.drag = function(evt, corner){
         rect.width(min);
         rect.height(min);
     }
+    this.bbox = this.calcBbox();
 }
 
 
@@ -1661,9 +1721,8 @@ CanvasSquare.prototype.onDragCreate = function(e){
     g.vertices[1].x = ptc[0] + 0.5*min;
     g.vertices[1].y = ptc[1] + 0.5*min;
 
-    g.shape.update();
-    me.renderer.updateBbox(me.renderer.selectedSet);
-    me.renderer.editLayer.batchDraw();
+    me.bbox = me.calcBbox();
+    me.renderer.drawEditLayer();
     //console.log(g);
 }
 
@@ -1713,7 +1772,7 @@ CanvasControl.prototype.viewerMoved = function(e) {
     this.viewer.editLayer.x(e.x/scale.x);
     this.viewer.editLayer.y(e.y/scale.x);
     */
-    this.viewer.stage.batchDraw();
+    this.viewer.draw();
     //this.viewer.stage.content.style.left = e.x + 'px';
     //this.viewer.stage.content.style.top = e.y + 'px';
 
@@ -1732,7 +1791,7 @@ CanvasControl.prototype.viewerZoomed = function(e) {
 
     //this.viewer.editLayer.x(e.x/scale.x);
     //this.viewer.editLayer.y(e.y/scale.x);
-    this.viewer.stage.batchDraw();
+    this.viewer.draw();
     //this.viewer.stage.batchDraw();
     //this.viewer.stage.removeChildren();
 
@@ -1821,7 +1880,7 @@ CanvasRenderer.prototype.initSelectLayer = function(){
 
     this.selectRect = new Kinetic.Rect({
         fill: 'rgba(0,0,0,0.0)',
-        stroke: 'none',
+        strokeWidth: 0,
         width: this.stage.width(),
         height: this.stage.height(),
         listening: true,
@@ -1884,10 +1943,17 @@ CanvasRenderer.prototype.initSelectLayer = function(){
         me.lassoRect.remove();
         me.selectLayer.moveToBottom();
 
-        var x0 = me.lassoRect.x();
-        var y0 = me.lassoRect.y();
-        var x1 = me.lassoRect.width() + x0;
-        var y1 = me.lassoRect.height() + y0;
+        var x0t = me.lassoRect.x();
+        var y0t = me.lassoRect.y();
+        var x1t = me.lassoRect.width() + x0t;
+        var y1t = me.lassoRect.height() + y0t;
+        console.log(x0t,y0t, x1t, y1t);;
+
+        var x0 = Math.min(x0t, x1t);
+        var y0 = Math.min(y0t, y1t);
+        var x1 = Math.max(x0t, x1t);
+        var y1 = Math.max(y0t, y1t)
+        console.log(x0,y0, x1, y1);
         me.lassoSelect(x0,y0,x1,y1);
         me.select(me.selectedSet);
         me.default_select(me.selectedSet);
@@ -1940,6 +2006,14 @@ CanvasRenderer.prototype.initUiShapes = function(){
     });
 };
 
+CanvasRenderer.prototype.draw = function (){
+    this.stage.batchDraw();
+};
+
+CanvasRenderer.prototype.drawEditLayer = function (){
+    this.updateBbox(this.selectedSet);
+    this.editLayer.batchDraw();
+};
 
 CanvasRenderer.prototype.enable_edit = function (enabled) {
 
@@ -2090,14 +2164,8 @@ CanvasRenderer.prototype.updateImage = function (e) {
     //this.selectRect.height(height);
     this.selectRect.width(viewstate.width/scale);
     this.selectRect.height(viewstate.height/scale);
-    /*
-    this.stage.setWidth(viewstate.width);
-    this.stage.setHeight(viewstate.height);
 
-    this.selectRect.width(viewstate.width/scale);
-    this.selectRect.height(viewstate.height/scale);
-    */
-
+    this.lassoRect.strokeWidth(1.0/scale);
     //this.stage.content.style.setProperty('z-index', 15);
     this.currentLayer.removeChildren();
 
@@ -2111,10 +2179,11 @@ CanvasRenderer.prototype.updateImage = function (e) {
     this.rendered_gobjects = gobs;
 
     this.updateBbox(this.selectedSet);
-    this.stage.batchDraw();
+    this.draw();
 };
 
 CanvasRenderer.prototype.editBbox = function(gobs,i, e) {
+    //return;
     this.updatePoints(gobs);
     var scale = this.stage.scale();
 
@@ -2137,6 +2206,7 @@ CanvasRenderer.prototype.editBbox = function(gobs,i, e) {
     var dx = e.evt.movementX;
     var dy = e.evt.movementY;
     var oCorner;
+    console.log();
     if(i == 0){
         this.bbCorners[1].x(px0 - offx/2);
         this.bbCorners[2].y(py0 - offy/2);
@@ -2168,7 +2238,6 @@ CanvasRenderer.prototype.editBbox = function(gobs,i, e) {
     var nHeight = py3-py0;
     var sx = nWidth/this.bbRect.width();
     var sy = nHeight/this.bbRect.height();
-
     //var scale = this.stage.scale();
     //var off = 10/scale.x;
 
@@ -2236,12 +2305,12 @@ CanvasRenderer.prototype.updateBbox = function (gobs){
         max[0] = max[0] > bb.max[0] ? max[0] : bb.max[0];
         max[1] = max[1] > bb.max[1] ? max[1] : bb.max[1];
     }
-
+    var pad = 8/scale.x;
     //pad the bbox
-    min[0] -=  4;
-    min[1] -=  4;
-    max[0] +=  4;
-    max[1] +=  4;
+    min[0] -=  pad;
+    min[1] -=  pad;
+    max[0] +=  pad;
+    max[1] +=  pad;
 
     var offx = 8/scale.x;
     var offy = 8/scale.x;
@@ -2282,21 +2351,23 @@ CanvasRenderer.prototype.updateBbox = function (gobs){
 };
 
 
-CanvasRenderer.prototype.updatePoints = function(gobs){
-    if(!gobs) return;
+CanvasRenderer.prototype.updatePoints = function(shapes){
+    if(!shapes) return;
 
     var me = this;
     var totalPoints = 0;
     var scale = this.stage.scale();
 
-    for(var i = 0; i < gobs.length; i++){
-        var points = gobs[i].points();
-        var x = gobs[i].sprite.x();
-        var y = gobs[i].sprite.y();
-        var sx = gobs[i].sprite.scaleX();
-        var sy = gobs[i].sprite.scaleY();
+    for(var i = 0; i < shapes.length; i++){
+        var points = shapes[i].points();
+        var x = shapes[i].sprite.x();
+        var y = shapes[i].sprite.y();
+        var sx = shapes[i].sprite.scaleX();
+        var sy = shapes[i].sprite.scaleY();
         var l = points.length;
+
         for(var j = 0; j < points.length; j+=2){
+            if(!me.shapeCorners[totalPoints + j/2]) continue;
             me.shapeCorners[totalPoints + j/2].radius(3.0/scale.x);
             me.shapeCorners[totalPoints + j/2].strokeWidth(6.0/scale.x);
             me.shapeCorners[totalPoints + j/2].x(x + sx*points[j + 0]);
@@ -2320,14 +2391,14 @@ CanvasRenderer.prototype.resetShapeCornerFill = function(){
     });
 };
 
-CanvasRenderer.prototype.initPoints = function(gobs){
+CanvasRenderer.prototype.initPoints = function(shapes){
     var me = this;
     this.shapeCorners = [];
     this.shapeCornerMasks = [];
 
     var scale = this.stage.scale();
-    for(var i = 0; i < gobs.length; i++){
-        var points = gobs[i].points();
+    for(var i = 0; i < shapes.length; i++){
+        var points = shapes[i].points();
         for(var j = 0; j < points.length; j+=2){
 
             var pnt =     new Kinetic.Circle({
@@ -2338,7 +2409,7 @@ CanvasRenderer.prototype.initPoints = function(gobs){
 
             });
 
-            pnt.gob = gobs[i];
+            pnt.gob = shapes[i];
             pnt.shapeId = j/2;
             me.shapeCorners.push(pnt);
         }
@@ -2357,13 +2428,13 @@ CanvasRenderer.prototype.initPoints = function(gobs){
 
         e.on('mouseover', function(evt) {
             e.fill('rgba(255,128,128,1.0)');
-            me.editLayer.batchDraw();
+            me.drawEditLayer();
         });
 
 
         e.on('mouseleave', function(evt) {
             e.fill('red');
-            me.editLayer.batchDraw();
+            me.drawEditLayer();
 
         });
 
@@ -2375,7 +2446,7 @@ CanvasRenderer.prototype.initPoints = function(gobs){
 
             me.updateBbox(me.selectedSet);
             e.moveToTop();
-            me.editLayer.batchDraw();
+            me.drawEditLayer();
         });
 
         e.on('mouseup',function(evt){
@@ -2444,7 +2515,7 @@ CanvasRenderer.prototype.select = function (gobs) {
             //if(this.mode != 'edit') return;
             me.editBbox(gobs,i,evt, e);
             e.moveToTop();
-            me.editLayer.batchDraw();
+            me.editLayer.batchDraw(); // don't want to use default draw command, as it updates the bounding box
         });
 
         e.on('mouseup',function(evt){
@@ -2456,6 +2527,7 @@ CanvasRenderer.prototype.select = function (gobs) {
             });
         });
     });
+
     this.currentLayer.draw();
     this.editLayer.draw();
 };
@@ -2501,7 +2573,7 @@ CanvasRenderer.prototype.rerender = function (gobs, params) {
     if (!params)
         params = [this.viewer.current_view];
     this.visit_render.visit_array(gobs, params);
-    this.stage.batchDraw();
+    this.draw();
 };
 
 CanvasRenderer.prototype.visitall = function (gobs, show) {
@@ -2536,6 +2608,7 @@ CanvasRenderer.prototype.default_move = function (view, gob) {
 
 CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
     var me = this;
+    if(!this.dragCache) this.dragCache = [0,0];
     poly.on('mousedown', function(evt) {
         //select(view, gob);
 
@@ -2558,16 +2631,18 @@ CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
         me.default_select(me.selectedSet);
 
         var scale = me.stage.scale();
-        me.dragCache = {x:evt.evt.offsetX/scale.x,
-                        y:evt.evt.offsetY/scale.y,};
+        me.dragCache[0] = evt.evt.offsetX/scale.x;
+        me.dragCache[1] = evt.evt.offsetY/scale.y;
 
-        me.shapeCache = [];
+        //me.shapeCache = [];
         for(var j = 0; j < me.selectedSet.length; j++){
-            me.shapeCache.push({x: me.selectedSet[j].sprite.x(),
+            me.selectedSet[j].dragStart();
+            /*
+              me.shapeCache.push({x: me.selectedSet[j].sprite.x(),
                                 y: me.selectedSet[j].sprite.y()});
+            */
         };
-        //me.clearEdit(view, me.selectedSet);
-        //me.beginEdit(view, me.selectedSet);
+
     });
 
     poly.on('dragstart', function() {
@@ -2575,20 +2650,34 @@ CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
 
     poly.on('dragmove', function(evt) {
         var scale = me.stage.scale();
-        var pos = {x:evt.evt.offsetX/scale.x,
-                   y:evt.evt.offsetY/scale.y,};
+        var pos = [evt.evt.offsetX/scale.x,
+                   evt.evt.offsetY/scale.y];
 
+        var bbox, bboxCache, shape, shapeCache, gsprite, fsprite;
+        var dxy = [0,0];
         for(var j = 0; j < me.selectedSet.length; j++){
 
             var f = me.selectedSet[j];
             f.dirty = true;
-            var dxy = {x:pos.x - me.dragCache.x,
-                       y:pos.y - me.dragCache.y,};
-            var gsprite = gob.shape.sprite;
-            var fsprite = f.sprite;
+            dxy[0] = pos[0] - me.dragCache[0];
+            dxy[1] = pos[1] - me.dragCache[1];
+;
+            gsprite = gob.shape.sprite;
+            fsprite = f.sprite;
+
+            bbox = f.bbox;
+            bboxCache = f.bboxCache;
+            shapeCache = f.spriteCache;
+
+            bbox.min[0] = bboxCache.min[0] + dxy[0];
+            bbox.max[0] = bboxCache.max[0] + dxy[0];
+            bbox.min[1] = bboxCache.min[1] + dxy[1];
+            bbox.max[1] = bboxCache.max[1] + dxy[1];
+
             if(fsprite._id != gsprite._id){
-                fsprite.x(me.shapeCache[j].x + dxy.x);
-                fsprite.y(me.shapeCache[j].y + dxy.y);
+                fsprite.x(shapeCache[0] + dxy[0]);
+                fsprite.y(shapeCache[1] + dxy[1]);
+
             }
         }
         me.updateBbox(me.selectedSet);
@@ -2654,9 +2743,7 @@ CanvasRenderer.prototype.hideShape = function (gob, view) {
         shape.destroy();
         //delete shape;
     }
-
-    this.editLayer.batchDraw();
-    this.currentLayer.batchDraw();
+    this.draw();
 };
 
 CanvasRenderer.prototype.highlight = function (gob, selection) {

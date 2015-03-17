@@ -660,7 +660,9 @@ BQFactory3D.make = function(g){
 function gObjectTool(volume, cls) {
 	//renderingTool.call(this, volume);
 	this.cls = 'gButton';
-	this.no_controls = false;
+	this.label = 'Graphical Annotations';
+
+    this.no_controls = false;
     this.base = renderingTool;
     this.name = 'gobjects';
     this.base(volume, this.cls);
