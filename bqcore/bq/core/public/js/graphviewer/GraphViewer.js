@@ -850,11 +850,11 @@ Ext.define('BQ.graphviewer', {
                 var mouse = d3.event;
                 if(mouse.button === 0){
                     me.fireEvent('mousedown', d, div, me);
-                    this.zoom.interrupt();
+                    //me.zoom.interrupt();
                 }
                 if(mouse.button === 2){
                     me.fireEvent('context', d, div, me);
-                    this.zoom.interrupt();
+                    //me.zoom.interrupt();
                 }
             });
 

@@ -785,6 +785,19 @@ Ext.define('BQ.viewer.Volume.Panel', {
             me.rerender();
         };
 
+        var mousewheel = function(event){
+            if(event.button >= 0){
+                me.mousedown = true;
+                me.rerender();
+            }
+
+            var distFromCenter = me.canvas3D.camera.position.length();
+			var newSliderVal = Math.floor((10.0 - distFromCenter) * 10.0);
+			var curSliderVal = me.zoomSlider.getValue(0);
+			if (newSliderVal != curSliderVal) {
+				me.zoomSlider.setValue(newSliderVal);
+			}
+        };
 
         //-------------------------------------
         //create the threejs canvas
@@ -809,7 +822,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 scope : me,
                 mousemove : mousemove,
                 mousedown : mousedown,
-                mousewheel: mousedown,
+                mousewheel: mousewheel,
                 mouseup : mouseup,
                 mousewheelup : mouseup,
             },
@@ -1875,7 +1888,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                    new saveTool(this),
 
                    //Tools in the settings menu
-                   new showGraphTool(this),
+                   //new showGraphTool(this),
                    new autoRotateTool(this),
                    new qualityTool(this),
 
