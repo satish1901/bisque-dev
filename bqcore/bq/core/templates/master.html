@@ -116,6 +116,9 @@
     <!-- proj4 -->
     <script type="text/javascript" src="${tg.url('/proj4js/proj4.js')}"></script>
 
+    <!-- Raphael -->
+    <script type="text/javascript" src="${tg.url('/raphael/raphael.js')}"></script>
+
     <!-- BisQue UI code -->
     <?python
        if tg.config.get('bisque.js_environment', None) == 'production':
@@ -146,8 +149,6 @@
     '/js/bq_ui_misc.js',
     '/js/date.js',
     '/js/encoder.js',
-    # -- Raphael --
-    '/raphael/raphael.js',
 
     # -- ResourceBrowser code --
     '/js/ResourceBrowser/Browser.js',
