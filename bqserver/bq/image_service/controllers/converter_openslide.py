@@ -111,6 +111,10 @@ class ConverterOpenSlide(ConverterBase):
 
     #######################################
     # Supported
+    # we skip generic tiff support from openslide to use imageconvert
+    # openslide recognizes OME-TIFF as generic tiff and also does not read >3 channels
+    # as well as saves images with >8 bits as 8 bits
+    # therefore we skip openslide in favour of imgcnv: it's faster and supports all the aforementioned types
     #######################################
 
     @classmethod
@@ -122,19 +126,17 @@ class ConverterOpenSlide(ConverterBase):
         if cls.is_multifile_series(**kw) is True:
             return False
         s = openslide.OpenSlide.detect_format(ifnm)
-        return (s is not None)
+        return (s is not None and s != 'generic-tiff')
 
     #######################################
     # The info command returns the "core" metadata (width, height, number of planes, etc.)
     # as a dictionary
     #######################################
-    
+
     @classmethod
     def info(cls, ifnm, series=0, **kw):
         '''returns a dict with file info'''
-        if not cls.installed:
-            return {}
-        if cls.is_multifile_series(**kw) is True:
+        if not cls.supported(ifnm):
             return {}
         log.debug('Info for: %s', ifnm )
         with Locks(ifnm):
@@ -161,21 +163,20 @@ class ConverterOpenSlide(ConverterBase):
                 'image_pixel_format': 'unsigned integer',
                 'image_pixel_depth': 8
             }
-            
+
             if slide.properties.get(openslide.PROPERTY_NAME_MPP_X, None) is not None:
                 info2.update({
                     'pixel_resolution_x': slide.properties.get(openslide.PROPERTY_NAME_MPP_X, 0),
                     'pixel_resolution_y': slide.properties.get(openslide.PROPERTY_NAME_MPP_Y, 0),
                     'pixel_resolution_unit_x': 'microns',
                     'pixel_resolution_unit_y': 'microns'
-                })               
+                })
             slide.close()
-            
+
             # read metadata using imgcnv since openslide does not decode all of the info
             info = ConverterImgcnv.info(tmp or ifnm, series=series, **kw)
-            info.update(info2) 
-            
             misc.end_nounicode_win(tmp)
+            info.update(info2)
             return info
         return {}
 
@@ -185,9 +186,7 @@ class ConverterOpenSlide(ConverterBase):
 
     @classmethod
     def meta(cls, ifnm, series=0, **kw):
-        if not cls.installed:
-            return {}
-        if cls.is_multifile_series(**kw) is True:
+        if not cls.supported(ifnm):
             return {}
         log.debug('Meta for: %s', ifnm )
         with Locks (ifnm):
@@ -224,18 +223,18 @@ class ConverterOpenSlide(ConverterBase):
                     'pixel_resolution_y': slide.properties.get(openslide.PROPERTY_NAME_MPP_Y, 0),
                     'pixel_resolution_unit_x': 'microns',
                     'pixel_resolution_unit_y': 'microns'
-                }) 
+                })
 
             # custom - any other tags in proprietary files should go further prefixed by the custom parent
             for k,v in slide.properties.iteritems():
                 rd['custom/%s'%k.replace('.', '/')] = v
             slide.close()
-            
+
             # read metadata using imgcnv since openslide does not decode all of the info
             meta = ConverterImgcnv.meta(tmp or ifnm, series=series, **kw)
             meta.update(rd)
             rd = meta
-            
+
             misc.end_nounicode_win(tmp)
         return rd
 
@@ -254,10 +253,10 @@ class ConverterOpenSlide(ConverterBase):
     @classmethod
     def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
         '''converts input filename into output thumbnail'''
-        log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
-        if cls.is_multifile_series(**kw) is True:
+        if not cls.supported(ifnm):
             return None
-        
+        log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
+
         fmt = kw.get('fmt', 'jpeg').upper()
         with Locks (ifnm, ofnm) as l:
             if l.locked: # the file is not being currently written by another process
@@ -290,28 +289,28 @@ class ConverterOpenSlide(ConverterBase):
     @classmethod
     def tile(cls, ifnm, ofnm, level, x, y, sz, series=0, **kw):
         '''extract Level,X,Y tile from input filename into output in OME-TIFF format'''
-        log.debug('Tile: %s %s %s %s %s for [%s]', level, x, y, sz, series, ifnm)
-        if cls.is_multifile_series(**kw) is True:
+        if not cls.supported(ifnm):
             return None
-        
+        log.debug('Tile: %s %s %s %s %s for [%s]', level, x, y, sz, series, ifnm)
+
         level = misc.safeint(level, 0)
         x  = misc.safeint(x, 0)
         y  = misc.safeint(y, 0)
         sz = misc.safeint(sz, 0)
         with Locks (ifnm, ofnm) as l:
-            if l.locked: # the file is not being currently written by another process            
+            if l.locked: # the file is not being currently written by another process
                 try:
                     _, tmp = misc.start_nounicode_win(ifnm, [])
-                    slide = openslide.OpenSlide(tmp or ifnm)                    
+                    slide = openslide.OpenSlide(tmp or ifnm)
                     dz = deepzoom.DeepZoomGenerator(slide, tile_size=sz, overlap=0)
                     img = dz.get_tile(dz.level_count-level-1, (x,y))
                     img.save(ofnm, 'TIFF', compression='LZW')
                     slide.close()
-                    misc.end_nounicode_win(tmp)                    
+                    misc.end_nounicode_win(tmp)
                 except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
                     misc.end_nounicode_win(tmp)
-                    return None                
-        
+                    return None
+
         # make sure the file was written
         with Locks(ofnm):
             pass
@@ -320,8 +319,10 @@ class ConverterOpenSlide(ConverterBase):
     @classmethod
     def writeHistogram(cls, ifnm, ofnm, **kw):
         '''writes Histogram in libbioimage format'''
+        if not cls.supported(ifnm):
+            return None
         log.debug('Writing histogram for %s into: %s', ifnm, ofnm )
-      
+
         # currently openslide only supports 8 bit 3 channel images
         # need to generate a histogram file uniformely distributed from 0..255
         channels = 3
@@ -335,15 +336,15 @@ class ConverterOpenSlide(ConverterBase):
             for c in range(channels):
                 f.write(struct.pack('<cccc', 'B', 'I', 'M', '1')) # header
                 f.write(struct.pack('<cccc', 'H', 'S', 'T', '1')) # spec
-                
-                # write bim::HistogramInternal 
+
+                # write bim::HistogramInternal
                 f.write(struct.pack('<H', 8)) # uint16 data_bpp; // bits per pixel
                 f.write(struct.pack('<H', 1)) # uint16 data_fmt; // signed, unsigned, float
                 f.write(struct.pack('<d', 0.0)) # double shift;
                 f.write(struct.pack('<d', 1.0)) # double scale;
                 f.write(struct.pack('<d', 0.0)) # double value_min;
                 f.write(struct.pack('<d', 255.0)) # double value_max;
-                
+
                 # write data
                 f.write(struct.pack('<L', 256)) # histogram size, here 256
                 for i in range(256):

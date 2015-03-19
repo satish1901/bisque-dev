@@ -64,10 +64,10 @@ def safedecode(s, encoding):
         return s
     if isinstance(s, basestring) is not True:
         return u'%s'%s
-    try: 
+    try:
         return s.decode(encoding)
     except UnicodeEncodeError:
-        try: 
+        try:
             return s.decode('utf8')
         except UnicodeEncodeError:
             return unicode(s.encode('ascii', 'replace'))
@@ -105,7 +105,7 @@ class ConverterImgcnv(ConverterBase):
     version = None
     installed_formats = None
     CONVERTERCOMMAND = 'imgcnv' if os.name != 'nt' else 'imgcnv.exe'
-    
+
     # info_map = {
     #     'width'      : 'image_num_x',
     #     'height'     : 'image_num_y',
@@ -132,9 +132,9 @@ class ConverterImgcnv(ConverterBase):
         'image_pixel_depth'  : 'image_pixel_depth',
         'raw_endian'         : 'raw_endian',
         'dimensions'         : 'dimensions',
-        'pixel_resolution_x' : 'pixel_resolution_x',        
-        'pixel_resolution_y' : 'pixel_resolution_y', 
-        'pixel_resolution_z' : 'pixel_resolution_z', 
+        'pixel_resolution_x' : 'pixel_resolution_x',
+        'pixel_resolution_y' : 'pixel_resolution_y',
+        'pixel_resolution_z' : 'pixel_resolution_z',
         'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
         'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
         'pixel_resolution_unit_x' : 'pixel_resolution_unit_x',
@@ -224,7 +224,7 @@ class ConverterImgcnv(ConverterBase):
     def supported(cls, ifnm, **kw):
         '''return True if the input file format is supported'''
         log.debug('Supported for: %s', ifnm )
-        supported = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-supported', '-i', ifnm]) 
+        supported = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-supported', '-i', ifnm])
         return supported.startswith('yes')
 
 
@@ -258,12 +258,12 @@ class ConverterImgcnv(ConverterBase):
             rd['image_num_t'] = rd['image_num_p']
         rd['image_num_series'] = 0
         rd['image_series_index'] = 0
-        
+
         if cls.is_multifile_series(**kw) is True:
             rd.update(kw['token'].meta)
             if kw['token'].meta.get('image_num_c', 0)>1:
                 if 'channel_color_0' in rd: del rd['channel_color_0']
-                if 'channel_0_name' in rd: del rd['channel_0_name']            
+                if 'channel_0_name' in rd: del rd['channel_0_name']
 
         return rd
 
@@ -271,7 +271,7 @@ class ConverterImgcnv(ConverterBase):
     # The info command returns the "core" metadata (width, height, number of planes, etc.)
     # as a dictionary
     #######################################
-    
+
     @classmethod
     def info(cls, ifnm, series=0, **kw):
         '''returns a dict with file info'''
@@ -299,8 +299,8 @@ class ConverterImgcnv(ConverterBase):
         # change the image_pixel_format output, convert numbers to a fully descriptive string
         # if isinstance(rd['image_pixel_format'], (long, int)):
         #     pf_map = {
-        #         1: 'unsigned integer', 
-        #         2: 'signed integer', 
+        #         1: 'unsigned integer',
+        #         2: 'signed integer',
         #         3: 'floating point'
         #     }
         #     rd['image_pixel_format'] = pf_map[rd['image_pixel_format']]
@@ -315,14 +315,14 @@ class ConverterImgcnv(ConverterBase):
         rd.setdefault('image_num_p', 1)
         if rd['image_num_z']==1 and rd['image_num_t']==1 and rd['image_num_p']>1:
             rd['image_num_t'] = rd['image_num_p']
-        
+
         if cls.is_multifile_series(**kw) is True:
             rd.update(kw['token'].meta)
             #try:
             #    del rd['files']
             #except (KeyError):
             #    pass
-        
+
         return rd
 
     #######################################
@@ -343,7 +343,7 @@ class ConverterImgcnv(ConverterBase):
     def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
         '''converts a file and returns output filename'''
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
-        
+
         command = []
         if cls.is_multifile_series(**kw) is False:
             log.debug('convert single file: %s', ifnm)
@@ -356,7 +356,7 @@ class ConverterImgcnv(ConverterBase):
             fl = '%s.files'%ofnm
             cls.write_files(files, fl)
             command.extend(['-il', fl])
-            
+
             # provide geometry and resolution
             meta = kw['token'].meta or {}
 
@@ -364,13 +364,13 @@ class ConverterImgcnv(ConverterBase):
             if meta.get('image_num_c', 0)>1:
                 geom = '%s,%s'%(geom, meta.get('image_num_c', 0))
             command.extend(['-geometry', geom])
-            
+
             # dima: have to convert pixel resolution from input units into microns
             # don't forget to update resolution in every image operation
-            meta.update(kw['token'].dims)            
+            meta.update(kw['token'].dims)
             res = '%s,%s,%s,%s'%(meta.get('pixel_resolution_x', 0), meta.get('pixel_resolution_y', 0), meta.get('pixel_resolution_z', 0), meta.get('pixel_resolution_t', 0))
             command.extend(['-resolution', res])
-        
+
         if ofnm is not None:
             command.extend (['-o', ofnm])
         if fmt is not None:
@@ -394,17 +394,17 @@ class ConverterImgcnv(ConverterBase):
         fmt = kw.get('fmt', 'jpeg')
         preproc = kw.get('preproc', '')
         preproc = preproc if preproc != '' else 'mid' # use 'mid' as auto mode for imgcnv
-        
+
         command = ['-o', ofnm, '-t', fmt]
-        
+
         try:
             token = kw.get('token', None)
             info = token.dims or {}
         except (TypeError, AttributeError):
             info = {}
-        
+
         log.debug('info: %s', info)
-        
+
         num_z = info.get('image_num_z', 1)
         num_t = info.get('image_num_t', 1)
         num_l = info.get('image_num_resolution_levels', 1)
@@ -438,7 +438,7 @@ class ConverterImgcnv(ConverterBase):
             files = cls.enumerate_series_files(**kw)
             meta = kw['token'].meta or {}
             log.debug('thumbnail files: %s', files)
-            
+
             samples = meta.get('image_num_c', 0)
             if samples<2:
                 command.extend(['-i', files[page-1]])
@@ -462,7 +462,7 @@ class ConverterImgcnv(ConverterBase):
             command.extend(['-fusemethod', 'm'])
         else:
             command.extend(['-fusemethod', 'm']) # 'a'
-            
+
         if fmt == 'jpeg':
             command.extend([ '-options', 'quality 95 progressive yes'])
 
@@ -481,9 +481,9 @@ class ConverterImgcnv(ConverterBase):
 
         command = ['-o', ofnm, '-t', fmt]
 
-        if t2==0: 
+        if t2==0:
             t2=t1
-        if z2==0: 
+        if z2==0:
             z2=z1
 
         pages = []
@@ -498,9 +498,9 @@ class ConverterImgcnv(ConverterBase):
                 else:
                     page_num = (zi-1)*info['image_num_t'] + ti
                 pages.append(page_num)
-        
+
         log.debug('slice pages: %s', pages)
-        
+
         # separate normal and multi-file series
         if cls.is_multifile_series(**kw) is False:
             log.debug('Slice for non-multi-file series')
@@ -516,7 +516,7 @@ class ConverterImgcnv(ConverterBase):
 
             #log.debug('Slice for multi-file series: %s', files)
             if len(pages)==1 and (x1==x2 or y1==y2) and channels<=1:
-                # in multi-file case and only one page is requested with no ROI, return with no re-conversion 
+                # in multi-file case and only one page is requested with no ROI, return with no re-conversion
                 misc.dolink(files[pages[0]-1], ofnm)
                 return ofnm
             else:
@@ -552,7 +552,7 @@ class ConverterImgcnv(ConverterBase):
         y  = misc.safeint(y, 0)
         sz = misc.safeint(sz, 0)
         page = 0
-       
+
         try:
             token = kw.get('token', None)
             info = token.dims or {}
@@ -569,12 +569,16 @@ class ConverterImgcnv(ConverterBase):
 
         # images may have different resolution levels embedded, find the right scale
         # this will later be hidden in the imgcnv tile level and size interface
-        try:
-            scales = info.get('image_resolution_level_scales', '')
-            scales = [float(i) for i in scales.split(',')]
-            level = scales.index(1.0 / math.pow(2, level))
-        except (ValueError):
-            return None
+        # not needed anymore: now computed by the imgcnv
+        # try:
+        #     scales = info.get('image_resolution_level_scales', '')
+        #     log.debug('scales: %s', scales)
+        #     scales = [float(i) for i in scales.split(',')]
+        #     log.debug('scales: %s', scales)
+        #     level = scales.index(1.0 / math.pow(2, level))
+        #     log.debug('level: %s', level)
+        # except (ValueError):
+        #     return None
 
         command = ['-o', ofnm, '-t', 'tiff']
 
@@ -603,7 +607,7 @@ class ConverterImgcnv(ConverterBase):
     #######################################
     # Special methods
     #######################################
-    
+
     @classmethod
     def writeHistogram(cls, ifnm, ofnm, **kw):
         '''writes Histogram in libbioimage format'''
@@ -616,7 +620,7 @@ class ConverterImgcnv(ConverterBase):
             info = token.dims or {}
         except (TypeError, AttributeError):
             info = {}
-        
+
         num_l = info.get('image_num_resolution_levels', 1)
         if num_l>1:
             try:
@@ -631,7 +635,7 @@ class ConverterImgcnv(ConverterBase):
                 level = relatives.index(max(relatives))
                 command.extend(['-res-level', str(level)])
             except (Exception):
-                pass        
+                pass
 
         return cls.run(ifnm, ofnm, command )
 
@@ -679,13 +683,13 @@ class ConverterImgcnv(ConverterBase):
 
             if 'PixelData' not in ds:
                 blobs.append(f)
-                continue                
+                continue
 
             modality     = read_tag(ds, ('0008', '0060'))
             patient_id   = read_tag(ds, ('0010', '0020'))
             study_uid    = read_tag(ds, ('0020', '000d'))
             series_uid   = read_tag(ds, ('0020', '000e'))
-            series_num   = read_tag(ds, ('0020', '0012')) # 
+            series_num   = read_tag(ds, ('0020', '0012')) #
             acqui_num    = read_tag(ds, ('0020', '0011')) # A number identifying the single continuous gathering of data over a period of time that resulted in this image
             instance_num = int(read_tag(ds, ('0020', '0013'), '0') or '0') # A number that identifies this image
             slice_loc    = float(read_tag(ds, ('0020', '1041'), '0') or '0') # defined as the relative position of the image plane expressed in mm
@@ -697,13 +701,13 @@ class ConverterImgcnv(ConverterBase):
             key = '%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, acqui_num) # series_num seems to vary in DR Systems
             data.append((key, slice_loc or instance_num, f, num_temp_p or num_frames or mr_acq_typ == '2D' ))
             #log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s', key, series_num, instance_num, num_temp_p, num_frames )
-        
+
         # group based on a key
         data = sorted(data, key=lambda x: x[0])
         for k, g in groupby(data, lambda x: x[0]):
             # sort based on an instance_num
             groups.append( sorted(list(g), key=lambda x: x[1]) )
-        
+
         # prepare groups of dicom filenames
         images   = []
         geometry = []
@@ -724,15 +728,15 @@ class ConverterImgcnv(ConverterBase):
         log.debug('group_files_dicom found: %s image groups, %s blobs', len(images), len(blobs))
 
         return (images, blobs, geometry)
-    
+
     #######################################
     # DICOM metadata parser writing directly into XML tree
     #######################################
-    
+
     @classmethod
     def meta_dicom(cls, ifnm, series=0, xml=None, **kw):
         '''appends nodes to XML'''
-        
+
         if os.path.basename(ifnm) == 'DICOMDIR': # skip reading metadata for teh index file
             return
 
@@ -754,7 +758,7 @@ class ConverterImgcnv(ConverterBase):
                 else:
                     if isinstance(de.value, dicom.multival.MultiValue):
                         value = ','.join(safedecode(i, encoding) for i in de.value)
-                    else:                
+                    else:
                         value = safedecode(de.value, encoding)
                     try:
                         node.set('value', value.strip())
@@ -768,19 +772,19 @@ class ConverterImgcnv(ConverterBase):
             misc.end_nounicode_win(tmp)
             return
         encoding = dicom_init_encoding(ds)
-        recurse_tree(ds, xml, encoding=encoding)     
-        
+        recurse_tree(ds, xml, encoding=encoding)
+
         misc.end_nounicode_win(tmp)
         return
 
     #######################################
     # Most important DICOM metadata to be ingested directly into data service
     #######################################
-    
+
     @classmethod
     def meta_dicom_parsed(cls, ifnm, xml=None, **kw):
         '''appends nodes to XML'''
-        
+
         try:
             import dicom
         except (ImportError, OSError):
@@ -793,11 +797,11 @@ class ConverterImgcnv(ConverterBase):
                 return
             name = name or de.name
             typ = ':///DICOM#%04.x,%04.x'%(de.tag.group, de.tag.element)
-            
+
             if fmt is None:
                 if isinstance(de.value, dicom.multival.MultiValue):
                     value = ','.join(safedecode(i, encoding) for i in de.value)
-                else:                
+                else:
                     value = safedecode(de.value, encoding)
             else:
                 if safe is True:
@@ -816,7 +820,7 @@ class ConverterImgcnv(ConverterBase):
             ds = dicom.read_file(tmp or ifnm)
         except (Exception):
             misc.end_nounicode_win(tmp)
-            return 
+            return
 
         encoding = dicom_init_encoding(ds)
 
@@ -835,14 +839,14 @@ class ConverterImgcnv(ConverterBase):
         append_tag(ds, ('0008', '0060'), xml, encoding=encoding) # Modality
         append_tag(ds, ('0008', '1030'), xml, encoding=encoding) # Study Description
         append_tag(ds, ('0008', '103e'), xml, encoding=encoding) # Series Description
-        append_tag(ds, ('0008', '0080'), xml, encoding=encoding) # Institution Name  
+        append_tag(ds, ('0008', '0080'), xml, encoding=encoding) # Institution Name
         append_tag(ds, ('0008', '0090'), xml, encoding=encoding) # Referring Physician's Name
         append_tag(ds, ('0008', '0008'), xml) # Image Type
         append_tag(ds, ('0008', '0012'), xml, fmt=dicom_parse_date ) # Instance Creation Date
         append_tag(ds, ('0008', '0013'), xml, fmt=dicom_parse_time ) # Instance Creation Time
         append_tag(ds, ('0008', '1060'), xml, encoding=encoding) # Name of Physician(s) Reading Study
-        append_tag(ds, ('0008', '2111'), xml, encoding=encoding) # Derivation Description  
-        
+        append_tag(ds, ('0008', '2111'), xml, encoding=encoding) # Derivation Description
+
         misc.end_nounicode_win(tmp)
 
 try:

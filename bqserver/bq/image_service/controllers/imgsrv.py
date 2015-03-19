@@ -146,7 +146,7 @@ class ConverterDict(OrderedDict):
             for f in c.formats().itervalues():
                 exts.extend(f.ext)
         return exts
-    
+
     def info(self, filename, name=None):
         if name is None:
             for n,c in self.iteritems():
@@ -202,7 +202,7 @@ mime_types = {
     'matroska'  : 'video/x-matroska',
     'webm'      : 'video/webm',
     'h264'      : 'video/mp4',
-    'h265'      : 'video/mp4',    
+    'h265'      : 'video/mp4',
     'mpeg4'     : 'video/mp4',
     'ogg'       : 'video/ogg',
 }
@@ -533,7 +533,7 @@ class MetaService(object):
                     pass
 
             if meta['format'] == 'DICOM':
-                node = etree.SubElement(image, 'tag', name='DICOM')  
+                node = etree.SubElement(image, 'tag', name='DICOM')
                 ConverterImgcnv.meta_dicom(ifile, series=data_token.series, token=data_token, xml=node)
 
             log.debug('Meta %s: storing metadata into %s', image_id, metacache)
@@ -868,7 +868,7 @@ class FormatService(object):
             # using ome-tiff as intermediate if everything failed
             if r is None:
                 log.debug('All converters could not connvert [%s] to [%s] format'%(ifile, fmt))
-                log.debug('Converting to OME-TIFF and then to desired output')                
+                log.debug('Converting to OME-TIFF and then to desired output')
                 r = self.server.imageconvert(image_id, ifile, ofile, fmt=fmt, series=data_token.series, extra=['-multi'], token=data_token, try_imgcnv=False)
 
             if r is None:
@@ -939,7 +939,7 @@ class ResizeService(object):
         dims = data_token.dims or {}
         if maxBounding and dims.get('image_num_x',0)<=size[0] and dims.get('image_num_y',0)<=size[1]:
             log.debug('Resize: Max bounding resize requested on a smaller image, skipping...')
-            return data_token        
+            return data_token
 
         ifile = self.server.getInFileName( data_token, image_id )
         ofile = self.server.getOutFileName( ifile, image_id, '.size_%d,%d,%s,%s' % (size[0], size[1], method, textAddition) )
@@ -989,6 +989,24 @@ class ResizeService(object):
 
         if not os.path.exists(ofile):
             args = ['-multi', '-resize', '%s,%s,%s%s'%(size[0], size[1], method,aspectRatio)]
+
+            # if image has multiple resolution levels find the closest one and request it
+            num_l = dims.get('image_num_resolution_levels', 1)
+            if num_l>1:
+                try:
+                    num_x = int(dims.get('image_num_x', 1))
+                    num_y = int(dims.get('image_num_y', 1))
+                    width = size[0] or 1
+                    height = size[1] or 1
+                    scales = [float(i) for i in dims.get('image_resolution_level_scales', '').split(',')]
+                    sizes = [(round(num_x*i),round(num_y*i)) for i in scales]
+                    relatives = [max(width/sz[0], height/sz[1]) for sz in sizes]
+                    relatives = [i if i<=1 else 0 for i in relatives]
+                    level = relatives.index(max(relatives))
+                    args.extend(['-res-level', str(level)])
+                except (Exception):
+                    pass
+
             self.server.imageconvert(image_id, ifile, ofile, fmt=default_format, series=data_token.series, extra=args, token=data_token)
 
         try:
@@ -1121,7 +1139,7 @@ class Resize3DService(object):
                 except KeyError:
                     pass
             elif t>0:
-                rt = data_token.dims['image_num_t'] / size[2]                
+                rt = data_token.dims['image_num_t'] / size[2]
                 data_token.dims['image_num_t'] = size[2]
                 try:
                     data_token.dims['pixel_resolution_t'] *= rt
@@ -1203,7 +1221,7 @@ class ThumbnailService(object):
 
     def dryrun(self, image_id, data_token, arg):
         ss = arg.split(',')
-        size = [misc.safeint(ss[0], 128) if len(ss)>0 else 128, 
+        size = [misc.safeint(ss[0], 128) if len(ss)>0 else 128,
                 misc.safeint(ss[1], 128) if len(ss)>1 else 128]
         method = ss[2].upper() if len(ss)>2 and len(ss[2])>0 else 'BC'
         preproc = ss[3].lower() if len(ss)>3 and len(ss[3])>0 else ''
@@ -1222,7 +1240,7 @@ class ThumbnailService(object):
 
     def action(self, image_id, data_token, arg):
         ss = arg.split(',')
-        size = [misc.safeint(ss[0], 128) if len(ss)>0 else 128, 
+        size = [misc.safeint(ss[0], 128) if len(ss)>0 else 128,
                 misc.safeint(ss[1], 128) if len(ss)>1 else 128]
         method = ss[2].upper() if len(ss)>2 and len(ss[2])>0 else 'BC'
         preproc = ss[3].lower() if len(ss)>3 and len(ss[3])>0 else ''
@@ -1557,14 +1575,9 @@ class TileService(object):
         if len(vs)>2 and vs[2].isdigit(): tny = int(vs[2])
         if len(vs)>3 and vs[3].isdigit(): tsz = int(vs[3])
 
-        try:
-            if not data_token.dims is None:
-                skip = True
-                if   'image_num_x' in data_token.dims and data_token.dims['image_num_x']>tsz: skip = False
-                elif 'image_num_y' in data_token.dims and data_token.dims['image_num_y']>tsz: skip = False
-                if skip: return data_token
-        finally:
-            pass
+        dims = data_token.dims or {}
+        if dims.get('image_num_x', 0)<=tsz and dims.get('image_num_y', 0)<=tsz:
+            return data_token
 
         data_token.dims['image_num_p'] = 1
         data_token.dims['image_num_z'] = 1
@@ -1589,14 +1602,11 @@ class TileService(object):
         log.debug( 'Tile: l:%d, tnx:%d, tny:%d, tsz:%d' % (level, tnx, tny, tsz) )
 
         # if input image is smaller than the requested tile size
-        try:
-            if not data_token.dims is None:
-                skip = True
-                if   'image_num_x' in data_token.dims and data_token.dims['image_num_x']>tsz: skip = False
-                elif 'image_num_y' in data_token.dims and data_token.dims['image_num_y']>tsz: skip = False
-                if skip: return data_token
-        finally:
-            pass
+        dims = data_token.dims or {}
+        #log.debug('Dims: %s', dims)
+        if dims.get('image_num_x', 0)<=tsz and dims.get('image_num_y', 0)<=tsz:
+            log.debug('Image is smaller that requested tile size, returning the whole image...')
+            return data_token
 
         # construct a sliced filename
         ifname   = self.server.getInFileName( data_token, image_id )
@@ -1620,28 +1630,23 @@ class TileService(object):
 
         # extract individual tile if available
         processed = False
-        if data_token.dims is not None and data_token.dims.get('image_num_resolution_levels', 0)>0:
+        if dims.get('image_num_resolution_levels', 0)>0 and dims.get('tile_num_x', 0)>0:
             if os.path.exists(ofname):
                 processed = True
             else:
                 r = None
                 for n,c in self.server.converters.iteritems():
-                    log.debug('Converter: %s', n)
                     if callable( getattr(c, "tile", None) ):
-                        log.debug('Trying to extract tile')
-                        with Locks(ifname, ofname) as l:
-                            if l.locked: # the file is not being currently written by another process
-                                r = c.tile(ifname, ofname, level, tnx, tny, tsz, series=data_token.series, token=data_token)
-                            else:
-                                r = ifnm
+                        r = c.tile(ifname, ofname, level, tnx, tny, tsz, series=data_token.series, token=data_token)
                         if r is not None:
-                            # write the histogram file if missing
                             if not os.path.exists(hstl_name):
-                                with Locks(ifname, hstl_name) as l:
-                                    if l.locked: # the file is not being currently written by another process
-                                        c.writeHistogram(ifnm=ifname, ofnm=hstl_name, series=data_token.series, token=data_token)
+                                # write the histogram file if missing
+                                c.writeHistogram(ifnm=ifname, ofnm=hstl_name, series=data_token.series, token=data_token)
                             break
                 processed = r is not None
+
+            with Locks(ofname):
+                pass
 
         # tile the whole image
         tiles_name = '%s.tif' % (base_name)
@@ -2582,7 +2587,7 @@ class ImageServer(object):
         log.info('Available converters: %s', str(self.converters))
         if 'imgcnv' not in self.converters:
             log.warn('imgcnv was not found, it is required for most of image service operations! Make sure to install it!')
-        
+
         self.writable_formats = self.converters.converters(readable=False, writable=True, multipage=False)
 
         img_threads = config.get ('bisque.image_service.imgcnv.omp_num_threads', None)
@@ -2710,7 +2715,7 @@ class ImageServer(object):
         if try_imgcnv is True:
             r = self.converters['imgcnv'].convert( ifnm, ofnm, fmt=fmt, series=series, extra=extra, **kw)
             if r is not None:
-                return r            
+                return r
 
         # if the conversion failed, convert input to OME-TIFF using other converts
         ometiff = self.getOutFileName( ifnm, image_id, '.ome.tif' )
@@ -2804,7 +2809,7 @@ class ImageServer(object):
         data_token = ProcessToken()
         data_token.timeout = kw.get('timeout', None)
         data_token.meta = kw.get('imagemeta', None)
-        
+
         if ident is not None:
             # pre-compute final filename and check if it exists before starting any other processing
             if len(query)>0:
