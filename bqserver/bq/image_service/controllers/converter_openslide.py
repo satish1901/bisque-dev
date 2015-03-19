@@ -127,6 +127,7 @@ class ConverterOpenSlide(ConverterBase):
             return False
         s = openslide.OpenSlide.detect_format(ifnm)
         return (s is not None and s != 'generic-tiff')
+        #return (s is not None)
 
     #######################################
     # The info command returns the "core" metadata (width, height, number of planes, etc.)

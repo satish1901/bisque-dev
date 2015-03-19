@@ -334,8 +334,10 @@ BQValue.prototype.setParent = function (p) {
 };
 
 BQValue.prototype.xmlNode = function () {
-    return BQXml.prototype.xmlNode.call (this, BQFactory.escapeXML(this.value));
+    //return BQXml.prototype.xmlNode.call (this, BQFactory.escapeXML(this.value));
+    return BQXml.prototype.xmlNode.call (this, this.value); // dima: migrated to DOM based creation
 };
+
 
 //-----------------------------------------------------------------------------
 // BQVertex
@@ -421,8 +423,10 @@ function BQXml() {
     this.xmlfields = [];
 };
 
-BQXml.prototype.toXML = function (){
-    return this.xmlNode ();
+BQXml.prototype.toXML = function () {
+    var doc = this.xmlNode (),
+        serializer = new XMLSerializer();
+    return serializer.serializeToString(doc);
 };
 
 /*
@@ -467,13 +471,37 @@ BQXml.prototype.xmlNode = function (content) {
         if (this[fields[f]] != undefined  &&  this[fields[f]] != null )
             resource.setAttribute(fields[f], this[fields[f]]);
     }
-    
-    if (content && content != "") {
-        resource.textContent = content;
-    } 
 
-    var serializer = new XMLSerializer();
-    return serializer.serializeToString(doc);
+    if (content && typeof content === 'string' && content != '') {
+        resource.textContent = content;
+    } /* else if (content && content instanceof Document) {
+        resource.appendChild( content.firstChild );
+    } else if (content && content instanceof Node) {
+        resource.appendChild( content );
+    }*/
+
+    if (this.values)
+        for (var i=0; i < this.values.length; i++ )
+            //xmlrep += this.values[i].xmlNode();
+            resource.appendChild( this.values[i].xmlNode() );
+    if (this.vertices)
+        for (var i=0; i < this.vertices.length; i++ )
+            //xmlrep += this.vertices[i].xmlNode();
+            resource.appendChild( this.vertices[i].xmlNode() );
+    if (this.tags)
+        for (var i=0; i < this.tags.length; i++ )
+             //xmlrep += this.tags[i].toXML();
+             resource.appendChild( this.tags[i].xmlNode() );
+    if (this.gobjects)
+        for (var i=0; i < this.gobjects.length; i++ )
+             //xmlrep += this.gobjects[i].toXML();
+             resource.appendChild( this.gobjects[i].xmlNode() );
+    if (this.children)
+        for (var i=0; i < this.children.length; i++ )
+            //xmlrep += this.children[i].toXML();
+            resource.appendChild( this.children[i].xmlNode() );
+
+    return resource;
 };
 
 //-----------------------------------------------------------------------------
@@ -609,6 +637,7 @@ BQObject.prototype.load_response = function (cb, ign, xmldoc) {
         cb(this);
 };
 
+/*
 BQObject.prototype.toXML = function() {
     var xmlrep = '';
     if (this.values)
@@ -628,6 +657,7 @@ BQObject.prototype.toXML = function() {
             xmlrep += this.children[i].toXML();
     return this.xmlNode(xmlrep);
 };
+*/
 
 BQObject.prototype.delete_ = function (cb, errorcb) {
     this.testReadonly();

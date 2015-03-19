@@ -1648,6 +1648,7 @@ class TileService(object):
             with Locks(ofname):
                 pass
 
+        # generate one pyramidal tiled tiff instead of many files in a directory !!!!
         # tile the whole image
         tiles_name = '%s.tif' % (base_name)
         if not processed and not os.path.exists(hist_name):
