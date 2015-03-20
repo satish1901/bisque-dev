@@ -668,9 +668,6 @@ class ConverterImgcnv(ConverterBase):
                 return ''
             return t.value or default
 
-        def tag_present(ds, key):
-            return ds.get(key) is not None
-
         if not cls.installed:
             return False
         log.debug('Group %s files', len(files) )
@@ -700,12 +697,17 @@ class ConverterImgcnv(ConverterBase):
             num_temp_p   = int(read_tag(ds, ('0020', '0105'), '0') or '0') # Total number of temporal positions prescribed
             num_frames   = int(read_tag(ds, ('0028', '0008'), '0') or '0') # Number of frames in a Multi-frame Image
 
-            # if slice location is present, it's most probably a 3D volume, even with acq type 2D
-            mr_acq_typ   = read_tag(ds, ('0018', '0023')) # MR Acquisition type
-            force_2d     = mr_acq_typ == '2D' and tag_present(ds, ('0020', '1041')) is False
+            mr_acq_typ  = read_tag(ds, ('0018', '0023')) # MR Acquisition type
+            force_time = False
+            # if slice location is not present, it's most probably a time series visualization of a volume
+            if mr_acq_typ == '3D' and ds.get(('0020', '1041')) is None:
+                force_time = True
+            # if slice location is present, it's most probably a 3D volume
+            if mr_acq_typ == '2D' and ds.get(('0020', '1041')) is not None:
+                force_time = False
 
             key = '%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, acqui_num) # series_num seems to vary in DR Systems
-            data.append((key, slice_loc or instance_num, f, num_temp_p or num_frames or force_2d ))
+            data.append((key, slice_loc or instance_num, f, num_temp_p or num_frames or force_time ))
             #log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s', key, series_num, instance_num, num_temp_p, num_frames )
 
         # group based on a key
