@@ -96,6 +96,7 @@ Ext.define('BQ.ResourceTagger.User', {
     // this will be changed in the next iteration when deltas are added and hopefully
     // this custom component can be removed
     deleteTags: function () {
+        var me = this;
         var selectedItems = this.tree.getSelectionModel().getSelection(), parent;
         
         // removes elements for the xml
@@ -128,12 +129,14 @@ Ext.define('BQ.ResourceTagger.User', {
                     //this.reload()
                     this.tree.setLoading(false);
                     BQ.ui.notification(selectedItems.length + ' record(s) deleted!');
+                    me.fireEvent('onDone', me, xml.documentElement)
                 },
                 failure: function(response) {
                     this.setProgress(false);
                     this.tree.setLoading(false);
                     BQ.ui.error('Failed to delete resource: '+id);
                     this.setResource('/admin/user/'+id) //reset resource
+                    me.fireEvent('onError', me, response)
                 },
                 scope: this,
             });      
@@ -146,6 +149,7 @@ Ext.define('BQ.ResourceTagger.User', {
     //saveTags will put the entire body back
     // this will be changed in the next iteration when deltas are added
     saveTags: function (parent, silent) {
+        var me = this;
         if (silent === undefined)
             silent = this.silent !== undefined ? this.silent : false;
 
@@ -158,18 +162,22 @@ Ext.define('BQ.ResourceTagger.User', {
             Ext.Ajax.request({
                 url: '/admin/user/'+id,
                 method: 'PUT',
+                params: {view:'deep'},
                 xmlData: xmlBody,
                 headers: { 'Content-Type': 'text/xml' },
                 success: function(response) {
                     var xml = response.responseXML;
                     this.setProgress(false);
+                    
                     BQ.ui.notification('Tag(s) successfully modified');
+                    me.fireEvent('onDone', me, xml.documentElement)
                 },
                 failure: function(response) {
                     BQ.ui.error('Failed to modify resource: '+id);
                     this.setProgress(false);
                     //this.reload()
                     this.setResource('/admin/user/'+id)
+                    me.fireEvent('onError', me, response)
                 },
                 scope: this,
             });
@@ -185,114 +193,113 @@ Ext.define('BQ.admin.UserTable', {
     title: 'User List',
     userInfoPanel: null,
     border: false,
+
+    viewConfig: {
+        markDirty: false,
+    },
     selModel: {  allowDeselect: true },
     columns: {
-        items: [
-            {text: 'ID', dataIndex: 'resource_uniq', sortable: true},
-            {text: 'User Name', dataIndex: 'name', sortable: true},
-            {text: 'Email', dataIndex: 'email', sortable: true},
-        ],
+        items: [{
+            dataIndex:'profile_picture',
+            width: 45,
+            renderer: function(value, meta, record){
+                if (value) {
+                    return '<img  src="'+value+'" alt=="No Image Found!" height="32" width="32"/>';
+                } else {
+                    return '<img  src="/images/toolbar/user.png" alt=="No Image Found!" height="32" width="32"/>';
+                }
+            },
+        },{
+            text: 'ID', dataIndex: 'resource_uniq', sortable: true, flex:1,
+        },{
+            text: 'User Name', dataIndex: 'name', sortable: true, flex:1,
+        },{
+            text: 'Email', dataIndex: 'email', sortable: true, flex:1,
+        }, {
+            text: 'Display Name', dataIndex: 'display_name', sortable: true, flex:1,
+        }],
         defaults: {
-            flex: 1,
+            renderer : function (value, meta, record) {
+                return '<div style="line-height:32px; text-align:center; height:32px; overflow:hidden; text-overflow:ellipsis">'+value+'</div>';
+            }
         }
     },   
     renderTo: Ext.getBody(),
     initComponent: function(config) {
         var config = config || {};
         var me = this;
-        var tbar = [{
-            xtype: 'button',
-            text: 'Add',
-            scale: 'large',
-            tooltip: 'Add new user',
-            handler: this.addUserWin,
-            scope: this,
-        }, {
-            xtype: 'button',
-            text: 'Delete',
-            scale: 'large',
-            tooltip: 'Delete existing user',
-            handler: this.deleteUserWin,
-            disabled: true,
-            listeners: {
-                afterrender: function(el) {
-                    var buttonEl = el;
-                    me.on('select',
-                        function(el, record) {
-                            buttonEl.setDisabled(false)
-                    });   
-                    me.on('deselect',
-                        function(el, record) {
-                            buttonEl.setDisabled(true)                    
-                    });
-                    var store = me.getStore();
-                    store.on('load',
-                        function(el,record) {
-                            buttonEl.setDisabled(true);
-                    });
+        
+        var tbar = new Ext.Toolbar({
+            margin: false,
+            border: false,
+            items:[{
+                xtype: 'button',
+                text: 'Add',
+                height: '50px',
+                scale: 'large',
+                tooltip: 'Add new user',
+                handler: this.addUserWin,
+                disabled: false,
+                scope: this,
+                listeners: {}, //remove default listeners
+            }, {
+                xtype: 'button',
+                text: 'Delete',
+                height: '50px',
+                scale: 'large',
+                tooltip: 'Delete existing user',
+                handler: this.deleteUserWin,
+                
+                scope: this,
+            },{
+                xtype: 'button',
+                text: 'Remove<br>All User<br>Data',
+                scale: 'large',
+                height: '50px',
+                tooltip: 'Removes all data from selected user',
+                handler: this.deleteUserImagesMessage,
+                scope: this,
+            },{
+                xtype: 'button',
+                text: 'Login<br>As',
+                scale: 'large',
+                height: '50px',
+                tooltip: 'Login as selected user',
+                handler: this.loginUserMessage,
+                scope: this,
+            }, {
+                xtype: 'button',
+                text: 'Refresh',
+                height: '50px',
+                scale: 'large',
+                tooltip: 'Refresh information in the list',
+                handler: this.reload,
+                disabled: false,
+                scope: this,
+                listeners: {}, //remove default listeners
+            }],
+            defaults: {
+                disabled: true,
+                listeners: { //disable buttons when deselected
+                    afterrender: function(el) {
+                        var buttonEl = el;
+                        me.on('select',
+                            function(el, record) {
+                                buttonEl.setDisabled(false);
+                        });   
+                        me.on('deselect',
+                            function(el, record) {
+                                buttonEl.setDisabled(true);                  
+                        });
+                        var store = me.getStore();
+                        store.on('load',
+                            function(el,record) {
+                                buttonEl.setDisabled(true);
+                        });
+                    }
                 }
             },
-            scope: this,
-        },{
-            xtype: 'button',
-            text: 'Remove All User Data',
-            scale: 'large',
-            tooltip: 'Removes all data from selected user',
-            handler: this.deleteUserImagesMessage,
-            disabled: true,
-            listeners: {
-                afterrender: function(el) {
-                    var buttonEl = el;
-                    me.on('select',
-                        function(el, record) {
-                            buttonEl.setDisabled(false)
-                    });   
-                    me.on('deselect',
-                        function(el, record) {
-                            buttonEl.setDisabled(true)                    
-                    });
-                    var store = me.getStore();
-                    store.on('load',
-                        function(el,record) {
-                            buttonEl.setDisabled(true);
-                    });
-                }
-            },
-            scope: this,
-        },{
-            xtype: 'button',
-            text: 'Login As',
-            scale: 'large',
-            tooltip: 'Login as selected user',
-            handler: this.loginUserMessage,
-            disabled: true,
-            listeners: {
-                afterrender: function(el) {
-                    var buttonEl = el;
-                    me.on('select',
-                        function(el, record) {
-                            buttonEl.setDisabled(false)
-                    });   
-                    me.on('deselect',
-                        function(el, record) {
-                            buttonEl.setDisabled(true)                    
-                    });
-                    var store = me.getStore();
-                    store.on('load',
-                        function(el,record) {
-                            buttonEl.setDisabled(true);
-                    });
-                }
-            },
-            scope: this,
-        }, {
-            xtype: 'button',
-            text: 'Refresh',
-            scale: 'large',
-            tooltip: 'Refresh information in the list',
-            handler: this.reload,
-            scope: this,
-        }];
+        });
         this.initTable();
         Ext.apply(me, {
             store: me.store,
@@ -302,7 +309,7 @@ Ext.define('BQ.admin.UserTable', {
     },
     
     initTable: function() {
-        Ext.define('BQ.model.Users', {
+        Ext.define('BQ.model.adminUsers', {
             extend: 'Ext.data.Model',
             fields: [{
                 name: 'name' ,
@@ -313,11 +320,17 @@ Ext.define('BQ.admin.UserTable', {
             },{
                 name: 'email',
                 mapping: "tag[@name='email']/@value",
+            },{
+                name: 'profile_picture',
+                mapping: "tag[@name='profile_picture']/@value",
+            },{
+                name: 'display_name',
+                mapping: "tag[@name='display_name']/@value",                
             }],
         });
 
         this.store = Ext.create('Ext.data.Store', {
-            model: 'BQ.model.Users',
+            model: 'BQ.model.adminUsers',
             storeID: 'BQUsers',
             autoLoad: false, //dont know yet why this doesnt work
             //autoLoad: true,
@@ -328,7 +341,7 @@ Ext.define('BQ.admin.UserTable', {
                 limitParam: undefined,
                 pageParam: undefined,
                 startParam: undefined,
-                url: '/admin/user?view=full', 
+                url: '/admin/user?view=full',
                 reader: {
                     type: 'xml',
                     root: 'resource',
@@ -404,16 +417,25 @@ Ext.define('BQ.admin.UserTable', {
         win.show();
     },
     
-    addUser: function(username, password, displayname, email) {
-        var xmlBody =  '<user name="'+username+'">';
-        xmlBody += '<tag name="password" value="'+password+'"/>';
-        xmlBody += '<tag name="email" value="'+email+'"/>';
-        xmlBody += '<tag name="display_name" value="'+displayname+'"/>';
-        xmlBody += '</user>';
+    addUser: function(username, password, display_name, email) {
+        var user = document.createElement("user");
+        user.setAttribute('name',username);
+        var passwordTag = document.createElement("tag");
+        passwordTag.setAttribute('name','password');
+        passwordTag.setAttribute('value',password);
+        user.appendChild(passwordTag);
+        var emailTag = document.createElement("tag");
+        emailTag.setAttribute('name','email');
+        emailTag.setAttribute('value',email);
+        user.appendChild(emailTag);
+        var display_nameTag = document.createElement("tag");
+        display_nameTag.setAttribute('name','display_name');
+        display_nameTag.setAttribute('value',display_name);
+        user.appendChild(display_nameTag);
         
         Ext.Ajax.request({
             url: '/admin/user',
-            xmlData: xmlBody,
+            xmlData: user.outerHTML,
             method: 'POST',
             headers: { 'Content-Type': 'text/xml' },
             success: function(response) {
@@ -561,7 +583,7 @@ Ext.define('BQ.admin.UserTable', {
             headers: { 'Content-Type': 'text/xml' },
             success: function(response) {
                 var xml = response.responseXML;
-                location ='/client_service'; //reloads with new credentials
+                location = '/client_service'; //reloads with new credentials
                 //update the list
             },
             failure: function(response) {
@@ -576,7 +598,7 @@ Ext.define('BQ.admin.UserTable', {
             this.userInfoPanel.deselectUser();
         }
         this.getStore().load();
-    }
+    },
 });
 
 Ext.define('BQ.admin.UserInfo', {
@@ -608,7 +630,7 @@ Ext.define('BQ.admin.UserInfo', {
             padding: '10px',
             layout: 'fit',
             tpl: [
-                '<h2>Welcome to the Administrators User Manager</h2>',
+                '<h2>Welcome to the Administrator\'s User Manager</h2>',
                 '<p>This page allows for an admin to create, delete, modify and manage users in the system with normal bisque credentials. If the user is registered to bisque with another system like cas or google this page will not be able to modify those users with the current iteration. Below is some information on how this page can be used to manage users.</p>',
                 '<p><b>Create User:</b> Select the add button at the top of the User List and a form will pop up. Enter the neccessary user information.</p>',
                 '<p><b>Delete User:</b> Select a user and then select the Delete at the top of the User List</p>',
@@ -668,16 +690,29 @@ Ext.define('BQ.admin.UserManager', {
             userInfoPanel: this.userInfo,
         });
         
-
-        
         this.userTable.on('select',
             function(el, record) {
-                var resource_uniq = record.data.resource_uniq;
+                var resource_uniq = record.get('resource_uniq');
                 me.userInfo.selectUser('/admin/user/'+resource_uniq);
         });
+        
         this.userTable.on('deselect',
             function(el, record) {
                 me.userInfo.deselectUser();
+        });
+        
+        this.userInfo.tagger.on('onDone', 
+            function(el, xmlResponse) {
+                var userName = xmlResponse.attributes['name'].value;
+                var record = me.userTable.store.findRecord('name', userName);
+                var email = xmlResponse.querySelector('tag[name="email"]');
+                record.set('email', email ? email.attributes['value'].value: '');
+                var resource_uniq = xmlResponse.attributes['resource_uniq'];
+                record.set('resource_uniq', resource_uniq ? resource_uniq.value: '');
+                var profile_picture = xmlResponse.querySelector('tag[name="profile_picture"]');
+                record.set('profile_picture', profile_picture ?  profile_picture.attributes['value'].value : '');
+                var display_name = xmlResponse.querySelector('tag[name="display_name"]');
+                record.set('display_name', display_name ?  display_name.attributes['value'].value : '');                
         });
         
         items.push(this.userTable);
