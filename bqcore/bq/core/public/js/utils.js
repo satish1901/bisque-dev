@@ -115,6 +115,14 @@ BQ.util.xpath_string = function(node, expression) {
     }
 };
 
+BQ.util.xpath_number = function(node, expression) {
+    var result = BQ.util.do_xpath(node, expression, XPathResult.NUMBER_TYPE);
+    if (result) {
+        return result.numberValue;
+    }    
+}
+
+
 /*******************************************************************************
   xhr
 *******************************************************************************/

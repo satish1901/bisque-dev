@@ -69,7 +69,7 @@ from bq import data_service
 from bq.core.service import ServiceController
 from bq.core import identity
 from bq.util.paths import data_path
-from bq.core.model import   User,Group #, Visit
+from bq.core.model import  User, Group #, Visit
 from bq.core.model import DBSession
 from bq.data_service.model import  BQUser, Image, TaggableAcl
 from bq.util.bisquik2db import bisquik2db, db2tree
@@ -96,7 +96,7 @@ class AdminController(ServiceController):
     """
     service_type = "admin"
 
-    allow_only = Any (in_group("admin"), in_group('admins'))
+    allow_only = Any(in_group("admin"), in_group('admins'))
     #allow_only = is_user('admin')
 
     #admin = BisqueAdminController([User, Group], DBSession)
@@ -147,6 +147,9 @@ class AdminController(ServiceController):
     def user(self, *arg, **kw):
         """
             Main user expose
+            
+            Merges the shadow user with the normal user for admins easy access to the password
+            columns
         
             GET user: returns list of all users in xml info see get_all_users for format
         
@@ -168,7 +171,7 @@ class AdminController(ServiceController):
                 return self.get_user(arg[0], **kw)
             elif request.method == 'PUT':
                 if request.body:
-                    return self.put_user(arg[0], request.body)
+                    return self.put_user(arg[0], request.body, **kw)
             elif request.method == 'DELETE':
                 return self.delete_user(arg[0])
             else:
@@ -190,7 +193,7 @@ class AdminController(ServiceController):
                 return self.get_all_users(*arg, **kw)
             elif request.method == 'POST':
                 if request.body:
-                    return self.post_user(request.body)
+                    return self.post_user(request.body, **kw)
            
         abort(400)
     
@@ -242,6 +245,7 @@ class AdminController(ServiceController):
                     <tag name="image_count" value="0"/>
                 </user>
         """
+        #u = data_service
         u = BQUser.query.filter(BQUser.resource_uniq == uniq).first()
         if u:
             view = kw.get('view', None)
@@ -256,7 +260,7 @@ class AdminController(ServiceController):
             abort(403)
         
     
-    def post_user(self, doc):
+    def post_user(self, doc, **kw):
         """
             Creates new user
             
@@ -287,11 +291,11 @@ class AdminController(ServiceController):
                     transaction.commit()
                     r = BQUser.query.filter(BQUser.resource_name == tags['user_name']).first()
                     r = data_service.update_resource('/data_service/%s'%r.resource_uniq, new_resource=userxml)
-                    return self.get_user('%s'%r.attrib['resource_uniq'])
+                    return self.get_user('%s'%r.attrib['resource_uniq'], **kw)
         abort(400)
     
         
-    def put_user(self, uniq, doc):
+    def put_user(self, uniq, doc, **kw):
         """
             update user
             
@@ -340,7 +344,7 @@ class AdminController(ServiceController):
                     #userxml.attrib['resource_uniq'] = r.attrib['resource_uniq']
                     #reset BQUser
                     r = data_service.update_resource('/data_service/%s'%uniq, new_resource=userxml)
-                    return self.get_user(r.attrib['resource_uniq'])
+                    return self.get_user(r.attrib['resource_uniq'], **kw)
         abort(400)
         
         
