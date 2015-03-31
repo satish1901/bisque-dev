@@ -676,7 +676,6 @@ function gObjectTool(volume, cls) {
 gObjectTool.prototype = new renderingTool();
 
 gObjectTool.prototype.addUniforms = function(){
-
     this.uniforms['opacity'] = {name: 'BRIGHTNESS',
                                 type: 'f',
                                 val: 1.0,
