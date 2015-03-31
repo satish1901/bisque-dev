@@ -2001,6 +2001,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			}
 		});
 
+        /*
 		thisDom.addEventListener('mousewheel', function () {
 			var distFromCenter = me.canvas3D.camera.position.length();
 			var newSliderVal = Math.floor((10.0 - distFromCenter) * 10.0);
@@ -2009,6 +2010,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 				me.zoomSlider.setValue(newSliderVal);
 			}
 		}, false);
+        */
 
 		this.zoomSlider.setValue(50);
 		this.canvas3D.controls.noRoate = false;
