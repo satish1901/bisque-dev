@@ -1,0 +1,39 @@
+BisQue dough 0.5.7:
+Tile retreival in seconds, avg: 0.918539996147 max: 3.38399982452 min: 0.591000080109, std: 0.793536578412
+Tile retreival in seconds, avg: 0.133559999466 max: 0.18499994278 min: 0.128000020981, std: 0.00798537707001
+
+BisQue loup 0.5.7:
+Tile retreival in seconds, avg: 0.897779998779 max: 2.67800021172 min: 0.661999940872, std: 0.580030829752
+Tile retreival in seconds, avg: 0.119299998283 max: 0.223999977112 min: 0.109000205994, std: 0.0201387724739
+
+0.5.8:
+
+Top:
+Tile retreival in seconds, avg: 0.0943600034714 max: 0.103199982643 min: 0.0921000003815, std: 0.00442021590005
+
+check access:
+Tile retreival in seconds, avg: 0.108239998817 max: 0.115400004387 min: 0.106200003624, std: 0.00358363196732
+
+resource + image meta fetch:
+Tile retreival in seconds, avg: 0.119079999924 max: 0.125600004196 min: 0.116700005531, std: 0.00329083791922
+
+Entire overhead excluding operations:
+Tile retreival in seconds, avg: 0.159179997444 max: 0.170000004768 min: 0.155599999428, std: 0.00543522186248
+
+No dryrun:
+Tile retreival in seconds, avg: 0.579440002441 max: 3.03299999237 min: 0.269999980927, std: 0.808412942156
+Tile retreival in seconds, avg: 0.156300001144 max: 0.28200006485 min: 0.149999856949, std: 0.0183120281153
+
+Tile retreival in seconds, avg: 0.322859997749 max: 0.519999980927 min: 0.269999980927, std: 0.0802877286362
+Tile retreival in seconds, avg: 0.155380001068 max: 0.288000106812 min: 0.148000001907, std: 0.0191247506115
+
+
+entire pipeline:
+
+planar:
+Tile retreival in seconds, avg: 0.554599995613 max: 2.98400020599 min: 0.25, std: 0.802151292881
+Tile retreival in seconds, avg: 0.143340001106 max: 0.157999992371 min: 0.125, std: 0.00731738909674
+
+pyramidal:
+Tile retreival in seconds, avg: 0.306220002174 max: 0.621999979019 min: 0.264999866486, std: 0.0799598142316
+Tile retreival in seconds, avg: 0.145499997139 max: 0.25 min: 0.12900018692, std: 0.0162040125661

@@ -263,7 +263,7 @@ class ImageServiceTestBase(unittest.TestCase):
             for name in files:
                 os.remove(os.path.join(root, name))
 
-    def validate_image_variant(self, resource, filename, commands, meta_required):
+    def validate_image_variant(self, resource, filename, commands, meta_required=None):
         path = os.path.join(local_store_tests, filename)
         try:
             #image = fromXml(resource, session=self.session)
@@ -273,11 +273,13 @@ class ImageServiceTestBase(unittest.TestCase):
                 px = px.command(c, a)
             px.fetch(path)
         except BQCommError:
-            self.fail()
+            logging.exception('Comm error')
+            self.fail('Communication error while fetching image')
 
-        meta_test = metadata_read(path)
-        self.assertTrue(meta_test is not None, msg='Retrieved image can not be read')
-        self.assertTrue(compare_info(meta_required, meta_test), msg='Retrieved metadata differs from test template')
+        if meta_required is not None:
+            meta_test = metadata_read(path)
+            self.assertTrue(meta_test is not None, msg='Retrieved image can not be read')
+            self.assertTrue(compare_info(meta_required, meta_test), msg='Retrieved metadata differs from test template')
 
     def validate_xml(self, resource, filename, commands, xml_parts_required):
         path = os.path.join(local_store_tests, filename)

@@ -19,6 +19,7 @@ from lxml import etree
 from bq.util.compat import OrderedDict
 import bq.util.io_misc as misc
 
+from .process_token import ProcessToken
 from .converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
 from bq.util.locks import Locks
@@ -37,6 +38,8 @@ class ConverterBioformats(ConverterBase):
     CONVERTERCOMMAND = 'bfconvert'  if os.name != 'nt' else 'bfconvert.bat'
     BFINFO           = 'showinf'    if os.name != 'nt' else 'showinf.bat'
     BFORMATS         = 'formatlist' if os.name != 'nt' else 'formatlist.bat'
+    name             = 'bioformats'
+    required_version = '5.0.1'
 
     format_map = {
         'ome-bigtiff' : {
@@ -141,14 +144,15 @@ class ConverterBioformats(ConverterBase):
     #######################################
 
     @classmethod
-    def supported(cls, ifnm, **kw):
+    def supported(cls, token, **kw):
         '''return True if the input file format is supported'''
         if not cls.installed:
             return False
-        if cls.is_multifile_series(**kw) is True:
-            return False # for now we're not using multi-file support of bioformats
+        #if token.is_multifile_series() is True:
+        #    return False # for now we're not using multi-file support of bioformats
+        ifnm = token.first_input_file()
         log.debug('Supported for: %s', ifnm )
-        return len(cls.info(ifnm))>0
+        return len(cls.info(token))>0
 
 
     #######################################
@@ -163,13 +167,13 @@ class ConverterBioformats(ConverterBase):
     # name value fields separated with ":"
 
     @classmethod
-    def meta(cls, ifnm, series=0, **kw):
+    def meta(cls, token, **kw):
         if not cls.installed:
             return {}
+        ifnm = token.first_input_file()
+        series = token.series
         if not os.path.exists(ifnm):
             return {}
-        if cls.is_multifile_series(**kw) is True:
-            return {}        
         log.debug('Meta for: %s', ifnm )
         o = cls.run_read(ifnm, [cls.BFINFO, '-nopix', '-omexml', '-novalid', '-no-upgrade', '-series', '%s'%series, ifnm] )
         if o is None:
@@ -308,14 +312,14 @@ class ConverterBioformats(ConverterBase):
     #        Thumbnail series = false
 
     @classmethod
-    def info(cls, ifnm, series=0, **kw):
+    def info(cls, token, **kw):
         '''returns a dict with file info'''
         if not cls.installed:
             return {}
+        ifnm = token.first_input_file()
+        series = token.series
         if not os.path.exists(ifnm):
             return {}
-        if cls.is_multifile_series(**kw) is True:
-            return {}        
         log.debug('Info for: %s', ifnm )
         o = cls.run_read(ifnm, [cls.BFINFO, '-nopix', '-nometa', '-no-upgrade', '-series', '%s'%series, ifnm] )
         if o is None:
@@ -379,8 +383,10 @@ class ConverterBioformats(ConverterBase):
     #######################################
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
+    def convert(cls, token, ofnm, fmt=None, extra=None, **kw):
         '''converts a file and returns output filename'''
+        ifnm = token.first_input_file()
+        series = token.series
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
         command = [ifnm, ofnm, '-no-upgrade', '-overwrite']
         tmp = None
@@ -414,11 +420,13 @@ class ConverterBioformats(ConverterBase):
     #sh bfconvert -bigtiff -compression LZW  ../53676.svs ../output.ome.tiff
 
     @classmethod
-    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=None, **kw):
+    def convertToOmeTiff(cls, token, ofnm, extra=None, **kw):
         '''converts input filename into output in OME-TIFF format'''
-        log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
-        if cls.is_multifile_series(**kw) is True:
+        if token.is_multifile_series() is True:
             return None
+        ifnm = token.first_input_file()
+        series = token.series
+        log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
 
         command = [ifnm, ofnm, '-no-upgrade', '-overwrite']
         #if original is not None:
@@ -431,44 +439,44 @@ class ConverterBioformats(ConverterBase):
         return cls.run(ifnm, ofnm, command, **kw )
 
     @classmethod
-    def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
+    def thumbnail(cls, token, ofnm, width, height, **kw):
         '''converts input filename into output thumbnail'''
+        ifnm = token.first_input_file()
+        series = token.series
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
-        if cls.is_multifile_series(**kw) is True:
-            return None        
+        if token.is_multifile_series() is True:
+            return None
 
         # dima: BF has a bug exporting only one channel when -z or -timepoint are requested
         # dima: will run plane extraction only if the image has 1 channel
         # dima: once fixed, remove test and perform plane extraction always
-        token = kw.get('token', None)
-        info = token.dims if token is not None else {}
+        info = token.dims or {}
         num_channels = info.get('image_num_c', 1)
         if num_channels == 1:
             ometiff = kw['intermediate'].replace('.ome.tif', '.t0.z0.ome.tif')
             # sub point extraction only works for 1 channel and z0 and t0, so, no way to optimizy mid
             if not os.path.exists(ometiff):
-                r = cls.convertToOmeTiff(ifnm, ometiff, series=series, extra=['-z', '0', '-timepoint', '0'], nooverwrite=True)
+                r = cls.convertToOmeTiff(token, ometiff, extra=['-z', '0', '-timepoint', '0'], nooverwrite=True)
                 if r is None:
                     return None
         else:
             # dima: when slices will be supported correctly - remove
             ometiff = kw['intermediate']
             if not os.path.exists(ometiff):
-                r = cls.convertToOmeTiff(ifnm, ometiff, series=series, nooverwrite=True)
+                r = cls.convertToOmeTiff(token, ometiff, nooverwrite=True)
                 if r is None:
                     return None
-        
+
         # extract thumbnail
-        #return ConverterImgcnv.thumbnail(ometiff, ofnm=ofnm, width=width, height=height, series=series, **kw)
-        return ConverterImgcnv.thumbnail(ometiff, ofnm=ofnm, width=width, height=height, series=series)
+        return ConverterImgcnv.thumbnail(ProcessToken(ifnm=ometiff), ofnm=ofnm, width=width, height=height)
 
     @classmethod
-    def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
+    def slice(cls, token, ofnm, z, t, roi=None, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
-        log.debug('Slice: %s %s %s %s for [%s]', z, t, roi, series, ifnm)
-        if cls.is_multifile_series(**kw) is True:
+        if token.is_multifile_series() is True:
             return None
-        
+        log.debug('Slice: %s %s %s %s for [%s]', z, t, roi, series, token.first_input_file())
+
         z1,z2 = z
         t1,t2 = t
         x1,x2,y1,y2 = roi
@@ -480,7 +488,7 @@ class ConverterBioformats(ConverterBase):
 #         num_channels = info.get('image_num_c', 1)
 #         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0 and num_channels==1:
 #             ofnmtmp = '%s.ome.tif'%ofnm
-#             r = cls.convertToOmeTiff(ifnm, ofnm=ofnmtmp, series=series, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
+#             r = cls.convertToOmeTiff(token, ofnm=ofnmtmp, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
 #             if r is None:
 #                 return None
 #             os.rename(ofnmtmp, ofnm)
@@ -489,11 +497,11 @@ class ConverterBioformats(ConverterBase):
         # create an intermediate OME-TIFF
         ometiff = kw.get('intermediate', None)
         if not os.path.exists(ometiff):
-            r = cls.convertToOmeTiff(ifnm, ometiff, series=series, nooverwrite=True)
+            r = cls.convertToOmeTiff(token, ometiff, nooverwrite=True)
             if r is None:
                 return None
         # extract slices
-        return ConverterImgcnv.slice(ometiff, ofnm=ofnm, z=z, t=t, roi=roi, series=series, **kw)
+        return ConverterImgcnv.slice(ProcessToken(ifnm=ometiff), ofnm=ofnm, z=z, t=t, roi=roi, **kw)
 
 
 try:
