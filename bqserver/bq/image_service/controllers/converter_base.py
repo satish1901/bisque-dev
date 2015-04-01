@@ -22,6 +22,8 @@ from itertools import groupby
 from bq.util.locks import Locks
 import bq.util.io_misc as misc
 
+from .process_token import ProcessToken
+
 import logging
 log = logging.getLogger('bq.image_service.converter')
 
@@ -59,6 +61,8 @@ class Format(object):
 ################################################################################
 
 class ConverterBase(object):
+    name = 'base_converter'
+    required_version = '0.0.0'
     installed = False
     version = None
     installed_formats = None # OrderedDict containing Format and keyed by format name
@@ -96,7 +100,10 @@ class ConverterBase(object):
     def get_installed (cls):
         '''Returns true if converter is installed'''
         if cls.version is not None and 'full' in cls.version:
-            return True
+            if not cls.ensure_version(cls.required_version):
+                log.warning('%s needs update! Has: %s Needs: %s', cls.name, cls.version['full'], cls.required_version)
+            else:
+                return True
         return False
 
     @classmethod
@@ -137,8 +144,9 @@ class ConverterBase(object):
 
     # overwrite with appropriate implementation
     @classmethod
-    def supported(cls, ifnm, **kw):
+    def supported(cls, token, **kw):
         '''return True if the input file format is supported'''
+        ifnm = token.first_input_file()
         return False
 
 
@@ -148,8 +156,10 @@ class ConverterBase(object):
 
     # overwrite with appropriate implementation
     @classmethod
-    def meta(cls, ifnm, series=0, **kw):
+    def meta(cls, token, **kw):
         '''returns a dict with file metadata'''
+        ifnm = token.first_input_file()
+        series = token.series
         return {}
 
     #######################################
@@ -159,14 +169,16 @@ class ConverterBase(object):
 
     # overwrite with appropriate implementation
     @classmethod
-    def info(cls, ifnm, series=0, **kw):
+    def info(cls, token, **kw):
         '''returns a dict with file info'''
+        ifnm = token.first_input_file()
+        series = token.series
         if not cls.installed:
             return {}
         if not os.path.exists(ifnm):
             return {}
 
-        rd = cls.meta(ifnm, series)
+        rd = cls.meta(token)
         core = [ 'image_num_series', 'image_num_x', 'image_num_y', 'image_num_z', 'image_num_c', 'image_num_t',
                  'image_pixel_format', 'image_pixel_depth',
                  'pixel_resolution_x', 'pixel_resolution_y', 'pixel_resolution_z',
@@ -174,66 +186,6 @@ class ConverterBase(object):
 
         #return {k:v for k,v in rd.iteritems() if k in core}
         return dict ( (k,v) for k,v in rd.iteritems() if k in core)
-
-    #######################################
-    # Multi-file misc
-    #######################################
-
-    @classmethod
-    def is_multifile_series(cls, **kw):
-        ''' Test if incoming is a multi-file no-header series like TIFF series '''
-        #log.debug('is_multifile_series kw: %s', kw)
-        
-        # test if token is present
-        try:
-            token = kw['token']
-        except (KeyError):
-            return False
-
-        # test for multiple files
-        try:
-            meta = token.meta
-            #log.debug('is_multifile_series meta: %s', meta)
-            files = meta['files']
-            #log.debug('is_multifile_series files: %s', files)
-            if len(files)<=1:
-                return False
-        except (KeyError, TypeError, AttributeError):
-            return False
-
-        # test for storage
-        #if meta.get('storage') != 'multi_file_series':
-        #    return False
-        
-        # test for geometry tags
-        if len(set(['image_num_z','image_num_t','image_num_c']).intersection(meta.keys()))<1:
-            return False
-
-        log.debug('is_multifile_series is True')
-        return True
-
-    @classmethod
-    def enumerate_series_files(cls, **kw):
-        ''' Find all files belonging to a multi-file series '''
-        
-        # test if token is present
-        try:
-            token = kw['token']
-        except (KeyError):
-            return []
-
-        # test for multiple files
-        try:
-            meta = token.meta
-            files = meta['files']
-        except (KeyError, TypeError, AttributeError):
-            return []
-        
-        # we can't possibly sort files since they are in order defined by the ingest
-        # store drivers might have to sort stuff if they get a directory instead of a file
-        #files = list(set(files)) # ensure unique names
-        #files = sorted(files, key=misc.blocked_alpha_num_sort) # use alpha-numeric sort
-        return files
 
     #######################################
     # Conversion
@@ -305,40 +257,58 @@ class ConverterBase(object):
         return ofnm
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
+    def convert(cls, token, ofnm, fmt=None, extra=None, **kw):
         '''converts a file and returns output filename'''
-        command = ['-input', ifnm]
+        command = ['-input', token.input]
         if ofnm is not None:
             command.extend (['-output', ofnm])
         if fmt is not None:
             command.extend (['-format', fmt])
-        if series is not None:
-            command.extend (['-series', str(series)])
+        if token.series is not None:
+            command.extend (['-series', str(token.series)])
         #command.extend (extra)
-        return cls.run(ifnm, ofnm, command )
+        return cls.run( token.input, ofnm, command )
 
     # overwrite with appropriate implementation
     @classmethod
-    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=None, **kw):
+    def convertToOmeTiff(cls, token, ofnm, extra=None, **kw):
         '''converts input filename into output in OME-TIFF format'''
+        ifnm = token.first_input_file()
+        series = token.series
         return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series] )
 
     # overwrite with appropriate implementation
     @classmethod
-    def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
+    def thumbnail(cls, token, ofnm, width, height, **kw):
         '''converts input filename into output thumbnail'''
+        ifnm = token.first_input_file()
+        series = token.series
         return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'jpeg', '-series', '%s'%series, '-thumbnail'] )
 
     # overwrite with appropriate implementation
     @classmethod
-    def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
+    def slice(cls, token, ofnm, z, t, roi=None, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
         #z1,z2 = z
         #t1,t2 = t
         #x1,x2,y1,y2 = roi
-        #token = kw.get('token', None)
-
+        ifnm = token.first_input_file()
+        series = token.series
         return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series, 'z', '%s'%z, 't', '%s'%t] )
+
+    @classmethod
+    def tile(cls, token, ofnm, level, x, y, sz, **kw):
+        '''extract tile Level,X,Y tile from input filename into output in TIFF format'''
+        ifnm = token.first_input_file()
+        series = token.series
+        return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'tiff', '-series', '%s'%series, '-tile'] )
+
+    @classmethod
+    def writeHistogram(cls, token, ofnm, **kw):
+        '''export histogram for a file with tiles'''
+        ifnm = token.first_input_file()
+        series = token.series
+        return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'tiff', '-series', '%s'%series, '-histogram'] )
 
 
 #ConverterBase.init()

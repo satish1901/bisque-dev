@@ -25,11 +25,15 @@ import re
 import tempfile
 import cStringIO as StringIO
 import ConfigParser
+import math
+
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
 from bq.util.locks import Locks
 import bq.util.io_misc as misc
 
+from .imgsrv import min_level_size
+from .process_token import ProcessToken
 from .converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
 
@@ -51,6 +55,8 @@ class ConverterOpenSlide(ConverterBase):
     version = None
     installed_formats = None
     extensions = None
+    name = 'openslide'
+    required_version = '0.5.1'
 
 #     #######################################
 #     # Init
@@ -118,13 +124,14 @@ class ConverterOpenSlide(ConverterBase):
     #######################################
 
     @classmethod
-    def supported(cls, ifnm, **kw):
+    def supported(cls, token, **kw):
         '''return True if the input file format is supported'''
         if not cls.installed:
             return False
+        ifnm = token.first_input_file()
         log.debug('Supported for: %s', ifnm )
-        if cls.is_multifile_series(**kw) is True:
-            return False
+        #if token.is_multifile_series() is True:
+        #    return False
         s = openslide.OpenSlide.detect_format(ifnm)
         return (s is not None and s != 'generic-tiff')
         #return (s is not None)
@@ -135,9 +142,11 @@ class ConverterOpenSlide(ConverterBase):
     #######################################
 
     @classmethod
-    def info(cls, ifnm, series=0, **kw):
+    def info(cls, token, **kw):
         '''returns a dict with file info'''
-        if not cls.supported(ifnm):
+        ifnm = token.first_input_file()
+        series = token.series
+        if not cls.supported(token):
             return {}
         log.debug('Info for: %s', ifnm )
         with Locks(ifnm):
@@ -175,7 +184,7 @@ class ConverterOpenSlide(ConverterBase):
             slide.close()
 
             # read metadata using imgcnv since openslide does not decode all of the info
-            info = ConverterImgcnv.info(tmp or ifnm, series=series, **kw)
+            info = ConverterImgcnv.info(ProcessToken(ifnm=tmp or ifnm, series=series), **kw)
             misc.end_nounicode_win(tmp)
             info.update(info2)
             return info
@@ -186,8 +195,9 @@ class ConverterOpenSlide(ConverterBase):
     #######################################
 
     @classmethod
-    def meta(cls, ifnm, series=0, **kw):
-        if not cls.supported(ifnm):
+    def meta(cls, token, **kw):
+        ifnm = token.first_input_file()
+        if not cls.supported(token):
             return {}
         log.debug('Meta for: %s', ifnm )
         with Locks (ifnm):
@@ -232,7 +242,7 @@ class ConverterOpenSlide(ConverterBase):
             slide.close()
 
             # read metadata using imgcnv since openslide does not decode all of the info
-            meta = ConverterImgcnv.meta(tmp or ifnm, series=series, **kw)
+            meta = ConverterImgcnv.meta(ProcessToken(ifnm=tmp or ifnm, series=token.series), **kw)
             meta.update(rd)
             rd = meta
 
@@ -244,17 +254,19 @@ class ConverterOpenSlide(ConverterBase):
     #######################################
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
+    def convert(cls, token, ofnm, fmt=None, extra=None, **kw):
         return None
 
     @classmethod
-    def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=None, **kw):
+    def convertToOmeTiff(cls, token, ofnm, extra=None, **kw):
         return None
 
     @classmethod
-    def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
+    def thumbnail(cls, token, ofnm, width, height, **kw):
         '''converts input filename into output thumbnail'''
-        if not cls.supported(ifnm):
+        ifnm = token.first_input_file()
+        series = token.series
+        if not cls.supported(token):
             return None
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
 
@@ -273,7 +285,7 @@ class ConverterOpenSlide(ConverterBase):
                 except IOError:
                     tmp = '%s.tif'%ofnm
                     img.save(tmp, 'TIFF')
-                    ConverterImgcnv.thumbnail(tmp, ofnm=ofnm, width=width, height=height, **kw)
+                    ConverterImgcnv.thumbnail(ProcessToken(ifnm=tmp), ofnm=ofnm, width=width, height=height, **kw)
                 slide.close()
                 misc.end_nounicode_win(tmp)
 
@@ -283,14 +295,16 @@ class ConverterOpenSlide(ConverterBase):
         return ofnm
 
     @classmethod
-    def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
+    def slice(cls, token, ofnm, z, t, roi=None, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
         return None
 
     @classmethod
-    def tile(cls, ifnm, ofnm, level, x, y, sz, series=0, **kw):
+    def tile(cls, token, ofnm, level, x, y, sz, **kw):
         '''extract Level,X,Y tile from input filename into output in OME-TIFF format'''
-        if not cls.supported(ifnm):
+        ifnm = token.first_input_file()
+        series = token.series
+        if not cls.supported(token):
             return None
         log.debug('Tile: %s %s %s %s %s for [%s]', level, x, y, sz, series, ifnm)
 
@@ -318,16 +332,55 @@ class ConverterOpenSlide(ConverterBase):
         return ofnm
 
     @classmethod
-    def writeHistogram(cls, ifnm, ofnm, **kw):
+    def writeHistogram(cls, token, ofnm, **kw):
         '''writes Histogram in libbioimage format'''
-        if not cls.supported(ifnm):
+        if not cls.supported(token):
             return None
+        ifnm = token.first_input_file()
         log.debug('Writing histogram for %s into: %s', ifnm, ofnm )
+
+        # estimate best level for histogram approximation
+        preferred_side = 1024
+        dims = token.dims or {}
+        num_x = int(dims.get('image_num_x', 0))
+        num_y = int(dims.get('image_num_y', 0))
+        width = preferred_side
+        height = preferred_side
+
+        #scales = [float(i) for i in dims.get('image_resolution_level_scales', '').split(',')]
+        # scales metadata is provided according to original data storage, not deepzoom virtual view
+        sz = max(num_x, num_y)
+        num_levels = int(round(math.ceil(math.log(sz, 2)) - math.ceil(math.log(min_level_size, 2)) + 1))
+        scales = [1/float(pow(2,i)) for i in range(0, num_levels)]
+
+        log.debug('scales: %s',  scales)
+        sizes = [(round(num_x*i),round(num_y*i)) for i in scales]
+        log.debug('scales: %s',  sizes)
+        relatives = [max(width/float(sz[0]), height/float(sz[1])) for sz in sizes]
+        log.debug('relatives: %s',  relatives)
+        relatives = [i if i>=1 else 1000000 for i in relatives] # only allow levels containing entire blocks
+        log.debug('relatives: %s',  relatives)
+        level = relatives.index(min(relatives))
+        log.debug('Chosen level: %s', level)
+
+        # extract desired level and compute histogram
+        try:
+            _, tmp = misc.start_nounicode_win(ifnm, [])
+            slide = openslide.OpenSlide(tmp or ifnm)
+            dz = deepzoom.DeepZoomGenerator(slide, tile_size=preferred_side, overlap=0)
+            img = dz.get_tile(dz.level_count-level-1, (0,0))
+            slide.close()
+            misc.end_nounicode_win(tmp)
+            hist = img.histogram()
+        except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
+            misc.end_nounicode_win(tmp)
+
+        log.debug('histogram: %s', hist)
 
         # currently openslide only supports 8 bit 3 channel images
         # need to generate a histogram file uniformely distributed from 0..255
         channels = 3
-
+        i = 0
         import struct
         with open(ofnm, 'wb') as f:
             f.write(struct.pack('<cccc', 'B', 'I', 'M', '1')) # header
@@ -349,7 +402,7 @@ class ConverterOpenSlide(ConverterBase):
                 # write data
                 f.write(struct.pack('<L', 256)) # histogram size, here 256
                 for i in range(256):
-                    f.write(struct.pack('<Q', 100)) # histogram data, here each color has freq of 100
+                    f.write(struct.pack('<Q', hist[i])) # histogram data, here each color has freq of 100
         return ofnm
 
 try:

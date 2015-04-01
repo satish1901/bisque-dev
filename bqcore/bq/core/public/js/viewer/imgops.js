@@ -34,11 +34,13 @@ ImgOperations.prototype.updateView = function (view) {
     if (!this.menu) this.createMenu();
     if (this.menu) {
         this.params = {};
-        
+
+        var channels_separate = 'cs'; // cs cc
+
         var enh = this.combo_enhancement.getValue();
         this.params.enhancement = enh;
         if (enh.indexOf('hounsfield') != 0) {
-            view.addParams  ('depth=8,' + this.combo_enhancement.getValue() + ',u');
+            view.addParams  ('depth=8,' + this.combo_enhancement.getValue() + ',u,cs');
         } else {
             var a = enh.split(':');
             view.addParams  ('depth=8,hounsfield,u,,'+a[1]);

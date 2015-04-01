@@ -88,9 +88,9 @@ ImgSlicer.prototype.updateView = function (view) {
             this.prev = {z: view.z, t: view.t};
 
         if (prjtype.indexOf('projectmax')===0)
-            projection = 'projectmax';
+            projection = 'intensityprojection=max';
         else if (prjtype.indexOf('projectmin')===0)
-            projection = 'projectmin';
+            projection = 'intensityprojection=min';
 
         // now take care of required pre-slicing for 4D/5D cases
         if (prjtype==='projectmaxz' || prjtype==='projectminz') {

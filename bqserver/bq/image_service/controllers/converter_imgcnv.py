@@ -26,6 +26,7 @@ from tg import config
 from bq.util.compat import OrderedDict
 import bq.util.io_misc as misc
 
+from .process_token import ProcessToken
 from .converter_base import ConverterBase, Format
 
 log = logging.getLogger('bq.image_service.converter_imgcnv')
@@ -105,6 +106,8 @@ class ConverterImgcnv(ConverterBase):
     version = None
     installed_formats = None
     CONVERTERCOMMAND = 'imgcnv' if os.name != 'nt' else 'imgcnv.exe'
+    name = 'imgcnv'
+    required_version = '2.0.0'
 
     # info_map = {
     #     'width'      : 'image_num_x',
@@ -221,8 +224,9 @@ class ConverterImgcnv(ConverterBase):
     #######################################
 
     @classmethod
-    def supported(cls, ifnm, **kw):
+    def supported(cls, token, **kw):
         '''return True if the input file format is supported'''
+        ifnm = token.first_input_file()
         log.debug('Supported for: %s', ifnm )
         supported = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-supported', '-i', ifnm])
         return supported.startswith('yes')
@@ -233,11 +237,12 @@ class ConverterImgcnv(ConverterBase):
     #######################################
 
     @classmethod
-    def meta(cls, ifnm, series=0, **kw):
+    def meta(cls, token, **kw):
         '''returns a dict with file metadata'''
-        log.debug('Meta for: %s', ifnm)
         if not cls.installed:
             return {}
+        ifnm = token.first_input_file()
+        log.debug('Meta for: %s', ifnm)
 
         meta = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-meta', '-i', ifnm] )
         if meta is None:
@@ -259,9 +264,9 @@ class ConverterImgcnv(ConverterBase):
         rd['image_num_series'] = 0
         rd['image_series_index'] = 0
 
-        if cls.is_multifile_series(**kw) is True:
-            rd.update(kw['token'].meta)
-            if kw['token'].meta.get('image_num_c', 0)>1:
+        if token.is_multifile_series() is True:
+            rd.update(token.meta)
+            if token.meta.get('image_num_c', 0)>1:
                 if 'channel_color_0' in rd: del rd['channel_color_0']
                 if 'channel_0_name' in rd: del rd['channel_0_name']
 
@@ -273,8 +278,9 @@ class ConverterImgcnv(ConverterBase):
     #######################################
 
     @classmethod
-    def info(cls, ifnm, series=0, **kw):
+    def info(cls, token, **kw):
         '''returns a dict with file info'''
+        ifnm = token.first_input_file()
         log.debug('Info for: %s', ifnm)
         if not cls.installed:
             return {}
@@ -316,12 +322,8 @@ class ConverterImgcnv(ConverterBase):
         if rd['image_num_z']==1 and rd['image_num_t']==1 and rd['image_num_p']>1:
             rd['image_num_t'] = rd['image_num_p']
 
-        if cls.is_multifile_series(**kw) is True:
-            rd.update(kw['token'].meta)
-            #try:
-            #    del rd['files']
-            #except (KeyError):
-            #    pass
+        if token.is_multifile_series() is True:
+            rd.update(token.meta)
 
         return rd
 
@@ -340,56 +342,66 @@ class ConverterImgcnv(ConverterBase):
     #######################################
 
     @classmethod
-    def convert(cls, ifnm, ofnm, fmt=None, series=0, extra=None, **kw):
+    def convert(cls, token, ofnm, fmt=None, extra=None, **kw):
         '''converts a file and returns output filename'''
-        log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
+        ifnm = token.first_input_file()
+        log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, token.series, extra)
 
         command = []
-        if cls.is_multifile_series(**kw) is False:
+        if token.is_multifile_series() is False:
             log.debug('convert single file: %s', ifnm)
-            command.extend(['-i', ifnm])
+            if '-i' not in extra and '-il' not in extra:
+                command.extend(['-i', ifnm])
         else:
             # use first image of the series, need to check for separate channels here
-            files = cls.enumerate_series_files(**kw)
-            log.debug('convert files: %s', files)
-            # create a list file and pass that as input
-            fl = '%s.files'%ofnm
-            cls.write_files(files, fl)
-            command.extend(['-il', fl])
+            if '-i' not in extra and '-il' not in extra:
+                files = token.input
+                #log.debug('convert files: %s', files)
+                # create a list file and pass that as input
+                fl = '%s.files'%ofnm
+                cls.write_files(files, fl)
+                command.extend(['-il', fl])
 
             # provide geometry and resolution
-            meta = kw['token'].meta or {}
+            meta = token.meta or {}
 
-            geom = '%s,%s'%(meta.get('image_num_z', 1),meta.get('image_num_t', 1))
-            if meta.get('image_num_c', 0)>1:
-                geom = '%s,%s'%(geom, meta.get('image_num_c', 0))
-            command.extend(['-geometry', geom])
+            if '-geometry' not in extra:
+                geom = '%s,%s'%(meta.get('image_num_z', 1),meta.get('image_num_t', 1))
+                if meta.get('image_num_c', 0)>1:
+                    geom = '%s,%s'%(geom, meta.get('image_num_c', 0))
+                command.extend(['-geometry', geom])
 
             # dima: have to convert pixel resolution from input units into microns
             # don't forget to update resolution in every image operation
-            meta.update(kw['token'].dims)
-            res = '%s,%s,%s,%s'%(meta.get('pixel_resolution_x', 0), meta.get('pixel_resolution_y', 0), meta.get('pixel_resolution_z', 0), meta.get('pixel_resolution_t', 0))
-            command.extend(['-resolution', res])
+            meta.update(token.dims)
 
-        if ofnm is not None:
+            if '-resolution' not in extra:
+                res = '%s,%s,%s,%s'%(meta.get('pixel_resolution_x', 0), meta.get('pixel_resolution_y', 0), meta.get('pixel_resolution_z', 0), meta.get('pixel_resolution_t', 0))
+                command.extend(['-resolution', res])
+
+        dims = token.dims or {}
+        nz = dims.get('image_num_z', 1)
+        nt = dims.get('image_num_t', 1)
+
+        if token.histogram is not None and '-ihst' not in extra:
+            command.extend (['-ihst', token.histogram])
+        if ofnm is not None and '-o' not in extra:
             command.extend (['-o', ofnm])
-        if fmt is not None:
+        if fmt is not None and '-t' not in extra:
             command.extend (['-t', fmt])
             if cls.installed_formats[fmt].multipage is True:
                 extra.extend(['-multi'])
-            else:
+            elif '-page' not in extra and nz*nt>1:
                 extra.extend(['-page', '1'])
         if extra is not None:
             command.extend (extra)
         return cls.run(ifnm, ofnm, command )
 
-    #def convertToOmeTiff(cls, ifnm, ofnm, series=0, extra=[]):
-    #    '''converts input filename into output in OME-TIFF format'''
-    #    return cls.convert(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series] )
-
     @classmethod
-    def thumbnail(cls, ifnm, ofnm, width, height, series=0, **kw):
+    def thumbnail(cls, token, ofnm, width, height, **kw):
         '''converts input filename into output thumbnail'''
+        ifnm = token.first_input_file()
+        series = token.series
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
         fmt = kw.get('fmt', 'jpeg')
         preproc = kw.get('preproc', '')
@@ -397,21 +409,14 @@ class ConverterImgcnv(ConverterBase):
 
         command = ['-o', ofnm, '-t', fmt]
 
-        try:
-            token = kw.get('token', None)
-            info = token.dims or {}
-        except (TypeError, AttributeError):
-            info = {}
-
-        log.debug('info: %s', info)
-
+        info = token.dims or {}
         num_z = info.get('image_num_z', 1)
         num_t = info.get('image_num_t', 1)
         num_l = info.get('image_num_resolution_levels', 1)
-        page=1
+        page=0
         if preproc == 'mid':
-            mx = num_z if num_z>1 else num_t
-            page = min(max(1, mx/2), mx)
+            mx = (num_z if num_z>1 else num_t)-1
+            page = min(max(0, mx/2), mx)
         elif preproc != '':
             return None
 
@@ -430,24 +435,28 @@ class ConverterImgcnv(ConverterBase):
                 pass
 
         # separate normal and multi-file series
-        if cls.is_multifile_series(**kw) is False:
-            command.extend(['-i', ifnm])
-            command.extend(['-page', str(page)])
+        queue = token.getQueue()
+        if token.is_multifile_series() is False:
+            if '-i' in queue:
+                command.extend(['-i', ifnm])
+            command.extend(['-page', str(page+1)])
         else:
             # use first image of the series, need to check for separate channels here
-            files = cls.enumerate_series_files(**kw)
-            meta = kw['token'].meta or {}
+            files = token.input
+            meta = token.meta or {}
             log.debug('thumbnail files: %s', files)
 
             samples = meta.get('image_num_c', 0)
             if samples<2:
-                command.extend(['-i', files[page-1]])
+                #command.extend(['-i', files[page]])
+                token.input = files[page]
             else:
                 # in case of channels being stored in separate files
-                page = (page-1) * samples
-                command.extend(['-i', files[page+0]])
+                page = page * samples
+                command.extend(['-i', files[page]])
                 for s in range(1, samples):
                     command.extend(['-c', files[page+s]])
+                #token.input = files[page]
 
         command.extend(['-enhancemeta']) # right now only CT data is enhanced
         if info.get('image_pixel_depth', 16) != 8:
@@ -466,20 +475,24 @@ class ConverterImgcnv(ConverterBase):
         if fmt == 'jpeg':
             command.extend([ '-options', 'quality 95 progressive yes'])
 
-        return cls.run(ifnm, ofnm, command )
+        #return cls.run(ifnm, ofnm, command )
+        return command
 
     @classmethod
-    def slice(cls, ifnm, ofnm, z, t, roi=None, series=0, **kw):
+    def slice(cls, token, ofnm, z, t, roi=None, **kw):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
+        ifnm = token.first_input_file()
+        series = token.series
+
         log.debug('Slice: z=%s t=%s roi=%s series=%s for [%s]', z, t, roi, series, ifnm)
         z1,z2 = z
         t1,t2 = t
         x1,x2,y1,y2 = roi
         fmt = kw.get('fmt', 'bigtiff')
-        token = kw.get('token', None)
-        info = token.dims if token is not None else None
+        info = token.dims or {}
 
-        command = ['-o', ofnm, '-t', fmt]
+        #command = ['-o', ofnm, '-t', fmt]
+        command = []
 
         if t2==0:
             t2=t1
@@ -502,34 +515,42 @@ class ConverterImgcnv(ConverterBase):
         log.debug('slice pages: %s', pages)
 
         # separate normal and multi-file series
-        if cls.is_multifile_series(**kw) is False:
-            log.debug('Slice for non-multi-file series')
-            command.extend(['-i', ifnm])
-            command.extend(['-multi', '-page', ','.join([str(p) for p in pages])])
+        if token.is_multifile_series() is False:
+            log.debug('Slice for single-file series')
+            #command.extend(['-i', ifnm])
+            command.extend(['-page', ','.join([str(p) for p in pages])])
         else:
             # use first image of the series, need to check for separate channels here
             log.debug('Slice for multi-file series')
-            command.extend(['-multi'])
-            files = cls.enumerate_series_files(**kw)
-            meta = kw['token'].meta or {}
+            files = token.input
+            meta = token.meta or {}
             channels = meta.get('image_num_c', 0)
 
             #log.debug('Slice for multi-file series: %s', files)
-            if len(pages)==1 and (x1==x2 or y1==y2) and channels<=1:
+            #if len(pages)==1 and (x1==x2 or y1==y2) and channels<=1:
+            if len(pages)==1 and channels<=1:
                 # in multi-file case and only one page is requested with no ROI, return with no re-conversion
-                misc.dolink(files[pages[0]-1], ofnm)
-                return ofnm
+                #misc.dolink(files[pages[0]-1], ofnm)
+                token.input = files[pages[0]-1]
+                #command.extend(['-i', token.input])
             else:
                 # in case of many pages we might have to write input filenames as a file
-                #files_pages = [files[i] for i in [p-1 for p in pages]]
-                fl = '%s.files'%ofnm
-                cls.write_files(files, fl)
-                command.extend(['-il', fl])
-                command.extend(['-multi', '-page', ','.join([str(p) for p in pages])])
+                #fl = '%s.files'%ofnm
+                #cls.write_files(files, fl)
+                #command.extend(['-il', fl])
+                #command.extend(['-page', ','.join([str(p) for p in pages])])
+
                 if channels>1:
                     # dima: since we are writing a non ome-tiff file, proper geometry is irrelevant but number of channels is
                     geom = '1,1,%s'%(channels)
                     command.extend(['-geometry', geom])
+                    cpages = []
+                    for p in [p-1 for p in pages]:
+                        for c in range(channels):
+                            cpages.append( p*channels + c )
+                    token.input = [files[p] for p in cpages]
+                else:
+                    token.input = [files[p-1] for p in pages]
 
         # roi
         if not x1==x2 or not y1==y2:
@@ -541,11 +562,14 @@ class ConverterImgcnv(ConverterBase):
                 if y2>0: y2 = y2-1
             command.extend(['-roi', '%s,%s,%s,%s' % (x1,y1,x2,y2)])
 
-        return cls.run(ifnm, ofnm, command )
+        #return cls.run(ifnm, ofnm, command )
+        return command
 
     @classmethod
-    def tile(cls, ifnm, ofnm, level, x, y, sz, series=0, **kw):
+    def tile(cls, token, ofnm, level, x, y, sz, **kw):
         '''extract tile Level,X,Y tile from input filename into output in OME-TIFF format'''
+        ifnm = token.first_input_file()
+        series = token.series
         log.debug('Tile: %s %s %s %s %s for [%s]', level, x, y, sz, series, ifnm)
         level = misc.safeint(level, 0)
         x  = misc.safeint(x, 0)
@@ -553,16 +577,10 @@ class ConverterImgcnv(ConverterBase):
         sz = misc.safeint(sz, 0)
         page = 0
 
-        try:
-            token = kw.get('token', None)
-            info = token.dims or {}
-        except (TypeError, AttributeError):
-            info = {}
-        log.debug('info: %s', info)
+        info   = token.dims or {}
         tile_w = info.get('tile_num_x', 0)
         tile_h = info.get('tile_num_y', 0)
-        num_l = info.get('image_num_resolution_levels', 1)
-
+        num_l  = info.get('image_num_resolution_levels', 1)
         if num_l<=1 or tile_w<1 or tile_h<1:
             log.debug('Image does not contain tiles, skipping...')
             return None
@@ -580,47 +598,68 @@ class ConverterImgcnv(ConverterBase):
         # except (ValueError):
         #     return None
 
-        command = ['-o', ofnm, '-t', 'tiff']
+        queue = token.getQueue()
+
+        #command = ['-o', ofnm, '-t', 'tiff']
+        command = []
 
         # separate normal and multi-file series
-        if cls.is_multifile_series(**kw) is False:
-            command.extend(['-i', ifnm])
-            command.extend(['-page', str(page)])
-        else:
-            # use first image of the series, need to check for separate channels here
-            files = cls.enumerate_series_files(**kw)
-            meta = kw['token'].meta or {}
-            samples = meta.get('image_num_c', 0)
-            if samples<2:
-                command.extend(['-i', files[page-1]])
+        if '-i' not in queue and '-il' not in queue and '-page' not in queue:
+            if token.is_multifile_series() is False:
+                command.extend(['-i', ifnm])
+                command.extend(['-page', str(page+1)])
             else:
-                # in case of channels being stored in separate files
-                page = (page-1) * samples
-                command.extend(['-i', files[page+0]])
-                for s in range(1, samples):
-                    command.extend(['-c', files[page+s]])
+                # use first image of the series, need to check for separate channels here
+                files = token.input
+                meta = token.meta or {}
+                samples = meta.get('image_num_c', 0)
+                if samples<2:
+                    command.extend(['-i', files[page]])
+                else:
+                    # in case of channels being stored in separate files
+                    page = page * samples
+                    command.extend(['-i', files[page]])
+                    for s in range(1, samples):
+                        command.extend(['-c', files[page+s]])
 
         command.extend([ '-tile', '%s,%s,%s,%s'%(sz,x,y,level)])
 
-        return cls.run(ifnm, ofnm, command )
+        return command
+        #return cls.run(ifnm, ofnm, command )
 
     #######################################
     # Special methods
     #######################################
 
     @classmethod
-    def writeHistogram(cls, ifnm, ofnm, **kw):
+    def writeHistogram(cls, token, ofnm, **kw):
         '''writes Histogram in libbioimage format'''
+        ifnm = token.first_input_file()
         log.debug('Writing histogram for %s into: %s', ifnm, ofnm )
-        command = ['-i', ifnm, '-ohst', ofnm]
+        command = ['-ohst', ofnm]
+        queue = token.getQueue()
+        page = 0
+        if '-i' not in queue and '-il' not in queue:
+            if token.is_multifile_series() is False:
+                command.extend(['-i', ifnm])
+                #command.extend(['-page', str(page+1)])
+            else:
+                # use first image of the series, need to check for separate channels here
+                files = token.input
+                meta = token.meta or {}
+                samples = meta.get('image_num_c', 0)
+                if samples<2:
+                    command.extend(['-i', files[page]])
+                else:
+                    # in case of channels being stored in separate files
+                    page = page * samples
+                    command.extend(['-i', files[page]])
+                    for s in range(1, samples):
+                        command.extend(['-c', files[page+s]])
+        command.extend(queue)
 
         # use resolution level to limit the scope
-        try:
-            token = kw.get('token', None)
-            info = token.dims or {}
-        except (TypeError, AttributeError):
-            info = {}
-
+        info = token.dims or {}
         num_l = info.get('image_num_resolution_levels', 1)
         if num_l>1:
             try:
