@@ -128,7 +128,11 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
             mousemove : this.onMouseMove,
             mousewheel: this.onMouseWheel,
             DOMMouseScrool: this.onMouseWheel,
-        });
+            touchstart: this.onMouseDown,
+            touchend: this.onMouseUp,
+            touchmove: this.onMouseMove,
+
+        } );
 
         //this.anaglyph = new THREE.AnaglyphEffect( this.renderer );
 		//this.anaglyph.setSize( this.getWidth(), this.getHeight() );
@@ -223,13 +227,16 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.needs_render = true;
         //console.log(event);
         this.triggerHandler('mousedown', event);
+        this.fireEvent('mousedown', event);
+
+        this.doAnimate();
+
         /*
         if(event.button == 0 || event.button == 1 ){
             //this.handlers.mousedown(event);
             this.triggerHandler('mousedown', event);
 
         }
-        //  this.fireEvent('mousedown', event);
         if(event.button == 2)
             this.triggerHandler('rightclick', event);
             */
@@ -239,7 +246,7 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
         this.controls.enabled = true;
         this.mousedown   = false;
         this.needs_render = true;
-        //this.fireEvent('mouseup', event);
+        this.fireEvent('mouseup', event);
         this.triggerHandler('mouseup', event);
 
     },
@@ -264,6 +271,12 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
 
     rerender : function() {
         this.needs_render = true;
+        if(!this.animationID)
+            this.doAnimate();
+    },
+
+    stoprender : function() {
+        this.needs_render = false;
     },
 
     render : function(){
@@ -282,16 +295,19 @@ Ext.define('BQ.viewer.Volume.ThreejsPanel', {
                 //this.onAnimateOverride();
             //else
             for(var i = 0; i < this.animate_funcs.length; i++){
-                this.animate_funcs[i](this);
+                if(this.animate_funcs[i])
+                    this.animate_funcs[i](this);
             }
             this.render();
             //this.anaglyph.render(this.scene, this.camera);
-        }
+            //this.controls.update();
+            this.animationID = requestAnimationFrame(function() {
+                me.doAnimate()
+            });
+        } else
+            this.animationID = null;
 
-        //this.controls.update();
-        this.animationID = requestAnimationFrame(function() {
-            me.doAnimate()
-        });
+
     },
 
     savePng : function(){

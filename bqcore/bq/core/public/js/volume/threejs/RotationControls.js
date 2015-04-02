@@ -133,7 +133,8 @@ THREE.RotationControls = function ( object, domElement ) {
 		return function () {
             if (_this.noRotate)  return;
 
-            if ( _state === STATE.ROTATE ) {
+            if ( _state === STATE.ROTATE ||
+                 _state === STATE.TOUCH_ROTATE) {
                 dc = _rotateEnd.clone();
                 dc.sub(_rotateStart);
 
@@ -486,12 +487,21 @@ THREE.RotationControls = function ( object, domElement ) {
 
 		if ( _this.enabled === false ) return;
 
+
+		event.preventDefault();
+		event.stopPropagation();
+
+        _quat.copy(_this.object.quaternion);
+        _posCopy.copy(_this.posLocal);
+
 		switch ( event.touches.length ) {
 
 			case 1:
-				_state = STATE.TOUCH_ROTATE;
-				_rotateEnd.copy( _this.getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, _rotateStart ));
-				break;
+			_state = STATE.TOUCH_ROTATE;
+			//_rotateEnd.copy( _this.getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, _rotateStart ));
+            _rotateStart = _this.getMouseOnScreen( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, _rotateStart );
+		    _rotateEnd.copy(_rotateStart)
+			break;
 
 			case 2:
 				_state = STATE.TOUCH_ZOOM;
@@ -523,22 +533,23 @@ THREE.RotationControls = function ( object, domElement ) {
 
 		switch ( event.touches.length ) {
 
-			case 1:
-				_rotateEnd = _this.getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, _rotateEnd );
-				break;
+		case 1:
+			//_rotateEnd = _this.getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, _rotateEnd );
+            _rotateEnd = _this.getMouseOnScreen( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, _rotateEnd );
+			break;
 
-			case 2:
-				var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
-				var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
-				_touchZoomDistanceEnd = Math.sqrt( dx * dx + dy * dy )
-				break;
+		case 2:
+			var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+			var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+			_touchZoomDistanceEnd = Math.sqrt( dx * dx + dy * dy )
+			break;
 
-			case 3:
-				_panEnd = _this.getMouseOnScreen( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, _panEnd );
-				break;
+		case 3:
+			_panEnd = _this.getMouseOnScreen( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, _panEnd );
+			break;
 
-			default:
-				_state = STATE.NONE;
+		default:
+			_state = STATE.NONE;
 
 		}
 
@@ -551,7 +562,7 @@ THREE.RotationControls = function ( object, domElement ) {
 		switch ( event.touches.length ) {
 
 			case 1:
-				_rotateStart.copy( _this.getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, _rotateEnd ));
+				_rotateStart.copy( _this.getMouseOnScreen( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, _rotateEnd ));
 				break;
 
 			case 2:

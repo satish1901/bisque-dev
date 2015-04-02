@@ -218,12 +218,14 @@ VolAxisTool.prototype.initControls = function () {
                  itemId: 'axis_panel',
                  doAnimate : function() {
                      var me = this;
-                     this.renderer.render(this.scene, this.camera);
-                     this.axisHelper.rotation.setFromRotationMatrix(this.followingCam.matrixWorldInverse);
-                     this.cubeMesh.rotation.setFromRotationMatrix(this.followingCam.matrixWorldInverse);
-                     requestAnimationFrame(function() {
-                         me.doAnimate()
-                     });
+                     if(this.needs_render){
+                         this.renderer.render(this.scene, this.camera);
+                         this.axisHelper.rotation.setFromRotationMatrix(this.followingCam.matrixWorldInverse);
+                         this.cubeMesh.rotation.setFromRotationMatrix(this.followingCam.matrixWorldInverse);
+                         requestAnimationFrame(function() {
+                             me.doAnimate()
+                         });
+                     }
                  },
 
                  buildScene: function() {
@@ -257,15 +259,25 @@ VolAxisTool.prototype.initControls = function () {
                 canvas.doAnimate();
                 me.parentdiv = this.getEl().dom;
                 me.volume.addFade(this);
+                me.volume.canvas3D.on({
+                    scope: me,
+                    mousedown: function(){
+                        canvas.rerender();
+                    },
+                    //mousemove: function(){},
+                    mouseup: function(){
+                        canvas.stoprender();
+                    },
+                    //render: me.updatePosition
+                });
+
             }
         }
 	});
 
     this.volume.on('loaded', function () {
-        me.volume.canvas3D.on({
-            scope: me,
-            //render: me.updatePosition
-        });
+        //var me = this;
+        //var canvas = this.queryById('axis_panel');
         //me.updateImage();
 
 
@@ -291,12 +303,16 @@ VolSpinnerTool.prototype.addButton = function () {
 
 VolSpinnerTool.prototype.start = function () {
     this.go = true;
+    var canvas = this.spinner.queryById('spinner_panel');
+    canvas.needs_render = true;
     this.spinner.show();
 };
 
 
 VolSpinnerTool.prototype.stop = function () {
     this.go = false;
+    var canvas = this.spinner.queryById('spinner_panel');
+    canvas.needs_render = false;
     this.spinner.hide();
 };
 
@@ -337,10 +353,12 @@ VolSpinnerTool.prototype.initControls = function () {
                          this.t += 0.01;
                          this.uniforms.t.value = this.t;
                      }
-                     var canvas = this;
-                     requestAnimationFrame(function() {
-                         canvas.doAnimate()
-                     });
+                     if(this.needs_render && me.go){
+                         var canvas = this;
+                         requestAnimationFrame(function() {
+                             canvas.doAnimate()
+                         });
+                     }
                  },
 
                  buildScene: function() {
@@ -437,6 +455,17 @@ VolSpinnerTool.prototype.initControls = function () {
                 canvas.doAnimate();
                 me.parentdiv = this.getEl().dom;
                 me.volume.addFade(this);
+                me.volume.canvas3D.on({
+                    scope: me,
+                    mousedown: function(){
+                        canvas.rerender();
+                    },
+                    //mousemove: function(){},
+                    mouseup: function(){
+                        canvas.stoprender();
+                    },
+                    //render: me.updatePosition
+                });
             }
         }
 	});
@@ -517,10 +546,10 @@ qualityTool.prototype.createButton = function(){
     var options = Ext.create('Ext.data.Store', {
 		fields : ['value', 'text'],
 		data : [
-            {"value" : 64,   "text" : "minimal"},
-            {"value" : 256,  "text" : "low"},
-            {"value" : 1024,  "text" : "medium"},
-            {"value" : 2048, "text" : "high"},
+            {"value" : 16,   "text" : "minimal"},
+            {"value" : 32,  "text" : "low"},
+            {"value" : 256,  "text" : "medium"},
+            {"value" : 1024, "text" : "high"},
         ]
 	});
     /*
