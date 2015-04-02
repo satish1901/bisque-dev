@@ -441,13 +441,19 @@ class LocalPathOperation(BaseOperation):
         return token.setXml('')
 
     def action(self, token, arg):
-        ifile = os.path.abspath(token.data)
+        if token.hasQueue():
+            ifile = token.data
+        else:
+            ifile = token.first_input_file()
+        ifile = os.path.abspath(ifile)
         log.debug('Localpath %s: %s', token.resource_id, ifile)
 
+        res = etree.Element ('resource', type='file', value=ifile)
         if os.path.exists(ifile):
-            res = etree.Element ('resource', type='file', src='file:%s'%(ifile))
-        else:
-            res = etree.Element ('resource')
+            etree.SubElement (res, 'tag', name='status', value='requires access for creation')
+
+        #else:
+        #    res = etree.Element ('resource')
 
         return token.setXml( etree.tostring(res) )
 
@@ -1388,7 +1394,7 @@ class DepthOperation(BaseOperation):
             'f': 'floating point'
         }
         cm = ['cs', 'cc']
-        d=None; m=None; f=None; c=None
+        d='d'; m='8'; f='u'; c='cs'
         arg = arg.lower()
         args = arg.split(',')
         if len(args)>0: d = args[0]
@@ -1599,15 +1605,9 @@ class IntensityProjectionOperation(BaseOperation):
 
     def dryrun(self, token, arg):
         arg = arg.lower()
-        args = arg.split(',')
-        if len(args)<1:
-            return token
-        method = 'both'
-        if len(args)>1:
-            method = args[1]
-        arg = '%s,%s'%(args[0], method)
-        ifile = token.data
-        ofile = '%s.threshold_%s'%(token.data, arg)
+        if arg not in ['min', 'max']:
+            abort(400, 'IntensityProjection: parameter must be either "max" or "min"')
+        ofile = '%s.iproject_%s'%(token.data, arg)
         return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
@@ -1659,14 +1659,14 @@ class DeinterlaceOperation(BaseOperation):
         return 'deinterlace: returns a deinterlaced image'
 
     def dryrun(self, token, arg):
-        arg = arg.lower()
+        arg = arg.lower() or 'avg'
         if arg not in ['odd', 'even', 'avg']:
             abort(400, 'Deinterlace: parameter must be either "odd", "even" or "avg"')
         ofile = '%s.deinterlace_%s'%(token.data, arg)
         return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
-        arg = arg.lower()
+        arg = arg.lower() or 'avg'
         if arg not in ['odd', 'even', 'avg']:
             abort(400, 'Deinterlace: parameter must be either "odd", "even" or "avg"')
         ifile = token.first_input_file()
@@ -1707,7 +1707,7 @@ class ThresholdOperation(BaseOperation):
         arg = '%s,%s'%(args[0], method)
         ifile = token.first_input_file()
         ofile = '%s.threshold_%s'%(token.data, arg)
-        log.debug('Threshold %: %s to %s with [%s]', token.resource_id, ifile, ofile, arg)
+        log.debug('Threshold %s: %s to %s with [%s]', token.resource_id, ifile, ofile, arg)
 
         return self.server.enqueue(token, 'threshold', ofile, fmt=default_format, command=['-threshold', arg])
 
@@ -1922,7 +1922,7 @@ transforms = {
     'wndchrmcolor': {
         'command': ['-filter', 'wndchrmcolor'],
         'info': {},
-        'require': { 'image_num_c': 3, },
+        'require': {},
     },
     'rgb2hsv': {
         'command': ['-transform_color', 'rgb2hsv'],
@@ -1970,14 +1970,14 @@ class TransformOperation(BaseOperation):
             abort(400, 'transform: requested transform is not yet supported')
 
         dims = token.dims or {}
-        for n,v in transforms[transform].require.iteritems():
+        for n,v in transforms[transform]['require'].iteritems():
             if v != dims.get(n):
                 abort(400, 'transform: input image is incompatible, %s must be %s but is %s'%(n, v, dims.get(n)) )
 
-        extra = transforms[transform].command
+        extra = transforms[transform]['command']
         if len(params)>0:
             extra.extend([','.join(params)])
-        return self.server.enqueue(token, 'transform', ofile, fmt=default_format, command=extra, dims=transforms[transform].info)
+        return self.server.enqueue(token, 'transform', ofile, fmt=default_format, command=extra, dims=transforms[transform]['info'])
 
 class SampleFramesOperation(BaseOperation):
     '''Returns an Image composed of Nth frames form input
@@ -2073,7 +2073,7 @@ class RotateOperation(BaseOperation):
             ofile = ifile
 
         dims = token.dims or {}
-        w, h = compute_rotated_size(int(dims.get('image_num_x', 0)), int(dims.get('image_num_y', 0)))
+        w, h = compute_rotated_size(int(dims.get('image_num_x', 0)), int(dims.get('image_num_y', 0)), ang)
         info = {
             'image_num_x': w,
             'image_num_y': h,
@@ -2237,6 +2237,8 @@ class ImageServer(object):
             log.debug('Executing enqueued commands %s: %s to %s with %s', token.resource_id, ifile, ofile, command)
             self.imageconvert(token, ifile, ofile, fmt=token.format, extra=command)
             token.input = ofile
+        if token.isFile() and len(token.queue)<1 and not os.path.exists(ofile):
+            token.data = token.first_input_file()
         return token
 
     def enqueue(self, token, op_name, ofnm, fmt=None, command=None, dims=None, **kw):
@@ -2307,6 +2309,8 @@ class ImageServer(object):
 
     def request(self, method, token, arguments):
         '''Apply an image request'''
+        if method not in self.operations:
+            abort(400, 'Requested operation does not exist: %s'%method)
         return self.operations[method].action (token, arguments)
         # try:
         #     return self.operations[method].action (token, arguments)
