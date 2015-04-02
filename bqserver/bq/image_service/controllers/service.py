@@ -52,18 +52,18 @@ def cache_control (value):
     tg.response.headers.pop('Pragma', None)
     tg.response.headers['Cache-Control'] = value
 
-class image_serviceController(ServiceController):
+class ImageServiceController(ServiceController):
     #Uncomment this line if your controller requires an authenticated user
     #allow_only = predicates.not_anonymous()
     service_type = "image_service"
+    format_exts = None
 
     def __init__(self, server_url):
-        super(image_serviceController, self).__init__(server_url)
+        super(ImageServiceController, self).__init__(server_url)
         workdir= config.get('bisque.image_service.work_dir', data_path('workdir'))
 
         _mkdir (workdir)
         log.info('ROOT=%s work=%s' , config.get('bisque.root'),  workdir)
-        self.format_exts = None
 
         self.user_map = {}
         # users = data_service.query('user', wpublic=1)
@@ -117,39 +117,45 @@ class image_serviceController(ServiceController):
 
     #     return token.data
 
-    def is_image_type (self, filename):
+    @classmethod
+    def is_image_type (cls, filename):
         """guess whether the file is an image based on the filename
         and whether we think we can decode
         """
-        if self.format_exts is None:
-            self.format_exts = set(self.srv.converters.extensions()) - extensions_ignore
+        if cls.format_exts is None:
+            cls.format_exts = set(ImageServer.converters.extensions()) - extensions_ignore
 
         ext = os.path.splitext(filename.strip())[1][1:].lower()
-        return ext in self.format_exts
+        return ext in cls.format_exts
 
-    def proprietary_series_extensions (self):
+    @classmethod
+    def proprietary_series_extensions (cls):
         """ return all extensions that can be proprietary series
         """
         non_series_cnv = ['imgcnv', 'openslide']
         exts = []
         ignore = []
-        for n in self.srv.converters.iterkeys():
+        for n in ImageServer.converters.iterkeys():
             if n in non_series_cnv:
-                ignore.extend(self.srv.converters.extensions(n))
+                ignore.extend(ImageServer.converters.extensions(n))
             else:
-                exts.extend(self.srv.converters.extensions(n))
+                exts.extend(ImageServer.converters.extensions(n))
         return list(((set(exts) - set(ignore)) - extensions_ignore) | extensions_series)
 
-    def proprietary_series_headers (self):
+    @classmethod
+    def proprietary_series_headers (cls):
         """ get fixed file names that could be series headers
         """
         return series_header_files
 
-
-    def get_info (self, filename):
+    @classmethod
+    def get_info (cls, filename):
         """ read file info
         """
-        return self.srv.converters.info(filename)
+        return ImageServer.converters.info(filename)
+
+
+
 
     @expose()
     def _default(self, *path, **kw):
@@ -324,7 +330,7 @@ def initialize(uri):
     """ Initialize the top level server for this microapp"""
     # Add you checks and database initialize
     log.debug ("initialize " + uri)
-    service =  image_serviceController(uri)
+    service =  ImageServiceController(uri)
     #directory.register_service ('image_service', service)
 
     return service
@@ -335,4 +341,4 @@ def get_static_dirs():
     package_path = pkg_resources.resource_filename(package,'bq')
     return [(package_path, os.path.join(package_path, 'image_service', 'public'))]
 
-__controller__ =  image_serviceController
+__controller__ =  ImageServiceController

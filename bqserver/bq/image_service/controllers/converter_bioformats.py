@@ -8,7 +8,7 @@ from __future__ import with_statement
 
 __module__    = "converter_bioformats"
 __author__    = "Dmitry Fedorov"
-__version__   = "0.6"
+__version__   = "0.7"
 __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
@@ -39,7 +39,7 @@ class ConverterBioformats(ConverterBase):
     BFINFO           = 'showinf'    if os.name != 'nt' else 'showinf.bat'
     BFORMATS         = 'formatlist' if os.name != 'nt' else 'formatlist.bat'
     name             = 'bioformats'
-    required_version = '5.0.1'
+    required_version = '5.1.0'
 
     format_map = {
         'ome-bigtiff' : {
@@ -269,8 +269,10 @@ class ConverterBioformats(ConverterBase):
         for a in custom:
             #k = misc.xpathtextnode(a, 'sa:Value/om:OriginalMetadata/om:Key', namespaces=namespaces)  # dima: v4.x.x
             #v = misc.xpathtextnode(a, 'sa:Value/om:OriginalMetadata/om:Value', namespaces=namespaces) # dima: v4.x.x
-            k = misc.xpathtextnode(a, 'Value/OriginalMetadata/Key', namespaces=namespaces)  # dima: v5.0.0
-            v = misc.xpathtextnode(a, 'Value/OriginalMetadata/Value', namespaces=namespaces) # dima: v5.0.0
+            #k = misc.xpathtextnode(a, 'Value/OriginalMetadata/Key', namespaces=namespaces)  # dima: v5.0.0
+            #v = misc.xpathtextnode(a, 'Value/OriginalMetadata/Value', namespaces=namespaces) # dima: v5.0.0
+            k = misc.xpathtextnode(a, 'sa:Value/sa:OriginalMetadata/sa:Key', namespaces=namespaces)  # dima: v5.1.0
+            v = misc.xpathtextnode(a, 'sa:Value/sa:OriginalMetadata/sa:Value', namespaces=namespaces) # dima: v5.1.0
             rd['custom/%s'%k] = v
 
         return rd
@@ -441,31 +443,17 @@ class ConverterBioformats(ConverterBase):
     @classmethod
     def thumbnail(cls, token, ofnm, width, height, **kw):
         '''converts input filename into output thumbnail'''
+        if token.is_multifile_series() is True:
+            return None
         ifnm = token.first_input_file()
         series = token.series
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
-        if token.is_multifile_series() is True:
-            return None
 
-        # dima: BF has a bug exporting only one channel when -z or -timepoint are requested
-        # dima: will run plane extraction only if the image has 1 channel
-        # dima: once fixed, remove test and perform plane extraction always
-        info = token.dims or {}
-        num_channels = info.get('image_num_c', 1)
-        if num_channels == 1:
-            ometiff = kw['intermediate'].replace('.ome.tif', '.t0.z0.ome.tif')
-            # sub point extraction only works for 1 channel and z0 and t0, so, no way to optimizy mid
-            if not os.path.exists(ometiff):
-                r = cls.convertToOmeTiff(token, ometiff, extra=['-z', '0', '-timepoint', '0'], nooverwrite=True)
-                if r is None:
-                    return None
-        else:
-            # dima: when slices will be supported correctly - remove
-            ometiff = kw['intermediate']
-            if not os.path.exists(ometiff):
-                r = cls.convertToOmeTiff(token, ometiff, nooverwrite=True)
-                if r is None:
-                    return None
+        ometiff = kw['intermediate'].replace('.ome.tif', '.t0.z0.ome.tif')
+        if not os.path.exists(ometiff):
+            r = cls.convertToOmeTiff(token, ometiff, extra=['-z', '0', '-timepoint', '0'], nooverwrite=True)
+            if r is None:
+                return None
 
         # extract thumbnail
         return ConverterImgcnv.thumbnail(ProcessToken(ifnm=ometiff), ofnm=ofnm, width=width, height=height)
@@ -475,24 +463,19 @@ class ConverterBioformats(ConverterBase):
         '''extract Z,T plane from input filename into output in OME-TIFF format'''
         if token.is_multifile_series() is True:
             return None
+        series = token.series
         log.debug('Slice: %s %s %s %s for [%s]', z, t, roi, series, token.first_input_file())
 
         z1,z2 = z
         t1,t2 = t
         x1,x2,y1,y2 = roi
 
-        # dima: BF has a bugs exporting -z or -timepoint, only extracts one image apparently from the beggining
-        # dima: will run plane extraction only if the image has 1 channel
-        # dima: once fixed, remove test and perform plane extraction always
-#         info = kw.get('info', None) or {}
-#         num_channels = info.get('image_num_c', 1)
-#         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0 and num_channels==1:
-#             ofnmtmp = '%s.ome.tif'%ofnm
-#             r = cls.convertToOmeTiff(token, ofnm=ofnmtmp, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
-#             if r is None:
-#                 return None
-#             os.rename(ofnmtmp, ofnm)
-#             return ofnm
+        if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
+            ofnmtmp = '%s.ome.tif'%ofnm
+            r = cls.convertToOmeTiff(token, ofnm=ofnmtmp, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
+            if r is not None:
+                os.rename(ofnmtmp, ofnm)
+                return ofnm
 
         # create an intermediate OME-TIFF
         ometiff = kw.get('intermediate', None)

@@ -6,7 +6,17 @@ BisQue loup 0.5.7:
 Tile retreival in seconds, avg: 0.897779998779 max: 2.67800021172 min: 0.661999940872, std: 0.580030829752
 Tile retreival in seconds, avg: 0.119299998283 max: 0.223999977112 min: 0.109000205994, std: 0.0201387724739
 
-0.5.8:
+BisQue loup 0.5.8:
+
+planar:
+Tile retreival in seconds, avg: 0.509260001183 max: 2.59699988365 min: 0.25, std: 0.688885664503
+Tile retreival in seconds, avg: 0.167839999199 max: 0.280999898911 min: 0.140999794006, std: 0.0254741890558
+
+pyramidal:
+Tile retreival in seconds, avg: 0.293140001297 max: 0.455999851227 min: 0.25, std: 0.0534183591367
+Tile retreival in seconds, avg: 0.161500000954 max: 0.172000169754 min: 0.141000032425, std: 0.00755314525561
+
+
 
 Top:
 Tile retreival in seconds, avg: 0.0943600034714 max: 0.103199982643 min: 0.0921000003815, std: 0.00442021590005
