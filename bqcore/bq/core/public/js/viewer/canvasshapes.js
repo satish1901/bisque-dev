@@ -1316,8 +1316,8 @@ CanvasImagePoint.prototype.calcBbox = function () {
     var sprite = this.sprite;
     var px = this.x();
     var py = this.y();
-    return {min: [px+8, py+8],
-            max: [px+8, py+8]};
+    return {min: [px+3, py+3],
+            max: [px+3, py+3]};
 };
 
 CanvasImagePoint.prototype.updateLocal = function () {
@@ -1359,8 +1359,8 @@ CanvasImagePoint.prototype.updateLocal = function () {
 
     var sprite = this.sprite;
 
-    this.x(p1.x-8);
-    this.y(p1.y-8);
+    this.x(p1.x-6);
+    this.y(p1.y-6);
     this.sprite.scale({x: 1.0/scale.x, y: 1.0/scale.y });
     //sprite.radius(r);
     //sprite.strokeWidth(6.0/scale.x);
@@ -1385,12 +1385,12 @@ CanvasImagePoint.prototype.drag = function(evt, corner){
 
 CanvasImagePoint.prototype.moveLocal = function(){
     var p1 = this.gob.vertices[0];
-    p1.x = this.x() + 8;
-    p1.y = this.y() + 8;
+    p1.x = this.x() + 6;
+    p1.y = this.y() + 6;
 }
 
 CanvasImagePoint.prototype.points = function(){
-    return [8,8];
+    return [];
 }
 
 

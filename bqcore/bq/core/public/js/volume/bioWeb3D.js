@@ -125,8 +125,16 @@ Ext.define('BQ.viewer.Volume.volumeScene', {
 			reset = true;
 
         if(!this.uniforms[name]) return;
-		this.uniforms[name].value = value;
-        this.fireEvent('setuniform', this);
+        var me = this;
+
+        var timeFunc = function(){
+            this.uniforms[name].value = value;
+            this.fireEvent('setuniform', this);
+            me.timeout = null;
+        };
+        if(this.timeout) clearTimeout(this.timeout);
+        this.timeout = setTimeout(timeFunc, 50);
+
 	},
 
 	setUniformNoRerender : function (name, value, reset, timeOut) {
@@ -501,10 +509,6 @@ volumeObject.prototype.initMaterials = function(){
 
 	});
 
-    console.log(new DepthShader({
-            poly: true,
-            type: 'vertex',
-        }).getSource());
 
 	this.backGroundShaderMaterial = new THREE.ShaderMaterial({
 		uniforms : {
@@ -554,6 +558,15 @@ volumeObject.prototype.set = function(key, value){
     this[key] = value;
 };
 
+volumeObject.prototype.resetSampleRate = function () {
+    //console.trace();
+    this.steps = this.maxSteps/8;
+},
+
+volumeObject.prototype.setSampleRate = function (rate) {
+    if(typeof(qual) === 'undefined') qual = 4096;
+    this.steps = rate;
+},
 
 volumeObject.prototype.setMaxSampleRate = function (qual) {
     if(typeof(qual) === 'undefined') qual = 4096;
@@ -620,14 +633,19 @@ volumeObject.prototype.setScale = function(scale){
 };
 
 volumeObject.prototype.setUniform  = function (name, value, reset, timeOut) {
-    this.steps = this.maxSteps/8;
+    this.resetSampleRate();
 	if (typeof(reset) === 'undefined')
 		reset = true;
 
     if(typeof(this.uniforms[name]) !== 'undefined'){
-	    this.uniforms[name].value = value;
-        this.canvas.rerender();
+        var me = this;
+        me.uniforms[name].value = value;
+        if(this.uniformTimer) clearTimeout(this.uniformTimer);
+        this.uniformTimer = setTimeout(function(){
+            me.canvas.rerender();
+        }, 50);
     }
+
     if(typeof(this.shaderConfig[name]) !== 'undefined'){
 	    this.shaderConfig[name] = value;
         this.shaderManager.setConfigurable("default_1",
@@ -696,7 +714,7 @@ volumeObject.prototype.loadMaterial = function (name) {
 
 volumeObject.prototype.onAnimate = function () {
 
-	//if(!this.currentSet) return;
+	if(!this.loaded) return;
     //if(!this.volume.sceneData) return;
     this.uniforms['BREAK_STEPS'].value = this.steps;
 
@@ -770,13 +788,17 @@ Ext.define('BQ.viewer.Volume.Panel', {
         var mousedown = function(event){
             if(event.button >= 0){
                 me.mousedown = true;
+                me.volumeObject.resetSampleRate();
                 me.rerender();
+                //me.rerender();
             }
         };
         var mousemove = function(event){
             if(me.mousedown){
                 //console.log('move');
+                me.volumeObject.resetSampleRate();
                 me.rerender();
+                //me.rerender();
             }
         };
 
@@ -1068,6 +1090,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 me.volumeObject.initResolution(this.canvas3D);
                 me.volumeObject.loadMaterial('default_1');
                 me.volumeObject.initBuffers();
+                me.volumeObject.loaded = true;
 
 				me.wipeTextureTimeBuffer();
 				me.updateTextureUniform();
@@ -1153,42 +1176,25 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	rerender : function () {
         var me = this;
-        //me.canvas3D.rerender();
-        this.volumeObject.steps = this.volumeObject.maxSteps/8;
-        setTimeout(callback(this, function () {
-			me.canvas3D.rerender();
-		}), this.update_delay_ms);
-
+        me.volumeObject.resetSampleRate();
+        me.canvas3D.rerender();
     },
 
 	onAnimate : function () {
 		//if (this.canvas3D.mousedown)
 		//	this.setMaxSteps = 32;
         //this.setaPess(1);
-
+        if(this.mousedown) this.volumeObject.resetSampleRate();
         if(this.canvas3D.getAutoRotate()){
             this.setSampleRate(this.minSampleRate);
             return;
         }
 
-
-        if(this.mousedown){
-            this.rerender();
-            return;
-        }
-/*
-        if(!this.progressive){
-            this.setSampleRate(this.setMaxSteps);
-			this.canvas3D.needs_render = false;
-            return;
-        }
-*/
-
 		if (this.volumeObject.steps < this.maxSteps) {
             this.volumeObject.steps *= 1.5;
             if(this.volumeObject.steps >= this.maxSteps){
                 this.volumeObject.steps = this.maxSteps;
-                this.canvas3D.needs_render = false;
+                this.canvas3D.stoprender();
             }
             //this.setSampleRate(this.volumeObject.newSampleRate);
             //this.volumeObject.maxSteps = newSampleRate;
@@ -1734,7 +1740,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	setVolumeScale : function (inScale) {
         this.volumeObject.setScale(inScale);
         this.scale = inScale;
-		this.sceneVolume.setUniform('BOX_SIZE', inScale);
+		this.volumeObject.setUniform('BOX_SIZE', inScale, true, true);
 
 		this.currentScale = inScale.clone();
         this.cubeMesh.scale.copy(new THREE.Vector3(2.0*inScale.x,

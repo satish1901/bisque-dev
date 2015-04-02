@@ -56,16 +56,27 @@ function gObjectBuffer(volume) {
 gObjectBuffer.prototype.rescale = function (scale) {
 	//var scale = this.volume.currentScale.clone();
     //var mat = new THREE.Matrix4().scale(scale);
+
+    /*var dims = this.volume.dims;
+    var min = Math.min(dims.pixel.x, Math.min(dims.pixel.y,dims.pixel.z));
+    var max = Math.max(dims.pixel.x, Math.max(dims.pixel.y,dims.pixel.z));
+    var boxMin = Math.min(dims.slice.x, Math.min(dims.slice.y,dims.slice.z));
+    var boxMax = Math.max(dims.slice.x, Math.max(dims.slice.y,dims.slice.z));
+    */
     this.mesh.scale.copy(new THREE.Vector3(2.0*scale.x,
-                                       2.0*scale.y,
-                                       2.0*scale.z));
+                                           2.0*scale.y,
+                                           2.0*scale.z));
 };
 
 gObjectBuffer.prototype.pushPosition = function (p, x, positions) {
-	var dims = this.volume.dims.slice;
-	positions[x * 3 + 0] = (p.x / dims.x - 0.5);
-	positions[x * 3 + 1] = (0.5 - p.y / dims.y);
-	positions[x * 3 + 2] = (0.5 - p.z / dims.z);
+	var slice = this.volume.dims.slice;
+	var dims = this.volume.dims;
+    var min = Math.min(dims.pixel.x, Math.min(dims.pixel.y,dims.pixel.z));
+    var max = Math.max(dims.pixel.x, Math.max(dims.pixel.y,dims.pixel.z));
+
+    positions[x * 3 + 0] = (p.x / slice.x/max - 0.5);
+	positions[x * 3 + 1] = (0.5 - p.y / slice.y/max);
+	positions[x * 3 + 2] = (0.5 - p.z / slice.z/max);
 };
 
 gObjectBuffer.prototype.push = function (poly) {}
@@ -1101,7 +1112,6 @@ gObjectTool.prototype.initControls = function(){
 				index = gindex[intersection.index];
 			if (intersection.face)
 				index = intersection.face;
-            console.log(index);
 
             //this.currentSet.polygons.setSelected(id);
             //this.currentSet.polygons.highlight(id);

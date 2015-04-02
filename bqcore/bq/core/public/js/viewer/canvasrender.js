@@ -57,7 +57,8 @@ RTree.prototype.compositeBbox  = function(bbi,bbj){
     max = [-999999,-999999,-999999,-9999990];
     if(!bbi) debugger;
     if(!bbj) debugger;
-    for(var i = 0; i < 4; i++){
+    var N = Math.min(bbi.min.length, bbj.min.length);
+    for(var i = 0; i < N; i++){
 
         min[i] = Math.min(bbi.min[i], bbj.min[i]);
         max[i] = Math.max(bbi.max[i], bbj.max[i]);
@@ -236,6 +237,8 @@ RTree.prototype.insert = function(gob){
 
     //if(gob.id() === 15) debugger;
     if(gob.page) return;  //if the gobject has a page then we insert it
+
+    gob.bbox = gob.calcBbox();
     //if(this.nodes.length > 10) return;
     while(stack.length > 0){
         //if(l > 18) break;
@@ -413,7 +416,7 @@ CanvasRenderer.prototype.create = function (parent) {
     this.shapes = {
         'ellipse': CanvasEllipse,
         'circle': CanvasCircle,
-        'point': CanvasPoint,
+        'point': CanvasImagePoint,
         'polygon': CanvasPolyLine,
         'rectangle': CanvasRectangle,
         'square': CanvasSquare,
@@ -1667,11 +1670,12 @@ CanvasRenderer.prototype.makeShape = function ( gob,  viewstate, shapeDescriptio
     //visible = gob.shape.visible();
 
     gob.shape.update();
-
+    /*
     if(this.stage.scale().x < 2)
         gob.shape.cacheSprite();
     else
         gob.shape.clearCache()
+    */
     if(!gob.shape.page)
         this.rtree.insert(gob.shape);
     if(gob.dirty)
