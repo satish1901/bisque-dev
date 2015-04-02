@@ -213,6 +213,7 @@ class ImageServiceController(ServiceController):
         if uri in self.user_map:
             return self.user_map[uri]
         owner = data_service.get_resource(uri)
+        self.user_map[uri] = owner.get ('name')
         return owner.get ('name')
 
     @expose()

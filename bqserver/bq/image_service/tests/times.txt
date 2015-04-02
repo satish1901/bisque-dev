@@ -7,7 +7,9 @@ After plug-in converters update
 Ran 37 tests in 17.464s
 Ran 38 tests in 21.028s
 
-v 5.6
+v 5.8
+
+Ran 38 tests in 37.730s
 
 
 dough: 3 servers

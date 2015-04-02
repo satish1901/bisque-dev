@@ -273,7 +273,7 @@ class ImageServiceTests(ImageServiceTestBase):
         resource = self.resource_2d_uint8
         self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'im_2d_uint8.deinterlace.tif'
-        commands = [('deinterlace', None)]
+        commands = [('deinterlace', 'avg')]
         meta_required = { 'format': 'BigTIFF',
             'image_num_x': '1024',
             'image_num_y': '768',
@@ -530,7 +530,7 @@ class ImageServiceTests(ImageServiceTestBase):
         resource = self.resource_3d_uint16
         self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'im_3d_uint16.projectmin.jpg'
-        commands = [('projectmin', None)]
+        commands = [('intensityprojection', 'min')]
         meta_required = { 'format': 'BigTIFF',
             'image_num_x': '512',
             'image_num_y': '512',
@@ -545,7 +545,7 @@ class ImageServiceTests(ImageServiceTestBase):
         resource = self.resource_3d_uint16
         self.assertIsNotNone(resource, 'Resource was not uploaded')
         filename = 'im_3d_uint16.projectmax.jpg'
-        commands = [('projectmax', None)]
+        commands = [('intensityprojection', 'max')]
         meta_required = { 'format': 'BigTIFF',
             'image_num_x': '512',
             'image_num_y': '512',
@@ -626,7 +626,7 @@ class ImageServiceTests(ImageServiceTestBase):
         meta_required = [
             { 'xpath': '//tag[@name="image_num_x"]', 'attr': 'value', 'val': '128' },
             { 'xpath': '//tag[@name="image_num_y"]', 'attr': 'value', 'val': '128' },
-            { 'xpath': '//tag[@name="image_num_c"]', 'attr': 'value', 'val': '2' },
+            { 'xpath': '//tag[@name="image_num_c"]', 'attr': 'value', 'val': '3' },
             { 'xpath': '//tag[@name="image_pixel_depth"]', 'attr': 'value', 'val': '8' },
         ]
         self.validate_xml(resource, filename, commands, meta_required)
@@ -637,7 +637,7 @@ class ImageServiceTests(ImageServiceTestBase):
         filename = 'im_3d_uint16.localpath.xml'
         commands = [('localpath', None)]
         meta_required = [
-            { 'xpath': '//resource', 'attr': 'src', 'val': None }, # simply test if attribute is present
+            { 'xpath': '//resource', 'attr': 'value', 'val': None }, # simply test if attribute is present
             { 'xpath': '//resource', 'attr': 'type', 'val': 'file' },
         ]
         self.validate_xml(resource, filename, commands, meta_required)
