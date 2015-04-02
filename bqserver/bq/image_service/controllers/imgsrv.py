@@ -176,15 +176,17 @@ class ConverterDict(OrderedDict):
         return exts
 
     def info(self, filename, name=None):
+
+        token = ProcessToken(ifnm=filename)
         if name is None:
             for n,c in self.iteritems():
-                info = c.info(filename)
+                info = c.info(token)
                 if info is not None and len(info)>0:
                     info['converter'] = n
                     return info
         else:
             c = self[name]
-            info = c.info(filename)
+            info = c.info(token)
             if info is not None and len(info)>0:
                 info['converter'] = name
                 return info
@@ -610,7 +612,12 @@ class SliceOperation(BaseOperation):
         if new_w>0: info['image_num_x'] = new_w+1
         if new_h>0: info['image_num_y'] = new_h+1
 
-        if dims.get('converter', '') == ConverterImgcnv.name:
+        meta = token.meta or {}
+        unsupported_multifile = False
+        if token.is_multifile_series() is True and (z2==0 or z2==z1) and (t2==0 or t2==t1) and x1==x2 and y1==y2 and meta.get('image_num_c', 0)==0:
+            unsupported_multifile = True
+
+        if dims.get('converter', '') == ConverterImgcnv.name or unsupported_multifile is True:
             r = ConverterImgcnv.slice(token, ofname, z=(z1,z2), t=(t1,t2), roi=(x1,x2,y1,y2), fmt=default_format)
             # if decoder returned a list of operations for imgcnv to enqueue
             if isinstance(r, list):
@@ -2079,6 +2086,37 @@ class RotateOperation(BaseOperation):
 ################################################################################
 
 class ImageServer(object):
+
+    converters = ConverterDict([
+        (ConverterOpenSlide.name,   ConverterOpenSlide()),
+        (ConverterImgcnv.name,      ConverterImgcnv()),
+        (ConverterImaris.name,      ConverterImaris()),
+        (ConverterBioformats.name,  ConverterBioformats()),
+    ])
+    writable_formats = {}
+
+    @classmethod
+    def init_converters(cls):
+        # test all the supported command line decoders and remove missing
+        missing = []
+        for n,c in cls.converters.iteritems():
+            if not c.get_installed():
+                log.debug('%s is not installed, skipping support...', n)
+                missing.append(n)
+            # elif not c.ensure_version(needed_versions[n]):
+            #     log.warning('%s needs update! Has: %s Needs: %s', n, c.version['full'], needed_versions[n])
+            #     missing.append(n)
+        for m in missing:
+            cls.converters.pop(m)
+
+
+        log.info('Available converters: %s', str(cls.converters))
+        if ConverterImgcnv.name not in cls.converters:
+            log.warn('imgcnv was not found, it is required for most of image service operations! Make sure to install it!')
+
+        cls.writable_formats = cls.converters.converters(readable=False, writable=True, multipage=False)
+
+
     def __init__(self, work_dir):
         '''Start an image server, using local dir imagedir,
         and loading extensions as methods'''
@@ -2123,31 +2161,25 @@ class ImageServer(object):
             'cleancache'   : CacheCleanOperation(self),
         }
 
-        self.converters = ConverterDict([
-            (ConverterOpenSlide.name,   ConverterOpenSlide()),
-            (ConverterImgcnv.name,      ConverterImgcnv()),
-            (ConverterImaris.name,      ConverterImaris()),
-            (ConverterBioformats.name,  ConverterBioformats()),
-        ])
 
-        # test all the supported command line decoders and remove missing
-        missing = []
-        for n,c in self.converters.iteritems():
-            if not c.get_installed():
-                log.debug('%s is not installed, skipping support...', n)
-                missing.append(n)
-            # elif not c.ensure_version(needed_versions[n]):
-            #     log.warning('%s needs update! Has: %s Needs: %s', n, c.version['full'], needed_versions[n])
-            #     missing.append(n)
-        for m in missing:
-            self.converters.pop(m)
+        # # test all the supported command line decoders and remove missing
+        # missing = []
+        # for n,c in self.converters.iteritems():
+        #     if not c.get_installed():
+        #         log.debug('%s is not installed, skipping support...', n)
+        #         missing.append(n)
+        #     # elif not c.ensure_version(needed_versions[n]):
+        #     #     log.warning('%s needs update! Has: %s Needs: %s', n, c.version['full'], needed_versions[n])
+        #     #     missing.append(n)
+        # for m in missing:
+        #     self.converters.pop(m)
 
 
-        log.info('Available converters: %s', str(self.converters))
-        if ConverterImgcnv.name not in self.converters:
-            log.warn('imgcnv was not found, it is required for most of image service operations! Make sure to install it!')
+        # log.info('Available converters: %s', str(self.converters))
+        # if ConverterImgcnv.name not in self.converters:
+        #     log.warn('imgcnv was not found, it is required for most of image service operations! Make sure to install it!')
 
-        self.writable_formats = self.converters.converters(readable=False, writable=True, multipage=False)
+        # self.writable_formats = self.converters.converters(readable=False, writable=True, multipage=False)
 
         img_threads = config.get ('bisque.image_service.imgcnv.omp_num_threads', None)
         if img_threads is not None:
@@ -2364,3 +2396,8 @@ class ImageServer(object):
         log.debug ('FINISHED %s: %s', ident, query)
         return token
 
+
+try:
+    ImageServer.init_converters()
+except Exception:
+    log.warn("ImageServer is not available")

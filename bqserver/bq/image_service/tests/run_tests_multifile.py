@@ -88,15 +88,6 @@ image_leica_lif = {
     'name': 'APDnew.lif',
 }
 
-image_slidebook = {
-    'file': 'cx-11.sld',
-    'resource': '<resource name="%s/cx-11.sld" />'%TEST_PATH,
-    'count': 16,
-    'values': 1,
-    'name': 'cx-11.sld',
-    'subpath': '%s/cx-11.sld#%s',
-}
-
 image_zeiss_czi = {
     'file': 'Mouse_stomach_20x_ROI_3chZTiles(WF).czi',
     'resource': '<resource name="%s/Mouse_stomach_20x_ROI_3chZTiles(WF).czi" />'%TEST_PATH,
@@ -123,6 +114,20 @@ package_imaris_leica = {
     'name': 'bad_beads_2stacks_chart.zip',
     'subpath': '%s/bad_beads_2stacks_chart/bad_beads_2stacks_chart/bad_beads_2stacks_chart.lei#%s',
 }
+
+######################################
+# bioformats/imarisconvert supported files
+######################################
+
+image_slidebook = {
+    'file': 'cx-11.sld',
+    'resource': '<resource name="%s/cx-11.sld" />'%TEST_PATH,
+    'count': 16,
+    'values': 1,
+    'name': 'cx-11.sld',
+    'subpath': '%s/cx-11.sld#%s',
+}
+
 
 ##################################################################
 # ImageServiceTests

@@ -59,7 +59,7 @@ import functools
 from tg import config
 
 #from bq.util.http import *
-from controllers.service import image_serviceController as LocalImageServer
+from controllers.service import ImageServiceController as LocalImageServer
 from bq.core import identity
 from bq.exceptions import RequestError
 
