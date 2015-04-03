@@ -132,7 +132,13 @@ class ConverterOpenSlide(ConverterBase):
         log.debug('Supported for: %s', ifnm )
         #if token.is_multifile_series() is True:
         #    return False
-        s = openslide.OpenSlide.detect_format(ifnm)
+
+        try:
+            _, tmp = misc.start_nounicode_win(ifnm, [])
+            s = openslide.OpenSlide.detect_format(tmp or ifnm)
+        except (openslide.OpenSlideUnsupportedFormatError, openslide.OpenSlideError):
+            s = None
+        misc.end_nounicode_win(tmp)
         return (s is not None and s != 'generic-tiff')
         #return (s is not None)
 
