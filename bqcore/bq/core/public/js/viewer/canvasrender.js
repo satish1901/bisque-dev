@@ -25,7 +25,8 @@ function test_visible (pos, viewstate, tolerance_z ) {
 }
 
 
-function RTree(){
+function RTree(renderer){
+    this.renderer = renderer;
 
     this.nodes = [{
         id: 0,
@@ -41,7 +42,8 @@ RTree.prototype.calcBoxVol = function(bb){
     //given two bounding boxes what is the volume
     var d = [0,0,0,0];
     for(var ii = 0; ii < 4; ii++){
-        d[ii] = bb.max[ii] - bb.min[ii];
+        if(bb.max.length > ii)
+            d[ii] = bb.max[ii] - bb.min[ii];
         //minimum distance is one unit
         d[ii] = Math.max(d[ii],1);
     }
@@ -112,10 +114,10 @@ RTree.prototype.findMaxVolPairs  = function(gobs){
     return [gobs[nodei],gobs[nodej]];
 };
 
-RTree.prototype.hasOverlap  = function(bbox, node){
+RTree.prototype.hasOverlap  = function(bbox1, bbox2){
     var overlap = false,
-    bb1 = bbox,
-    bb2 = node.bbox;
+    bb1 = bbox1,
+    bb2 = bbox2;
     //for each dimension test to see if axis are seperate
     for(var i = 0; i < 2; i++){
         if      (bb1.max[i] < bb2.min[i]) overlap = false;
@@ -207,11 +209,11 @@ RTree.prototype.traverseDownBB  = function(node, bb, func){
     var stack = [node];
     while(stack.length > 0){
         var cnode = stack.pop();
-        func(cnode);
+        if(!func(cnode)) continue;
         if(cnode.children.length > 0){
-            if(this.hasOverlap(bb, cnode.children[0]))
+            if(this.hasOverlap(bb, cnode.children[0].bbox))
                 stack.push(cnode.children[0]);
-            if(this.hasOverlap(bb, cnode.children[1]))
+            if(this.hasOverlap(bb, cnode.children[1].bbox))
                 stack.push(cnode.children[1]);
         }
     }
@@ -225,6 +227,18 @@ RTree.prototype.traverseDown  = function(node, func){
         if(cnode.children.length > 0){
             stack.push(cnode.children[0]);
             stack.push(cnode.children[1]);
+        }
+    }
+};
+
+
+RTree.prototype.traverseUp  = function(node, func){
+    var stack = [node];
+    while(stack.length > 0){
+        var cnode = stack.pop();
+        if(!func(cnode)) continue;
+        if(cnode.parent){
+            stack.push(cnode.parent);
         }
     }
 };
@@ -243,7 +257,7 @@ RTree.prototype.insert = function(gob){
     while(stack.length > 0){
         //if(l > 18) break;
         var cnode = stack.pop();
-
+        cnode.dirty = true;
         //expand the bounding box of the current node on the stack
         cnode.bbox = this.compositeBbox(gob.bbox, cnode.bbox);
         this.updateSprite(cnode);
@@ -270,28 +284,6 @@ RTree.prototype.insert = function(gob){
     }
 };
 
-RTree.prototype.updateSprite = function(node){
-    var bbox = node.bbox;
-    var w = bbox.max[0] - bbox.min[0];
-    var h = bbox.max[1] - bbox.min[1];
-    if(!node.sprite)
-        node.sprite = new Kinetic.Rect({
-            x: bbox.min[0],
-            y: bbox.min[1],
-            width: w,
-            height: h,
-            hasFill: false,
-            listening: false,
-            //fill: "rgba(128,128,128,0.2)",
-            stroke: "rgba(128,255,255,0.4)",
-            strokeWidth: 1.0,
-        });
-
-    node.sprite.x(bbox.min[0]);
-    node.sprite.y(bbox.min[1]);
-    node.sprite.width(w);
-    node.sprite.height(h);
-};
 
 RTree.prototype.remove = function(gob){
     //I like static integer pointer trees, but a dymanic pointer tree seems appropriate here, so
@@ -321,6 +313,196 @@ RTree.prototype.remove = function(gob){
     gob.page = null;
 };
 
+
+RTree.prototype.collectObjectsInRegion = function(frust, node){
+    var me = this;
+    var collection = [];
+    var renderer = this.renderer;
+
+    var collectSprite = function(node){
+        if(node.leaves.length > 0){
+            for(var i = 0; i < node.leaves.length; i++){
+                if(me.hasOverlap(frust, node.leaves[i].bbox)){
+                    collection.push(node.leaves[i]);
+                }
+            }
+        }
+        return true;
+    };
+    this.traverseDownBB(node, frust, collectSprite);
+    return collection;
+};
+
+RTree.prototype.cull = function(frust){
+    var me = this;
+    var renderer = this.renderer;
+    renderer.currentLayer.removeChildren();
+
+    var leaves = this.collectObjectsInRegion(frust, this.nodes[0]);
+    leaves.forEach(function(e){
+        renderer.currentLayer.add(e.sprite);
+    });
+};
+
+RTree.prototype.cullAndCache = function(frust){
+    var me = this;
+    var fArea = this.calcBoxVol(frust);
+    var me = this;
+    var collection = [];
+    var renderer = this.renderer;
+    var scale = renderer.stage.scale().x;
+    var collectSprite = function(node){
+        var nArea = me.calcBoxVol(node.bbox);
+        var cache = null;
+
+        if(node.leaves.length > 0){
+            for(var i = 0; i < node.leaves.length; i++){
+                if(me.hasOverlap(frust, node.leaves[i].bbox)){
+                    collection.push(node.leaves[i].sprite);
+                }
+            }
+            return false;
+        }
+
+        else if(nArea < fArea) {
+            if(!node.imageCache ||
+               scale != node.scale)
+                me.cacheChildSprites(node);
+            /*
+              if the node is dirty, then rather than update the cache and redraw
+              the image which is an asynchronis call, its better to just redraw the
+              the whole branch of the tree.
+            */
+            if(node.dirty){
+                me.cacheChildSprites(node);
+                var leaves = me.collectObjectsInRegion(node.bbox, node);
+                leaves.forEach(function(e){
+                    collection.push(e.sprite);
+                });
+                return false;
+            }
+
+            collection.push(node.imageCache);
+            return false;
+        }
+
+        else return true;
+    };
+    this.traverseDownBB(this.nodes[0], frust, collectSprite);
+
+    renderer.currentLayer.removeChildren();
+    collection.forEach(function(e){
+        renderer.currentLayer.add(e);
+    });
+};
+
+RTree.prototype.cacheScene = function(frust){
+    var me = this;
+    var fArea = this.calcBoxVol(frust);
+    var collectSprite = function(node){
+        var nArea = me.calcBoxVol(node.bbox);
+        if(nArea < fArea) {
+            me.cacheChildSprites(node);
+            return false;
+        }
+        else return true;
+    };
+    this.traverseDownBB(this.nodes[0], frust, collectSprite);
+};
+
+RTree.prototype.cacheChildSprites = function(node, scale){
+    //delete cache if it exists
+    if(node.image) delete node.image;
+    if(node.imageCache) delete node.imageCage;
+
+    //initialize a few variables;
+    var me = this;
+    var renderer = this.renderer;
+    var bbox = node.bbox;
+    var w = bbox.max[0] - bbox.min[0];
+    var h = bbox.max[1] - bbox.min[1];
+    var scale = renderer.stage.scale().x;
+
+    node.scale = scale;
+
+    var buffer = renderer.getPointSize();
+
+    //create a new image
+    node.imageCache = new Kinetic.Image({
+    });
+
+    //create a temp layer to capture the appropriate objects
+    var layer = new Kinetic.Layer({
+        scaleX: scale,
+        scaleY: scale,
+        width: w*scale,
+        height: h*scale
+    });
+
+    //fetch the objects in the tree that are in that node
+    var leaves = this.collectObjectsInRegion(bbox, node);
+    leaves.forEach(function(e){
+        e.updateLocal();
+        layer.add(e.sprite);
+    });
+    layer.draw();
+
+    //create a new image, in the async callback assign the image to the node's imageCache
+    //scale the image region
+    var image = layer.toImage({
+        callback: function(img){
+            node.image = img;
+            node.imageCache.setImage(img);
+            node.dirty = false;
+        },
+
+        x: bbox.min[0]*scale - buffer,
+        y: bbox.min[1]*scale - buffer,
+        width: w*scale + 2.0*buffer,
+        height: h*scale + 2.0*buffer,
+    });
+    node.imageCache.x(bbox.min[0] - buffer/scale);
+    node.imageCache.y(bbox.min[1] - buffer/scale);
+    node.imageCache.width(w + 2.0*buffer/scale);
+    node.imageCache.height(h + 2.0*buffer/scale);
+};
+
+RTree.prototype.setDirty = function(node){
+    var me = this;
+    var collectSprite = function(node){
+        node.dirty = true;
+        return true;
+    };
+    this.traverseUp(node);
+};
+
+
+RTree.prototype.updateSprite = function(node){
+    var bbox = node.bbox;
+    var w = bbox.max[0] - bbox.min[0];
+    var h = bbox.max[1] - bbox.min[1];
+    if(!node.sprite)
+        node.sprite = new Kinetic.Rect({
+            x: bbox.min[0],
+            y: bbox.min[1],
+            width: w,
+            height: h,
+            hasFill: false,
+            listening: false,
+            //fill: "rgba(128,128,128,0.2)",
+            stroke: "rgba(128,255,255,0.4)",
+            strokeWidth: 1.0,
+        });
+
+    node.sprite.x(bbox.min[0]);
+    node.sprite.y(bbox.min[1]);
+    node.sprite.width(w);
+    node.sprite.height(h);
+};
+
+////////////////////////////////////////////////////////////////
+//Controller
+////////////////////////////////////////////////////////////////
 
 function CanvasControl(viewer, element) {
   this.viewer = viewer;
@@ -393,8 +575,13 @@ CanvasControl.prototype.viewerZoomed = function(e) {
 
     this.viewer.stage.x(e.x);
     this.viewer.stage.y(e.y);
+    this.viewer.updateVisible();
     this.viewer.draw();
 };
+
+////////////////////////////////////////////////////////////////
+//Renderer
+////////////////////////////////////////////////////////////////
 
 
 function CanvasRenderer (viewer,name) {
@@ -412,11 +599,11 @@ CanvasRenderer.prototype.create = function (parent) {
 
     //this.canvas = document.createElement("canvas");
     //parent.appendChild(this.canvas);
-    this.mode = 'select';
+    this.mode = 'navigate';
     this.shapes = {
         'ellipse': CanvasEllipse,
         'circle': CanvasCircle,
-        'point': CanvasImagePoint,
+        'point': CanvasPoint,
         'polygon': CanvasPolyLine,
         'rectangle': CanvasRectangle,
         'square': CanvasSquare,
@@ -434,7 +621,8 @@ CanvasRenderer.prototype.create = function (parent) {
     this.initEditLayer();
     this.initSelectLayer();
     this.initPointImageCache();
-    this.rtree = new RTree();
+    this.rtree = new RTree(this);
+
 };
 
 
@@ -594,7 +782,7 @@ CanvasRenderer.prototype.initUiShapes = function(){
 };
 
 CanvasRenderer.prototype.draw = function (){
-    this.stage.batchDraw();
+    this.stage.draw();
 };
 
 CanvasRenderer.prototype.drawEditLayer = function (){
@@ -647,12 +835,15 @@ CanvasRenderer.prototype.addHandler = function (ty, cb){
 
 CanvasRenderer.prototype.setMode = function (mode){
     this.mode = mode;
+    this.unselect(this.selectedSet);
     if(mode == 'add') {
         this.lassoRect.width(0);
         this.lassoRect.height(0);
         this.selectLayer.moveToBottom();
         this.editLayer.moveToTop();
     }
+    this.updateVisible();
+    this.draw();
 };
 
 CanvasRenderer.prototype.initPointImageCache = function () {
@@ -678,7 +869,6 @@ CanvasRenderer.prototype.initPointImageCache = function () {
             me.pointImageCache = img;
         }
     });
-
 };
 
 CanvasRenderer.prototype.setmousedown = function (cb ){
@@ -769,96 +959,15 @@ CanvasRenderer.prototype.setFrustum = function(bb){
     this.cursorRect.height(bb.max[1] - bb.min[1]);
 }
 
+CanvasRenderer.prototype.cacheVisible = function(){
+    this.rtree.cacheScene(this.viewFrustum);
+};
+
 CanvasRenderer.prototype.updateVisible = function(){
-
-    var me = this;
-    for(var i = 0; i < this.rtree.nodes.length; i++){
-
-        var node = this.rtree.nodes[i];
-        //this.currentLayer.add(node.sprite);
-    }
-
-    var frust = this.viewFrustum;
-
-    var isContained = function(bb1, bb0){
-        if(!bb0) debugger;
-        if(!bb1) debugger;
-        return (bb0.min[0] < bb1.min[0] && bb0.max[0] > bb1.max[0] &&
-                bb0.min[1] < bb1.min[1] && bb0.max[1] > bb1.max[1]);
-    };
-
-    var hasOverlap = function(bb1, bb0){
-        var separate = true;
-        var ol0 = bb0.max[0] < bb1.min[0];
-        var ol1 = bb1.max[0] < bb0.min[0];
-        var ol2 = bb0.max[1] < bb1.min[1];
-        var ol3 = bb1.max[1] < bb0.min[1];
-        separate = (bb0.max[0] < bb1.min[0] || bb1.max[0] < bb0.min[0] ||
-                   bb0.max[1] < bb1.min[1] || bb1.max[1] < bb0.min[1]);
-        return !separate;
-    };
-
-    var stack = [];
-    if(!this.currentNode)
-        this.currentNode = this.rtree.nodes[0];
-    /*
-    stack.push(this.currentNode);
-    var newCurrentNode = this.currentNode;
-    var l = 0;
-    while(stack.length > 0){
-        var cnode = stack.pop();
-        cnode.sprite.visible(true);
-        //if the frustum is contained traverse to children
-        //newCurrentNode = cnode;
-        var nbb = cnode.bbox;
-        if(isContained(frust, nbb)){
-            if(cnode.children.length > 0){
-                var ho0 = hasOverlap(frust,cnode.children[0].bbox);
-                var ic0 = isContained(frust,cnode.children[0].bbox);
-                var ho1 = hasOverlap(frust,cnode.children[1].bbox);
-                var ic1 = isContained(frust,cnode.children[1].bbox);
-
-                if(ic0 && !ho1){
-                    stack.push(cnode.children[0]);
-                }
-                if(ic1 && !ho0){
-                    stack.push(cnode.children[1]);
-                }
-                else {
-                    newCurrentNode = cnode;
-                }
-            }
-        }else{
-            if(cnode.parent)
-                stack.push(cnode.parent);
-            else
-                newCurrentNode = this.rtree.nodes[0];
-        }
-    }
-    */
-    var showSprite = function(node){
-        //if(node.sprite)
-        //    node.sprite.visible(true);
-        //me.currentLayer.add(node.sprite);
-        if(node.leaves.length > 0){
-            for(var i = 0; i < node.leaves.length; i++){
-                if(hasOverlap(frust, node.leaves[i].bbox)){
-                    me.currentLayer.add(node.leaves[i].sprite);
-
-                }
-            }
-        }
-    };
-
-    me.currentLayer.removeChildren();
-    this.rtree.traverseDownBB(this.rtree.nodes[0], frust, showSprite);
-    //this.currentLayer.batchDraw();
-    /*
-    if(newCurrentNode.id != this.currentNode.id){
-        //see if traversal works
-        //this.rtree.traverseDown(this.currentNode, hideSprite);
-
-    }*/
+    if(this.mode == 'navigate')
+        this.rtree.cullAndCache(this.viewFrustum);
+    else
+        this.rtree.cull(this.viewFrustum);
 };
 
 CanvasRenderer.prototype.drawNodes = function(){
@@ -1731,13 +1840,20 @@ CanvasRenderer.prototype.square = function (visitor, gob,  viewstate, visibility
 };
 
 CanvasRenderer.prototype.point = function (visitor, gob,  viewstate, visibility) {
+    this.pointSize = 2.5;
     this.makeShape(gob, viewstate, 'point');
+    if(gob.shape)
+        gob.shape.setPointSize(this.pointSize);
+
 };
 
 CanvasRenderer.prototype.label = function (visitor, gob,  viewstate, visibility) {
     this.makeShape(gob, viewstate, 'label');
 };
 
+CanvasRenderer.prototype.getPointSize = function () {
+    return this.pointSize;
+};
 
 /*
 ///////////////////////////////////////
