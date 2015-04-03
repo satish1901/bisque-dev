@@ -253,6 +253,7 @@ CanvasShape.prototype.setLayer = function (layer) {
 CanvasShape.prototype.move = function () {
     if(!this.postEnabled) return;
     this.moveLocal();
+
     this.dirty = false;
 };
 
@@ -1165,6 +1166,9 @@ CanvasPoint.prototype.init = function(gob){
                              callback(this,'select_sprite'));
 */
 }
+CanvasPoint.prototype.setPointSize = function(size){
+    this.pointSize = size;
+};
 
 CanvasPoint.prototype.clearCache = function(){};
 CanvasPoint.prototype.cacheSprite = function(){};
@@ -1190,7 +1194,7 @@ CanvasPoint.prototype.updateLocal = function () {
     var scale = this.renderer.stage.scale();
 
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
-    var r = 2.0/scale.x;
+    var r = this.pointSize/scale.x;
 
     var color = 'rgba(255,0,0,1.0)';
     var strokeColor = 'rgba(255,0,0,0.5)';
@@ -1220,7 +1224,7 @@ CanvasPoint.prototype.updateLocal = function () {
     this.y(p1.y);
     //this.sprite.scale({x: 1.0/scale.x, y: 1.0/scale.y });
     sprite.radius(r);
-    sprite.strokeWidth(5.0/scale.x);
+    sprite.strokeWidth(2.0*this.pointSize/scale.x);
     this.bbox = this.calcBbox();
     this.currentLayer.add(this.sprite);
 }

@@ -500,14 +500,14 @@ ImgEdit.prototype.on_move = function (gob) {
 ImgEdit.prototype.setmode = function (type, mode_fun) {
     if (mode_fun) this.startEdit();
     this.mode = mode_fun;
-    this.renderer.setMode('add');
+    this.renderer.setMode(type);
     this.mode_type = type;
     if (type)
         this.createButtonsDeselect();
 };
 
 ImgEdit.prototype.select = function (e, x, y) {
-    this.setmode (null);
+
     this.mode_type = 'select';
     this.renderer.setMode('edit');
     this.current_gob = null;
@@ -526,7 +526,7 @@ ImgEdit.prototype.remove = function (e, x, y) {
 };
 
 ImgEdit.prototype.navigate = function (e, x, y) {
-    this.setmode (null);
+    this.setmode ('navigate');
     this.endEdit();
     if (this.viewer.parameters.oneditcontrols)
         this.viewer.parameters.oneditcontrols();
