@@ -610,6 +610,8 @@ CanvasPolyLine.prototype.moveLocal = function(){
     var offy = this.y();
     var sx = this.sprite.scaleX();
     var sy = this.sprite.scaleY();
+    var z = this.gob.vertices[0].z;
+    var t = this.gob.vertices[0].t;
     for(var i=0;i<points.length-1;i+=2){
         var x = points[i];
         var y = points[i+1];
@@ -619,6 +621,8 @@ CanvasPolyLine.prototype.moveLocal = function(){
                 this.gob.vertices[i/2] = new BQVertex();
             this.gob.vertices[i/2].x = sx*x + offx;
             this.gob.vertices[i/2].y = sy*y + offy;
+            this.gob.vertices[i/2].z = z;
+            this.gob.vertices[i/2].t = t;
         }
     }
 }

@@ -5,6 +5,7 @@ function test_visible_dim(pos, pos_view, tolerance ) {
 }
 
 function test_visible (pos, viewstate, tolerance_z ) {
+    if(!pos) return false;
     var proj = viewstate.imagedim.project,
         proj_gob = viewstate.gob_projection;
 
@@ -27,6 +28,11 @@ function test_visible (pos, viewstate, tolerance_z ) {
 
 function RTree(renderer){
     this.renderer = renderer;
+    this.reset();
+    this.maxChildren = 8;
+};
+
+RTree.prototype.reset = function(){
 
     this.nodes = [{
         id: 0,
@@ -35,8 +41,8 @@ function RTree(renderer){
         leaves: [],
         bbox: {min: [0,0,0,0], max: [0,0,0,0]}
     }];
-    this.maxChildren = 8;
-};
+
+}
 
 RTree.prototype.calcBoxVol = function(bb){
     //given two bounding boxes what is the volume
@@ -308,6 +314,7 @@ RTree.prototype.remove = function(gob){
         var cnode1 = node.children[1];
         node.bbox = this.compositeBbox(cnode0.bbox, cnode1.bbox);
         this.updateSprite(node);
+        node.dirty = true;
         node = node.parent;
     }
     gob.page = null;
@@ -469,11 +476,11 @@ RTree.prototype.cacheChildSprites = function(node, scale){
 
 RTree.prototype.setDirty = function(node){
     var me = this;
-    var collectSprite = function(node){
+    var dirtFunc = function(node){
         node.dirty = true;
         return true;
     };
-    this.traverseUp(node);
+    this.traverseUp(node, dirtFunc);
 };
 
 
@@ -505,15 +512,16 @@ RTree.prototype.updateSprite = function(node){
 ////////////////////////////////////////////////////////////////
 
 function CanvasControl(viewer, element) {
-  this.viewer = viewer;
+    this.viewer = viewer;
 
-  if (typeof element == 'string')
-    this.svg_element = document.getElementById(element);
-  else
-    this.svg_element = element;
+    if (typeof element == 'string')
+        this.svg_element = document.getElementById(element);
+    else
+        this.svg_element = element;
 
-  this.viewer.viewer.tiles.tiled_viewer.addViewerZoomedListener(this);
-  this.viewer.viewer.tiles.tiled_viewer.addViewerMovedListener(this);
+    this.viewer.viewer.tiles.tiled_viewer.addViewerZoomedListener(this);
+    this.viewer.viewer.tiles.tiled_viewer.addViewerMovedListener(this);
+
 }
 
 CanvasControl.prototype.setFrustum = function(e, scale){
@@ -622,6 +630,7 @@ CanvasRenderer.prototype.create = function (parent) {
     this.initSelectLayer();
     this.initPointImageCache();
     this.rtree = new RTree(this);
+    this.cur_z = 0;
 
 };
 
@@ -646,6 +655,7 @@ CanvasRenderer.prototype.initSelectLayer = function(){
     this.selectLayer.moveToBottom();
 
     this.selectedSet = [];
+    this.visibleSet = [];
 
     this.lassoRect = new Kinetic.Rect({
         fill: 'rgba(200,200,200,0.1)',
@@ -1089,9 +1099,21 @@ CanvasRenderer.prototype.drawNodes = function(){
             me.currentNode = newCurrentNode;
         }
     });
-}
+};
+
+
+CanvasRenderer.prototype.resetTree = function (e) {
+    //reset the rtree and visible node references to tree
+    this.visibleSet.forEach(function(e){
+        e.page = null;
+    });
+    this.visibleSet =[]; //cleare the visible set.
+    //rtree reset
+    this.rtree.reset();
+};
 
 CanvasRenderer.prototype.updateImage = function (e) {
+    var me = this;
     var viewstate = this.viewer.current_view;
     var url = this.viewer.image_url();
     var scale = this.viewer.current_view.scale;
@@ -1100,14 +1122,17 @@ CanvasRenderer.prototype.updateImage = function (e) {
     var z = this.viewer.tiles.cur_z;
     this.stage.scale(scale);
 
+    /*
     if(this.selectedSet.length> 0){
         if(this.selectedSet[0].gob.vertices[0]){
             if(this.selectedSet[0].gob.vertices[0].z != z){
-                this.unselect(this.selectedSet);
-                this.selectedSet = [];
             }
         }
-    }
+    }*/
+
+    this.unselect(this.selectedSet);
+    this.selectedSet = [];
+
 
     //this.stage.content.style.left = x + 'px';
     //this.stage.content.style.top = y + 'px';
@@ -1123,13 +1148,19 @@ CanvasRenderer.prototype.updateImage = function (e) {
     this.stage.setWidth(width);
     this.stage.setHeight(height);
 
-    //this.selectRect.width(width);
-    //this.selectRect.height(height);
     this.selectRect.width(viewstate.width/scale);
     this.selectRect.height(viewstate.height/scale);
 
     this.lassoRect.strokeWidth(1.0/scale);
-    //this.stage.content.style.setProperty('z-index', 15);
+
+    /*
+    */
+
+    if(this.cur_z != z)
+        this.resetTree();
+    this.cur_z = z;
+
+    //dump the currently viewed objects
     this.currentLayer.removeChildren();
 
     if(!this.addedListeners){
@@ -1137,11 +1168,12 @@ CanvasRenderer.prototype.updateImage = function (e) {
         this.myCanvasListener = new CanvasControl( this, this.stage );
     }
 
+    //get the gobs and walk the tree to rerender them
     var gobs = this.viewer.image.gobjects;
     this.visit_render.visit_array(gobs, [this.viewer.current_view]);
     this.rendered_gobjects = gobs;
 
-    //this.drawNodes();
+    //update visible objects in the tree... next iteration may be 3D.
     this.updateVisible();
 
     this.updateBbox(this.selectedSet);
@@ -1776,16 +1808,14 @@ CanvasRenderer.prototype.makeShape = function ( gob,  viewstate, shapeDescriptio
 
     }
 
+
+    var visible = test_visible(gob.vertices[0], viewstate);
+    if(visible)
+        this.visibleSet.push(gob.shape);
     //visible = gob.shape.visible();
 
     gob.shape.update();
-    /*
-    if(this.stage.scale().x < 2)
-        gob.shape.cacheSprite();
-    else
-        gob.shape.clearCache()
-    */
-    if(!gob.shape.page)
+    if(!gob.shape.page && visible)
         this.rtree.insert(gob.shape);
     if(gob.dirty)
         this.stage.draw();
