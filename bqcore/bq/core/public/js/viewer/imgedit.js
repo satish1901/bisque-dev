@@ -215,6 +215,7 @@ ImgEdit.prototype.startEdit = function () {
     this.renderer.stage.content.style.zIndex = this.zindex_high;
     this.viewer.viewer_controls_surface.style.zIndex = this.zindex_low;
 
+    //this.renderer.setmousedown(null);
     this.renderer.setmousedown(callback(this, this.mousedown));
     this.surface_original_onmousedown = this.viewer.viewer_controls_surface.onmousedown;
     this.viewer.viewer_controls_surface.onmousedown = callback(this, this.mousedown);
@@ -507,9 +508,10 @@ ImgEdit.prototype.setmode = function (type, mode_fun) {
 };
 
 ImgEdit.prototype.select = function (e, x, y) {
-
+    this.setmode (null);
     this.mode_type = 'select';
     this.renderer.setMode('edit');
+
     this.current_gob = null;
     this.startEdit();
     if (this.viewer.parameters.oneditcontrols)
@@ -519,6 +521,9 @@ ImgEdit.prototype.select = function (e, x, y) {
 ImgEdit.prototype.remove = function (e, x, y) {
     this.setmode (null);
     this.mode_type = 'delete';
+    this.renderer.setMode('delete');
+    this.renderer.delete_fun = callback(this, 'remove_gobject');
+
     this.current_gob = null;
     this.startEdit();
     if (this.viewer.parameters.oneditcontrols)
@@ -526,13 +531,29 @@ ImgEdit.prototype.remove = function (e, x, y) {
 };
 
 ImgEdit.prototype.navigate = function (e, x, y) {
-    this.setmode ('navigate');
+
+    this.setmode (null);
+    this.mode_type = 'navigate';
+    this.renderer.setMode('navigate');
+
+//this.setmode ('navigate');
     this.endEdit();
     if (this.viewer.parameters.oneditcontrols)
         this.viewer.parameters.oneditcontrols();
 };
 
+ImgEdit.prototype.on_edit = function (parent, e, x, y) {
+    var view = this.viewer.current_view,
+    phys = this.viewer.imagephys,
+    p = this.renderer.getUserCoord(e),
+    pt = view.inverseTransformPoint(p.x, p.y),
+    pt = phys.coordinate_to_phys(pt, true);
+    this.viewer.parameters.onposition(pt);
+},
+
 ImgEdit.prototype.new_point = function (parent, e, x, y) {
+    e.evt.cancelBubble = true;
+
     var v = this.viewer.current_view;
     var g = new BQGObject('point');
     parent = parent || this.global_parent;
@@ -548,6 +569,10 @@ ImgEdit.prototype.new_point = function (parent, e, x, y) {
     this.current_gob = null;
     this.visit_render.visitall(g, [v]);
     this.store_new_gobject ((parent && !parent.uri) ? parent : g);
+
+    this.renderer.unselectCurrent();
+    this.renderer.selectedSet = [g.shape];
+    this.renderer.select(this.renderer.selectedSet);
 };
 
 ImgEdit.prototype.new_rectangle = function (parent, e, x, y) {

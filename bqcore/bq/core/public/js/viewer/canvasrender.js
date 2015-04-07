@@ -856,30 +856,7 @@ CanvasRenderer.prototype.setMode = function (mode){
     this.draw();
 };
 
-CanvasRenderer.prototype.initPointImageCache = function () {
-    var me = this;
-    var point = new Kinetic.Circle({
-            //radius: {x: rx, y: ry},
-            x: 8,
-            y: 8,
-            fill:   'rgba(255,,255,1.0)',
-            stroke: 'rgba(255,255,255,0.5)',
-            radius: 3,
-            strokeWidth: 6,
-        });
-    var layer = new Kinetic.Layer({
-        width: 16,
-        height: 16
-    }).add(point);
-    layer.draw();
 
-    this.pointImageCache;
-    layer.toImage({
-        callback: function(img){
-            me.pointImageCache = img;
-        }
-    });
-};
 
 CanvasRenderer.prototype.setmousedown = function (cb ){
     this.addHandler ("mousedown", cb );
@@ -1095,7 +1072,7 @@ CanvasRenderer.prototype.drawNodes = function(){
             //see if traversal works
             me.rtree.traverseDown(me.currentNode, hideSprite);
             me.rtree.traverseDownBB(newCurrentNode, frust, showSprite);
-            me.currentLayer.batchDraw();
+            me.draw();
             me.currentNode = newCurrentNode;
         }
     });
@@ -1204,7 +1181,7 @@ CanvasRenderer.prototype.editBbox = function(gobs,i, e) {
     var dx = e.evt.movementX;
     var dy = e.evt.movementY;
     var oCorner;
-    console.log();
+
     if(i == 0){
         this.bbCorners[1].x(px0 - offx/2);
         this.bbCorners[2].y(py0 - offy/2);
@@ -1366,8 +1343,8 @@ CanvasRenderer.prototype.updatePoints = function(shapes){
 
         for(var j = 0; j < points.length; j+=2){
             if(!me.shapeCorners[totalPoints + j/2]) continue;
-            me.shapeCorners[totalPoints + j/2].radius(3.0/scale.x);
-            me.shapeCorners[totalPoints + j/2].strokeWidth(6.0/scale.x);
+            //me.shapeCorners[totalPoints + j/2].radius(3.0/scale.x);
+            //me.shapeCorners[totalPoints + j/2].strokeWidth(6.0/scale.x);
             me.shapeCorners[totalPoints + j/2].x(x + sx*points[j + 0]);
             me.shapeCorners[totalPoints + j/2].y(y + sy*points[j + 1]);
         };
@@ -1389,6 +1366,41 @@ CanvasRenderer.prototype.resetShapeCornerFill = function(){
     });
 };
 
+CanvasRenderer.prototype.initPointImageCache = function () {
+    var me = this;
+    var point = new Kinetic.Circle({
+            //radius: {x: rx, y: ry},
+            x: 4,
+            y: 4,
+            fill:   'rgba(0,0,0,1.0)',
+            stroke: 'rgba(255,255,255,0.5)',
+            radius: 3,
+            strokeWidth: 2,
+        });
+    var layer = new Kinetic.Layer({
+        width: 8,
+        height: 8
+    }).add(point);
+    layer.draw();
+
+    this.pointImageCache;
+    this.pointImageCacheOver;
+
+    layer.toImage({
+        callback: function(img){
+            me.pointImageCache = img;
+        }
+    });
+    point.fill('rgba(128,128,128,1.0)');
+    layer.draw();
+
+    layer.toImage({
+        callback: function(img){
+            me.pointImageCacheOver = img;
+        }
+    });
+};
+
 CanvasRenderer.prototype.initPoints = function(shapes){
     var me = this;
     this.shapeCorners = [];
@@ -1398,13 +1410,21 @@ CanvasRenderer.prototype.initPoints = function(shapes){
     for(var i = 0; i < shapes.length; i++){
         var points = shapes[i].points();
         for(var j = 0; j < points.length; j+=2){
-
+            /*
             var pnt =     new Kinetic.Circle({
                 radius: 5/scale.x,
                 fill: 'red',
                 stroke: 'rgba(255,255,255,0.05)',
                 listening: true,
 
+            });
+            */
+            var pnt = new Kinetic.Image({
+                image:     this.pointImageCache,
+                listening: true,
+                width: 8/scale.x,
+                height: 8/scale.x,
+                offset: {x: 4/scale.x, y: 4/scale.x}
             });
 
             pnt.gob = shapes[i];
@@ -1425,13 +1445,15 @@ CanvasRenderer.prototype.initPoints = function(shapes){
         });
 
         e.on('mouseover', function(evt) {
-            e.fill('rgba(255,128,128,1.0)');
+            //e.fill('rgba(255,128,128,1.0)');
+            e.image(me.pointImageCacheOver);
             me.drawEditLayer();
         });
 
 
         e.on('mouseleave', function(evt) {
-            e.fill('red');
+            //e.fill('red');
+            e.image(me.pointImageCache);
             me.drawEditLayer();
 
         });
@@ -1609,8 +1631,12 @@ CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
     if(!this.dragCache) this.dragCache = [0,0];
     poly.on('mousedown', function(evt) {
         //select(view, gob);
-
-        if(me.mode != 'edit') return;
+        if(me.mode === 'delete'){
+            me.rtree.remove(gob.shape);
+            me.delete_fun(gob);
+            return;
+        }
+        else if(me.mode != 'edit') return;
         evt.evt.cancelBubble = true;
         poly.shape.clearCache();
 
