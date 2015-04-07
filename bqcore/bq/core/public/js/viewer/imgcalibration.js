@@ -14,52 +14,28 @@ Ext.define('BQ.Calibration.StackCount', {
         this.callParent([config]);
     },
     setValues: function(xmlDoc) {
-        var value = xmlDoc.evaluate(this.dimsXpath+'/@value', xmlDoc, null, XPathResult.NUMBER_TYPE, null).numberValue;
+        var value = BQ.util.xpath_number(xmlDoc, this.dimsXpath+'/@value');
         this.originalMetaDoc = xmlDoc; //save document
-        if (value) { //set value
-            this.setValue(value);
-        } else { //set zero
-            this.setValue(0);
-        }
+        this.setValue(value||0);
     },
     fromXmlNode: function(imageMeta) {
         //check to see if tag exists
-        if (this.value==0) {
-            var oldValue = this.originalMetaDoc.evaluate(this.dimsXpath+'/@value', this.originalMetaDoc, null, XPathResult.NUMBER_TYPE, null).numberValue;
-            if (oldValue!=this.value) {
-                if (imageMeta) { //if no image meta make new node
-                    var uri = imageMeta.evaluate(this.dimsXpath+'/@uri', imageMeta, null, XPathResult.STRING_TYPE, null).stringValue;
-                    if (uri) { //assign to old value
-                        return '<tag name="image_num_'+this.dimension.toLowerCase()+'" type="number" value="'+this.value+'" uri="'+uri+'"/>';
-                    } else { // create a new one
-                        return '<tag name="image_num_'+this.dimension.toLowerCase()+'" type="number" value="'+this.value+'"/>';
-                    }
-                } else { // create a new one
-                    return '<tag name="image_num_'+this.dimension.toLowerCase()+'" type="number" value="'+this.value+'"/>';
-                }
+        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.dimsXpath+'/@value');
+        var metaValue = BQ.util.xpath_number(imageMeta, this.dimsXpath+'/@value');
+        if (metaValue || oldValue!=this.value) {
+            if (this.value) { // if no value delete from metadata
+                var tag = document.createElement('tag');
+                tag.setAttribute('name', 'image_num_'+this.dimension.toLowerCase());
+                tag.setAttribute('value', this.value);
+                return tag
             }
-        } /*else { //delete resource if exists
-            var uri = imageMeta.evaluate(this.dimsXpath+'/@uri', imageMeta, null, XPathResult.STRING_TYPE, null).stringValue;
-            if (uri) {
-                delete_queue.push(uri);
-                
-                Ext.Ajax.request({
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'text/xml' },
-                    url: uri,
-                    success: function(response) {
-                        BQ.ui.notification('Removed image_num_'+this.dimension.toLowerCase());
-                    },
-                    failure: function(response) {
-                        BQ.ui.error('Failed to delete Image Meta Tag!');
-                    },
-                    scope: this,
-                });
-                                
-            }
-        }*/
-        return '';
-    }
+        }
+    },
+
+    changed: function() {
+        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.dimsXpath+'/@value')||0;
+        return oldValue!=this.value
+    },
 });
 
 Ext.define('BQ.Calibration.ChannelOrder', {
@@ -75,34 +51,28 @@ Ext.define('BQ.Calibration.ChannelOrder', {
         this.callParent([config]);
     },
     setValues: function(xmlDoc) {
-        var value = xmlDoc.evaluate(this.dimsXpath+'/@value', xmlDoc, null, XPathResult.STRING_TYPE, null).stringValue;
+        var value = BQ.util.xpath_string(xmlDoc, this.dimsXpath+'/@value');
         this.originalMetaDoc = xmlDoc; //save document
-        if (value) { //set value
-            this.setValue(value);
-        } else { //set default
-            this.setValue('');
-        }
+        this.setValue(value||'');
     },
     fromXmlNode: function(imageMeta) {
         //check to see if tag exists
-        if (this.value) {
-            var oldValue = this.originalMetaDoc.evaluate(this.dimsXpath+'/@value', this.originalMetaDoc, null, XPathResult.NUMBER_TYPE, null).numberValue;
-            if (oldValue!=this.value) {
-                if (imageMeta) { //if no image meta make new node
-                    var uri = imageMeta.evaluate(this.dimsXpath+'/@uri', imageMeta, null, XPathResult.STRING_TYPE, null).stringValue;
-                    if (uri) { //assign to old value
-                        return '<tag name="dimension" value="'+this.value+'" uri="'+uri+'"/>';
-                    } else { // create a new one
-                        return '<tag name="dimension" value="'+this.value+'"/>';
-                    }
-                } else { // create a new one
-                    return '<tag name="dimension" value="'+this.value+'"/>';
-                }
+        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.dimsXpath+'/@value');
+        var metaValue = BQ.util.xpath_number(imageMeta, this.dimsXpath+'/@value');
+        if (metaValue || oldValue!=this.value) {
+            if (this.value) { // if no value delete from metadata
+                var tag = document.createElement('tag');
+                tag.setAttribute('name', 'dimension');
+                tag.setAttribute('value', this.value);
+                return tag;
             }
         }
-        return ''; 
-    }
+    },
     
+    changed: function() {
+        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.dimsXpath+'/@value')||'';
+        return oldValue!=this.value
+    },
 })
 
 Ext.define('BQ.Calibration.PixelResolution', {
@@ -146,56 +116,58 @@ Ext.define('BQ.Calibration.PixelResolution', {
     },
     setValues: function(xmlDoc) {
         this.originalMetaDoc = xmlDoc; //save document
-        var resolutionValue = xmlDoc.evaluate(this.resolutionXpath+'/@value', xmlDoc, null, XPathResult.NUMBER_TYPE, null).numberValue;
-        if (resolutionValue) {
-            var resolutionForm = this.getForm().findField('pixel_resolution_'+this.dimension.toLowerCase());
-            resolutionForm.setValue(resolutionValue);
-        }
-        var unitValue = xmlDoc.evaluate(this.unitsXpath+'/@value', xmlDoc, null, XPathResult.STRING_TYPE, null).stringValue;
-        if (unitValue) {
-            var unitForm = this.getForm().findField('pixel_resolution_unit_'+this.dimension.toLowerCase());
-            unitForm.setValue(unitValue);
-        }
+        var resolutionValue = BQ.util.xpath_number(xmlDoc, this.resolutionXpath+'/@value');
+        var resolutionForm = this.getForm().findField('pixel_resolution_'+this.dimension.toLowerCase());
+        resolutionForm.setValue(resolutionValue||'');
+            
+        var unitValue = BQ.util.xpath_string(xmlDoc, this.unitsXpath+'/@value');
+        var unitForm = this.getForm().findField('pixel_resolution_unit_'+this.dimension.toLowerCase());
+        unitForm.setValue(unitValue||'');
     },
     fromXmlNode: function(imageMeta) {
         //check to see if tag exists
-        var xmlNode = '';
+        var tagList = [];
         var unitForm = this.getForm().findField('pixel_resolution_'+this.dimension);
         var value = unitForm.getValue();
-        if (value) {
-            var oldValue = this.originalMetaDoc.evaluate(this.resolutionXpath+'/@value', this.originalMetaDoc, null, XPathResult.NUMBER_TYPE, null).numberValue;
-            if (oldValue!=value) {
-                if (imageMeta) { //if no image meta make new node
-                    var uri = imageMeta.evaluate(this.resolutionXpath+'/@uri', imageMeta, null, XPathResult.STRING_TYPE, null).stringValue;
-                    if (uri) { //assign to old value
-                        xmlNode += '<tag name="pixel_resolution_'+this.dimension.toLowerCase()+'" type="number" value="'+value+'" uri="'+uri+'"/>';
-                    } else { // create a new one
-                        xmlNode +=  '<tag name="pixel_resolution_'+this.dimension.toLowerCase()+'" type="number" value="'+value+'"/>';
-                    }
-                } else { // create a new one
-                    xmlNode +=  '<tag name="pixel_resolution_'+this.dimension.toLowerCase()+'" type="number" value="'+value+'"/>';
-                }
+        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.resolutionXpath+'/@value');
+        var metaValue = BQ.util.xpath_number(imageMeta, this.resolutionXpath+'/@value');
+        if (metaValue || oldValue!=value) {
+            if (value) {
+                var tag = document.createElement('tag');
+                tag.setAttribute('name', 'pixel_resolution_'+this.dimension.toLowerCase());
+                tag.setAttribute('type', 'number');
+                tag.setAttribute('value', value);              
+                tagList.push(tag);
             }
         }
         var unitForm = this.getForm().findField('pixel_resolution_unit_'+this.dimension);
         var value = unitForm.getValue();
-        if (value) {
-            var oldValue = this.originalMetaDoc.evaluate(this.unitsXpath+'/@value', this.originalMetaDoc, null, XPathResult.STRING_TYPE, null).stringValue;
-            if (oldValue!=value) {
-                if (imageMeta) { //if no image meta make new node
-                    var uri = imageMeta.evaluate(this.unitsXpath+'/@uri', imageMeta, null, XPathResult.STRING_TYPE, null).stringValue;
-                    if (uri) { //assign to old value
-                        xmlNode += '<tag name="pixel_resolution_unit_'+this.dimension.toLowerCase()+'" value="'+value+'" uri="'+uri+'"/>';
-                    } else { // create a new one
-                        xmlNode +=  '<tag name="pixel_resolution_unit_'+this.dimension.toLowerCase()+'" value="'+value+'"/>';
-                    }
-                } else { // create a new one
-                    xmlNode +=  '<tag name="pixel_resolution_unit_'+this.dimension.toLowerCase()+'" value="'+value+'"/>';
-                }
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.unitsXpath+'/@value')
+        var metaValue = BQ.util.xpath_number(imageMeta, this.unitsXpath+'/@value');
+        if (metaValue || oldValue!=value) {
+            if (value) {
+                var tag = document.createElement('tag');
+                tag.setAttribute('name', 'pixel_resolution_unit_'+this.dimension.toLowerCase());
+                tag.setAttribute('value', value);
+                tagList.push(tag);
             }
         }
-        return xmlNode; 
-    }
+        return tagList; 
+    },
+    
+    changed: function() {
+        var unitForm = this.getForm().findField('pixel_resolution_'+this.dimension);
+        var value = unitForm.getValue()||'';
+        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.resolutionXpath+'/@value')||'';
+        var changedFlag = oldValue!=value;
+        
+        var unitForm = this.getForm().findField('pixel_resolution_unit_'+this.dimension);
+        var value = unitForm.getValue()||'';
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.unitsXpath+'/@value')||'';  
+        var changedFlag = oldValue!=value || changedFlag;
+        
+        return changedFlag;
+    },
 });
 
 Ext.define('BQ.Calibration.ChannelPanel', {
@@ -253,7 +225,8 @@ Ext.define('BQ.Calibration.ChannelPanel', {
                 listeners: {
                     scope: this,
                     change: function(field, value) {
-                        me.color = '#'+value;
+                        var color = field.getValue();
+                        me.color = '#'+color;
                     },
                 },
             }],
@@ -268,14 +241,14 @@ Ext.define('BQ.Calibration.ChannelPanel', {
         this.originalMetaDoc = xmlDoc; //save document
         if (this.channel != undefined){
             var nameXpath = '//tag[@name="channel_'+this.channel+'_name"]/@value';
-            var nameValue = xmlDoc.evaluate(nameXpath, xmlDoc, null, XPathResult.STRING_TYPE, null).stringValue;
+            var nameValue = BQ.util.xpath_string(xmlDoc, nameXpath)||'';
             if (nameValue != undefined) { //add name if name found
                 this.name = nameValue;
                 var channel_name = this.queryById('channel_'+this.channel+'_name')
                 channel_name.setValue(this.name)
             }
             var colorXpath = '//tag[@name="channel_color_'+this.channel+'"]/@value';
-            var colorValue = xmlDoc.evaluate(colorXpath, xmlDoc, null, XPathResult.STRING_TYPE, null).stringValue;
+            var colorValue = BQ.util.xpath_string(xmlDoc, colorXpath)||'0,0,0';
             if (colorValue) { //add color if color found
                 //convert to hex
                 var colors = colorValue.match(/(\d*),(\d*),(\d*)/); //return the value only	
@@ -284,56 +257,59 @@ Ext.define('BQ.Calibration.ChannelPanel', {
                     var g = parseInt(colors[2]);
                     var b = parseInt(colors[3]);
                     var c = Ext.draw.Color.create(r, g, b);
+                    this.color = c.toString();
+                    color = this.color.replace('#', '');
+                    var colorPicker = this.queryById('channel_color_'+this.channel); //color picker is the 3 item, change to look up
+                    if (colorPicker) colorPicker.onColorSelected(null, color);
+                } else {
+                    BQ.ui.error('Cannot parse the color value in the metadata');
                 }
-                
-                //set the color
-                this.color = c.toString();
-                color = this.color.replace('#', '');
-                var colorPicker = this.queryById('channel_color_'+this.channel); //color picker is the 3 item, change to look up
-                if (colorPicker)
-                    colorPicker.onColorSelected(null, color);
             }
         }
         
     },
     
     fromXmlNode: function(imageMeta) {
-        var xmlNode = '';
-        if (this.name) {
-            var nameXpath = '//tag[@name="channel_'+this.channel+'_name"]';
-            var oldValue = this.originalMetaDoc.evaluate(nameXpath+'/@value', this.originalMetaDoc, null, XPathResult.STRING_TYPE, null).stringValue;
-            if (oldValue!=this.name) {
-                if (imageMeta) { //if no image meta make new node
-                    var uri = imageMeta.evaluate(nameXpath+'/@uri', imageMeta, null, XPathResult.STRING_TYPE, null).stringValue;
-                    if (uri) { //assign to old value
-                        xmlNode += '<tag name="channel_'+this.channel+'_name" value="'+this.name+'" uri="'+uri+'"/>';
-                    } else { // create a new one
-                        xmlNode +=  '<tag name="channel_'+this.channel+'_name" value="'+this.name+'"/>';
-                    }
-                } else { // create a new one
-                    xmlNode +=  '<tag name="channel_'+this.channel+'_name" value="'+this.name+'"/>';
-                }
+        var tagList = [];
+        var nameXpath = '//tag[@name="channel_'+this.channel+'_name"]/@value';
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, nameXpath);
+        var metaValue = BQ.util.xpath_number(imageMeta, nameXpath);
+        if (metaValue || oldValue!=this.name) {
+            if (this.name) {
+                var tag = document.createElement('tag');
+                tag.setAttribute('name', 'channel_'+this.channel+'_name');
+                tag.setAttribute('value', this.name);
+                tagList.push(tag);
             }
         }
-        if (this.color) {
-            var color = Ext.draw.Color.fromString(this.color);
-            var color = color.r+','+color.g+','+color.b;
-            var colorXpath = '//tag[@name="channel_color_'+this.channel+'"]';
-            var oldValue = this.originalMetaDoc.evaluate(colorXpath+'/@value', this.originalMetaDoc, null, XPathResult.STRING_TYPE, null).stringValue;
-            if (oldValue!=color) {
-                if (imageMeta) { //if no image meta make new node
-                    var uri = imageMeta.evaluate(colorXpath+'/@uri', imageMeta, null, XPathResult.STRING_TYPE, null).stringValue;
-                    if (uri) { //assign to old value
-                        xmlNode += '<tag name="channel_color_'+this.channel+'" value="'+color+'" uri="'+uri+'"/>';
-                    } else { // create a new one
-                        xmlNode +=  '<tag name="channel_color_'+this.channel+'" value="'+color+'"/>';
-                    }
-                } else { // create a new one
-                    xmlNode +=  '<tag name="channel_color_'+this.channel+'" value="'+color+'"/>';
-                }
+        var color = Ext.draw.Color.fromString(this.color);
+        var color = color.r+','+color.g+','+color.b;
+        var colorXpath = '//tag[@name="channel_color_'+this.channel+'"]/@value';
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, colorXpath);
+        var metaValue = BQ.util.xpath_number(imageMeta, colorXpath);
+        if (metaValue || oldValue!=color) {
+            if (color) {
+                var tag = document.createElement('tag');
+                tag.setAttribute('name', 'channel_color_'+this.channel);
+                tag.setAttribute('value', color);
+                tagList.push(tag);
             }
         }
-        return xmlNode
+        return tagList
+    },
+    
+    changed: function() {
+        var nameXpath = '//tag[@name="channel_'+this.channel+'_name"]/@value';
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, nameXpath)||'';
+        var changedFlag = oldValue!=this.name
+        
+        var colorXpath = '//tag[@name="channel_color_'+this.channel+'"]/@value';
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, colorXpath)||'0,0,0';
+        var color = Ext.draw.Color.fromString(this.color);
+        var color = color.r+','+color.g+','+color.b;
+        var changedFlag = oldValue!=color || changedFlag;
+        
+        return changedFlag;
     },
 });
 
@@ -410,11 +386,19 @@ Ext.define('BQ.Calibration.ChannelOrganizer', {
     },
     
     fromXmlNode: function(imageMeta) {
-        var xmlNode = '';
+        var tagList = [];
         for (var c=0; c<this.chStore.length; c++) {
-            xmlNode += this.chStore[c].fromXmlNode(imageMeta)
+            tagList = tagList.concat(this.chStore[c].fromXmlNode(imageMeta));
         }
-        return xmlNode;        
+        return tagList;        
+    },
+    
+    changed: function() {
+        var changedFlag = false;
+        for (var c=0; c<this.chStore.length; c++) {
+            var changedFlag = this.chStore[c].changed()||changedFlag;
+        }
+        return changedFlag;
     },
     
     setChannelNum: function(value, xmlDoc) {
@@ -424,11 +408,10 @@ Ext.define('BQ.Calibration.ChannelOrganizer', {
 });
 
 
-
 Ext.define('BQ.viewer.Calibration', {
     extend: 'Ext.window.Window',
     layout: 'hbox',
-    title: 'Image Meta Editor',
+    title: 'Image Calibrator',
     bodyStyle: 'background-color:#FFFFFF',
     image_resource: '', //data_service url (ex. '/data_service/($id)')
     //viewer: {}, //required
@@ -442,13 +425,13 @@ Ext.define('BQ.viewer.Calibration', {
             scale: 'large',
             xtype: 'button',
             margin: '0 8 0 8',
-            text: 'Apply New MetaData Values',
+            text: 'Save',
             handler: me.getImageMetaTag.bind(me, me.updateImageMeta),
         }, {
             scale: 'large',
             margin: '0 8 0 8',
             xtype: 'button',
-            text: 'Reset to Default MetaData Values',
+            text: 'Reload',
             handler: function() {
                 //request for image meta
                 Ext.Ajax.request({
@@ -471,7 +454,7 @@ Ext.define('BQ.viewer.Calibration', {
             scale: 'large',
             margin: '0 8 0 8',
             xtype: 'button',
-            text: 'Remove All Edited MetaData',
+            text: 'Set Default',
             handler: me.getImageMetaTag.bind(me, me.deleteImageMeta),
         }],        
         
@@ -552,7 +535,7 @@ Ext.define('BQ.viewer.Calibration', {
         
         this.imageCalibForm.add({
             xtype: 'box',
-            html: '<h2>Image Resolution Calibration</h2><p>A fast an easy way to calibrate pixel resolution when you do not have values.</p>',
+            html: '<h2>Image Resolution Calibration</h2><p>A fast an easy way to calibrate pixel resolution when the values are not present.</p>',
             width: '100%',
             cls: 'imgmetaeditor',
             padding: '0px',
@@ -597,37 +580,11 @@ Ext.define('BQ.viewer.Calibration', {
         
         this.imageCalibForm.add({
             xtype: 'box',
-            html: '<p>Select the gobject line in the image viewer and draw a line spanning that distance on the image. Many lines can be added and the estimated pixel resolution will be the average of the provided lines. Select Calibrate Values when a close Estimated Pixel Resolution has been reached. The values will be transfered to the x and y resolution entries.</p>',
+            html: '<p>Select the gobject line in the image viewer and draw a line spanning the reference length in the image. The average of the lines drawn will update the x-y pixel resolutions.</p>',
             width: '100%',
             cls: 'imgmetaeditor',
             padding: 0,
             margins:'0px',
-        });  
-        
-        this.imageCalibForm.formComponents['est_px_res'] = Ext.createWidget('textfield',{
-            fieldLabel: 'Estimated Pixel Resolution',
-            margin: '0 70 0 10',
-            id: 'est_px_res',
-            readOnly: true,
-        });
-        
-        this.imageCalibForm.formComponents['set_px_rex'] = Ext.createWidget('button',{
-            //scale: 'large',
-            margin: '0 0 0 70',
-            text: 'Calibrate Values',
-            scale: 'large',
-            handler: function() {
-                var value =  me.imageCalibForm.formComponents['est_px_res'].getValue()
-                if (value) {
-                    var xform = me.imageMetaForm.formComponents['pixel_resolution_x'].getForm().findField('pixel_resolution_x'); 
-                    var yform = me.imageMetaForm.formComponents['pixel_resolution_y'].getForm().findField('pixel_resolution_y');
-                    xform.setValue(value);
-                    yform.setValue(value);
-                } else {
-                    BQ.ui.notification('No Value to Update.');
-                }
-                
-            },
         });
         
         this.imageCalibForm.formComponents['imgViewer'] = this.imageCalibForm.add(
@@ -647,22 +604,6 @@ Ext.define('BQ.viewer.Calibration', {
                 },
             })
         );
-        
-        this.imageCalibForm.add({
-            border: false,
-            layout: {
-                align: 'middle',
-                type: 'hbox',
-                //pack: 'justify'
-                //pack: 'center',
-            },            
-            width: '100%',
-            items: [
-                this.imageCalibForm.formComponents['est_px_res'],
-                this.imageCalibForm.formComponents['set_px_rex'],
-                //this.imageCalibForm.formComponents['reset_gobs'],
-            ],
-        })
     },
     
     constructImageMetaForm: function(imMetaXML) {
@@ -671,7 +612,7 @@ Ext.define('BQ.viewer.Calibration', {
         
         this.imageMetaForm.add({
             xtype: 'box',
-            html: '<h2>Image Meta</h2><p>Welcome to the image meta data editor. Edit the fields that need to be corrected and update the meta data by selecting Apply New MetaData Values. If a field is left empty or 0 the original meta data will be applied</p>',
+            html: '<h2>Image Calibrator</h2><p>Welcome to the image calibrator. Edit the fields that need to be corrected and update the metadata by selecting Save. If a field is left empty or 0 the original metadata will be applied.</p>',
             width: '100%',
             cls: 'imgmetaeditor',
             padding: '0px',
@@ -732,13 +673,12 @@ Ext.define('BQ.viewer.Calibration', {
         //channel panel
         this.imageMetaForm.add({
             xtype: 'box',
-            html: '<h2>Channel Meta</h2><p>The amount of channels is effected by the channel count.</p>',
+            html: '<h2>Channel Meta</h2><p>C Count will determine the channels shown below.</p>',
             width: '100%',
             cls: 'imgmetaeditor',
             padding: '0px',
             margins:'0px',
-        });              
-        
+        });
         
         this.imageMetaForm.formComponents['channels'] = this.imageMetaForm.add(
             Ext.create('BQ.Calibration.ChannelOrganizer')
@@ -758,6 +698,8 @@ Ext.define('BQ.viewer.Calibration', {
     updateReferenceLength: function() {
         var gobjects = this.imageCalibForm.formComponents['imgViewer'].getGobjects();
         var estimated = this.imageCalibForm.formComponents['reference_length'].getValue();
+        var xform = me.imageMetaForm.formComponents['pixel_resolution_x'].getForm().findField('pixel_resolution_x'); 
+        var yform = me.imageMetaForm.formComponents['pixel_resolution_y'].getForm().findField('pixel_resolution_y');
         if (estimated && gobjects.length>0) {
             var lengths = [];
             for (var g=0; g<gobjects.length; g++) {
@@ -775,9 +717,12 @@ Ext.define('BQ.viewer.Calibration', {
             }
             avg_lengths = avg_lengths/lengths.length
             //average all the distances together
-            this.imageCalibForm.formComponents['est_px_res'].setValue(estimated/avg_lengths);
+
+            xform.setValue(estimated/avg_lengths);
+            yform.setValue(estimated/avg_lengths);
         } else {
-            this.imageCalibForm.formComponents['est_px_res'].setValue();
+            xform.setValue();
+            yform.setValue();
         }        
     },
     
@@ -807,74 +752,67 @@ Ext.define('BQ.viewer.Calibration', {
                 BQ.ui.error('Image Meta failed to be servered for this resource!');
             },
             scope: this,
-        });     
-        
+        });
     },
     
     updateImageMeta: function(imMetaXML) {
         //image meta check for multi tiff to put the correct tags
-    
         //from xml document to post
-        var uri = imMetaXML.evaluate('//tag[@name="image_meta"]/@uri', imMetaXML, null, XPathResult.STRING_TYPE, null).stringValue;
-        if (uri) {
-            var imMetaTag = '<tag name="image_meta" type="image_meta" uri="'+uri+'">';
-        } else { //image meta query has nothing in it
-            imMetaXML = '';
-            var imMetaTag = '<tag name="image_meta" type="image_meta">';
- 
+        var me = this;
+        var image_meta = document.createElement('tag');
+        image_meta.setAttribute('name','image_meta')
+        image_meta.setAttribute('type','image_meta')
+        var uri = BQ.util.xpath_string(imMetaXML, '//tag[@name="image_meta"]/@uri');
+        if (uri) { //overiding the current image_meta tag
+            image_meta.setAttribute('uri', uri);
+            var method = 'PUT';
         }
-        
-        //var delete_queue = [];
-        
-        var xmlBody = '';
+        var changedFlag = false; //a flag that keeps track if any changes had occured to the image meta document
         if (this.imageMetaForm.formComponents) {
             for (var k in this.imageMetaForm.formComponents) {
-                xmlBody += this.imageMetaForm.formComponents[k].fromXmlNode(imMetaXML) || ''; //if nothing is return add empty string
+                var tag = this.imageMetaForm.formComponents[k].fromXmlNode(imMetaXML);
+                var changedFlag = this.imageMetaForm.formComponents[k].changed() || changedFlag; //check for changes
+                if(tag instanceof Array) { //appends lists of tags to the document
+                    for (var t=0; t<tag.length; t++) {
+                        if (tag[t] instanceof Element) image_meta.appendChild(tag[t]);
+                    }
+                } else if (tag instanceof Element) image_meta.appendChild(tag);
             }
         }
-
-        if (xmlBody.length<1) {
+        if (!changedFlag) {
             BQ.ui.notification('Nothing updated.');
             return
-        }        
-        var imMetaTag = imMetaTag+xmlBody+'</tag>';
-        //post to image meta
-        /*
-        //wait for all deletes
-        for (var d=0; d<delete_queue; d++) {
-            Ext.Ajax.request({
-                method: 'DELETE',
-                disableCaching: false,
-                headers: {'Content-Type': 'text/xml'},
-                url: delete_queue[d],
-                success: function(response) {
-                    BQ.ui.notification('Removed: '+delete_queue[d]);
-                },
-                failure: function(response) {
-                    BQ.ui.error('Failed to delete Image Meta Tag!');
-                },
-            });
         }
-        */
+        
+        //since nothing is in image meta the tag is removed
+        if (image_meta.childElementCount<1) {
+            me.deleteImageMeta(imMetaXML); //remove image meta
+            return;
+        }
+        
+        me.setLoading('Setting Metadata')
+        //post to image meta
         Ext.Ajax.request({
-            method: 'POST',
+            method: method||'POST',
             disableCaching: false,
             headers: {'Content-Type': 'text/xml'},
-            url: this.image_resource,
-            xmlData: imMetaTag,
+            url: uri||this.image_resource,
+            xmlData: image_meta.outerHTML,
             success: function(response) {
                 this.cleanImageCache();
             },
             failure: function(response) {
+                me.setLoading(false)
                 BQ.ui.error('Failed to update Image Meta Tag!');
             },
             scope: this,
-        }); 
-        
+        });
     },
     
     deleteImageMeta: function(imMetaXML) {
-        var uri = imMetaXML.evaluate('//tag[@name="image_meta"]/@uri', imMetaXML, null, XPathResult.STRING_TYPE, null).stringValue;
+        var me = this;
+        var uri = BQ.util.xpath_string(imMetaXML, '//tag[@name="image_meta"]/@uri');
+        me.setLoading('Deleting Metadata')
         if (uri) {
             Ext.Ajax.request({
                 method: 'DELETE',
@@ -885,6 +823,7 @@ Ext.define('BQ.viewer.Calibration', {
                     this.cleanImageCache();
                 },
                 failure: function(response) {
+                    me.setLoading(false);
                     BQ.ui.error('Failed to delete Image Meta Tag!');
                 },
                 scope: this,
@@ -896,15 +835,17 @@ Ext.define('BQ.viewer.Calibration', {
     },
     
     cleanImageCache: function() {
+        var me = this;
         Ext.Ajax.request({
             method: 'POST',
             disableCaching: false,
             headers: { 'Content-Type': 'text/xml' },
             url: this.image_resource+'/pixels?cleancache=true',
             success: function(response) {
+                me.setLoading(false);
                 Ext.MessageBox.show({
                     title: 'Updated Image Meta Data',
-                    msg: 'Updating image meta data was successful! Clean browser cache and then click ok to reload the page.',
+                    msg: 'Updating image metadata was successful! Clean browser cache and then click ok to reload the page.',
                     buttons: Ext.MessageBox.OK,
                     scope: this,
                     fn: function() {
@@ -913,11 +854,10 @@ Ext.define('BQ.viewer.Calibration', {
                 });
             },
             failure: function(response) {
+                me.setLoading(false);
                 BQ.ui.error('Image cache has failed to clear!');
             },
             scope: this,
         });
-     
-    }
-    
+    },
 });

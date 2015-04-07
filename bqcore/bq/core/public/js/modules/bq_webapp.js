@@ -2,8 +2,8 @@
 
   BQWebApp - a prototype of a fully integrated interface for a module
 
-  This class should be inherited as demostrated in the example and extended for
-  desired functionality of themodule. This class also expects a certain structure
+  This class should be inherited as demonstrated in the example and extended for
+  desired functionality of the module. This class also expects a certain structure
   of the HTML page it will be operating on. Pages should have certain elements:
   <div id="">
 
