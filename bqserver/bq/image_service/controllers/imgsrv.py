@@ -1128,7 +1128,7 @@ class ThumbnailOperation(BaseOperation):
             'format': fmt,
         }
         ext = self.server.converters.defaultExtension(fmt)
-        ofile = '%s.thumb_%s,%s,%s%s.%s'%(token.data, size[0],size[1],method,preprocc,ext)
+        ofile = '%s.thumb_%s,%s,%s%s.%s'%(token.data, size[0], size[1], method, preprocc, ext)
         return token.setImage(ofile, fmt=fmt, dims=info)
 
     def action(self, token, arg):
@@ -1151,7 +1151,7 @@ class ThumbnailOperation(BaseOperation):
 
         ext = self.server.converters.defaultExtension(fmt)
         ifile = token.first_input_file()
-        ofile = '%s.thumb_%s,%s,%s%s.%s'%(token.data, size[0],size[1],method,preprocc,ext)
+        ofile = '%s.thumb_%s,%s,%s%s.%s'%(token.data, size[0], size[1], method, preprocc, ext)
 
         dims = token.dims or {}
         num_x = int(dims.get('image_num_x', 0))
@@ -1317,15 +1317,14 @@ class FuseOperation(BaseOperation):
         return 'fuse: returns an RGB image with the requested channel fusion, arg = W1R,W1G,W1B;W2R,W2G,W2B;...[:METHOD]'
 
     def dryrun(self, token, arg):
+        method = 'a'
         arg = arg.lower()
         if ':' in arg:
             (arg, method) = arg.split(':', 1)
         elif '.' in arg:
             (arg, method) = arg.split('.', 1)
         argenc = ''.join([hex(int(i)).replace('0x', '') for i in arg.replace(';', ',').split(',') if i is not ''])
-        ofile = '%s.fuse_%s'%(token.data, argenc)
-        if method != 'a':
-            ofile = '%s_%s'%(ofile, method)
+        ofile = '%s.fuse_%s_%s'%(token.data, argenc, method)
         return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
@@ -1339,7 +1338,7 @@ class FuseOperation(BaseOperation):
         argenc = ''.join([hex(int(i)).replace('0x', '') for i in arg.replace(';', ',').split(',') if i is not ''])
 
         ifile = token.first_input_file()
-        ofile = '%s.fuse_%s'%(token.data, argenc)
+        ofile = '%s.fuse_%s_%s'%(token.data, argenc, method)
         log.debug('Fuse %s: %s to %s with [%s:%s]', token.resource_id, ifile, ofile, arg, method)
 
         if arg == 'display':
@@ -1450,24 +1449,36 @@ class TileOperation(BaseOperation):
         return 'tile: returns a tile, arg = l,tnx,tny,tsz. All values are in range [0..N]'
 
     def dryrun(self, token, arg):
-        tsz=512;
+        level=0; tnx=0; tny=0; tsz=512;
         vs = arg.split(',', 4)
-        if len(vs)>0 and vs[0].isdigit():   l = int(vs[0])
+        if len(vs)>0 and vs[0].isdigit(): level = int(vs[0])
         if len(vs)>1 and vs[1].isdigit(): tnx = int(vs[1])
         if len(vs)>2 and vs[2].isdigit(): tny = int(vs[2])
         if len(vs)>3 and vs[3].isdigit(): tsz = int(vs[3])
 
         dims = token.dims or {}
-        if dims.get('image_num_x', 0)<=tsz and dims.get('image_num_y', 0)<=tsz:
+        width = dims.get('image_num_x', 0)
+        height = dims.get('image_num_y', 0)
+        if width<=tsz and height<=tsz:
+            log.debug('Dryrun tile: Image is smaller than requested tile size, passing the whole image...')
             return token
 
-        token.dims['image_num_p'] = 1
-        token.dims['image_num_z'] = 1
-        token.dims['image_num_t'] = 1
+        x = tnx * tsz
+        y = tny * tsz
+        if x>=width or y>=height:
+            abort(400, 'Tile: tile position outside of the image: %s,%s'%(tnx, tny))
+
+        # the new tile service does not change the number of z points in the image and if contains all z will perform the operation
+        info = {
+            'image_num_x': tsz if width-x < tsz else width-x,
+            'image_num_y': tsz if height-y < tsz else height-y,
+            #'image_num_z': 1,
+            #'image_num_t': 1,
+        }
 
         base_name = '%s.tiles'%(token.data)
         ofname    = os.path.join(base_name, '%s_%.3d_%.3d_%.3d' % (tsz, level, tnx, tny))
-        return token.setImage(ofname, fmt=default_format)
+        return token.setImage(ofname, fmt=default_format, dims=info)
 
     def action(self, token, arg):
         '''arg = l,tnx,tny,tsz'''
@@ -1865,9 +1876,17 @@ class TextureAtlasOperation(BaseOperation):
 
     def dryrun(self, token, arg):
         ofile = '%s.textureatlas'%(token.data)
-        token.dims['image_num_z'] = 1
-        token.dims['image_num_t'] = 1
-        return token.setImage(fname=ofile, fmt=default_format)
+        dims = token.dims or {}
+        num_z = int(dims.get('image_num_z', 1))
+        num_t = int(dims.get('image_num_t', 1))
+        width, height = compute_atlas_size(int(dims.get('image_num_x', 0)), int(dims.get('image_num_y', 0)), num_z*num_t)
+        info = {
+            'image_num_x': width,
+            'image_num_y': height,
+            'image_num_z': 1,
+            'image_num_t': 1,
+        }
+        return token.setImage(fname=ofile, fmt=default_format, dims=info)
 
     def action(self, token, arg):
         #ifile = token.first_input_file()
@@ -2190,13 +2209,10 @@ class ImageServer(object):
             os.environ['OMP_NUM_THREADS'] = "%s" % img_threads
 
 
-    def ensureOriginalFile(self, ident):
-        return blob_service.localpath(ident) or abort (404, 'File not available from blob service')
+    def ensureOriginalFile(self, ident, resource=None):
+        return blob_service.localpath(ident, resource=resource) or abort (404, 'File not available from blob service')
 
     def getImageInfo(self, filename, series=0, infofile=None, meta=None):
-        if not os.path.exists(filename):
-            return None
-
         if infofile is None:
             infofile = '%s.info'%filename
         info = {}
@@ -2206,6 +2222,9 @@ class ImageServer(object):
             for k,v in image.attrib.iteritems():
                 info[k] = safetypeparse(v)
             return info
+
+        if not os.path.exists(filename):
+            return None
 
         # parse image info from original file
         for n,c in self.converters.iteritems():
@@ -2324,11 +2343,14 @@ class ImageServer(object):
         #     log.exception('Exception running: %s', method)
         #     return token
 
-    def process(self, url, ident, **kw):
+    def process(self, url, ident, resource=None, **kw):
         resource_id, query = getOperations(url, self.base_url)
         log.debug ('STARTING %s: %s', ident, query)
         os.chdir(self.workdir)
         log.debug('Current path %s: %s', ident, self.workdir)
+
+        if resource is None:
+            resource = {}
 
         # init the output to a simple file
         token = ProcessToken()
@@ -2337,17 +2359,17 @@ class ImageServer(object):
             # pre-compute final filename and check if it exists before starting any other processing
             if len(query)>0:
                 token.setFile(self.initialWorkPath(ident, user_name=kw.get('user_name', None)))
-                token.dims = self.getImageInfo(filename=token.data, series=token.series )
-                token.init(resource_id=ident, ifnm=token.data, imagemeta=kw.get('imagemeta', None), timeout=kw.get('timeout', None), resource_name=kw.get('resource_name', None))
+                token.dims = self.getImageInfo(filename=token.data, series=token.series, infofile='%s.info'%token.data )
+                token.init(resource_id=ident, ifnm=token.data, imagemeta=kw.get('imagemeta', None), timeout=kw.get('timeout', None), resource_name=resource.get('name'))
                 for action, args in query:
                     try:
                         service = self.operations[action]
-                        #log.debug ('DRY run: %s', action)
                         # if the service has a dryrun function, some actions are same as dryrun
                         if callable( getattr(service, "dryrun", None) ):
                             token = service.dryrun(token, args)
                         else:
                             token = service.action(token, args)
+                        log.debug ('DRY run: %s producing: %s', action, token.data)
                     except Exception:
                         pass
                     if token.isHttpError():
@@ -2360,12 +2382,14 @@ class ImageServer(object):
                         pass
                     return token
 
+            log.debug('STARTING full processing %s: with %s', ident, token)
+
             # ----------------------------------------------
             # start the processing
-            b = self.ensureOriginalFile(ident)
+            b = self.ensureOriginalFile(ident, resource=resource)
             #log.debug('Original %s, %s, %s', b.path, b.sub, b.files)
             token.setFile(self.ensureWorkPath(b.path, ident, user_name=kw.get('user_name', None)), series=(b.sub or 0))
-            token.init(resource_id=ident, ifnm=b.path, imagemeta=kw.get('imagemeta', None), files=b.files, timeout=kw.get('timeout', None), resource_name=kw.get('resource_name', None))
+            token.init(resource_id=ident, ifnm=b.path, imagemeta=kw.get('imagemeta', None), files=b.files, timeout=kw.get('timeout', None), resource_name=resource.get('name'))
 
             if not os.path.exists(b.path):
                 abort(404, 'File not found...')
@@ -2377,8 +2401,6 @@ class ImageServer(object):
                 # overwrite fields from resource image meta
                 if token.meta is not None:
                     token.dims.update(token.meta)
-
-        log.debug('STARTING full processing %s: with %s', ident, token)
 
         #process all the requested operations
         for action,args in query:

@@ -27,6 +27,7 @@ from tg import config
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
 from bq.util.locks import Locks
+from bq.util.read_write_locks import HashedReadWriteLock
 import bq.util.io_misc as misc
 
 from .process_token import ProcessToken
@@ -45,11 +46,14 @@ except (ImportError, OSError):
 # dynlib misc
 ################################################################################
 
-imgcnv_lib_name = 'imgcnv.so'
+# thread level lock on libimgcnv
+rw = HashedReadWriteLock()
+
+imgcnv_lib_name = 'libimgcnv.so'
 if os.name == 'nt':
     imgcnv_lib_name = 'imgcnv.dll'
 elif sys.platform == 'darwin':
-    imgcnv_lib_name = 'imgcnv.dylib'
+    imgcnv_lib_name = 'libimgcnv.dylib'
 
 imgcnvlib = ctypes.cdll.LoadLibrary(imgcnv_lib_name)
 
@@ -60,7 +64,9 @@ if os.name == 'nt':
         res = ctypes.pointer(ctypes.c_char_p())
 
         try:
+            rw.acquire_write('libimgcnv')
             r = imgcnvlib.imgcnv(len(command), arr, res)
+            rw.release_write('libimgcnv')
         except Exception:
             log.exception('Exception calling libbioimage')
             return 100, None
@@ -75,7 +81,9 @@ else:
         res = ctypes.pointer(ctypes.c_char_p())
 
         try:
+            rw.acquire_write('libimgcnv')
             r = imgcnvlib.imgcnv(len(command), arr, res)
+            rw.release_write('libimgcnv')
         except Exception:
             log.exception('Exception calling libbioimage')
             return 100, None
@@ -271,76 +279,76 @@ class ConverterImgcnv(ConverterBase):
     # Conversion
     #######################################
 
-    # @classmethod
-    # def run_read(cls, ifnm, command ):
-    #     with Locks(ifnm):
-    #         #command, tmp = misc.start_nounicode_win(ifnm, command)
-    #         log.debug('run_read dylib command: %s', misc.tounicode(command))
-    #         #out = misc.run_command( command )
-    #         #misc.end_nounicode_win(tmp)
-    #         retcode, out = call_imgcnvlib( command )
-    #         if retcode == 100 or retcode == 101: # some error in libbioimage, retry once
-    #             log.error ('Libioimage retcode %s: retry once: %s', retcode, command)
-    #             retcode, out = call_imgcnvlib (command)
+    @classmethod
+    def run_read(cls, ifnm, command ):
+        with Locks(ifnm):
+            #command, tmp = misc.start_nounicode_win(ifnm, command)
+            log.debug('run_read dylib command: %s', misc.tounicode(command))
+            #out = misc.run_command( command )
+            #misc.end_nounicode_win(tmp)
+            retcode, out = call_imgcnvlib( command )
+            if retcode == 100 or retcode == 101: # some error in libbioimage, retry once
+                log.error ('Libioimage retcode %s: retry once: %s', retcode, command)
+                retcode, out = call_imgcnvlib (command)
 
-    #         #log.debug('Retcode: %s', retcode)
-    #         #log.debug('out: %s', out)
-    #     return out
+            #log.debug('Retcode: %s', retcode)
+            #log.debug('out: %s', out)
+        return out
 
-    # @classmethod
-    # def run(cls, ifnm, ofnm, args, **kw ):
-    #     '''converts input filename into output using exact arguments as provided in args'''
-    #     if not cls.installed:
-    #         return None
-    #     tmp = None
-    #     with Locks(ifnm, ofnm) as l:
-    #         if l.locked: # the file is not being currently written by another process
-    #             command = [cls.CONVERTERCOMMAND]
-    #             command.extend(args)
-    #             log.debug('Run dylib command: %s', misc.tounicode(command))
-    #             proceed = True
-    #             if ofnm is not None and os.path.exists(ofnm) and os.path.getsize(ofnm)>16:
-    #                 if kw.get('nooverwrite', False) is True:
-    #                     proceed = False
-    #                     log.warning ('Run: output exists before command [%s], skipping', misc.tounicode(ofnm))
-    #                 else:
-    #                     log.warning ('Run: output exists before command [%s], overwriting', misc.tounicode(ofnm))
-    #             if proceed is True:
-    #                 #command, tmp = misc.start_nounicode_win(ifnm, command)
-    #                 retcode, out = call_imgcnvlib (command)
-    #                 #misc.end_nounicode_win(tmp)
-    #                 if retcode == 100 or retcode == 101: # some error in libbioimage, retry once
-    #                     log.error ('Libioimage retcode %s: retry once: %s', retcode, command)
-    #                     retcode, out = call_imgcnvlib (command)
-    #                 if retcode == 99:
-    #                     # in case of a timeout
-    #                     log.info ('Run: timed-out for [%s]', misc.tounicode(command))
-    #                     if ofnm is not None and os.path.exists(ofnm):
-    #                         os.remove(ofnm)
-    #                     abort(412, 'Requested timeout reached')
-    #                 if retcode!=0:
-    #                     log.info ('Run: returned [%s] for [%s]', retcode, misc.tounicode(command))
-    #                     return None
-    #                 if ofnm is None:
-    #                     return str(retcode)
-    #                 # output file does not exist for some operations, like tiles
-    #                 # tile command does not produce a file with this filename
-    #                 # if not os.path.exists(ofnm):
-    #                 #     log.error ('Run: output does not exist after command [%s]', ofnm)
-    #                 #     return None
+    @classmethod
+    def run(cls, ifnm, ofnm, args, **kw ):
+        '''converts input filename into output using exact arguments as provided in args'''
+        if not cls.installed:
+            return None
+        tmp = None
+        with Locks(ifnm, ofnm) as l:
+            if l.locked: # the file is not being currently written by another process
+                command = [cls.CONVERTERCOMMAND]
+                command.extend(args)
+                log.debug('Run dylib command: %s', misc.tounicode(command))
+                proceed = True
+                if ofnm is not None and os.path.exists(ofnm) and os.path.getsize(ofnm)>16:
+                    if kw.get('nooverwrite', False) is True:
+                        proceed = False
+                        log.warning ('Run: output exists before command [%s], skipping', misc.tounicode(ofnm))
+                    else:
+                        log.warning ('Run: output exists before command [%s], overwriting', misc.tounicode(ofnm))
+                if proceed is True:
+                    #command, tmp = misc.start_nounicode_win(ifnm, command)
+                    retcode, out = call_imgcnvlib (command)
+                    #misc.end_nounicode_win(tmp)
+                    if retcode == 100 or retcode == 101: # some error in libbioimage, retry once
+                        log.error ('Libioimage retcode %s: retry once: %s', retcode, command)
+                        retcode, out = call_imgcnvlib (command)
+                    if retcode == 99:
+                        # in case of a timeout
+                        log.info ('Run: timed-out for [%s]', misc.tounicode(command))
+                        if ofnm is not None and os.path.exists(ofnm):
+                            os.remove(ofnm)
+                        abort(412, 'Requested timeout reached')
+                    if retcode!=0:
+                        log.info ('Run: returned [%s] for [%s]', retcode, misc.tounicode(command))
+                        return None
+                    if ofnm is None:
+                        return str(retcode)
+                    # output file does not exist for some operations, like tiles
+                    # tile command does not produce a file with this filename
+                    # if not os.path.exists(ofnm):
+                    #     log.error ('Run: output does not exist after command [%s]', ofnm)
+                    #     return None
 
-    #     # make sure the write of the output file have finished
-    #     if ofnm is not None and os.path.exists(ofnm):
-    #         with Locks(ofnm):
-    #             pass
+        # make sure the write of the output file have finished
+        if ofnm is not None and os.path.exists(ofnm):
+            with Locks(ofnm):
+                pass
 
-    #     # safeguard for incorrectly converted files, sometimes only the tiff header can be written
-    #     # empty lock files are automatically removed before by lock code
-    #     if os.path.exists(ofnm) and os.path.getsize(ofnm) < 16:
-    #         log.error ('Run: output file is smaller than 16 bytes, probably an error, removing [%s]', ofnm)
-    #         os.remove(ofnm)
-    #         return None
-    #     return ofnm
+        # safeguard for incorrectly converted files, sometimes only the tiff header can be written
+        # empty lock files are automatically removed before by lock code
+        if os.path.exists(ofnm) and os.path.getsize(ofnm) < 16:
+            log.error ('Run: output file is smaller than 16 bytes, probably an error, removing [%s]', ofnm)
+            os.remove(ofnm)
+            return None
+        return ofnm
 
     #######################################
     # Meta - returns a dict with all the metadata fields
