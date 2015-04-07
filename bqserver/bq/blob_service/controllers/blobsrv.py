@@ -478,9 +478,10 @@ class BlobServer(RestController, ServiceMixin):
             return None
         return self.create_resource(resource)
 
-    def localpath (self, uniq_ident):
+    def localpath (self, uniq_ident, resource=None):
         "Find  local path for the identified blob, using workdir for local copy if needed"
-        resource = data_service.resource_load (uniq=uniq_ident, view='full')
+        if resource is None:
+            resource = data_service.resource_load (uniq=uniq_ident, view='full')
         #try:
         #    resource = data_service.query(resource_uniq=uniq_ident, wpublic=1, view='full')[0]
         #except IndexError:

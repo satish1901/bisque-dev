@@ -266,14 +266,8 @@ class ImageServiceController(ServiceController):
         except (AttributeError, IndexError):
             pass
 
-        # if the image is multi-blob and blob is requested, use export service
-        try:
-            resource_name = resource.get('name')
-        except (AttributeError, IndexError):
-            resource_name = None
-
         # Run processing
-        token = self.srv.process(url, ident, timeout=timeout, imagemeta=meta, resource_name=resource_name, user_name=user_name, **kw)
+        token = self.srv.process(url, ident, timeout=timeout, imagemeta=meta, resource=resource, user_name=user_name, **kw)
         tg.response.headers['Content-Type']  = token.contentType
         #tg.response.content_type  = token.contentType
         #tg.response.headers['Cache-Control'] = ",".join ([token.cacheInfo, "public"])

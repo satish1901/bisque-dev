@@ -51,10 +51,9 @@ Tile retreival in seconds, avg: 0.145499997139 max: 0.25 min: 0.12900018692, std
 DYLIB entire pipeline:
 
 planar:
-
-Tile retreival in seconds, avg: 0.456180005074 max: 2.66300010681 min: 0.206999778748, std: 0.701641254138
-Tile retreival in seconds, avg: 0.151459999084 max: 0.271000146866 min: 0.143999814987, std: 0.0200621302464
+Tile retreival in seconds, avg: 0.452859997749 max: 2.71099996567 min: 0.18700003624, std: 0.719729603196
+Tile retreival in seconds, avg: 0.109879999161 max: 0.125 min: 0.0939998626709, std: 0.00518706398346
 
 pyramidal:
-Tile retreival in seconds, avg: 0.230799999237 max: 0.34299993515 min: 0.203000068665, std: 0.0332667971228
-Tile retreival in seconds, avg: 0.146579999924 max: 0.15499997139 min: 0.143000125885, std: 0.00227233729546
+Tile retreival in seconds, avg: 0.218559999466 max: 0.313000202179 min: 0.186999797821, std: 0.0320831421614
+Tile retreival in seconds, avg: 0.111480002403 max: 0.128999948502 min: 0.0939998626709, std: 0.00668203185509
