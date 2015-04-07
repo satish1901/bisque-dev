@@ -1209,56 +1209,64 @@ Ext.define('BQ.viewer.Volume.Panel', {
             histogram: {r:[], g:[], b:[]},
             gamma: {min: 0, max: 1.0, scale: 1.0},
             loaded: false,
-            updateHistogram : function(){
-                for(var chan in this.histogramRaw){
-                    var hist    = this.histogramRaw[chan];
-                    var newHist = this.histogram[chan];
+        }
 
-                    var maxVal = 0;
-                    var minVal = 999;
-                    var min = this.gamma.min;
-                    var max = this.gamma.max;
-                    var C   = this.gamma.scale;
-                    //var C = 1.0;
-                    var start = Math.floor(this.gamma.min * hist.length);
-                    var end = Math.floor(this.gamma.max * hist.length);
+        var model = this.model;
 
-                    var lookUp = new Array();
-                    var avg = 0;
-                    hist.forEach(function(val,i,a){
-                        avg += val;
-                        minVal = val < minVal ? val : minVal;
-                        maxVal = val > maxVal ? val : maxVal;
-                    });
+        var updateHist = function(){
 
-                    avg /= hist.length;
-                    var l = hist.length;
-                    for (var i = 0; i < newHist.length; i++) {
+            for(var chan in model.histogramRaw){
+                var hist    = model.histogramRaw[chan];
+                var newHist = model.histogram[chan];
+                if(hist.length > 10000) return;
+                var maxVal = 0;
+                var minVal = 999;
+                var min = model.gamma.min;
+                var max = model.gamma.max;
+                var C   = model.gamma.scale;
+                //var C = 1.0;
+                var start = Math.floor(model.gamma.min * hist.length);
+                var end = Math.floor(model.gamma.max * hist.length);
+
+                var lookUp = new Array();
+                var avg = 0;
+                hist.forEach(function(val,i,a){
+                    avg += val;
+                    minVal = val < minVal ? val : minVal;
+                    maxVal = val > maxVal ? val : maxVal;
+                });
+
+                avg /= hist.length;
+                var l = hist.length;
+                for (var i = 0; i < newHist.length; i++) {
+                    lookUp[i] = 0;
+                    newHist[i] = 0;
+                    if (i > start && i < end) {
+                        var val = l*(i - start) / (end - start);
+                        var plogy = C * Math.log(val);
+                        var modVal = Math.exp(plogy);
+                        modVal = modVal < 0 ? 0 : (modVal > hist.length ? hist.length : modVal);
+                        var newBin = Math.floor(modVal);
+                        newBin = newBin < hist.length - 1 ? newBin : hist.length - 1;
+                        lookUp[i] = newBin;
+                        if(C == 1) lookUp[i] = i;
+                    }
+                    if(i < start)
                         lookUp[i] = 0;
-                        newHist[i] = 0;
-                        if (i > start && i < end) {
-                            var val = l*(i - start) / (end - start);
-                            var plogy = C * Math.log(val);
-                            var modVal = Math.exp(plogy);
-                            modVal = modVal < 0 ? 0 : (modVal > hist.length ? hist.length : modVal);
-                            var newBin = Math.floor(modVal);
-                            newBin = newBin < hist.length - 1 ? newBin : hist.length - 1;
-                            lookUp[i] = newBin;
-                            if(C == 1) lookUp[i] = i;
-                        }
-                        if(i < start)
-                            lookUp[i] = 0;
-                        if(i > end)
-                            lookUp[i] = newHist.length - 1;
+                    if(i > end)
+                        lookUp[i] = newHist.length - 1;
 
-                    }
-                    var spread = Math.ceil(hist.length/(end - start));
-                    for (var i = 0; i < lookUp.length - spread; i++) {
-                        newHist[lookUp[i]] += 1.0/spread * hist[i];
-                    }
                 }
-                me.fireEvent("histogramupdate", me);
+                var spread = Math.ceil(hist.length/(end - start));
+                for (var i = 0; i < lookUp.length - spread; i++) {
+                    newHist[lookUp[i]] += 1.0/spread * hist[i];
+                }
             }
+            me.fireEvent("histogramupdate", me);
+        };
+        this.model.updateHistogram = function(){
+            if(me.histTimer) clearTimeout(me.histTimer);
+            me.histTimer = setTimeout(updateHist, 50);
         }
     },
 
@@ -1368,7 +1376,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 	},
 
     fetchHistogram : function () {
-        url = this.constructAtlasUrl().replace('format=jpeg','histogram');
+        var url = this.constructAtlasUrl().replace('format=jpeg','histogram');
 
         //console.log("hist url: ", url);
         if(!this.model)
