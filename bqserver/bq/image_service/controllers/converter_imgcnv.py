@@ -18,12 +18,15 @@ import os.path
 import math
 from itertools import groupby
 from lxml import etree
-#from subprocess import call
-from bq.util.locks import Locks
+
+import os
+import sys
+import ctypes
 
 from tg import config
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
+from bq.util.locks import Locks
 import bq.util.io_misc as misc
 
 from .process_token import ProcessToken
@@ -37,6 +40,52 @@ except (ImportError, OSError):
     log.warn('pydicom is needed for DICOM support, skipping support...')
     pass
 
+
+################################################################################
+# dynlib misc
+################################################################################
+
+imgcnv_lib_name = 'imgcnv.so'
+if os.name == 'nt':
+    imgcnv_lib_name = 'imgcnv.dll'
+elif sys.platform == 'darwin':
+    imgcnv_lib_name = 'imgcnv.dylib'
+
+imgcnvlib = ctypes.cdll.LoadLibrary(imgcnv_lib_name)
+
+if os.name == 'nt':
+    def call_imgcnvlib(command):
+        arr = (ctypes.c_wchar_p * len(command))()
+        arr[:] = [misc.tounicode(i) for i in command]
+        res = ctypes.pointer(ctypes.c_char_p())
+
+        try:
+            r = imgcnvlib.imgcnv(len(command), arr, res)
+        except Exception:
+            log.exception('Exception calling libbioimage')
+            return 100, None
+
+        out = res.contents.value
+        _ = imgcnvlib.imgcnv_clear(res)
+        return r, out
+else:
+    def call_imgcnvlib(command):
+        arr = (ctypes.c_char_p * len(command))()
+        arr[:] = [i.encode('utf-8') for i in command]
+        res = ctypes.pointer(ctypes.c_char_p())
+
+        try:
+            r = imgcnvlib.imgcnv(len(command), arr, res)
+        except Exception:
+            log.exception('Exception calling libbioimage')
+            return 100, None
+        out = res.contents.value
+        _ = imgcnvlib.imgcnv_clear(res)
+        return r, out
+
+################################################################################
+# DICOM misc
+################################################################################
 
 # Map DICOM Specific Character Set to python equivalent
 dicom_encoding = {
@@ -98,7 +147,7 @@ def dicom_parse_time(v):
 
 
 ################################################################################
-# ConverterBase
+# ConverterImgcnv
 ################################################################################
 
 class ConverterImgcnv(ConverterBase):
@@ -108,20 +157,6 @@ class ConverterImgcnv(ConverterBase):
     CONVERTERCOMMAND = 'imgcnv' if os.name != 'nt' else 'imgcnv.exe'
     name = 'imgcnv'
     required_version = '2.0.0'
-
-    # info_map = {
-    #     'width'      : 'image_num_x',
-    #     'height'     : 'image_num_y',
-    #     'zsize'      : 'image_num_z',
-    #     'tsize'      : 'image_num_t',
-    #     'channels'   : 'image_num_c',
-    #     'pages'      : 'image_num_p',
-    #     'format'     : 'format',
-    #     'pixelType'  : 'image_pixel_format',
-    #     'depth'      : 'image_pixel_depth',
-    #     'endian'     : 'endian',
-    #     'dimensions' : 'dimensions'
-    # }
 
     info_map = {
         'image_num_x'        : 'image_num_x',
@@ -166,11 +201,11 @@ class ConverterImgcnv(ConverterBase):
         '''returns the version of command line utility'''
         o = misc.run_command( [cls.CONVERTERCOMMAND, '-v'] )
         try:
-            d = [int(s) for s in o.split('.', 1)]
+            d = [int(s) for s in o.split('.')]
         except ValueError:
             log.error ('imgcnv is too old, cannot proceed')
             raise Exception('imgcnv is too old, cannot proceed')
-        d.append(0)
+        if len(d)<3: d.append(0)
         return {
             'full': '.'.join([str(i) for i in d]),
             'numeric': d,
@@ -231,6 +266,81 @@ class ConverterImgcnv(ConverterBase):
         supported = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-supported', '-i', ifnm])
         return supported.startswith('yes')
 
+
+    #######################################
+    # Conversion
+    #######################################
+
+    # @classmethod
+    # def run_read(cls, ifnm, command ):
+    #     with Locks(ifnm):
+    #         #command, tmp = misc.start_nounicode_win(ifnm, command)
+    #         log.debug('run_read dylib command: %s', misc.tounicode(command))
+    #         #out = misc.run_command( command )
+    #         #misc.end_nounicode_win(tmp)
+    #         retcode, out = call_imgcnvlib( command )
+    #         if retcode == 100 or retcode == 101: # some error in libbioimage, retry once
+    #             log.error ('Libioimage retcode %s: retry once: %s', retcode, command)
+    #             retcode, out = call_imgcnvlib (command)
+
+    #         #log.debug('Retcode: %s', retcode)
+    #         #log.debug('out: %s', out)
+    #     return out
+
+    # @classmethod
+    # def run(cls, ifnm, ofnm, args, **kw ):
+    #     '''converts input filename into output using exact arguments as provided in args'''
+    #     if not cls.installed:
+    #         return None
+    #     tmp = None
+    #     with Locks(ifnm, ofnm) as l:
+    #         if l.locked: # the file is not being currently written by another process
+    #             command = [cls.CONVERTERCOMMAND]
+    #             command.extend(args)
+    #             log.debug('Run dylib command: %s', misc.tounicode(command))
+    #             proceed = True
+    #             if ofnm is not None and os.path.exists(ofnm) and os.path.getsize(ofnm)>16:
+    #                 if kw.get('nooverwrite', False) is True:
+    #                     proceed = False
+    #                     log.warning ('Run: output exists before command [%s], skipping', misc.tounicode(ofnm))
+    #                 else:
+    #                     log.warning ('Run: output exists before command [%s], overwriting', misc.tounicode(ofnm))
+    #             if proceed is True:
+    #                 #command, tmp = misc.start_nounicode_win(ifnm, command)
+    #                 retcode, out = call_imgcnvlib (command)
+    #                 #misc.end_nounicode_win(tmp)
+    #                 if retcode == 100 or retcode == 101: # some error in libbioimage, retry once
+    #                     log.error ('Libioimage retcode %s: retry once: %s', retcode, command)
+    #                     retcode, out = call_imgcnvlib (command)
+    #                 if retcode == 99:
+    #                     # in case of a timeout
+    #                     log.info ('Run: timed-out for [%s]', misc.tounicode(command))
+    #                     if ofnm is not None and os.path.exists(ofnm):
+    #                         os.remove(ofnm)
+    #                     abort(412, 'Requested timeout reached')
+    #                 if retcode!=0:
+    #                     log.info ('Run: returned [%s] for [%s]', retcode, misc.tounicode(command))
+    #                     return None
+    #                 if ofnm is None:
+    #                     return str(retcode)
+    #                 # output file does not exist for some operations, like tiles
+    #                 # tile command does not produce a file with this filename
+    #                 # if not os.path.exists(ofnm):
+    #                 #     log.error ('Run: output does not exist after command [%s]', ofnm)
+    #                 #     return None
+
+    #     # make sure the write of the output file have finished
+    #     if ofnm is not None and os.path.exists(ofnm):
+    #         with Locks(ofnm):
+    #             pass
+
+    #     # safeguard for incorrectly converted files, sometimes only the tiff header can be written
+    #     # empty lock files are automatically removed before by lock code
+    #     if os.path.exists(ofnm) and os.path.getsize(ofnm) < 16:
+    #         log.error ('Run: output file is smaller than 16 bytes, probably an error, removing [%s]', ofnm)
+    #         os.remove(ofnm)
+    #         return None
+    #     return ofnm
 
     #######################################
     # Meta - returns a dict with all the metadata fields

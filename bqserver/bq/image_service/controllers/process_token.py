@@ -133,7 +133,7 @@ class ProcessToken(object):
         self.cacheInfo = cache_info['month']
         return self
 
-    def setImage (self, fname, fmt, series=0, meta=None, dims=None, input=None, hist=None, **kw):
+    def setImage (self, fname, fmt, series=0, meta=None, dims=None, input=None, hist=None, queue=None, **kw):
         self.data = fname
         self.is_file = True
         self.series = series
@@ -149,6 +149,9 @@ class ProcessToken(object):
 
         # histogram
         self.histogram = hist
+
+        if queue is not None:
+            self.queue = queue
 
         # cache
         self.cacheInfo = cache_info['month']
@@ -238,7 +241,7 @@ class ProcessToken(object):
         return len(self.queue)>0
 
     def drainQueue (self):
-        commands = self.queue
+        commands = self.queue or []
         self.queue = []
         return commands
         # commands = []
