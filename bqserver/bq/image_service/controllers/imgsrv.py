@@ -1030,8 +1030,8 @@ class Resize3DOperation(BaseOperation):
             'pixel_resolution_y': dims.get('pixel_resolution_y', 0) * (h / float(height)),
             zrestag: dims.get(zrestag, 0) * (d / float(size[2])),
         }
+        command = token.drainQueue()
         if not os.path.exists(ofile):
-            command = token.drainQueue()
             command.extend(['-resize3d', '%s,%s,%s,%s%s'%(size[0], size[1], size[2], method, aspectRatio)])
             self.server.imageconvert(token, ifile, ofile, fmt=default_format, extra=command)
 
@@ -1081,8 +1081,8 @@ class Rearrange3DOperation(BaseOperation):
         }
         ifile = token.first_input_file()
         ofile = '%s.rearrange3d_%s'%(token.data, arg)
+        command = token.drainQueue()
         if not os.path.exists(ofile):
-            command = token.drainQueue()
             command.extend(['-rearrange3d', '%s'%arg])
             self.server.imageconvert(token, ifile, ofile, fmt=default_format, extra=command)
 
@@ -1241,8 +1241,8 @@ class RoiOperation(BaseOperation):
         rois = [(_x1,_y1,_x2,_y2) for _x1,_y1,_x2,_y2 in rois if not os.path.exists('%s.roi_%d,%d,%d,%d'%(otemp,_x1-1,_y1-1,_x2-1,_y2-1))]
 
         lfile = '%s.rois'%(ifile)
+        command = token.drainQueue()
         if not os.path.exists(ofile) or len(rois)>0:
-            command = token.drainQueue()
             # global ROI lock on this input since we can't lock on all individual outputs
             with Locks(ifile, lfile) as l:
                 if l.locked: # the file is not being currently written by another process
@@ -1733,8 +1733,10 @@ class PixelCounterOperation(BaseOperation):
         ofile = '%s.pixelcount_%s.xml'%(token.data, arg)
         log.debug('Pixelcount %s: %s to %s with [%s]', token.resource_id, ifile, ofile, arg)
 
+        command = token.drainQueue()
         if not os.path.exists(ofile):
-            self.server.imageconvert(token, ifile, ofile, extra=['-pixelcounts', str(arg)])
+            command.extend(['-pixelcounts', str(arg)])
+            self.server.imageconvert(token, ifile, ofile, extra=command)
 
         return token.setXmlFile(fname=ofile)
 
@@ -1757,9 +1759,10 @@ class HistogramOperation(BaseOperation):
         ofile = '%s.histogram.xml'%(token.data)
         log.debug('Histogram %s: %s to %s', token.resource_id, ifile, ofile)
 
+        command = token.drainQueue()
         if not os.path.exists(ofile):
             # use resolution level if available to find the best estimate for very large images
-            command = ['-ohstxml', ofile]
+            command.extend(['-ohstxml', ofile])
 
             dims = token.dims or {}
             num_x = int(dims.get('image_num_x', 0))
@@ -1890,7 +1893,7 @@ class TextureAtlasOperation(BaseOperation):
             ofile = '%s.textureatlas'%(token.data)
             log.debug('Texture Atlas %s: %s to %s', token.resource_id, ifile, ofile)
             self.server.imageconvert(token, ifile, ofile, fmt=default_format, extra=['-textureatlas'], dims=info)
-        return token.setImage(ofile, fmt=default_format, dims=info, input=ofile)
+        return token.setImage(ofile, fmt=default_format, dims=info, input=ofile, queue=[])
 
 
 transforms = {
@@ -2259,6 +2262,9 @@ class ImageServer(object):
         if not token.isFile():
             abort(400, 'Convert: input is not an image...' )
         fmt = fmt or token.format or default_format
+
+        if token.hasQueue():
+            extra.extend(token.drainQueue())
 
         # create pyramid for large images
         dims = dims or token.dims or {}
