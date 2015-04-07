@@ -1140,13 +1140,14 @@ function CanvasPoint(gob, renderer) {
     this.gob = gob;
     this.init(gob);
     CanvasShape.call(this, gob, renderer);
+
 };
 
 CanvasPoint.prototype = new CanvasShape();
 
 CanvasPoint.prototype.init = function(gob){
 
-
+    this.pointSize = 2.5;
     var scale = this.renderer.stage.scale();
     var color = 'rgba(255,0,0,0.5)';
 
@@ -1154,9 +1155,10 @@ CanvasPoint.prototype.init = function(gob){
         //radius: {x: rx, y: ry},
         //x: p1.x,
         //y: p1.y,
+        radius: this.pointSize/scale.x,
         fill: color,
         stroke: 'red',
-        strokeWidth: 1.5/scale.x,
+        strokeWidth: 2.0*this.pointSize/scale.x,
     });
 
     gob.shape = this;
