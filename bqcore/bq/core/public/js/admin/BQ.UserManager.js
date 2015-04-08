@@ -204,7 +204,8 @@ Ext.define('BQ.admin.UserTable', {
             width: 45,
             renderer: function(value, meta, record){
                 if (value) {
-                    return '<img  src="'+value+'" alt=="No Image Found!" height="32" width="32"/>';
+                    var image_url = '/'+value+'/pixels?thumbnail';
+                    return '<img  src="'+image_url+'" alt=="No Image Found!" height="32" width="32"/>';
                 } else {
                     return '<img  src="/images/toolbar/user.png" alt=="No Image Found!" height="32" width="32"/>';
                 }
@@ -220,6 +221,7 @@ Ext.define('BQ.admin.UserTable', {
         }],
         defaults: {
             renderer : function (value, meta, record) {
+                var value = value || '';
                 return '<div style="line-height:32px; text-align:center; height:32px; overflow:hidden; text-overflow:ellipsis">'+value+'</div>';
             }
         }
