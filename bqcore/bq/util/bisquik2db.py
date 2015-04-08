@@ -124,6 +124,7 @@ system_types = [
     'store',
     'dir',
     'link',
+    'preference',
     ]
 
 

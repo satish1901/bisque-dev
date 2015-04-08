@@ -40,6 +40,11 @@ server {
       upload_pass_form_field "^.*_resource$";
       upload_cleanup 400 404 499 500-505;
       upload_pass @bisque;
+
+      # Breaks on long filenames
+      upload_max_part_header_len 2048;
+      # Allow Large form  uploads
+      upload_max_output_body_len 0;
      }
 
     # Default try to server then send to bisque
