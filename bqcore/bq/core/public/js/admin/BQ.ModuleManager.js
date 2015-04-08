@@ -588,7 +588,7 @@ Ext.define('BQ.module.RegisteredPanel', {
             store: this.store,
         });
         
-        /*
+        
         this.store.on('add', function(store, records, index, eOpts) {
             for (var r=0; r<records.length;r++) {
                 var owner_uri = records[r].get('owner_uri');
@@ -600,7 +600,7 @@ Ext.define('BQ.module.RegisteredPanel', {
                     me.setStatus(records[r], name);
                 }
             }
-        });*/
+        });
         
         //set the row expander as selector
         this.on('select', function(el, record, index, eOpt) {
@@ -807,6 +807,7 @@ Ext.define('BQ.module.RegisteredPanel', {
                 failure: function(response) {
                     BQ.ui.error('Failed to find engine at: '+ engine);
                 },
+                scope: me,
             });
         }
 
@@ -826,12 +827,12 @@ Ext.define('BQ.module.RegisteredPanel', {
                     var result = BQ.util.xpath_string(xml, '//user/@name');
                     if (result) {
                         record.set('owner', result)
-                        //record.data.owner = result;
                     }
                 },
                 failure: function(response) {
                     BQ.ui.error('Failed to find user at: '+ owner_uri);
                 },
+                scope: me,
             });
         }
     },
@@ -851,7 +852,7 @@ Ext.define('BQ.module.RegisteredPanel', {
                 failure: function(response) {
                     record.set('status', 'Failed!')
                 },
-                scope: this,
+                scope: me,
             });
         }
     },
@@ -879,7 +880,6 @@ Ext.define('BQ.admin.ModuleManagerMain', {
             flex: 9,
             emptyText: ' Enter Engine URL',
             store: [],
-            engineStore: [],
         });
 
         
@@ -1405,7 +1405,6 @@ Ext.define('BQ.admin.ModuleManagerMain', {
         
         this.registerPanel.getView().on('beforedrop', function(node, data, overModel, dropPosition,  dropFunction,  eOpts){ //check whether the registration worked
             var record = data.records[0];
-            //var record = overModel;
             var registration = record.get('registration');
             if (registration == 'Registered') {
                 BQ.ui.notification('Cannot register a module that is already registered.')
@@ -1502,7 +1501,6 @@ Ext.define('BQ.admin.ModuleManagerMain', {
                                 me.registerPanel.store.add(record);
                             }
                             me.registerPanel.addEntry(uniq, record, storeRecord);
-                            //me.registerPanel.store.add(record);
                         }
                         me.fireEvent('registered', me, record)
                         if (cb) cb();
