@@ -272,18 +272,10 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             if (!uri.baseURL)
                 uri.baseURL = this.browserState.baseURL;
 
-            function checkTS(tagOrder) {
-                if (tagOrder && tagOrder.indexOf('@ts') == -1) {
-                    var ts = this.commandBar.getComponent("btnTS").sortState;
-                    tagOrder += (tagOrder) ? ',' : '';
-                    tagOrder += (ts == 'ASC') ? '"@ts":asc' : '"@ts":desc';
-                }
-
-                return tagOrder;
+            if (uri.tag_order == undefined || uri.tag_order.indexOf('@ts') == -1) {
+                var ts = this.commandBar.getComponent("btnTS").sortState;
+                uri.tag_order = (ts == 'ASC') ? '"@ts":asc' : '"@ts":desc';
             }
-
-
-            uri.tag_order = checkTS.call(this, uri.tag_order);
 
             this.setBrowserState(uri);
         } else

@@ -210,7 +210,7 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
         'gob_names': 'gobject[name,type="{0}"]',
         'tag_names': 'tag[name]',
         'gob_types': 'gobject[type]'
-    },    
+    },
 
     buildUrl: function(request) {
         // extjs attempts adding ?node=NAME to all requests
@@ -222,14 +222,14 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
             delete request.params.sort;
         }
 
-        // create a URL with all required projections        
+        // create a URL with all required projections
         var url = this.url;
         if (this.query && this.query.length>0) {
             url += '?tag_query='+this.query+'&';
         } else {
             url += '?';
         }
-        
+
         var extracts = [];
         for (i=0; (name=this.projections_order[i]); i++ ) {
             if (!this.projections[name]) continue;
@@ -241,6 +241,11 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
 
         request.url = url + '&wpublic='+this.browserParams.wpublic;
         return request.url;
+    },
+
+    doRequest: function (operation, callback, scope) {
+        if (operation.action == 'destroy') return;
+        this.callParent(arguments);
     },
 
     // dima: fix the absense of local filtering by replacing processResponse
@@ -297,7 +302,7 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
         }
 
         me.afterRequest(request, success);
-    },    
+    },
 });
 
 
@@ -466,7 +471,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                     },
                     items: [{
                         xtype: 'tbtext',
-                        text: '<span class="menu-heading">Sort by:</span>', 
+                        text: '<span class="menu-heading">Sort by:</span>',
                     }, {
                         text: 'Text',
                         //scope: this,
@@ -476,10 +481,10 @@ Ext.define('BQ.tree.organizer.Panel', {
                         direction: 'DESC',
                         handler: function(item) {
                             item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
-                            if (item.direction === 'DESC') 
-                                item.addCls('DESC'); 
+                            if (item.direction === 'DESC')
+                                item.addCls('DESC');
                             else
-                                item.removeCls('DESC'); 
+                                item.removeCls('DESC');
                             //this.store.sort('value', item.direction);
                             this.store.sort([{
                                 property : 'value',
@@ -493,7 +498,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                             }, {
                                 property : 'count',
                                 direction: item.direction
-                            }]);                          
+                            }]);
                         },
                     }, {
                         text: 'Counts',
@@ -503,8 +508,8 @@ Ext.define('BQ.tree.organizer.Panel', {
                         direction: 'ASC',
                         handler: function(item) {
                             item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
-                            if (item.direction === 'DESC') 
-                                item.addCls('DESC'); 
+                            if (item.direction === 'DESC')
+                                item.addCls('DESC');
                             else
                                 item.removeCls('DESC');
                             //this.store.sort('count', item.direction);
@@ -520,7 +525,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                             }, {
                                 property : 'value',
                                 direction: item.direction
-                            }]);                        
+                            }]);
                         },
                     }, {
                         text: 'Type',
@@ -530,9 +535,9 @@ Ext.define('BQ.tree.organizer.Panel', {
                         cls: 'DESC',
                         direction: 'DESC',
                         handler: function(item) {
-                            item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC'; 
-                            if (item.direction === 'DESC') 
-                                item.addCls('DESC'); 
+                            item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
+                            if (item.direction === 'DESC')
+                                item.addCls('DESC');
                             else
                                 item.removeCls('DESC');
                             this.store.sort([{
@@ -633,7 +638,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                 name : 'text',
                 convert : function (value, record) {
                     if (!(record.raw instanceof Node)) return '';
-                    return Ext.String.format('{0}<span class="counts">{1}</span>', record.data.value, record.data.count); 
+                    return Ext.String.format('{0}<span class="counts">{1}</span>', record.data.value, record.data.count);
                     //return record.data.value;
                 },
             }*/],
@@ -699,7 +704,7 @@ Ext.define('BQ.tree.organizer.Panel', {
         record.expand();
     },
 
-    onBeforeItemExpand: function (record, eOpts) {       
+    onBeforeItemExpand: function (record, eOpts) {
         if (this.no_selects===true || record.data.loaded===true) return;
         var node = record,
             nodes=[];
@@ -839,6 +844,7 @@ Ext.define('BQ.tree.organizer.Panel', {
         proxy.projections.tag_values = null;
         proxy.projections.gob_names = null;
 
+        this.getSelectionModel().deselectAll();
         var root = this.getRootNode();
         this.store.suspendAutoSync();
         root.removeAll(true);

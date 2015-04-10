@@ -269,10 +269,14 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
     },
 
     btnRefresh : function() {
-        this.browser.msgBus.fireEvent('Browser_ReloadData', {});
         if (this.organizerCt && this.organizerCt.isVisible()) {
             this.organizerCt.reset();
         }
+        this.browser.msgBus.fireEvent('Browser_ReloadData', {
+            offset : 0,
+            tag_query : '',
+            tag_order : '',
+        });
         var t = this.westPanel.queryById('files');
         if (t && t.isVisible()) {
             t.reset();
@@ -353,6 +357,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         this.westPanel.doComponentLayout(null, null, true);
     },
 
+    /*
     btnOrganizerClickOriginal : function(reload) {
         this.westPanel.setWidth(420).show().expand();
         //this.westPanel.queryById('organizer').removeAll(false); //this.westPanel.removeAll(false);
@@ -390,6 +395,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         });
         this.westPanel.add(this.organizerCt);
     },
+    */
 
     btnOrganizerClickTreeNew : function(reload) {
         this.westPanel.setWidth(420).show().expand();
