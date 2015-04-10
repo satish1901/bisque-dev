@@ -521,7 +521,7 @@ ImgViewer.prototype.updateImage = function () {
 
     if (this.update_needed) clearTimeout(this.update_needed);
     //this.update_needed = setTimeout(callback(this, 'doUpdateImage'), this.update_delay_ms);
-    this.update_needed = setTimeout(callback(this, 'doUpdateImage'), 0);
+    //this.update_needed = setTimeout(callback(this, 'doUpdateImage'), 0);
 
 };
 
