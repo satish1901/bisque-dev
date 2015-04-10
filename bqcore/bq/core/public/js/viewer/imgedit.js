@@ -423,6 +423,7 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
 
 ImgEdit.prototype.remove_gobject = function (gob) {
     // dima: a hack to stop writing into a MEX
+    this.renderer.quadtree.remove(gob.shape);
     if (gob.uri && gob.uri.indexOf('/mex/')>=0) {
         BQ.ui.warning('Can\'t delete annotation from a Module EXecution document...');
         return;

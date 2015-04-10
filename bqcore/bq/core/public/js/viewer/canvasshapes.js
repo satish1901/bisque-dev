@@ -90,15 +90,13 @@ CanvasShape.prototype.calcBbox = function () {
 };
 
 CanvasShape.prototype.hasOverlap  = function(bbox){
-    var overlap = false,
+    var overlap = true,
     bb1 = bbox,
     bb2 = this.bbox;
     //for each dimension test to see if axis are seperate
     for(var i = 0; i < 2; i++){
-        if      (bb1.max[i] < bb2.min[i]) overlap = false;
-        else if (bb2.max[i] < bb1.min[i]) overlap = false;
-        else overlap = true;
-
+        if (bb1.max[i] < bb2.min[i]) overlap = false;
+        if (bb1.min[i] > bb2.max[i]) overlap = false;
     }
     return overlap;
 };
@@ -298,8 +296,8 @@ CanvasPolyLine.prototype.cacheOffset = function(){
 }
 
 CanvasPolyLine.prototype.calcBbox = function () {
-    var min = [ 9999, 9999];
-    var max = [-9999,-9999];
+    var min = [ 9999999, 9999999];
+    var max = [-9999999,-9999999];
 
     var points = this.sprite.points();
 
@@ -384,9 +382,9 @@ CanvasPolyLine.prototype.updateLocal = function () {
         vertices.push(pnt.x, pnt.y);
     }
 
-    var min = [ 9999, 9999];
-    var max = [-9999,-9999];
-    for(var xy = 0; xy < vertices.length; xy+=2){
+  var min = [ 9999999, 9999999];
+    var max = [-9999999,-9999999];
+  for(var xy = 0; xy < vertices.length; xy+=2){
         var px = vertices[xy + 0];
         var py = vertices[xy + 1];
         min[0] = min[0] < px ? min[0] : px;

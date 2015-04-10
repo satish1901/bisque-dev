@@ -39,7 +39,8 @@ RTree.prototype.reset = function(){
         parent: null,
         children:[],
         leaves: [],
-        bbox: {min: [0,0,0,0], max: [0,0,0,0]}
+        bbox: {min: [0,0,0,0], max: [0,0,0,0]},
+        leve: 0,
     }];
 
 }
@@ -507,6 +508,574 @@ RTree.prototype.updateSprite = function(node){
     node.sprite.height(h);
 };
 
+
+function QuadTree(renderer){
+    this.renderer = renderer;
+    this.reset();
+    this.maxChildren = 8;
+};
+
+QuadTree.prototype.reset = function(){
+    if(this.nodes){
+        var collection = [];
+        var collectLeaves = function(node){
+            if(node.leaves.length > 0){
+                collection = collection.concat(node.leaves);
+            }
+            return true;
+        }
+        this.traverseDown(this.nodes[0], collectLeaves);
+
+        collection.forEach(function(e){
+            e.inTree = false;
+        });
+    }
+    var view = this.renderer.viewer.imagedim;
+    if(!view)
+        view = {x:0, y:0};
+
+    this.nodes = [{
+        id: 0,
+        parent: null,
+        children:[],
+        leaves: [],
+        bbox: {min: [0,0], max: [view.x,view.y]},
+        L: 0,
+    }];
+
+}
+
+QuadTree.prototype.calcBoxVol = function(bb){
+    //given two bounding boxes what is the volume
+    var d = [0,0,0,0];
+    for(var ii = 0; ii < 4; ii++){
+        if(bb.max.length > ii)
+            d[ii] = bb.max[ii] - bb.min[ii];
+        //minimum distance is one unit
+        d[ii] = Math.max(d[ii],1);
+    }
+    var vol = d[0]*d[1]*d[2]*d[3];
+
+    return vol;
+};
+
+QuadTree.prototype.compositeBbox  = function(bbi,bbj){
+    //given two bounding boxes what is the volume
+    var
+    min = [999999,999999,999999,999999],
+    max = [-999999,-999999,-999999,-9999990];
+    if(!bbi) debugger;
+    if(!bbj) debugger;
+    var N = Math.min(bbi.min.length, bbj.min.length);
+    for(var i = 0; i < N; i++){
+
+        min[i] = Math.min(bbi.min[i], bbj.min[i]);
+        max[i] = Math.max(bbi.max[i], bbj.max[i]);
+        min[i] = min[i] ? min[i] : 0;
+        max[i] = max[i] ? max[i] : 0;
+    }
+    return {min:min, max:max};
+};
+
+
+QuadTree.prototype.calcBbox = function(gobs){
+    //given a set of stored objects, find the maximum bounding volume
+    var
+    min = [9999999,9999999,9999999,9999999],
+    max = [-9999999,-9999999,-9999999,-9999999];
+
+    var nodei, nodej, maxVol = 0;
+
+    if(!gobs) debugger;
+    for(var i = 0; i < gobs.length; i++){
+        var gbb = gobs[i].getBbox();
+        var iiN = gbb.min.length;
+        for(var ii = 0; ii < iiN; ii++){
+            min[ii] = Math.min(min[ii], gbb.min[ii]);
+            max[ii] = Math.max(max[ii], gbb.max[ii]);
+            min[ii] = min[ii] ? min[ii] : 0;
+            max[ii] = max[ii] ? max[ii] : 0;
+        }
+    }
+    return {min: min, max: max};
+};
+
+QuadTree.prototype.findMaxVolPairs  = function(gobs){
+    //given a set of stored objects, find the maximum bounding volume between pairs in the set
+    //return an array of the two indices
+    var nodei, nodej, maxVol = 0;
+    for(var i = 0; i < gobs.length; i++){
+        for(var j = i+1; j < gobs.length; j++){
+            //if(i == j) continue;
+            var ibb = gobs[i].getBbox();
+            var jbb = gobs[j].getBbox();
+            var cbb = this.compositeBbox(ibb,jbb);
+            var vol = this.calcBoxVol(cbb);
+            if(vol > maxVol){
+                maxVol = vol;
+                nodei = i;
+                nodej = j;
+            }
+        }
+    }
+    return [gobs[nodei],gobs[nodej]];
+};
+
+QuadTree.prototype.hasOverlap  = function(bbox1, bbox2){
+    var overlap = true,
+    bb1 = bbox1,
+    bb2 = bbox2;
+    //for each dimension test to see if axis are seperate
+    for(var i = 0; i < 2; i++){
+        if      (bb1.max[i] < bb2.min[i]) overlap = false;
+        else if (bb1.min[i] > bb2.max[i]) overlap = false;
+    }
+    return overlap;
+};
+
+QuadTree.prototype.calcVolumeChange  = function(obj, node){
+    var nodebb = node.bbox;
+    var compbb = this.compositeBbox(obj.bbox, nodebb);
+
+    var nodeVol = this.calcBoxVol(nodebb);
+    var compVol = this.calcBoxVol(compbb);
+    return Math.abs(nodeVol - compVol);
+}
+
+
+QuadTree.prototype.traverseDownBB  = function(node, bb, func){
+    var stack = [node];
+    while(stack.length > 0){
+        var cnode = stack.pop();
+        if(!func(cnode)) continue;
+        for (var i = 0; i < cnode.children.length; i++){
+            if(this.hasOverlap(bb, cnode.children[i].bbox))
+                stack.push(cnode.children[i]);
+        }
+    }
+};
+
+QuadTree.prototype.traverseDown  = function(node, func){
+    var stack = [node];
+    while(stack.length > 0){
+        var cnode = stack.pop();
+        if(!func(cnode)) continue;
+        for (var i = 0; i < cnode.children.length; i++){
+            stack.push(cnode.children[i]);
+        }
+    }
+};
+
+
+QuadTree.prototype.traverseUp  = function(node, func){
+    var stack = [node];
+    while(stack.length > 0){
+        var cnode = stack.pop();
+        if(!func(cnode)) continue;
+        if(cnode.parent){
+            stack.push(cnode.parent);
+        }
+    }
+};
+
+QuadTree.prototype.splitNode  = function(node, stack){
+    var nbb = node.bbox;
+    var bbMin = [0,0];
+    bbMin[0] = Math.ceil(nbb.min[0]);
+    bbMin[1] = Math.ceil(nbb.min[1]);
+
+    var bbw = nbb.max[0] - nbb.min[0];
+    var bbh = nbb.max[1] - nbb.min[1];
+    var mDim = Math.min(bbw, bbh);
+    var nXTiles = 2*Math.floor(bbw/mDim);
+    var nYTiles = 2*Math.floor(bbh/mDim);
+
+    var tw = Math.ceil(bbw/nXTiles); //tile width
+    var th = Math.ceil(bbh/nYTiles); //tile height
+
+    for(var i = 0; i < nXTiles; i++){
+        for(var j = 0; j < nYTiles; j++){
+            var ind = i + j*nXTiles;
+            var tMinX = bbMin[0] + i*tw;
+            var tMinY = bbMin[1] + j*th;
+            var bbox = {min: [tMinX, tMinY], max: [tMinX + tw, tMinY + th]}
+            var newNode = {
+                parent: node,
+                children:[],
+                leaves:[],
+                bbox: bbox,
+                L: node.L+1
+            };
+            var id = this.nodes.length;
+            newNode.id = id;
+            this.updateSprite(newNode);
+
+            node.children.push(newNode);
+            this.nodes.push(newNode);
+
+        }
+    }
+
+    for(var i = 0; i < node.leaves.length; i++){
+        for(var j = 0; j < node.children.length; j++){
+            var leaf = node.leaves[i];
+            var cnode = node.children[j];
+            if(leaf.hasOverlap(cnode.bbox)){
+                var frame = {node: cnode, shape: leaf}
+                stack.push(frame);
+            }
+        }
+    }
+
+    node.leaves = [];
+};
+
+QuadTree.prototype.insertInNode  = function(gob, node, stack){
+    node.leaves.push(gob);
+    gob.page = node;
+    //node.bbox = this.calcBbox(node.leaves);
+
+
+    if(node.leaves.length >= this.maxChildren && node.L < 20){
+        this.splitNode(node, stack);
+    }
+
+
+    var fArea = this.calcBoxVol(this.renderer.viewFrustum);
+    var nArea = this.calcBoxVol(node.bbox);
+    if(!node.children.length && nArea > 1.5*fArea){
+        this.splitNode(node, stack);
+    }
+};
+
+
+QuadTree.prototype.insert = function(shape){
+    //I like static integer pointer trees, but a dymanic pointer tree seems appropriate here, so
+    // we can pull data on and off the tree without having to do our own
+    //return;
+    var view = this.renderer.viewer.imagedim;
+    this.nodes[0].bbox = {min:[0,0], max: [view.x,view.y]};
+    var stack = [{node: this.nodes[0], shape: shape}];
+
+    //if(shape.id() === 15) debugger;
+    //if(shape.page) return;  //if the shapeject has a page then we insert it
+    shape.inTree = true;
+    shape.bbox = shape.calcBbox();
+
+    //if(this.nodes.length > 10) return;
+    var k = 0;
+    while(stack.length > 0){ k++;
+        //if(l > 18) break;
+        var frame = stack.pop();
+        var fshape = frame.shape;
+        var fnode = frame.node;
+        fnode.dirty = true;
+        delete fnode.imageCache;
+        //expand the bounding box of the current node on the stack
+        //fnode.bbox = this.compositeBbox(shape.bbox, fnode.bbox);
+
+        if(fnode.children.length === 0){
+
+            if(fnode.leaves.length < this.maxChildren){
+                this.insertInNode(fshape,fnode, stack);
+            }
+        }
+
+        else{
+            for(var i = 0; i < fnode.children.length; i++){
+                var over = fshape.hasOverlap(fnode.children[i].bbox);
+                if(over){
+
+                    stack.push({node: fnode.children[i], shape: fshape});
+                }
+            }
+
+
+        }
+    }
+};
+
+
+QuadTree.prototype.remove = function(shape){
+    //I like static integer pointer trees, but a dymanic pointer tree seems appropriate here, so
+    // we can pull data on and off the tree without having to do our own
+    //return;
+    var me = this;
+    shape.inTree = false;
+    //if(shape.id() === 15) debugger;
+    var collection = [];
+    var collectLeaves = function(node){
+        if(node.leaves.length > 0)
+            collection.push(node);
+        return true;
+    }
+    this.traverseDownBB(this.nodes[0], shape.bbox, collectLeaves);
+
+    for(var k = 0; k < collection.length; k++){
+        var node = collection[k];
+        var leaves = node.leaves;
+        var pos = 0;
+        for(var i= 0; i < leaves.length; i++){
+            if(leaves[i].id() === shape.id()) pos = i;
+        }
+        leaves.splice(pos,1);
+        //node.bbox = this.calcBbox(node.leaves);
+        //this.updateSprite(node);
+        //node = node.parent;
+        while(node){
+            //if(node.parent === null) break;
+            if(!node.children)       continue;
+            var cnode0 = node.children[0];
+            var cnode1 = node.children[1];
+            //node.bbox = this.compositeBbox(cnode0.bbox, cnode1.bbox);
+            this.updateSprite(node);
+            node.dirty = true;
+            delete node.imageCache;
+            node = node.parent;
+            //
+        }
+        //shape.page = null;
+
+    }
+};
+
+
+QuadTree.prototype.collectObjectsInRegion = function(frust, node){
+    var me = this;
+    var collection = [];
+    var renderer = this.renderer;
+
+    var collectSprite = function(node){
+        if(node.leaves.length > 0){
+            for(var i = 0; i < node.leaves.length; i++){
+                var leaf = node.leaves[i];
+                if(leaf.collected) continue;
+                if(me.hasOverlap(frust, leaf.bbox)){
+                    collection.push(leaf);
+                    leaf.collected = true;
+                }
+            }
+        }
+        return true;
+    };
+    this.traverseDownBB(node, frust, collectSprite);
+    collection.forEach(function(e){
+        e.collected = false;
+    });
+    return collection;
+};
+
+QuadTree.prototype.cull = function(frust){
+    var me = this;
+    var renderer = this.renderer;
+    renderer.currentLayer.removeChildren();
+
+    var leaves = this.collectObjectsInRegion(frust, this.nodes[0]);
+    leaves.forEach(function(e){
+        renderer.currentLayer.add(e.sprite);
+    });
+};
+
+
+QuadTree.prototype.cache = function(frust, onCache){
+    var me = this;
+    var fArea = this.calcBoxVol(frust);
+    var me = this;
+    var collection = [];
+    var renderer = this.renderer;
+    var scale = renderer.stage.scale().x;
+    var cache = false;
+
+    this.cachesDestroyed = 0;
+    this.cachesRendered = 0;
+
+    var cacheSprite = function(node){
+        var nArea = me.calcBoxVol(node.bbox);
+        var cache = null;
+        if(nArea < fArea || node.leaves.length > 0) {
+            if(!node.imageCache || scale != node.scale){
+                me.cachesDestroyed += 1;
+                me.cacheChildSprites(node, onCache);
+                cache = true;
+                return false;
+            }
+            return false;
+        }
+        else return true;
+    };
+    this.traverseDownBB(this.nodes[0], frust, cacheSprite);
+    if(this.cachesDestroyed === 0){
+        onCache();
+    }
+};
+
+QuadTree.prototype.cullCached = function(frust){
+    var me = this;
+    var fArea = this.calcBoxVol(frust);
+    var me = this;
+    var collection = [];
+    var renderer = this.renderer;
+    var scale = renderer.stage.scale().x;
+    var cache = false;
+
+    var collectSprite = function(node){
+        var nArea = me.calcBoxVol(node.bbox);
+        var cache = null;
+
+        if(nArea < fArea || node.leaves.length > 0) {
+            /*
+              drawing is fast enough, if we've cached in the previous step, then
+              we'll just redraw the whole thing, otherwise we grab the rendered cached images
+            */
+            collection.push(node.imageCache);
+            /*
+            if(cache){
+                var leaves = me.collectObjectsInRegion(node.bbox, node);
+                leaves.forEach(function(e){
+                    collection.push(e.sprite);
+                });
+                return false;
+            }
+            else
+              */
+            //collection.push(node.sprite);
+            return false;
+        }
+
+        else return true;
+    };
+    this.traverseDownBB(this.nodes[0], frust, collectSprite);
+    renderer.currentLayer.removeChildren();
+    collection.forEach(function(e){
+        if(e)
+            renderer.currentLayer.add(e);
+    });
+};
+
+QuadTree.prototype.cacheScene = function(frust){
+    var me = this;
+    var fArea = this.calcBoxVol(frust);
+    var collectSprite = function(node){
+        var nArea = me.calcBoxVol(node.bbox);
+        if(nArea < fArea) {
+            me.cacheChildSprites(node);
+            return false;
+        }
+        else return true;
+    };
+    this.traverseDownBB(this.nodes[0], frust, collectSprite);
+};
+
+QuadTree.prototype.cacheChildSprites = function(node, onCache){
+    //delete cache if it exists
+    if(node.image) delete node.image;
+    if(node.imageCache) delete node.imageCage;
+
+    //initialize a few variables;
+    var me = this;
+    var renderer = this.renderer;
+    var bbox = node.bbox;
+    var w = bbox.max[0] - bbox.min[0];
+    var h = bbox.max[1] - bbox.min[1];
+    var scale = renderer.stage.scale().x;
+
+    node.scale = scale;
+
+    var buffer = renderer.getPointSize();
+    buffer = 0;
+
+    //create a new image
+    node.imageCache = new Kinetic.Image({
+    });
+
+    //create a temp layer to capture the appropriate objects
+    var layer = new Kinetic.Layer({
+        scaleX: scale,
+        scaleY: scale,
+        width: w*scale,
+        height: h*scale
+    });
+
+    //fetch the objects in the tree that are in that node
+    var leaves = this.collectObjectsInRegion(bbox, node);
+    leaves.forEach(function(e){
+        e.updateLocal();
+        layer.add(e.sprite);
+    });
+    layer.draw();
+
+    //create a new image, in the async callback assign the image to the node's imageCache
+    //scale the image region
+    var image = layer.toImage({
+        callback: function(img){
+            //if(!node.dirty) return;
+
+            node.image = img;
+            if(!node.imageCache) debugger;
+            node.imageCache.setImage(img);
+            node.dirty = false;
+            me.cachesRendered += 1; //count the caches that have been rerendered since performing a cache call
+            if(me.cachesRendered >= me.cachesDestroyed && onCache){
+                me.cachesRendered = 0;
+                me.cachesDestroyed = 0;
+                onCache();
+            }
+
+        },
+
+        x: bbox.min[0]*scale - buffer,
+        y: bbox.min[1]*scale - buffer,
+        width: w*scale + 2.0*buffer,
+        height: h*scale + 2.0*buffer,
+    });
+    node.imageCache.x(bbox.min[0] - buffer/scale);
+    node.imageCache.y(bbox.min[1] - buffer/scale);
+    node.imageCache.width(w + 2.0*buffer/scale);
+    node.imageCache.height(h + 2.0*buffer/scale);
+};
+
+QuadTree.prototype.setDirty = function(node){
+    var me = this;
+    var dirtFunc = function(node){
+        node.dirty = true;
+        return true;
+    };
+    this.traverseUp(node, dirtFunc);
+};
+
+
+QuadTree.prototype.updateSprite = function(node){
+    var bbox = node.bbox;
+    var w = bbox.max[0] - bbox.min[0];
+    var h = bbox.max[1] - bbox.min[1];
+    if(!node.sprite)
+        node.sprite = new Kinetic.Rect({
+            x: bbox.min[0],
+            y: bbox.min[1],
+            width: w,
+            height: h,
+            hasFill: false,
+            listening: false,
+            //fill: "rgba(128,128,128,0.2)",
+            stroke: "rgba(128,255,255,0.4)",
+            strokeWidth: 1.0,
+        });
+
+    node.sprite.x(bbox.min[0]);
+    node.sprite.y(bbox.min[1]);
+    node.sprite.width(w);
+    node.sprite.height(h);
+};
+
+
+QuadTree.prototype.drawBboxes = function(){
+    var me = this;
+    this.nodes.forEach(function(e){
+        if(e.sprite)
+            me.renderer.currentLayer.add(e.sprite);
+    });
+};
+
 ////////////////////////////////////////////////////////////////
 //Controller
 ////////////////////////////////////////////////////////////////
@@ -583,8 +1152,10 @@ CanvasControl.prototype.viewerZoomed = function(e) {
 
     this.viewer.stage.x(e.x);
     this.viewer.stage.y(e.y);
-    this.viewer.updateVisible();
+    this.viewer.quadtree.cullCached(this.viewer.viewFrustum);
     this.viewer.draw();
+    this.viewer.updateVisible(); //update visible has draw function
+    //this.viewer.draw();
 };
 
 ////////////////////////////////////////////////////////////////
@@ -622,14 +1193,15 @@ CanvasRenderer.prototype.create = function (parent) {
         container: parent,
         listening: true,
     });
-
+    this.stage._mousemove = Kinetic.Util._throttle( this.stage._mousemove, 60);
+    //someKineticLayer._getIntersection = function() {return {};};
     this.stage.content.style.setProperty('z-index', 15);
 
     this.initShapeLayer();
     this.initEditLayer();
     this.initSelectLayer();
     this.initPointImageCache();
-    this.rtree = new RTree(this);
+    this.quadtree = new QuadTree(this);
     this.cur_z = 0;
 
 };
@@ -844,16 +1416,21 @@ CanvasRenderer.prototype.addHandler = function (ty, cb){
 };
 
 CanvasRenderer.prototype.setMode = function (mode){
-    this.mode = mode;
+    var me = this;
     this.unselect(this.selectedSet);
+
+    this.mode = mode;
+
+    me.updateVisible();
+
     if(mode == 'add') {
         this.lassoRect.width(0);
         this.lassoRect.height(0);
         this.selectLayer.moveToBottom();
         this.editLayer.moveToTop();
     }
-    this.updateVisible();
-    this.draw();
+
+
 };
 
 
@@ -947,22 +1524,37 @@ CanvasRenderer.prototype.setFrustum = function(bb){
 }
 
 CanvasRenderer.prototype.cacheVisible = function(){
-    this.rtree.cacheScene(this.viewFrustum);
+    this.quadtree.cacheScene(this.viewFrustum);
 };
 
 CanvasRenderer.prototype.updateVisible = function(){
-    if(this.mode == 'navigate')
-        this.rtree.cullAndCache(this.viewFrustum);
-    else
-        this.rtree.cull(this.viewFrustum);
+    var me = this;
+    //this.quadtree.cull(this.viewFrustum);
+
+    if(this.mode == 'navigate'){
+
+        this.quadtree.cache(this.viewFrustum, function(){
+                me.quadtree.cullCached(me.viewFrustum);
+                me.draw();
+        });
+        //this.quadtree.cache(this.viewFrustum);
+        //this.quadtree.cullCached(this.viewFrustum);
+    }
+    else{
+        this.quadtree.cull(this.viewFrustum);
+        me.draw();
+
+    }
+    this.quadtree.drawBboxes();
+
 };
 
 CanvasRenderer.prototype.drawNodes = function(){
     var me = this;
     var scale = this.stage.scale();
-    for(var i = 0; i < this.rtree.nodes.length; i++){
+    for(var i = 0; i < this.quadtree.nodes.length; i++){
 
-        var node = this.rtree.nodes[i];
+        var node = this.quadtree.nodes[i];
         var bbox = node.bbox;
         var pid = node.parent ? node.parent.id : null;
 
@@ -996,7 +1588,7 @@ CanvasRenderer.prototype.drawNodes = function(){
             stroke: 'black',
             strokeWidth: 1,
         });
-    this.currentNode = this.rtree.nodes[0];
+    this.currentNode = this.quadtree.nodes[0];
     this.editLayer.add(this.cursorRect);
 
     this.selectRect.on('mousemove', function(e){
@@ -1070,8 +1662,8 @@ CanvasRenderer.prototype.drawNodes = function(){
 
         if(newCurrentNode.id != me.currentNode.id){
             //see if traversal works
-            me.rtree.traverseDown(me.currentNode, hideSprite);
-            me.rtree.traverseDownBB(newCurrentNode, frust, showSprite);
+            me.quadtree.traverseDown(me.currentNode, hideSprite);
+            me.quadtree.traverseDownBB(newCurrentNode, frust, showSprite);
             me.draw();
             me.currentNode = newCurrentNode;
         }
@@ -1080,13 +1672,13 @@ CanvasRenderer.prototype.drawNodes = function(){
 
 
 CanvasRenderer.prototype.resetTree = function (e) {
-    //reset the rtree and visible node references to tree
+    //reset the quadtree and visible node references to tree
     this.visibleSet.forEach(function(e){
         e.page = null;
     });
     this.visibleSet =[]; //cleare the visible set.
-    //rtree reset
-    this.rtree.reset();
+    //quadtree reset
+    this.quadtree.reset();
 };
 
 CanvasRenderer.prototype.updateImage = function (e) {
@@ -1151,10 +1743,10 @@ CanvasRenderer.prototype.updateImage = function (e) {
     this.rendered_gobjects = gobs;
 
     //update visible objects in the tree... next iteration may be 3D.
-    this.updateVisible();
 
     this.updateBbox(this.selectedSet);
-    this.draw();
+    this.updateVisible(); //update visible has a draw call
+    //this.draw();
 };
 
 CanvasRenderer.prototype.editBbox = function(gobs,i, e) {
@@ -1265,9 +1857,8 @@ CanvasRenderer.prototype.updateBbox = function (gobs){
     this.updatePoints(gobs);
 
     var scale = this.stage.scale();
-
-    var min = [ 9999, 9999];
-    var max = [-9999,-9999];
+    var min = [ 9999999, 9999999];
+    var max = [-9999999,-9999999];
 
     for(var i = 0; i < gobs.length; i++){
 
@@ -1506,7 +2097,6 @@ CanvasRenderer.prototype.inSelectedSet = function(shape){
 };
 
 
-
 CanvasRenderer.prototype.select = function (gobs) {
     var me = this;
 
@@ -1579,7 +2169,9 @@ CanvasRenderer.prototype.unselect = function (gobs) {
     this.selectedSet.forEach(function(e,i,d){
         if(e.dirty)
             me.move_shape(e.gob);
+        //me.quadtree.insert(e)
     });
+
     this.editLayer.removeChildren();
 };
 
@@ -1626,13 +2218,41 @@ CanvasRenderer.prototype.default_move = function (view, gob) {
         this.callback_move(view, gob);
 };
 
+
+CanvasRenderer.prototype.toggleWidgets = function(fcn){
+    /*
+    var scale = this.stage.scale();
+    if(fcn === 'hide'){
+        this.selectedSet.forEach(function(e){
+            e.sprite.strokeWidth(2/scale.x);
+        });
+    }
+    else {
+        this.selectedSet.forEach(function(e){
+            e.sprite.strokeWidth(1/scale.x);
+        });
+    }*/
+
+    this.shapeCorners.forEach(function(e){
+        e[fcn]();
+    });
+    this.updateBbox(this.selectedSet);
+    this.bbRect[fcn]();
+    this.bbCorners.forEach(function(e,i,a){
+        e[fcn]();
+    });
+    this.editLayer.draw();
+}
+
 CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
     var me = this;
     if(!this.dragCache) this.dragCache = [0,0];
+    //poly.setDraggable(true);
+
     poly.on('mousedown', function(evt) {
         //select(view, gob);
         if(me.mode === 'delete'){
-            me.rtree.remove(gob.shape);
+            me.quadtree.remove(gob.shape);
             me.delete_fun(gob);
             return;
         }
@@ -1662,12 +2282,13 @@ CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
         //me.shapeCache = [];
         for(var j = 0; j < me.selectedSet.length; j++){
             me.selectedSet[j].dragStart();
-            me.rtree.remove(me.selectedSet[j]);
+            me.quadtree.remove(me.selectedSet[j]);
         };
 
     });
 
     poly.on('dragstart', function() {
+        me.toggleWidgets('hide');
     });
 
     poly.on('dragmove', function(evt) {
@@ -1706,7 +2327,7 @@ CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
                 fsprite.y(shapeCache[1] + dxy[1]);
             }
         }
-        me.updateBbox(me.selectedSet);
+        //me.updateBbox(me.selectedSet);
         if(this.shape.selfAnchor)
            this.shape.drag(evt,this);
         //me.currentLayer.draw();
@@ -1714,7 +2335,7 @@ CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
     });
 
     poly.on('dragend', function() {
-
+        me.toggleWidgets('show');
     });
 
     poly.on('mouseup', function() {
@@ -1724,8 +2345,8 @@ CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
             if(e.dirty)
                 me.move_shape(e.gob);
 
-            //me.rtree.in(f);
-            me.rtree.insert(e)
+            //me.quadtree.in(f);
+            me.quadtree.insert(e)
         });
         ;
         //me.selectedSet.forEach(function(e,i,d){
@@ -1841,8 +2462,8 @@ CanvasRenderer.prototype.makeShape = function ( gob,  viewstate, shapeDescriptio
     //visible = gob.shape.visible();
 
     gob.shape.update();
-    if(!gob.shape.page && visible)
-        this.rtree.insert(gob.shape);
+    if(!gob.shape.inTree && visible)
+        this.quadtree.insert(gob.shape);
     if(gob.dirty)
         this.stage.draw();
 };

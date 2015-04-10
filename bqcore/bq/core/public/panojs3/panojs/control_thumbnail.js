@@ -1,12 +1,12 @@
 /*******************************************************************************
   ThumbnailControl - creates thumbnail navigator and listens to the viewer for
                      view transformations
-  
+
   GSV 3.0 : PanoJS3
-  @author Dmitry Fedorov  <fedorov@ece.ucsb.edu>   
-  
+  @author Dmitry Fedorov  <fedorov@ece.ucsb.edu>
+
   Copyright (c) 2010 Dmitry Fedorov, Center for Bio-Image Informatics
-  
+
   using: isClientTouch() and isClientPhone() from utils.js
 
 *******************************************************************************/
@@ -22,26 +22,26 @@ function trim(v, l, h) {
   else
   if (v>h) return h;
   else
-  return v;    
-}  
+  return v;
+}
 
 function ThumbnailControl(viewer) {
-  this.move_delay_ms = 10;  // Delay before moving the viewer
-  
+  this.move_delay_ms = 1;  // Delay before moving the viewer
+
   this.viewer = viewer;
-  this.initControls();   
+  this.initControls();
   this.createDOMElements();
 
   this.scale = 1;
   this.x = 0;
-  this.y = 0;  
-  this.width = 128;  
-  this.height = 128; 
-  
+  this.y = 0;
+  this.width = 128;
+  this.height = 128;
+
   this.viewer.addViewerMovedListener(this);
   this.viewer.addViewerZoomedListener(this);
-  this.viewer.addViewerResizedListener(this);    
-    
+  this.viewer.addViewerResizedListener(this);
+
   // load thumbnail image
   this.update();
 }
@@ -50,7 +50,7 @@ ThumbnailControl.prototype.initControls = function() {
   if (PanoJS.CONTROL_THUMBNAIL_UPDATED_URLS) return;
   PanoJS.CONTROL_IMAGE_PLUS     = PanoJS.STATIC_BASE_URL + PanoJS.CONTROL_IMAGE_PLUS;
   PanoJS.CONTROL_IMAGE_MINUS    = PanoJS.STATIC_BASE_URL + PanoJS.CONTROL_IMAGE_MINUS;
-  PanoJS.CONTROL_IMAGE_PROGRESS = PanoJS.STATIC_BASE_URL + PanoJS.CONTROL_IMAGE_PROGRESS;  
+  PanoJS.CONTROL_IMAGE_PROGRESS = PanoJS.STATIC_BASE_URL + PanoJS.CONTROL_IMAGE_PROGRESS;
   PanoJS.CONTROL_THUMBNAIL_UPDATED_URLS = true;
 }
 
@@ -60,30 +60,30 @@ ThumbnailControl.prototype.update = function() {
 }
 
 ThumbnailControl.prototype.init = function() {
-  this.dom_image.onload = null;  
-  if (this.dom_image_progress 
+  this.dom_image.onload = null;
+  if (this.dom_image_progress
       && this.dom_image_progress.parentNode)
-    this.dom_element.removeChild(this.dom_image_progress);   
-  
+    this.dom_element.removeChild(this.dom_image_progress);
+
   // the thumbnail image may be larger that the space allocated for the thumbnail view
   // resize control accordingly to the larger side
   if (this.dom_image.width == this.dom_image.height) {
     this.dom_image.width = PanoJS.CONTROL_THUMBNAIL_SIZE;
-    this.dom_image.height = PanoJS.CONTROL_THUMBNAIL_SIZE;    
+    this.dom_image.height = PanoJS.CONTROL_THUMBNAIL_SIZE;
   } else if (this.dom_image.width > this.dom_image.height) {
     this.dom_image.width = PanoJS.CONTROL_THUMBNAIL_SIZE;
     this.dom_element.style.height = this.dom_image.height+PanoJS.CONTROL_THUMBNAIL_BORDER*2+'px';
   } else { // if (this.dom_image.width < this.dom_image.height)
-    this.dom_image.height = PanoJS.CONTROL_THUMBNAIL_SIZE;    
-    this.dom_element.style.width = this.dom_image.width+PanoJS.CONTROL_THUMBNAIL_BORDER*2+'px';    
+    this.dom_image.height = PanoJS.CONTROL_THUMBNAIL_SIZE;
+    this.dom_element.style.width = this.dom_image.width+PanoJS.CONTROL_THUMBNAIL_BORDER*2+'px';
   }
-  
+
   // store thumbnmail control size for maximizing
   this.dom_width = this.dom_element.style.width;
-  this.dom_height = this.dom_element.style.height;  
-  
+  this.dom_height = this.dom_element.style.height;
+
   this.tw = this.dom_image.width;
-  this.th = this.dom_image.height;  
+  this.th = this.dom_image.height;
   this.thumbscale = this.tw / this.viewer.imageSize().width;
 
   this.viewer.notifyViewerZoomed();
@@ -94,53 +94,53 @@ ThumbnailControl.prototype.createDOMElements = function() {
 
     this.dom_element = document.createElement('div');
     this.dom_element.className = 'thumbnail';
-    de.appendChild(this.dom_element); 
+    de.appendChild(this.dom_element);
     PanoJS.CONTROL_THUMBNAIL_SIZE = Math.max(this.dom_element.clientWidth, this.dom_element.clientHeight);
     PanoJS.CONTROL_THUMBNAIL_BORDER = (this.dom_element.offsetWidth - this.dom_element.clientWidth) / 2;
-      
+
     this.dom_surface = document.createElement('div');
     this.dom_surface.className = 'thumbnail_surface';
-    this.dom_element.appendChild(this.dom_surface); 
+    this.dom_element.appendChild(this.dom_surface);
 
     this.dom_roi = document.createElement('div');
     this.dom_roi.className = 'thumbnail_roi';
-    this.dom_element.appendChild(this.dom_roi); 
+    this.dom_element.appendChild(this.dom_roi);
 
     this.dom_roi_prev = document.createElement('div');
     this.dom_roi_prev.className = 'thumbnail_roi_preview';
-    this.dom_element.appendChild(this.dom_roi_prev); 
-    
+    this.dom_element.appendChild(this.dom_roi_prev);
+
     this.dom_scale = document.createElement('span');
     this.dom_scale.className = 'thumbnail_scale';
-    this.dom_element.appendChild(this.dom_scale); 
+    this.dom_element.appendChild(this.dom_scale);
 
     this.dom_image_progress = document.createElement('img');
-    this.dom_element.appendChild(this.dom_image_progress); 
+    this.dom_element.appendChild(this.dom_image_progress);
     this.dom_image_progress.width = '128';
-    this.dom_image_progress.height = '128';    
+    this.dom_image_progress.height = '128';
     this.dom_image_progress.src = PanoJS.CONTROL_IMAGE_PROGRESS;
-    
+
     this.dom_image = document.createElement('img');
-    this.dom_element.appendChild(this.dom_image); 
+    this.dom_element.appendChild(this.dom_image);
 
     this.dom_surface.onmousedown = callback (this, this.onmousedown );
     this.dom_surface.onmouseup   = callback (this, this.onmouseup );
     this.dom_surface.onmousemove = callback (this, this.onmousemove );
-    this.dom_surface.onmouseout  = callback (this, this.onmouseout ); 
-    
+    this.dom_surface.onmouseout  = callback (this, this.onmouseout );
+
     if (PanoJS.CONTROL_THUMBNAIL_SHOW_MINIMIZE) {
         var style = PanoJS.CONTROL_THUMBNAIL_STYLE + " bottom: 16px; right: 1px; width: 16px;"
         this.btn = document.createElement('span');
         this.dom_element.appendChild(this.btn);
         this.btn.setAttribute("style", style);
-        this.btn.style.cssText = style;   
-        
+        this.btn.style.cssText = style;
+
         this.img = document.createElement('img');
         this.img.src = PanoJS.CONTROL_IMAGE_MINUS;
         if (this.btn.style.width) this.img.style.width = this.btn.style.width;
-        this.btn.appendChild(this.img);    
-        
-        this.btn.onclick = callback(this, this.toggleMinimize); 
+        this.btn.appendChild(this.img);
+
+        this.btn.onclick = callback(this, this.toggleMinimize);
     }
 }
 
@@ -151,22 +151,22 @@ ThumbnailControl.prototype.toggleMinimize = function(e) {
     if (this.minimized) {
         this.img.src = PanoJS.CONTROL_IMAGE_PLUS;
         this.dom_element.style.width = '17px';
-        this.dom_element.style.height = '17px'; 
+        this.dom_element.style.height = '17px';
 
         this.dom_surface.style.display  = 'none';
         this.dom_roi.style.display      = 'none';
-        this.dom_roi_prev.style.display = 'none';        
+        this.dom_roi_prev.style.display = 'none';
         this.dom_scale.style.display    = 'none';
         this.dom_image.style.display    = 'none';
-        
+
     } else {
         this.img.src = PanoJS.CONTROL_IMAGE_MINUS;
         this.dom_element.style.width = this.dom_width;
         this.dom_element.style.height = this.dom_height;
-        
+
         this.dom_surface.style.display  = '';
         this.dom_roi.style.display      = '';
-        this.dom_roi_prev.style.display = '';               
+        this.dom_roi_prev.style.display = '';
         this.dom_scale.style.display    = '';
         this.dom_image.style.display    = '';
     }
@@ -175,30 +175,30 @@ ThumbnailControl.prototype.toggleMinimize = function(e) {
 ThumbnailControl.prototype.viewerMoved = function(e) {
     if (!this.dom_roi || typeof this.dom_roi == 'undefined') return;
     var img_x = -1.0 * (e.x / this.scale);
-    var img_y = -1.0 * (e.y / this.scale);  
+    var img_y = -1.0 * (e.y / this.scale);
     var tx = trim( img_x * this.thumbscale, 0, this.tw);
     var ty = trim( img_y * this.thumbscale, 0, this.th);
     var w = trim(this.width, 0, this.viewer.imageSize().width-img_x);
     var h = trim(this.height, 0, this.viewer.imageSize().height-img_y);
     if (img_x<0) w += img_x;
-    if (img_y<0) h += img_y;  
+    if (img_y<0) h += img_y;
 
     this.dom_roi.style.left = tx + 'px';
-    this.dom_roi.style.top  = ty + 'px';   
+    this.dom_roi.style.top  = ty + 'px';
     this.dom_roi.style.width = Math.min(w*this.thumbscale, this.tw-tx) + 'px';
     this.dom_roi.style.height = Math.min(h*this.thumbscale, this.th-ty) + 'px';
-    
+
     this.dom_roi_prev.style.left = tx + 'px';
-    this.dom_roi_prev.style.top  = ty + 'px';   
+    this.dom_roi_prev.style.top  = ty + 'px';
     this.dom_roi_prev.style.width = Math.min(w*this.thumbscale, this.tw-tx) + 'px';
-    this.dom_roi_prev.style.height = Math.min(h*this.thumbscale, this.th-ty) + 'px';    
+    this.dom_roi_prev.style.height = Math.min(h*this.thumbscale, this.th-ty) + 'px';
 }
 
 ThumbnailControl.prototype.viewerZoomed = function(e) {
     this.scale  = e.scale;
     this.width  = e.width;
     this.height = e.height;
-    //if (this.dom_scale) this.dom_scale.innerHTML = this.scale*100 + '%';   
+    //if (this.dom_scale) this.dom_scale.innerHTML = this.scale*100 + '%';
     this.viewerMoved(e);
 }
 
@@ -211,23 +211,23 @@ ThumbnailControl.prototype.viewerResized = function(e) {
 ThumbnailControl.prototype.moveViewer = function (e) {
     if (!this.viewer) return;
     var mx = e.offsetX != undefined ? e.offsetX : e.layerX;
-    var my = e.offsetY != undefined ? e.offsetY : e.layerY; 
+    var my = e.offsetY != undefined ? e.offsetY : e.layerY;
     var x = (mx / this.thumbscale);
-    var y = (my / this.thumbscale);   
-    
+    var y = (my / this.thumbscale);
+
     this.viewer.resetSlideMotion();
     PanoJS.USE_SLIDE = false;
     this.viewer.recenter( this.viewer.toViewerFromImage({'x': x, 'y': y}), true, true );
-    PanoJS.USE_SLIDE = true;    
+    PanoJS.USE_SLIDE = true;
 }
 
 ThumbnailControl.prototype.movePreview = function (e) {
     var mx = e.offsetX != undefined ? e.offsetX : e.layerX;
-    var my = e.offsetY != undefined ? e.offsetY : e.layerY; 
+    var my = e.offsetY != undefined ? e.offsetY : e.layerY;
     mx -= this.dom_roi_prev.offsetWidth/2;
-    my -= this.dom_roi_prev.offsetHeight/2;    
+    my -= this.dom_roi_prev.offsetHeight/2;
     this.dom_roi_prev.style.left = mx + 'px';
-    this.dom_roi_prev.style.top  = my + 'px'; 
+    this.dom_roi_prev.style.top  = my + 'px';
 }
 
 ThumbnailControl.prototype.moveViewerNow = function (e) {
@@ -244,9 +244,9 @@ ThumbnailControl.prototype.queueMove = function (e) {
 
 ThumbnailControl.prototype.blockPropagation = function (e) {
   if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
-  else e.cancelBubble = true;                 // IE    
+  else e.cancelBubble = true;                 // IE
   if (e.preventDefault) e.preventDefault(); // prevent image dragging
-  else e.returnValue = false;        
+  else e.returnValue = false;
 }
 
 ThumbnailControl.prototype.onmousedown = function (e) {
@@ -254,42 +254,42 @@ ThumbnailControl.prototype.onmousedown = function (e) {
     if (e == null) return false;
     this.blockPropagation(e);
 
-    this.mouse_pressed = true;  
+    this.mouse_pressed = true;
     if (this.dom_surface) this.dom_surface.style.cursor = 'move';
     //this.moveViewer(e);
     return false;
 }
 
 ThumbnailControl.prototype.onmouseup = function (e) {
-    if (!e) e = window.event;  // IE event model  
-    if (e == null) return false; 
+    if (!e) e = window.event;  // IE event model
+    if (e == null) return false;
     this.blockPropagation(e);
 
-    this.mouse_pressed = false; 
+    this.mouse_pressed = false;
     if (this.dom_surface) this.dom_surface.style.cursor = 'default';
     this.moveViewer(e);
-    return false;    
+    return false;
 }
 
 ThumbnailControl.prototype.onmousemove = function (e) {
-    if (!e) e = window.event;  // IE event model  
+    if (!e) e = window.event;  // IE event model
     if (e == null) return false;
-    this.blockPropagation(e);        
+    this.blockPropagation(e);
 
     if (!this.mouse_pressed) return false;
     if (this.move_delay_ms<=0)
       this.moveViewer(e);
-    else      
+    else
       this.queueMove(e);
-    return false;      
+    return false;
 }
 
 ThumbnailControl.prototype.onmouseout = function (e) {
-    if (!e) e = window.event;  // IE event model  
-    if (e == null) return false; 
-    this.blockPropagation(e);    
- 
-    this.mouse_pressed = false;   
+    if (!e) e = window.event;  // IE event model
+    if (e == null) return false;
+    this.blockPropagation(e);
+
+    this.mouse_pressed = false;
     if (this.dom_surface) this.dom_surface.style.cursor = 'default';
-    return false;    
+    return false;
 }
