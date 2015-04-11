@@ -105,7 +105,11 @@ Ext.define('BQ.help.Video', {
     border: false,
     layout: 'fit',
     autoEl: {
-        tag: 'div',
+        //tag: 'div',
+        tag: 'iframe',
+        src: '',
+        frameborder: "0",
+        allowfullscreen: '',
     },
 
     iframe_youtube: '<iframe src="{1}" frameborder="0" allowfullscreen></iframe>',
@@ -125,7 +129,8 @@ Ext.define('BQ.help.Video', {
     	this.video = url;
     	var el = this.getEl();
     	if (el && el.dom) {
-    	    el.dom.innerHTML = this.iframe_youtube.replace('{1}', url);
+    	    //el.dom.innerHTML = this.iframe_youtube.replace('{1}', url);
+            el.dom.src = url;
     	}
     },
 });
@@ -434,7 +439,7 @@ Ext.define('BQ.Application.Toolbar', {
                 handler: Ext.Function.pass(urlAction, BQ.Server.url('/client_service/help')),
             }, {
                 text: 'Bisque project website',
-                handler: Ext.Function.pass(urlAction, 'http://www.bioimage.ucsb.edu/downloads/Bisque%20Database'),
+                handler: Ext.Function.pass(urlAction, 'http://bioimage.ucsb.edu/bisque'),
             }, '-', {
                 xtype:'tbtext', text: 'Problems with Bisque?',
                 indent: true,
@@ -447,7 +452,7 @@ Ext.define('BQ.Application.Toolbar', {
                 handler: Ext.Function.pass(urlAction, 'http://biodev.ece.ucsb.edu/projects/bisquik/newticket'),
             }, {
                 text: 'Send us e-mail',
-                handler: Ext.Function.pass(urlAction, 'mailto:bisque-dev@biodev.ece.ucsb.edu,bisque-bioimage@googlegroups.com'),
+                handler: Ext.Function.pass(urlAction, 'mailto:bisque-bioimage@googlegroups.com'),
             }],
         };
 
@@ -715,11 +720,11 @@ Ext.define('BQ.Application.Toolbar', {
         var admin = Ext.create('BQ.admin.MainPage', {
             height : '85%',
             width : '85%',
-            modal : true, 
+            modal : true,
         });
         admin.show();
     },
-    
+
     userPrefs : function() {
         var preferences = Ext.create('BQ.Preferences.Dialog');
     },
@@ -1040,26 +1045,26 @@ Ext.define('BQ.Application.Toolbar', {
         );
     },
 
+    setMenuHandler: function(menuitem, url, _def) {
+        if (!(url || _def)) {
+            menuitem.setVisible(false);
+        } else {
+            menuitem.setHandler( Ext.Function.pass(pageAction, BQ.Server.url(url || _def)), this );
+        }
+    },
+
     onPreferences: function(pref) {
         this.preferences = pref;
 
-        if (this.preferences.registration === 'disabled')
+        this.setMenuHandler( this.queryById('menu_user_profile'), this.preferences.user_profile, undefined );
+        this.setMenuHandler( this.queryById('menu_user_register'), this.preferences.registration, undefined );
+        this.setMenuHandler( this.queryById('menu_user_recover'), this.preferences.password_recovery, undefined );
+
+        if (this.preferences.registration === 'disabled') {
             this.queryById('menu_user_register').setVisible(false);
-
-        this.queryById('menu_user_profile').setHandler(
-            Ext.Function.pass(pageAction, BQ.Server.url(this.preferences.user_profile || '/registration/edit_user')), // '/registration/lost_password'
-            this
-        );
-
-        this.queryById('menu_user_register').setHandler(
-            Ext.Function.pass(pageAction, BQ.Server.url(this.preferences.registration || '/registration')), // '/registration'
-            this
-        );
-
-        this.queryById('menu_user_recover').setHandler(
-            Ext.Function.pass(pageAction, BQ.Server.url(this.preferences.password_recovery || '/auth_service/login')), // '/registration/lost_password'
-            this
-        );
+            this.queryById('menu_user_profile').setVisible(false);
+            this.queryById('menu_user_recover').setVisible(false);
+        }
 
         if (this.preferences.title)
             this.queryById('menu_title').setText( '<h3><a href="/">'+this.preferences.title+'</a></h3>' );
