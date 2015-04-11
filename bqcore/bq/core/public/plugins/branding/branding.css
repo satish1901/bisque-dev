@@ -3,12 +3,25 @@
 *******************************************************************************/
 
 .toolbar-main .main-logo {
-    width: 90px;
     height: 30px;
-    margin: 0px 10px 0px 5px;
     background-image: url('/images/bisque_logo_gray.svg');
-    background-repeat: no-repeat;
     background-size: 90px;
-    background-position: 0px 0px;
-    display: block;
+}
+
+.viewer .name.logo {
+    height: 30px !important;
+    background-image: url('/images/bisque_logo_gray.svg');
+    background-size: 90px;
+}
+
+.bq-viewer-movie .logo {
+    height: 30px !important;
+    background-image: url('/images/bisque_logo_gray.svg');
+    background-size: 90px;
+}
+
+.bq-three-container .logo {
+    height: 30px !important;
+    background-image: url('/images/bisque_logo_gray.svg');
+    background-size: 90px;
 }
