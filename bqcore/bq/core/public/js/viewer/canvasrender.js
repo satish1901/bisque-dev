@@ -679,6 +679,7 @@ QuadTree.prototype.traverseUp  = function(node, func){
 };
 
 QuadTree.prototype.splitNode  = function(node, stack){
+
     var nbb = node.bbox;
     var bbMin = [0,0];
     bbMin[0] = Math.ceil(nbb.min[0]);
@@ -731,7 +732,14 @@ QuadTree.prototype.splitNode  = function(node, stack){
 };
 
 QuadTree.prototype.insertInNode  = function(gob, node, stack){
-    node.leaves.push(gob);
+    var inSet = false;
+    for(var i = 0; i < node.leaves.length; i++){
+        if(gob.id() === node.leaves[i].id())
+            inSet = true;
+    }
+    if(!inSet)
+        node.leaves.push(gob);
+
     gob.page = node;
     //node.bbox = this.calcBbox(node.leaves);
 
@@ -814,20 +822,18 @@ QuadTree.prototype.remove = function(shape){
     for(var k = 0; k < collection.length; k++){
         var node = collection[k];
         var leaves = node.leaves;
-        var pos = 0;
+        var pos = -1;
         for(var i= 0; i < leaves.length; i++){
             if(leaves[i].id() === shape.id()) pos = i;
         }
-        leaves.splice(pos,1);
+        if(pos > -1)
+            leaves.splice(pos,1);
         //node.bbox = this.calcBbox(node.leaves);
         //this.updateSprite(node);
         //node = node.parent;
         while(node){
             //if(node.parent === null) break;
             if(!node.children)       continue;
-            var cnode0 = node.children[0];
-            var cnode1 = node.children[1];
-            //node.bbox = this.compositeBbox(cnode0.bbox, cnode1.bbox);
             this.updateSprite(node);
             node.dirty = true;
             delete node.imageCache;
@@ -2169,14 +2175,39 @@ CanvasRenderer.prototype.unselect = function (gobs) {
     this.selectedSet.forEach(function(e,i,d){
         if(e.dirty)
             me.move_shape(e.gob);
-        //me.quadtree.insert(e)
+        me.quadtree.insert(e)
     });
 
     this.editLayer.removeChildren();
 };
 
+CanvasRenderer.prototype.destroy = function (gobs) {
+    //var shape = gobs.shape;
+    var me = this;
+
+    this.bbCorners.forEach(function(e,i,d){
+        e.remove(); //remove all current corners
+        e.off('mousedown');
+        e.off('dragmove');
+        e.off('mouseup');
+    });
+
+    if(this.shapeCorners){
+        this.shapeCorners.forEach(function(e,i,d){
+            e.remove(); //remove all current corners
+            e.off('mousedown');
+            e.off('dragmove'); //kill their callbacks
+            e.off('mouseup');
+        });
+    }
+    this.editLayer.removeChildren();
+
+};
+
+
 CanvasRenderer.prototype.unselectCurrent = function(){
     this.unselect(this.selectedSet);
+
 };
 
 CanvasRenderer.prototype.rerender = function (gobs, params) {
@@ -2252,11 +2283,14 @@ CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
     poly.on('mousedown', function(evt) {
         //select(view, gob);
         if(me.mode === 'delete'){
-            me.quadtree.remove(gob.shape);
+            //me.quadtree.remove(gob.shape);
+            gob.isDestroyed = true;
             me.delete_fun(gob);
             return;
         }
+
         else if(me.mode != 'edit') return;
+
         evt.evt.cancelBubble = true;
         poly.shape.clearCache();
 
@@ -2389,11 +2423,11 @@ CanvasRenderer.prototype.hideShape = function (gob, view) {
 
 
     if (shape) {
-        this.unselect(this.selectedSet);
+        this.destroy(this.selectedSet);
         this.selectedSet = [];
         //shape.sprite.hide();
         shape.destroy();
-        //delete shape;
+        delete shape;
     }
     this.draw();
 };
@@ -2530,6 +2564,11 @@ CanvasRenderer.prototype.label = function (visitor, gob,  viewstate, visibility)
 
 CanvasRenderer.prototype.getPointSize = function () {
     return this.pointSize;
+};
+
+CanvasRenderer.prototype.getMergedCanvas = function () {
+    this.unselectCurrent();
+    return this.currentLayer.canvas._canvas;
 };
 
 /*
