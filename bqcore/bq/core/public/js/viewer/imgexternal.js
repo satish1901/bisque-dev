@@ -25,17 +25,8 @@ function ImgExternal (viewer,name){
                 border: true, //default
                 showGobjects: true,
                 handler: function() {
-						var level = this.imgCurrentView.getCurrentLevel();
-						this.imgCurrentView.setLevel(level);
-						
-						function callback(canvas_view) {
-							var url = canvas_view.toDataURL("image/png");
-							window.open(url);
-						}
-						
-						var canvas_view = this.imgCurrentView.returnCurrentView(callback);
-
-                    },
+                    this.getCurrentView(0)
+                },
                 
                 menu   : {
                     //hidden: true,
@@ -47,16 +38,8 @@ function ImgExternal (viewer,name){
                         text: '100%',
 						itemId : 'menu_viewer_export_view_button_100',
                         handler: function() {
-							var level = this.imgCurrentView.getCurrentLevel();
-							this.imgCurrentView.setLevel(level);
-							
-							function callback(canvas_view) {
-								var url = canvas_view.toDataURL("image/png");
-								window.open(url);
-							}
-							
-							var canvas_view = this.imgCurrentView.returnCurrentView(callback);
-						},
+                            this.getCurrentView(0)
+                        },
                         scope: this,
                         //checked: false,
                         //hideOnClick : false,
@@ -67,16 +50,8 @@ function ImgExternal (viewer,name){
                         text: '200%',
 						itemId : 'menu_viewer_export_view_button_200',
                         handler: function(){
-							var level = this.imgCurrentView.getCurrentLevel();
-							this.imgCurrentView.setLevel(level - 1);
-							
-							function callback(canvas_view) {
-								var url = canvas_view.toDataURL("image/png");
-								window.open(url);
-							}
-							
-							var canvas_view = this.imgCurrentView.returnCurrentView(callback);
-						},
+                            this.getCurrentView(1)
+                        },
                         scope: this,
                         //checked: true,
                         //hideOnClick : false,
@@ -87,16 +62,8 @@ function ImgExternal (viewer,name){
                         text: '400%',
 						itemId : 'menu_viewer_export_view_button_400',
                         handler: function(){
-							var level = this.imgCurrentView.getCurrentLevel();
-							this.imgCurrentView.setLevel(level - 2);
-							
-							function callback(canvas_view) {
-								var url = canvas_view.toDataURL("image/png");
-								window.open(url);
-							}
-							
-							var canvas_view = this.imgCurrentView.returnCurrentView(callback);
-						},
+                            this.getCurrentView(2)
+                        },
                         scope: this,
                         //checked: false,
                         //hideOnClick : false,
@@ -202,22 +169,43 @@ ImgExternal.prototype.newImage = function () {
 
 };
 
+/*
+*   getCurrentView
+*
+*       Runs currentView plugin in imgExternal
+*
+*       @param: levelDiff - sets the currentView level 
+*/
+ImgExternal.prototype.getCurrentView = function(levelDiff) {
+
+    var level = this.imgCurrentView.getCurrentLevel();
+    this.imgCurrentView.setLevel(level-levelDiff);
+    
+    function callback(canvas_view) {
+        var url = canvas_view.toDataURL("image/png");
+        window.open(url);
+    }
+    
+    var canvas_view = this.imgCurrentView.returnCurrentView(callback);
+    
+};
+
 
 ImgExternal.prototype.updateImage = function () {
 
 	//set the options for the export at different scales
 	if (this.imgCurrentView && this.viewer.toolbar) {
 		var level = this.imgCurrentView.getCurrentLevel(); //level can not drop below 0
-		var m200 = this.viewer.toolbar.queryById('menu_viewer_export_view_button_200');
-		var m400 = this.viewer.toolbar.queryById('menu_viewer_export_view_button_400');
+		var currentView200 = this.viewer.toolbar.queryById('menu_viewer_export_view_button_200');
+		var currentView400 = this.viewer.toolbar.queryById('menu_viewer_export_view_button_400');
 		if (level) {
-			if (level<1) m200.setDisabled(true);
-			else m200.setDisabled(false);
-			if (level<2) m400.setDisabled(true);
-			else m400.setDisabled(false);
+			if (level<1) currentView200.setDisabled(true);
+			else currentView200.setDisabled(false);
+			if (level<2) currentView400.setDisabled(true);
+			else currentView400.setDisabled(false);
 		} else {
-			m200.setDisabled(true);
-			m400.setDisabled(true);
+			currentView200.setDisabled(true);
+			currentView400.setDisabled(true);
 		}
 	}
 	

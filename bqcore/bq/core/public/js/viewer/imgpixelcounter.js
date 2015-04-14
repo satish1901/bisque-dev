@@ -235,37 +235,30 @@ ImgPixelCounter.prototype.updateCanvas = function() {
 */
 ImgPixelCounter.prototype.updateThresholdCanvas = function() {
 	if (this.canvas_theshold) {
-		var renderer = this.viewer.plugins_by_name['renderer'];
-		var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer;
-		var ctx_thresh = this.canvas_theshold.getContext("2d");
-		
-		//set transparency of the threshold convas to the location of the view
-		ctx_thresh.fillStyle = 'rgba(67, 67, 67, 0)';
-		ctx_thresh.fillRect(0, 0, this.canvas_theshold.width, this.canvas_theshold.height); //set all transparent
-		
-		var width = parseInt(renderer.overlay.style.width, 10);
-		var height = parseInt(renderer.overlay.style.height, 10);
-		
+        //var renderer = this.viewer.plugins_by_name['renderer'];
+        var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer;
+        var view_scale = this.viewer.view().scale;
+        var width = Math.floor(tiled_viewer.image_size.width * view_scale);
+        var height = Math.floor(tiled_viewer.image_size.height * view_scale);
+        var left = tiled_viewer.x;
+        var top = tiled_viewer.y;
+        
+        
 		//getting the viewer offsets
-		if (parseInt(renderer.overlay.style.left, 10)>0)
-			var xoffset = parseInt(renderer.overlay.style.left, 10);
-		else {
-			var xoffset = 0;
+		var xoffset = left>0?left:0;
+        var yoffset = top>0?top:0;
+        
+		if (top + height > tiled_viewer.height) {
+			var height = height - (top + height - tiled_viewer.height);
 		}
 		
-		if (parseInt(renderer.overlay.style.top, 10)>0)
-			var yoffset = parseInt(renderer.overlay.style.top, 10);
-		else {
-			var yoffset = 0;
+		if (left + width > tiled_viewer.width) {
+			var width = width - (left + width - tiled_viewer.width);
 		}
-		if ((parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10)) > tiled_viewer.height) {
-			var height = height - (parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10) - tiled_viewer.height);
-		}
-		
-		if ((parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10)) > tiled_viewer.width) {
-			var width = width - (parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10) - tiled_viewer.width);
-		}
-		
+
+		var ctx_thresh = this.canvas_theshold.getContext("2d");
+		ctx_thresh.fillStyle = 'rgba(67, 67, 67, 0)';
+		ctx_thresh.fillRect(0, 0, this.canvas_theshold.width, this.canvas_theshold.height); //set all transparent		
 		ctx_thresh.fillStyle = 'rgba(67, 67, 67, 1)';
 		ctx_thresh.fillRect(xoffset, yoffset, width, height); //set view none transparent
 		this.thresholdImage(this.pixelCounterPanel.thresholdValue);
@@ -969,34 +962,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                 },
             },
         ];
-		/*
-		var me = this;
-		this.infoContainer = Ext.create('Ext.container.Container', {
-			layout: {
-				type: 'hbox',
-				align: 'stretch'
-			},
-			items: [{
-				xtype: 'container',
-				layout: {
-					type: 'hbox',
-					align: 'stretch'
-				},				
-				title: 'Global Counts',
-				items: [me.globalCountInfo],
-			},{
-				xtype: 'container',
-				title: 'Region Counts',
-				layout: {
-					type: 'hbox',
-					align: 'stretch'
-				},
-				items: [me.regionCountInfo, me.regionCountGrid]
-			}]
-		});
-		*/
 		this.items.push(this.thresholdSlider);
-		//this.items.push(this.infoContainer);
 		this.items.push(this.globalCountInfo);
         this.items.push(this.regionCountInfo);
         this.items.push(this.regionCountGrid);
