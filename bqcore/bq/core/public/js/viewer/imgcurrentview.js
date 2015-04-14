@@ -31,7 +31,7 @@ function ImgCurrentView(viewer, opt){
 	
 	this.opt = {} //set up options if not provided a default is given
 	
-	this.opt.wGobjects = false;//(typeof opt.wGobjects === 'boolean')  ?  opt.wGobjects:false;
+	this.opt.wGobjects = (typeof opt.wGobjects === 'boolean')  ?  opt.wGobjects:true;
 	this.opt.wBorders = (typeof opt.wBorders === 'boolean')  ?  opt.wBorders:false;
 	this.opt.wScaleBar = (typeof opt.wScaleBar === 'boolean')  ?  opt.wScaleBar:true;
 	
@@ -44,29 +44,12 @@ function ImgCurrentView(viewer, opt){
 *	@return - canvas with the gobject overlaid 
 */
 ImgCurrentView.prototype.drawGobjects = function(canvas_view) {
-	
 	var logScale = this.getlogScale();
 	var scale = Math.pow(2,logScale);
 	var renderer = this.viewer.plugins_by_name['renderer'];
-	var svgimg = new Image();
-	var serializer = new XMLSerializer();
-	var svg_data = renderer.svgdoc.cloneNode(true);
-	
-	//remove offsets
-	var xoffset = svg_data.style.left;
-	var yoffset = svg_data.style.top;
-	svg_data.setAttribute('style', 'position: absolute; top: 0px; left: 0px; width: ' + parseInt(svg_data.style.width)+'px; height: ' + parseInt(svg_data.style.height)+'px');
-	svg_data.setAttribute('id','');
-	svg_data.setAttribute('width', scale*parseInt(svg_data.style.width));
-	svg_data.setAttribute('height', scale*parseInt(svg_data.style.height));
-	svg_data.getElementsByTagName('g')[0].setAttribute("transform", "scale(" + scale + ")");
-	
-	
-	var svgStr = serializer.serializeToString(svg_data);
-	svgimg.src = 'data:image/svg+xml;base64,' + window.btoa(svgStr); //will not handle a lot of gobjects
-	
-	var ctx_view = canvas_view.getContext('2d');
-	ctx_view.drawImage(svgimg, scale*parseInt(xoffset), scale*parseInt(yoffset), scale*parseInt(svg_data.style.width), scale*parseInt(svg_data.style.height));
+    gobject_view = renderer.getMergedCanvas();
+    var ctx_view = canvas_view.getContext('2d');
+	ctx_view.drawImage(gobject_view, 0, 0, scale*gobject_view.width,scale*gobject_view.height);
 	return canvas_view;
 }
 
@@ -82,40 +65,54 @@ ImgCurrentView.prototype.drawGobjects = function(canvas_view) {
 ImgCurrentView.prototype.cropBorders = function (canvas_view) {
 
 	var logScale = this.getlogScale();
-	var scale = Math.pow(2,logScale);
+	var scale = Math.pow(2, logScale);
 	var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
-	var renderer = this.viewer.plugins_by_name['renderer'];
 	
-	var width = parseInt(renderer.overlay.style.width, 10);
-	var height = parseInt(renderer.overlay.style.height, 10);
-	
-	if (parseInt(renderer.overlay.style.left, 10)>0)
-		var xoffset = -parseInt(renderer.overlay.style.left, 10);
-	else {
+    var tile_height = parseInt(tiled_viewer.height);
+    var tile_width = parseInt(tiled_viewer.width);
+    var view_scale = this.viewer.view().scale;
+	var width = Math.floor(tiled_viewer.image_size.width * view_scale); 
+	var height = Math.floor(tiled_viewer.image_size.height * view_scale);
+    var left = tiled_viewer.x; 
+    var top = tiled_viewer.y; 
+    
+    var canvas_width = width;
+	var canvas_height = height
+    
+    //crop left
+	if (left>0) {
+		var xoffset = -left;
+	} else {
 		var xoffset = 0;
-		width = width + parseInt(renderer.overlay.style.left, 10);
+		canvas_width = canvas_width + left;
 	}
 	
-	if (parseInt(renderer.overlay.style.top, 10)>0)
-		var yoffset = -parseInt(renderer.overlay.style.top, 10);
-	else {
+    //crop top
+	if (top>0) {
+		var yoffset = -top;
+	} else {
 		var yoffset = 0;
-		height = height + parseInt(renderer.overlay.style.top, 10);
+		canvas_height = canvas_height + top;
 	}
 	
-	if ((parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10)) > tiled_viewer.height) {
-		height = height - (parseInt(renderer.overlay.style.top, 10) + parseInt(renderer.overlay.style.height, 10) - tiled_viewer.height);
+    //crop bottom
+	if ((top + canvas_height) > tile_height) {
+		canvas_height = canvas_height - (top + height - tile_height);
 	}
 	
-	if ((parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10)) > tiled_viewer.width) {
-		width = width - (parseInt(renderer.overlay.style.left, 10) + parseInt(renderer.overlay.style.width, 10) - tiled_viewer.width);
+    //crop right
+	if ((left + canvas_width) > tiled_viewer.width) {
+		canvas_width = canvas_width - (left + width - tile_width);
 	}
 	
+    //create cropped canvas
 	var canvas_border = document.createElement('canvas');
-	canvas_border.width = scale*width;
-	canvas_border.height = scale*height;
+	canvas_border.width = scale*canvas_width;
+	canvas_border.height = scale*canvas_height;
+    
+    //apply image to cropped canvas
 	var ctx_border = canvas_border.getContext('2d');
-	ctx_border.drawImage(canvas_view, scale*xoffset, scale*yoffset, scale*parseInt(tiled_viewer.width), scale*parseInt(tiled_viewer.height));
+	ctx_border.drawImage(canvas_view, scale*xoffset, scale*yoffset, scale*tile_width, scale*tile_height);
 	return canvas_border;
 }
 
@@ -136,10 +133,11 @@ ImgCurrentView.prototype.drawScaleBar = function(canvas_view) {
 		var scalebar_size = scalebar.scalebar.widget.getBoundingClientRect();
 		var viewer_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
 		var svg_box = this.viewer.plugins_by_name['renderer'].svgimg.getBoundingClientRect() //gets the full image view
-		var viewer_top = this.viewer.plugins_by_name['tiles'].tiled_viewer.y;
-		var viewer_left = this.viewer.plugins_by_name['tiles'].tiled_viewer.x;
-		var viewer_width = this.viewer.plugins_by_name['tiles'].tiled_viewer.width;
-		var viewer_height = this.viewer.plugins_by_name['tiles'].tiled_viewer.height;
+        var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer;
+		var viewer_top = tiled_viewer.y;
+		var viewer_left = tiled_viewer.x;
+		var viewer_width = tiled_viewer.width;
+		var viewer_height = tiled_viewer.height;
 		
 		if (svg_box.top - viewer_size.top <= scalebar_size.top - viewer_size.top &&
 			svg_box.left - viewer_size.left <= scalebar_size.left - viewer_size.left &&
@@ -294,7 +292,10 @@ ImgCurrentView.prototype.divideTile = function(tile) {
 	
 	function createNewTile(xOffset, yOffset, width, height, lvl, xTile, yTile) {
 		return { 
-			style : {top: yOffset, left: xOffset},
+			style : {
+                top: yOffset, 
+                left: xOffset
+            },
 			width: width,
 			height: height,
 			level: lvl,
@@ -383,8 +384,8 @@ ImgCurrentView.prototype.returnCurrentView = function(cb) {
     canvas_view.height = Math.pow(2,logScale)*control_surface_size.height;
     canvas_view.width = Math.pow(2,logScale)*control_surface_size.width;
     var ctx_view = canvas_view.getContext("2d");
-    ctx_view.fillStyle = 'rgba(67, 67, 67, 1)'//"#FF0000";
-    ctx_view.fillRect(0, 0, canvas_view.width, canvas_view.height); 
+    ctx_view.fillStyle = 'rgba(67, 67, 67, 1)'//"#FF0000"; //the background of the image
+    ctx_view.fillRect(0, 0, canvas_view.width, canvas_view.height);
     
 	//scaled images in view
 	var inViewImagesScaled = [];
@@ -421,10 +422,6 @@ ImgCurrentView.prototype.returnCurrentView = function(cb) {
 				if (!me.opt.wBorders) canvas_view = me.cropBorders(canvas_view);
 				if (me.opt.wScaleBar) canvas_view = me.drawScaleBar(canvas_view);
 				if (cb) cb(canvas_view); //run call back
-				//var url = canvas_view.toDataURL("image/png");
-				//window.open(url)
-				//var data = canvas_view.toDataURL("image/png").replace("image/png", "image/octet-stream");
-				//window.location.href = data;
 			}
 		}.bind(img));
 		

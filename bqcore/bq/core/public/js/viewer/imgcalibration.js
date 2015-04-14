@@ -696,6 +696,7 @@ Ext.define('BQ.viewer.Calibration', {
     },
 
     updateReferenceLength: function() {
+        var me = this;
         var gobjects = this.imageCalibForm.formComponents['imgViewer'].getGobjects();
         var estimated = this.imageCalibForm.formComponents['reference_length'].getValue();
         var xform = me.imageMetaForm.formComponents['pixel_resolution_x'].getForm().findField('pixel_resolution_x'); 
