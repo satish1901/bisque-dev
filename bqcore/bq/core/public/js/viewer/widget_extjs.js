@@ -112,6 +112,7 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.ondone    = callback(this, 'ondone');
         this.parameters.onerror   = callback(this, 'onerror');
         this.parameters.onselect  = callback(this, 'onselect');
+        this.parameters.onhover   = callback(this, 'onhover');
         this.parameters.onloaded  = callback(this, this.onloaded);
         this.parameters.onphys    = callback(this, this.onphys);
         this.parameters.oneditcontrols = callback(this, this.oneditcontrols);
@@ -173,6 +174,11 @@ Ext.define('BQ.viewer.Image', {
             BQ.ui.error(error.message_short);
     },
 
+    onhover : function(gob, e) {
+        //console.log(gob,e);
+        this.fireEvent( 'hover', this, gob, e );
+    },
+
     onselect : function(gob) {
         this.fireEvent( 'select', this, gob );
     },
@@ -190,4 +196,3 @@ Ext.define('BQ.viewer.Image', {
     },
 
 });
-

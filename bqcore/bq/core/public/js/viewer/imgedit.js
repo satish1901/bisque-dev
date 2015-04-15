@@ -43,6 +43,7 @@ ImgEdit.prototype = new ViewerPlugin();
 ImgEdit.prototype.newImage = function () {
     this.renderer = this.viewer.renderer;
     this.renderer.set_select_handler( callback(this, this.on_selected) );
+    this.renderer.set_hover_handler( callback(this, this.on_hover) );
     this.renderer.set_move_handler( callback(this, this.on_move) );
     this.gobjects = this.viewer.image.gobjects;
     this.visit_render = new BQProxyClassVisitor (this.renderer);
@@ -217,6 +218,7 @@ ImgEdit.prototype.startEdit = function () {
 
     //this.renderer.setmousedown(null);
     this.renderer.setmousedown(callback(this, this.mousedown));
+    this.renderer.set_select_handler(callback(this, this.on_selected));
     this.surface_original_onmousedown = this.viewer.viewer_controls_surface.onmousedown;
     this.viewer.viewer_controls_surface.onmousedown = callback(this, this.mousedown);
 
@@ -248,7 +250,7 @@ ImgEdit.prototype.endEdit = function () {
     if (this.surface_original_onmousedown)
         this.viewer.viewer_controls_surface.onmousedown = this.surface_original_onmousedown;
     this.renderer.setmousedown(null);
-    //this.renderer.setmousemove(null);
+    this.renderer.setmousemove(null);
     //this.renderer.setdblclick(null);
     //this.viewer.viewer_controls_surface.ondblclick = null;
 
@@ -307,15 +309,38 @@ ImgEdit.prototype.mousemove = function (e) {
     //console.log(this, e);
     if (!e) e = window.event;  // IE event model
     if (e == null) return;
-
-    if (!(e.target===this.renderer.svgdoc ||
-          e.target===this.renderer.svggobs ||
-          (this.current_gob && e.target===this.current_gob.shape.svgNode))) return;
+    var me = this;
+    var evt = e.evt ? e.evt : e;
+    //if (!(e.target===this.renderer.svgdoc ||
+     //     e.target===this.renderer.svggobs ||
+     //     (this.current_gob && e.target===this.current_gob.shape.svgNode))) return;
 
     var view = this.viewer.current_view,
-        p = this.renderer.getUserCoord(e),
-        pt = view.inverseTransformPoint(p.x, p.y);
+    p = this.renderer.getUserCoord(e),
+    pt = view.inverseTransformPoint(p.x, p.y);
     this.viewer.print_coordinate(pt, true, true);
+
+    if(!this.trackpt)
+        this.trackpt = pt;
+
+    var tpt = this.trackpt;
+    var dpt = {x: pt.x - tpt.x, y: pt.y - tpt.y};
+    var dl = dpt.x*dpt.x + dpt.y*dpt.y;
+
+    this.trackpt = pt;
+    if(this.hoverTimeout) clearTimeout(this.hoverTimeout);
+    if(dl < 2){
+        this.hoverTimeout = setTimeout(function(){
+            var shape = me.renderer.findNearestShape(tpt.x, tpt.y);
+            if(shape){
+                evt.type = 'hover';
+                me.viewer.parameters.onhover(shape.gob, evt);
+                //console.log(shape);
+            }
+
+            //me.onhover(e);
+        },750);
+    }
 };
 
 /*ImgEdit.prototype.mousedblclick = function (e) {

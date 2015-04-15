@@ -1388,13 +1388,16 @@ CanvasRenderer.prototype.enable_edit = function (enabled) {
     this.rendered_gobjects = gobs;
 };
 
+CanvasRenderer.prototype.findNearestShape = function(x,y){
+    var node = this.quadtree.nodes[0];
+    var scale = this.stage.scale().x;
+    var w = 4/scale;
+    var shapes = this.quadtree.collectObjectsInRegion({min:[x-w, y-w], max: [x+w, y+w]}, node);
+    return shapes[0];
+},
 
 CanvasRenderer.prototype.getUserCoord = function (e ){
-    var evt;
-
-
-    if(e.evt)
-        evt = e.evt;
+    var evt = e.evt ? e.evt : e;
     var x = evt.offsetX==undefined?evt.layerX:evt.offsetX;
     var y = evt.offsetY==undefined?evt.layerY:evt.offsetY;
     var scale = this.stage.scale();
@@ -1407,18 +1410,6 @@ CanvasRenderer.prototype.getUserCoord = function (e ){
     return {x: x, y: y};
 	//return mouser.getUserCoordinate(this.svgimg, e);
     //the old command got the e.x, e.y and applied a transform to localize them to the svg area using a matrix transform.
-};
-
-CanvasRenderer.prototype.addHandler = function (ty, cb){
-    //console.log ("addHandler " + ty + " func " + cb);
-    if (cb) {
-        //tremovehis.svgimg.addEventListener (ty, cb, false);
-        this.stage.on(ty,cb);
-        this.events[ty] = cb;
-    }else{
-        this.stage.off(ty);
-        //this.svgimg.removeEventListener (ty, this.events[ty], false);
-    }
 };
 
 CanvasRenderer.prototype.setMode = function (mode){
@@ -1439,7 +1430,17 @@ CanvasRenderer.prototype.setMode = function (mode){
 
 };
 
-
+CanvasRenderer.prototype.addHandler = function (ty, cb){
+    //console.log ("addHandler " + ty + " func " + cb);
+    if (cb) {
+        //tremovehis.svgimg.addEventListener (ty, cb, false);
+        this.stage.on(ty,cb);
+        this.events[ty] = cb;
+    }else{
+        this.stage.off(ty);
+        //this.svgimg.removeEventListener (ty, this.events[ty], false);
+    }
+};
 
 CanvasRenderer.prototype.setmousedown = function (cb ){
     this.addHandler ("mousedown", cb );
@@ -2228,6 +2229,11 @@ CanvasRenderer.prototype.is_selected = function (gob){
     if (gob.shape)
         return gob.shape.selected;
     return false;
+};
+
+
+CanvasRenderer.prototype.set_hover_handler = function (callback){
+    this.select_callback = callback;
 };
 
 CanvasRenderer.prototype.set_select_handler = function (callback){
