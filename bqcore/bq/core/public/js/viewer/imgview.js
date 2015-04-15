@@ -623,6 +623,9 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
 
 ImgViewer.prototype.color_gobject = function(gob, color) {
     this.renderer.setcolor(gob, color);
+    var t = gob.addtag(new BQTag(null, 'color', color, 'color'));
+    t.save_reload(gob.uri);
+    console.log(gob.uri + '?view=deep');
 };
 
 ImgViewer.prototype.delete_gobjects = function(gobs) {

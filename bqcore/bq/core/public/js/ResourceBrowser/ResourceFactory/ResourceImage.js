@@ -550,6 +550,29 @@ Ext.define('Bisque.Resource.Image.Page', {
                 loaded: function(vc) {
                     var editor = vc.viewer.editor;
                     this.gobjectTagger.on('createGob', editor.onCreateGob, editor);
+                    var panel = this.queryById('main_view_2d');
+                    if(!this.hoverMenu)
+                        this.hoverMenu = Ext.create('Ext.Tip', {
+			                target : panel.getEl(),
+			                anchor : 'top',
+			                anchorToTarget : true,
+			                maxWidth : 460,
+			                width : 300,
+			                height : 300,
+
+                            closable : true,
+			                layout : {
+				                type : 'fit',
+                                //align: 'stretch',
+			                },
+                            /*
+                            items: {xtype: 'bq-tagger',
+                                     itemId: 'hover-tagger',
+                                     width: 270,
+                                     height: 300}
+                            */
+		                });//.hide();
+                    this.hoverMenu.hide();
                 },
                 changed : function(me, gobjects) {
                     this.gobjectTagger.tree.getView().refresh();
@@ -585,6 +608,84 @@ Ext.define('Bisque.Resource.Image.Page', {
                         map.positionMarker(pt);
                     }
                 },
+                hover: function(panel, gob, e){
+
+                    GetPropertyGrid = function(configOpts, source)
+                    {
+                        var propsGrid = Ext.create('Ext.grid.Panel',
+                                                 {
+                                                     autoHeight : configOpts.autoHeight,
+                                                     style : "text-overflow:ellipsis;"+configOpts.style,
+                                                     width : configOpts.width,
+                                                     store : Ext.create('Ext.data.Store',
+                                                                        {
+                                                                            model: 'Ext.grid.property.Property',
+                                                                            data: source
+                                                                        }),
+                                                     border : false,
+                                                     padding : 1,
+                                                     multiSelect: true,
+                                                     plugins : new Ext.ux.DataTip(
+                                                         {
+                                                             tpl : '<div>{value}</div>'
+                                                         }),
+
+                                                     columns:
+                                                     [{
+                                                         text: 'Tag',
+                                                         flex: 0.8,
+                                                         dataIndex: 'name'
+                                                     },
+                                                      {
+                                                          text: 'Value',
+                                                          flex: 1,
+                                                          dataIndex: 'value'
+                                                      }]
+                                                 });
+
+                        return propsGrid;
+                    },
+
+                    tagData  = function(gob) {
+                        //this.tagsLoaded = true;
+                        //this.resource.tags = data.tags;
+
+                        var tagArr = [], tags = {
+                        }, found = '';
+
+                        for (var key in gob.attributes) {
+                            console.log(key, gob.attributes[key]);
+                            tagArr.push(new Ext.grid.property.Property({
+                                name : key,
+                                value : gob.attributes[key]
+                            }));
+                        }
+
+                        var propsGrid = this.GetPropertyGrid({
+                            width : 270
+                        }, tagArr);
+
+                        propsGrid.title = 'Gobject Attributes';
+                        return propsGrid;
+                    }
+
+                    var propsGrid = tagData(gob);
+                    this.hoverMenu.removeAll();
+                    this.hoverMenu.add(propsGrid);
+
+                    this.hoverMenu.show();
+                    this.hoverMenu.setX(e.clientX+15);
+                    this.hoverMenu.setY(e.clientY-10);
+                    //var tagger = this.hoverMenu.queryById('hover-tagger');
+                    //tagger.setResource(gob);
+
+                    //if(this.hoverMenu.getEl()){
+                    //
+                    //}
+
+                    //console.log(panel.hoverMenu);
+                },
+
                 loadedPhys: this.onImagePhys,
                 working : this.onworking,
                 done    : this.ondone,
