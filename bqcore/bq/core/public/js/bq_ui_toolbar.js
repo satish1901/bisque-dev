@@ -533,7 +533,8 @@ Ext.define('BQ.Application.Toolbar', {
                     cls: 'toolbar-menu',
                     plain: true,
                     items: [{
-                        xtype: 'bq-resource-browser',
+                        //xtype: 'bq-resource-browser',
+                        xtype: 'bq-module-browser',
                         itemId: 'analysis_browser',
                         width :  w,
                         height:  h,

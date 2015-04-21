@@ -679,5 +679,37 @@ Ext.define('BQ.grid.ModuleGroups', {
 });
 
 
+//-----------------------------------------------------------------------
+// wrapper for module browser to only load data after render
+//-----------------------------------------------------------------------
 
+Ext.define('Bisque.ModuleBrowser.Browser', {
+    extend: 'Ext.container.Container',
+    alias: 'widget.bq-module-browser',
+    layout: 'fit',
+
+    afterRender : function() {
+        this.callParent();
+        this.add({
+            xtype: 'bq-resource-browser',
+            itemId: 'analysis_organizer',
+            layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
+            wpublic: true,
+            selType: 'SINGLE',
+            viewMode: 'ModuleBrowser',
+            //showOrganizer: true,
+            showModuleOrganizer: true,
+            //dataset : '/module_service/',
+            dataset: '/data_service/module',
+            wpublic: 'true',
+            /*listeners : {
+                scope: this,
+                Select : this.dispatch_module,
+            }*/
+        });
+        this.relayEvents(this.queryById('analysis_organizer'), ['Select']);
+    },
+
+
+});
 
