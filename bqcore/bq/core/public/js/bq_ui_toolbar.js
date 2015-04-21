@@ -1085,20 +1085,14 @@ Ext.define('BQ.Application.Toolbar', {
             a.menu[0].tagQuery = q;
             a.menu[0].wpublic = 'true';
         } else {
-            if (!a.preferences) {
-                a.browserParams.dataset = '/data_service/module';
-                a.browserParams.tagQuery = q;
-                a.browserParams.wpublic = 'true';
-            } else {
-                a.loadData({
-                    baseURL: '/data_service/module',
-                    dataset: '/data_service/module',
-                    offset: 0,
-                    tag_order: '"@ts":desc',
-                    tag_query: q,
-                    wpublic: 'true',
-                });
-            }
+            a.initQuery({
+                baseURL: '/data_service/module',
+                dataset: '/data_service/module',
+                offset: 0,
+                tag_order: '"@ts":desc',
+                tag_query: q,
+                wpublic: 'true',
+            });
         }
     },
 
