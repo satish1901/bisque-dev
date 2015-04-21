@@ -693,23 +693,51 @@ Ext.define('Bisque.ModuleBrowser.Browser', {
         this.add({
             xtype: 'bq-resource-browser',
             itemId: 'analysis_organizer',
+
             layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.IconList,
-            wpublic: true,
             selType: 'SINGLE',
             viewMode: 'ModuleBrowser',
             //showOrganizer: true,
             showModuleOrganizer: true,
-            //dataset : '/module_service/',
-            dataset: '/data_service/module',
-            wpublic: 'true',
-            /*listeners : {
-                scope: this,
-                Select : this.dispatch_module,
-            }*/
+
+            baseURL: this.baseURL || '/data_service/module',
+            dataset: this.dataset || '/data_service/module',
+            offset: this.offset || 0,
+            tag_order: this.tag_order || '"@ts":desc',
+            tag_query: this.tag_query,
+            wpublic: this.wpublic || 'true',
+
         });
         this.relayEvents(this.queryById('analysis_organizer'), ['Select']);
     },
 
+    initQuery : function(q) {
+        var a = this.queryById('analysis_organizer');
+        if (!a) {
+            this.baseURL   = q.baseURL || this.baseURL;
+            this.dataset   = q.dataset || this.dataset;
+            this.offset    = q.offset || this.offset;
+            this.tag_order = q.tag_order || this.tag_order;
+            this.tag_query = q.tag_query || this.tag_query;
+            this.wpublic   = q.wpublic || this.wpublic;
+            return;
+        }
+
+        if (!a.preferences) {
+            a.browserParams.dataset = q.dataset || this.dataset;
+            a.browserParams.tagQuery = q.tag_query;
+            a.browserParams.wpublic = q.wpublic || this.wpublic;
+        } else {
+            a.loadData({
+                baseURL: q.baseURL || this.baseURL,
+                dataset: q.dataset || this.dataset,
+                offset: q.offset || this.offset,
+                tag_order: q.tag_order || this.tag_order,
+                tag_query: q.tag_query,
+                wpublic: q.wpublic || this.wpublic,
+            });
+        }
+    },
 
 });
 
