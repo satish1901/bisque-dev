@@ -62,6 +62,7 @@ The bisque server
     dataset_service  = bq.dataset_service.controllers.dataset_service
     usage            = bq.usage.controllers.usage
     graph            = bq.graph.controllers.graph
+    preference       = bq.preference.controllers.service
 
 
     [bq.commands]
