@@ -242,7 +242,7 @@ class AdminController(ServiceController):
                     <tag name="email" value="myemail@email.com"/>
                     <tag name="display_name" value="user"/>
                     <tag name="password" value="******"/> //everything will be served in plan text no password will be returned
-                    <tag name="image_count" value="0"/>
+                    ...
                 </user>
         """
         #u = data_service
