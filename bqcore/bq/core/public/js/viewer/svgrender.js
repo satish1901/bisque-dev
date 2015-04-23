@@ -28,7 +28,6 @@ function SVGRenderer (viewer,name) {
     var p = viewer.parameters || {};
     //this.default_showOverlay           = p.rotate          || 0;   // values: 0, 270, 90, 180
     this.default_showOverlay   = false;
-
     this.base = ViewerPlugin;
     this.base (viewer, name);
     this.events  = {};
@@ -36,27 +35,28 @@ function SVGRenderer (viewer,name) {
 SVGRenderer.prototype = new ViewerPlugin();
 
 SVGRenderer.prototype.create = function (parent) {
-    this.svgdoc = document.createElementNS(svgns, "svg");
+    /*this.svgdoc = document.createElementNS(svgns, "svg");
     this.svgdoc.setAttributeNS(null, 'class', 'gobjects_surface');
     this.svgdoc.setAttributeNS(null, 'id', 'gobjects_surface');
     parent.appendChild(this.svgdoc);
     this.svgdoc.style.position = "absolute";
     this.svgdoc.style.top = "0px";
-    this.svgdoc.style.left = "0px";
+    this.svgdoc.style.left = "0px";*/
 
     this.overlay = document.createElementNS(svgns, "svg");
     this.overlay.setAttributeNS(null, 'class', 'gobjects_overlay');
-    this.overlay.setAttributeNS(null, 'id', 'gobjects_overlay');
+    this.overlay.setAttributeNS(null, 'id', 'overlay');
     parent.appendChild(this.overlay);
     this.overlay.style.position = "absolute";
     this.overlay.style.top = "0px";
     this.overlay.style.left = "0px";
 
-
+    this.parent = parent;
     // KGK
     // KGK THESE ARE GLOBAL Variables REQUIRED CURRENTLY BY 2D.js
     // KGK Please REVIEW and REMOVE if possible.
-    _svgElement = this.svgdoc;
+    //_svgElement = this.svgdoc;
+    return parent;
 };
 
 SVGRenderer.prototype.enable_edit = function (enabled) {
@@ -120,6 +120,7 @@ SVGRenderer.prototype.setkeyhandler = function (cb, doadd ){
    }
 };
 
+/*
 SVGRenderer.prototype.newImage = function () {
     removeAllChildren (this.svgdoc);
     //this.svgimg = document.createElementNS(svgns, "image");
@@ -145,7 +146,7 @@ SVGRenderer.prototype.newImage = function () {
     marker.appendChild(circle);
     defs.appendChild(marker);
     this.svgdoc.appendChild(defs);
-
+    
     // define global g object for all svg elements
     this.svggobs = document.createElementNS(svgns, "g");
     this.svgdoc.appendChild(this.svggobs);
@@ -155,6 +156,7 @@ SVGRenderer.prototype.newImage = function () {
 
     this.visit_render = new BQProxyClassVisitor (this);
 };
+*/
 
 SVGRenderer.prototype.updateView = function (view) {
     if (this.initialized) return;
@@ -174,8 +176,8 @@ SVGRenderer.prototype.updateImage = function () {
     var viewstate = this.viewer.current_view;
     var url = this.viewer.image_url();
 
-    this.svgdoc.setAttributeNS( null, 'width', viewstate.width);
-    this.svgdoc.setAttributeNS( null, 'height', viewstate.height);
+    /*this.svgdoc.setAttributeNS( null, 'width', viewstate.width);
+    this.svgdoc.setAttributeNS( null, 'height', viewstate.height);*/
 
     this.overlay.setAttributeNS( null, 'width', viewstate.width);
     this.overlay.setAttributeNS( null, 'height', viewstate.height);
@@ -190,7 +192,7 @@ SVGRenderer.prototype.updateImage = function () {
     //this.svgimg.setAttributeNS( null, 'y', 0);
     //this.svgimg.setAttributeNS( null, 'width', viewstate.width);
     //this.svgimg.setAttributeNS( null, 'height', viewstate.height);
-
+/*
     var selected  = [];
     // Ensure no handle are left over.
     if (mouser)
@@ -201,6 +203,7 @@ SVGRenderer.prototype.updateImage = function () {
     this.rendered_gobjects = gobs;
     if (mouser)
         mouser.selectShapes(selected);
+        */
 };
 
 SVGRenderer.prototype.rerender = function (gobs, params) {
