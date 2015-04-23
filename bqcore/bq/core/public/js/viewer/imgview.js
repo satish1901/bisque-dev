@@ -352,7 +352,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
 
-    var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,dotsTemplateAdjuster,scalebar,progressbar,infobar,edit,renderer";
+    var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,scalebar,progressbar,infobar,overlay,edit,renderer";
     if ('onlyedit' in this.parameters)
         plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,edit,renderer";
     if ('simpleview' in this.parameters) {
@@ -370,13 +370,13 @@ function ImgViewer (parentid, image_or_uri, parameters) {
             "scalebar"    : ImgScaleBar,
             "progressbar" : ProgressBar,
             "infobar"     : ImgInfoBar,
-            "dotsTemplateAdjuster" : dotsTemplateAdjuster,
+            //"dotsTemplateAdjuster" : dotsTemplateAdjuster,
             "slicer"      : ImgSlicer,
             "edit"        : ImgEdit,
             "tiles"       : TilesRenderer, // TILES RENDERER MUST BE BEFORE SVGRenderer
             "ops"         : ImgOperations, // Ops should be after tiler
             "pixelcounter": ImgPixelCounter,
-            //"overlay"     : SVGRenderer,   // RENDERER MUST BE LAST
+            "overlay"     : SVGRenderer,
             "renderer"    : CanvasRenderer,   // RENDERER MUST BE LAST
 
         };
@@ -411,6 +411,7 @@ ImgViewer.prototype.getAttributes = function () {
 
 ImgViewer.prototype.init = function () {
     this.renderer = this.plugins_by_name.renderer;
+    this.overlay  = this.plugins_by_name.overlay;
     this.editor   = this.plugins_by_name.edit;
     this.tiles    = this.plugins_by_name.tiles;
     this.slicer   = this.plugins_by_name.slicer;
