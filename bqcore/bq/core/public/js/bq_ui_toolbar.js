@@ -160,8 +160,10 @@ Ext.define('BQ.Application.Toolbar', {
 
     tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep','menu_user_recover' ],
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs',
-                 'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', 'button_create', 'button_upload' ],
-    tools_admin: ['menu_user_admin_separator', 'menu_user_admin', 'menu_admin_page','menu_user_admin_prefs', ],
+                 'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', 'button_create', 'button_upload', 
+                  'menu_module', 'menu_module_developer','menu_preference', 'menu_user_admin_separator'], //chris's new stuff
+    tools_admin: ['menu_user_admin', 'menu_user_admin_prefs', 'menu_user_manager',
+                  'menu_system',],
 
     initComponent : function() {
         this.images_base_url = this.images_base_url || BQ.Server.url('/images/toolbar/');
@@ -170,13 +172,13 @@ Ext.define('BQ.Application.Toolbar', {
         Ext.QuickTips.init();
         Ext.tip.QuickTipManager.init();
         var toolbar = this;
-
-        if (BQ.Preferences)
+        
+        /*
         BQ.Preferences.get({
             key : 'Toolbar',
             callback : Ext.bind(this.onPreferences, this),
         });
-
+        */
         //--------------------------------------------------------------------------------------
         // Services menu
         //--------------------------------------------------------------------------------------
@@ -353,28 +355,30 @@ Ext.define('BQ.Application.Toolbar', {
                 xtype:'menuseparator',
                 itemId: 'menu_user_admin_separator',
                 hidden: true,
-            }, /*{
-                text: 'Website admin',
-                itemId: 'menu_user_admin',
-                hidden: true,
-                handler: Ext.Function.pass(pageAction, BQ.Server.url('/admin')),
-            },*/{
-                text: 'Admin Page',
-                itemId: 'menu_admin_page',
-                hidden: true,
-                handler: this.adminPage,
-            },{
-                text: 'User preferences',
-                itemId: 'menu_user_prefs',
-                handler: this.userPrefs,
-                scope: this,
-                hidden: true,
             }, {
-                text: 'System preferences',
-                itemId: 'menu_user_admin_prefs',
+                text: 'User',
+                itemId: 'menu_user_manager',
                 hidden: true,
-                handler: this.systemPrefs,
-                scope: this,
+                handler: this.settingUserPage,
+            }, {
+                text: 'Module Manager',
+                itemId: 'menu_module',
+                hidden: true,
+                handler: this.settingModuleManagerPage,
+            }, {
+                text: 'Module Developer',
+                itemId: 'menu_module_developer',
+                hidden: true,
+                handler: this.settingModuleDeveloperPage,
+            }, {
+                text: 'Preference',
+                itemId: 'menu_preference',
+                hidden: true,
+                handler: this.settingPreferencePage,
+            }, {
+                text: 'System',
+                itemId: 'menu_system',
+                hidden: true,
             }, {
                 xtype: 'menuseparator',
                 itemId: 'menu_user_signout_sep',
@@ -658,6 +662,27 @@ Ext.define('BQ.Application.Toolbar', {
         //this.addListener( 'resize', this.onResized, this);
         this.callParent();
 
+        //call preferences
+        var me = this;
+        if (BQ.Preferences) {
+            BQ.Preferences.on('updateuserpref', function(el, userPrefDict, userPrefXML){
+                var toolbarPref = {};
+                if (userPrefDict.Toolbar)
+                    toolbarPref = userPrefDict.Toolbar;
+                me.onPreferences(toolbarPref) //update preferences
+            })
+            //check to see if resource preferences was updated already
+            if (BQ.Preferences.userDict) {
+                var toolbarPref = {};
+                if (BQ.Preferences.userDict.Toolbar)
+                    toolbarPref = BQ.Preferences.userDict.Toolbar
+                me.onPreferences(toolbarPref) //update preferences
+            }
+        } else {
+            me.onPreferences({}) //set default preferences
+        }
+        
+        
         // update user menu based on application events
         Ext.util.Observable.observe(BQ.Application);
         BQ.Application.on('gotuser', function(u) {
@@ -716,24 +741,67 @@ Ext.define('BQ.Application.Toolbar', {
                this.queryById(id).setVisible(true);
         }*/
     },
-
-    adminPage: function() {
-        var admin = Ext.create('BQ.admin.MainPage', {
+    
+    //only admin
+    settingUserPage: function() {
+        var settingWindow = Ext.create('Ext.window.Window', {
+            title: 'Settings',
             height : '85%',
             width : '85%',
-            modal : true,
+            layout: 'fit',
+            modal : true, 
+            items: Ext.create('BQ.setting.MainPage',{
+                activeTab: 0,
+            }),
         });
-        admin.show();
+        settingWindow.show();
     },
-
-    userPrefs : function() {
-        var preferences = Ext.create('BQ.Preferences.Dialog');
+    
+    //always visible
+    settingModuleManagerPage: function() {
+        var settingWindow = Ext.create('Ext.window.Window', {
+            title: 'Settings',
+            height : '85%',
+            width : '85%',
+            layout: 'fit',
+            modal : true, 
+            items: Ext.create('BQ.setting.MainPage',{
+                activeTab: 2,
+            }),
+        });
+        settingWindow.show();
     },
-
-    systemPrefs : function() {
-        var preferences = Ext.create('BQ.Preferences.Dialog', {prefType:'system'});
+    
+    //always visible
+    settingModuleDeveloperPage: function() {
+        var settingWindow = Ext.create('Ext.window.Window', {
+            title: 'Settings',
+            height : '85%',
+            width : '85%',
+            layout: 'fit',
+            modal : true, 
+            items: Ext.create('BQ.setting.MainPage',{
+                activeTab: 3,
+            }),
+        });
+        settingWindow.show();
     },
-
+    
+    //should go to the highest level
+    settingPreferencePage: function() {
+        var settingWindow = Ext.create('Ext.window.Window', {
+            title: 'Settings',
+            height : '85%',
+            width : '85%',
+            layout: 'fit',
+            modal : true, 
+            items: Ext.create('BQ.setting.MainPage',{
+                activeTab: 4,
+            }),
+        });
+        settingWindow.show();
+    },
+    
     fetchResourceTypes : function() {
         BQFactory.request ({
             uri : '/data_service/',
@@ -1053,7 +1121,6 @@ Ext.define('BQ.Application.Toolbar', {
             menuitem.setHandler( Ext.Function.pass(pageAction, BQ.Server.url(url || _def)), this );
         }
     },
-
     onPreferences: function(pref) {
         this.preferences = pref;
 

@@ -1,10 +1,5 @@
 Ext.define('BQ.admin.MainPage', {
     extend : 'Ext.window.Window',
-    requires: [
-        'BQ.admin.UserManager', 
-        'BQ.admin.ModuleManager',
-    ],
-    //xtype: 'BQAdminViewer',
     title : 'Admin Page',
     layout : 'fit',
     height : '85%',
@@ -56,12 +51,26 @@ Ext.define('BQ.admin.MainPage', {
                 title: 'Module Manager',
                 layout: 'fit',
                 //disabled: true,
-                items: Ext.create('BQ.admin.ModuleManagerMain'),
+                border: false,
+                items: Ext.create('BQ.module.ModuleManagerMain'),
+            },{
+                title: 'Module Developer',
+                layout: 'fit',
+                border: false,
+                items: Ext.create('BQ.module.ModuleDeveloperPage'),
+                //disabled: true,
             }, {
-                title: 'Log Viewer',
+                title: 'Preferences',
+                layout: 'fit',
+                items: Ext.create('BQ.preference.PreferencePage'),
+            }, {
+                title: 'System',
+                layout: 'fit',
                 disabled: true,
-            }, {
-                title: 'System Configuration',
+                //items: Ext.create('BQ.admin.ModuleManagerMain'),
+            },{
+                title: 'Log Viewer',
+                layout: 'fit',
                 disabled: true,
             }]
         }];

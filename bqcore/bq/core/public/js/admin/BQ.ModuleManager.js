@@ -865,7 +865,7 @@ Ext.define('BQ.module.RegisteredPanel', {
 });
 
 
-Ext.define('BQ.admin.ModuleManagerMain', {
+Ext.define('BQ.module.ModuleManagerMain', {
     extend : 'Ext.container.Container',
     layout : 'border',
     border: false,
@@ -1576,7 +1576,7 @@ Ext.define('BQ.admin.ModuleManagerMain', {
 });
 
 //needs to check the user for credentials
-Ext.define('BQ.admin.ModuleManager', {
+Ext.define('BQ.module.ModuleManager', {
     extend : 'Ext.tab.Panel',
     layout: 'fit',
     border: false,
@@ -1589,7 +1589,7 @@ Ext.define('BQ.admin.ModuleManager', {
         var items = [{
             title: 'Manage Modules',
             layout: 'fit',
-            items: [Ext.create('BQ.admin.ModuleManagerMain')],
+            items: [Ext.create('BQ.module.ModuleManagerMain')],
         },{ //allows for module registrations from engines
             title: 'Engine Manager',
             layout: 'fit',

@@ -20,6 +20,7 @@ Ext.define('BQ.ResourceViewer', {
         initViewer : function(resource) {
             BQApp.setLoading(false);
             BQApp.resource = resource;
+            BQ.Preferences.loadResource(resource.resource_uniq) //loading in resource level preferences
             BQApp.setAnalysisQuery(encodeURIComponent('(accepted_type:"{1}" or "{1}":::)'.replace(/\{1\}/g, resource.resource_type)));
 
             var resourceCt = Bisque.ResourceFactoryWrapper.getResource({
