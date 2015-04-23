@@ -125,6 +125,7 @@ system_types = [
     'dir',
     'link',
     'preference',
+    'annotation',
     ]
 
 
@@ -717,6 +718,7 @@ def parse_bisque_uri(uri):
     else:
         service = parts.pop(0)
     # first element may be a docid
+    ida = None
     if is_uniq_code (parts[0]):
         ida = parts.pop(0)
     clname = None
@@ -747,7 +749,7 @@ def load_uri (uri, query=False):
         service, clname, ida, rest = parse_bisque_uri(uri)
         if service  not in  ('data_service', 'module_service'):
             return None
-        if is_uniq_code (ida):
+        if ida and is_uniq_code (ida):
             log.debug("loading resource_uniq %s" % ida)
             resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
         elif clname:
