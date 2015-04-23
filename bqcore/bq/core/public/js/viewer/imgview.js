@@ -321,17 +321,38 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.imagediv = document.createElementNS (xhtmlns, "div");
     this.imagediv.id="imgviewer_image";
     this.imagediv.className = "image_viewer_display";
-
+    var me = this;
+    
+    //initializing preference for the image viewer
     this.preferences = this.parameters.preferences;
+    if (BQ.Preferences) {
+        BQ.Preferences.on('updateresourcepref', function(el, resourcePrefDict, resourcePrefXML){
+            var viewerPref = {};
+            if (resourcePrefDict.Viewer)
+                viewerPref = resourcePrefDict.Viewer;
+            me.onPreferences(viewerPref) //update preferences
+        })
+        //check to see if resource preferences was updated already
+        if (BQ.Preferences.resourceDict) {
+            var viewerPref = {};
+            if (BQ.Preferences.resourceDict.Viewer)
+                viewerPref = BQ.Preferences.resourceDict.Viewer
+            me.onPreferences(viewerPref) //update preferences
+        }
+    } else {
+        me.onPreferences({}) //onPreferences has to be initialized before the view shows anything 
+    }
+    
+    /*
     BQ.Preferences.get({
         key : 'Viewer',
         callback : Ext.bind(this.onPreferences, this),
     });
-
+    */
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
 
-    var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,scalebar,progressbar,infobar,edit,renderer";
+    var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,dotsTemplateAdjuster,scalebar,progressbar,infobar,edit,renderer";
     if ('onlyedit' in this.parameters)
         plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,edit,renderer";
     if ('simpleview' in this.parameters) {
@@ -349,12 +370,13 @@ function ImgViewer (parentid, image_or_uri, parameters) {
             "scalebar"    : ImgScaleBar,
             "progressbar" : ProgressBar,
             "infobar"     : ImgInfoBar,
+            "dotsTemplateAdjuster" : dotsTemplateAdjuster,
             "slicer"      : ImgSlicer,
             "edit"        : ImgEdit,
             "tiles"       : TilesRenderer, // TILES RENDERER MUST BE BEFORE SVGRenderer
             "ops"         : ImgOperations, // Ops should be after tiler
             "pixelcounter": ImgPixelCounter,
-            //"renderer"    : SVGRenderer,   // RENDERER MUST BE LAST
+            //"overlay"     : SVGRenderer,   // RENDERER MUST BE LAST
             "renderer"    : CanvasRenderer,   // RENDERER MUST BE LAST
 
         };
@@ -521,7 +543,7 @@ ImgViewer.prototype.updateImage = function () {
 
     if (this.update_needed) clearTimeout(this.update_needed);
     //this.update_needed = setTimeout(callback(this, 'doUpdateImage'), this.update_delay_ms);
-    //this.update_needed = setTimeout(callback(this, 'doUpdateImage'), 0);
+    this.update_needed = setTimeout(callback(this, 'doUpdateImage'), 0);
 
 };
 

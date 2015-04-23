@@ -1,6 +1,6 @@
 <system name="system"  >
-    <tag name="version" value="0.5.5" />
-    <tag name="Preferences">
+    <tag name="version" value="0.5.8" />
+    <preference>
         <tag name="titles">
             <tag name="organization" value="" />
             <tag name="title" value="" />
@@ -167,6 +167,5 @@
             <tag name="show" value="false" type="boolean"/>
           </tag>
         </tag>
-
-      </tag>
+      </preference>
     </system>
