@@ -212,20 +212,34 @@ Ext.define('BQ.Preferences', {
         this.resource_uniq = resource_uniq
     },
     
+    parseValueType: function parseValueType(v, t) { //taken from bqapi
+        try {
+            if (t && typeof v === 'string' && t == 'number')
+                return parseFloat(v);
+            else if (t && t == 'boolean')
+                return (v=='true') ? true : false;
+        } catch(err) {
+            return v;
+        }
+        return v;
+    },
+
     toDict: function(dom) {
         var pref = {}
         function conv(dom,node) {
             for (var d=0; d<dom.children.length; d++) {
                 if (dom.children[d].tagName == 'tag') {
-                    if (dom.children[d].getAttribute('value')===null && dom.children[d].children.length<1) {
+                    if (dom.children[d].getAttribute('value')===null && dom.children[d].children.length<1) { //no value found but end of string
                         node[dom.children[d].getAttribute('name')] = '';
-                    } else if (dom.children[   d].getAttribute('value')===null) { //had no value
+                    } else if (dom.children[d].getAttribute('value')===null) { //had no value set as dictionary
                         node[dom.children[d].getAttribute('name')] = {};
                         conv(dom.children[d], node[dom.children[d].getAttribute('name')]);
-                    } else if (dom.children[d].getAttribute('value')===undefined) {
+                    } else if (dom.children[d].getAttribute('value')===undefined) { //no value found
                         node[dom.children[d].getAttribute('name')] = '';
-                    } else {
-                        node[dom.children[d].getAttribute('name')] = dom.children[d].getAttribute('value');
+                    } else { //set value
+                        var value = dom.children[d].getAttribute('value');
+                        var type = dom.children[d].getAttribute('type'); //cast if type is boolean or number
+                        node[dom.children[d].getAttribute('name')] = parseValueType(value, type);
                     }
                 }
             }
