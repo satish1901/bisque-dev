@@ -191,8 +191,8 @@ def update_level(new_doc, current_doc, attrib={}):
                         attrib = current.sub_node_dict[nk].node_attrib
                         #add value and maybe type
                         attrib['value'] = new.sub_node_dict[nk].node_attrib.get('value', '')
-                        if new.sub_node_dict[nk].node_attrib.get('type', ''):
-                            attrib['type'] = new.sub_node_dict[nk].node_attrib.get('type', '')
+                        #if new.sub_node_dict[nk].node_attrib.get('type', ''):
+                        #    attrib['type'] = new.sub_node_dict[nk].node_attrib.get('type', '')
                     current.sub_node_dict[nk] = TagValueNode(
                         value = new.sub_node_dict[nk].value,
                         node_attrib = attrib,
@@ -206,8 +206,8 @@ def update_level(new_doc, current_doc, attrib={}):
                     #add value, name and maybe type
                     attrib['name'] = new.sub_node_dict[nk].node_attrib.get('name', '')
                     attrib['value'] = new.sub_node_dict[nk].node_attrib.get('value', '')
-                    if new.sub_node_dict[nk].node_attrib.get('type', ''):
-                        attrib['type'] = new.sub_node_dict[nk].node_attrib.get('type', '')
+                    #if new.sub_node_dict[nk].node_attrib.get('type', ''):
+                    #    attrib['type'] = new.sub_node_dict[nk].node_attrib.get('type', '')
                     current.sub_node_dict[nk] = TagValueNode(
                         value = new.sub_node_dict[nk].value,
                         node_attrib = attrib,
@@ -346,7 +346,7 @@ class PreferenceController(ServiceController):
             attrib = user_preference.attrib
             attrib.update(resource_preference.attrib)
             attrib['uri'] = request.url.replace('&','&amp;')
-            attrib['owner'] = user.attrib['uri']
+            #attrib['owner'] = user.attrib['uri']
             resource_preference = mergeDocuments(user_preference, resource_preference, attrib=attrib)
         else:
             resource_preference = user_preference
@@ -356,13 +356,20 @@ class PreferenceController(ServiceController):
         #annotation_resource = data_service.get_resource('/data_service/annotation/%s'%annotation_uniq, view='full')
         resource_preference_list = annotation.xpath('preference')
         if len(resource_preference_list)>0:
-            resource_preference = data_service.get_resource(resource_preference_list[0].attrib['uri'], **kw)
-            resource_preference = mergeDocuments(user_preference, resource_preference, attrib=attrib)
+            annotation_preference = data_service.get_resource(resource_preference_list[0].attrib['uri'], **kw)
+            attrib = resource_preference.attrib
+            attrib.update(annotation_preference.attrib)
+            attrib['uri'] = request.url.replace('&','&amp;')
+            attrib['owner'] = user.attrib['uri']
+            annotation_preference = mergeDocuments(resource_preference, annotation_preference, attrib=attrib)
         else:
-            resource_preference = resource_preference
-        
+            annotation_preference = resource_preference
+            
+        if user.attrib.get('uri', None): #if user is signed in
+            annotation_preference.attrib['owner'] = user.attrib['uri']
+            
         if level <= LEVEL['resource']:
-            return etree.tostring(resource_preference)
+            return etree.tostring(annotation_preference)
         #raise exception level not known
     
     
