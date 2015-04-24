@@ -334,7 +334,6 @@ BQValue.prototype.setParent = function (p) {
 };
 
 BQValue.prototype.xmlNode = function () {
-    //return BQXml.prototype.xmlNode.call (this, BQFactory.escapeXML(this.value));
     return BQXml.prototype.xmlNode.call (this, this.value); // dima: migrated to DOM based creation
 };
 
@@ -472,7 +471,7 @@ BQXml.prototype.xmlNode = function (content) {
             resource.setAttribute(fields[f], this[fields[f]]);
     }
 
-    if (content && typeof content === 'string' && content != '') {
+    if (content && content !== '') { // && typeof content === 'string') {
         resource.textContent = content;
     } /* else if (content && content instanceof Document) {
         resource.appendChild( content.firstChild );
