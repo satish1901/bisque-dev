@@ -1181,9 +1181,6 @@ function CanvasRenderer (viewer,name) {
 CanvasRenderer.prototype = new ViewerPlugin();
 
 CanvasRenderer.prototype.create = function (parent) {
-
-    //this.canvas = document.createElement("canvas");
-    //parent.appendChild(this.canvas);
     this.mode = 'navigate';
     this.shapes = {
         'ellipse': CanvasEllipse,
@@ -1195,8 +1192,12 @@ CanvasRenderer.prototype.create = function (parent) {
         'label': CanvasLabel,
     };
 
+    // dima: kineticjs removes all other elements in the given container, create a wrapper for its sad sole existence
+    this.wrapper = document.createElement("div");
+    parent.appendChild(this.wrapper);
+
     this.stage = new Kinetic.Stage({
-        container: parent,
+        container: this.wrapper,
         listening: true,
     });
     this.stage._mousemove = Kinetic.Util._throttle( this.stage._mousemove, 60);
@@ -1209,7 +1210,7 @@ CanvasRenderer.prototype.create = function (parent) {
     this.initPointImageCache();
     this.quadtree = new QuadTree(this);
     this.cur_z = 0;
-
+    return parent;
 };
 
 
