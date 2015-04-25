@@ -593,8 +593,8 @@ class ConverterImgcnv(ConverterBase):
         if fmt == 'jpeg':
             command.extend([ '-options', 'quality 95 progressive yes'])
 
-        #return cls.run(ifnm, ofnm, command )
         return command
+        #return cls.run(ifnm, ofnm, command )
 
     @classmethod
     def slice(cls, token, ofnm, z, t, roi=None, **kw):
@@ -620,14 +620,14 @@ class ConverterImgcnv(ConverterBase):
         pages = []
         for ti in range(t1, t2+1):
             for zi in range(z1, z2+1):
-                if info['image_num_t']==1:
+                if info.get('image_num_t', 1)==1:
                     page_num = zi
-                elif info['image_num_z']==1:
+                elif info.get('image_num_z', 1)==1:
                     page_num = ti
                 elif info.get('dimensions', 'XYCZT').replace(' ', '').startswith('XYCT') is False:
-                    page_num = (ti-1)*info['image_num_z'] + zi
+                    page_num = (ti-1)*info.get('image_num_z', 1) + zi
                 else:
-                    page_num = (zi-1)*info['image_num_t'] + ti
+                    page_num = (zi-1)*info.get('image_num_t', 1) + ti
                 pages.append(page_num)
 
         log.debug('slice pages: %s', pages)

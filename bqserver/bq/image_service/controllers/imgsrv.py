@@ -31,11 +31,14 @@ from pylons.controllers.util import abort
 
 #Project
 from bq import blob_service
+from bq.blob_service.controllers.blob_drivers import Blobs
+
 #from bq import data_service
 from bq.core import  identity
 from bq.util.mkdir import _mkdir
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
+from bq.util.urlpaths import url2localpath
 
 from bq.util.locks import Locks
 from bq.util.io_misc import safetypeparse, safeint
@@ -547,7 +550,7 @@ class SliceOperation(BaseOperation):
         if z1==z2==0: z1=1; z2=dims.get('image_num_z', 1)
         if t1==t2==0: t1=1; t2=dims.get('image_num_t', 1)
 
-        ofname = '%s.%d-%d,%d-%d,%d-%d,%d-%d' % (token.data, x1,x2,y1,y2,z1,z2,t1,t2)
+        ofname = '%s.%d-%d,%d-%d,%d-%d,%d-%d.ome.tif' % (token.data, x1,x2,y1,y2,z1,z2,t1,t2)
         return token.setImage(ofname, fmt=default_format)
 
     def action(self, token, arg):
@@ -604,7 +607,7 @@ class SliceOperation(BaseOperation):
 
         # construct a sliced filename
         ifname = token.first_input_file()
-        ofname = '%s.%d-%d,%d-%d,%d-%d,%d-%d' % (token.data, x1,x2,y1,y2,z1,z2,t1,t2)
+        ofname = '%s.%d-%d,%d-%d,%d-%d,%d-%d.ome.tif' % (token.data, x1,x2,y1,y2,z1,z2,t1,t2)
         log.debug('Slice %s: from [%s] to [%s]', token.resource_id, ifname, ofname)
 
         new_w = x2-x1
@@ -632,14 +635,25 @@ class SliceOperation(BaseOperation):
         # slice the image
         if not os.path.exists(ofname):
             intermediate = '%s.ome.tif'%token.data
-            for n,c in self.server.converters.iteritems():
-                if n == ConverterImgcnv.name: continue
-                r = c.slice(token, ofname, z=(z1,z2), t=(t1,t2), roi=(x1,x2,y1,y2), fmt=default_format, intermediate=intermediate)
-                if r is not None:
-                    break
+
+            if 'converter' in dims and dims.get('converter') in self.server.converters:
+                r = self.server.converters[dims.get('converter')].slice(token, ofname, z=(z1,z2), t=(t1,t2), roi=(x1,x2,y1,y2), fmt=default_format, intermediate=intermediate)
+
+            # if desired converter failed, perform exhaustive conversion
+            if r is None:
+                for n,c in self.server.converters.iteritems():
+                    if n in [ConverterImgcnv.name, dims.get('converter')]: continue
+                    r = c.slice(token, ofname, z=(z1,z2), t=(t1,t2), roi=(x1,x2,y1,y2), fmt=default_format, intermediate=intermediate)
+                    if r is not None:
+                        break
+
             if r is None:
                 log.error('Slice %s: could not generate slice for [%s]', token.resource_id, ifname)
                 abort(415, 'Could not generate slice' )
+
+            # if decoder returned a list of operations for imgcnv to enqueue
+            if isinstance(r, list):
+                return self.server.enqueue(token, 'slice', ofname, fmt=default_format, command=r, dims=info)
 
         return token.setImage(ofname, fmt=default_format, dims=info, input=ofname)
 
@@ -743,7 +757,7 @@ class FormatOperation(BaseOperation):
 
             # using ome-tiff as intermediate if everything failed
             if r is None:
-                log.debug('None of converters could not connvert [%s] to [%s] format'%(ifile, fmt))
+                log.debug('None of converters could connvert [%s] to [%s] format'%(ifile, fmt))
                 log.debug('Converting to OME-TIFF and then to desired output')
                 r = self.server.imageconvert(token, ifile, ofile, fmt=fmt, extra=[], try_imgcnv=False)
 
@@ -1190,6 +1204,8 @@ class ThumbnailOperation(BaseOperation):
             if r is None:
                 log.error('Thumbnail %s: could not generate thumbnail for [%s]', token.resource_id, ifile)
                 abort(415, 'Could not generate thumbnail' )
+            if isinstance(r, list):
+                return self.server.enqueue(token, 'thumbnail', ofile, fmt=fmt, command=r, dims=info)
 
         return token.setImage(ofile, fmt=fmt, dims=info, input=ofile)
 
@@ -2210,6 +2226,17 @@ class ImageServer(object):
 
 
     def ensureOriginalFile(self, ident, resource=None):
+        # if resource is not None:
+        #     vs = resource.xpath('value')
+        #     if len(vs)>0:
+        #         files = [v.text for v in vs]
+        #     else:
+        #         files = [resource.get('value')]
+        #     log.debug('files: %s', files)
+        #     if files[0].startswith('file://'):
+        #         files = ['path%s'%f.replace('file://', '') for f in files]
+        #         log.debug('files: %s', files)
+        #         return Blobs(path=files[0], sub=None, files=files if len(files)>1 else None)
         return blob_service.localpath(ident, resource=resource) or abort (404, 'File not available from blob service')
 
     def getImageInfo(self, filename, series=0, infofile=None, meta=None):
@@ -2299,16 +2326,29 @@ class ImageServer(object):
                 return r
 
         # if the conversion failed, convert input to OME-TIFF using other converts
+        r = None
         ometiff = '%s.ome.tif'%(token.data)
-        for n,c in self.converters.iteritems():
-            if n==ConverterImgcnv.name:
-                continue
-            if not os.path.exists(ometiff) or os.path.getsize(ometiff)<16:
-                r = c.convertToOmeTiff(token, ometiff, **kw)
-            else:
-                r = ometiff
-            if r is not None and os.path.exists(ometiff) and os.path.getsize(ometiff)>16:
-                return self.converters[ConverterImgcnv.name].convert( ProcessToken(ifnm=ometiff), ofnm, fmt=fmt, extra=extra)
+        if os.path.exists(ometiff) and os.path.getsize(ometiff)>16:
+            r = ometiff
+        else:
+            # try converter used to read info
+            n = dims.get('converter')
+            if n in self.converters and callable( getattr(self.converters[n], "convertToOmeTiff", None) ) is True:
+                r = self.converters[n].convertToOmeTiff(token, ometiff, **kw)
+
+            # if desired converter failed, perform exhaustive conversion
+            if r is None:
+                for n,c in self.converters.iteritems():
+                    if n in [ConverterImgcnv.name, dims.get('converter')]: continue
+                    r = c.convertToOmeTiff(token, ometiff, **kw)
+                    if r is not None:
+                        break
+
+            if r is None or os.path.getsize(ometiff)<16:
+                log.error('Convert %s: failed for [%s]', token.resource_id, ifname)
+                abort(415, 'Convert failed' )
+
+        return self.converters[ConverterImgcnv.name].convert( ProcessToken(ifnm=ometiff), ofnm, fmt=fmt, extra=extra)
 
     def initialWorkPath(self, image_id, user_name):
         if len(image_id)>3 and image_id[2]=='-':

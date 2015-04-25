@@ -121,7 +121,7 @@
                 </template>
             </tag>
 
-            <tag name="showOverlay" value="false" type="boolean">
+            <tag name="showOverlay" value="false">
                 <template>
                     <tag type="string" name="Type" value="ComboBox"/>
                     <tag type="string" name="defaultValue" value="false"/>
