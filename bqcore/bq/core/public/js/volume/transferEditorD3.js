@@ -972,7 +972,7 @@ transferTool.prototype.loadPreferences = function(prefs){
     //set toggled on start
     //////////////////////
     var me = this;
-    this.button.toggle(prefs.show);
+    this.button.toggle(prefs.show === true);
 
     if(!this.presets) this.presets = {}; //initialize a presets menu
     //if for some reason a default isn't available lets just make one ahead of time
@@ -1062,11 +1062,13 @@ transferTool.prototype.createTransferEditor = function(){
         },
 
     });
-    this.transferEditor.setData(this.presets['current']);
-    this.transferData = this.transferEditor.data;
+    if (this.presets) {
+        this.transferEditor.setData(this.presets['current']);
+        this.transferData = this.transferEditor.data;
+    }
 };
 
-transferTool.prototype.toggle = function(button){
+transferTool.prototype.toggle = function(button) {
     this.transfer ^= 1;
     //this.changed(); //don't want to call this until after layout since the editor stores the data
     //this..sceneVolume.setUniform('USE_TRANSFER', this.transfer);

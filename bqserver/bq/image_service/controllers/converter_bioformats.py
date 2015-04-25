@@ -431,6 +431,7 @@ class ConverterBioformats(ConverterBase):
         log.debug('convertToOmeTiff: [%s] -> [%s] for series %s with [%s]', ifnm, ofnm, series, extra)
 
         command = [ifnm, ofnm, '-no-upgrade', '-overwrite']
+
         #if original is not None:
         #    command = ['-map', ifnm, original, ofnm]
         command.extend(['-bigtiff', '-compression', 'LZW'])
@@ -471,16 +472,14 @@ class ConverterBioformats(ConverterBase):
         x1,x2,y1,y2 = roi
 
         if z1>z2 and z2==0 and t1>t2 and t2==0 and x1==0 and x2==0 and y1==0 and y2==0:
-            ofnmtmp = '%s.ome.tif'%ofnm
-            r = cls.convertToOmeTiff(token, ofnm=ofnmtmp, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
+            r = cls.convertToOmeTiff(token, ofnm=ofnm, extra=['-z', str(z1-1), '-timepoint', str(t1-1)])
             if r is not None:
-                os.rename(ofnmtmp, ofnm)
                 return ofnm
 
         # create an intermediate OME-TIFF
         ometiff = kw.get('intermediate', None)
         if not os.path.exists(ometiff):
-            r = cls.convertToOmeTiff(token, ometiff, nooverwrite=True)
+            r = cls.convertToOmeTiff(token, ometiff)
             if r is None:
                 return None
         # extract slices
