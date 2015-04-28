@@ -103,6 +103,7 @@ from bq.core.identity import  set_admin_mode, set_current_user, get_username
 from bq.core.service import ServiceController
 from bq.core.model import DBSession
 
+from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
 from bq.data_service.controllers.resource import Resource
 from bq.data_service import resource_controller
 from bq.data_service.model import  ModuleExecution
@@ -586,7 +587,7 @@ class ModuleServer(ServiceController):
         #self.runner.start()
 
 
-    def load_services(self, name = None, set_admin=False, **kw):
+    def load_services(self, name=None, set_admin=False, **kw):
         """
             Access to registered services through the module service
             
@@ -630,31 +631,6 @@ class ModuleServer(ServiceController):
         return service_list
         #self.runner.start()
 
-
-#    #chris - added for ui testing, should be temporary
-#    @expose(content_type='text/xml')
-#    def proxy(self, *args, **kwargs):
-#        """
-#            main entry point to module service
-#        """
-#        if len(args)==0 and request.method=='GET':
-#            engine = kwargs.get('engine')
-#            if engine: #proxy engine
-#                if engine.startswith('"'):
-#                    engine = engine[1:]
-#                    if engine.endswith('"'):
-#                        engine = engine[:-1]
-#                engine = urllib.unquote(engine)
-#                session = BQServer()
-#                #session.root = request.host_url
-#                engine = session.prepare_url(engine)
-#                log.debug("begin routing externally: %s" % engine)
-#                try:
-#                    resp = session.get(engine, headers={'Content-Type':'text/xml'})
-#                except BQCommError as e:
-#                    log.debug('%s' % str(e))
-#                    abort(400)
-#                return resp.content
             
     @expose()
     def _lookup(self, service, *rest):
@@ -681,8 +657,10 @@ class ModuleServer(ServiceController):
         """
             Return the list of active modules as determined by the registered services
         """
-        kw['wpublic'] = '1'
+        #kw['wpublic'] = '1'
         kw.setdefault ('view','short')
+        if 'set_admin' in kw:
+            kw.pop('set_admin') #protect from setting admin
         #xml= self.modules.default(**kw)
         #modules = etree.XML(xml)
         #log.debug ("all modules = %s " % xml)
@@ -733,7 +711,7 @@ class ModuleServer(ServiceController):
         if http_method=='POST' and (definition is not None):
             
             #check to see if module has the same name with all modules registered
-            if len(self.load_services(definition.attrib.get('name'), set_admin=True))>0:
+            if len(self.load_services(definition.attrib.get('name'), set_admin=True, wpublic=True))>0:
                 log.info ("Engine is already registered by that name")
                 abort(405, 'Engine is already registered by that name')
             module = data_service.new_resource(definition, **kw)
@@ -783,14 +761,15 @@ class ModuleServer(ServiceController):
         #set_admin_mode()
         log.info ("unregister engine")
         try:
-            module =  data_service.get_resource(resource_uniq)
+            module = data_service.resource_load(resource_uniq, action=RESOURCE_EDIT, view='short')
+            #module = data_service.get_resource(resource_uniq)
         except IndexError:
             abort(400)
             
         if module is not None:
             if module.tag == 'module':
                 module.attrib['value'] = '' #needs to be changed in .06
-                module = data_service.update(module)
+                module = data_service.update(module, **kw)
                 return etree.tostring(module)
             else:
                 log.info("Resource not a module")
