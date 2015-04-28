@@ -438,23 +438,23 @@ Ext.define('BQ.module.UnregisteredPanel', {
                 me.store.each(function(record) {
                     var engine = record.get('engine');
                     if (engine) {
-                        var moduleList = BQ.util.xpath_nodes(xml, '//module[@value="'+engine+'"]')
+                        var moduleList = BQ.util.xpath_nodes(xml, '//module[@value="'+engine+'"]');
                         if (moduleList.length<1){ //module was not registered
-                            record.set('registration', 'Not Registered')
+                            record.set('registration', 'Not Registered');
                         } else {
                             record.set('registration', 'Registered')
-                            var uniq = moduleList[0].getAttribute('resource_uniq')
-                            record.set('resource_uniq', uniq)
+                            var uniq = moduleList[0].getAttribute('resource_uniq');
+                            record.set('resource_uniq', uniq);
                         }
                     } else {
-                        BQ.ui.error('Record does not have an engine!')
+                        BQ.ui.error('Record does not have an engine!');
                     }
                 });
                 if(cb) cb();
             },
             failure: function(response) {
                 BQ.ui.error('Failed to find module_service');
-                record.set('registration', '???')
+                record.set('registration', '???');
             },
             scope: this,
         });
@@ -465,7 +465,7 @@ Ext.define('BQ.module.UnregisteredPanel', {
             //clear store
             this.store.loadData([]);
             this.lookUpEngine(engine_url);
-            this.fireEvent('reload',this)
+            this.fireEvent('reload',this);
         }
     },
 });
@@ -650,6 +650,7 @@ Ext.define('BQ.module.RegisteredPanel', {
         var me = this;
         Ext.Ajax.request({
             url: '/module_service',
+            params: {wpublic: 'true'},
             method: 'GET',
             headers: { 'Content-Type': 'text/xml' },
             disableCaching: false,
@@ -692,12 +693,12 @@ Ext.define('BQ.module.RegisteredPanel', {
                 var moduleNodes = BQ.util.xpath_nodes(xml, '//module');
                 if (moduleNodes.length>0) {
                     //me.updateEntry(moduleNodes[i], record);
-                    record.set('moduleXmlDoc', moduleNodes[0])
-                    record.set('resource_uniq', moduleNodes[0].attributes['resource_uniq'].value || '')
-                    record.set('name', moduleNodes[0].attributes['name'].value || '')
-                    record.set('owner_uri', moduleNodes[0].attributes['owner'].value||'')
-                    record.set('engine', moduleNodes[0].attributes['value'].value||'')
-                    record.set('visibility', moduleNodes[0].attributes['permission'].value||'')
+                    record.set('moduleXmlDoc', moduleNodes[0]);
+                    record.set('resource_uniq', moduleNodes[0].attributes['resource_uniq'].value || '');
+                    record.set('name', moduleNodes[0].attributes['name'].value || '');
+                    record.set('owner_uri', moduleNodes[0].attributes['owner'].value||'');
+                    record.set('engine', moduleNodes[0].attributes['value'].value||'');
+                    record.set('visibility', moduleNodes[0].attributes['permission'].value||'');
                     me.updateEntry(record);
                     //me.setRecord(moduleNodes[0], record)
                     if (cb) cb();
@@ -998,13 +999,13 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                     me.unregisterPanel.on('select',
                                         function(el, record) {
                                             if (buttonEl.onSelect)
-                                                buttonEl.onSelect(el,record)
+                                                buttonEl.onSelect(el,record);
                                     });
                                     
                                     me.unregisterPanel.on('deselect',
                                         function(el, record) {
                                             if (buttonEl.onDeselect)
-                                                buttonEl.onDeselect(el,record)                 
+                                                buttonEl.onDeselect(el,record);             
                                     });
                                     var store = me.unregisterPanel.getStore();
                                     me.unregisterPanel.on('reload',
@@ -1027,7 +1028,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                 }
                             },
                             onSelect : function(el, record) {
-                                this.setDisabled(false)
+                                this.setDisabled(false);
                             },
                             onDeselect: function(el, record) {
                                 this.setDisabled(true);

@@ -548,8 +548,8 @@ Ext.define('BQ.Application.Toolbar', {
                         viewMode: 'ModuleBrowser',
                         //showOrganizer: true,
                         showModuleOrganizer: true,
-                        //dataset : '/module_service/',
-                        dataset: '/data_service/module',
+                        dataset : '/module_service',
+                        //dataset: '/data_service/module',
                         wpublic: 'true',
                         listeners : {
                             scope: this,
