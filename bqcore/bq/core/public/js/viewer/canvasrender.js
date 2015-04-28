@@ -1236,7 +1236,6 @@ CanvasRenderer.prototype.create = function (parent) {
     });
 
     this.stage._mousemove = Kinetic.Util._throttle( this.stage._mousemove, 30);
-    //someKineticLayer._getIntersection = function() {return {};};
     this.stage.content.style.setProperty('z-index', 15);
 
     this.initShapeLayer();
@@ -1251,12 +1250,19 @@ CanvasRenderer.prototype.create = function (parent) {
 
 CanvasRenderer.prototype.initShapeLayer = function(){
     this.currentLayer = new Kinetic.Layer();
+    this.defaultIntersection = this.currentLayer._getIntersection;
+    this.noIntersection = function() {return {};};
+
+    this.currentLayer._getIntersection = this.noIntersection;
+
     this.stage.add(this.currentLayer);
 };
 
 CanvasRenderer.prototype.initEditLayer = function(){
     var me = this;
     this.editLayer = new Kinetic.Layer();
+    this.editLayer._getIntersection = this.noIntersection;
+
     this.stage.add(this.editLayer);
     this.editLayer.moveToTop();
     this.initUiShapes();
@@ -1265,6 +1271,8 @@ CanvasRenderer.prototype.initEditLayer = function(){
 CanvasRenderer.prototype.initSelectLayer = function(){
     var me = this;
     this.selectLayer = new Kinetic.Layer();
+    this.selectLayer._getIntersection = this.noIntersection;
+
     this.stage.add(this.selectLayer);
     this.selectLayer.moveToBottom();
 
@@ -1297,8 +1305,10 @@ CanvasRenderer.prototype.initSelectLayer = function(){
 
         var stageX = stage.x();
         var stageY = stage.y();
-        var x = (evt.offsetX - stageX)/scale.x;
-        var y = (evt.offsetY - stageY)/scale.y;
+        var x = evt.offsetX==undefined?evt.layerX:evt.offsetX;
+        var y = evt.offsetY==undefined?evt.layerY:evt.offsetY;
+        x = (x - stageX)/scale.x;
+        y = (y - stageY)/scale.y;
 
         var x0 = lassoRect.x();
         var y0 = lassoRect.y();
@@ -1317,9 +1327,12 @@ CanvasRenderer.prototype.initSelectLayer = function(){
 
         var stageX = stage.x();
         var stageY = stage.y();
-        var x = (evt.offsetX - stageX)/scale.x;
-        var y = (evt.offsetY - stageY)/scale.y;
-
+        //var x = (evt.offsetX - stageX)/scale.x;
+        //var y = (evt.offsetY - stageY)/scale.y;
+        var x = evt.offsetX==undefined?evt.layerX:evt.offsetX;
+        var y = evt.offsetY==undefined?evt.layerY:evt.offsetY;
+        x = (x - stageX)/scale.x;
+        y = (y - stageY)/scale.y;
         //console.log(evt);
 
         me.currentLayer.draw();
@@ -1457,6 +1470,22 @@ CanvasRenderer.prototype.setMode = function (mode){
     me.updateVisible();
 
     if(mode == 'add') {
+        this.lassoRect.width(0);
+        this.lassoRect.height(0);
+        this.selectLayer.moveToBottom();
+        this.editLayer.moveToTop();
+    }
+
+    if(mode == 'edit') {
+        this.currentLayer._getIntersection = this.defaultIntersection;
+        this.editLayer._getIntersection = this.defaultIntersection;
+        this.selectLayer._getIntersection = this.defaultIntersection;
+    }
+
+    if(mode == 'navigate') {
+        this.currentLayer._getIntersection = this.noIntersection;
+        this.editLayer._getIntersection = this.noIntersection;
+        this.selectLayer._getIntersection = this.noIntersection;
         this.lassoRect.width(0);
         this.lassoRect.height(0);
         this.selectLayer.moveToBottom();
@@ -2076,6 +2105,9 @@ CanvasRenderer.prototype.initPoints = function(shapes){
     this.shapeCorners.forEach(function(e,i,d){
         me.editLayer.add(e);
         e.on('mousedown', function(evt) {
+            //me.currentLayer._getIntersection = me.noIntersection;
+            //me.editLayer._getIntersection = me.noIntersection;
+            //me.selectLayer._getIntersection = me.noIntersection;
 
         });
 
@@ -2105,6 +2137,10 @@ CanvasRenderer.prototype.initPoints = function(shapes){
         });
 
         e.on('mouseup',function(evt){
+            //me.currentLayer._getIntersection = me.defaultIntersection;
+            //me.editLayer._getIntersection = me.defaultIntersection;
+            //me.selectLayer._getIntersection = me.defaultIntersection;
+
             me.selectedSet.forEach(function(e,i,d){
                 e.dirty = true;
 
@@ -2163,6 +2199,9 @@ CanvasRenderer.prototype.select = function (gobs) {
 
         e.on('mousedown', function(evt) {
 
+            //me.currentLayer._getIntersection = me.noIntersection;
+            //me.editLayer._getIntersection   = me.noIntersection;
+            //me.selectLayer._getIntersection = me.noIntersection;
         });
 
         e.on('dragmove', function(evt) {
@@ -2175,6 +2214,9 @@ CanvasRenderer.prototype.select = function (gobs) {
         e.on('mouseup',function(evt){
             e.dirty = true;
 
+            //me.currentLayer._getIntersection = me.defaultIntersection;
+           // me.editLayer._getIntersection = me.defaultIntersection;
+            //me.selectLayer._getIntersection = me.defaultIntersection;
             me.selectedSet.forEach(function(e,i,d){
                 if(e.dirty)
                     me.move_shape(e.gob);
