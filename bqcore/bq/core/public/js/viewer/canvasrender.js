@@ -1556,6 +1556,7 @@ CanvasRenderer.prototype.newImage = function () {
     var h = this.viewer.imagediv.offsetHeight;
 
     this.rendered_gobjects = [];
+    if(!this.viewFrustum) this.initFrustum();
     this.visit_render = new BQProxyClassVisitor (this);
 };
 
@@ -1572,9 +1573,21 @@ CanvasRenderer.prototype.appendSvg = function (gob){
         this.svggobs.appendChild(gob.shape.svgNode);
 };
 
+CanvasRenderer.prototype.initFrustum = function(){
+
+    if(!this.viewFrustum){
+        var x = this.viewer.tiles.div.clientWidth;
+        var y = this.viewer.tiles.div.clientHeight;
+
+        this.viewFrustum = {
+            min: [0,0],
+            max: [x,y]
+        };
+    }
+};
+
 CanvasRenderer.prototype.setFrustum = function(bb){
-    if(!this.viewFrustum)
-        this.viewFrustum = {min: [0,0], max: [0, 0]};
+    if(!this.viewFrustum) this.initFrustum();
     if(!this.cursorRect)
         this.cursorRect = new Kinetic.Rect({
             //x: -20,
@@ -1782,11 +1795,6 @@ CanvasRenderer.prototype.updateImage = function (e) {
     var width = window.innerWidth;
     var height = window.innerHeight;
 
-    if(!this.viewFrustum)
-        this.setFrustum({
-            min: [0,0],
-            max: [x,y]
-        });
     this.stage.setWidth(width);
     this.stage.setHeight(height);
 
@@ -2296,6 +2304,7 @@ CanvasRenderer.prototype.rerender = function (gobs, params) {
     if (!params)
         params = [this.viewer.current_view];
     this.visit_render.visit_array(gobs, params);
+
     this.draw();
 };
 
