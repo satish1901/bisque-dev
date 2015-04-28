@@ -330,6 +330,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
             var viewerPref = {};
             if (resourcePrefDict.Viewer)
                 viewerPref = resourcePrefDict.Viewer;
+            //me.requires_update = true;
             me.onPreferences(viewerPref) //update preferences
         })
         //check to see if resource preferences was updated already
@@ -352,9 +353,9 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
 
-    var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,scalebar,progressbar,infobar,overlay,edit,renderer";
+    var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,overlayeditor,scalebar,progressbar,infobar,overlay,edit,renderer";
     if ('onlyedit' in this.parameters)
-        plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,edit,renderer";
+        plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,overlay,edit,renderer";
     if ('simpleview' in this.parameters) {
         plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,renderer";
         this.parameters['noedit'] = '';
@@ -370,7 +371,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
             "scalebar"    : ImgScaleBar,
             "progressbar" : ProgressBar,
             "infobar"     : ImgInfoBar,
-            //"dotsTemplateAdjuster" : dotsTemplateAdjuster,
+            "overlayeditor": ImgOverlayEditor,
             "slicer"      : ImgSlicer,
             "edit"        : ImgEdit,
             "tiles"       : TilesRenderer, // TILES RENDERER MUST BE BEFORE SVGRenderer
@@ -760,8 +761,10 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
 
 ImgViewer.prototype.onPreferences = function(pref) {
     this.preferences = Ext.apply(pref, this.parameters || {}); // local defines overwrite preferences
-    if (this.requires_update)
+    if (this.requires_update) {
         this.updateImage();
+        //this.updateView();
+    }
 };
 
 //----------------------------------------------------------------------

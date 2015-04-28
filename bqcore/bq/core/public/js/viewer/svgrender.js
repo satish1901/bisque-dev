@@ -27,7 +27,11 @@ function test_visible (pos, viewstate, tolerance_z ) {
 function SVGRenderer (viewer,name) {
     var p = viewer.parameters || {};
     //this.default_showOverlay           = p.rotate          || 0;   // values: 0, 270, 90, 180
-    this.default_showOverlay   = false;
+    this.default_overlayPref  = {
+        enable    :false,
+        position  : '',
+        shape     : 'dots',
+    };
     this.base = ViewerPlugin;
     this.base (viewer, name);
     this.events  = {};
@@ -163,7 +167,7 @@ SVGRenderer.prototype.updateView = function (view) {
     this.initialized = true;
     this.loadPreferences(this.viewer.preferences);
     if (this.showOverlay !== 'false')
-        this.populate_overlay(this.showOverlay);
+        this.populate_overlay();
 };
 
 SVGRenderer.prototype.appendSvg = function (gob){
@@ -925,108 +929,123 @@ SVGRenderer.prototype.select_label = function (state){
 //----------------------------------------------------------------------------
 
 SVGRenderer.prototype.loadPreferences = function (p) {
-    this.showOverlay  = 'showOverlay' in p ? p.showOverlay  : this.default_showOverlay;
+    //this.showOverlay  = 'showOverlay' in p ? p.showOverlay  : this.default_showOverlay;
+    this.overlayPref = 'Overlay' in p ? p.Overlay  : this.default_overlayPref;
 };
 
-SVGRenderer.prototype.populate_overlay = function (mode) {
-    removeAllChildren (this.overlay);
 
+
+SVGRenderer.prototype.LUDecomposition
+
+
+SVGRenderer.prototype.populate_overlay = function () {
+    removeAllChildren (this.overlay);
+    
     var gobs = document.createElementNS(svgns, "g");
     this.overlay.appendChild(gobs);
+    if (this.overlayPref.enable) {
+        if (this.overlayPref.shape === 'dots') {
+            for (var x=9; x<=95; x+=9)
+            for (var y=12; y<=95; y+=9) {
+                var circ = document.createElementNS( svgns, 'circle');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'black');
+                circ.setAttributeNS(null, 'stroke-width', 2);
+                circ.setAttributeNS(null, 'cx', ''+x+'%' );
+                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'r', '1%' );
+                gobs.appendChild(circ);
 
-    if (mode === 'dots') {
-        for (var x=9; x<=95; x+=9)
-        for (var y=12; y<=95; y+=9) {
-            var circ = document.createElementNS( svgns, 'circle');
-            circ.setAttributeNS(null, 'fill-opacity', 0.0);
-            circ.setAttributeNS(null, 'fill', 'black');
-            circ.setAttributeNS(null, 'stroke', 'black');
-            circ.setAttributeNS(null, 'stroke-width', 2);
-            circ.setAttributeNS(null, 'cx', ''+x+'%' );
-            circ.setAttributeNS(null, 'cy', ''+y+'%');
-            circ.setAttributeNS(null, 'r', '1%' );
-            gobs.appendChild(circ);
+                var circ = document.createElementNS( svgns, 'circle');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'white');
+                circ.setAttributeNS(null, 'stroke-width', 1);
+                circ.setAttributeNS(null, 'cx', ''+x+'%' );
+                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'r', '1%' );
+                gobs.appendChild(circ);
+            }
+        } else if (this.overlayPref.shape === 'dots_medium') {
+            for (var x=9; x<=95; x+=9)
+            for (var y=15; y<=90; y+=8) {
+                var circ = document.createElementNS( svgns, 'circle');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'black');
+                circ.setAttributeNS(null, 'stroke-width', 2);
+                circ.setAttributeNS(null, 'cx', ''+x+'%' );
+                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'r', '1%' );
+                gobs.appendChild(circ);
 
-            var circ = document.createElementNS( svgns, 'circle');
-            circ.setAttributeNS(null, 'fill-opacity', 0.0);
-            circ.setAttributeNS(null, 'fill', 'black');
-            circ.setAttributeNS(null, 'stroke', 'white');
-            circ.setAttributeNS(null, 'stroke-width', 1);
-            circ.setAttributeNS(null, 'cx', ''+x+'%' );
-            circ.setAttributeNS(null, 'cy', ''+y+'%');
-            circ.setAttributeNS(null, 'r', '1%' );
-            gobs.appendChild(circ);
+                var circ = document.createElementNS( svgns, 'circle');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'white');
+                circ.setAttributeNS(null, 'stroke-width', 1);
+                circ.setAttributeNS(null, 'cx', ''+x+'%' );
+                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'r', '1%' );
+                gobs.appendChild(circ);
+            }
+        } else if (this.overlayPref.shape === 'dots_narrow') {
+            for (var x=15; x<=90; x+=8)
+            for (var y=20; y<=85; y+=7) {
+                var circ = document.createElementNS( svgns, 'circle');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'black');
+                circ.setAttributeNS(null, 'stroke-width', 2);
+                circ.setAttributeNS(null, 'cx', ''+x+'%' );
+                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'r', '1%' );
+                gobs.appendChild(circ);
+
+                var circ = document.createElementNS( svgns, 'circle');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'white');
+                circ.setAttributeNS(null, 'stroke-width', 1);
+                circ.setAttributeNS(null, 'cx', ''+x+'%' );
+                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'r', '1%' );
+                gobs.appendChild(circ);
+            }
+        } else if (this.overlayPref.shape === 'grid') {
+            for (var y=12; y<=95; y+=9) {
+                var circ = document.createElementNS( svgns, 'line');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'black');
+                circ.setAttributeNS(null, 'stroke-width', 2);
+                circ.setAttributeNS(null, 'x1', '0%' );
+                circ.setAttributeNS(null, 'x2', '100%' );
+                circ.setAttributeNS(null, 'y1', ''+y+'%');
+                circ.setAttributeNS(null, 'y2', ''+y+'%');
+                gobs.appendChild(circ);
+
+                var circ = document.createElementNS( svgns, 'line');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'white');
+                circ.setAttributeNS(null, 'stroke-width', 1);
+                circ.setAttributeNS(null, 'x1', '0%' );
+                circ.setAttributeNS(null, 'x2', '100%' );
+                circ.setAttributeNS(null, 'y1', ''+y+'%');
+                circ.setAttributeNS(null, 'y2', ''+y+'%');
+                gobs.appendChild(circ);
+            }
         }
-    } else if (mode === 'dots_medium') {
-        for (var x=9; x<=95; x+=9)
-        for (var y=15; y<=90; y+=8) {
-            var circ = document.createElementNS( svgns, 'circle');
-            circ.setAttributeNS(null, 'fill-opacity', 0.0);
-            circ.setAttributeNS(null, 'fill', 'black');
-            circ.setAttributeNS(null, 'stroke', 'black');
-            circ.setAttributeNS(null, 'stroke-width', 2);
-            circ.setAttributeNS(null, 'cx', ''+x+'%' );
-            circ.setAttributeNS(null, 'cy', ''+y+'%');
-            circ.setAttributeNS(null, 'r', '1%' );
-            gobs.appendChild(circ);
-
-            var circ = document.createElementNS( svgns, 'circle');
-            circ.setAttributeNS(null, 'fill-opacity', 0.0);
-            circ.setAttributeNS(null, 'fill', 'black');
-            circ.setAttributeNS(null, 'stroke', 'white');
-            circ.setAttributeNS(null, 'stroke-width', 1);
-            circ.setAttributeNS(null, 'cx', ''+x+'%' );
-            circ.setAttributeNS(null, 'cy', ''+y+'%');
-            circ.setAttributeNS(null, 'r', '1%' );
-            gobs.appendChild(circ);
-        }
-    } else if (mode === 'dots_narrow') {
-        for (var x=15; x<=90; x+=8)
-        for (var y=20; y<=85; y+=7) {
-            var circ = document.createElementNS( svgns, 'circle');
-            circ.setAttributeNS(null, 'fill-opacity', 0.0);
-            circ.setAttributeNS(null, 'fill', 'black');
-            circ.setAttributeNS(null, 'stroke', 'black');
-            circ.setAttributeNS(null, 'stroke-width', 2);
-            circ.setAttributeNS(null, 'cx', ''+x+'%' );
-            circ.setAttributeNS(null, 'cy', ''+y+'%');
-            circ.setAttributeNS(null, 'r', '1%' );
-            gobs.appendChild(circ);
-
-            var circ = document.createElementNS( svgns, 'circle');
-            circ.setAttributeNS(null, 'fill-opacity', 0.0);
-            circ.setAttributeNS(null, 'fill', 'black');
-            circ.setAttributeNS(null, 'stroke', 'white');
-            circ.setAttributeNS(null, 'stroke-width', 1);
-            circ.setAttributeNS(null, 'cx', ''+x+'%' );
-            circ.setAttributeNS(null, 'cy', ''+y+'%');
-            circ.setAttributeNS(null, 'r', '1%' );
-            gobs.appendChild(circ);
-        }
-    } else if (mode === 'grid') {
-        for (var y=12; y<=95; y+=9) {
-            var circ = document.createElementNS( svgns, 'line');
-            circ.setAttributeNS(null, 'fill-opacity', 0.0);
-            circ.setAttributeNS(null, 'fill', 'black');
-            circ.setAttributeNS(null, 'stroke', 'black');
-            circ.setAttributeNS(null, 'stroke-width', 2);
-            circ.setAttributeNS(null, 'x1', '0%' );
-            circ.setAttributeNS(null, 'x2', '100%' );
-            circ.setAttributeNS(null, 'y1', ''+y+'%');
-            circ.setAttributeNS(null, 'y2', ''+y+'%');
-            gobs.appendChild(circ);
-
-            var circ = document.createElementNS( svgns, 'line');
-            circ.setAttributeNS(null, 'fill-opacity', 0.0);
-            circ.setAttributeNS(null, 'fill', 'black');
-            circ.setAttributeNS(null, 'stroke', 'white');
-            circ.setAttributeNS(null, 'stroke-width', 1);
-            circ.setAttributeNS(null, 'x1', '0%' );
-            circ.setAttributeNS(null, 'x2', '100%' );
-            circ.setAttributeNS(null, 'y1', ''+y+'%');
-            circ.setAttributeNS(null, 'y2', ''+y+'%');
-            gobs.appendChild(circ);
+        if (this.overlayPref.position) { //position reads p1;p2;p3;p4 p=x,y
+            var pattern = /(\w+),(\w+);(\w+),(\w+);(\w+),(\w+);(\w+),(\w+)/;
+            var points = this.overlayPref.position.match(pattern);
+            if (points.lenght==9) {
+                
+            }
         }
     }
+    //gobs.setAttributesNS(null, )
 };
 

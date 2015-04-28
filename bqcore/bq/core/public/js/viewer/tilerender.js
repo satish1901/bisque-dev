@@ -14,6 +14,7 @@ function TilesRenderer (viewer,name){
     this.template  = 'tile=0,0,0,'+this.tile_size;
     this.myTileProvider = new PanoJS.TileUrlProvider('','','');
 };
+
 TilesRenderer.prototype = new ViewerPlugin();
 
 TilesRenderer.prototype.create = function (parent) {
@@ -65,7 +66,9 @@ TilesRenderer.prototype.updateImage = function (){
 
       // this listner will correctly resize and move SVG element
       //this.mySvgListener = new SvgControl( this.tiled_viewer, this.viewer.renderer.svgdoc );
-      this.myOverListener = new SvgControl( this.tiled_viewer, this.viewer.overlay.overlay );
+      if (this.viewer.overlay) {
+        this.myOverListener = new SvgControl( this.tiled_viewer, this.viewer.overlay.overlay );
+      }
 
       // this listner will update viewer if scale has changed in the tiled viewer
       this.myZoomListener = new ZoomListner(this.tiled_viewer, this.viewer);
