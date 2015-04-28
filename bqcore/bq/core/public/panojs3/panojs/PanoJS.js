@@ -637,7 +637,7 @@ PanoJS.prototype.currentScale = function() {
 
 PanoJS.prototype.toImageFromViewer = function(p) {
     var scale = this.currentScale();
-    return {x: p.x / scale, y: p.y / scale};
+    return {x: p.x / scale, y: p.y / scale, event: p.event};
 };
 
 PanoJS.prototype.toViewerFromImage = function(p) {
@@ -696,7 +696,7 @@ PanoJS.prototype.notifyViewerMoved = function(coords) {
 
 PanoJS.prototype.notifyCursorMoved = function(pt) {
     for (var i = 0; i < this.cursorMovedListeners.length; i++) {
-        this.cursorMovedListeners[i].cursorMoved( new PanoJS.MoveEvent(pt.x, pt.y) );
+        this.cursorMovedListeners[i].cursorMoved( new PanoJS.MoveEvent(pt.x, pt.y, pt.event) );
     }
 };
 
@@ -986,6 +986,7 @@ PanoJS.prototype.resolveCoordinates = function(e) {
   return {
     'x' : x,
     'y' : y,
+    event : e,
   };
 };
 
@@ -1124,7 +1125,7 @@ PanoJS.prototype.mouseMovedHandler = function(e) {
 PanoJS.prototype.mouseMoveHandler = function(e) {
     e = e ? e : window.event;
     var pt = this.resolveCoordinates(e);
-    pt = this.toImageFromViewer({x: pt.x - this.x, y: pt.y - this.y});
+    pt = this.toImageFromViewer({x: pt.x - this.x, y: pt.y - this.y, event: e});
     this.notifyCursorMoved(pt);
     return false;
 };
@@ -1326,9 +1327,10 @@ PanoJS.prototype.maximizeHandler = function(e) {
 // PanoJS Events
 //-------------------------------------------------------
 
-PanoJS.MoveEvent = function(x, y) {
+PanoJS.MoveEvent = function(x, y, e) {
   this.x = x;
   this.y = y;
+  this.event = e;
 };
 
 PanoJS.ZoomEvent = function(x, y, level, scale, width, height) {

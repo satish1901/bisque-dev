@@ -218,7 +218,6 @@ ImgEdit.prototype.startEdit = function () {
 
     //this.renderer.setmousedown(null);
     this.renderer.setmousedown(callback(this, this.mousedown));
-    this.renderer.set_select_handler(callback(this, this.on_selected));
     this.surface_original_onmousedown = this.viewer.viewer_controls_surface.onmousedown;
     this.viewer.viewer_controls_surface.onmousedown = callback(this, this.mousedown);
 
@@ -305,6 +304,10 @@ ImgEdit.prototype.mousedown = function (e) {
     }
 };
 
+ImgEdit.prototype.hover = function (e) {
+
+},
+
 ImgEdit.prototype.mousemove = function (e) {
     //console.log(this, e);
     if (!e) e = window.event;  // IE event model
@@ -322,7 +325,7 @@ ImgEdit.prototype.mousemove = function (e) {
 
     if(!this.trackpt)
         this.trackpt = pt;
-
+/*
     var tpt = this.trackpt;
     var dpt = {x: pt.x - tpt.x, y: pt.y - tpt.y};
     var dl = dpt.x*dpt.x + dpt.y*dpt.y;
@@ -335,12 +338,13 @@ ImgEdit.prototype.mousemove = function (e) {
             if(shape){
                 evt.type = 'hover';
                 me.viewer.parameters.onhover(shape.gob, evt);
-                //console.log(shape);
+                console.log(shape);
             }
 
             //me.onhover(e);
         },750);
     }
+*/
 };
 
 /*ImgEdit.prototype.mousedblclick = function (e) {
