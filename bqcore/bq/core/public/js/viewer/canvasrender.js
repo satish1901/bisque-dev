@@ -462,6 +462,7 @@ RTree.prototype.cacheChildSprites = function(node, scale){
             node.image = img;
             node.imageCache.setImage(img);
             node.dirty = false;
+            console.log(img);
         },
 
         x: bbox.min[0]*scale - buffer,
@@ -1021,6 +1022,7 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
             node.imageCache.setImage(img);
             node.dirty = false;
             me.cachesRendered += 1; //count the caches that have been rerendered since performing a cache call
+            //console.log(img.src);
             if(me.cachesRendered >= me.cachesDestroyed && onCache){
                 me.cachesRendered = 0;
                 me.cachesDestroyed = 0;
@@ -1096,7 +1098,7 @@ function CanvasControl(viewer, element) {
 
     this.viewer.viewer.tiles.tiled_viewer.addViewerZoomedListener(this);
     this.viewer.viewer.tiles.tiled_viewer.addViewerMovedListener(this);
-
+    this.viewer.viewer.tiles.tiled_viewer.addCursorMovedListener(this);
 }
 
 CanvasControl.prototype.setFrustum = function(e, scale){
@@ -1145,7 +1147,6 @@ CanvasControl.prototype.viewerMoved = function(e) {
     this.viewer.draw();
     //this.viewer.stage.content.style.left = e.x + 'px';
     //this.viewer.stage.content.style.top = e.y + 'px';
-
 };
 
 CanvasControl.prototype.viewerZoomed = function(e) {
@@ -1162,6 +1163,39 @@ CanvasControl.prototype.viewerZoomed = function(e) {
     this.viewer.draw();
     this.viewer.updateVisible(); //update visible has draw function
     //this.viewer.draw();
+};
+
+
+CanvasControl.prototype.cursorMoved = function(e) {
+    //this.viewer.stage.content.style.left = e.x + 'px';
+    //this.viewer.stage.content.style.top = e.y + 'px';
+    //console.log(e);
+
+    var pt = e;
+    if(!this.pastPoint)
+        this.pastPoint = e;
+
+    var tpt = this.pastPoint;
+    var dpt = {x: pt.x - tpt.x, y: pt.y - tpt.y};
+    var scale = this.viewer.stage.scale();
+    var dl = (dpt.x*dpt.x + dpt.y*dpt.y)*scale.x*scale.x;
+    var viewer = this.viewer.viewer;
+    var renderer = this.viewer;
+
+    if(this.hoverTimeout) clearTimeout(this.hoverTimeout);
+    if(dl < 10 && renderer.mode === 'navigate'){
+        this.hoverTimeout = setTimeout(function(){
+            var shape = renderer.findNearestShape(tpt.x, tpt.y);
+            if(shape){
+                viewer.parameters.onhover(shape.gob, e.event);
+                console.log(shape);
+            }
+
+            //me.onhover(e);
+        },750);
+    }
+
+    this.pastPoint = e;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -1200,7 +1234,8 @@ CanvasRenderer.prototype.create = function (parent) {
         container: this.wrapper,
         listening: true,
     });
-    this.stage._mousemove = Kinetic.Util._throttle( this.stage._mousemove, 60);
+
+    this.stage._mousemove = Kinetic.Util._throttle( this.stage._mousemove, 30);
     //someKineticLayer._getIntersection = function() {return {};};
     this.stage.content.style.setProperty('z-index', 15);
 
@@ -1452,6 +1487,7 @@ CanvasRenderer.prototype.setmouseup = function (cb, doadd ){
 };
 
 CanvasRenderer.prototype.setmousemove = function (cb, doadd ){
+    var me = this;
     this.addHandler ("mousemove",cb );
 };
 
@@ -1553,7 +1589,7 @@ CanvasRenderer.prototype.updateVisible = function(){
         me.draw();
 
     }
-    this.quadtree.drawBboxes();
+    //this.quadtree.drawBboxes();
 
 };
 
