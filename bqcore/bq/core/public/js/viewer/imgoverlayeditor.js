@@ -6,8 +6,8 @@
 *   a dot template. Only instantiated if the user has set
 *   the dot template in the view image layouts
 *
-*	@param: viewer - 
-*	@param: name - 
+*	@param: viewer -
+*	@param: name -
 */
 function ImgOverlayEditor(viewer, name) {
 
@@ -34,7 +34,7 @@ function ImgOverlayEditor(viewer, name) {
                             modal: true,
                             closeAction:'hide',
                             viewer: me.viewer,
-                            phys: me.viewer.imagephys,       
+                            phys: me.viewer.imagephys,
                             image_resource:resource,
                         });
                     }
@@ -64,7 +64,7 @@ ImgOverlayEditor.prototype.newImage = function () {
 };
 
 ImgOverlayEditor.prototype.updateImage = function () {
-    
+
 };
 
 ImgOverlayEditor.prototype.getParams = function () {
@@ -79,7 +79,7 @@ Ext.define('BQ.overlayEditor.Window', {
     initComponent: function(config) {
         var config = config || {};
         var me = this;
-        
+
         this.miniViewer =  Ext.create('BQ.viewer.Image',{
             width:'100%',
             height: '75%',
@@ -94,7 +94,11 @@ Ext.define('BQ.overlayEditor.Window', {
                 'changed': function(el) {
                     var gobs = el.getGobjects();
                     if (gobs.length>4) {
-                        el.viewer.plugins_by_name.edit.remove_gobject(gobs[0])
+                        var editor   = el.viewer.plugins_by_name.edit;
+                        var renderer = el.viewer.plugins_by_name.renderer;
+
+                        editor.remove_gobject(gobs[0]);
+                        renderer.updateVisible();
                     }
                 }
             },
@@ -108,10 +112,10 @@ Ext.define('BQ.overlayEditor.Window', {
             ],
             flex: 1,
         },
-            this.miniViewer, 
+            this.miniViewer,
         ];
-        
-        
+
+
         var fbar = [{
             scale: 'large',
             xtype: 'button',
@@ -123,19 +127,19 @@ Ext.define('BQ.overlayEditor.Window', {
                     BQ.ui.notification('For points are required to set the overlay')
                     return
                 }
-                
-                
+
+
                 view = me.viewer.view();
-                
+
                 corners = [
                     {x:0,y:0},
                     {x:view.original_width,y:0},
                     {x:0, y:view.orginial_height},
                     {x:view.original_width, y:view.orginial_height}
                 ];
-                
+
                 var points = []
-                
+
                 for (var c=0; c<4; c++) {
                     var lengths = [];
                     for (var g = 0;g<gobs.length;g++) {
@@ -144,7 +148,7 @@ Ext.define('BQ.overlayEditor.Window', {
                     var i = lengths.indexOf(Math.max.apply(Math, lengths));
                     points.push(gobs.splice(i, 1)[0]);
                 }
-                
+
                 var x1 = '';
                 var y1 = '';
                 var x2 = '';
@@ -153,28 +157,28 @@ Ext.define('BQ.overlayEditor.Window', {
                 var y3 = '';
                 var x4 = '';
                 var y4 = '';
-                
-                
+
+
                 var preferenceTag = document.createElement('preference');
-                
+
                 var viewerTag = document.createElement('tag');
                 viewerTag.setAttribute('name', 'Viewer');
                 preferenceTag.appendChild(viewerTag);
-                
+
                 var layoutTag = document.createElement('tag');
                 layoutTag.setAttribute('name', 'Overlay');
                 viewerTag.appendChild(layoutTag);
-                
+
                 var enableTag = document.createElement('tag');
                 enableTag.setAttribute('name', 'enable');
                 enableTag.setAttribute('value', 'true');
                 layoutTag.appendChild(enableTag);
-                
+
                 var positionTag = document.createElement('tag');
                 positionTag.setAttribute('name', 'position');
                 positionTag.setAttribute('value', points[0].vertices[0].x+','+points[0].vertices[0].y+';'+points[1].vertices[0].x+','+points[1].vertices[0].y+';'+points[2].vertices[0].x+','+points[2].vertices[0].y+';'+points[3].vertices[0].x+','+points[3].vertices[0].y);
                 layoutTag.appendChild(positionTag);
-                
+
                 BQ.Preferences.updateResource(preferenceTag.outerHTML)
             },
         }, { //toggles disable enable of the mask
@@ -183,14 +187,14 @@ Ext.define('BQ.overlayEditor.Window', {
             xtype: 'button',
             text: 'Disable',
         }]
-        
+
         Ext.apply(me, {
             items: items,
             fbar: fbar,
         });
         this.callParent([config]);
-        
+
     },
-    
-    
+
+
 })
