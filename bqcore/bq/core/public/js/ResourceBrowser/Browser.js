@@ -109,12 +109,15 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
 
     constructor : function(config) {
         //Prefetch the loading spinner
+        var me = this;
         var imgSpinner = new Image();
         imgSpinner.src = BQ.Server.url('/js/ResourceBrowser/Images/loading.gif');
 
+        //organizer tab panel
         this.westPanel = Ext.create('Ext.tab.Panel', { //Ext.create('Ext.panel.Panel', {
             region : 'west',
             plain : true,
+            width: 420,
             border: 0,
             activeTab : 0,
             split : true,
@@ -125,7 +128,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             hidden : true,
             collapsible : true,
             hideCollapseTool : true,
-            deferredRender: true,
+            //deferredRender: true,
             listeners : {
                 beforecollapse : function(me) {
                     me.setTitle(me.getComponent(0).title);
@@ -134,6 +137,50 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                     if (newCard.setActive)
                         newCard.setActive();
                 },
+                afterrender: function(el) {
+                    if (me.showOrganizer) {
+                        me.organizerCt = Ext.create('BQ.tree.organizer.Panel', {
+                            title: 'Organizer',
+                            itemId: 'organizer',
+                            browserParams : me.browserParams,
+                            url: me.browserState['baseURL'],
+                            listeners : {
+                                scope : this,
+                                selected : function(url, organizer) {
+                                    me.msgBus.fireEvent('Browser_ReloadData', {
+                                        baseURL : organizer.getUrl(),
+                                        offset: 0,
+                                        tag_query: organizer.getQuery(),
+                                        tag_order: organizer.getOrder(),
+                                    });
+                                },
+                            },
+                        });
+                        el.add(me.organizerCt);
+                        el.setActiveTab(0);
+                        if (me.dataset && !(me.dataset instanceof BQDataset)) {
+                            el.add({
+                                xtype: 'bq-tree-files-panel',
+                                itemId: 'files',
+                                title: 'Files',
+                                tag_order : me.browserParams.tagOrder,
+                                listeners : {
+                                    scope : this,
+                                    selected : function(url, files) {
+                                        me.msgBus.fireEvent('Browser_ReloadData', {
+                                            baseURL : url.slice(-1)!=='/' ? url+'/value' : url+'value',
+                                            offset : 0,
+                                            tag_query : '',
+                                            tag_order : files.tag_order,
+                                            //wpublic : false,
+                                        });
+                                    }
+                                },
+                            });
+                        }
+                        el.setVisible(true)
+                    }
+                }
             }
         });
 
@@ -178,14 +225,84 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         });
 
         this.callParent([arguments]);
-
-        this.loadPreferences();
+        
+        
+        //load preferences
+        var me = this;
+        if (BQ.Preferences) {
+            BQ.Preferences.on('update_user_pref', function(el, userPrefDict, userPrefXML){
+                var resourcebrowserPref = {};
+                if (userPrefDict.ResourceBrowser)
+                    resourcebrowserPref = userPrefDict.ResourceBrowser;
+                me.onPreferences(resourcebrowserPref) //update preferences
+            })
+            BQ.Preferences.on('onerror_user_pref', function() {
+                me.onPreferences({}) //set default preferences no preference was found                
+            });
+            //check to see if resource preferences was updated already
+            if (BQ.Preferences.userDict) {
+                var resourcebrowserPref = {};
+                if (BQ.Preferences.userDict.ResourceBrowser)
+                    resourcebrowserPref = BQ.Preferences.userDict.ResourceBrowser
+                me.onPreferences(resourcebrowserPref) //update preferences
+            }
+        } else {
+            me.onPreferences({}) //set default preferences no preference was found
+        }
+        //this.loadPreferences();
 
         if (Ext.supports.Touch)
             this.gestureMgr = new Bisque.Misc.GestureManager();
     },
+    
+    
+    onPreferences : function(preferences) {
+        this.preferences = preferences;
+        this.applyPreferences();
 
-    loadPreferences : function(preferences, tag) {
+        // defaults (should be loaded from system preferences)
+        Ext.apply(this.browserParams, {
+            layout : this.browserParams.layout || 1,
+            dataset : this.browserParams.dataset || '/data_service/image/',
+            offset : this.browserParams.offset || 0,
+            tagQuery : this.browserParams.tagQuery || '',
+            tagOrder : this.browserParams.tagOrder || '"@ts":desc',
+            wpublic : (this.browserParams.wpublic == 'true' ? true : false),
+            selType : (this.browserParams.selType || 'SINGLE').toUpperCase()
+        });
+
+        this.browserState['offset'] = this.browserParams.offset;
+        this.layoutKey = this.layoutKey || this.browserParams.layout;
+        //this.showOrganizer = true;
+        //if ('showOrganizer' in this.browserParams)
+        this.showOrganizer = this.browserParams.showOrganizer || false;
+        this.showModuleOrganizer = this.browserParams.showModuleOrganizer || false;
+        this.selectState = this.browserParams.selectState || 'ACTIVATE';
+        this.commandBar.applyPreferences();
+
+        if (this.browserParams.dataset != "None") {
+            var baseURL = (this.browserParams.dataset instanceof BQDataset) ? this.browserParams.dataset.uri + '/value' : this.browserParams.dataset;
+
+            this.loadData({
+                baseURL : baseURL,
+                offset : this.browserParams.offset,
+                tag_query : this.browserParams.tagQuery,
+                tag_order : this.browserParams.tagOrder
+            });
+
+            //var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
+            //this.showOrganizer ? btnOrganize.handler.call(this.commandBar) : '';
+            /*
+            if (this.showModuleOrganizer) {
+                this.initModuleOrganizer();
+            }
+            */
+        }
+    },    
+    
+    //deprecate
+    /*
+    loadPreferences : function(preferences, tags) {
         if (preferences == undefined)
             BQ.Preferences.get({
                 type : 'user',
@@ -230,12 +347,15 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
 
                 var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
                 this.showOrganizer ? btnOrganize.handler.call(this.commandBar) : '';
+                
                 if (this.showModuleOrganizer) {
                     this.initModuleOrganizer();
                 }
+                
             }
         }
     },
+    */
 
     applyPreferences : function() {
         var browserPref = this.preferences.Browser;
@@ -471,10 +591,11 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                     var user = BQSession.current_session.user;
 
                     if (user) {
-                        BQ.Preferences.reloadUser(user);
+                        BQ.Preferences.loadUser();
                         this.browserParams = {
                         };
-                        this.loadPreferences();
+                        //this.onPreferences(this.preferences);
+                        //this.loadPreferences();
                     }
                 } else
                     this.loadData(uri);
@@ -740,4 +861,3 @@ Ext.define('Bisque.ModuleBrowser.Browser', {
     },
 
 });
-

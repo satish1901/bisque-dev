@@ -147,8 +147,10 @@ Ext.define('BQ.preference.Tagger', {
                     'user':BQ.Preferences.updateUser,
                     'resource':BQ.Preferences.updateResource,
                 }
-                if (this.level in update) {
-                    update[this.level](prefDOM.outerHTML)
+                if (this.level=='resource' && this.resource_uniq) {
+                    update[this.level](this.resource_uniq, prefDOM.outerHTML);
+                } else if (this.level in update) {
+                    update[this.level](prefDOM.outerHTML);
                 } else {
                     if (!silent) BQ.ui.notification('No records modified, save canceled! Not a valid level!');
                 }
@@ -241,7 +243,6 @@ Ext.define('BQ.preference.PreferencePage', {
         if (BQApp.user) {
             var userPref = Ext.create('BQ.preference.Tagger', {
                 level: 'user',
-                //viewMode : 'Offline',
             });
             
             if (BQApp.user.name=='admin') { //dumb I know
@@ -256,7 +257,6 @@ Ext.define('BQ.preference.PreferencePage', {
             var resourcePref = Ext.create('BQ.preference.Tagger', {
                 level: 'resource',
                 resource: resource_uniq,
-                //viewMode : 'Offline',
             });
         }
         

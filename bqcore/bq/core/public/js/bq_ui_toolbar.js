@@ -665,21 +665,24 @@ Ext.define('BQ.Application.Toolbar', {
         //call preferences
         var me = this;
         if (BQ.Preferences) {
-            BQ.Preferences.on('updateuserpref', function(el, userPrefDict, userPrefXML){
+            BQ.Preferences.on('update_user_pref', function(el, userPrefDict, userPrefXML){
                 var toolbarPref = {};
                 if (userPrefDict.Toolbar)
                     toolbarPref = userPrefDict.Toolbar;
-                me.onPreferences(toolbarPref) //update preferences
-            })
+                me.onPreferences(toolbarPref); //update preferences
+            });
+            BQ.Preferences.on('onerror_user_pref', function() {
+                me.onPreferences({}); //set default preferences                
+            });
             //check to see if resource preferences was updated already
             if (BQ.Preferences.userDict) {
                 var toolbarPref = {};
                 if (BQ.Preferences.userDict.Toolbar)
-                    toolbarPref = BQ.Preferences.userDict.Toolbar
-                me.onPreferences(toolbarPref) //update preferences
+                    toolbarPref = BQ.Preferences.userDict.Toolbar;
+                me.onPreferences(toolbarPref); //update preferences
             }
         } else {
-            me.onPreferences({}) //set default preferences
+            me.onPreferences({}); //set default preferences
         }
         
         
