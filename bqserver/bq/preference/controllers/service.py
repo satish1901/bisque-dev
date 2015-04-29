@@ -66,6 +66,7 @@ from bq import data_service
 from bq.core.service import ServiceController
 from bq.core import identity
 
+from bq.util.hash import is_uniq_code
 
 log = logging.getLogger('bq.preference')
 
@@ -283,15 +284,16 @@ class PreferenceController(ServiceController):
         """
         not_annon = not_anonymous().is_met(request.environ)
         if resource_uniq:
-            if request.method == 'GET':
-                log.info('GET /preference/user -> fetching user level preference')
-                return self.get(resource_uniq=resource_uniq, level=2, **kw)
-            elif request.method == 'PUT' and not_annon:
-                if request.body:
-                    return self.resource_put(resource_uniq, body=request.body, **kw)
-            elif request.method == 'DELETE' and not_annon:
-                path = arg.join('/') #no path deletes the preference
-                return self.resource_delete(resource_uniq, path=path, **kw)
+            if is_uniq_code(resource_uniq):
+                if request.method == 'GET':
+                    log.info('GET /preference/user -> fetching user level preference')
+                    return self.get(resource_uniq=resource_uniq, level=2, **kw)
+                elif request.method == 'PUT' and not_annon:
+                    if request.body:
+                        return self.resource_put(resource_uniq, body=request.body, **kw)
+                elif request.method == 'DELETE' and not_annon:
+                    path = arg.join('/') #no path deletes the preference
+                    return self.resource_delete(resource_uniq, path=path, **kw)
         else:
             if request.method == 'GET':
                 log.info('GET /preference/user -> fetching resource level preference for %s',resource_uniq)
@@ -322,31 +324,37 @@ class PreferenceController(ServiceController):
             return etree.tostring(system_preference)
         
         #check user preference
-        #user = data_service.get_resource('/data_service/user', view='full')
         user = self.get_current_user(view='full')
         user_preference_list = user.xpath('preference')
         if len(user_preference_list)>0: #if user is not signed in no user preferences are added
             user_preference = data_service.get_resource(user_preference_list[0].attrib['uri'], **kw)
-            attrib = system_preference.attrib
-            attrib.update(user_preference.attrib)
-            attrib['uri'] = request.url.replace('&','&amp;')
-            attrib['owner'] = user.attrib['uri']
+            attrib = {}
+            if 'clean' not in kw.get('view', ''):
+                attrib = system_preference.attrib
             user_preference = mergeDocuments(system_preference, user_preference, attrib=attrib)
         else:
             user_preference  = system_preference
         
         if level <= LEVEL['user']:
+            if 'clean' not in kw.get('view', ''):
+                user_preference.attrib['uri'] = request.url.replace('&','&amp;')
+                user_preference.attrib['owner'] = user.attrib.get('uri', system_preference.attrib.get('owner', ''))
             return etree.tostring(user_preference)
         
         #check resource preference
         resource = data_service.get_resource('/data_service/%s'%resource_uniq, view='full')
+        if not resource:
+            abort(404)
+        
         resource_preference_list = resource.xpath('preference')
         if len(resource_preference_list)>0:
             resource_preference = data_service.get_resource(resource_preference_list[0].attrib['uri'], **kw)
-            attrib = user_preference.attrib
-            attrib.update(resource_preference.attrib)
-            attrib['uri'] = request.url.replace('&','&amp;')
-            #attrib['owner'] = user.attrib['uri']
+            if not resource_preference: #handles a bug in the data_service with permissions and full verse deep views
+                resource_preference = etree.Element('prefererence')
+            attrib = {}
+            if 'clean' not in kw.get('view',''):
+                attrib.update(user_preference.attrib)
+                attrib.update(resource_preference.attrib)
             resource_preference = mergeDocuments(user_preference, resource_preference, attrib=attrib)
         else:
             resource_preference = user_preference
@@ -357,18 +365,18 @@ class PreferenceController(ServiceController):
         resource_preference_list = annotation.xpath('preference')
         if len(resource_preference_list)>0:
             annotation_preference = data_service.get_resource(resource_preference_list[0].attrib['uri'], **kw)
-            attrib = resource_preference.attrib
-            attrib.update(annotation_preference.attrib)
-            attrib['uri'] = request.url.replace('&','&amp;')
-            attrib['owner'] = user.attrib['uri']
+            attrib = {}
+            if 'clean' not in kw.get('view', ''):
+                attrib.update(resource_preference.attrib)
+                attrib.update(annotation_preference.attrib)
             annotation_preference = mergeDocuments(resource_preference, annotation_preference, attrib=attrib)
         else:
             annotation_preference = resource_preference
             
-        if user.attrib.get('uri', None): #if user is signed in
-            annotation_preference.attrib['owner'] = user.attrib['uri']
-            
         if level <= LEVEL['resource']:
+            if 'clean' not in kw.get('view', ''):
+                annotation_preference.attrib['uri'] = request.url.replace('&','&amp;')
+                annotation_preference.attrib['owner'] = user.attrib.get('uri', resource.attrib.get('owner', ''))
             return etree.tostring(annotation_preference)
         #raise exception level not known
     

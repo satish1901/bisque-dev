@@ -174,10 +174,10 @@ class DataServerController(ServiceController):
         'generate a unique code to be used for a resource'
         return make_uniq_code()
 
-    def resource_load(self,  uniq=None, ident=None, view=None):
+    def resource_load(self,  uniq=None, ident=None, action=RESOURCE_READ, view=None):
         "Load a resource by uniq code or db ident (deprecated)"
         query =  resource_load('resource', uniq=uniq, ident=ident)
-        query =  resource_permission(query)
+        query =  resource_permission(query, action=action)
         resource = query.first()
         if resource:
             xtree = db2tree(resource, baseuri = self.url, view=view)

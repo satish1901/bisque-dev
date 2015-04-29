@@ -246,6 +246,7 @@ ViewerPlugin.prototype.create = function (parent){
     return parent;
 };
 ViewerPlugin.prototype.newImage = function (){
+    
 };
 ViewerPlugin.prototype.updateImage = function (){
 };
@@ -325,12 +326,14 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     
     //initializing preference for the image viewer
     this.preferences = this.parameters.preferences;
+    
+    /*
     if (BQ.Preferences) {
+        BQ.Preferences.loadResource(uniq); //begin loading request for viewer
         BQ.Preferences.on('updateresourcepref', function(el, resourcePrefDict, resourcePrefXML){
             var viewerPref = {};
             if (resourcePrefDict.Viewer)
                 viewerPref = resourcePrefDict.Viewer;
-            //me.requires_update = true;
             me.onPreferences(viewerPref) //update preferences
         })
         //check to see if resource preferences was updated already
@@ -343,6 +346,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     } else {
         me.onPreferences({}) //onPreferences has to be initialized before the view shows anything 
     }
+    */
     
     /*
     BQ.Preferences.get({
@@ -489,6 +493,7 @@ ImgViewer.prototype.load = function (uri){
 
 
 ImgViewer.prototype.newImage = function (bqimage) {
+    var me = this;
     if (! (bqimage instanceof BQImage) ) {
         throw BQOperationError;
     }
@@ -498,6 +503,29 @@ ImgViewer.prototype.newImage = function (bqimage) {
 
     var phys = new BQImagePhys (this.image);
     phys.load (callback (this, 'newPhys') );
+    
+    if (BQ.Preferences) {
+        BQ.Preferences.loadResource(this.image.resource_uniq); 
+        //begin loading request for viewer
+        BQ.Preferences.on('update_'+this.image.resource_uniq+'_pref', function(el, resourcePrefDict, resourcePrefXML){
+            var viewerPref = {};
+            if (resourcePrefDict.Viewer)
+                viewerPref = resourcePrefDict.Viewer;
+            me.onPreferences(viewerPref) //update preferences
+        })
+        BQ.Preferences.on('onerror_'+this.image.resource_uniq+'_pref', function(el, resourcePrefDict, resourcePrefXML){
+            me.onPreferences({}) //update preferences
+        })
+        //check to see if resource preferences was updated already
+        if (BQ.Preferences.resourceDict) {
+            var viewerPref = {};
+            if (BQ.Preferences.resourceDict.Viewer)
+                viewerPref = BQ.Preferences.resourceDict.Viewer
+            me.onPreferences(viewerPref) //update preferences
+        }
+    } else {
+        me.onPreferences({}) //onPreferences has to be initialized before the view shows anything 
+    }
 
     // this probably should be run after the imagephys is acquired
     // in order to disable the use of "default" service at all!
