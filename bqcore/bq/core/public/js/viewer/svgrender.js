@@ -1093,9 +1093,9 @@ SVGRenderer.prototype.populate_overlay = function () {
         var dx = 0; // in %
         var dy = 0; // in %    
         if (this.overlayPref.position) { //position reads p1;p2;p3;p4 p=x,y
-            var pattern = /(\w+),(\w+);(\w+),(\w+);(\w+),(\w+);(\w+),(\w+)/;
+            var pattern = /([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+)/;
             var points = this.overlayPref.position.match(pattern);
-            if (points.length == 9) {
+            if (points && (points.length == 9)) {
                 var view = this.viewer.view();
                 /*
                 var h = this.fourPointsHomographyMat(
@@ -1130,11 +1130,22 @@ SVGRenderer.prototype.populate_overlay = function () {
                 var scaleY = ((this.distance(points[1],points[2],points[5],points[6]) + this.distance(points[3],points[4],points[7],points[8]))/2)/view.original_height;
                 var scale = 'scale('+scaleX+','+scaleY+')';
                 dx = ((points[1])/view.original_width)/scaleX*100; //view.width  h[5];
-                dy = ((points[2])/view.original_height)/scaleY*100; //h[6];                
-                var angle = Math.atan(this.slope(points[1],points[2],points[3],points[4]))
-                var rotate = 'rotate('+this.radian2degrees(angle)+' '+scaleX+' '+scaleY+')';
+                dy = ((points[2])/view.original_height)/scaleY*100; //h[6];       
+
+                //angle
+                //var angle1 = 0;
+                var angle1 = Math.atan(this.slope(points[1],points[2],points[3],points[4]));
+                var angle2 = Math.atan(this.slope(points[5],points[6],points[7],points[8]));
+                //var angle3 = -1/Math.atan(this.slope(points[1],points[2],points[5],points[6]));
+                //var angle4 = -1/Math.atan(this.slope(points[3],points[4],points[7],points[8]));
+                var angleAvg = (angle1+angle2)/4;
+                var rotate = 'rotate('+this.radian2degrees(angleAvg)+','+(dx/100)*view.width+','+(dy/100)*view.width+')';
                 
-                gobs.setAttributeNS(null, 'transform', rotate+' '+scale);
+                //skew
+                //var rotate = 'rotate('+this.radian2degrees(angle)+')';
+                
+                gobs.setAttributeNS(null, 'transform', scale+' '+rotate);
+                //gobs.setAttributeNS(null, 'transform', scale);
                 var circ = document.createElementNS( svgns, 'circle');
                 circ.setAttributeNS(null, 'fill-opacity', 0.0);
                 circ.setAttributeNS(null, 'fill', 'black');
@@ -1216,6 +1227,29 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'r', '1%' );
                 gobs.appendChild(circ);
             }
+        } else if (this.overlayPref.shape === 'dots_custom') {
+            for (var x=8; x<=92; x+=8.4)
+            for (var y=8; y<=92; y+=8.4) {
+                var circ = document.createElementNS( svgns, 'circle');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'black');
+                circ.setAttributeNS(null, 'stroke-width', 2);
+                circ.setAttributeNS(null, 'cx', ''+(x+dx)+'%' );
+                circ.setAttributeNS(null, 'cy', ''+(y+dy)+'%');
+                circ.setAttributeNS(null, 'r', '1%' );
+                gobs.appendChild(circ);
+
+                var circ = document.createElementNS( svgns, 'circle');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'white');
+                circ.setAttributeNS(null, 'stroke-width', 1);
+                circ.setAttributeNS(null, 'cx', ''+(x+dx)+'%' );
+                circ.setAttributeNS(null, 'cy', ''+(y+dy)+'%');
+                circ.setAttributeNS(null, 'r', '1%' );
+                gobs.appendChild(circ);
+            } 
         } else if (this.overlayPref.shape === 'grid') {
             for (var y=12; y<=95; y+=9) {
                 var circ = document.createElementNS( svgns, 'line');
@@ -1342,12 +1376,17 @@ Ext.define('BQ.overlayEditor.Window', {
                 positionTag.setAttribute('name', 'position');
                 positionTag.setAttribute('value', points[0].vertices[0].x+','+points[0].vertices[0].y+';'+points[1].vertices[0].x+','+points[1].vertices[0].y+';'+points[2].vertices[0].x+','+points[2].vertices[0].y+';'+points[3].vertices[0].x+','+points[3].vertices[0].y);
                 layoutTag.appendChild(positionTag);
-                
-                BQ.Preferences.updateResource(me.viewer.image.resource_uniq, preferenceTag.outerHTML)
+                /*
+                var shapeTag = document.createElement('tag');
+                positionTag.setAttribute('name', 'position');
+                positionTag.setAttribute('value', 'custom_dots');
+                layoutTag.appendChild(positionTag);
+                */
+                BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML)
                 
                 //remove all the gobjects
-                var editor   = me.viewer.plugins_by_name.edit;
-                var renderer = me.viewer.plugins_by_name.renderer;
+                var editor   = me.miniViewer.viewer.plugins_by_name.edit;
+                var renderer = me.miniViewer.viewer.plugins_by_name.renderer;
                 var gobs = me.miniViewer.getGobjects();
                 editor.remove_gobject(gobs[3]);
                 editor.remove_gobject(gobs[2]);
