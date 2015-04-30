@@ -75,6 +75,9 @@ function CanvasShape(gob, renderer) {
     this.postEnabled = true;
     this.selfAnchor = false;
     this.position = {x: 0, y: 0};
+
+    this.manipulators = [];
+    this.shapeCorners = [];
     //this.rotation = 0;
 };
 
@@ -134,6 +137,281 @@ CanvasShape.prototype.clearCache = function(){
     //this.
     this.bbox = this.calcBbox();
 };
+
+CanvasShape.prototype.resetManipulatorSet = function(set){
+    set.forEach(function(e){
+        e.remove();
+        e.off('mousedown');
+        e.off('dragmove'); //kill their callbacks
+        e.off('mouseup');
+        delete e;
+    })
+    set = [];
+};
+
+CanvasShape.prototype.resetManipulators = function(){
+    if(this.renderer.colorMenu)
+        this.renderer.colorMenu.hide();
+    this.resetManipulatorSet(this.shapeCorners);
+    this.resetManipulatorSet(this.manipulators);
+}
+
+CanvasShape.prototype.getColorManipulator = function(){
+    var imageObj = new Image();
+    var me = this,
+    bbox = this.getBbox(),
+    x = bbox.max[0],
+    y = bbox.min[1],
+    renderer = this.renderer,
+    viewer = this.renderer.viewer,
+    scale = renderer.stage.scale();
+    /*
+    var image = new Kinetic.Rect({
+        x: x + 12/scale.x,
+        y: y + 8/scale.x,
+        //image: imageObj,
+        //fill: "rgba(128,128,128,0.2)",
+        stroke: 'red',
+        strokeWidth: 1.0/scale.x,
+
+        width: 16/scale.x,
+        height: 16/scale.x,
+    });
+    */
+
+    var image = new Kinetic.Image({
+            x: x + 12/scale.x,
+            y: y, //+ 2/scale.x,
+            image: imageObj,
+            width: 16/scale.x,
+            height: 16/scale.x
+    });
+
+    imageObj.onload = function() {
+        image.setImage(imageObj);
+    };
+    imageObj.src = '/images/viewer/color_wheel.png';
+
+    if(!renderer.colorMenu)
+        renderer.colorMenu = Ext.create('Ext.tip.Tip', {
+		    anchor : renderer.viewer.viewer_controls_surface,
+		    //itemId : 'viewer_color',
+           // anchor : 'right',
+		   //anchorToTarget : true,
+            cls: 'bq-viewer-menu',
+            //autoHide : false,
+		    //shadow: false,
+            width : 250,
+            height: 220,
+            //closeable: true,
+            //autoDestroy: true,
+            //headerPosition: 'right',
+            header: {
+                title: 'choose color',
+                tools:[{
+                    type: 'close',
+                    handler: function(){
+                        renderer.colorMenu.hide();
+                    }
+                }]},
+            layout: {
+                type: 'vbox',
+                //align: 'stretch',
+            },
+
+            listeners: {
+                close : function(){
+                    debugger;
+                },
+                show: function(){
+                    if(renderer.selectedSet.length === 0) this.hide();
+                }
+            },
+
+            items: [{xtype: 'excolorpicker',
+                     //height: '100%',
+                     flex: 1,
+                     //width: 250,
+                     //height: 200,
+                     itemId : 'picker',
+                     listeners : {
+                         change: function(d, i, a){
+                             var rgb = this.getColorRgb();
+                             var shape = renderer.colorMenu.currentShape;
+                             shape.setColor(Math.floor(rgb[0]),
+                                            Math.floor(rgb[1]),
+                                            Math.floor(rgb[2]));
+                             renderer.drawEditLayer();
+                         },
+                     }
+                     //region: 'west'
+                    }]
+	    });
+
+    if(renderer.colorMenu.isVisible()) renderer.colorMenu.hide();
+
+    //renderer.colorMenu.hide();
+    image.on('mousedown', function(evt){
+        var e = evt.evt;
+        //var ix = image.x();
+        //var iy = image.y();
+        if(renderer.colorMenu.isVisible()) {
+            renderer.colorMenu.hide();
+            return;
+        }
+        var ip = image.getAbsolutePosition();
+        renderer.colorMenu.currentShape = me;
+        renderer.colorMenu.show();
+        renderer.colorMenu.setX(ip.x + 22);
+        renderer.colorMenu.setY(ip.y + 78);
+        var picker = renderer.colorMenu.queryById('picker');
+        var c = Kinetic.Util._hexToRgb('#' + me.gob.color_override);
+        picker.setColorRgb(c.r/255, c.g/255, c.b/255, 1.0);
+
+    });
+    this.manipulators.push(image)
+    return [image];
+};
+
+CanvasShape.prototype.getCornerManipulators = function(){
+        var me = this,
+    renderer = this.renderer,
+    points   = this.points(),
+    scale = renderer.stage.scale();
+
+    this.shapeCorners = [];
+
+    for(var j = 0; j < points.length; j+=2){
+        /*
+          var pnt =     new Kinetic.Circle({
+          radius: 5/scale.x,
+          fill: 'red',
+          stroke: 'rgba(255,255,255,0.05)',
+          listening: true,
+
+          });
+        */
+        var pnt = new Kinetic.Image({
+            image:     renderer.pointImageCache,
+            listening: true,
+            width: 8/scale.x,
+            height: 8/scale.x,
+            offset: {x: 4/scale.x, y: 4/scale.x}
+        });
+
+        pnt.gob = this;
+        pnt.shapeId = j/2;
+        me.shapeCorners.push(pnt);
+    }
+
+
+    this.shapeCorners.forEach(function(e,i,d){
+        e.setDraggable(true);
+    });
+
+    this.shapeCorners.forEach(function(e,i,d){
+        //me.editLayer.add(e);
+        e.on('mousedown', function(evt) {
+            //me.currentLayer._getIntersection = me.noIntersection;
+            //me.editLayer._getIntersection = me.noIntersection;
+            //me.selectLayer._getIntersection = me.noIntersection;
+
+        });
+
+        e.on('mouseover', function(evt) {
+            //e.fill('rgba(255,128,128,1.0)');
+            e.image(me.pointImageCacheOver);
+            renderer.drawEditLayer();
+        });
+
+
+        e.on('mouseleave', function(evt) {
+            //e.fill('red');
+            e.image(me.pointImageCache);
+            renderer.drawEditLayer();
+
+        });
+
+        e.on('dragmove', function(evt) {
+            //me.editBbox(gobs,i,evt, e)
+            //if(me.mode != 'edit') return;;
+            var i = this.shapeId;
+            this.gob.drag(evt, this);
+
+            renderer.updateBbox(renderer.selectedSet);
+            e.moveToTop();
+            renderer.drawEditLayer();
+        });
+
+        e.on('mouseup',function(evt){
+            //me.currentLayer._getIntersection = me.defaultIntersection;
+            //me.editLayer._getIntersection = me.defaultIntersection;
+            //me.selectLayer._getIntersection = me.defaultIntersection;
+
+            renderer.selectedSet.forEach(function(e,i,d){
+                renderer.move_shape(e.gob);
+                /*
+                e.dirty = true;
+
+                me.selectedSet.forEach(function(e,i,d){
+                    if(e.dirty)
+
+                });*/
+            });
+        })
+
+    });
+    return this.shapeCorners;
+};
+
+CanvasShape.prototype.getManipulators = function(mode){
+
+    var manipulators = [];
+    //var corners = this.getCornerManipulators();
+    if(mode === 'single'){
+        manipulators = manipulators.concat(this.getColorManipulator());
+        manipulators = manipulators.concat(this.getCornerManipulators());
+    }
+    if(mode === 'multiple'){
+        manipulators = manipulators.concat(this.getCornerManipulators());
+    }
+
+    if(mode === 'many'){
+    }
+    return manipulators;
+}
+
+CanvasShape.prototype.updateManipulators = function(){
+    //if(!shapes) return;
+
+    var me = this,
+    renderer = this.renderer,
+    scale = renderer.stage.scale();
+
+    var points = this.points();
+    var x  = this.x();
+    var y  = this.y();
+    var sx = this.sprite.scaleX();
+    var sy = this.sprite.scaleY();
+    var l = points.length;
+
+    for(var j = 0; j < points.length; j+=2){
+        if(!me.shapeCorners[j/2]) continue;
+        //me.shapeCorners[totalPoints + j/2].radius(3.0/scale.x);
+        //me.shapeCorners[totalPoints + j/2].strokeWidth(6.0/scale.x);
+        me.shapeCorners[j/2].x(x + sx*points[j + 0]);
+        me.shapeCorners[j/2].y(y + sy*points[j + 1]);
+    };
+
+    var bbox = this.getBbox(),
+    x = bbox.max[0],
+    y = bbox.min[1];
+
+    for(var j = 0; j < this.manipulators.length; j++){
+        this.manipulators[j].x(x + 12/scale.x);
+        this.manipulators[j].y(y + 2/scale.x);
+    }
+}
 
 CanvasShape.prototype.cacheSprite = function(){
     if(!this.bbox){
@@ -254,6 +532,31 @@ CanvasShape.prototype.move = function () {
 
     this.dirty = false;
 };
+
+CanvasShape.prototype.setColor = function (r,g,b) {
+    var h = Kinetic.Util._rgbToHex(r,g,b);
+    this.gob.color_override = h;
+    var me = this;
+    var    color = 'rgba('+
+            r+','+
+            g+','+
+            b+','+
+            0.5+')';
+    var  strokeColor = 'rgba('+
+            r+','+
+            g+','+
+            b+','+
+            1.0+')';
+
+    if(this.colorTimeout) clearTimeout(this.colorTimeout);
+    this.colorTimeout = setTimeout( function(){
+        me.renderer.viewer.color_gobject(me.gob, h);
+    }, 100);
+
+    this.sprite.fill(color);
+    this.sprite.stroke(strokeColor);
+};
+
 
 CanvasShape.prototype.applyColor = function () {
     var color = 'rgba(255,0,0,0.5)';

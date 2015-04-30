@@ -26,490 +26,6 @@ function test_visible (pos, viewstate, tolerance_z ) {
 }
 
 
-function RTree(renderer){
-    this.renderer = renderer;
-    this.reset();
-    this.maxChildren = 8;
-};
-
-RTree.prototype.reset = function(){
-
-    this.nodes = [{
-        id: 0,
-        parent: null,
-        children:[],
-        leaves: [],
-        bbox: {min: [0,0,0,0], max: [0,0,0,0]},
-        leve: 0,
-    }];
-
-}
-
-RTree.prototype.calcBoxVol = function(bb){
-    //given two bounding boxes what is the volume
-    var d = [0,0,0,0];
-    for(var ii = 0; ii < 4; ii++){
-        if(bb.max.length > ii)
-            d[ii] = bb.max[ii] - bb.min[ii];
-        //minimum distance is one unit
-        d[ii] = Math.max(d[ii],1);
-    }
-    var vol = d[0]*d[1]*d[2]*d[3];
-
-    return vol;
-};
-
-RTree.prototype.compositeBbox  = function(bbi,bbj){
-    //given two bounding boxes what is the volume
-    var
-    min = [999999,999999,999999,999999],
-    max = [-999999,-999999,-999999,-9999990];
-    if(!bbi) debugger;
-    if(!bbj) debugger;
-    var N = Math.min(bbi.min.length, bbj.min.length);
-    for(var i = 0; i < N; i++){
-
-        min[i] = Math.min(bbi.min[i], bbj.min[i]);
-        max[i] = Math.max(bbi.max[i], bbj.max[i]);
-        min[i] = min[i] ? min[i] : 0;
-        max[i] = max[i] ? max[i] : 0;
-    }
-    return {min:min, max:max};
-};
-
-
-RTree.prototype.calcBbox = function(gobs){
-    //given a set of stored objects, find the maximum bounding volume
-    var
-    min = [9999999,9999999,9999999,9999999],
-    max = [-9999999,-9999999,-9999999,-9999999];
-
-    var nodei, nodej, maxVol = 0;
-
-    if(!gobs) debugger;
-    for(var i = 0; i < gobs.length; i++){
-        var gbb = gobs[i].getBbox();
-        var iiN = gbb.min.length;
-        for(var ii = 0; ii < iiN; ii++){
-            min[ii] = Math.min(min[ii], gbb.min[ii]);
-            max[ii] = Math.max(max[ii], gbb.max[ii]);
-            min[ii] = min[ii] ? min[ii] : 0;
-            max[ii] = max[ii] ? max[ii] : 0;
-        }
-    }
-    return {min: min, max: max};
-};
-
-RTree.prototype.findMaxVolPairs  = function(gobs){
-    //given a set of stored objects, find the maximum bounding volume between pairs in the set
-    //return an array of the two indices
-    var nodei, nodej, maxVol = 0;
-    for(var i = 0; i < gobs.length; i++){
-        for(var j = i+1; j < gobs.length; j++){
-            //if(i == j) continue;
-            var ibb = gobs[i].getBbox();
-            var jbb = gobs[j].getBbox();
-            var cbb = this.compositeBbox(ibb,jbb);
-            var vol = this.calcBoxVol(cbb);
-            if(vol > maxVol){
-                maxVol = vol;
-                nodei = i;
-                nodej = j;
-            }
-        }
-    }
-    return [gobs[nodei],gobs[nodej]];
-};
-
-RTree.prototype.hasOverlap  = function(bbox1, bbox2){
-    var overlap = false,
-    bb1 = bbox1,
-    bb2 = bbox2;
-    //for each dimension test to see if axis are seperate
-    for(var i = 0; i < 2; i++){
-        if      (bb1.max[i] < bb2.min[i]) overlap = false;
-        else if (bb2.max[i] < bb1.min[i]) overlap = false;
-        else overlap = true;
-
-    }
-    return overlap;
-};
-
-RTree.prototype.calcVolumeChange  = function(obj, node){
-    var nodebb = node.bbox;
-    var compbb = this.compositeBbox(obj.bbox, nodebb);
-
-    var nodeVol = this.calcBoxVol(nodebb);
-    var compVol = this.calcBoxVol(compbb);
-    return Math.abs(nodeVol - compVol);
-}
-
-RTree.prototype.splitNode  = function(node){
-
-    var b12 = this.findMaxVolPairs(node.leaves);
-
-    var newNode0 = {
-        parent: node,
-        children:[],
-        leaves: [b12[0]],
-        bbox: this.calcBbox([b12[0]]),
-    };
-
-    var newNode1 = {
-        parent: node,
-        children:[],
-        leaves: [b12[1]],
-        bbox: this.calcBbox([b12[1]])
-    }
-    b12[0].page = newNode0;
-    b12[1].page = newNode1;
-
-    var id = this.nodes.length;
-    newNode0.id = id;
-    newNode1.id = id+1;
-
-    this.nodes.push(newNode0, newNode1);
-    node.children.push(newNode0,newNode1);
-    for(var i = 0; i < node.leaves.length; i++){
-        var leaf = node.leaves[i];
-
-        if(leaf.id() === b12[0].id() ||
-           leaf.id() === b12[1].id()) continue; //if the leaf == to one of the reference nodes, continue
-
-        var dvol0 = this.calcVolumeChange(leaf, node.children[0]);
-        var dvol1 = this.calcVolumeChange(leaf, node.children[1]);
-        var bbox = leaf.bbox;
-        var bbox0 = node.children[0].bbox;
-        var bbox1 = node.children[1].bbox;
-
-        //console.log("l:", bbox.min[0],bbox.min[1],bbox.max[0], bbox.max[1]);
-        //console.log("0:", bbox0.min[0],bbox0.min[1],bbox0.max[0], bbox0.max[1], dvol0);
-        //console.log("1:", bbox1.min[0],bbox1.min[1],bbox1.max[0], bbox1.max[1], dvol1);
-
-        if(dvol0 < dvol1){
-            this.insertInNode(leaf, node.children[0]);
-        }
-        else {
-            this.insertInNode(leaf, node.children[1]);
-        }
-    }
-    node.children[0].bbox = this.calcBbox(node.children[0].leaves);
-    node.children[1].bbox = this.calcBbox(node.children[1].leaves);
-    this.updateSprite(node.children[0]);
-    this.updateSprite(node.children[1]);
-
-    node.leaves = [];
-};
-
-RTree.prototype.insertInNode  = function(gob, node){
-    node.leaves.push(gob);
-    gob.page = node;
-    node.bbox = this.calcBbox(node.leaves);
-    this.updateSprite(node);
-
-    if(node.leaves.length >= this.maxChildren){
-        this.splitNode(node);
-    }
-};
-
-RTree.prototype.traverseDownBB  = function(node, bb, func){
-    var stack = [node];
-    while(stack.length > 0){
-        var cnode = stack.pop();
-        if(!func(cnode)) continue;
-        if(cnode.children.length > 0){
-            if(this.hasOverlap(bb, cnode.children[0].bbox))
-                stack.push(cnode.children[0]);
-            if(this.hasOverlap(bb, cnode.children[1].bbox))
-                stack.push(cnode.children[1]);
-        }
-    }
-};
-
-RTree.prototype.traverseDown  = function(node, func){
-    var stack = [node];
-    while(stack.length > 0){
-        var cnode = stack.pop();
-        func(cnode);
-        if(cnode.children.length > 0){
-            stack.push(cnode.children[0]);
-            stack.push(cnode.children[1]);
-        }
-    }
-};
-
-
-RTree.prototype.traverseUp  = function(node, func){
-    var stack = [node];
-    while(stack.length > 0){
-        var cnode = stack.pop();
-        if(!func(cnode)) continue;
-        if(cnode.parent){
-            stack.push(cnode.parent);
-        }
-    }
-};
-
-RTree.prototype.insert = function(gob){
-    //I like static integer pointer trees, but a dymanic pointer tree seems appropriate here, so
-    // we can pull data on and off the tree without having to do our own
-    //return;
-    var stack = [this.nodes[0]];
-
-    //if(gob.id() === 15) debugger;
-    if(gob.page) return;  //if the gobject has a page then we insert it
-
-    gob.bbox = gob.calcBbox();
-    //if(this.nodes.length > 10) return;
-    while(stack.length > 0){
-        //if(l > 18) break;
-        var cnode = stack.pop();
-        cnode.dirty = true;
-        //expand the bounding box of the current node on the stack
-        cnode.bbox = this.compositeBbox(gob.bbox, cnode.bbox);
-        this.updateSprite(cnode);
-
-        if(cnode.children.length === 0){
-
-            if(cnode.leaves.length < this.maxChildren){
-                this.insertInNode(gob,cnode);
-            }
-        }
-
-        else{
-            var mindvol = 999999999, nextNode;
-            for(var i = 0; i < cnode.children.length; i++){
-                var dvol = this.calcVolumeChange(gob, cnode.children[i]);
-                if(dvol < mindvol){
-                    mindvol = dvol;
-                    nextNode = cnode.children[i];
-                }
-            }
-
-            stack.push(nextNode);
-        }
-    }
-};
-
-
-RTree.prototype.remove = function(gob){
-    //I like static integer pointer trees, but a dymanic pointer tree seems appropriate here, so
-    // we can pull data on and off the tree without having to do our own
-    //return;
-
-    //if(gob.id() === 15) debugger;
-    var node = gob.page;
-    var leaves = node.leaves;
-    var pos = 0;
-    for(var i= 0; i < leaves.length; i++){
-        if(leaves[i].id() === gob.id()) pos = i;
-    }
-    leaves.splice(pos,1);
-    node.bbox = this.calcBbox(node.leaves);
-    //this.updateSprite(node);
-    node = node.parent;
-    while(node){
-        //if(node.parent === null) break;
-        if(!node.children)       continue;
-        var cnode0 = node.children[0];
-        var cnode1 = node.children[1];
-        node.bbox = this.compositeBbox(cnode0.bbox, cnode1.bbox);
-        this.updateSprite(node);
-        node.dirty = true;
-        node = node.parent;
-    }
-    gob.page = null;
-};
-
-
-RTree.prototype.collectObjectsInRegion = function(frust, node){
-    var me = this;
-    var collection = [];
-    var renderer = this.renderer;
-
-    var collectSprite = function(node){
-        if(node.leaves.length > 0){
-            for(var i = 0; i < node.leaves.length; i++){
-                if(me.hasOverlap(frust, node.leaves[i].bbox)){
-                    collection.push(node.leaves[i]);
-                }
-            }
-        }
-        return true;
-    };
-    this.traverseDownBB(node, frust, collectSprite);
-    return collection;
-};
-
-RTree.prototype.cull = function(frust){
-    var me = this;
-    var renderer = this.renderer;
-    renderer.currentLayer.removeChildren();
-
-    var leaves = this.collectObjectsInRegion(frust, this.nodes[0]);
-    leaves.forEach(function(e){
-        renderer.currentLayer.add(e.sprite);
-    });
-};
-
-RTree.prototype.cullAndCache = function(frust){
-    var me = this;
-    var fArea = this.calcBoxVol(frust);
-    var me = this;
-    var collection = [];
-    var renderer = this.renderer;
-    var scale = renderer.stage.scale().x;
-    var collectSprite = function(node){
-        var nArea = me.calcBoxVol(node.bbox);
-        var cache = null;
-
-        if(node.leaves.length > 0){
-            for(var i = 0; i < node.leaves.length; i++){
-                if(me.hasOverlap(frust, node.leaves[i].bbox)){
-                    collection.push(node.leaves[i].sprite);
-                }
-            }
-            return false;
-        }
-
-        else if(nArea < fArea) {
-            if(!node.imageCache ||
-               scale != node.scale)
-                me.cacheChildSprites(node);
-            /*
-              if the node is dirty, then rather than update the cache and redraw
-              the image which is an asynchronis call, its better to just redraw the
-              the whole branch of the tree.
-            */
-            if(node.dirty){
-                me.cacheChildSprites(node);
-                var leaves = me.collectObjectsInRegion(node.bbox, node);
-                leaves.forEach(function(e){
-                    collection.push(e.sprite);
-                });
-                return false;
-            }
-
-            collection.push(node.imageCache);
-            return false;
-        }
-
-        else return true;
-    };
-    this.traverseDownBB(this.nodes[0], frust, collectSprite);
-
-    renderer.currentLayer.removeChildren();
-    collection.forEach(function(e){
-        renderer.currentLayer.add(e);
-    });
-};
-
-RTree.prototype.cacheScene = function(frust){
-    var me = this;
-    var fArea = this.calcBoxVol(frust);
-    var collectSprite = function(node){
-        var nArea = me.calcBoxVol(node.bbox);
-        if(nArea < fArea) {
-            me.cacheChildSprites(node);
-            return false;
-        }
-        else return true;
-    };
-    this.traverseDownBB(this.nodes[0], frust, collectSprite);
-};
-
-RTree.prototype.cacheChildSprites = function(node, scale){
-    //delete cache if it exists
-    if(node.image) delete node.image;
-    if(node.imageCache) delete node.imageCage;
-
-    //initialize a few variables;
-    var me = this;
-    var renderer = this.renderer;
-    var bbox = node.bbox;
-    var w = bbox.max[0] - bbox.min[0];
-    var h = bbox.max[1] - bbox.min[1];
-    var scale = renderer.stage.scale().x;
-
-    node.scale = scale;
-
-    var buffer = renderer.getPointSize();
-
-    //create a new image
-    node.imageCache = new Kinetic.Image({
-    });
-
-    //create a temp layer to capture the appropriate objects
-    var layer = new Kinetic.Layer({
-        scaleX: scale,
-        scaleY: scale,
-        width: w*scale,
-        height: h*scale
-    });
-
-    //fetch the objects in the tree that are in that node
-    var leaves = this.collectObjectsInRegion(bbox, node);
-    leaves.forEach(function(e){
-        e.updateLocal();
-        layer.add(e.sprite);
-    });
-    layer.draw();
-
-    //create a new image, in the async callback assign the image to the node's imageCache
-    //scale the image region
-    var image = layer.toImage({
-        callback: function(img){
-            node.image = img;
-            node.imageCache.setImage(img);
-            node.dirty = false;
-            console.log(img);
-        },
-
-        x: bbox.min[0]*scale - buffer,
-        y: bbox.min[1]*scale - buffer,
-        width: w*scale + 2.0*buffer,
-        height: h*scale + 2.0*buffer,
-    });
-    node.imageCache.x(bbox.min[0] - buffer/scale);
-    node.imageCache.y(bbox.min[1] - buffer/scale);
-    node.imageCache.width(w + 2.0*buffer/scale);
-    node.imageCache.height(h + 2.0*buffer/scale);
-};
-
-RTree.prototype.setDirty = function(node){
-    var me = this;
-    var dirtFunc = function(node){
-        node.dirty = true;
-        return true;
-    };
-    this.traverseUp(node, dirtFunc);
-};
-
-
-RTree.prototype.updateSprite = function(node){
-    var bbox = node.bbox;
-    var w = bbox.max[0] - bbox.min[0];
-    var h = bbox.max[1] - bbox.min[1];
-    if(!node.sprite)
-        node.sprite = new Kinetic.Rect({
-            x: bbox.min[0],
-            y: bbox.min[1],
-            width: w,
-            height: h,
-            hasFill: false,
-            listening: false,
-            //fill: "rgba(128,128,128,0.2)",
-            stroke: "rgba(128,255,255,0.4)",
-            strokeWidth: 1.0,
-        });
-
-    node.sprite.x(bbox.min[0]);
-    node.sprite.y(bbox.min[1]);
-    node.sprite.width(w);
-    node.sprite.height(h);
-};
-
-
 function QuadTree(renderer){
     this.renderer = renderer;
     this.reset();
@@ -745,16 +261,17 @@ QuadTree.prototype.insertInNode  = function(gob, node, stack){
     //node.bbox = this.calcBbox(node.leaves);
 
 
-    if(node.leaves.length >= this.maxChildren && node.L < 20){
+    if(node.leaves.length >= this.maxChildren && node.L < 6){
         this.splitNode(node, stack);
     }
 
-
+    /*
     var fArea = this.calcBoxVol(this.renderer.viewFrustum);
     var nArea = this.calcBoxVol(node.bbox);
     if(!node.children.length && nArea > 1.5*fArea){
         this.splitNode(node, stack);
     }
+    */
 };
 
 
@@ -768,6 +285,7 @@ QuadTree.prototype.insert = function(shape){
 
     //if(shape.id() === 15) debugger;
     //if(shape.page) return;  //if the shapeject has a page then we insert it
+    //if(shape.inTree) return;
     shape.inTree = true;
     shape.bbox = shape.calcBbox();
 
@@ -806,11 +324,11 @@ QuadTree.prototype.insert = function(shape){
 
 
 QuadTree.prototype.remove = function(shape){
-    //I like static integer pointer trees, but a dymanic pointer tree seems appropriate here, so
-    // we can pull data on and off the tree without having to do our own
-    //return;
     var me = this;
+
+    if(!shape.inTree) return;
     shape.inTree = false;
+
     //if(shape.id() === 15) debugger;
     var collection = [];
     var collectLeaves = function(node){
@@ -1160,8 +678,9 @@ CanvasControl.prototype.viewerZoomed = function(e) {
     this.viewer.stage.x(e.x);
     this.viewer.stage.y(e.y);
     this.viewer.quadtree.cullCached(this.viewer.viewFrustum);
-    this.viewer.draw();
     this.viewer.updateVisible(); //update visible has draw function
+    this.viewer.draw();
+
     //this.viewer.draw();
 };
 
@@ -1206,6 +725,7 @@ CanvasControl.prototype.cursorMoved = function(e) {
 function CanvasRenderer (viewer,name) {
     var p = viewer.parameters || {};
     //this.default_showOverlay           = p.rotate          || 0;   // values: 0, 270, 90, 180
+
     this.default_showOverlay   = false;
 
     this.base = ViewerPlugin;
@@ -1463,23 +983,21 @@ CanvasRenderer.prototype.getUserCoord = function (e ){
 
 CanvasRenderer.prototype.setMode = function (mode){
     var me = this;
-    this.unselect(this.selectedSet);
+    this.unselectCurrent();
 
     this.mode = mode;
 
     me.updateVisible();
 
-    if(mode == 'add') {
+    if(mode === 'add' || mode === 'delete' || mode === 'edit') {
+        this.currentLayer._getIntersection = this.defaultIntersection;
+        this.editLayer._getIntersection = this.defaultIntersection;
+        this.selectLayer._getIntersection = this.defaultIntersection;
+
         this.lassoRect.width(0);
         this.lassoRect.height(0);
         this.selectLayer.moveToBottom();
         this.editLayer.moveToTop();
-    }
-
-    if(mode == 'edit') {
-        this.currentLayer._getIntersection = this.defaultIntersection;
-        this.editLayer._getIntersection = this.defaultIntersection;
-        this.selectLayer._getIntersection = this.defaultIntersection;
     }
 
     if(mode == 'navigate') {
@@ -1635,128 +1153,6 @@ CanvasRenderer.prototype.updateVisible = function(){
 
 };
 
-CanvasRenderer.prototype.drawNodes = function(){
-    var me = this;
-    var scale = this.stage.scale();
-    for(var i = 0; i < this.quadtree.nodes.length; i++){
-
-        var node = this.quadtree.nodes[i];
-        var bbox = node.bbox;
-        var pid = node.parent ? node.parent.id : null;
-
-        var w = bbox.max[0] - bbox.min[0];
-        var h = bbox.max[1] - bbox.min[1];
-        if(!node.sprite)
-            node.sprite = new Kinetic.Rect({
-                x: bbox.min[0],
-                y: bbox.min[1],
-                width: w,
-                height: h,
-                hasFill: false,
-                listening: false,
-                //fill: "rgba(128,128,128,0.2)",
-                stroke: "rgba(128,255,255,0.25)",
-                strokeWidth: 1.0,
-            });
-
-        node.sprite.visible(true);
-        this.currentLayer.add(node.sprite);
-    }
-    var dim = this.viewer.imagedim;
-    this.viewFrustum = {min: [0,0], max: [dim.x, dim.y]};
-    if(!this.cursorRect)
-        this.cursorRect = new Kinetic.Rect({
-            //x: -20,
-            //y: -20,
-            width: dim.x,
-            height: dim.y,
-            fill: "rgba(128,255,128,0.2)",
-            stroke: 'black',
-            strokeWidth: 1,
-        });
-    this.currentNode = this.quadtree.nodes[0];
-    this.editLayer.add(this.cursorRect);
-
-    this.selectRect.on('mousemove', function(e){
-
-        var evt = e.evt;
-        var scale = me.stage.scale();
-        //console.log(e);
-        var stageX = me.stage.x();
-        var stageY = me.stage.y();
-        var x = (evt.offsetX - stageX)/scale.x;
-        var y = (evt.offsetY - stageY)/scale.y;
-
-        //me.cursorRect.x(x-1);
-        //me.cursorRect.y(y-1);
-        var frust = me.viewFrustum;
-
-        //frust.min[0] = x-1;
-        //frust.min[1] = y-1;
-        //frust.max[0] = x+1;
-        //frust.max[1] = y+1;
-
-        me.editLayer.batchDraw();
-
-
-        var stack = [];
-
-        stack.push(me.currentNode);
-        var newCurrentNode;
-
-        var isContained = function(bb1, bb0){
-            return (bb0.min[0] < bb1.min[0] && bb0.max[0] > bb1.max[0] &&
-                    bb0.min[1] < bb1.min[1] && bb0.max[1] > bb1.max[1]);
-        };
-
-        while(stack.length > 0){
-            var cnode = stack.pop();
-            var nbb = cnode.bbox;
-            if(cnode.children.length > 0){
-                var ho0 = hasOverlap(frust,cnode.children[0].bbox);
-                var ic0 = isContained(frust,cnode.children[0].bbox);
-                var ho1 = hasOverlap(frust,cnode.children[1].bbox);
-                var ic1 = isContained(frust,cnode.children[1].bbox);
-
-                if(ic0 && !ho1){
-                    stack.push(cnode.children[0]);
-                }
-                else if(ic1 && !ho0){
-                    stack.push(cnode.children[1]);
-                }
-                else {
-                    newCurrentNode = cnode;
-                }
-            }
-
-            else{
-                //if we've moved out of the view frustum check the parent
-                if(cnode.parent)
-                    stack.push(cnode.parent);
-            }
-        }
-
-        var hideSprite = function(node){
-            if(node.sprite)
-                node.sprite.visible(false);
-        };
-
-        var showSprite = function(node){
-            if(node.sprite)
-                node.sprite.visible(true);
-        };
-
-        if(newCurrentNode.id != me.currentNode.id){
-            //see if traversal works
-            me.quadtree.traverseDown(me.currentNode, hideSprite);
-            me.quadtree.traverseDownBB(newCurrentNode, frust, showSprite);
-            me.draw();
-            me.currentNode = newCurrentNode;
-        }
-    });
-};
-
-
 CanvasRenderer.prototype.resetTree = function (e) {
     //reset the quadtree and visible node references to tree
     this.visibleSet.forEach(function(e){
@@ -1832,7 +1228,7 @@ CanvasRenderer.prototype.updateImage = function (e) {
 
 CanvasRenderer.prototype.editBbox = function(gobs,i, e) {
     //return;
-    this.updatePoints(gobs);
+    this.updateManipulators(gobs);
     var scale = this.stage.scale();
 
     var offx = 8/scale.x;
@@ -1935,7 +1331,7 @@ CanvasRenderer.prototype.editBbox = function(gobs,i, e) {
 
 CanvasRenderer.prototype.updateBbox = function (gobs){
 
-    this.updatePoints(gobs);
+    this.updateManipulators(gobs);
 
     var scale = this.stage.scale();
     var min = [ 9999999, 9999999];
@@ -1998,46 +1394,6 @@ CanvasRenderer.prototype.updateBbox = function (gobs){
 };
 
 
-CanvasRenderer.prototype.updatePoints = function(shapes){
-    if(!shapes) return;
-
-    var me = this;
-    var totalPoints = 0;
-    var scale = this.stage.scale();
-
-    for(var i = 0; i < shapes.length; i++){
-        var points = shapes[i].points();
-        var x = shapes[i].x();
-        var y = shapes[i].y();
-        var sx = shapes[i].sprite.scaleX();
-        var sy = shapes[i].sprite.scaleY();
-        var l = points.length;
-
-        for(var j = 0; j < points.length; j+=2){
-            if(!me.shapeCorners[totalPoints + j/2]) continue;
-            //me.shapeCorners[totalPoints + j/2].radius(3.0/scale.x);
-            //me.shapeCorners[totalPoints + j/2].strokeWidth(6.0/scale.x);
-            me.shapeCorners[totalPoints + j/2].x(x + sx*points[j + 0]);
-            me.shapeCorners[totalPoints + j/2].y(y + sy*points[j + 1]);
-        };
-        totalPoints += l/2;
-    }
-};
-
-CanvasRenderer.prototype.mouseUp = function(){
-    var me = this;
-    this.endMove(this.selectedSet);
-    this.selectedSet.forEach(function(e,i,d){
-        me.move_poly(e.gob);
-    });
-};
-
-CanvasRenderer.prototype.resetShapeCornerFill = function(){
-    this.shapeCorners.forEach(function(e,i,a){
-        e.fill('rgba(255,0,0,1)');
-    });
-};
-
 CanvasRenderer.prototype.initPointImageCache = function () {
     var me = this;
     var point = new Kinetic.Circle({
@@ -2073,93 +1429,48 @@ CanvasRenderer.prototype.initPointImageCache = function () {
     });
 };
 
-CanvasRenderer.prototype.initPoints = function(shapes){
+CanvasRenderer.prototype.mouseUp = function(){
     var me = this;
-    this.shapeCorners = [];
-    this.shapeCornerMasks = [];
+    this.endMove(this.selectedSet);
+    this.selectedSet.forEach(function(e,i,d){
+        me.move_poly(e.gob);
+    });
+};
 
+CanvasRenderer.prototype.resetShapeCornerFill = function(){
+    this.manipulators.forEach(function(e,i,a){
+        e.fill('rgba(255,0,0,1)');
+    });
+};
+
+CanvasRenderer.prototype.updateManipulators = function(shapes){
+    if(!shapes) return;
+
+    var me = this;
+    var totalPoints = 0;
     var scale = this.stage.scale();
+
     for(var i = 0; i < shapes.length; i++){
-        var points = shapes[i].points();
-        for(var j = 0; j < points.length; j+=2){
-            /*
-            var pnt =     new Kinetic.Circle({
-                radius: 5/scale.x,
-                fill: 'red',
-                stroke: 'rgba(255,255,255,0.05)',
-                listening: true,
-
-            });
-            */
-            var pnt = new Kinetic.Image({
-                image:     this.pointImageCache,
-                listening: true,
-                width: 8/scale.x,
-                height: 8/scale.x,
-                offset: {x: 4/scale.x, y: 4/scale.x}
-            });
-
-            pnt.gob = shapes[i];
-            pnt.shapeId = j/2;
-            me.shapeCorners.push(pnt);
-        }
-
+        shapes[i].updateManipulators();
     }
+};
 
-    this.shapeCorners.forEach(function(e,i,d){
-        e.setDraggable(true);
-    });
+CanvasRenderer.prototype.initManipulators = function(shapes){
 
-    this.shapeCorners.forEach(function(e,i,d){
-        me.editLayer.add(e);
-        e.on('mousedown', function(evt) {
-            //me.currentLayer._getIntersection = me.noIntersection;
-            //me.editLayer._getIntersection = me.noIntersection;
-            //me.selectLayer._getIntersection = me.noIntersection;
+    var manipMode = shapes.length > 1 ? 'multiple' : 'single';
+    manipMode = shapes.length > 5 ? 'many' : manipMode;
+    manipMode = this.viewer.parameters.showmanipulators ? 'multiple' : manipMode;
 
+    var me = this;
+    this.manipulators = [];
+
+    for(var i = 0; i < shapes.length; i++){
+        var manipulators = shapes[i].getManipulators(manipMode);
+        manipulators.forEach(function(e){
+            me.editLayer.add(e);
         });
-
-        e.on('mouseover', function(evt) {
-            //e.fill('rgba(255,128,128,1.0)');
-            e.image(me.pointImageCacheOver);
-            me.drawEditLayer();
-        });
-
-
-        e.on('mouseleave', function(evt) {
-            //e.fill('red');
-            e.image(me.pointImageCache);
-            me.drawEditLayer();
-
-        });
-
-        e.on('dragmove', function(evt) {
-            //me.editBbox(gobs,i,evt, e)
-            //if(me.mode != 'edit') return;;
-            var i = this.shapeId;
-            this.gob.drag(evt, this);
-
-            me.updateBbox(me.selectedSet);
-            e.moveToTop();
-            me.drawEditLayer();
-        });
-
-        e.on('mouseup',function(evt){
-            //me.currentLayer._getIntersection = me.defaultIntersection;
-            //me.editLayer._getIntersection = me.defaultIntersection;
-            //me.selectLayer._getIntersection = me.defaultIntersection;
-
-            me.selectedSet.forEach(function(e,i,d){
-                e.dirty = true;
-
-                me.selectedSet.forEach(function(e,i,d){
-                    if(e.dirty)
-                        me.move_shape(e.gob);
-                });
-            });
-        })
-
-    });
+        this.manipulators = this.manipulators.concat(manipulators);
+    }
 };
 
 CanvasRenderer.prototype.resetSelectedSet = function(){
@@ -2190,7 +1501,7 @@ CanvasRenderer.prototype.select = function (gobs) {
 
     this.editLayer.removeChildren();
 
-    this.initPoints(gobs);
+    this.initManipulators(gobs);
     this.updateBbox(gobs);
 
     this.bBoxScale = [1,1];
@@ -2243,6 +1554,7 @@ CanvasRenderer.prototype.unselect = function (gobs) {
     gobs.forEach(function(e,i,a){
         e.setLayer(me.currentLayer);
         e.sprite.moveToBottom();
+        e.resetManipulators();
     });
 
     this.bbCorners.forEach(function(e,i,d){
@@ -2251,15 +1563,14 @@ CanvasRenderer.prototype.unselect = function (gobs) {
         e.off('dragmove');
         e.off('mouseup');
     });
-
-    if(this.shapeCorners){
-        this.shapeCorners.forEach(function(e,i,d){
+    /*
+    if(this.manipulators){
+        this.manipulators.forEach(function(e,i,d){
             e.remove(); //remove all current corners
-            e.off('mousedown');
-            e.off('dragmove'); //kill their callbacks
-            e.off('mouseup');
+
         });
     }
+    */
     this.selectedSet.forEach(function(e,i,d){
         if(e.dirty)
             me.move_shape(e.gob);
@@ -2280,8 +1591,8 @@ CanvasRenderer.prototype.destroy = function (gobs) {
         e.off('mouseup');
     });
 
-    if(this.shapeCorners){
-        this.shapeCorners.forEach(function(e,i,d){
+    if(this.manipulators){
+        this.manipulators.forEach(function(e,i,d){
             e.remove(); //remove all current corners
             e.off('mousedown');
             e.off('dragmove'); //kill their callbacks
@@ -2295,6 +1606,7 @@ CanvasRenderer.prototype.destroy = function (gobs) {
 
 CanvasRenderer.prototype.unselectCurrent = function(){
     this.unselect(this.selectedSet);
+    this.selectedSet = [];
 
 };
 
@@ -2320,9 +1632,9 @@ CanvasRenderer.prototype.is_selected = function (gob){
 };
 
 
-CanvasRenderer.prototype.set_hover_handler = function (callback){
-    this.select_callback = callback;
-};
+//CanvasRenderer.prototype.set_hover_handler = function (callback){
+    //this.select_callback = callback;
+//};
 
 CanvasRenderer.prototype.set_select_handler = function (callback){
     this.select_callback = callback;
@@ -2358,7 +1670,7 @@ CanvasRenderer.prototype.toggleWidgets = function(fcn){
         });
     }*/
 
-    this.shapeCorners.forEach(function(e){
+    this.manipulators.forEach(function(e){
         e[fcn]();
     });
     this.updateBbox(this.selectedSet);

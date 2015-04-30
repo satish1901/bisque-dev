@@ -43,7 +43,7 @@ ImgEdit.prototype = new ViewerPlugin();
 ImgEdit.prototype.newImage = function () {
     this.renderer = this.viewer.renderer;
     this.renderer.set_select_handler( callback(this, this.on_selected) );
-    this.renderer.set_hover_handler( callback(this, this.on_hover) );
+    //this.renderer.set_hover_handler( callback(this, this.on_hover) );
     this.renderer.set_move_handler( callback(this, this.on_move) );
     this.gobjects = this.viewer.image.gobjects;
     this.visit_render = new BQProxyClassVisitor (this.renderer);
@@ -187,6 +187,7 @@ ImgEdit.prototype.updateView = function (view) {
 };
 
 ImgEdit.prototype.onCreateGob = function (type) {
+    this.renderer.setMode('add');
     if (type in ImgViewer.gobFunction) {
         this.mode_primitive = null;
         var f = ImgViewer.gobFunction[type];
@@ -453,6 +454,7 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
 ImgEdit.prototype.remove_gobject = function (gob) {
     // dima: a hack to stop writing into a MEX
     this.renderer.quadtree.remove(gob.shape);
+
     if (gob.uri && gob.uri.indexOf('/mex/')>=0) {
         BQ.ui.warning('Can\'t delete annotation from a Module EXecution document...');
         return;
@@ -531,7 +533,9 @@ ImgEdit.prototype.on_move = function (gob) {
 ImgEdit.prototype.setmode = function (type, mode_fun) {
     if (mode_fun) this.startEdit();
     this.mode = mode_fun;
-    this.renderer.setMode(type);
+    if(type)
+        this.renderer.setMode('add');
+
     this.mode_type = type;
     if (type)
         this.createButtonsDeselect();

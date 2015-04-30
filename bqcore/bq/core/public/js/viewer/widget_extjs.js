@@ -29,7 +29,9 @@
                        can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
 
     blockforsaves  - set to true to show saving of gobjects, def: true
-
+    showmanipulators - turns off advanced manipulators in the canvas renderer
+       jrd: this should really be more advanced and allow you to customize what options you want to show on
+            the renderer ie: toggle shape corners, manipulators, bounding boxes, debugging tree, etc
 
   Example:
     var myviewer = Ext.create('BQ.viewer.Image', {
