@@ -250,6 +250,10 @@ ViewerPlugin.prototype.newImage = function (){
 };
 ViewerPlugin.prototype.updateImage = function (){
 };
+
+ViewerPlugin.prototype.onPreferences = function (pref){
+};
+
 ViewerPlugin.prototype.updateView = function (view){
 };
 
@@ -328,27 +332,6 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.preferences = this.parameters.preferences;
     
     /*
-    if (BQ.Preferences) {
-        BQ.Preferences.loadResource(uniq); //begin loading request for viewer
-        BQ.Preferences.on('updateresourcepref', function(el, resourcePrefDict, resourcePrefXML){
-            var viewerPref = {};
-            if (resourcePrefDict.Viewer)
-                viewerPref = resourcePrefDict.Viewer;
-            me.onPreferences(viewerPref) //update preferences
-        })
-        //check to see if resource preferences was updated already
-        if (BQ.Preferences.resourceDict) {
-            var viewerPref = {};
-            if (BQ.Preferences.resourceDict.Viewer)
-                viewerPref = BQ.Preferences.resourceDict.Viewer
-            me.onPreferences(viewerPref) //update preferences
-        }
-    } else {
-        me.onPreferences({}) //onPreferences has to be initialized before the view shows anything 
-    }
-    */
-    
-    /*
     BQ.Preferences.get({
         key : 'Viewer',
         callback : Ext.bind(this.onPreferences, this),
@@ -357,7 +340,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
 
-    var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,overlayeditor,scalebar,progressbar,infobar,overlay,edit,renderer";
+    var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,scalebar,progressbar,infobar,overlay,edit,renderer";
     if ('onlyedit' in this.parameters)
         plugin_list = "default,slicer,tiles,ops,scalebar,progressbar,infobar,overlay,edit,renderer";
     if ('simpleview' in this.parameters) {
@@ -375,7 +358,6 @@ function ImgViewer (parentid, image_or_uri, parameters) {
             "scalebar"    : ImgScaleBar,
             "progressbar" : ProgressBar,
             "infobar"     : ImgInfoBar,
-            "overlayeditor": ImgOverlayEditor,
             "slicer"      : ImgSlicer,
             "edit"        : ImgEdit,
             "tiles"       : TilesRenderer, // TILES RENDERER MUST BE BEFORE SVGRenderer
@@ -793,6 +775,11 @@ ImgViewer.prototype.onPreferences = function(pref) {
         this.updateImage();
         //this.updateView();
     }
+    for (var i = 0; i < this.plugins.length; i++) {
+        plugin = this.plugins[i];
+        plugin.onPreferences(this.preferences);
+    }
+    //this.loadPreference(this.preferences);
 };
 
 //----------------------------------------------------------------------
