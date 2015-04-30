@@ -49,6 +49,22 @@ def parse_format(l):
     ext = t[1].strip('()').split(';')
     return (name,full,ext)
 
+def safeRead(config, section, option, defval=None):
+    try:
+        return config.get(section, option)
+    except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        return defval
+
+def safeReadAndSet(config, section, option, d, key, defval=None):
+    v = defval
+    try:
+        v = config.get(section, option)
+    except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        pass
+    if v is not None:
+        d[key] = v
+
+
 ################################################################################
 # ConverterImaris
 ################################################################################
@@ -272,25 +288,35 @@ class ConverterImaris(ConverterBase):
         config.readfp(sp)
         sp.close()
 
-        # channel names
+        # channel names, colors and other info
         for c in range(rd['image_num_c']):
-            try:
-                name = config.get('Channel %s'%c, 'Name')
+            section = 'Channel %s'%c
+            path    = 'channels/channel_%.5d'%c
+
+            name = safeRead(config, section, 'Name') or ''
+            dye  = safeRead(config, section, 'Dye name') or safeRead(config, section, 'Fluor')
+            if dye is not None:
+                name = '%s (%s)'%(name, dye)
+            if len(name)>0:
                 rd['channel_%s_name'%c] = name
-            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-                pass
 
-        # channel colors
-        for c in range(rd['image_num_c']):
-            try:
-                rgb = [str(int(misc.safefloat(i)*255)) for i in config.get('Channel %s'%c, 'Color').split(' ')]
-                rd['channel_color_%s'%c] = ','.join(rgb)
-            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-                pass
+            rgb = safeRead(config, section, 'Color')
+            if rgb is not None:
+                rd['channel_color_%s'%c] = ','.join([str(int(misc.safefloat(i)*255)) for i in rgb.split(' ')])
 
-        # preferred channel mapping
-        #if rd['image_num_c']==1:
-        #    rd['channel_color_0'] = '255,255,255'
+            # new format
+            if len(name)>0:
+                rd['%s/name'%path] = name
+            if rgb is not None:
+                rd['%s/color'%path] = ','.join(rgb.split(' '))
+            safeReadAndSet(config, section, 'ColorOpacity',            rd, '%s/opacity'%path)
+            safeReadAndSet(config, section, 'Fluor',                   rd, '%s/fluor'%path)
+            safeReadAndSet(config, section, 'GammaCorrection',         rd, '%s/gamma'%path)
+            safeReadAndSet(config, section, 'LSMEmissionWavelength',   rd, '%s/lsm_emission_wavelength'%path)
+            safeReadAndSet(config, section, 'LSMExcitationWavelength', rd, '%s/lsm_excitation_wavelength'%path)
+            rng = safeRead(config, section, 'ColorRange')
+            if rng is not None:
+                rd['%s/range'%path] = ','.join(rng.split(' '))
 
         # custom - any other tags in proprietary files should go further prefixed by the custom parent
         for section in config.sections():
