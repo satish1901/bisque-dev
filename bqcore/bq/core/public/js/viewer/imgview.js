@@ -330,7 +330,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
 
     //initializing preference for the image viewer
     this.preferences = this.parameters.preferences;
-
+/*
     if (BQ.Preferences) {
         BQ.Preferences.loadResource(uniq); //begin loading request for viewer
         BQ.Preferences.on('updateresourcepref', function(el, resourcePrefDict, resourcePrefXML){
@@ -349,7 +349,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     } else {
         me.onPreferences({}) //onPreferences has to be initialized before the view shows anything
     }
-
+*/
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
 
@@ -498,7 +498,7 @@ ImgViewer.prototype.newImage = function (bqimage) {
 
     var phys = new BQImagePhys (this.image);
     phys.load (callback (this, 'newPhys') );
-
+    /*
     if (BQ.Preferences) {
         BQ.Preferences.loadResource(this.image.resource_uniq);
         //begin loading request for viewer
@@ -521,6 +521,7 @@ ImgViewer.prototype.newImage = function (bqimage) {
     } else {
         me.onPreferences({}) //onPreferences has to be initialized before the view shows anything
     }
+    */
 
     // this probably should be run after the imagephys is acquired
     // in order to disable the use of "default" service at all!
