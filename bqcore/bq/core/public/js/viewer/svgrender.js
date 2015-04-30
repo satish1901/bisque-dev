@@ -35,6 +35,38 @@ function SVGRenderer (viewer,name) {
     this.base = ViewerPlugin;
     this.base (viewer, name);
     this.events  = {};
+    
+    //overlay Editor
+    var me = this;
+    if (this.viewer.toolbar) { //required toolbar to initialize
+        var operation_menu = this.viewer.toolbar.queryById('menu_viewer_operations')
+        if (operation_menu) {
+            var image = this.viewer.image;
+            var resource = image ? image.uri : '';
+            operation_menu.menu.add({
+                    xtype  : 'menuitem',
+                    itemId : 'menu_viewer_operation_overlayEditor',
+                    text   : 'Overlay Editor',
+                    handler: function() {
+                        if (!me.overlayEditorWin) {
+                            var image = this.viewer.image;
+                            var resource = image? image.uri : ''
+                            me.overlayEditorWin = Ext.create('BQ.overlayEditor.Window',{
+                                title: 'Overlay Editor',
+                                height: '80%',
+                                width: '80%',
+                                modal: true,
+                                closeAction:'hide',
+                                viewer: me.viewer,
+                                phys: me.viewer.imagephys,       
+                                image_resource:resource,
+                            });
+                        }
+                        me.overlayEditorWin.show();
+                    },
+            });
+        }
+    }
 }
 SVGRenderer.prototype = new ViewerPlugin();
 
@@ -61,6 +93,13 @@ SVGRenderer.prototype.create = function (parent) {
     // KGK Please REVIEW and REMOVE if possible.
     //_svgElement = this.svgdoc;
     return parent;
+};
+
+SVGRenderer.prototype.onPreferences = function(pref) {
+    this.loadPreferences(pref);
+    var view = this.viewer.view();
+    if (this.showOverlay !== 'false' && view)
+        this.populate_overlay();    
 };
 
 SVGRenderer.prototype.enable_edit = function (enabled) {
@@ -124,6 +163,15 @@ SVGRenderer.prototype.setkeyhandler = function (cb, doadd ){
    }
 };
 
+SVGRenderer.prototype.newImage = function () {
+    var me = this;
+    if (me.overlayEditorWin) {
+        this.phys_inited = false;
+        var image = this.viewer.image;
+        var resource = image? image.uri : ''
+        me.overlayEditorWin.miniViewer.resource = resource;
+    }
+};
 /*
 SVGRenderer.prototype.newImage = function () {
     removeAllChildren (this.svgdoc);
@@ -934,9 +982,107 @@ SVGRenderer.prototype.loadPreferences = function (p) {
 };
 
 
+/*
+*   Functions for finding the homography matrix
+*
+*/
+SVGRenderer.prototype.det2D = function(x) {
+    return x[0]*x[3] - x[1]*x[2];
+};
 
-SVGRenderer.prototype.LUDecomposition
+SVGRenderer.prototype.det3x3 = function(x) {
+    return (x[0]*x[4]*x[8] + x[1]*x[5]*x[6] + x[2]*x[3]*x[7]) - (x[2]*x[4]*x[6] + x[1]*x[3]*x[8] + x[0]*x[5]*x[7]);
+};
 
+
+/*
+*   adj3x3
+*   3 by 3 Adjugate matrix
+*/
+SVGRenderer.prototype.adj3x3 = function(x) {
+    return [
+        this.det2D([x[4],x[5],x[7],x[8]]),
+        -this.det2D([x[3],x[5],x[6],x[8]]),
+        this.det2D([x[3],x[4],x[6],x[7]]),
+        -this.det2D([x[1],x[2],x[7],x[8]]),
+        this.det2D([x[0],x[2],x[6],x[8]]),
+        -this.det2D([x[0],x[1],x[6],x[7]]),
+        this.det2D([x[1],x[2],x[4],x[5]]),
+        -this.det2D([x[0],x[2],x[3],x[5]]),
+        this.det2D([x[0],x[1],x[3],x[4]]),
+    ];
+};
+
+SVGRenderer.prototype.scaleMult3x3 = function(scalar, mat) {
+    return [
+        scalar*mat[0],
+        scalar*mat[1],
+        scalar*mat[2],
+        scalar*mat[3],
+        scalar*mat[4],
+        scalar*mat[5],
+        scalar*mat[6],
+        scalar*mat[7],
+        scalar*mat[8],
+    ];
+};
+
+SVGRenderer.prototype.inv3x3 = function(x) {
+    return this.scaleMult3x3(1/this.det3x3(x), this.trans3x3(this.adj3x3(x)));
+};
+
+SVGRenderer.prototype.trans3x3 = function(x) {
+    return [
+        x[0],x[3],x[6],
+        x[1],x[4],x[7],
+        x[2],x[5],x[8],
+    ]
+};
+
+SVGRenderer.prototype.matMultiply3x3 = function(x, y) {
+    var z = Array(9);
+    for (var i =0; i<3; ++i) {
+        for (var j =0; j<3; ++j) {
+            var c = 0;
+            for  (var k = 0; k<3; ++k) {
+                c += x[3*i + k]*y[3*k + j];
+            }
+            z[3*i + j] = c;
+        }
+    }
+    return z;
+};
+
+SVGRenderer.prototype.mapMat = function(x1,y1,x2,y2,x3,y3,x4,y4) {
+    var d = this.det3x3([x1,x2,x3,y1,y2,y3,1.0,1.0,1.0]);
+    var x = this.det3x3([x4,x2,x3,y4,y2,y3,1.0,1.0,1.0])/d;
+    var y = this.det3x3([x1,x4,x3,y1,y4,y3,1.0,1.0,1.0])/d;
+    var z = this.det3x3([x1,x2,x4,y1,y2,y4,1.0,1.0,1.0])/d;
+    return [
+        x*x1,y*x2,z*x3,
+        x*y1,y*y2,z*y3,
+        x,y,z
+    ];
+};
+
+SVGRenderer.prototype.fourPointsHomographyMat = function(x11,y11,x12,y12,x13,y13,x14,y14,x21,y21,x22,y22,x23,y23,x24,y24) {
+    var A = this.mapMat(x11,y11,x12,y12,x13,y13,x14,y14);
+    var B = this.mapMat(x21,y21,x22,y22,x23,y23,x24,y24);
+    return this.matMultiply3x3(B, this.inv3x3(A));
+};
+
+
+SVGRenderer.prototype.distance = function(x1,y1,x2,y2) {
+    return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2));
+};
+
+SVGRenderer.prototype.slope = function(x1,y1,x2,y2) {
+    return (y2-y1)/(x2-x1);
+};
+
+SVGRenderer.prototype.radian2degrees = function(radians) {
+    return radians * 180 / Math.PI;
+};
 
 SVGRenderer.prototype.populate_overlay = function () {
     removeAllChildren (this.overlay);
@@ -944,6 +1090,63 @@ SVGRenderer.prototype.populate_overlay = function () {
     var gobs = document.createElementNS(svgns, "g");
     this.overlay.appendChild(gobs);
     if (this.overlayPref.enable) {
+        var dx = 0; // in %
+        var dy = 0; // in %    
+        if (this.overlayPref.position) { //position reads p1;p2;p3;p4 p=x,y
+            var pattern = /(\w+),(\w+);(\w+),(\w+);(\w+),(\w+);(\w+),(\w+)/;
+            var points = this.overlayPref.position.match(pattern);
+            if (points.length == 9) {
+                var view = this.viewer.view();
+                /*
+                var h = this.fourPointsHomographyMat(
+                    0,0,view.original_width,0,0,view.original_height,view.original_width,view.original_height,
+                    points[1],points[2],points[3],points[4],points[5],points[6],points[7],points[8]
+                    //0,0,view.original_width,0,0,view.original_height,view.original_width,view.original_height
+                );
+                            
+                
+                //var transform = 'matrix3d(1,-1,0,0,0,1,0,0,0,0,1,0,0,0,0,1)';
+                t = [
+                    h[0], h[3], 0, h[6],
+                    h[1], h[4], 0, h[7],
+                    0,       0, 1,    0,
+                    h[2], h[5], 0, h[8],
+                ];
+                */
+                //var transform = 'matrix3d('+t.join(',')+')';
+                //var transform = 'matrix('+h[0]+','+h[3]+','+h[1]+','+h[4]+',0,0)'; //remove the translation
+                //var transform = 'matrix('+h[0]+','+h[1]+','+h[3]+','+h[4]+','+h[2]+','+h[5]+')';
+                //gobs.setAttributeNS(null, 'transform', transform);
+                //dx = (points[1]/view.original_width)*100; //view.width  h[5];
+                //dy = (points[2]/view.original_height)*100; //h[6];
+                //this.overlay.style['-webkit-transform-origin'] = '0 0;';
+                //this.overlay.style['-webkit-transform'] = transform;
+                //this.overlay.style['transform'] = transform;
+                //this.overlay.parentNode.style['-webkit-transform'] = transform;
+                //gobs.style['-webkit-transform'] = transform;
+                //circ.setAttributeNS(null, 'style', transform);
+                
+                var scaleX = ((this.distance(points[1],points[2],points[3],points[4]) + this.distance(points[5],points[6],points[7],points[8]))/2)/view.original_width;
+                var scaleY = ((this.distance(points[1],points[2],points[5],points[6]) + this.distance(points[3],points[4],points[7],points[8]))/2)/view.original_height;
+                var scale = 'scale('+scaleX+','+scaleY+')';
+                dx = ((points[1])/view.original_width)/scaleX*100; //view.width  h[5];
+                dy = ((points[2])/view.original_height)/scaleY*100; //h[6];                
+                var angle = Math.atan(this.slope(points[1],points[2],points[3],points[4]))
+                var rotate = 'rotate('+this.radian2degrees(angle)+' '+scaleX+' '+scaleY+')';
+                
+                gobs.setAttributeNS(null, 'transform', rotate+' '+scale);
+                var circ = document.createElementNS( svgns, 'circle');
+                circ.setAttributeNS(null, 'fill-opacity', 0.0);
+                circ.setAttributeNS(null, 'fill', 'black');
+                circ.setAttributeNS(null, 'stroke', 'black');
+                circ.setAttributeNS(null, 'stroke-width', 2);
+                circ.setAttributeNS(null, 'cx', '1%' );
+                circ.setAttributeNS(null, 'cy', '1%');
+                circ.setAttributeNS(null, 'r', '1%' );
+                gobs.appendChild(circ);
+            }
+        }
+    
         if (this.overlayPref.shape === 'dots') {
             for (var x=9; x<=95; x+=9)
             for (var y=12; y<=95; y+=9) {
@@ -952,8 +1155,8 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'fill', 'black');
                 circ.setAttributeNS(null, 'stroke', 'black');
                 circ.setAttributeNS(null, 'stroke-width', 2);
-                circ.setAttributeNS(null, 'cx', ''+x+'%' );
-                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'cx', ''+(x+dx)+'%' );
+                circ.setAttributeNS(null, 'cy', ''+(y+dy)+'%');
                 circ.setAttributeNS(null, 'r', '1%' );
                 gobs.appendChild(circ);
 
@@ -962,8 +1165,8 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'fill', 'black');
                 circ.setAttributeNS(null, 'stroke', 'white');
                 circ.setAttributeNS(null, 'stroke-width', 1);
-                circ.setAttributeNS(null, 'cx', ''+x+'%' );
-                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'cx', ''+(x+dx)+'%' );
+                circ.setAttributeNS(null, 'cy', ''+(y+dy)+'%');
                 circ.setAttributeNS(null, 'r', '1%' );
                 gobs.appendChild(circ);
             }
@@ -975,8 +1178,8 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'fill', 'black');
                 circ.setAttributeNS(null, 'stroke', 'black');
                 circ.setAttributeNS(null, 'stroke-width', 2);
-                circ.setAttributeNS(null, 'cx', ''+x+'%' );
-                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'cx', ''+(x+dx)+'%' );
+                circ.setAttributeNS(null, 'cy', ''+(y+dy)+'%');
                 circ.setAttributeNS(null, 'r', '1%' );
                 gobs.appendChild(circ);
 
@@ -985,8 +1188,8 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'fill', 'black');
                 circ.setAttributeNS(null, 'stroke', 'white');
                 circ.setAttributeNS(null, 'stroke-width', 1);
-                circ.setAttributeNS(null, 'cx', ''+x+'%' );
-                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'cx', ''+(x+dx)+'%' );
+                circ.setAttributeNS(null, 'cy', ''+(y+dy)+'%');
                 circ.setAttributeNS(null, 'r', '1%' );
                 gobs.appendChild(circ);
             }
@@ -998,8 +1201,8 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'fill', 'black');
                 circ.setAttributeNS(null, 'stroke', 'black');
                 circ.setAttributeNS(null, 'stroke-width', 2);
-                circ.setAttributeNS(null, 'cx', ''+x+'%' );
-                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'cx', ''+(x+dx)+'%' );
+                circ.setAttributeNS(null, 'cy', ''+(y+dy)+'%');
                 circ.setAttributeNS(null, 'r', '1%' );
                 gobs.appendChild(circ);
 
@@ -1008,8 +1211,8 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'fill', 'black');
                 circ.setAttributeNS(null, 'stroke', 'white');
                 circ.setAttributeNS(null, 'stroke-width', 1);
-                circ.setAttributeNS(null, 'cx', ''+x+'%' );
-                circ.setAttributeNS(null, 'cy', ''+y+'%');
+                circ.setAttributeNS(null, 'cx', ''+(x+dx)+'%' );
+                circ.setAttributeNS(null, 'cy', ''+(y+dy)+'%');
                 circ.setAttributeNS(null, 'r', '1%' );
                 gobs.appendChild(circ);
             }
@@ -1022,8 +1225,8 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'stroke-width', 2);
                 circ.setAttributeNS(null, 'x1', '0%' );
                 circ.setAttributeNS(null, 'x2', '100%' );
-                circ.setAttributeNS(null, 'y1', ''+y+'%');
-                circ.setAttributeNS(null, 'y2', ''+y+'%');
+                circ.setAttributeNS(null, 'y1', ''+(y+dy)+'%');
+                circ.setAttributeNS(null, 'y2', ''+(y+dy)+'%');
                 gobs.appendChild(circ);
 
                 var circ = document.createElementNS( svgns, 'line');
@@ -1033,19 +1236,139 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'stroke-width', 1);
                 circ.setAttributeNS(null, 'x1', '0%' );
                 circ.setAttributeNS(null, 'x2', '100%' );
-                circ.setAttributeNS(null, 'y1', ''+y+'%');
-                circ.setAttributeNS(null, 'y2', ''+y+'%');
+                circ.setAttributeNS(null, 'y1', ''+(y+dy)+'%');
+                circ.setAttributeNS(null, 'y2', ''+(y+dy)+'%');
                 gobs.appendChild(circ);
-            }
-        }
-        if (this.overlayPref.position) { //position reads p1;p2;p3;p4 p=x,y
-            var pattern = /(\w+),(\w+);(\w+),(\w+);(\w+),(\w+);(\w+),(\w+)/;
-            var points = this.overlayPref.position.match(pattern);
-            if (points.lenght==9) {
-                
             }
         }
     }
     //gobs.setAttributesNS(null, )
 };
 
+Ext.define('BQ.overlayEditor.Window', {
+    extend: 'Ext.window.Window',
+    image_resource: '',
+    layout: 'vbox',
+    initComponent: function(config) {
+        var config = config || {};
+        var me = this;
+        
+        this.miniViewer =  Ext.create('BQ.viewer.Image',{
+            width:'100%',
+            height: '75%',
+            flex: 6,
+            resource: me.image_resource,
+            parameters: {
+                onlyedit: true,
+                nosave: true,
+                editprimitives: 'Point',
+            },
+            listeners: {
+                'changed': function(el) {
+                    var gobs = el.getGobjects();
+                    if (gobs.length>4) {
+                        var editor   = el.viewer.plugins_by_name.edit;
+                        var renderer = el.viewer.plugins_by_name.renderer;
+
+                        editor.remove_gobject(gobs[0]);
+                        renderer.updateVisible();
+                    }
+                }
+            },
+        });
+        var items = [{
+            xtype: 'container',
+            padding: '10px',
+            html: [
+                '<h3>Layout Editor</h3>',
+                '<p>Set the position of the template size and orientation by selecting 4 points on the image.</p>',
+            ],
+            flex: 1,
+        },
+            this.miniViewer, 
+        ];
+        
+        
+        var fbar = [{
+            scale: 'large',
+            xtype: 'button',
+            margin: '0 8 0 8',
+            text: 'Set',
+            handler: function() {
+                var gobs = me.miniViewer.getGobjects();
+                var gobs = gobs.slice();
+                if (gobs.length!=4) {
+                    BQ.ui.notification('For points are required to set the overlay');
+                    return
+                }
+                
+                view = me.viewer.view();
+                
+                corners = [
+                    {x:0,y:0},
+                    {x:view.original_width,y:0},
+                    {x:0, y:view.original_height},
+                    {x:view.original_width, y:view.original_height}
+                ];
+                
+                var points = []
+                
+                for (var c=0; c<4; c++) {
+                    var lengths = [];
+                    for (var g = 0;g<gobs.length;g++) {
+                        lengths.push(Math.sqrt(Math.pow(gobs[g].vertices[0].x-corners[c].x,2) + Math.pow(gobs[g].vertices[0].y-corners[c].y,2)))
+                    }
+                    var i = lengths.indexOf(Math.min.apply(Math, lengths));
+                    points.push(gobs.splice(i, 1)[0]);
+                }
+                
+                
+                var preferenceTag = document.createElement('preference');
+                
+                var viewerTag = document.createElement('tag');
+                viewerTag.setAttribute('name', 'Viewer');
+                preferenceTag.appendChild(viewerTag);
+                
+                var layoutTag = document.createElement('tag');
+                layoutTag.setAttribute('name', 'Overlay');
+                viewerTag.appendChild(layoutTag);
+                
+                var enableTag = document.createElement('tag');
+                enableTag.setAttribute('name', 'enable');
+                enableTag.setAttribute('value', 'true');
+                layoutTag.appendChild(enableTag);
+                
+                var positionTag = document.createElement('tag');
+                positionTag.setAttribute('name', 'position');
+                positionTag.setAttribute('value', points[0].vertices[0].x+','+points[0].vertices[0].y+';'+points[1].vertices[0].x+','+points[1].vertices[0].y+';'+points[2].vertices[0].x+','+points[2].vertices[0].y+';'+points[3].vertices[0].x+','+points[3].vertices[0].y);
+                layoutTag.appendChild(positionTag);
+                
+                BQ.Preferences.updateResource(me.viewer.image.resource_uniq, preferenceTag.outerHTML)
+                
+                //remove all the gobjects
+                var editor   = me.viewer.plugins_by_name.edit;
+                var renderer = me.viewer.plugins_by_name.renderer;
+                var gobs = me.miniViewer.getGobjects();
+                editor.remove_gobject(gobs[3]);
+                editor.remove_gobject(gobs[2]);
+                editor.remove_gobject(gobs[1]);
+                editor.remove_gobject(gobs[0]);
+                renderer.updateVisible();                
+            },
+        }, { //toggles disable enable of the mask
+            scale: 'large',
+            margin: '0 8 0 8',
+            xtype: 'button',
+            text: 'Disable',
+        }]
+        
+        Ext.apply(me, {
+            items: items,
+            fbar: fbar,
+        });
+        this.callParent([config]);
+        
+    },
+    
+    
+})

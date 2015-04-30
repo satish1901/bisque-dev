@@ -121,15 +121,33 @@
                 </template>
             </tag>
 
-            <tag name="showOverlay" value="false">
-                <template>
-                    <tag type="string" name="Type" value="ComboBox"/>
-                    <tag type="string" name="defaultValue" value="false"/>
-                    <tag type="boolean" name="allowBlank" value="false"/>
-                    <tag type="boolean" name="Editable" value="true"/>
-                    <tag type="string" name="select" value="None,Dots,Dots (Medium),Dots (Narrow),Grid"/>
-                    <tag type="string" name="passedValues" value="false,dots,dots_medium,dots_narrow,grid"/>
-                </template>
+            <tag name="Overlay">
+                <tag name="enable" type="boolean" value="false">
+                    <template>
+                        <tag type="string" name="Type" value="Boolean"/>
+                        <tag type="string" name="defaultValue" value="false"/>
+                        <tag type="boolean" name="allowBlank" value="false"/>
+                        <tag type="boolean" name="Editable" value="true"/>
+                    </template>
+                </tag>
+                <tag name="position" value="">
+                    <template>
+                        <tag type="string" name="Type" value="ComboBox"/>
+                        <tag type="string" name="defaultValue" value=""/>
+                        <tag type="boolean" name="allowBlank" value="true"/>
+                        <tag type="boolean" name="Editable" value="true"/>
+                    </template> 
+                </tag>
+                <tag name="shape" value="dots">
+                    <template>
+                        <tag type="string" name="Type" value="ComboBox"/>
+                        <tag type="string" name="defaultValue" value="false"/>
+                        <tag type="boolean" name="allowBlank" value="false"/>
+                        <tag type="boolean" name="Editable" value="true"/>
+                        <tag type="string" name="select" value="Dots,Dots (Medium),Dots (Narrow),Grid"/>
+                        <tag type="string" name="passedValues" value="dots,dots_medium,dots_narrow,grid"/>
+                    </template>
+                </tag>
             </tag>
 
             <tag name="channel_color_0" value="255,0,0" type="string">
@@ -143,7 +161,7 @@
             <tag name="hide_gobjects_creation" value="" />
 
         </tag>
-
+        
         <tag name="Viewer3D" >
           <tag name="render_quality" value="medium"  type="string">
             <template>
