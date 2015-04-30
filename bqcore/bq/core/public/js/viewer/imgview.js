@@ -246,7 +246,7 @@ ViewerPlugin.prototype.create = function (parent){
     return parent;
 };
 ViewerPlugin.prototype.newImage = function (){
-    
+
 };
 ViewerPlugin.prototype.updateImage = function (){
 };
@@ -327,16 +327,29 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.imagediv.id="imgviewer_image";
     this.imagediv.className = "image_viewer_display";
     var me = this;
-    
+
     //initializing preference for the image viewer
     this.preferences = this.parameters.preferences;
-    
-    /*
-    BQ.Preferences.get({
-        key : 'Viewer',
-        callback : Ext.bind(this.onPreferences, this),
-    });
-    */
+
+    if (BQ.Preferences) {
+        BQ.Preferences.loadResource(uniq); //begin loading request for viewer
+        BQ.Preferences.on('updateresourcepref', function(el, resourcePrefDict, resourcePrefXML){
+            var viewerPref = {};
+            if (resourcePrefDict.Viewer)
+                viewerPref = resourcePrefDict.Viewer;
+            me.onPreferences(viewerPref) //update preferences
+        })
+        //check to see if resource preferences was updated already
+        if (BQ.Preferences.resourceDict) {
+            var viewerPref = {};
+            if (BQ.Preferences.resourceDict.Viewer)
+                viewerPref = BQ.Preferences.resourceDict.Viewer
+            me.onPreferences(viewerPref) //update preferences
+        }
+    } else {
+        me.onPreferences({}) //onPreferences has to be initialized before the view shows anything
+    }
+
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
 
@@ -485,9 +498,9 @@ ImgViewer.prototype.newImage = function (bqimage) {
 
     var phys = new BQImagePhys (this.image);
     phys.load (callback (this, 'newPhys') );
-    
+
     if (BQ.Preferences) {
-        BQ.Preferences.loadResource(this.image.resource_uniq); 
+        BQ.Preferences.loadResource(this.image.resource_uniq);
         //begin loading request for viewer
         BQ.Preferences.on('update_'+this.image.resource_uniq+'_pref', function(el, resourcePrefDict, resourcePrefXML){
             var viewerPref = {};
@@ -506,7 +519,7 @@ ImgViewer.prototype.newImage = function (bqimage) {
             me.onPreferences(viewerPref) //update preferences
         }
     } else {
-        me.onPreferences({}) //onPreferences has to be initialized before the view shows anything 
+        me.onPreferences({}) //onPreferences has to be initialized before the view shows anything
     }
 
     // this probably should be run after the imagephys is acquired
@@ -657,7 +670,14 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
 
 ImgViewer.prototype.color_gobject = function(gob, color) {
     this.renderer.setcolor(gob, color);
-    var t = gob.addtag(new BQTag(null, 'color', color, 'color'));
+    var xml = gob.xmlNode();
+    var tagColor = BQ.util.xpath_nodes(xml,'tag[@name="color"]');
+    var uri = null;
+    if(tagColor.length > 0){
+        uri = tagColor[0].getAttribute('uri');
+    }
+
+    var t = gob.addtag(new BQTag(uri, 'color', color, 'color'));
     t.save_reload(gob.uri);
     console.log(gob.uri + '?view=deep');
 };
