@@ -6,7 +6,7 @@
   position: relative;
   top: 0px;
   left: 0px;
-  
+
 }
 
 .image_viewer_display {
@@ -335,11 +335,11 @@
   border-radius: 5px;
   -moz-border-radius: 5px;
   z-index: 30;
-  
-  -moz-user-select: none; 
-  -khtml-user-select: none; 
-  -webkit-user-select: none; 
-  -o-user-select: none; 
+
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -o-user-select: none;
 }
 
 .scalebar div#scalebar_bar {
@@ -354,7 +354,7 @@
 }
 
 .scalebar div#scalebar_caption {
-  white-space: nowrap; 
+  white-space: nowrap;
   height: 100%;
   position:relative;
   overflow: hidden;
@@ -398,10 +398,10 @@
     background-image: url('/images/viewer/resize-handle.png');
 }
 
-/******************************************************************** 
- * 
+/********************************************************************
+ *
  * image meta editor
- * 
+ *
  ********************************************************************/
 
 .imgmetaeditor p{
@@ -487,7 +487,7 @@
 
 .viewer .info {
   position: absolute;
-  z-index: 15;
+  z-index: 25;
   width: 100%;
   height: 20px;
   text-align: center;
