@@ -302,7 +302,9 @@ Ext.define('BQ.admin.UserTable', {
                 }
             },
         });
-        this.initTable();
+        if (BQApp.user.name=='admin') { //the way to check for admin needs to be changed
+            this.initTable();
+        }
         Ext.apply(me, {
             store: me.store,
             tbar: tbar
