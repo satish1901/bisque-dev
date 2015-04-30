@@ -178,7 +178,10 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                                 },
                             });
                         }
-                        el.setVisible(true)
+                        el.setVisible(true);
+                    }
+                    if (me.showModuleOrganizer) {
+                        me.initModuleOrganizer();
                     }
                 }
             }
@@ -298,64 +301,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             }
             */
         }
-    },    
-    
-    //deprecate
-    /*
-    loadPreferences : function(preferences, tags) {
-        if (preferences == undefined)
-            BQ.Preferences.get({
-                type : 'user',
-                key : this.preferenceKey,
-                callback : Ext.bind(this.loadPreferences, this)
-            });
-        else
-        // preferences loaded
-        {
-            this.preferences = preferences;
-            this.applyPreferences();
-
-            // defaults (should be loaded from system preferences)
-            Ext.apply(this.browserParams, {
-                layout : this.browserParams.layout || 1,
-                dataset : this.browserParams.dataset || '/data_service/image/',
-                offset : this.browserParams.offset || 0,
-                tagQuery : this.browserParams.tagQuery || '',
-                tagOrder : this.browserParams.tagOrder || '"@ts":desc',
-                wpublic : (this.browserParams.wpublic == 'true' ? true : false),
-                selType : (this.browserParams.selType || 'SINGLE').toUpperCase()
-            });
-
-            this.browserState['offset'] = this.browserParams.offset;
-            this.layoutKey = this.layoutKey || this.browserParams.layout;
-            //this.showOrganizer = true;
-            //if ('showOrganizer' in this.browserParams)
-            this.showOrganizer = this.browserParams.showOrganizer || false;
-            this.showModuleOrganizer = this.browserParams.showModuleOrganizer || false;
-            this.selectState = this.browserParams.selectState || 'ACTIVATE';
-            this.commandBar.applyPreferences();
-
-            if (this.browserParams.dataset != "None") {
-                var baseURL = (this.browserParams.dataset instanceof BQDataset) ? this.browserParams.dataset.uri + '/value' : this.browserParams.dataset;
-
-                this.loadData({
-                    baseURL : baseURL,
-                    offset : this.browserParams.offset,
-                    tag_query : this.browserParams.tagQuery,
-                    tag_order : this.browserParams.tagOrder
-                });
-
-                var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
-                this.showOrganizer ? btnOrganize.handler.call(this.commandBar) : '';
-                
-                if (this.showModuleOrganizer) {
-                    this.initModuleOrganizer();
-                }
-                
-            }
-        }
     },
-    */
 
     applyPreferences : function() {
         var browserPref = this.preferences.Browser;
