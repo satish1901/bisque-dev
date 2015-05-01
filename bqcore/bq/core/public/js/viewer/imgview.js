@@ -487,23 +487,25 @@ ImgViewer.prototype.newImage = function (bqimage) {
     phys.load (callback (this, 'newPhys') );
     
     if (BQ.Preferences) {
+        //needs to remove call back if new image is added
+        
         BQ.Preferences.loadResource(this.image.resource_uniq);
         //begin loading request for viewer
         BQ.Preferences.on('update_'+this.image.resource_uniq+'_pref', function(el, resourcePrefDict, resourcePrefXML){
             var viewerPref = {};
-            if (resourcePrefDict.Viewer)
+            if (resourcePrefDict.Viewer);
                 viewerPref = resourcePrefDict.Viewer;
-            me.onPreferences(viewerPref) //update preferences
+            me.onPreferences(viewerPref); //update preferences
         })
         BQ.Preferences.on('onerror_'+this.image.resource_uniq+'_pref', function(el, resourcePrefDict, resourcePrefXML){
-            me.onPreferences({}) //update preferences
+            me.onPreferences({}); //update preferences
         })
         //check to see if resource preferences was updated already
-        if (BQ.Preferences.resourceDict) {
+        if (BQ.Preferences.resourceDict[this.image.resource_uniq]) {
             var viewerPref = {};
             if (BQ.Preferences.resourceDict.Viewer)
-                viewerPref = BQ.Preferences.resourceDict.Viewer
-            me.onPreferences(viewerPref) //update preferences
+                viewerPref = BQ.Preferences.resourceDict[this.image.resource_uniq].Viewer;
+            me.onPreferences(viewerPref); //update preferences
         }
     } else {
         me.onPreferences({}) //onPreferences has to be initialized before the view shows anything
@@ -788,6 +790,17 @@ ImgViewer.prototype.onPreferences = function(pref) {
     }
     //this.loadPreference(this.preferences);
 };
+
+ImgViewer.prototype.updatePref = function(el, resourcePrefDict, resourcePrefXML){
+    var viewerPref = {};
+    if (resourcePrefDict.Viewer)
+        viewerPref = resourcePrefDict.Viewer;
+    this.onPreferences(viewerPref) //update preferences
+};
+
+ImgViewer.prototype.onErrorPref = function(el){
+    this.onPreferences({}) //update preferences
+}
 
 //----------------------------------------------------------------------
 // view menu
