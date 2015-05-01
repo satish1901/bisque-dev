@@ -99,11 +99,25 @@ def mergeDocuments(minorDoc, majorDoc, attrib={}):
         for k in new.sub_node_dict.keys():
             if k in current.sub_node_dict:
                 if (type(current.sub_node_dict[k]) is TagNameNode) and (type(new.sub_node_dict[k]) is TagNameNode):
+                    node_attrib = new.sub_node_dict[k].node_attrib
+                    if 'type' in current.sub_node_dict[k].node_attrib:
+                        node_attrib['type'] = current.sub_node_dict[k].node_attrib['type']
+                    current.sub_node_dict[k] = TagNameNode(
+                        sub_node_dict = current.sub_node_dict[k].sub_node_dict,
+                        node_attrib = node_attrib,
+                        sub_none_tag_node = current.sub_node_dict[k].sub_none_tag_node
+                    )
                     merge(new.sub_node_dict[k], current.sub_node_dict[k])
-                elif (type(current.sub_node_dict[k]) is TagValueNode) and (type(new.sub_node_dict[k]) is TagValueNode):
+                    
+                    
+                elif (type(current.sub_node_dict[k]) is TagValueNode) and (type(new.sub_node_dict[k]) is TagValueNode): #both are tag nodes
+                    #over write value
+                    node_attrib = new.sub_node_dict[k].node_attrib
+                    if 'type' in current.sub_node_dict[k].node_attrib:
+                        node_attrib['type'] = current.sub_node_dict[k].node_attrib['type']
                     current.sub_node_dict[k] = TagValueNode(
                         value = new.sub_node_dict[k].value,
-                        node_attrib = new.sub_node_dict[k].node_attrib,
+                        node_attrib = node_attrib,
                         sub_node = current.sub_node_dict[k].sub_node
                     )
                 elif (type(current.sub_node_dict[k]) is TagNameNode) and (type(new.sub_node_dict[k]) is TagValueNode):
@@ -292,7 +306,7 @@ class PreferenceController(ServiceController):
                     if request.body:
                         return self.resource_put(resource_uniq, body=request.body, **kw)
                 elif request.method == 'DELETE' and not_annon:
-                    path = arg.join('/') #no path deletes the preference
+                    path = '/'.join(arg) #no path deletes the preference
                     return self.resource_delete(resource_uniq, path=path, **kw)
         else:
             if request.method == 'GET':
@@ -302,7 +316,7 @@ class PreferenceController(ServiceController):
                 if request.body:
                     return self.user_put(body=request.body, **kw);
             elif request.method == 'DELETE' and not_annon:
-                path = arg.join('/') #no path deletes the preference
+                path = '/'.join(arg) #no path deletes the preference
                 return self.user_delete(path=path, **kw)
         abort(404)
         
@@ -604,7 +618,6 @@ class PreferenceController(ServiceController):
             tag nothing happens. Returns back the updated document.
             Allows the default value to be set for the level above.
         """
-        #resource = data_service.get_resource('/data_service/%s', view='full')
         resource = data_service.resource_load(resource_uniq, action=RESOURCE_EDIT, view='full')
         if resource:
             resource_preference_list = resource.xpath('preference')
@@ -616,9 +629,12 @@ class PreferenceController(ServiceController):
                 abort(404)
             
         if len(resource_preference_list)>0:
-            preference_location = resource_preference_list[0].uri
+            preference_location = resource_preference_list[0].attrib['uri']
             if path:
-                data_service.del_resource(preference_location+'/'+path)
+                if len(resource_preference_list[0].xpath('tag[@uri="%s"]'%(preference_location+'/'+path))) == 1:
+                    data_service.del_resource(preference_location+'/'+path)
+                else:
+                    abort(404)
             else:
                 data_service.del_resource(preference_location)
         else:

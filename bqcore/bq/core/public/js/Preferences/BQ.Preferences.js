@@ -196,7 +196,6 @@ Ext.define('BQ.Preferences', {
             url: me.preference_user_uri+'/'+uniq+'/'+path,
             disableCaching: false,
             success: function(response) {
-                //me.resourceXML = response.responseXML;
                 me.loadUser(cb);
             },
             failure: function(response) {
@@ -215,8 +214,7 @@ Ext.define('BQ.Preferences', {
             url: me.preference_user_uri+'/'+uniq+'/'+path,
             disableCaching: false,
             success: function(response) {
-                //me.resourceXML = response.responseXML;
-                me.loadResource(uniq, cb);
+                me.loadResource(uniq, cb); //reset the element
             },
             failure: function(response) {
                 BQ.ui.error('failed to delete resource preference tag');

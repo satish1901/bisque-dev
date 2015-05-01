@@ -144,8 +144,8 @@
                         <tag type="string" name="defaultValue" value="false"/>
                         <tag type="boolean" name="allowBlank" value="false"/>
                         <tag type="boolean" name="Editable" value="true"/>
-                        <tag type="string" name="select" value="Dots,Dots (Medium),Dots (Narrow),Grid"/>
-                        <tag type="string" name="passedValues" value="dots,dots_medium,dots_narrow,grid"/>
+                        <tag type="string" name="select" value="Dots,Dots (Medium),Dots (Narrow),Grid,Custom Dots"/>
+                        <tag type="string" name="passedValues" value="dots,dots_medium,dots_narrow,grid,dots_custom"/>
                     </template>
                 </tag>
             </tag>

@@ -155,7 +155,7 @@ def test_update_level_3():
     """
         Update Level Test 3
         
-        
+        templating the latter element
     """
     current = etree.XML("""
         <preference>
@@ -165,7 +165,7 @@ def test_update_level_3():
     
     new = etree.XML("""
         <preference>
-            <tag name="test2" value="new" type="somethign">
+            <tag name="test2" value="new" type="something">
                 <template>
                     <tag name="template_name" value="template_value"/>
                 </template>
@@ -176,10 +176,9 @@ def test_update_level_3():
     answer = etree.XML("""
         <preference>
             <tag name="test1" value="old" uri="/data_service/preference/1234/tag/12345" />
-            <tag name="test2" value="new" type="somethign" />
+            <tag name="test2" value="new"/>
         </preference>
     """, parser=parser)
-    
     result = update_level(new, current)
     compare_etree(answer, result)
     
@@ -348,8 +347,6 @@ def test_mergeDocument_5():
         Merge Document Test 5
         
         Normal Use Case
-        
-        order get mest up
     """
     etree_1 = etree.XML("""
         <preference>
@@ -412,6 +409,89 @@ def test_mergeDocument_5():
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
     
+    
+def test_mergeDocument_6():
+    """
+        Merge Document Test 6
+        
+        Has type attributes
+        
+        order get mest up
+    """
+    etree_1 = etree.XML("""
+        <preference>
+            <tag name="test1" type="Boolean" value="true"/>
+            <tag name="test2" type="Boolean" value="true"/>
+            <tag name="test3" type="Boolean" value="true"/>
+            <tag name="first_level">
+                <tag name="test1" type="Boolean" value="true"/>
+                <tag name="test2" type="Boolean" value="true"/>
+                <tag name="test3" type="Boolean" value="true"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    
+    etree_2 = etree.XML("""
+        <preference>
+            <tag name="test1" value="false"/>
+            <tag name="test3" type="String" value="false"/>
+            <tag name="first_level">
+                <tag name="test1" value="false"/>
+                <tag name="test3" type="String" value="false"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    
+    answer = etree.XML("""
+        <preference>
+            <tag name="test1" type="Boolean" value="false"/>
+            <tag name="test2" type="Boolean" value="true"/>
+            <tag name="test3" type="Boolean" value="false"/>
+            <tag name="first_level">
+                <tag name="test1" type="Boolean" value="false"/>
+                <tag name="test2" type="Boolean" value="true"/>
+                <tag name="test3" type="Boolean" value="false"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    result = mergeDocuments(etree_1, etree_2)
+    compare_etree(answer, result)
+    
+    
+def test_mergeDocument_7():
+    """
+        Merge Document Test 7
+        
+        merging uris
+    """
+    etree_1 = etree.XML("""
+        <preference>
+            <tag name="test1" type="Boolean" value="true" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1271/tag/1277"/>
+            <tag name="first_level" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1271/tag/1278">
+                <tag name="test1" type="Boolean" value="true" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1271/tag/1278/tag/1530"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    
+    etree_2 = etree.XML("""
+        <preference>
+            <tag name="test1" value="false" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1272/tag/1234"/>
+            <tag name="first_level" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1272/tag/1235">
+                <tag name="test1" value="false" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1272/tag/1235/tag/1423"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    
+    answer = etree.XML("""
+        <preference>
+            <tag name="test1" type="Boolean" value="false" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1272/tag/1234"/>
+            <tag name="first_level" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1272/tag/1235">
+                <tag name="test1" type="Boolean" value="false" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1272/tag/1235/tag/1423"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    result = mergeDocuments(etree_1, etree_2)
+    compare_etree(answer, result)
     
 def test_to_dict_1():
     """

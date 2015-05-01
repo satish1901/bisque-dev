@@ -746,6 +746,7 @@ def load_uri (uri, query=False):
     # Check that we are looking at the right resource.
 
     try:
+        resource = None
         service, clname, ida, rest = parse_bisque_uri(uri)
         if service  not in  ('data_service', 'module_service'):
             return None
