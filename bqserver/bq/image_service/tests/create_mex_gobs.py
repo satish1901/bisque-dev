@@ -52,6 +52,8 @@ session = BQSession().init_local(user, pswd,  bisque_root=root, create_mex=False
 meta = session.fetchxml('%s?meta'%image_uri.replace('data_service', 'image_service'))
 w = int(meta.xpath('//tag[@name="image_num_x"]')[0].get('value'))
 h = int(meta.xpath('//tag[@name="image_num_y"]')[0].get('value'))
+z = int(meta.xpath('//tag[@name="image_num_z"]')[0].get('value'))
+t = int(meta.xpath('//tag[@name="image_num_t"]')[0].get('value'))
 
 # create mex
 mex = etree.Element ('mex', name='ExternalAnnotator %s'%num_gobs, value='FINISHED')
@@ -73,6 +75,8 @@ for j in range(num_gobs):
     g = random.randint(0, 255)
     b = random.randint(0, 255)
     etree.SubElement (poly, 'tag', name='color', value='#%s%s%s'%(int2hex(r), int2hex(g), int2hex(b)))
+    zz = random.randint(0, z)
+    tt = random.randint(0, t)
 
     vrtx = []
     for i in range(10):
@@ -82,7 +86,7 @@ for j in range(num_gobs):
 
     vrtx = sorted(vrtx,key=lambda x: x[0])
     for v in vrtx:
-        etree.SubElement (poly, 'vertex', x='%s'%v[0], y='%s'%v[1])
+        etree.SubElement (poly, 'vertex', x='%s'%v[0], y='%s'%v[1], z='%s'%zz, t='%s'%tt)
 
 
 #print etree.tostring(mex)
