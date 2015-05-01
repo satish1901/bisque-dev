@@ -506,6 +506,10 @@ CanvasShape.prototype.rotation = function(input){
 */
 CanvasShape.prototype.update = function () {
     //this.sprite.clearCache();
+
+    var z = this.renderer.viewer.tiles.cur_z;
+    if(z != this.gob.vertices[0].z) return;
+
     this.clearCache();
     this.updateLocal();
     //if(!this.bbox) this.bbox = this.calcBbox();
@@ -763,9 +767,9 @@ CanvasPolyLine.prototype.onDragCreate = function(e){
     var dx = ex - bx;
     var dy = ey - by;
     if(dx*dx + dy*dy < 16){
-        me.renderer.shapeCorners[0].fill('rgba(0,255,0,1)');
+        me.shapeCorners[0].fill('rgba(0,255,0,1)');
     } else{
-        me.renderer.shapeCorners[0].fill('rgba(255,0,0,1)');
+        me.shapeCorners[0].fill('rgba(255,0,0,1)');
     }
 
     me.bbox = me.calcBbox();
