@@ -259,16 +259,23 @@ QuadTree.prototype.insertInNode  = function(gob, node, stack){
 
     gob.page = node;
     //node.bbox = this.calcBbox(node.leaves);
-
-
-    if(node.leaves.length >= this.maxChildren && node.L < 6){
+    var maxLevel = 6;
+    var maxTileLevel = this.renderer.viewer.tiles.pyramid.levels;
+    if((node.leaves.length >= this.maxChildren || node.L < maxTileLevel + 1) &&
+       node.L < maxLevel){
         this.splitNode(node, stack);
     }
-
     /*
-    var fArea = this.calcBoxVol(this.renderer.viewFrustum);
-    var nArea = this.calcBoxVol(node.bbox);
-    if(!node.children.length && nArea > 1.5*fArea){
+    //make sure that the leaves are no larger than the client view
+    var xc = this.renderer.viewer.tiles.div.clientWidth;
+    var yc = this.renderer.viewer.tiles.div.clientHeight;
+    var scale = Math.pow(2,node.L);
+    var xn = (node.bbox.max[0] - node.bbox.min[0])*scale;
+    var yn = (node.bbox.max[1] - node.bbox.min[1])*scale;
+
+    //var fArea = this.calcBoxVol(this.renderer.viewFrustum);
+    //var nArea = this.calcBoxVol(node.bbox);
+    if(!node.children.length && xn*yn > 1.25*xc*yc){
         this.splitNode(node, stack);
     }
     */
@@ -621,7 +628,7 @@ function CanvasControl(viewer, element) {
 
 CanvasControl.prototype.setFrustum = function(e, scale){
     var dim = this.viewer.viewer.imagedim;
-    var
+
     cw = this.viewer.viewer.imagediv.clientWidth/scale.x,
     ch = this.viewer.viewer.imagediv.clientHeight/scale.y,
     x = e.x < 0 ? -e.x/scale.x : 0,
@@ -762,7 +769,7 @@ CanvasRenderer.prototype.create = function (parent) {
     this.initEditLayer();
     this.initSelectLayer();
     this.initPointImageCache();
-    this.quadtree = new QuadTree(this);
+    this.quadtrees = [];//new QuadTree(this);
     this.cur_z = 0;
     return parent;
 };
@@ -936,6 +943,8 @@ CanvasRenderer.prototype.initUiShapes = function(){
     this.bbCorners.forEach(function(e,i,d){
         e.setDraggable(true);
     });
+
+
 };
 
 CanvasRenderer.prototype.draw = function (){
@@ -1171,8 +1180,13 @@ CanvasRenderer.prototype.updateImage = function (e) {
     var x = this.viewer.tiles.tiled_viewer.x;
     var y = this.viewer.tiles.tiled_viewer.y;
     var z = this.viewer.tiles.cur_z;
+
+    if(!this.quadtrees[z]) this.quadtrees[z] = new QuadTree(this);
+    this.quadtree = this.quadtrees[z];
+
     this.stage.scale(scale);
 
+    this.initDrawer();
     /*
     if(this.selectedSet.length> 0){
         if(this.selectedSet[0].gob.vertices[0]){
@@ -1202,8 +1216,8 @@ CanvasRenderer.prototype.updateImage = function (e) {
     /*
     */
 
-    if(this.cur_z != z)
-        this.resetTree();
+    //if(this.cur_z != z)
+    //    this.resetTree();
     this.cur_z = z;
 
     //dump the currently viewed objects
@@ -1391,6 +1405,7 @@ CanvasRenderer.prototype.updateBbox = function (gobs){
 
     this.bbCorners[3].x(max[0]);
     this.bbCorners[3].y(max[1]);
+    this.updateDrawer();
 };
 
 
@@ -1495,6 +1510,61 @@ CanvasRenderer.prototype.inSelectedSet = function(shape){
     return inSet;
 };
 
+CanvasRenderer.prototype.initDrawer = function(){
+    var me = this;
+    if(!this.guidrawer)
+        this.guidrawer = Ext.create('Ext.tip.Tip', {
+		    anchor : this.viewer.viewer_controls_surface,
+		    cls: 'bq-viewer-menu',
+
+            header: {
+                title: ' ',
+                tools:[{
+                    type: 'close',
+                    handler: function(){
+                        me.guidrawer.hide();
+                    }
+                }]},
+            layout: {
+                type: 'hbox',
+                //align: 'stretch',
+            },
+            /*
+              listeners: {
+              close : function(){
+              debugger;
+              },
+              show: function(){
+              if(renderer.selectedSet.length === 0) this.hide();
+              }
+              },
+            */
+	    }).hide();
+};
+
+CanvasRenderer.prototype.updateDrawer = function(){
+    if(!this.guidrawer) return;
+    if(this.guidrawer.isHidden()) return;
+    var xy0 = this.bbCorners[2].getAbsolutePosition();
+    var xy1 = this.bbCorners[3].getAbsolutePosition();
+
+    this.guidrawer.setWidth(xy1.x - xy0.x);
+    this.guidrawer.setHeight(xy1.y - xy0.y);
+    this.guidrawer.setX(xy0.x + 10);
+    this.guidrawer.setY(xy0.y + 85);
+};
+
+CanvasRenderer.prototype.showDrawer = function(){
+    if(!this.guidrawer) return;
+    this.guidrawer.show();
+    this.updateDrawer();
+};
+
+CanvasRenderer.prototype.hideDrawer = function(){
+    if(!this.guidrawer) return;
+    this.guidrawer.removeAll();
+    this.guidrawer.hide();
+};
 
 CanvasRenderer.prototype.select = function (gobs) {
     var me = this;
@@ -1536,13 +1606,14 @@ CanvasRenderer.prototype.select = function (gobs) {
             //me.currentLayer._getIntersection = me.defaultIntersection;
            // me.editLayer._getIntersection = me.defaultIntersection;
             //me.selectLayer._getIntersection = me.defaultIntersection;
+            me.updateDrawer();
             me.selectedSet.forEach(function(e,i,d){
                 if(e.dirty)
                     me.move_shape(e.gob);
             });
         });
     });
-
+    this.showDrawer();
     this.currentLayer.draw();
     this.editLayer.draw();
 };
@@ -1576,7 +1647,7 @@ CanvasRenderer.prototype.unselect = function (gobs) {
             me.move_shape(e.gob);
         me.quadtree.insert(e)
     });
-
+    this.hideDrawer();
     this.editLayer.removeChildren();
 };
 
@@ -1679,6 +1750,12 @@ CanvasRenderer.prototype.toggleWidgets = function(fcn){
         e[fcn]();
     });
     this.editLayer.draw();
+    if(fcn === 'hide')
+        this.hideDrawer();
+    if(fcn === 'show'){
+        this.showDrawer();
+        this.updateDrawer();
+    }
 }
 
 CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
@@ -1875,6 +1952,11 @@ CanvasRenderer.prototype.removeFromLayer = function (gobShape) {
 
 ////////////////////////////////////////////////////////////
 CanvasRenderer.prototype.makeShape = function ( gob,  viewstate, shapeDescription) {
+    if(!gob.vertices[0]) return;
+    var z = this.viewer.tiles.cur_z;
+    var zg = gob.vertices[0].z;
+
+    if(z != zg) return;
     if(gob.shape){ //JD:Don't completely understand deleting process, but: for now deferred cleanup
         if(gob.shape.isDestroyed) {
             var shape = gob.shape
