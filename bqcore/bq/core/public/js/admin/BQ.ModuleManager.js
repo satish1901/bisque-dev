@@ -21,10 +21,10 @@ Ext.define('BQ.module.RowExpander', {
     addExpander: function(){ //remove the plus
         //this.grid.headerCt.insert(0, this.getHeaderConfig());
     },
-    
+
     onClick: function(view, cell, rowIdx, cellIndex, e) {
         this.toggleRow(rowIdx);
-    },  
+    },
 
     getRowBodyFeatureData: function(record, idx, rowValues) {
         var me = this
@@ -37,7 +37,7 @@ Ext.define('BQ.module.RowExpander', {
         rowValues.rowBody = me.getRowBodyContents(record);
         rowValues.rowBodyCls = me.recordsExpanded[record.internalId] ? '' : me.rowBodyHiddenCls;
     },
-    
+
     expandRow: function(rowIdx) { //costom expander
         var view = this.view,
             rowNode = view.getNode(rowIdx),
@@ -45,7 +45,7 @@ Ext.define('BQ.module.RowExpander', {
             nextBd = Ext.get(row).down(this.rowBodyTrSelector),
             record = view.getRecord(rowNode),
             grid = this.getCmp();
-            
+
         if (row.hasCls(this.rowCollapsedCls)) {
             row.removeCls(this.rowCollapsedCls);
             nextBd.removeCls(this.rowBodyHiddenCls);
@@ -55,7 +55,7 @@ Ext.define('BQ.module.RowExpander', {
             view.fireEvent('expandbody', rowNode, record, nextBd.dom);
         }
     },
-    
+
     collapeRow: function(rowIdx) { //custom collapse
         var view = this.view,
             rowNode = view.getNode(rowIdx),
@@ -63,7 +63,7 @@ Ext.define('BQ.module.RowExpander', {
             nextBd = Ext.get(row).down(this.rowBodyTrSelector),
             record = view.getRecord(rowNode),
             grid = this.getCmp();
-            
+
         if (!row.hasCls(this.rowCollapsedCls)) {
             row.addCls(this.rowCollapsedCls);
             nextBd.addCls(this.rowBodyHiddenCls);
@@ -73,7 +73,7 @@ Ext.define('BQ.module.RowExpander', {
             view.fireEvent('collapsebody', rowNode, record, nextBd.dom);
         }
     },
-    
+
     toggleRow: function(rowIdx) {
         var view = this.view,
             rowNode = view.getNode(rowIdx),
@@ -81,7 +81,7 @@ Ext.define('BQ.module.RowExpander', {
             nextBd = Ext.get(row).down(this.rowBodyTrSelector),
             record = view.getRecord(rowNode),
             grid = this.getCmp();
-            
+
         if (row.hasCls(this.rowCollapsedCls)) {
             this.expandRow(rowIdx)
         } else {
@@ -132,9 +132,9 @@ Ext.define('BQ.module.UnregisteredPanel', {
             {text: 'Authors', dataIndex: 'authors', sortable: true, flex:1},
             {text: 'Version', dataIndex: 'version', sortable: true, flex:1},
             {
-                text: 'Registration Status',  
-                dataIndex: 'registration', 
-                sortable: true, 
+                text: 'Registration Status',
+                dataIndex: 'registration',
+                sortable: true,
                 flex:1,
                 renderer: function (value, meta) {
                     if(value == 'Registered') {
@@ -142,7 +142,7 @@ Ext.define('BQ.module.UnregisteredPanel', {
                         return '<span style="color:#cccccc; line-height:32px; text-align:center; height:32px;"><b>'+value+'</b></span>';
                     } else {
                         return '<span style="line-height:32px; text-align:center; height:32px;">'+value+'</span>';
-                    }                    
+                    }
                 }
             },
         ],
@@ -166,7 +166,7 @@ Ext.define('BQ.module.UnregisteredPanel', {
         expandOnDblClick: false,
         padding: '10px',
         //expandOnClick: true,
-        
+
         rowBodyTpl : [
             '<tpl if="registration == \'Registered\'"><div style="margin:5px;opacity:0.4;"></tpl>',
             '<tpl if="registration != \'Registered\'"><div style="margin:5px;"></tpl>',
@@ -184,14 +184,14 @@ Ext.define('BQ.module.UnregisteredPanel', {
                 '</div>',
             '</div>',
         ],
-        
+
     }],
-    
+
     initComponent: function(config) {
         var config = config || {};
         var me = this;
         var items = [];
-        
+
         var store = new Ext.data.JsonStore({
             fields : [{
                 name: 'title',
@@ -226,29 +226,29 @@ Ext.define('BQ.module.UnregisteredPanel', {
             }],
             root   : 'records'
         });
-        
+
         Ext.apply(me, {
             store: store,
         });
-        
+
         //set the row expander as selector
         this.on('select', function(el, record, index, eOpt) {
             me.getPlugin('modulerowexpander').expandRow(index);
         });
-        
+
         this.on('deselect', function(el, record, index, eOpt) {
             me.getPlugin('modulerowexpander').collapeRow(index);
         });
-        
+
         this.store.on('add', function(store, records, index, eOpts) {
             for (var r=0; r<records.length;r++) {
                 me.checkRegistrationModule(records[r]);
             }
         });
-        
+
         this.callParent([config]);
     },
-    
+
     searchForEngines: function(cb) {
         var me = this;
         Ext.Ajax.request({
@@ -262,7 +262,7 @@ Ext.define('BQ.module.UnregisteredPanel', {
                 var moduleNodes = BQ.util.xpath_nodes(xmlDoc, '//module');
                 var engine_list =[];
                 var engine_hash = {};
-                for (var i = 0; i<moduleNodes.length; i++){ 
+                for (var i = 0; i<moduleNodes.length; i++){
                     var engine = moduleNodes[i].attributes['value'].value;
                     var name = moduleNodes[i].attributes['name'].value;
                     if (engine && name) {
@@ -281,10 +281,10 @@ Ext.define('BQ.module.UnregisteredPanel', {
             failure: function(response) {
                 BQ.ui.error('Failed to find module service');
             },
-            scope: this,            
+            scope: this,
         });
     },
-    
+
     lookUpEngine: function(engine) {
         var me = this;
         var engine_httpless = engine.replace(/.*?:\/\//g, "");
@@ -310,7 +310,7 @@ Ext.define('BQ.module.UnregisteredPanel', {
             scope: this,
         });
     },
-    
+
     lookUpEngineModule: function(engine_module) {
         var me = this;
         var engine_httpless = engine_module.replace(/.*?:\/\//g, "");
@@ -321,33 +321,34 @@ Ext.define('BQ.module.UnregisteredPanel', {
             disableCaching: false,
             success: function(response) {
                 var xml = response.responseXML;
-                me.populateTable(xml);
+                me.populateTable(engine_module, xml);
             },
             failure: function(response) {
                 BQ.ui.error('Failed to find module');
             },
             scope: this,
-        }); 
+        });
     },
-    
-    populateTable: function(definition) {
+
+    populateTable: function(engine_module, definition) {
         var me = this;
         var moduleList = []
         var moduleNodes = BQ.util.do_xpath(definition, '//module',  XPathResult.ORDERED_NODE_ITERATOR_TYPE);
         var i;
-        
+        var engine_httpless = engine_module.replace(/.*?:\/\//g, "");
+
         function getTagValues(node, name) {
             if(node) {
                 var tag = node.querySelector('tag[name="'+name+'"]')
                 if (tag) {
                     var value = tag.attributes['value']||'';
-                    if (value) value = value.value; 
+                    if (value) value = value.value;
                     else var value = ''
                 }
             }
             return value||'';
         }
-        
+
         function getVersion(node) {
             if(node) {
                 var module_options = node.querySelector('tag[name="module_options"]')
@@ -362,20 +363,22 @@ Ext.define('BQ.module.UnregisteredPanel', {
             }
             return value||'';
         }
-        
+
         function getThumbnail(node) {
-            var thumbnail = getTagValues(i,'thumbnail')
-            if (thumbnail) {
-                //strip public
-                var thumbnail = thumbnail.replace(new RegExp("^public+", "g"), "");
-                //add proxy url
-                return (i.attributes['value'].value || '')+thumbnail;
-            } else {
-                return '';
-            }
-            
+            // var thumbnail = getTagValues(i,'thumbnail')
+            // if (thumbnail) {
+            //     //strip public
+            //     var thumbnail = thumbnail.replace(new RegExp("^public+", "g"), "");
+            //     //add proxy url
+            //     return (i.attributes['value'].value || '')+thumbnail;
+            // } else {
+            //     return '';
+            //}
+            return '/proxy/'+engine_httpless+ '/thumbnail';
+
+
         }
-        
+
         while (i = moduleNodes.iterateNext()) {
             var moduleNode = {
                 title: getTagValues(i, 'title'),
@@ -386,15 +389,15 @@ Ext.define('BQ.module.UnregisteredPanel', {
                 type: i.attributes['type'].value || '',
                 version: getVersion(i),
                 definition: definition,
-                
+
                 groups: [],
                 thumbnail_uri: getThumbnail(i),
             };
             var record = me.store.add(moduleNode);
         }
     },
-    
-    
+
+
     checkRegistrationModule: function(record) {
         var me = this;
         var engine = record.get('engine');
@@ -425,7 +428,7 @@ Ext.define('BQ.module.UnregisteredPanel', {
             BQ.ui.error('Record does not have an engine!')
         }
     },
-    
+
     updateRegistration: function(cb) {
         var me = this;
         Ext.Ajax.request({
@@ -459,7 +462,7 @@ Ext.define('BQ.module.UnregisteredPanel', {
             scope: this,
         });
     },
-    
+
     reload: function(engine_url){
         if (engine_url) {
             //clear store
@@ -485,7 +488,7 @@ Ext.define('BQ.module.RegisteredPanel', {
             rp.tstyle += 'height: 50px;';
         }
     },
-    
+
     columns: {
         items: [/*
             {
@@ -515,9 +518,9 @@ Ext.define('BQ.module.RegisteredPanel', {
             {text: 'Owner', dataIndex: 'owner', sortable: true, flex:1},
             {text: 'Visibility', dataIndex: 'visibility', sortable: true, flex:1},
             {
-                text: 'Status', 
+                text: 'Status',
                 dataIndex: 'status',
-                sortable: true, 
+                sortable: true,
                 flex:1,
                 renderer: function(value, meta, record) {
                     if(value == 'Good!') {
@@ -542,11 +545,11 @@ Ext.define('BQ.module.RegisteredPanel', {
             },
         },
     },
-    
+
     initComponent: function(config) {
         var config = config || {};
         var me = this;
-        
+
         this.store = new Ext.data.JsonStore({
             fields : [{
                 name: 'title',
@@ -581,14 +584,14 @@ Ext.define('BQ.module.RegisteredPanel', {
             }],
             root   : 'records'
         });
-        
+
         Ext.apply(me, {
             //items: items,
             //tbar: tbar,
             store: this.store,
         });
-        
-        
+
+
         this.store.on('add', function(store, records, index, eOpts) {
             for (var r=0; r<records.length;r++) {
                 var owner_uri = records[r].get('owner_uri');
@@ -601,20 +604,20 @@ Ext.define('BQ.module.RegisteredPanel', {
                 }
             }
         });
-        
+
         //set the row expander as selector
         this.on('select', function(el, record, index, eOpt) {
             me.getPlugin('modulerowexpander').expandRow(index);
         });
-        
+
         this.on('deselect', function(el, record, index, eOpt) {
             me.getPlugin('modulerowexpander').collapeRow(index);
         });
-        
+
         this.initTable();
         this.callParent([config]);
     },
-    
+
     plugins: [{
         ptype: 'modulerowexpander',
         pluginId: 'modulerowexpander',
@@ -644,8 +647,8 @@ Ext.define('BQ.module.RegisteredPanel', {
             '</div>',
         ],
     }],
-    
-    
+
+
     initTable: function() { //search module service for registered modules
         var me = this;
         Ext.Ajax.request({
@@ -675,10 +678,10 @@ Ext.define('BQ.module.RegisteredPanel', {
             scope: this,
         });
     },
-    
+
     /*
     *   addEntry
-    *   
+    *
     *   adds entry from another table
     */
     addEntry: function(uniq, record, cb) {
@@ -709,7 +712,7 @@ Ext.define('BQ.module.RegisteredPanel', {
             },
         });
     },
-    
+
     updateEntry: function(record) {
         var me = this;
         var owner_uri = record.get('owner_uri');
@@ -724,8 +727,8 @@ Ext.define('BQ.module.RegisteredPanel', {
         if (engine) {
             me.setEngine(record, engine)
         }
-    },    
-    
+    },
+
     removeEntry: function(record) {
         var me = this;
         var uniq = record.get('resource_uniq');
@@ -737,7 +740,7 @@ Ext.define('BQ.module.RegisteredPanel', {
         }
         me.store.remove(row);
     },
-    
+
     setEngine: function(record, engine) {
         var me = this;
         if (engine) {
@@ -757,7 +760,7 @@ Ext.define('BQ.module.RegisteredPanel', {
                                 var tag = node.querySelector('tag[name="'+name+'"]')
                                 if (tag) {
                                     var value = tag.attributes['value']||'';
-                                    if (value) value = value.value; 
+                                    if (value) value = value.value;
                                 } else {
                                     var value = '';
                                 }
@@ -781,19 +784,21 @@ Ext.define('BQ.module.RegisteredPanel', {
                             }
                             return value||'';
                         }
-                        
+
                         function getThumbnail(node) {
-                            var thumbnail = getTagValues( node, 'thumbnail');
-                            if (thumbnail) {
-                                //strip public
-                                var thumbnail = thumbnail.replace(new RegExp("^['public']+", "g"), "");
-                                //add proxy url
-                                return (node.attributes['value'].value || '')+thumbnail;
-                            } else {
-                                return '';
-                            }
+                            // var thumbnail = getTagValues( node, 'thumbnail');
+                            // if (thumbnail) {
+                            //     //strip public
+                            //     var thumbnail = thumbnail.replace(new RegExp("^['public']+", "g"), "");
+                            //     //add proxy url
+                            //     return (node.attributes['value'].value || '')+thumbnail;
+                            // } else {
+                            //     return '';
+                            //}
+                            //return node.attributes['value'].value + '/thumbnail';
+                            return '/proxy/'+engine_httpless+ '/thumbnail';
                         }
-                        
+
                         record.set('title', getTagValues(definition, 'title'));
                         record.set('authors', getTagValues(definition, 'authors'));
                         record.set('description', getTagValues(definition, 'description'));
@@ -837,7 +842,7 @@ Ext.define('BQ.module.RegisteredPanel', {
             });
         }
     },
-    
+
     //sets the statuses of all the nodes
     setStatus: function(record, name) {
         var me = this;
@@ -857,7 +862,7 @@ Ext.define('BQ.module.RegisteredPanel', {
             });
         }
     },
-    
+
     reload: function() {
         this.store.loadData([]);
         this.initTable();
@@ -883,7 +888,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
             store: [],
         });
 
-        
+
         //need unregister before register panel
         this.unregisterPanel = Ext.create('BQ.module.UnregisteredPanel', {
             ddGroup: 'registerGripDDGroup',
@@ -966,7 +971,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                     }
                                 } else {
                                     this.setDisabled(true);
-                                }                                
+                                }
                             },
                             onUnregister: function(el, record) {
                                 this.onRegister(el, record);
@@ -995,17 +1000,17 @@ Ext.define('BQ.module.ModuleManagerMain', {
                             listeners: { //disable buttons when deselected
                                 afterrender: function(el) {
                                     var buttonEl = el
-                                    
+
                                     me.unregisterPanel.on('select',
                                         function(el, record) {
                                             if (buttonEl.onSelect)
                                                 buttonEl.onSelect(el,record);
                                     });
-                                    
+
                                     me.unregisterPanel.on('deselect',
                                         function(el, record) {
                                             if (buttonEl.onDeselect)
-                                                buttonEl.onDeselect(el,record);             
+                                                buttonEl.onDeselect(el,record);
                                     });
                                     var store = me.unregisterPanel.getStore();
                                     me.unregisterPanel.on('reload',
@@ -1013,13 +1018,13 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                             if (buttonEl.onLoad)
                                                 buttonEl.onLoad(el,record);
                                     });
-                                    me.on('registered', 
+                                    me.on('registered',
                                         function ( el, record) {
                                             if (buttonEl.onRegister)
                                                 buttonEl.onRegister(el, record);
                                         }
                                     )
-                                    me.on('unregistered', 
+                                    me.on('unregistered',
                                         function ( el, record) {
                                             if (buttonEl.onUnregister)
                                                 buttonEl.onUnregister(el, record);
@@ -1034,7 +1039,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                 this.setDisabled(true);
                             },
                             onLoad: function() {
-                                this.setDisabled(true);    
+                                this.setDisabled(true);
                             },
                             onRegister: function() {
                             },
@@ -1057,7 +1062,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                     var engine_url = me.engineSearchBar.getValue()
                                     if (engine_url) {
                                         me.unregisterPanel.reload(engine_url);
-                                        
+
                                     }
                                 }
                             }
@@ -1066,7 +1071,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                 ]
             },
         });
-        
+
         this.registerPanel = Ext.create('BQ.module.RegisteredPanel', {
             ddGroup: 'unregisterGripDDGroup',
             split: true,
@@ -1148,7 +1153,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                     var record = row[0];
                                     var visibility = record.get('visibility');
                                     var visibility = (visibility == 'private') ? 'published' : 'private';
-                                    
+
                                     setButton = function() {
                                         var visibility = record.get('visibility')
                                             if (visibility=='published') {
@@ -1157,7 +1162,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                                 el.setText('Set<br>Public');
                                         }
                                     }
-                                    
+
                                     me.setVisibility(visibility, record, setButton);
                                 } else {
                                     BQ.ui.error('Expecting only one row selected at a time')
@@ -1177,7 +1182,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                             scale: 'large',
                             height: '50px',
                             hidden: true,
-                            menu: { 
+                            menu: {
                                 xtype: 'menu',
                                 plain: true,
                                 items: [{
@@ -1192,7 +1197,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                     displayField: 'name',
                                     valueField: 'name',
                                     store: Ext.create('Ext.data.Store',{
-                                        //autoSync: false,                     
+                                        //autoSync: false,
                                         noCache: false,
                                         proxy: {
                                             type: 'ajax',
@@ -1209,7 +1214,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                         },
                                         fields: [{
                                             name: 'name',
-                                            mapping: '@name', 
+                                            mapping: '@name',
                                         },{
                                             name: 'resource_uniq',
                                             mapping: '@resource_uniq',
@@ -1241,11 +1246,11 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                 this.setDisabled(false)
                                 var owner = record.get('owner') || '';
                                 this.setText('Owner: '+owner);
-                            },              
+                            },
                         },{
                             text: 'Share',
                             xtype: 'button',
-                            scale: 'large',     
+                            scale: 'large',
                             height: '50px',
                             disabled: true,
                             handler: function(el, event) {
@@ -1300,17 +1305,17 @@ Ext.define('BQ.module.ModuleManagerMain', {
                             listeners: { //disable buttons when deselected
                                 afterrender: function(el) {
                                     var buttonEl = el
-                                    
+
                                     me.registerPanel.on('select',
                                         function(el, record) {
                                             if (buttonEl.onSelect)
                                                 buttonEl.onSelect(el,record)
                                     });
-                                    
+
                                     me.registerPanel.on('deselect',
                                         function(el, record) {
                                             if (buttonEl.onDeselect)
-                                                buttonEl.onDeselect(el,record)                 
+                                                buttonEl.onDeselect(el,record)
                                     });
                                     var store = me.registerPanel.getStore();
                                     me.registerPanel.on('reload',
@@ -1318,7 +1323,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                             if (buttonEl.onLoad)
                                                 buttonEl.onLoad(el,record);
                                     });
-                                    me.on('unregistered', 
+                                    me.on('unregistered',
                                         function ( el, record) {
                                             if (buttonEl.onUnregister)
                                                 buttonEl.onUnregister(el, record);
@@ -1333,12 +1338,12 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                 this.setDisabled(true);
                             },
                             onLoad: function() {
-                                this.setDisabled(true);    
+                                this.setDisabled(true);
                             },
                             onRegister: function() {
                             },
                             onUnregister: function() {
-                                this.setDisabled(true);  
+                                this.setDisabled(true);
                             },
                             disabled: true,
                         },
@@ -1358,7 +1363,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                 ]
             }
         });
-        
+
         //listeners
         this.engineSearchBar.on('specialkey', function(field, e) {
             // e.HOME, e.END, e.PAGE_UP, e.PAGE_DOWN,
@@ -1370,21 +1375,21 @@ Ext.define('BQ.module.ModuleManagerMain', {
                 }
             }
         });
-        
+
         this.engineSearchBar.on('select', function(el, records, eOpts) {
                 var engine_url = records[0].get('field1');
                 if (engine_url) {
                     me.unregisterPanel.reload(engine_url);
                 }
         });
-        
+
         this.engineSearchBar.on('afterrender', function() {
             function storeBind(store) {
                 me.engineSearchBar.bindStore(store)
             }
             me.unregisterPanel.searchForEngines(storeBind);
         });
-        
+
         this.unregisterPanel.getView().on('beforedrop', function(node, data, overModel, dropPosition,  dropFunction,  eOpts){
                 var record = data.records[0];
                 var resource_uniq = record.get('resource_uniq');
@@ -1394,7 +1399,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                         dropZone.invalidateDrop();
                         dropHandled = true;
                         dropZone.fireViewEvent('drop', node, data, overModel, dropPosition);
-                    },   
+                    },
                     me.unregisterModule(record, dropFunction);
                 } else {
                     BQ.ui.error('Module failed to be registered!');
@@ -1403,31 +1408,31 @@ Ext.define('BQ.module.ModuleManagerMain', {
                 dropFunction.wait = true;
             }
         );
-        
+
         this.registerPanel.getView().on('beforedrop', function(node, data, overModel, dropPosition,  dropFunction,  eOpts){ //check whether the registration worked
             var record = data.records[0];
             var registration = record.get('registration');
             if (registration == 'Registered') {
                 BQ.ui.notification('Cannot register a module that is already registered.')
                 return false
-            } else {         
+            } else {
                 me.registerModule(record, dropFunction);
                 dropFunction.wait = true;
                 //return false;
             }
         });
-        
+
         var items = [
             this.registerPanel,
             this.unregisterPanel,
         ];
-        
+
         Ext.apply(me, {
             items: items,
         });
         this.callParent([config]);
     },
-    
+
     setVisibility: function(visibility, record, cb) {
         var me = this;
         var moduleXmlDoc = record.get('moduleXmlDoc');
@@ -1454,7 +1459,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
             });
         }
     },
-    
+
     setModuleOwner: function(new_owner_url, record, cb) {
         var me = this;
         var moduleXmlDoc = record.get('moduleXmlDoc');
@@ -1480,7 +1485,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
             });
         }
     },
-    
+
     registerModule: function(record, dropFunction, cb) {
         var me = this;
         var definition = record.get('definition')
@@ -1505,7 +1510,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                         }
                         me.fireEvent('registered', me, record)
                         if (cb) cb();
-                        
+
                     } else {
                         if (dropFunction) {
                             dropFunction.cancelDrop();
@@ -1521,7 +1526,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                     if (dropFunction) {
                         dropFunction.cancelDrop();
                     }
-                },                
+                },
             })
         } else {
             BQ.ui.error('Module failed to be registered!');
@@ -1530,7 +1535,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
             }
         }
     },
-    
+
     unregisterModule: function(record, dropFunction, cb) {
         var me = this;
         Ext.Ajax.request({
@@ -1548,7 +1553,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                     me.fireEvent('unregistered', me, record);
                 }
                 me.unregisterPanel.updateRegistration(fireUnregisteredEvent);
-                
+
                 if (cb) cb();
             },
             failure: function(response) {
@@ -1556,10 +1561,10 @@ Ext.define('BQ.module.ModuleManagerMain', {
                 if (dropFunction) {
                     dropFunction.cancelDrop();
                 }
-            },                
+            },
         })
     },
-    
+
     registerAllModule: function() {
         var me = this;
         this.unregisterPanel.store.each(function(record) {
@@ -1567,7 +1572,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                 me.registerModule(record);
         });
     },
-    
+
     unregisterAllModule: function() {
         var me = this;
         this.registerPanel.store.each(function(record) {
@@ -1603,7 +1608,7 @@ Ext.define('BQ.module.ModuleManager', {
             title: 'Mex Manager',
             disabled: true,
         }];
-        
+
         Ext.apply(me, {
             items: items,
             //tbar: tbar,
