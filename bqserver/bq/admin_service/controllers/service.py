@@ -112,8 +112,10 @@ class AdminController(ServiceController):
         users_xml = etree.SubElement(index_xml,'command', name='user/RESOURCE_UNIQ', value='Lists the particular user')
         users_xml = etree.SubElement(index_xml,'command', name='user/RESOURCE_UNIQ/login', value='Log in as user')
         return etree.tostring(index_xml)
-    
-    
+
+
+
+
     def add_admin_info2node(self, user_node, view=[]):
         """
             adds email and password tags and remove the email value
@@ -121,48 +123,50 @@ class AdminController(ServiceController):
         if view and 'short' not in view:
             email = user_node.attrib.get('value', '')
             etree.SubElement(user_node, 'tag', name='email', value=email)
-            etree.SubElement(user_node, 'tag', name='password', value='******')
-            
-        try: #try to remove value from user node
-            user_node.attrib.pop('value')
-        except KeyError:
-            pass
-        
+            if 'password' in view:
+                password = User.by_user_name (user_node.get('name')).password
+            else:
+                password ='******'
+            etree.SubElement(user_node, 'tag', name='password', value=password)
+
+        #try to remove value from user node
+        user_node.attrib.pop('value', None)
+
         return user_node
-    
-    
+
+
     @expose(content_type='text/xml')
     def cache(self, *arg, **kw):
         """
             Deletes system cache
-            
+
             DELETE cache
         """
         if request.method == 'DELETE':
             return self.clearcache()
         return '<resource/>'
-        
-        
+
+
     @expose(content_type='text/xml')
     def user(self, *arg, **kw):
         """
             Main user expose
-            
+
             Merges the shadow user with the normal user for admins easy access to the password
             columns
-        
+
             GET user: returns list of all users in xml info see get_all_users for format
-        
+
             GET user/uniq: returns user in xml info see get_user for format
-            
-            GET user/uniq/login: 
-            
+
+            GET user/uniq/login:
+
             POST user: creates new user, see post_user for format
-            
+
             PUT user/uniq: update info on user see put_user for format
-            
+
             DELETE user/uniq: deletes user, see delete user for format
-            
+
             DELETE user/uniq/image
                 Deletes only the users image data and not the user itself
         """
@@ -182,9 +186,10 @@ class AdminController(ServiceController):
                     return self.loginasuser(arg[0])
             elif arg[1]=='image':
                 if request.method == 'DELETE':
-                    bquser = DBSession.query(BQUser).filter(BQUser.resource_uniq == uniq).first()
+                    bquser = data_service.resource_load(uniq=uniq)
+                    #bquser = DBSession.query(BQUser).filter(BQUser.resource_uniq == uniq).first()
                     if bquser:
-                        self.deleteimages(bquser.resource_name, will_redirect=False)
+                        self.deleteimages(bquser.get ('name'), will_redirect=False)
                         return '<resource name="delete_images" value="Successful">'
                     else:
                         abort(404)
@@ -194,21 +199,21 @@ class AdminController(ServiceController):
             elif request.method == 'POST':
                 if request.body:
                     return self.post_user(request.body, **kw)
-           
+
         abort(400)
-    
-    
+
+
     def get_all_users(self, *arg, **kw):
         """
             Returns a list of all users in xml with password and diplay name.
-            (Note: may be removed in version 0.6 due to redundant functionality 
+            (Note: may be removed in version 0.6 due to redundant functionality
             of data_service)
-            
+
             Limited command support, does not have view=deep,clean..
-        
+
             document format:
                 <resource>
-                    <user name="user" owner="/data_service/00-aYnhJQA5BJVm4GDpuexc2G" permission="published" 
+                    <user name="user" owner="/data_service/00-aYnhJQA5BJVm4GDpuexc2G" permission="published"
                     resource_uniq="00-aYnhJQA5BJVm4GDpuexc2G" ts="2015-01-30T02:23:18.414000" uri="admin/user/00-aYnhJQA5BJVm4GDpuexc2G">
                         <tag name="email" value="myemail@email.com"/>
                         <tag name="display_name" value="user"/>
@@ -216,28 +221,30 @@ class AdminController(ServiceController):
                     <user>...
                 </resource>
         """
-        users = BQUser.query.all()
+        view=kw.pop('view', None)
+        users =  data_service.query (resource_type = 'user', view=view, wpublic='1')
+        #users = BQUser.query.all()
         resource = etree.Element('resource', uri=str(request.url))
         for u in users:
-            view = kw.get('view', None)
-            if view:
-                view = [x.strip() for x in view.split(',')]
-            else:
-                view = []
-            user = db2tree(u, baseuri=self.url, view=view)
-            user = self.add_admin_info2node(user, view)
+            #view = kw.get('view', None)
+            #if view:
+            #    view = [x.strip() for x in view.split(',')]
+            #else:
+            #    view = []
+            #user = db2tree(u, baseuri=self.url, view=view)
+            user = self.add_admin_info2node(u, view)
             resource.append(user)
         return etree.tostring(resource)
-    
-    
+
+
     def get_user(self, uniq, **kw):
         """
             Returns requested user in xml with password and diplay name.
-            (Note: may be removed in version 0.6 due to redundant functionality 
+            (Note: may be removed in version 0.6 due to redundant functionality
             of data_service)
-            
+
             document format:
-                <user name="user" owner="/data_service/00-aYnhJQA5BJVm4GDpuexc2G" permission="published" 
+                <user name="user" owner="/data_service/00-aYnhJQA5BJVm4GDpuexc2G" permission="published"
                 resource_uniq="00-aYnhJQA5BJVm4GDpuexc2G" ts="2015-01-30T02:23:18.414000" uri="/data_service/00-aYnhJQA5BJVm4GDpuexc2G">
                     <tag name="email" value="myemail@email.com"/>
                     <tag name="display_name" value="user"/>
@@ -246,24 +253,25 @@ class AdminController(ServiceController):
                 </user>
         """
         #u = data_service
-        u = BQUser.query.filter(BQUser.resource_uniq == uniq).first()
-        if u:
-            view = kw.get('view', None)
-            if view:
-                view = [x.strip() for x in view.split(',')]
-            else:
-                view = []
-            user = db2tree(u,baseuri=self.url, view=view)
+        user = data_service.resource_load(uniq)
+        #u = BQUser.query.filter(BQUser.resource_uniq == uniq).first()
+        if user:
+            #view = kw.get('view', None)
+            #if view:
+            #    view = [x.strip() for x in view.split(',')]
+            #else:
+            #    view = []
+            #user = db2tree(u,baseuri=self.url, view=view)
             user = self.add_admin_info2node(user, view)
             return etree.tostring(user)
-        else: 
+        else:
             abort(403)
-        
-    
+
+
     def post_user(self, doc, **kw):
         """
             Creates new user
-            
+
             document format:
                 <user name="user">
                     <tag name="password" value="12345"/>
@@ -289,19 +297,20 @@ class AdminController(ServiceController):
                     u = User(user_name=tags['user_name'], password=tags['password'], email_address=tags['email'], display_name=tags['display_name'])
                     DBSession.add(u)
                     transaction.commit()
-                    r = BQUser.query.filter(BQUser.resource_name == tags['user_name']).first()
-                    r = data_service.update_resource('/data_service/%s'%r.resource_uniq, new_resource=userxml)
+                    #r = BQUser.query.filter(BQUser.resource_name == tags['user_name']).first()
+                    r = data_service.query (resource_type  = 'user', name=tags['user_name'])
+                    #r = data_service.update_resource('/data_service/%s'%r.resource_uniq, new_resource=userxml)
                     return self.get_user('%s'%r.attrib['resource_uniq'], **kw)
         abort(400)
-    
-        
+
+
     def put_user(self, uniq, doc, **kw):
         """
             update user
-            
+
             @param: uniq - resource uniq for the user
             @param: doc - document in the format shown below
-        
+
             document format:
                 <user name="user" resource_uniq="00-1235218954">
                     <tag name="password" value="12345"/> or <tag name="password" value="******"/>
@@ -322,38 +331,39 @@ class AdminController(ServiceController):
                         t.getparent().remove(t) #removes email and password
                         if t.attrib['name'] == 'email':
                             userxml.attrib['value'] = t.attrib.get('value') #set it as value of the user
-                            
+
                 if all(k in tags for k in required_tags): #checks to see if all required tags are present
                     #update tg_user
-                    tg_user = DBSession.query(User).filter(User.user_name == tags.get('user_name')).first()
+                    #tg_user = DBSession.query(User).filter(User.user_name == tags.get('user_name')).first()
+                    tg_user = User.by_user_name(tags.get('user_name'))
                     if not tg_user:
                         log.debug('No user was found with name of ' + user_name + '. Please check core tables?')
                         abort(404)
                     #reset values on tg user
                     tg_user.email_address = tags.get("email", tg_user.email_address)
-                    
+
                     if tags['password'] and tags['password'].count('*') != len(tags['password']): #no password and ***.. not allowed passwords
                         tg_user.password = tags.get("password", tg_user.password) #just set it as itself if nothing is provided
                     #else:
                     #    tags.pop("password", None) #remove the invalid password
-                    
+
                     tg_user.display_name = tags.get("display_name", tg_user.display_name)
                     log.debug("ADMIN: Updated user: " + str(user_name))
                     transaction.commit()
-                    
+
                     #userxml.attrib['resource_uniq'] = r.attrib['resource_uniq']
                     #reset BQUser
                     r = data_service.update_resource('/data_service/%s'%uniq, new_resource=userxml)
                     return self.get_user(r.attrib['resource_uniq'], **kw)
         abort(400)
-        
-        
+
+
     def delete_user(self, uniq):
         """
             Deletes user
-            
+
             @param uniq - resource uniq for the user
-            
+
         """
         # Remove the user from the system for most purposes, but
         # leave the id for statistics purposes.
@@ -370,14 +380,14 @@ class AdminController(ServiceController):
                     DBSession.delete(p)
                 self.deleteimages(bquser.resource_name, will_redirect=False)
                 #transaction.commit()
-                
+
                 #data_service.del_resource('/data_service/%s'%uniq)
                 DBSession.delete(bquser)
                 transaction.commit()
                 #data_service.del_resource('/%s'%uniq)
                 return '<resource>Delete User</resource>'
-            
-        abort(400)  
+
+        abort(400)
 
 
     def deleteimage(self, imageid=None, **kw):
@@ -386,7 +396,7 @@ class AdminController(ServiceController):
         DBSession.delete(image)
         transaction.commit()
         redirect(request.headers.get("Referer", "/"))
-        
+
 
     def deleteuser(self, username=None,  **kw):
         #DBSession.autoflush = False

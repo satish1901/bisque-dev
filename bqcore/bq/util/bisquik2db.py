@@ -362,7 +362,7 @@ mapping_fields = {
     'action_code': 'action',
     'resource': None,
     'xmltag': None,
-
+    'primary': 'id',
     }
 
 
@@ -406,6 +406,9 @@ def xmlelement(dbo, parent, baseuri, view, **kw):
         kw = model_fields (dbo, baseuri)
         if 'clean' in view:
             kw = dict([ (k,v) for k,v in kw.items() if k in clean_fields])
+
+    if 'primary' in view:
+        kw['primary'] = str(dbo.id)
 
     if 'canonical' in view or xtag not in system_types:
         kw['resource_type'] = xtag

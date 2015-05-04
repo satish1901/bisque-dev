@@ -236,7 +236,7 @@ class ResponseCache(object):
             # ',' can be troublesome at ends so we remove them
             #     ,data_service/images,1#view=deep == ,data_service/images,1,#view=deep
             cachename = cachename.split('#',1)[0].split(',',1)[1].strip(',')
-            for mn, cf in [ (fn.split('#',1)[0].split(',',1)[1].strip(','), fn) for fn in files if ',' in fn ] :
+            for mn, cf in [ (fn.split('#',1)[0].split(',',1)[1].strip(','), fn) for fn in files ] :
                 #log.debug('exact %s <> %s' % (cachename, mn))
 
                 if mn == cachename:
@@ -248,17 +248,11 @@ class ResponseCache(object):
                     files.remove (cf)
                     log.debug ('cache exact remove %s' % cf)
             return
-
-        if cachename.startswith ('*'):
-            scn = cachename.split(',',1)[1]
-        else:
-            scn = None
         for cf in files[:]:
-            try:
-                scf = cf.split (',',1)[1]
-            except IndexError:
-                continue
-            if (scn and scf.startswith (scn)) or cf.startswith(cachename) :
+            #log.debug ("checking %s" % cf)
+            if cachename.startswith('*')\
+               and cf.split(',',1)[1].startswith(cachename.split(',',1)[1])\
+               or cf.startswith (cachename):
                 try:
                     os.unlink (os.path.join(self.cachepath, cf))
                 except OSError:
