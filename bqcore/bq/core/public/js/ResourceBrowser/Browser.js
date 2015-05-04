@@ -705,6 +705,7 @@ Ext.define('BQ.grid.ModuleGroups', {
 
             proxy: {
                 noCache: false,
+                headers : { 'Cache-Control': 'max-age' },
                 type: 'rest',
                 limitParam: undefined,
                 pageParam: undefined,

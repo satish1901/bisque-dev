@@ -70,9 +70,9 @@ function analysisAction(o, e) {
             'Select' : function(rb, module) {
                 if (module.available === false) return;
                 if (BQApp.resource)
-                    pageAction('/module_service/' + module.name + '/?resource=' + BQApp.resource.uri);
+                    pageAction('/module_service/' + module.name + '/?wpublic=1&resource=' + BQApp.resource.uri );
                 else
-                    pageAction('/module_service/' + module.name);
+                    pageAction('/module_service/' + module.name + '/?wpublic=1');
             },
         }
     });
@@ -548,7 +548,7 @@ Ext.define('BQ.Application.Toolbar', {
                         viewMode: 'ModuleBrowser',
                         //showOrganizer: true,
                         showModuleOrganizer: true,
-                        dataset : '/module_service',
+                        dataset : '/module_service/?wpublic=1',
                         //dataset: '/data_service/module',
                         wpublic: 'true',
                         listeners : {
@@ -1177,9 +1177,9 @@ Ext.define('BQ.Application.Toolbar', {
         }
 
         if (BQApp.resource)
-            pageAction('/module_service/' + module.name + '/?resource=' + BQApp.resource.uri);
+            pageAction('/module_service/' + module.name + '/?wpublic=1&resource=' + BQApp.resource.uri);
         else
-            pageAction('/module_service/' + module.name);
+            pageAction('/module_service/' + module.name  + '/?wpublic=1');
     },
 
 });

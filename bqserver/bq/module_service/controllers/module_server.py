@@ -53,8 +53,8 @@ DESCRIPTION
    known as MEX.
 
    Clients can request an execution of a particular module by
-   preparing a MEX document 
-   (see http://biodev.ece.ucsb.edu/projects/bisquik/wiki/Developer/ModuleSystem/MexRequestSpecification) 
+   preparing a MEX document
+   (see http://biodev.ece.ucsb.edu/projects/bisquik/wiki/Developer/ModuleSystem/MexRequestSpecification)
    and POST it the module server.
    The module server finds an appropiate engine (i.e. a node that can
    actually execute the module), registers the MEX and launches it on
@@ -131,7 +131,7 @@ class MexDelegate (Resource):
     def remap_uri (self, mex):
         """
             sets the mex url to mex document
-            
+
             @param: mex - etree mex document
         """
         host_url = request_host()
@@ -143,7 +143,7 @@ class MexDelegate (Resource):
                 bq.root = host_url
             mexurl = bq.prepare_url('%s%s'%(self.url,mexid)) #adds host url if no host if provided in mexurl
             mex.set ('uri', mexurl)
-        
+
 #        uri = mex.get('uri')
 #        if uri:
 #            #host_url = request_host()
@@ -499,7 +499,7 @@ class ServiceDelegate(controllers.WSGIAppController):
     def execute(self, **kw):
         log.info ('EXECUTE %s with %s' , str(self.module), str(kw))
         mex = (tg.request.method.lower() in ('put', 'post') and read_xml_body()) or None
-        mex = create_mex(self.module, self.name, mex=mex, **kw)
+        mex = create_mex(self.module.get ('uri'), self.name, mex=mex, **kw)
         etree.SubElement(mex, 'tag',
                          name="start-time",
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
@@ -519,7 +519,7 @@ class ServiceDelegate(controllers.WSGIAppController):
     def remap_uri (self, mex):
         """
             sets the mex url to mex document
-            
+
             @param: mex - etree mex document
         """
         host_url = request_host()
@@ -590,30 +590,31 @@ class ModuleServer(ServiceController):
     def load_services(self, name=None, set_admin=False, **kw):
         """
             Access to registered services through the module service
-            
-            @param: name - if name is provided the name will be checked with the 
+
+            @param: name - if name is provided the name will be checked with the
             registered modules. If the module name is found to be registered
             the module xml document will be returned. If nothing is provided
-            a list of registered modules will be returned including both public 
+            a list of registered modules will be returned including both public
             and private modules for the user that is requesting.
-            
+
             @param: set_admin - allows the load service to check for private modules
             (WARNING: only allow for module registration to not allow the user
             to look up other users private moduels)
-            
+
             @param: kw - data service query args pass through
         """
+        log.debug ("LOADING SERVICES %s %s", name, kw)
         if set_admin: #give temporary all system access to search for all the names
             user = get_username()
-            set_admin_mode() 
-            
+            set_admin_mode()
+
         if name:
             #modules = data_service.query('module', name=name, wpublic='1', view='deep')
             modules = data_service.query('module', name=name, **kw)
         else:
             #modules = data_service.query('module', wpublic='1', view='deep')
             modules = data_service.query('module', **kw)
-            
+
         service_list = {}
         for module in modules.xpath('module'):
             log.debug ("FOUND module: %s" , (module.get('uri')))
@@ -625,13 +626,13 @@ class ModuleServer(ServiceController):
                 if not name in service_list: #names are protected
                     service = ServiceDelegate(name, engine, module, self.mex.fulluri)
                     service_list[name] = service
-        
+
         if set_admin: #remove all system access
             set_current_user(user)
         return service_list
         #self.runner.start()
 
-            
+
     @expose()
     def _lookup(self, service, *rest):
         """
@@ -640,7 +641,7 @@ class ModuleServer(ServiceController):
         log.info('service lookup for %s' , str( service))
         proxy = self.service_list.get(service)
         if proxy is None:
-            self.service_list = self.load_services()
+            self.service_list = self.load_services(wpublic='1')
             proxy = self.service_list.get(service)
         return proxy, rest
 
@@ -657,10 +658,10 @@ class ModuleServer(ServiceController):
         """
             Return the list of active modules as determined by the registered services
         """
-        #kw['wpublic'] = '1'
+        kw.setdefault('wpublic', '1')
         kw.setdefault ('view','short')
-        if 'set_admin' in kw:
-            kw.pop('set_admin') #protect from setting admin
+        #kw.pop('setadmin', None)
+
         #xml= self.modules.default(**kw)
         #modules = etree.XML(xml)
         #log.debug ("all modules = %s " % xml)
@@ -669,7 +670,7 @@ class ModuleServer(ServiceController):
             tg.app_globals.pool.poll(block=False)
         except NoResultsPending:
             pass
-        
+
         resource = etree.Element('resource', uri = self.uri)
         services =  self.load_services(**kw)
         for service in services.values():
@@ -688,35 +689,35 @@ class ModuleServer(ServiceController):
     @require(not_anonymous())
     def register_engine(self, **kw):
         """
-            registers a module from an engine service by posting module definition to 
+            registers a module from an engine service by posting module definition to
             data service
             (requires: a post and a request.body)
-            
-            @return - posted module to data service 
+
+            @return - posted module to data service
         """
         #set_admin_mode()
         log.info ("register_engine")
-        
+
         http_method = request.method.upper()
-        
+
         try:
             definition = etree.fromstring(request.body)
         except:
             log.debug("Defintion has malformed xml")
             abort(400)
-            
+
         if definition.tag != 'module':
             abort(400)
-            
+
         if http_method=='POST' and (definition is not None):
-            
+
             #check to see if module has the same name with all modules registered
             if len(self.load_services(definition.attrib.get('name'), set_admin=True, wpublic=True))>0:
                 log.info ("Engine is already registered by that name")
                 abort(405, 'Engine is already registered by that name')
             module = data_service.new_resource(definition, **kw)
-            
-            
+
+
             #xml =  self.engine._default (**kw)
             #self.load_services()  #-is this even neccessary?
             return etree.tostring(module)
@@ -752,9 +753,9 @@ class ModuleServer(ServiceController):
         """
             Removes a registered service by its name by leaving its value
             blank
-            
+
             @param: resource uniq - the resource uniq of the module one wants remove
-            
+
             @return - returns updated module
         """
         'Remove a service record'
@@ -765,7 +766,7 @@ class ModuleServer(ServiceController):
             #module = data_service.get_resource(resource_uniq)
         except IndexError:
             abort(400)
-            
+
         if module is not None:
             if module.tag == 'module':
                 module.attrib['value'] = '' #needs to be changed in .06
@@ -790,7 +791,7 @@ class ModuleServer(ServiceController):
     @expose('bq.module_service.templates.register')
     def register_module(self, name=None, module=None):
         return dict ()
-    
+
     @expose(content_type="text/xml")
     def services(self):
         log.info("service list")
