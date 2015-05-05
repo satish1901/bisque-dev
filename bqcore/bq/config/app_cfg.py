@@ -98,7 +98,7 @@ class BisqueAppConfig(AppConfig):
 
     def setup_sqlalchemy(self):
         #from tg import config
-        sqlalchemy_url = config.get ('sqlalchemy.url')
+        sqlalchemy_url = os.getenv('BISQUE_DBURL', None) or config.get ('sqlalchemy.url')
         has_database = asbool(config.get ('bisque.has_database', True))
         if not has_database or not sqlalchemy_url:
             config['use_transaction_manager'] = False
@@ -117,7 +117,6 @@ class BisqueAppConfig(AppConfig):
         # Pass the engine to initmodel, to be able to introspect tables
         self.package.model.init_model(engine)
         self.register_hook('controller_wrapper', transaction_retry_wrapper)
-
 
     def after_init_config(self):
         "after config"

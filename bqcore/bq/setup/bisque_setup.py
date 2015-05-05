@@ -700,8 +700,10 @@ def test_db_existance(DBURL):
 
 def get_dburi(params):
 
+    if os.getenv('BISQUE_DBURL'):
+        params['sqlalchemy.url'] = os.getenv('BISQUE_DBURL')
     params = modify_site_cfg(DB_QUESTIONS, params)
-    dburi = params.get('sqlalchemy.url', None)
+    dburi = os.getenv('BISQUE_DBURL') or params.get('sqlalchemy.url', None)
     DBURL = sa.engine.url.make_url (dburi)
     return params, DBURL
 
