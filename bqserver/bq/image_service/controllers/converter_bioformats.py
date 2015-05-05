@@ -28,6 +28,29 @@ import logging
 log = logging.getLogger('bq.image_service.converter_bioformats')
 
 ################################################################################
+# misc
+################################################################################
+
+def bfColorToString(v):
+    if v is None:
+        return None
+    n = int(v)
+    r = n >> 24 & 0xff
+    g = n >> 16 & 0xff
+    b = n >> 8 & 0xff
+    return '%s,%s,%s'%(r,g,b)
+
+def bfReadAndSet(el, attr, d, key, defval=None, f=None):
+    v = el.get(attr, defval)
+    if v is None:
+        return
+    if f is not None:
+        d[key] = f(v)
+    else:
+        d[key] = v
+
+
+################################################################################
 # ConverterBase
 ################################################################################
 
@@ -255,14 +278,33 @@ class ConverterBioformats(ConverterBase):
         rd['pixel_resolution_unit_z'] = 'microns'
         rd['pixel_resolution_unit_t'] = 'seconds'
 
-        # channel names
+        # default channel mapping
+        if rd.get('image_num_c', 0) == 1:
+            rd.setdefault('channel_color_0', '255,255,255')
+
+        # channel info
         channels = mee.xpath('ome:Image[@ID="Image:0"]/ome:Pixels/ome:Channel', namespaces=namespaces)
         for c,i in zip(channels, range(len(channels))):
-            rd['channel_%s_name'%i] = c.get('Name', 'ch_%s'%i)
+            bfReadAndSet(c, 'Name',   rd, 'channel_%s_name'%i, defval='ch_%s'%i)
+            bfReadAndSet(c, 'Color',  rd, 'channel_color_%s'%i, f=bfColorToString)
 
-        # preferred channel mapping
-        if rd['image_num_c']==1:
-            rd['channel_color_0'] = '255,255,255'
+        # new format
+        for c,i in zip(channels, range(len(channels))):
+            path    = 'channels/channel_%.5d'%i
+
+            bfReadAndSet(c, 'Name',   rd, '%s/name'%path, defval='ch_%s'%i)
+            bfReadAndSet(c, 'Color',  rd, '%s/color'%path, f=bfColorToString)
+            bfReadAndSet(c, 'Fluor',  rd, '%s/fluor'%path)
+            bfReadAndSet(c, 'EmissionWavelength',  rd, '%s/lsm_emission_wavelength'%path)
+            bfReadAndSet(c, 'ExcitationWavelength',  rd, '%s/lsm_excitation_wavelength'%path)
+            bfReadAndSet(c, 'ContrastMethod',  rd, '%s/contrast_method'%path)
+            bfReadAndSet(c, 'AcquisitionMode',  rd, '%s/acquisition_mode'%path)
+            bfReadAndSet(c, 'IlluminationType',  rd, '%s/illumination'%path)
+            bfReadAndSet(c, 'PinholeSize',  rd, '%s/pinhole_size'%path)
+            #bfReadAndSet(c, 'ColorOpacity',  rd, '%s/opacity'%path)
+            #bfReadAndSet(c, 'GammaCorrection',  rd, '%s/gamma'%path)
+            #bfReadAndSet(c, 'ColorRange',  rd, '%s/range'%path)
+
 
         # custom - any other tags in proprietary files should go further prefixed by the custom parent
         custom = mee.xpath('sa:StructuredAnnotations/sa:XMLAnnotation', namespaces=namespaces)

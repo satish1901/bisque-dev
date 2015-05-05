@@ -2345,7 +2345,7 @@ class ImageServer(object):
                         break
 
             if r is None or os.path.getsize(ometiff)<16:
-                log.error('Convert %s: failed for [%s]', token.resource_id, ifname)
+                log.error('Convert %s: failed for [%s]', token.resource_id, ifnm)
                 abort(415, 'Convert failed' )
 
         return self.converters[ConverterImgcnv.name].convert( ProcessToken(ifnm=ometiff), ofnm, fmt=fmt, extra=extra)

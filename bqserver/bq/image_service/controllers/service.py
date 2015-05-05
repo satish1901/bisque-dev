@@ -72,50 +72,63 @@ class ImageServiceController(ServiceController):
 
         self.srv = ImageServer(work_dir = workdir)
 
-## dima: meta and localfile must be fixed!!!!
+    def meta (self, uniq, **kw):
+        ''' returns etree metadata element'''
+        url = '/image_service/%s?meta'%uniq
 
-    # def meta (self, uniq, **kw):
-    #     ''' returns etree metadata element'''
+        # check for access permission
+        resource = self.check_access(uniq, view='image_meta')
+        user_name = self.get_user_name(resource.get('owner'))
 
-    #     # token = ProcessToken()
-    #     # token = self.srv.request( 'operations', None, token, None )
-    #     # tg.response.headers['Content-Type']  = token.contentType
-    #     # cache_control( token.cacheInfo )
-    #     # return token.data
+        # fetch image meta from a resource if any, has to have a name and a type as "image_meta"
+        meta = None
+        try:
+            meta = resource.xpath('tag[@type="image_meta"]')[0]
+            meta = dict((i.get('name'), misc.safetypeparse(i.get('value'))) for i in meta.xpath('tag'))
+            log.debug('images meta: %s', meta)
+            if len(meta)==0:
+                meta=None
+        except (AttributeError, IndexError):
+            meta = None
 
+        # Run processing
+        token = self.srv.process(url, uniq, imagemeta=meta, resource=resource, user_name=user_name)
+        if token.isHttpError():
+            return None
 
+        return etree.parse(token.data)
 
-    #     self.check_access(uniq)
-    #     url = '/image_service/image/%s?meta'%uniq
-    #     token = self.srv.process(url, uniq)
+    # we use URL here in order to give access to derived computed results as local files
+    def local_file (self, url, **kw):
+        ''' returns local path if it exists otherwise None'''
+        m = re.search(r'(\/image_service\/(image[s]?\/|))(?P<id>[\w-]+)', url) #includes cases without image(s) in the url
 
-    #     #first check if the output is an error
-    #     if token.isHttpError():
-    #         return None
+        if m is None: #url did not match the regex
+            return None
 
-    #     return etree.parse(token.data)
+        uniq = m.group('id')
 
-    # def local_file (self, url, **kw):
-    #     ''' returns local path if it exists otherwise None'''
-    #     #m = re.search(r'(\/image_service\/image[s]?\/)(?P<id>[\w-]+)', url) # changed by chris
-    #     m = re.search(r'(\/image_service\/(image[s]?\/|))(?P<id>[\w-]+)', url) #includes cases without image(s) in the url
+        # check for access permission
+        resource = self.check_access(uniq, view='image_meta')
+        user_name = self.get_user_name(resource.get('owner'))
 
-    #     if m is None: #url did not match the regex
-    #         return
+        # fetch image meta from a resource if any, has to have a name and a type as "image_meta"
+        meta = None
+        try:
+            meta = resource.xpath('tag[@type="image_meta"]')[0]
+            meta = dict((i.get('name'), misc.safetypeparse(i.get('value'))) for i in meta.xpath('tag'))
+            log.debug('images meta: %s', meta)
+            if len(meta)==0:
+                meta=None
+        except (AttributeError, IndexError):
+            meta = None
 
-    #     id = m.group('id')
+        # Run processing
+        token = self.srv.process(url, uniq, imagemeta=meta, resource=resource, user_name=user_name)
+        if token.isHttpError():
+            return None
 
-    #     log.debug ("Checking %s" % id)
-    #     # check for access permission
-    #     self.check_access(id)
-
-    #     token = self.srv.process(url, id)
-
-    #     #first check if the output is an error
-    #     if token.isHttpError():
-    #         return None
-
-    #     return token.data
+        return token.data
 
     @classmethod
     def is_image_type (cls, filename):

@@ -136,7 +136,7 @@
                         <tag type="string" name="defaultValue" value=""/>
                         <tag type="boolean" name="allowBlank" value="true"/>
                         <tag type="boolean" name="Editable" value="true"/>
-                    </template> 
+                    </template>
                 </tag>
                 <tag name="shape" value="dots">
                     <template>
@@ -150,18 +150,10 @@
                 </tag>
             </tag>
 
-            <tag name="channel_color_0" value="255,0,0" type="string">
-                <template>
-                    <tag name="Type" value="color" type="string"/>
-                    <tag type="boolean" name="allowBlank" value="false"/>
-                    <tag type="boolean" name="Editable" value="true"/>
-                </template>
-            </tag>
-
             <tag name="hide_gobjects_creation" value="" />
 
         </tag>
-        
+
         <tag name="Viewer3D" >
           <tag name="render_quality" value="medium"  type="string">
             <template>
