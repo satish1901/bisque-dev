@@ -284,6 +284,7 @@ def get_info(filename):
     server = find_server()
     return server.get_info(filename)
 
+# we use URL here in order to give access to derived computed results as local files
 def local_file(url):
     server = find_server()
     return server.local_file(url)

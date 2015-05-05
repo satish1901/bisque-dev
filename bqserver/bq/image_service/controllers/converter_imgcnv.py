@@ -92,6 +92,19 @@ else:
         return r, out
 
 ################################################################################
+# misc
+################################################################################
+
+def readAndSet(el, attr, d, key, defval=None, f=None):
+    v = el.get(attr, defval)
+    if v is None:
+        return
+    if f is not None:
+        d[key] = f(v)
+    else:
+        d[key] = v
+
+################################################################################
 # DICOM misc
 ################################################################################
 
@@ -372,12 +385,14 @@ class ConverterImgcnv(ConverterBase):
                 tag, val = [ l.lstrip() for l in line.split(':', 1) ]
             except ValueError:
                 continue
-            rd[tag] = misc.safetypeparse(val.replace('\n', ''))
+            val = val.replace('\n', '')
+            if val != '':
+                rd[tag] = misc.safetypeparse(val)
 
         if 'dimensions' in rd:
             rd['dimensions'] = rd['dimensions'].replace(' ', '') # remove spaces
 
-        if rd['image_num_z']==1 and rd['image_num_t']==1 and rd['image_num_p']>1:
+        if rd.get('image_num_z', 0)==1 and rd.get('image_num_t', 0)==1 and rd.get('image_num_p', 0)>1:
             rd['image_num_t'] = rd['image_num_p']
         rd['image_num_series'] = 0
         rd['image_series_index'] = 0
@@ -387,6 +402,12 @@ class ConverterImgcnv(ConverterBase):
             if token.meta.get('image_num_c', 0)>1:
                 if 'channel_color_0' in rd: del rd['channel_color_0']
                 if 'channel_0_name' in rd: del rd['channel_0_name']
+
+        # new format
+        for i in range(int(rd.get('image_num_c', 0))):
+            path    = 'channels/channel_%.5d'%i
+            readAndSet(rd, 'channel_%s_name'%i, rd, '%s/name'%path)
+            readAndSet(rd, 'channel_color_%s'%i, rd, '%s/color'%path)
 
         return rd
 

@@ -231,7 +231,14 @@ class ConverterOpenSlide(ConverterBase):
                 'channel_2_name': 'blue',
                 'channel_color_0': '255,0,0',
                 'channel_color_1': '0,255,0',
-                'channel_color_2': '0,0,255'
+                'channel_color_2': '0,0,255',
+                # new format
+                'channels/channel_00000/name' : 'red',
+                'channels/channel_00000/color': '255,0,0',
+                'channels/channel_00001/name' : 'green',
+                'channels/channel_00001/color': '0,255,0',
+                'channels/channel_00002/name' : 'blue',
+                'channels/channel_00002/color': '0,0,255',
             }
 
             if slide.properties.get(openslide.PROPERTY_NAME_MPP_X, None) is not None:
