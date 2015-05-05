@@ -408,7 +408,7 @@ def xmlelement(dbo, parent, baseuri, view, **kw):
             kw = dict([ (k,v) for k,v in kw.items() if k in clean_fields])
 
     if 'primary' in view:
-        kw['primary'] = str(dbo.id)
+        kw['primary'] = str(dbo.id) if hasattr(dbo,'id') else ''
 
     if 'canonical' in view or xtag not in system_types:
         kw['resource_type'] = xtag

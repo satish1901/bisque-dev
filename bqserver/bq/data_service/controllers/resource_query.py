@@ -55,7 +55,7 @@ import logging
 import string
 import textwrap
 
-from tg import config, url, session
+from tg import config, url, session, request
 from datetime import datetime
 from sqlalchemy import Integer, String, DateTime, Unicode, Float, Boolean
 from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc, operators, cast
@@ -389,8 +389,12 @@ def prepare_type (resource_type):
         types = [ resource_type ]
         name, dbtype = resource_type
     elif isinstance(resource_type, basestring):
-        types = [ dbtype_from_tag(x.strip()) for x in resource_type.split('|') ]
-        name, dbtype = (None, Taggable)
+        if resource_type == 'value':
+            types = []
+            name, dbtype = 'value', Value
+        else:
+            types = [ dbtype_from_tag(x.strip()) for x in resource_type.split('|') ]
+            name, dbtype = (None, Taggable)
 
     query = DBSession.query(dbtype)
     query_expr = None
@@ -1004,7 +1008,7 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
         common_email = {
             'owner_name' : owner_name,
             'owner_email' : owner_email,
-            'image_url'  : url ('%s/client_service/view?resource=%s' % (bisque_root, "/data_service/%s" % (resource.uri))),
+            'image_url'  : url ('%s/client_service/view?resource=%s' % (request.host_url, "/data_service/%s" % (resource.uri))),
             'root'       : bisque_root,
             }
 

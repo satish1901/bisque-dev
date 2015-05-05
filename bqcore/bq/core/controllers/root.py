@@ -54,6 +54,7 @@ DESCRIPTION
    Provides login and logout services.
 
 """
+import os
 import sys
 import logging
 import time
@@ -284,8 +285,8 @@ def startup():
     if not root:
         raise ConfigurationError ('bisque.root not set')
     #proxy = config.get('bisque.site', None)
-    enabled = config.get('bisque.services_enabled', None)
-    disabled = config.get('bisque.services_disabled', None)
+    enabled = os.getenv('BISQUE_SERVICES_ENABLED') or config.get('bisque.services_enabled', None)
+    disabled = os.getenv('BISQUE_SERVICES_DISABLED') or config.get('bisque.services_disabled', None)
     enabled  = enabled and [ x.strip() for x in enabled.split(',') ] or []
     disabled = disabled and [ x.strip() for x in disabled.split(',') ] or []
     log.info ('using root=%s with services=%s - %s' % (root,  enabled, disabled))
@@ -332,7 +333,6 @@ def startup():
     #
     # Encoding issues
     import locale
-    import os
     log.debug ("Using locale %s local.preferredencoding %s sys.defaultencoding %s",  locale.getlocale(), locale.getpreferredencoding(), sys.getdefaultencoding())
     if locale.getpreferredencoding() != "UTF-8" and os.name != 'nt':
          log.warn('locale encoding will not allow Unicode to work properly:  Please try to set LANG="en_US.UTF-8" in your environment')
