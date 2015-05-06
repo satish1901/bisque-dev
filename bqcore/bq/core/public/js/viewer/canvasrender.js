@@ -814,9 +814,9 @@ CanvasControl.prototype.viewerZoomed = function(e) {
     this.viewer.stage.x(e.x);
     this.viewer.stage.y(e.y);
     this.viewer.currentLayer.removeChildren();
-    this.viewer.quadtree.cullCached(this.viewer.viewFrustum);
+    //this.viewer.quadtree.cullCached(this.viewer.viewFrustum);
     this.viewer.updateVisible(); //update visible has draw function
-    this.viewer.draw();
+    //this.viewer.draw();
 
     //this.viewer.draw();
 };
@@ -1347,8 +1347,9 @@ CanvasRenderer.prototype.updateVisible = function(){
         this.currentLayer.removeChildren();
         this.quadtree.cache(this.viewFrustum, function(){
             me.quadtree.cullCached(me.viewFrustum);
+            me.draw();
         });
-        me.draw();
+
         //this.quadtree.cache(this.viewFrustum);
         //this.quadtree.cullCached(this.viewFrustum);
     }
