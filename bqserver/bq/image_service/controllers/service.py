@@ -96,7 +96,10 @@ class ImageServiceController(ServiceController):
         if token.isHttpError():
             return None
 
-        return etree.parse(token.data)
+        if token.isFile() is True:
+            return etree.parse(token.data)
+        else:
+            return etree.XML(token.data)
 
     # we use URL here in order to give access to derived computed results as local files
     def local_file (self, url, **kw):
