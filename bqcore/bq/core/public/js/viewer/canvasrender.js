@@ -1,35 +1,115 @@
 
+////////////////////////////////////////////////////////////////////
+// ImageCache is a convenience object for handling
+// a two dimensional array of image objects
+// used for caching prerenderered nodes at given frames for
+// time, t and depth, z.
+////////////////////////////////////////////////////////////////////
 
-function test_visible_dim(pos, pos_view, tolerance ) {
-    return !(pos!==undefined && pos!==null && !isNaN(pos) && Math.abs(pos-pos_view)>=tolerance);
-}
+function ImageCache(renderer){
+    this.renderer = renderer;
+    this.caches = [];
+    this.images = [];
+};
 
-function test_visible (pos, viewstate, tolerance_z ) {
-    if(!pos) return false;
-    var proj = viewstate.imagedim.project,
-        proj_gob = viewstate.gob_projection;
+ImageCache.prototype.createAtFrame = function(t,z){
+    if(!this.caches[t]) this.caches[t] = [];
+    if(!this.images[t]) this.images[t] = [];
 
-    tolerance_z = tolerance_z || viewstate.gob_tolerance.z || 1.0;
-    tolerance_t = viewstate.gob_tolerance.t || 1.0;
+    this.caches[t][z] = new Kinetic.Image({});
+    this.images[t][z] = null;
+};
 
-    if (proj_gob==='all') {
-        return true;
-    } else if (proj === 'projectmaxz' || proj === 'projectminz' || proj_gob==='Z') {
-        return test_visible_dim(pos.t, viewstate.t, tolerance_t);
-    } else if (proj === 'projectmaxt' || proj === 'projectmint' || proj_gob==='T') {
-        return test_visible_dim(pos.z, viewstate.z, tolerance_z);
-    } else if (!proj || proj === 'none') {
-        return (test_visible_dim(pos.z, viewstate.z, tolerance_z) &&
-                test_visible_dim(pos.t, viewstate.t, tolerance_t));
+ImageCache.prototype.deleteAtFrame = function(t,z){
+    if(!this.images[t]) this.images[t] = [];
+    if(!this.caches[t]) this.caches[t] = [];
+    if(this.images[t][z]) {
+        delete this.images[t][z];
+        this.images[t][z] = null;
     }
-    return true;
+    if(this.caches[t][z]) {
+        delete this.caches[t][z];
+        this.caches[t][z] = null;
+    }
+};
+
+
+ImageCache.prototype.getCacheAtFrame = function(t,z){
+    if(!this.caches[t]) this.caches[t] = [];
+    return this.caches[t][z];
+};
+
+ImageCache.prototype.setPositionAtFrame = function(t,z, node){
+
+    var
+    cache = this.caches[t][z],
+    scale = this.renderer.stage.scale().x,
+    bbox = node.bbox,
+    w = bbox.max[0] - bbox.min[0];
+    h = bbox.max[1] - bbox.min[1];
+    buffer = 0;
+
+    cache.x(bbox.min[0] - buffer/scale);
+    cache.y(bbox.min[1] - buffer/scale);
+    cache.width(w + 2.0*buffer/scale);
+    cache.height(h + 2.0*buffer/scale);
+};
+
+ImageCache.prototype.setImageAtFrame = function(t,z, img){
+    this.caches[t][z].setImage(img);
+    this.images[t][z] = img;
+};
+
+ImageCache.prototype.createAtCurrent = function(){
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
+    this.createAtFrame(t,z);
+};
+
+ImageCache.prototype.deleteAtCurrent = function(t,z){
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
+    this.deleteAtFrame(t,z);
+}
+
+ImageCache.prototype.getCacheAtCurrent = function(t,z){
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
+    return this.getCacheAtFrame(t,z);
 }
 
 
-function QuadTree(renderer){
+ImageCache.prototype.setPositionAtCurrent = function(node){
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
+    this.setPositionAtFrame(t,z,node);
+}
+
+ImageCache.prototype.setImageAtCurrent = function(img){
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
+    this.setImageAtFrame(t,z,img);
+}
+
+ImageCache.prototype.clearAll = function(img){
+    this.caches.forEach(function(e, i, a){
+        delete e;
+        a[i] = null;
+    });
+    this.images.forEach(function(e, i, a){
+        delete e;
+        a[i] = null;
+    });
+}
+
+
+function QuadTree(renderer, z, t){
+    this.z = z;
+    this.t = t;
+
     this.renderer = renderer;
     this.reset();
-    this.maxChildren = 8;
+    this.maxChildren = 256;
 };
 
 QuadTree.prototype.reset = function(){
@@ -49,14 +129,15 @@ QuadTree.prototype.reset = function(){
     }
     var view = this.renderer.viewer.imagedim;
     if(!view)
-        view = {x:0, y:0};
+        view = {x:0, y:0, z:0, t: 0};
 
     this.nodes = [{
         id: 0,
         parent: null,
         children:[],
         leaves: [],
-        bbox: {min: [0,0], max: [view.x,view.y]},
+        imageCache : new ImageCache(this.renderer),
+        bbox: {min: [0,0,0], max: [view.x,view.y,view.z,view.t]},
         L: 0,
     }];
 
@@ -65,13 +146,13 @@ QuadTree.prototype.reset = function(){
 QuadTree.prototype.calcBoxVol = function(bb){
     //given two bounding boxes what is the volume
     var d = [0,0,0,0];
-    for(var ii = 0; ii < 4; ii++){
+    for(var ii = 0; ii < 2; ii++){
         if(bb.max.length > ii)
             d[ii] = bb.max[ii] - bb.min[ii];
         //minimum distance is one unit
         d[ii] = Math.max(d[ii],1);
     }
-    var vol = d[0]*d[1]*d[2]*d[3];
+    var vol = d[0]*d[1];
 
     return vol;
 };
@@ -143,10 +224,11 @@ QuadTree.prototype.hasOverlap  = function(bbox1, bbox2){
     bb1 = bbox1,
     bb2 = bbox2;
     //for each dimension test to see if axis are seperate
-    for(var i = 0; i < 2; i++){
+    for(var i = 0; i < 4; i++){
         if      (bb1.max[i] < bb2.min[i]) overlap = false;
         else if (bb1.min[i] > bb2.max[i]) overlap = false;
     }
+    //if(!overlap) debugger;
     return overlap;
 };
 
@@ -198,39 +280,70 @@ QuadTree.prototype.traverseUp  = function(node, func){
 QuadTree.prototype.splitNode  = function(node, stack){
 
     var nbb = node.bbox;
-    var bbMin = [0,0];
+    var bbMin = [0,0,0];
     bbMin[0] = Math.ceil(nbb.min[0]);
     bbMin[1] = Math.ceil(nbb.min[1]);
+    bbMin[2] = Math.ceil(nbb.min[2]);
+    bbMin[3] = Math.ceil(nbb.min[3]);
 
     var bbw = nbb.max[0] - nbb.min[0];
     var bbh = nbb.max[1] - nbb.min[1];
-    var mDim = Math.min(bbw, bbh);
-    var nXTiles = 2*Math.floor(bbw/mDim);
-    var nYTiles = 2*Math.floor(bbh/mDim);
+    var bbz = nbb.max[2] - nbb.min[2];
+    var bbt = nbb.max[3] - nbb.min[3];
+
+    var mDim  = 0.5*Math.min(bbw, bbh);
+    //var mDimZ = Math.min(bbz, bbt);
+    //if(bbz === 1) mDimZ = bbt;
+    //if(bbt === 1) mDimZ = bbz;
+    var mDimZ = bbz <= 1 ? 1 : 0.5*bbz;
+    var mDimT = bbt <= 1 ? 1 : 0.5*bbt;
+    if( mDim/mDimZ < 5 ) var mDim = Math.min(mDim, mDimZ);
+
+    //var K = (mDim === bbz || mDim === bbt) ? 1 : 2;
+    var nXTiles = Math.max(Math.floor(bbw/mDim),1);
+    var nYTiles = Math.max(Math.floor(bbh/mDim),1);
+    var nZTiles = Math.max(Math.floor(bbz/mDimZ),1);
+    var nTTiles = Math.max(Math.floor(bbt/mDimT),1);
 
     var tw = Math.ceil(bbw/nXTiles); //tile width
     var th = Math.ceil(bbh/nYTiles); //tile height
+    var tz = Math.ceil(bbz/nZTiles); //tile depth
+    var tt = Math.ceil(bbt/nTTiles); //tile depth
 
+    if(!this.splits) this.splits = [];
+    this.splits[node.L + 1] = [nXTiles, nYTiles, nZTiles, nTTiles];
+
+    node.children = [];
+    //debugger;
     for(var i = 0; i < nXTiles; i++){
         for(var j = 0; j < nYTiles; j++){
-            var ind = i + j*nXTiles;
-            var tMinX = bbMin[0] + i*tw;
-            var tMinY = bbMin[1] + j*th;
-            var bbox = {min: [tMinX, tMinY], max: [tMinX + tw, tMinY + th]}
-            var newNode = {
-                parent: node,
-                children:[],
-                leaves:[],
-                bbox: bbox,
-                L: node.L+1
-            };
-            var id = this.nodes.length;
-            newNode.id = id;
-            this.updateSprite(newNode);
+            for(var k = 0; k < nZTiles; k++){
+                for(var l = 0; l < nTTiles; l++){
 
-            node.children.push(newNode);
-            this.nodes.push(newNode);
+                    var ind = i + j*nXTiles + k*nXTiles*nYTiles + l*nXTiles*nYTiles*nZTiles;
+                    var newNode = {
+                        parent: node,
+                        children:[],
+                        leaves:[],
+                        imageCache : new ImageCache(this.renderer),
+                        bbox: {min:[0,0,0,0], max: [9999,9999,9999,9999]},
+                        L: node.L+1
+                    }
+                    //node.children.push(newNode);
+                    var tMinX = bbMin[0] + i*tw;
+                    var tMinY = bbMin[1] + j*th;
+                    var tMinZ = bbMin[2] + k*tz;
+                    var tMinT = bbMin[3] + l*tt;
+                    newNode.bbox.min = [tMinX, tMinY, tMinZ, tMinT];
+                    newNode.bbox.max = [tMinX + tw, tMinY + th, tMinZ + tz, tMinT + tt ];
+                    var id = this.nodes.length;
+                    newNode.id = id;
+                    this.updateSprite(newNode);
 
+                    node.children.push(newNode);
+                    this.nodes.push(newNode);
+                }
+            }
         }
     }
 
@@ -278,7 +391,7 @@ QuadTree.prototype.insertInNode  = function(gob, node, stack){
     if(!node.children.length && xn*yn > 1.25*xc*yc){
         this.splitNode(node, stack);
     }
-    */
+   */
 };
 
 
@@ -286,8 +399,12 @@ QuadTree.prototype.insert = function(shape){
     //I like static integer pointer trees, but a dymanic pointer tree seems appropriate here, so
     // we can pull data on and off the tree without having to do our own
     //return;
+
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
+
     var view = this.renderer.viewer.imagedim;
-    this.nodes[0].bbox = {min:[0,0], max: [view.x,view.y]};
+    this.nodes[0].bbox = {min:[0,0,0,0], max: [view.x, view.y, view.z, view.t]};
     var stack = [{node: this.nodes[0], shape: shape}];
 
     //if(shape.id() === 15) debugger;
@@ -298,13 +415,14 @@ QuadTree.prototype.insert = function(shape){
 
     //if(this.nodes.length > 10) return;
     var k = 0;
-    while(stack.length > 0){ k++;
+    while(stack.length > 0){
+        k++;
         //if(l > 18) break;
         var frame = stack.pop();
         var fshape = frame.shape;
         var fnode = frame.node;
         fnode.dirty = true;
-        delete fnode.imageCache;
+        fnode.imageCache.deleteAtCurrent();
         //expand the bounding box of the current node on the stack
         //fnode.bbox = this.compositeBbox(shape.bbox, fnode.bbox);
 
@@ -335,6 +453,8 @@ QuadTree.prototype.remove = function(shape){
 
     if(!shape.inTree) return;
     shape.inTree = false;
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
 
     //if(shape.id() === 15) debugger;
     var collection = [];
@@ -362,7 +482,8 @@ QuadTree.prototype.remove = function(shape){
             if(!node.children)       continue;
             this.updateSprite(node);
             node.dirty = true;
-            delete node.imageCache;
+
+            node.imageCache.deleteAtCurrent();
             node = node.parent;
             //
         }
@@ -381,7 +502,7 @@ QuadTree.prototype.collectObjectsInRegion = function(frust, node){
         if(node.leaves.length > 0){
             for(var i = 0; i < node.leaves.length; i++){
                 var leaf = node.leaves[i];
-                if(leaf.collected) continue;
+                if(leaf.collected || !leaf.isVisible(this.z, this.t)) continue;
                 if(me.hasOverlap(frust, leaf.bbox)){
                     collection.push(leaf);
                     leaf.collected = true;
@@ -421,11 +542,12 @@ QuadTree.prototype.cache = function(frust, onCache){
     this.cachesDestroyed = 0;
     this.cachesRendered = 0;
 
+
     var cacheSprite = function(node){
         var nArea = me.calcBoxVol(node.bbox);
         var cache = null;
         if(nArea < fArea || node.leaves.length > 0) {
-            if(!node.imageCache || scale != node.scale){
+            if(!node.imageCache.getCacheAtCurrent() || scale != node.scale){
                 me.cachesDestroyed += 1;
                 me.cacheChildSprites(node, onCache);
                 cache = true;
@@ -450,38 +572,42 @@ QuadTree.prototype.cullCached = function(frust){
     var scale = renderer.stage.scale().x;
     var cache = false;
 
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
     var collectSprite = function(node){
         var nArea = me.calcBoxVol(node.bbox);
         var cache = null;
 
         if(nArea < fArea || node.leaves.length > 0) {
-            /*
-              drawing is fast enough, if we've cached in the previous step, then
-              we'll just redraw the whole thing, otherwise we grab the rendered cached images
-            */
-            collection.push(node.imageCache);
-            /*
-            if(cache){
-                var leaves = me.collectObjectsInRegion(node.bbox, node);
-                leaves.forEach(function(e){
-                    collection.push(e.sprite);
-                });
-                return false;
-            }
-            else
-              */
-            //collection.push(node.sprite);
+            collection.push(node.imageCache.getCacheAtCurrent());
             return false;
         }
 
         else return true;
     };
     this.traverseDownBB(this.nodes[0], frust, collectSprite);
-    renderer.currentLayer.removeChildren();
+
     collection.forEach(function(e){
         if(e)
             renderer.currentLayer.add(e);
     });
+};
+
+
+QuadTree.prototype.clearCache = function(frust){
+    var me = this;
+    //var fArea = this.calcBoxVol(frust);
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
+
+    var atSprite = function(node){
+
+        //if(!node.imageCache.getCacheAtCurrent()) return true;
+        node.imageCache.clearAll();
+
+        return true;
+    };
+    this.traverseDown(this.nodes[0], atSprite);
 };
 
 QuadTree.prototype.cacheScene = function(frust){
@@ -500,8 +626,8 @@ QuadTree.prototype.cacheScene = function(frust){
 
 QuadTree.prototype.cacheChildSprites = function(node, onCache){
     //delete cache if it exists
-    if(node.image) delete node.image;
-    if(node.imageCache) delete node.imageCage;
+
+    node.imageCache.deleteAtCurrent();
 
     //initialize a few variables;
     var me = this;
@@ -517,8 +643,7 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
     buffer = 0;
 
     //create a new image
-    node.imageCache = new Kinetic.Image({
-    });
+    node.imageCache.createAtCurrent();
 
     //create a temp layer to capture the appropriate objects
     var layer = new Kinetic.Layer({
@@ -543,8 +668,11 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
             //if(!node.dirty) return;
 
             node.image = img;
-            if(!node.imageCache) debugger;
-            node.imageCache.setImage(img);
+            if(!node.imageCache.getCacheAtCurrent())
+                node.imageCache.createAtCurrent();
+            node.imageCache.setPositionAtCurrent(node);
+            node.imageCache.setImageAtCurrent(img);
+
             node.dirty = false;
             me.cachesRendered += 1; //count the caches that have been rerendered since performing a cache call
             //console.log(img.src);
@@ -561,10 +689,8 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
         width: w*scale + 2.0*buffer,
         height: h*scale + 2.0*buffer,
     });
-    node.imageCache.x(bbox.min[0] - buffer/scale);
-    node.imageCache.y(bbox.min[1] - buffer/scale);
-    node.imageCache.width(w + 2.0*buffer/scale);
-    node.imageCache.height(h + 2.0*buffer/scale);
+
+    node.imageCache.setPositionAtCurrent(node);
 };
 
 QuadTree.prototype.setDirty = function(node){
@@ -627,21 +753,24 @@ function CanvasControl(viewer, element) {
 }
 
 CanvasControl.prototype.setFrustum = function(e, scale){
-    var dim = this.viewer.viewer.imagedim;
-
+    var dim = this.viewer.viewer.imagedim,
+    z = this.viewer.viewer.tiles.cur_z,
+    t = this.viewer.viewer.tiles.cur_t,
     cw = this.viewer.viewer.imagediv.clientWidth/scale.x,
     ch = this.viewer.viewer.imagediv.clientHeight/scale.y,
     x = e.x < 0 ? -e.x/scale.x : 0,
     y = e.y < 0 ? -e.y/scale.y : 0,
-    w = e.x < 0 ? dim.x + e.x/scale.x : cw - e.x/scale.x;
+    w = e.x < 0 ? dim.x + e.x/scale.x : cw - e.x/scale.x,
     h = e.y < 0 ? dim.y + e.y/scale.y : ch - e.y/scale.y;
+
     w = Math.min(cw, w);
     w = Math.min(dim.x, w);
     h = Math.min(ch, h);
     h = Math.min(dim.y, h);
+
     this.viewer.setFrustum({
-        min: [x,y],
-        max: [x+w, y+h]
+        min: [x,y, z-0.5, t-0.5],
+        max: [x+w, y+h, z+0.5, t+0.5]
     });
 };
 
@@ -684,6 +813,7 @@ CanvasControl.prototype.viewerZoomed = function(e) {
 
     this.viewer.stage.x(e.x);
     this.viewer.stage.y(e.y);
+    this.viewer.currentLayer.removeChildren();
     this.viewer.quadtree.cullCached(this.viewer.viewFrustum);
     this.viewer.updateVisible(); //update visible has draw function
     this.viewer.draw();
@@ -696,6 +826,9 @@ CanvasControl.prototype.cursorMoved = function(e) {
     //this.viewer.stage.content.style.left = e.x + 'px';
     //this.viewer.stage.content.style.top = e.y + 'px';
     //console.log(e);
+    var
+    z = this.viewer.viewer.tiles.cur_z,
+    t = this.viewer.viewer.tiles.cur_t;
 
     var pt = e;
     if(!this.pastPoint)
@@ -711,7 +844,7 @@ CanvasControl.prototype.cursorMoved = function(e) {
     if(this.hoverTimeout) clearTimeout(this.hoverTimeout);
     if(dl < 10 && renderer.mode === 'navigate'){
         this.hoverTimeout = setTimeout(function(){
-            var shape = renderer.findNearestShape(tpt.x, tpt.y);
+            var shape = renderer.findNearestShape(tpt.x, tpt.y, z, t);
             if(shape){
                 viewer.parameters.onhover(shape.gob, e.event);
                 console.log(shape);
@@ -738,6 +871,9 @@ function CanvasRenderer (viewer,name) {
     this.base = ViewerPlugin;
     this.base (viewer, name);
     this.events  = {};
+    this.visit_render = new BQProxyClassVisitor (this);
+    //this.visit render
+
 }
 CanvasRenderer.prototype = new ViewerPlugin();
 
@@ -769,7 +905,9 @@ CanvasRenderer.prototype.create = function (parent) {
     this.initEditLayer();
     this.initSelectLayer();
     this.initPointImageCache();
-    this.quadtrees = [];//new QuadTree(this);
+    this.quadtree = new QuadTree(this);
+    this.gobs = [];
+    this.visitedFrame = [];
     this.cur_z = 0;
     return parent;
 };
@@ -844,7 +982,6 @@ CanvasRenderer.prototype.initSelectLayer = function(){
         lassoRect.height((y - y0));
         me.editLayer.draw();
     };
-
     var mousedown = function(e){
         if(me.mode != 'edit') return;
         me.unselect(me.selectedSet);
@@ -892,7 +1029,9 @@ CanvasRenderer.prototype.initSelectLayer = function(){
         var y0 = Math.min(y0t, y1t);
         var x1 = Math.max(x0t, x1t);
         var y1 = Math.max(y0t, y1t)
-
+        var dx = x1 - x0;
+        var dy = y1 - y0;
+        if(dx*dy === 0) return;
         me.lassoSelect(x0,y0,x1,y1);
         me.select(me.selectedSet);
         me.default_select(me.selectedSet);
@@ -908,6 +1047,7 @@ CanvasRenderer.prototype.initSelectLayer = function(){
 
 CanvasRenderer.prototype.lassoSelect = function(x0,y0, x1,y1){
     var me = this;
+    /*
     var shapes = this.currentLayer.getChildren();
     shapes.forEach(function(e,i,d){
         var x = e.x();
@@ -918,6 +1058,20 @@ CanvasRenderer.prototype.lassoSelect = function(x0,y0, x1,y1){
         if(bbox.min[0] > x0 && bbox.min[1] > y0 &&
            bbox.max[0] < x1 && bbox.max[1] < y1){
             me.addToSelectedSet(e.shape);
+        }
+    });
+    */
+    var node0 = this.quadtree.nodes[0];
+    var shapes = this.quadtree.collectObjectsInRegion({min:[x0,y0],max:[x1,y1]},node0);
+    shapes.forEach(function(e,i,d){
+        var x = e.sprite.x();
+        var y = e.sprite.y();
+        //if(!e.shape) return;
+        var bbox = e.getBbox();
+        if(!bbox) return;
+        if(bbox.min[0] > x0 && bbox.min[1] > y0 &&
+           bbox.max[0] < x1 && bbox.max[1] < y1){
+            me.addToSelectedSet(e);
         }
     });
 }
@@ -960,17 +1114,21 @@ CanvasRenderer.prototype.enable_edit = function (enabled) {
 
     this.viewer.current_view.edit_graphics = enabled?true:false;
     var gobs =  this.viewer.image.gobjects;
-    this.visit_render.visit_array(gobs, [this.viewer.current_view]);
+    //this.visit_render.visit_array(gobs, [this.viewer.current_view]);
 
     this.editLayer.moveToTop();
     this.rendered_gobjects = gobs;
 };
 
-CanvasRenderer.prototype.findNearestShape = function(x,y){
+CanvasRenderer.prototype.findNearestShape = function(x,y, z, t){
     var node = this.quadtree.nodes[0];
     var scale = this.stage.scale().x;
     var w = 4/scale;
-    var shapes = this.quadtree.collectObjectsInRegion({min:[x-w, y-w], max: [x+w, y+w]}, node);
+    var shapes =
+        this.quadtree.collectObjectsInRegion(
+            {min: [x-w, y-w, z-0.5, t-0.5],
+             max: [x+w, y+w, z+0.5, t+0.5]}, node);
+
     return shapes[0];
 },
 
@@ -1084,7 +1242,7 @@ CanvasRenderer.prototype.newImage = function () {
 
     this.rendered_gobjects = [];
     if(!this.viewFrustum) this.initFrustum();
-    this.visit_render = new BQProxyClassVisitor (this);
+
 };
 
 CanvasRenderer.prototype.updateView = function (view) {
@@ -1103,12 +1261,15 @@ CanvasRenderer.prototype.appendSvg = function (gob){
 CanvasRenderer.prototype.initFrustum = function(){
 
     if(!this.viewFrustum){
-        var x = this.viewer.tiles.div.clientWidth;
-        var y = this.viewer.tiles.div.clientHeight;
+        var scale = this.stage.scale().x;
+        var x = this.viewer.tiles.div.clientWidth/scale;
+        var y = this.viewer.tiles.div.clientHeight/scale;
+        var z = 1;
+        var t = 1;
 
         this.viewFrustum = {
-            min: [0,0],
-            max: [x,y]
+            min: [0,0,z-0.5,t-0.5],
+            max: [x,y,z+0.5,t+0.5]
         };
     }
 };
@@ -1128,8 +1289,14 @@ CanvasRenderer.prototype.setFrustum = function(bb){
     //this.editLayer.add(this.cursorRect);
     this.viewFrustum.min[0] = bb.min[0];
     this.viewFrustum.min[1] = bb.min[1];
+    this.viewFrustum.min[2] = bb.min[2];
+    this.viewFrustum.min[3] = bb.min[3];
+
     this.viewFrustum.max[0] = bb.max[0];
     this.viewFrustum.max[1] = bb.max[1];
+    this.viewFrustum.max[2] = bb.max[2];
+    this.viewFrustum.max[3] = bb.max[3];
+
     this.cursorRect.x(bb.min[0]);
     this.cursorRect.y(bb.min[1]);
     this.cursorRect.width(bb.max[0] - bb.min[0]);
@@ -1140,23 +1307,55 @@ CanvasRenderer.prototype.cacheVisible = function(){
     this.quadtree.cacheScene(this.viewFrustum);
 };
 
+CanvasRenderer.prototype.getProjectionRange = function(zrange, trange){
+    var viewstate = this.viewer.current_view;
+    var dim = this.viewer.imagedim;
+
+    var
+    proj = viewstate.imagedim.project,
+    proj_gob = viewstate.gob_projection;
+
+    var
+    z = dim.z,
+    t = dim.t;
+
+    if (proj_gob==='all' || proj === 'projectmax' || proj === 'projectmin') {
+        trange[0] = 0;
+        trange[1] = t;
+        zrange[0] = 0;
+        zrange[1] = z;
+    } else if (proj === 'projectmaxz' || proj === 'projectminz' || proj_gob==='Z'){
+        zrange[0] = 0;
+        zrange[1] = z;
+    } else if (proj === 'projectmaxt' || proj === 'projectmint' || proj_gob==='T') {
+        trange[0] = 0;
+        trange[1] = t;
+    }
+};
+
 CanvasRenderer.prototype.updateVisible = function(){
     var me = this;
     //this.quadtree.cull(this.viewFrustum);
+    var z = this.viewer.tiles.cur_z;
+    var t = this.viewer.tiles.cur_t;
+
+    var zrange = [z, z+1];
+    var trange = [t, t+1];
+    this.getProjectionRange(zrange, trange);
 
     if(this.mode == 'navigate'){
-
+        this.currentLayer.removeChildren();
         this.quadtree.cache(this.viewFrustum, function(){
-                me.quadtree.cullCached(me.viewFrustum);
-                me.draw();
+            me.quadtree.cullCached(me.viewFrustum);
         });
+        me.draw();
         //this.quadtree.cache(this.viewFrustum);
         //this.quadtree.cullCached(this.viewFrustum);
     }
     else{
+        this.currentLayer.removeChildren();
         this.quadtree.cull(this.viewFrustum);
         me.draw();
-
     }
     //this.quadtree.drawBboxes();
 
@@ -1180,13 +1379,12 @@ CanvasRenderer.prototype.updateImage = function (e) {
     var x = this.viewer.tiles.tiled_viewer.x;
     var y = this.viewer.tiles.tiled_viewer.y;
     var z = this.viewer.tiles.cur_z;
-
-    if(!this.quadtrees[z]) this.quadtrees[z] = new QuadTree(this);
-    this.quadtree = this.quadtrees[z];
+    var t = this.viewer.tiles.cur_t;
+    this.gobsSlice = this.gobs[z];
 
     this.stage.scale(scale);
 
-    this.initDrawer();
+    //this.initDrawer();
     /*
     if(this.selectedSet.length> 0){
         if(this.selectedSet[0].gob.vertices[0]){
@@ -1213,11 +1411,9 @@ CanvasRenderer.prototype.updateImage = function (e) {
 
     this.lassoRect.strokeWidth(1.0/scale);
 
-    /*
-    */
+    if(this.cur_z != z){
+    }
 
-    //if(this.cur_z != z)
-    //    this.resetTree();
     this.cur_z = z;
 
     //dump the currently viewed objects
@@ -1229,10 +1425,6 @@ CanvasRenderer.prototype.updateImage = function (e) {
     }
 
     //get the gobs and walk the tree to rerender them
-    var gobs = this.viewer.image.gobjects;
-    this.visit_render.visit_array(gobs, [this.viewer.current_view]);
-    this.rendered_gobjects = gobs;
-
     //update visible objects in the tree... next iteration may be 3D.
 
     this.updateBbox(this.selectedSet);
@@ -1405,7 +1597,7 @@ CanvasRenderer.prototype.updateBbox = function (gobs){
 
     this.bbCorners[3].x(max[0]);
     this.bbCorners[3].y(max[1]);
-    this.updateDrawer();
+    //this.updateDrawer();
 };
 
 
@@ -1585,14 +1777,10 @@ CanvasRenderer.prototype.select = function (gobs) {
 
     this.bbCorners.forEach(function(e,i,d){
         me.editLayer.add(e); //add corners
-
+        /*
         e.on('mousedown', function(evt) {
-
-            //me.currentLayer._getIntersection = me.noIntersection;
-            //me.editLayer._getIntersection   = me.noIntersection;
-            //me.selectLayer._getIntersection = me.noIntersection;
         });
-
+        */
         e.on('dragmove', function(evt) {
             //if(this.mode != 'edit') return;
             me.editBbox(gobs,i,evt, e);
@@ -1602,18 +1790,14 @@ CanvasRenderer.prototype.select = function (gobs) {
 
         e.on('mouseup',function(evt){
             e.dirty = true;
-
-            //me.currentLayer._getIntersection = me.defaultIntersection;
-           // me.editLayer._getIntersection = me.defaultIntersection;
-            //me.selectLayer._getIntersection = me.defaultIntersection;
-            me.updateDrawer();
+            //me.updateDrawer();
             me.selectedSet.forEach(function(e,i,d){
                 if(e.dirty)
                     me.move_shape(e.gob);
             });
         });
     });
-    this.showDrawer();
+    //this.showDrawer();
     this.currentLayer.draw();
     this.editLayer.draw();
 };
@@ -1647,7 +1831,7 @@ CanvasRenderer.prototype.unselect = function (gobs) {
             me.move_shape(e.gob);
         me.quadtree.insert(e)
     });
-    this.hideDrawer();
+    //this.hideDrawer();
     this.editLayer.removeChildren();
 };
 
@@ -1686,8 +1870,11 @@ CanvasRenderer.prototype.rerender = function (gobs, params) {
         gobs = this.viewer.image.gobjects;
     if (!params)
         params = [this.viewer.current_view];
-    this.visit_render.visit_array(gobs, params);
 
+    this.visit_render.visit_array(gobs, params);
+    this.quadtree.clearCache();
+
+    this.updateVisible();
     this.draw();
 };
 
@@ -1751,12 +1938,20 @@ CanvasRenderer.prototype.toggleWidgets = function(fcn){
     });
     this.editLayer.draw();
     if(fcn === 'hide')
-        this.hideDrawer();
+        //this.hideDrawer();
     if(fcn === 'show'){
-        this.showDrawer();
-        this.updateDrawer();
+        //this.showDrawer();
+        //this.updateDrawer();
     }
-}
+};
+
+CanvasRenderer.prototype.removeSpriteEvents = function(poly,gob){
+    poly.off('mousedown');
+    poly.off('dragstart');
+    poly.off('dragmove');
+    poly.off('dragend');
+    poly.off('mouseup');
+};
 
 CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
     var me = this;
@@ -1879,10 +2074,11 @@ CanvasRenderer.prototype.viewShape = function (gob, move, select){
     var g = gob;
     if(!gob.shape) return;
     var poly = gob.shape.sprite;
-    this.currentLayer.add(poly);
+    //this.currentLayer.add(poly);
     var dragMove = false;
     var dragStart = false;
     var dragEnd = false;
+
     this.addSpriteEvents(poly, gob);
     if(gob.shape.text)
         this.addSpriteEvents(gob.shape.text, gob);
@@ -1937,7 +2133,7 @@ CanvasRenderer.prototype.setcolor = function (gob, color) {
     visit_all(gob, function(g, args) {
             g.color_override = args[0];
     }, color );
-    this.rerender([gob]);
+    //this.rerender([this.viewer.current_view, true]);
 };
 
 /*
@@ -1951,12 +2147,12 @@ CanvasRenderer.prototype.removeFromLayer = function (gobShape) {
 
 
 ////////////////////////////////////////////////////////////
-CanvasRenderer.prototype.makeShape = function ( gob,  viewstate, shapeDescription) {
+CanvasRenderer.prototype.makeShape = function ( gob,  viewstate, shapeDescription, visibility) {
     if(!gob.vertices[0]) return;
     var z = this.viewer.tiles.cur_z;
-    var zg = gob.vertices[0].z;
 
-    if(z != zg) return;
+    visibility = typeof visibility == 'undefined' ? true : visibility;
+
     if(gob.shape){ //JD:Don't completely understand deleting process, but: for now deferred cleanup
         if(gob.shape.isDestroyed) {
             var shape = gob.shape
@@ -1977,15 +2173,9 @@ CanvasRenderer.prototype.makeShape = function ( gob,  viewstate, shapeDescriptio
 
     }
 
-
-    var visible = test_visible(gob.vertices[0], viewstate);
-    if(visible)
-        this.visibleSet.push(gob.shape);
-    //visible = gob.shape.visible();
-
+    gob.shape.visibility = visibility;
     gob.shape.update();
-    if(!gob.shape.inTree && visible)
-        this.quadtree.insert(gob.shape);
+    this.quadtree.insert(gob.shape);
     if(gob.dirty)
         this.stage.draw();
 };
@@ -2012,7 +2202,7 @@ CanvasRenderer.prototype.polygon = function (visitor, gob , viewstate, visibilit
 };
 
 CanvasRenderer.prototype.polyline = function (visitor, gob,  viewstate, visibility) {
-    this.makeShape(gob, viewstate, 'polygon');
+    this.makeShape(gob, viewstate, 'polygon', visibility);
 };
 
 CanvasRenderer.prototype.line = function (visitor, gob , viewstate, visibility) {
@@ -2022,32 +2212,32 @@ CanvasRenderer.prototype.line = function (visitor, gob , viewstate, visibility) 
 };
 
 CanvasRenderer.prototype.ellipse = function ( visitor, gob,  viewstate, visibility) {
-    this.makeShape(gob, viewstate, 'ellipse');
+    this.makeShape(gob, viewstate, 'ellipse', visibility);
 };
 
 CanvasRenderer.prototype.circle = function (visitor, gob,  viewstate, visibility) {
-    this.makeShape(gob, viewstate, 'circle');
+    this.makeShape(gob, viewstate, 'circle', visibility);
 };
 
 CanvasRenderer.prototype.rectangle = function (visitor, gob,  viewstate, visibility) {
-    this.makeShape(gob, viewstate, 'rectangle');
+    this.makeShape(gob, viewstate, 'rectangle', visibility);
 };
 
 
 CanvasRenderer.prototype.square = function (visitor, gob,  viewstate, visibility) {
-    this.makeShape(gob, viewstate, 'square');
+    this.makeShape(gob, viewstate, 'square', visibility);
 };
 
 CanvasRenderer.prototype.point = function (visitor, gob,  viewstate, visibility) {
     this.pointSize = 2.5;
-    this.makeShape(gob, viewstate, 'point');
+    this.makeShape(gob, viewstate, 'point', visibility);
     if(gob.shape)
         gob.shape.setPointSize(this.pointSize);
 
 };
 
 CanvasRenderer.prototype.label = function (visitor, gob,  viewstate, visibility) {
-    this.makeShape(gob, viewstate, 'label');
+    this.makeShape(gob, viewstate, 'label', visibility);
 };
 
 CanvasRenderer.prototype.getPointSize = function () {
