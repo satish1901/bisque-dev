@@ -1,5 +1,32 @@
 
 
+
+function test_visible_dim(pos, pos_view, tolerance ) {
+    return !(pos!==undefined && pos!==null && !isNaN(pos) && Math.abs(pos-pos_view)>=tolerance);
+}
+
+function test_visible (pos, viewstate, tolerance_z ) {
+    if(!pos) return false;
+    var proj = viewstate.imagedim.project,
+        proj_gob = viewstate.gob_projection;
+
+    tolerance_z = tolerance_z || viewstate.gob_tolerance.z || 1.0;
+    tolerance_t = viewstate.gob_tolerance.t || 1.0;
+
+    if (proj_gob==='all') {
+        return true;
+    } else if (proj === 'projectmaxz' || proj === 'projectminz' || proj_gob==='Z') {
+        return test_visible_dim(pos.t, viewstate.t, tolerance_t);
+    } else if (proj === 'projectmaxt' || proj === 'projectmint' || proj_gob==='T') {
+        return test_visible_dim(pos.z, viewstate.z, tolerance_z);
+    } else if (!proj || proj === 'none') {
+        return (test_visible_dim(pos.z, viewstate.z, tolerance_z) &&
+                test_visible_dim(pos.t, viewstate.t, tolerance_t));
+    }
+    return true;
+}
+
+
 function minHeap(compare) {
   var heap = {},
       array = [];
@@ -97,12 +124,14 @@ CanvasShape.prototype.hasOverlap  = function(bbox){
     bb1 = bbox,
     bb2 = this.bbox;
     //for each dimension test to see if axis are seperate
-    for(var i = 0; i < 2; i++){
+    for(var i = 0; i < 4; i++){
         if (bb1.max[i] < bb2.min[i]) overlap = false;
         if (bb1.min[i] > bb2.max[i]) overlap = false;
     }
     return overlap;
 };
+
+
 
 CanvasShape.prototype.dragStart = function () {
     if(!this.bboxCache || !this.spriteCache ){
@@ -123,6 +152,46 @@ CanvasShape.prototype.getBbox = function () {
         this.bbox = this.calcBbox();
     return this.bbox;
 };
+
+
+
+CanvasShape.prototype.isVisible = function (z,t, tolerance_z) {
+
+    //test visible takes the shape and tests if its bounding box is intersected by
+    //the current view plane
+    if(!this.visibility) return false; //visibility is a tag passed from the tagger
+
+    var test_visible_dim = function(min, max,  pos_view, tolerance ) {
+        return (pos_view >= min && pos_view <= max);
+    }
+
+    var viewstate = this.renderer.viewer.current_view;
+
+    //if(!pos) return false;
+    var proj = viewstate.imagedim.project,
+        proj_gob = viewstate.gob_projection;
+
+    tolerance_z = tolerance_z || viewstate.gob_tolerance.z || 1.0;
+    var tolerance_t = viewstate.gob_tolerance.t || 1.0;
+    if(!this.bbox)
+        this.bbox = this.caclBbox();
+    var bbox = this.bbox;
+    var min = bbox.min;
+    var max = bbox.max;
+    var t = t ? t : viewstate.t;
+    var z = z ? z : viewstate.z;
+    if (proj_gob==='all') {
+        return true;
+    } else if (proj === 'projectmaxz' || proj === 'projectminz' || proj_gob==='Z') {
+        return test_visible_dim(min[3], max[3], t, tolerance_t);
+    } else if (proj === 'projectmaxt' || proj === 'projectmint' || proj_gob==='T') {
+        return test_visible_dim(min[2], max[2], z, tolerance_z);
+    } else if (!proj || proj === 'none') {
+        return (test_visible_dim(min[2], max[2], z, tolerance_z) &&
+                test_visible_dim(min[3], max[3], t, tolerance_t));
+    }
+    return true;
+}
 
 CanvasShape.prototype.cacheOffset = function(){
     return {x: 0, y: 0};
@@ -507,8 +576,8 @@ CanvasShape.prototype.rotation = function(input){
 CanvasShape.prototype.update = function () {
     //this.sprite.clearCache();
 
-    var z = this.renderer.viewer.tiles.cur_z;
-    if(z != this.gob.vertices[0].z) return;
+    //var z = this.renderer.viewer.tiles.cur_z;
+    //if(z != this.gob.vertices[0].z) return;
 
     this.clearCache();
     this.updateLocal();
@@ -526,7 +595,8 @@ CanvasShape.prototype.destroy = function () {
 CanvasShape.prototype.setLayer = function (layer) {
     this.currentLayer = layer;
     this.sprite.remove();
-    this.currentLayer.add(this.sprite);
+    if(this.isVisible())
+        this.currentLayer.add(this.sprite);
 };
 
 
@@ -603,8 +673,8 @@ CanvasPolyLine.prototype.cacheOffset = function(){
 }
 
 CanvasPolyLine.prototype.calcBbox = function () {
-    var min = [ 9999999, 9999999];
-    var max = [-9999999,-9999999];
+    var min = [ 9999999, 9999999, 9999999, 9999999];
+    var max = [-9999999,-9999999,-9999999,-9999999];
 
     var points = this.sprite.points();
 
@@ -616,7 +686,6 @@ CanvasPolyLine.prototype.calcBbox = function () {
     var sx = this.sprite.scaleX();
     var sy = this.sprite.scaleY();
 
-
     for(var xy = 0; xy < points.length; xy+=2){
         var px = x + sx*points[xy + 0];
         var py = y + sy*points[xy + 1];
@@ -624,6 +693,18 @@ CanvasPolyLine.prototype.calcBbox = function () {
         min[1] = min[1] < py ? min[1] : py;
         max[0] = max[0] > px ? max[0] : px;
         max[1] = max[1] > py ? max[1] : py;
+    }
+
+    for(var z = 0; z < this.gob.vertices.length; z++){
+        var pz = this.gob.vertices[z].z;
+        min[2] = Math.min(min[2], pz);
+        max[2] = Math.max(max[2], pz);
+    }
+
+    for(var t = 0; t < this.gob.vertices.length; t++){
+        var pt = this.gob.vertices[t].t;
+        min[3] = Math.min(min[3], pt);
+        max[3] = Math.max(max[3], pt);
     }
 
     return {min: min, max: max};
@@ -683,8 +764,8 @@ CanvasPolyLine.prototype.updateLocal = function () {
             continue;
         }
 
-        if (!test_visible(pnt, viewstate))
-            continue;
+        //if (!test_visible(pnt, viewstate))
+        //    continue;
 
         vertices.push(pnt.x, pnt.y);
     }
@@ -722,7 +803,7 @@ CanvasPolyLine.prototype.updateLocal = function () {
 
     this.sprite.scaleX(1.0);
     this.sprite.scaleY(1.0);
-    this.currentLayer.add(this.sprite);
+    //this.currentLayer.add(this.sprite);
 
 
     if(gob.dirty)
@@ -1011,8 +1092,26 @@ CanvasEllipse.prototype.calcBbox = function () {
     var bbhw = Math.sqrt(ux*ux + vx*vx);
     var bbhh = Math.sqrt(uy*uy + vy*vy);
 
-    return {min: [px - bbhw, py - bbhh],
-            max: [px + bbhw, py + bbhh]};
+    var
+    minz =  99999999999,
+    maxz = -99999999999,
+    mint  = 99999999999,
+    maxt = -99999999999;
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pz = this.gob.vertices[i].z;
+        minz = Math.min(minz, pz);
+        maxz = Math.max(maxz, pz);
+    }
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pt = this.gob.vertices[i].t;
+        mint = Math.min(mint, pt);
+        maxt = Math.max(maxt, pt);
+    }
+
+    return {min: [px - bbhw, py - bbhh, minz, mint],
+            max: [px + bbhw, py + bbhh, maxz, maxt]};
 };
 
 
@@ -1039,11 +1138,12 @@ CanvasEllipse.prototype.updateLocal = function () {
     var pnt1 = this.gob.vertices[0];
     var pnt2 = this.gob.vertices[1];
     var pnt3 = this.gob.vertices[2];
-
+    /*
     if (!test_visible(pnt1, viewstate)){
         this.sprite.remove();
         return;
     }
+    */
 
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
     var p2 = pnt2;//viewstate.transformPoint (pnt2.x, pnt2.y);
@@ -1086,7 +1186,7 @@ CanvasEllipse.prototype.updateLocal = function () {
     ellipse.strokeWidth(1.0/scale.x);
 
     this.bbox = this.calcBbox();
-    this.currentLayer.add(this.sprite);
+    //this.currentLayer.add(this.sprite);
 }
 
 
@@ -1263,8 +1363,28 @@ CanvasCircle.prototype.calcBbox = function () {
     var px = this.x();
     var py = this.y();
     var r = sprite.radius();
-    return {min: [px - r, py - r],
-            max: [px + r, py + r]};
+
+
+    var
+    minz =  99999999999,
+    maxz = -99999999999,
+    mint  = 99999999999,
+    maxt = -99999999999;
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pz = this.gob.vertices[i].z;
+        minz = Math.min(minz, pz);
+        maxz = Math.max(maxz, pz);
+    }
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pt = this.gob.vertices[i].t;
+        mint = Math.min(mint, pt);
+        maxt = Math.max(maxt, pt);
+    }
+
+    return {min: [px - r, py - r, minz, mint],
+            max: [px + r, py + r, maxz, maxt]};
 };
 
 
@@ -1289,12 +1409,12 @@ CanvasCircle.prototype.updateLocal = function () {
 
     var pnt1 = this.gob.vertices[0];
     var pnt2 = this.gob.vertices[1];
-
+    /*
     if (!test_visible(pnt1, viewstate)){
         this.sprite.remove();
         return;
     }
-
+    */
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
     var p2 = pnt2;//viewstate.transformPoint (pnt2.x, pnt2.y);
     var r =  Math.sqrt(
@@ -1338,7 +1458,7 @@ CanvasCircle.prototype.updateLocal = function () {
     sprite.rotation(ang + 180);
     sprite.strokeWidth(1.0/scale.x);
     this.bbox = this.calcBbox();
-    this.currentLayer.add(this.sprite);
+    //this.currentLayer.add(this.sprite);
 }
 
 
@@ -1488,8 +1608,28 @@ CanvasPoint.prototype.calcBbox = function () {
     var sprite = this.sprite;
     var px = this.x();
     var py = this.y();
-    return {min: [px, py],
-            max: [px, py]};
+
+    var
+    minz =  99999999999,
+    maxz = -99999999999,
+    mint  = 99999999999,
+    maxt = -99999999999;
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pz = this.gob.vertices[i].z;
+        minz = Math.min(minz, pz);
+        maxz = Math.max(maxz, pz);
+    }
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pt = this.gob.vertices[i].t;
+        mint = Math.min(mint, pt);
+        maxt = Math.max(maxt, pt);
+    }
+
+
+    return {min: [px, py, minz, mint],
+            max: [px, py, maxz, maxt]};
 };
 
 CanvasPoint.prototype.updateLocal = function () {
@@ -1497,11 +1637,12 @@ CanvasPoint.prototype.updateLocal = function () {
     var viewstate = this.renderer.viewer.current_view;
 
     var pnt1 = this.gob.vertices[0];
-
+    /*
     if (!test_visible(pnt1, viewstate)){
         this.sprite.remove();
         return;
     }
+    */
     var scale = this.renderer.stage.scale();
 
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
@@ -1537,7 +1678,7 @@ CanvasPoint.prototype.updateLocal = function () {
     sprite.radius(r);
     sprite.strokeWidth(2.0*this.pointSize/scale.x);
     this.bbox = this.calcBbox();
-    this.currentLayer.add(this.sprite);
+    //this.currentLayer.add(this.sprite);
 }
 
 
@@ -1631,8 +1772,29 @@ CanvasImagePoint.prototype.calcBbox = function () {
     var sprite = this.sprite;
     var px = this.x();
     var py = this.y();
-    return {min: [px+3, py+3],
-            max: [px+3, py+3]};
+
+
+    var
+    minz =  99999999999,
+    maxz = -99999999999,
+    mint  = 99999999999,
+    maxt = -99999999999;
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pz = this.gob.vertices[i].z;
+        minz = Math.min(minz, pz);
+        maxz = Math.max(maxz, pz);
+    }
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pt = this.gob.vertices[i].t;
+        mint = Math.min(mint, pt);
+        maxt = Math.max(maxt, pt);
+    }
+
+
+    return {min: [px+3, py+3, minz, mint],
+            max: [px+3, py+3, maxz, maxt]};
 };
 
 CanvasImagePoint.prototype.updateLocal = function () {
@@ -1640,11 +1802,12 @@ CanvasImagePoint.prototype.updateLocal = function () {
     var viewstate = this.renderer.viewer.current_view;
 
     var pnt1 = this.gob.vertices[0];
-
+    /*
     if (!test_visible(pnt1, viewstate)){
         this.sprite.remove();
         return;
     }
+    */
     var scale = this.renderer.stage.scale();
 
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
@@ -1680,7 +1843,7 @@ CanvasImagePoint.prototype.updateLocal = function () {
     //sprite.radius(r);
     //sprite.strokeWidth(6.0/scale.x);
     this.bbox = this.calcBbox();
-    this.currentLayer.add(this.sprite);
+    //this.currentLayer.add(this.sprite);
 }
 
 
@@ -1763,9 +1926,9 @@ CanvasLabel.prototype.setLayer = function (layer) {
     this.text.remove();
     this.arrow.remove();
 
-    this.currentLayer.add(this.sprite);
-    this.currentLayer.add(this.text);
-    this.currentLayer.add(this.arrow);
+    //this.currentLayer.add(this.sprite);
+    //this.currentLayer.add(this.text);
+    //this.currentLayer.add(this.arrow);
 
     this.sprite.shapeId = 0;
     this.text.shapeId = -1;
@@ -1791,8 +1954,28 @@ CanvasLabel.prototype.calcBbox = function () {
     var ymin = Math.min(y0, Math.min(y1, y2));
     var ymax = Math.max(y0, Math.max(y1, y2));
 
-    return {min: [xmin, ymin],
-            max: [xmax, ymax]};
+
+    var
+    minz =  99999999999,
+    maxz = -99999999999,
+    mint  = 99999999999,
+    maxt = -99999999999;
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pz = this.gob.vertices[i].z;
+        minz = Math.min(minz, pz);
+        maxz = Math.max(maxz, pz);
+    }
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pt = this.gob.vertices[i].t;
+        mint = Math.min(mint, pt);
+        maxt = Math.max(maxt, pt);
+    }
+
+
+    return {min: [xmin, ymin, minz, mint],
+            max: [xmax, ymax, maxz, maxt]};
 };
 
 CanvasLabel.prototype.clearCache = function(){};
@@ -1821,7 +2004,7 @@ CanvasLabel.prototype.updateArrow = function(strokeColor){
         tip += 10;
 
     if(dx*dx + dy*dy > 25){
-        this.currentLayer.add(this.arrow);
+        //this.currentLayer.add(this.arrow);
         this.arrow.moveToBottom();
         var points = this.arrow.points();
         points[0] = this.x();
@@ -1841,11 +2024,12 @@ CanvasLabel.prototype.updateLocal = function () {
     var viewstate = this.renderer.viewer.current_view;
 
     var pnt1 = this.gob.vertices[0];
-
+    /*
     if (!test_visible(pnt1, viewstate)){
         this.sprite.remove();
         return;
     }
+    */
     var scale = this.renderer.stage.scale();
 
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
@@ -1894,8 +2078,8 @@ CanvasLabel.prototype.updateLocal = function () {
     sprite.strokeWidth(6.0/scale.x);
     this.updateArrow(strokeColor);
     this.bbox = this.calcBbox();
-    this.currentLayer.add(this.sprite);
-    this.currentLayer.add(this.text);
+    //this.currentLayer.add(this.sprite);
+    //this.currentLayer.add(this.text);
 }
 
 
@@ -2016,8 +2200,26 @@ CanvasRectangle.prototype.calcBbox = function () {
     var ymin = Math.min(py, py + h);
     var ymax = Math.max(py, py + h);
 
-    return {min: [xmin, ymin],
-            max: [xmax, ymax]};
+    var
+    minz =  99999999999,
+    maxz = -99999999999,
+    mint  = 99999999999,
+    maxt = -99999999999;
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pz = this.gob.vertices[i].z;
+        minz = Math.min(minz, pz);
+        maxz = Math.max(maxz, pz);
+    }
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pt = this.gob.vertices[i].t;
+        mint = Math.min(mint, pt);
+        maxt = Math.max(maxt, pt);
+    }
+
+    return {min: [xmin, ymin, minz, mint],
+            max: [xmax, ymax, maxz, minz]};
 };
 
 CanvasRectangle.prototype.clearCache = function(){};
@@ -2030,11 +2232,12 @@ CanvasRectangle.prototype.updateLocal = function () {
     var pnt1 = this.gob.vertices[0];
     var pnt2 = this.gob.vertices[1];
 
-
+    /*
     if (!test_visible(pnt1, viewstate)){
         this.sprite.remove();
         return;
     }
+    */
 
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
     var p2 = pnt2;//viewstate.transformPoint (pnt2.x, pnt2.y);
@@ -2069,7 +2272,7 @@ CanvasRectangle.prototype.updateLocal = function () {
     this.sprite.stroke(strokeColor);
     this.sprite.strokeWidth(1.0/scale.x);
     this.bbox = this.calcBbox();
-    this.currentLayer.add(this.sprite);
+    //this.currentLayer.add(this.sprite);
 }
 
 
@@ -2204,8 +2407,26 @@ CanvasSquare.prototype.calcBbox = function () {
     var ymin = Math.min(py, py + h);
     var ymax = Math.max(py, py + h);
 
-    return {min: [xmin, ymin],
-            max: [xmax, ymax]};
+    var
+    minz =  99999999999,
+    maxz = -99999999999,
+    mint  = 99999999999,
+    maxt = -99999999999;
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pz = this.gob.vertices[i].z;
+        minz = Math.min(minz, pz);
+        maxz = Math.max(maxz, pz);
+    }
+
+    for(var i = 0; i < this.gob.vertices.length; i++){
+        var pt = this.gob.vertices[i].t;
+        mint = Math.min(mint, pt);
+        maxt = Math.max(maxt, pt);
+    }
+
+    return {min: [xmin, ymin, minz, mint],
+            max: [xmax, ymax, maxz, minz]};
 
 };
 
@@ -2219,11 +2440,12 @@ CanvasSquare.prototype.updateLocal = function () {
     var pnt1 = this.gob.vertices[0];
     var pnt2 = this.gob.vertices[1];
 
-
+    /*
     if (!test_visible(pnt1, viewstate)){
         this.sprite.remove();
         return;
     }
+    */
 
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
     var p2 = pnt2;//viewstate.transformPoint (pnt2.x, pnt2.y);
@@ -2260,7 +2482,7 @@ CanvasSquare.prototype.updateLocal = function () {
 
     this.sprite.strokeWidth(1.0/scale.x);
     this.bbox = this.calcBbox();
-    this.currentLayer.add(this.sprite);
+    //this.currentLayer.add(this.sprite);
 }
 
 

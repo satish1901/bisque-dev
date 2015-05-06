@@ -330,7 +330,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
 
     //initializing preference for the image viewer
     this.preferences = this.parameters.preferences;
-    
+
     /*
     BQ.Preferences.get({
         key : 'Viewer',
@@ -485,7 +485,7 @@ ImgViewer.prototype.newImage = function (bqimage) {
 
     var phys = new BQImagePhys (this.image);
     phys.load (callback (this, 'newPhys') );
-    
+
     if (BQ.Preferences) {
         //needs to remove call back if new image is added
         
@@ -608,7 +608,7 @@ ImgViewer.prototype.show_additional_gobjects = function(gobs) {
     if (!(gobs instanceof Array))
         gobs = [gobs];
     this.image.gobjects.push.apply(this.image.gobjects, gobs);
-    this.renderer.rerender();
+    this.renderer.rerender(gobs, [this.current_view, true]);
 };
 
 ImgViewer.prototype.showGObjects = function(gobs) {
@@ -657,7 +657,7 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
     this.renderer.highlight(gob, selection);
 };
 
-ImgViewer.prototype.color_gobject = function(gob, color) {
+ImgViewer.prototype.color_gbject = function(gob, color) {
     this.renderer.setcolor(gob, color);
     var xml = gob.xmlNode();
     var tagColor = BQ.util.xpath_nodes(xml,'tag[@name="color"]');
@@ -668,6 +668,7 @@ ImgViewer.prototype.color_gobject = function(gob, color) {
 
     var t = gob.addtag(new BQTag(uri, 'color', color, 'color'));
     t.save_reload(gob.uri);
+    this.renderer.rerender([gob], [this.current_view, true]);
     console.log(gob.uri + '?view=deep');
 };
 
@@ -742,6 +743,7 @@ ImgViewer.prototype.newPhys = function (phys) {
         this.loadGObjects(gobjects_url);
     }
 
+    this.renderer.rerender(this.image.gobjects, [this.current_view, true]);
 };
 
 ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
