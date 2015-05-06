@@ -261,24 +261,17 @@ class BQImage(BQResource):
     def geometry(self):
         'return x,y,z,t,ch of image'
         if self._geometry is None:
-            geom = self.toDict().get ('geometry')
-            if geom:
-                self._geometry = tuple(map(int, geom.value.split(',')))
-                #self._geometry = (x, y, z, t, ch)
-            else:
-                info = self.pixels().meta().fetch()
-                info = etree.XML(info)
-                geom = []
-                for n in 'xyztc':
-                    tn = info.xpath('//tag[@name="image_num_%s"]' % n)
-                    geom.append(tn[0].get('value'))
-                self._geometry = tuple(map(int, geom))
+            info = self.pixels().meta().fetch()
+            info = etree.XML(info)
+            geom = []
+            for n in 'xyztc':
+                tn = info.xpath('//tag[@name="image_num_%s"]' % n)
+                geom.append(tn[0].get('value'))
+            self._geometry = tuple(map(int, geom))
         return self._geometry
-
 
     def pixels(self):
         return BQImagePixels(self)
-
 
 class BQImagePixels(object):
     """manage requests to the image pixels"""
@@ -290,8 +283,9 @@ class BQImagePixels(object):
         """build the final url based on the operation
         """
         session = self.image.session
-        return session.service_url('image_service', "images/%s?%s"
+        return session.service_url('image_service', '%s?%s'
                                    % (self.image.resource_uniq, '&'.join(self.ops)))
+
     def fetch(self, path=None):
         """resolve the current and fetch the pixel
         """

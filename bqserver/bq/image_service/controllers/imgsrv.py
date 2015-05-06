@@ -1230,7 +1230,11 @@ class RoiOperation(BaseOperation):
         x2 = int(vs[2]) if len(vs)>2 and vs[2].isdigit() else 0
         y2 = int(vs[3]) if len(vs)>3 and vs[3].isdigit() else 0
         ofile = '%s.roi_%d,%d,%d,%d'%(token.data, x1-1,y1-1,x2-1,y2-1)
-        return token.setImage(ofile, fmt=default_format)
+        info = {
+            'image_num_x': x2-x1,
+            'image_num_y': y2-y1,
+        }
+        return token.setImage(ofile, fmt=default_format, dims=info)
 
     def action(self, token, arg):
         if not token.isFile():
@@ -1256,17 +1260,16 @@ class RoiOperation(BaseOperation):
         # remove pre-computed ROIs
         rois = [(_x1,_y1,_x2,_y2) for _x1,_y1,_x2,_y2 in rois if not os.path.exists('%s.roi_%d,%d,%d,%d'%(otemp,_x1-1,_y1-1,_x2-1,_y2-1))]
 
-        lfile = '%s.rois'%(ifile)
+        lfile = '%s.rois'%(otemp)
         command = token.drainQueue()
         if not os.path.exists(ofile) or len(rois)>0:
             # global ROI lock on this input since we can't lock on all individual outputs
             with Locks(ifile, lfile) as l:
                 if l.locked: # the file is not being currently written by another process
                     s = ';'.join(['%s,%s,%s,%s'%(x1-1,y1-1,x2-1,y2-1) for x1,y1,x2,y2 in rois])
-                    params = ['-roi', s]
-                    params += ['-template', '%s.roi_{x1},{y1},{x2},{y2}'%otemp]
-                    params.extend(command)
-                    self.server.imageconvert(token, ifile, ofile, fmt=default_format, extra=params)
+                    command.extend(['-roi', s])
+                    command.extend(['-template', '%s.roi_{x1},{y1},{x2},{y2}'%otemp])
+                    self.server.imageconvert(token, ifile, ofile, fmt=default_format, extra=command)
                     # ensure the virtual locking file is not removed
                     with open(lfile, 'wb') as f:
                         f.write('#Temporary locking file')
