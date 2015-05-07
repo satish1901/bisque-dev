@@ -314,7 +314,7 @@ class ConverterImgcnv(ConverterBase):
         if not cls.installed:
             return None
         tmp = None
-        with Locks(ifnm, ofnm) as l:
+        with Locks(ifnm, ofnm, failonexist=True) as l:
             if l.locked: # the file is not being currently written by another process
                 command = [cls.CONVERTERCOMMAND]
                 command.extend(args)
@@ -488,7 +488,7 @@ class ConverterImgcnv(ConverterBase):
 
         command = []
         if token.is_multifile_series() is False:
-            log.debug('convert single file: %s', ifnm)
+            #log.debug('convert single file: %s', ifnm)
             if '-i' not in extra and '-il' not in extra:
                 command.extend(['-i', ifnm])
         else:

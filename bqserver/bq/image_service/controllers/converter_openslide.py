@@ -284,7 +284,7 @@ class ConverterOpenSlide(ConverterBase):
         log.debug('Thumbnail: %s %s %s for [%s]', width, height, series, ifnm)
 
         fmt = kw.get('fmt', 'jpeg').upper()
-        with Locks (ifnm, ofnm) as l:
+        with Locks (ifnm, ofnm, failonexist=True) as l:
             if l.locked: # the file is not being currently written by another process
                 try:
                     _, tmp = misc.start_nounicode_win(ifnm, [])
@@ -325,7 +325,7 @@ class ConverterOpenSlide(ConverterBase):
         x  = misc.safeint(x, 0)
         y  = misc.safeint(y, 0)
         sz = misc.safeint(sz, 0)
-        with Locks (ifnm, ofnm) as l:
+        with Locks (ifnm, ofnm, failonexist=True) as l:
             if l.locked: # the file is not being currently written by another process
                 try:
                     _, tmp = misc.start_nounicode_win(ifnm, [])

@@ -206,7 +206,7 @@ class ConverterBase(object):
         if not cls.installed:
             return None
         tmp = None
-        with Locks(ifnm, ofnm) as l:
+        with Locks(ifnm, ofnm, failonexist=True) as l:
             if l.locked: # the file is not being currently written by another process
                 command = [cls.CONVERTERCOMMAND]
                 command.extend(args)

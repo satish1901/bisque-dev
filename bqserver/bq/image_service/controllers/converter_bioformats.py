@@ -22,7 +22,6 @@ import bq.util.io_misc as misc
 from .process_token import ProcessToken
 from .converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
-from bq.util.locks import Locks
 
 import logging
 log = logging.getLogger('bq.image_service.converter_bioformats')
@@ -241,7 +240,7 @@ class ConverterBioformats(ConverterBase):
 
         rd['date_time'] = misc.xpathtextnode(mee, '%s/ome:AcquisitionDate'%imagenodepath, namespaces=namespaces).replace('T', ' ')
 
-        pixels = mee.xpath('ome:Image[@ID="Image:0"]/ome:Pixels', namespaces=namespaces)[0]
+        pixels = mee.xpath('%s/ome:Pixels'%imagenodepath, namespaces=namespaces)[0]
         rd['image_num_x'] = misc.safeint(pixels.get('SizeX', '0'))
         rd['image_num_y'] = misc.safeint(pixels.get('SizeY', '0'))
         rd['image_num_z'] = misc.safeint(pixels.get('SizeZ', '0'))
@@ -283,7 +282,7 @@ class ConverterBioformats(ConverterBase):
             rd.setdefault('channel_color_0', '255,255,255')
 
         # channel info
-        channels = mee.xpath('ome:Image[@ID="Image:0"]/ome:Pixels/ome:Channel', namespaces=namespaces)
+        channels = mee.xpath('%s/ome:Pixels/ome:Channel'%imagenodepath, namespaces=namespaces)
         for c,i in zip(channels, range(len(channels))):
             bfReadAndSet(c, 'Name',   rd, 'channel_%s_name'%i, defval='ch_%s'%i)
             bfReadAndSet(c, 'Color',  rd, 'channel_color_%s'%i, f=bfColorToString)
