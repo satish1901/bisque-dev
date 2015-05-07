@@ -8,11 +8,30 @@
 
 function ImageCache(renderer){
     this.renderer = renderer;
-    this.cachesAtScale = {};
-    this.caches = [];
-    this.images = [];
+    this.caches = {};
+    this.nodeHashes = {};
 };
-ImageCache.prototype.getCurrentIndex = function(){
+
+
+ImageCache.prototype.getCurrentNodeHashes = function(node){
+
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
+    var bbox = node.bbox;
+    var nHash =
+        bbox.min[0] + "," + bbox.min[1] + "," + bbox.min[2] + "," +
+        bbox.max[0] + "," + bbox.max[1] + "," + bbox.max[2] + "," +
+        z + ',' + t;
+    var hashes = [];
+    for (var key in this.nodeHashes[nHash]) {
+        if (this.nodeHashes[nHash].hasOwnProperty(key)) {
+            hashes.push(key);
+        }
+    }
+    return hashes;
+}
+
+ImageCache.prototype.getCurrentHash = function(node){
     var scale = this.renderer.stage.scale().x;
 
     var viewstate = this.renderer.viewer.current_view;
@@ -23,36 +42,39 @@ ImageCache.prototype.getCurrentIndex = function(){
     var t = this.renderer.viewer.tiles.cur_t;
     var maxLoc = sz*st;
     var loc = z + t*sz;
-
-    if(!this.cachesAtScale[scale]) this.cachesAtScale[scale] = [];
-    this.caches = this.cachesAtScale[scale];
+    var bbox = node.bbox;
 
     var proj = viewstate.imagedim.project,
     proj_gob = viewstate.gob_projection;
 
-    if (proj_gob==='all') {
-        return maxLoc;
+
+
+    var pHash = '';
+    if (proj_gob==='all' || proj === 'projectmax' || proj === 'projectmin') {
+        pHash = 'all';
     } else if (proj === 'projectmaxz' || proj === 'projectminz' || proj_gob==='Z') {
-        return maxLoc + t;
+        pHash = 'Z';
     } else if (proj === 'projectmaxt' || proj === 'projectmint' || proj_gob==='T') {
-        return maxLoc + st + z;
-    } else if (proj === 'projectmax' || proj === 'projectmin') {
-        return maxLoc + st + sz;
-    } else if (!proj || proj === 'none') {
-        return loc;
+        pHash = 'T';
     }
+    var nHash =
+        bbox.min[0] + "," + bbox.min[1] + "," + bbox.min[2] + "," +
+        bbox.max[0] + "," + bbox.max[1] + "," + bbox.max[2] + "," +
+        z + ',' + t;
+
+    var hash = nHash +','+ pHash + ',' + scale;
+    if(!this.nodeHashes[nHash]) this.nodeHashes[nHash] = {};
+
+    this.nodeHashes[nHash][hash] = hash;
+    return hash;
 }
 
 ImageCache.prototype.createAtFrame = function(i){
     this.caches[i] = new Kinetic.Image({});
-    this.images[i] = null;
 };
 
 ImageCache.prototype.deleteAtFrame = function(i){
-    if(this.images[i]) {
-        delete this.images[i];
-        this.images[i] = null;
-    }
+
     if(this.caches[i]) {
         delete this.caches[i];
         this.caches[i] = null;
@@ -80,50 +102,41 @@ ImageCache.prototype.setPositionAtFrame = function(i, node){
 
 ImageCache.prototype.setImageAtFrame = function(i, img){
     this.caches[i].setImage(img);
-    this.images[i] = img;
 };
 
-ImageCache.prototype.createAtCurrent = function(){
-    var i = this.getCurrentIndex();
+ImageCache.prototype.createAtCurrent = function(node){
+    var i = this.getCurrentHash(node);
     this.createAtFrame(i);
 };
 
-ImageCache.prototype.deleteAtCurrent = function(){
-    var i = this.getCurrentIndex();
+ImageCache.prototype.deleteAtCurrent = function(node){
+    var i = this.getCurrentHash(node);
     this.deleteAtFrame(i);
 }
 
-ImageCache.prototype.getCacheAtCurrent = function(t,z){
-    var i = this.getCurrentIndex();
+ImageCache.prototype.getCacheAtCurrent = function(node){
+    var i = this.getCurrentHash(node);
     return this.getCacheAtFrame(i);
 }
 
 
 ImageCache.prototype.setPositionAtCurrent = function(node){
-    var i = this.getCurrentIndex();
+    var i = this.getCurrentHash(node);
     this.setPositionAtFrame(i,node);
 }
 
-ImageCache.prototype.setImageAtCurrent = function(img){
-    var i = this.getCurrentIndex();
+ImageCache.prototype.setImageAtCurrent = function(img, node){
+    var i = this.getCurrentHash(node);
     this.setImageAtFrame(i,img);
 }
 
-ImageCache.prototype.clearAll = function(img){
-    for(var key in this.cachesAtScale){
-        var caches = this.cachesAtScale[key];
-        caches.forEach(function(e, i, a){
-            delete e;
-            a[i] = null;
-        });
+ImageCache.prototype.clearAll = function(node){
+    var nodeHashes = this.getCurrentNodeHashes(node);
+    for(var i = 0; i < nodeHashes.length; i++){
+        var hash = nodeHashes[i];
+        delete this.caches[hash];
     }
-
-    this.images.forEach(function(e, i, a){
-        delete e;
-        a[i] = null;
-    });
 }
-
 
 function QuadTree(renderer, z, t){
     this.z = z;
@@ -132,6 +145,7 @@ function QuadTree(renderer, z, t){
     this.renderer = renderer;
     this.reset();
     this.maxChildren = 256;
+    this.imageCache = new ImageCache(renderer);
 };
 
 QuadTree.prototype.reset = function(){
@@ -158,8 +172,7 @@ QuadTree.prototype.reset = function(){
         parent: null,
         children:[],
         leaves: [],
-        imageCache : new ImageCache(this.renderer),
-        bbox: {min: [0,0,0], max: [view.x,view.y,view.z,view.t]},
+        bbox: {min: [0,0,0,0], max: [view.x,view.y,view.z,view.t]},
         L: 0,
     }];
 
@@ -247,8 +260,8 @@ QuadTree.prototype.hasOverlap  = function(bbox1, bbox2){
     bb2 = bbox2;
     //for each dimension test to see if axis are seperate
     for(var i = 0; i < 4; i++){
-        if      (bb1.max[i] < bb2.min[i]) overlap = false;
-        else if (bb1.min[i] > bb2.max[i]) overlap = false;
+        if      (bb1.max[i] <  bb2.min[i]) overlap = false;
+        else if (bb1.min[i] >  bb2.max[i]) overlap = false;
     }
     //if(!overlap) debugger;
     return overlap;
@@ -348,7 +361,6 @@ QuadTree.prototype.splitNode  = function(node, stack){
                         parent: node,
                         children:[],
                         leaves:[],
-                        imageCache : new ImageCache(this.renderer),
                         bbox: {min:[0,0,0,0], max: [9999,9999,9999,9999]},
                         L: node.L+1
                     }
@@ -357,7 +369,7 @@ QuadTree.prototype.splitNode  = function(node, stack){
                     var tMinY = bbMin[1] + j*th;
                     var tMinZ = bbMin[2] + k*tz;
                     var tMinT = bbMin[3] + l*tt;
-                    newNode.bbox.min = [tMinX, tMinY, tMinZ, tMinT];
+                    newNode.bbox.min = [tMinX,      tMinY,      tMinZ,      tMinT];
                     newNode.bbox.max = [tMinX + tw, tMinY + th, tMinZ + tz, tMinT + tt ];
                     var id = this.nodes.length;
                     newNode.id = id;
@@ -427,7 +439,11 @@ QuadTree.prototype.insert = function(shape){
     var t = this.renderer.viewer.tiles.cur_t;
 
     var view = this.renderer.viewer.imagedim;
-    this.nodes[0].bbox = {min:[0,0,-0.5,-0.5], max: [view.x, view.y, view.z+0.5, view.t+0.5]};
+    var nudge = 0.01;
+    this.nodes[0].bbox = {
+        min:[0,0,0,0],
+        max: [view.x, view.y, view.z, view.t]
+    };
     var stack = [{node: this.nodes[0], shape: shape}];
 
     //if(shape.id() === 15) debugger;
@@ -445,7 +461,7 @@ QuadTree.prototype.insert = function(shape){
         var fshape = frame.shape;
         var fnode = frame.node;
         fnode.dirty = true;
-        fnode.imageCache.clearAll();
+        this.imageCache.clearAll(fnode);
         //expand the bounding box of the current node on the stack
         //fnode.bbox = this.compositeBbox(shape.bbox, fnode.bbox);
 
@@ -506,7 +522,7 @@ QuadTree.prototype.remove = function(shape){
             this.updateSprite(node);
             node.dirty = true;
 
-            node.imageCache.clearAll();
+            this.imageCache.clearAll(node);
             node = node.parent;
             //
         }
@@ -550,6 +566,7 @@ QuadTree.prototype.cull = function(frust){
 
     var leaves = this.collectObjectsInRegion(frust, this.nodes[0]);
     leaves.forEach(function(e){
+        e.updateStroke();
         renderer.currentLayer.add(e.sprite);
     });
 };
@@ -577,7 +594,7 @@ QuadTree.prototype.cache = function(frust, onCache){
         if(nArea <= 0.6*fArea || node.leaves.length > 0) {
             //if(!node.imageCache.getCacheAtCurrent()){
 
-            if(!node.imageCache.getCacheAtCurrent()){
+            if(!me.imageCache.getCacheAtCurrent(node)){
                 me.cachesDestroyed += 1;
                 me.cacheChildSprites(node, onCache);
                 cache = true;
@@ -611,7 +628,7 @@ QuadTree.prototype.cullCached = function(frust){
         var cache = null;
         //if(L === node.L || node.leaves.length > 0){
         if(nArea <= 0.6*fArea || node.leaves.length > 0) {
-            collection.push(node.imageCache.getCacheAtCurrent());
+            collection.push(me.imageCache.getCacheAtCurrent(node));
             return false;
         }
 
@@ -635,7 +652,7 @@ QuadTree.prototype.clearCache = function(frust){
     var atSprite = function(node){
 
         //if(!node.imageCache.getCacheAtCurrent()) return true;
-        node.imageCache.clearAll();
+        me.imageCache.clearAll(node);
 
         return true;
     };
@@ -691,7 +708,7 @@ QuadTree.prototype.intersectBboxFrustum(bbox){
 QuadTree.prototype.cacheChildSprites = function(node, onCache){
     //delete cache if it exists
 
-    node.imageCache.deleteAtCurrent();
+    this.imageCache.deleteAtCurrent(node);
 
     //initialize a few variables;
     var me = this;
@@ -705,8 +722,8 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
     var z = this.renderer.viewer.tiles.cur_z;
     var t = this.renderer.viewer.tiles.cur_t;
 
-    //var nbbox = {min: [bbox.min[0],bbox.min[1], z-0.5, t-0.5],
-    //             max: [bbox.max[0],bbox.max[1], z+0.5, t+0.5]};
+    var nbbox = {min: [bbox.min[0],bbox.min[1], z, t],
+                 max: [bbox.max[0],bbox.max[1], z, t]};
 
     //console.log(bbox.min[2], bbox.max[2], z);
 
@@ -715,7 +732,7 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
     buffer = 0;
 
     //create a new image
-    node.imageCache.createAtCurrent();
+    this.imageCache.createAtCurrent(node);
 
     //create a temp layer to capture the appropriate objects
     var layer = new Kinetic.Layer({
@@ -726,7 +743,7 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
     });
 
     //fetch the objects in the tree that are in that node
-    var leaves = this.collectObjectsInRegion(bbox, node);
+    var leaves = this.collectObjectsInRegion(nbbox, node);
     leaves.forEach(function(e){
         e.updateLocal();
         layer.add(e.sprite);
@@ -740,10 +757,9 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
             //if(!node.dirty) return;
 
             node.image = img;
-            if(!node.imageCache.getCacheAtCurrent())
-                node.imageCache.createAtCurrent();
-            node.imageCache.setPositionAtCurrent(node);
-            node.imageCache.setImageAtCurrent(img);
+            me.imageCache.createAtCurrent(node);
+            me.imageCache.setPositionAtCurrent(node);
+            me.imageCache.setImageAtCurrent(img, node);
 
             node.dirty = false;
             me.cachesRendered += 1; //count the caches that have been rerendered since performing a cache call
@@ -762,7 +778,7 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
         height: h*scale + 2.0*buffer,
     });
 
-    node.imageCache.setPositionAtCurrent(node);
+    me.imageCache.setPositionAtCurrent(node);
 };
 
 QuadTree.prototype.setDirty = function(node){
@@ -878,7 +894,7 @@ CanvasControl.prototype.setFrustum = function(e, scale){
     }
 
     this.viewer.setFrustum({
-        min: [x,y, z0, t0],
+        min: [x,   y,   z0, t0],
         max: [x+w, y+h, z1, t1]
     });
 };
@@ -1492,7 +1508,6 @@ CanvasRenderer.prototype.updateImage = function (e) {
     this.gobsSlice = this.gobs[z];
 
     this.stage.scale({x: scale, y:scale});
-    console.log('uimage:', scale);
     //this.initDrawer();
     /*
     if(this.selectedSet.length> 0){
