@@ -1264,7 +1264,7 @@ class RoiOperation(BaseOperation):
         command = token.drainQueue()
         if not os.path.exists(ofile) or len(rois)>0:
             # global ROI lock on this input since we can't lock on all individual outputs
-            with Locks(ifile, lfile) as l:
+            with Locks(ifile, lfile, failonexist=True) as l:
                 if l.locked: # the file is not being currently written by another process
                     s = ';'.join(['%s,%s,%s,%s'%(x1-1,y1-1,x2-1,y2-1) for x1,y1,x2,y2 in rois])
                     command.extend(['-roi', s])
@@ -2256,30 +2256,38 @@ class ImageServer(object):
         if not os.path.exists(filename):
             return None
 
-        # parse image info from original file
-        for n,c in self.converters.iteritems():
-            info = c.info(ProcessToken(ifnm=filename, series=series))
-            if info is not None and len(info)>0:
-                info['converter'] = n
-                break
-        if info is None or 'image_num_x' not in info:
-            return None
+        # read image info
+        with Locks(filename, infofile, failonexist=True) as l:
+            if l.locked: # the file is not being currently written by another process
+                # parse image info from original file
+                for n,c in self.converters.iteritems():
+                    info = c.info(ProcessToken(ifnm=filename, series=series))
+                    if info is not None and len(info)>0:
+                        info['converter'] = n
+                        break
+                if info is None or 'image_num_x' not in info:
+                    return None
 
-        info.setdefault('image_num_t', 1)
-        info.setdefault('image_num_z', 1)
-        info.setdefault('image_num_p', info['image_num_t'] * info['image_num_z'])
-        info.setdefault('format', default_format)
-        if not 'filesize' in info:
-            info.setdefault('filesize', os.path.getsize(filename))
+                info.setdefault('image_num_t', 1)
+                info.setdefault('image_num_z', 1)
+                info.setdefault('image_num_p', info['image_num_t'] * info['image_num_z'])
+                info.setdefault('format', default_format)
+                if not 'filesize' in info:
+                    info.setdefault('filesize', os.path.getsize(filename))
 
-        # cache file info into a file
-        image = etree.Element ('image')
-        for k,v in info.iteritems():
-            image.set(k, '%s'%v)
-        with open(infofile, 'w') as f:
-            f.write(etree.tostring(image))
+                # cache file info into a file
+                image = etree.Element ('image')
+                for k,v in info.iteritems():
+                    image.set(k, '%s'%v)
+                with open(infofile, 'w') as f:
+                    f.write(etree.tostring(image))
+                return info
 
-        return info
+        if os.path.exists(infofile):
+            with Locks(infofile):
+                return self.getImageInfo(filename, series, infofile=infofile, meta=meta)
+
+        return None
 
     def process_queue(self, token):
         ofile = token.data

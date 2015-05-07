@@ -27,7 +27,6 @@ import bq.util.io_misc as misc
 from .process_token import ProcessToken
 from .converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
-from bq.util.locks import Locks
 
 import logging
 log = logging.getLogger('bq.image_service.converter_imaris')
