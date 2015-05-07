@@ -269,8 +269,8 @@ def test_mergeDocument_3():
     """, parser=parser)
     answer = etree.XML("""
         <preference>
-            <tag name="first_level" value="old">
-                <tag name="name" value="old"/>
+            <tag name="first_level">
+                <tag name="name" value="new"/>
             </tag>
         </preference>
     """, parser=parser)
@@ -614,18 +614,29 @@ def test_to_dict_2():
                 },
             )
         ), (
-            'first_level', TagValueNode(
-                value = 'test',
+            'first_level', TagNameNode(
                 node_attrib = {
                     'name'  : 'first_level',
-                    'value' : 'test',
                 },
-                sub_node = [
-                    etree.Element('tag', name='test1', value='test1_old'),
-                    etree.Element('tag', name='test2', value='test2_old'),
-                ],
+                sub_node_dict = OrderedDict([(
+                    'test1', TagValueNode(
+                        value = 'test1_old',
+                        node_attrib = {
+                            'name'  : 'test1',
+                            'value' : 'test1_old',
+                        },
+                    )
+                ),(
+                    'test2', TagValueNode(
+                        value = 'test2_old',
+                        node_attrib = {
+                            'name'  : 'test2',
+                            'value' : 'test2_old',
+                        },
+                    )
+                )])
             )
-        )])
+        )]),
     )
     
     result = to_dict(xml)
@@ -664,10 +675,116 @@ def test_to_dict_3():
             template
         ]
     )
-    
     result = to_dict(xml)
     compare_dict(answer, result)
     
+    
+def test_to_dict_4():
+    """
+        To Dict Test 4
+        
+        Parent nodes with values
+    """
+    xml = etree.XML("""
+        <preference>
+            <tag name="test1" value="">
+                <tag name="test1" value="test1"/>
+            </tag>
+            <tag name="test2" value="asdf">
+                <tag name="test2" value="test2"/>
+            </tag>
+            <tag name="test3" value="">
+                <tag name="test3" value="">
+                    <tag name="test3" value=""/>
+                </tag>
+            </tag>
+            <tag name="test4" value="">
+                <template>
+                    <tag name="test4" value="templateTest"/>
+                </template>
+                <tag name="test4" value=""/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    
+    template = etree.Element('template')
+    etree.SubElement(template, 'tag', name='test4', value="templateTest")
+    
+    answer = TagNameNode(
+        sub_node_dict = OrderedDict([(
+            'test1', TagNameNode(
+                sub_node_dict = OrderedDict([(
+                    'test1', TagValueNode(
+                        value='test1',
+                        node_attrib={
+                            'name':'test1',
+                            'value':'test1'
+                        },
+                    )
+                )]),
+                node_attrib = {
+                    'name':'test1',
+                }
+            )
+        ),(
+            'test2', TagNameNode(
+                sub_node_dict = OrderedDict([(
+                    'test2', TagValueNode(
+                        value='test2',
+                        node_attrib={
+                            'name':'test2',
+                            'value':'test2'
+                        },
+                    )
+                )]),
+                node_attrib = {
+                    'name':'test2',
+                }
+            )
+        ),(
+            'test3', TagNameNode(
+                sub_node_dict = OrderedDict([(
+                    'test3', TagNameNode(
+                        sub_node_dict = OrderedDict([(
+                            'test3', TagValueNode(
+                                value='',
+                                node_attrib={
+                                    'name':'test3',
+                                    'value':''
+                                },
+                            )
+                        )]),
+                        node_attrib = {
+                            'name':'test3',
+                        }
+                    )
+                )]),
+                node_attrib = {
+                    'name':'test3',
+                }
+            )
+        ),(
+            'test4', TagNameNode(
+                sub_node_dict = OrderedDict([(
+                    'test4', TagValueNode(
+                        value='',
+                        node_attrib={
+                            'name':'test4',
+                            'value':''
+                        },
+                    )
+                )]),
+                node_attrib={
+                    'name':'test4',
+                },
+                sub_none_tag_node =[
+                    template
+                ]
+            )
+        )]),
+    )
+    result = to_dict(xml)
+    compare_dict(answer, result)
     
 def test_to_etree_1():
     """
