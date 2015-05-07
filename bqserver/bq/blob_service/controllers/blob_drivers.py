@@ -440,7 +440,7 @@ class S3Driver(StorageDriver):
         self.readonly = asbool(readonly)
         self.top = mount_url.split('$')[0]
         self.options = kw
-        self.mount (mount_url, **kw)
+        self.mount ()
 
 
     def mount(self):

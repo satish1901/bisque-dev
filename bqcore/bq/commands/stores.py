@@ -1,5 +1,6 @@
 # Store services
 #
+from __future__ import print_function
 import os
 import logging
 
@@ -145,12 +146,12 @@ def _create_default_mounts(drivers, root=None):
 
 
 def list_stores(username = None):
-    print "List values in store"
+    print ("List values in store")
     if username is not None:
         users = [ username ]
     else:
         users  = [ x.get ('name') for x in data_service.query('user', wpublic=1) ]
-    print users
+    print (users)
 
 def fill_stores(username = None):
     "Clean unreferenced images/files from bisque storage"
@@ -183,12 +184,28 @@ def _update_mounts(drivers):
         return None
 
     user_stores = dict ((x.get ('name'), x)  for x in user_root.xpath('store'))
+
+    storeorder = get_tag(user_root, 'order')
+    if storeorder is None:
+        log.warn ("order tag missing from root store adding")
+        storeorder = etree.SubElement(user_root, 'tag', name='order', value = ','.join (drivers.keys()))
+        update = True
+    elif len(storeorder) == 1:
+        storeorder = storeorder[0]
+        storelist = ','.join (drivers.keys())
+        if storeorder.get('value') != storelist:
+            storeorder.set ('value', storelist)
+            update = True
+
     for store_name, driver in drivers.items():
         if store_name not in user_stores:
-            log.warn("Need to create new store : %s", store_name)
+            print ("Need to create new store : %s" % store_name)
+            mount_path = string.Template(driver['mounturl']).safe_substitute(datadir = data_url_path(), user = user_name)
+            etree.SubElement(user_root, 'store', name = store_name, resource_unid=store_name, value=config2url(mount_path))
+            update = True
             continue
-        store = user_stores[store_name]
 
+        store = user_stores[store_name]
         mounturl = driver.get ('mounturl')
         mounturl = string.Template(mounturl).safe_substitute(datadir = data_url_path(), user = user_name)
         # ensure no $ are left
@@ -196,11 +213,11 @@ def _update_mounts(drivers):
 
         store_value =  store.get ('value')
 
-        print "examining store %s with %s" % (store_name, store_value)
+        print ("examining store %s with %s" % (store_name, store_value))
 
 
         if store_value is None or store_value != mounturl:
-            print "Updating store with value %s to %s" % (store_value, mounturl)
+            print ("Updating store with value %s to %s" % (store_value, mounturl))
             store.set ('value', mounturl)
             update = True
 
