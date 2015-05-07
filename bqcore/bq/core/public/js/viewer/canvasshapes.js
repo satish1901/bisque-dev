@@ -1643,6 +1643,14 @@ CanvasPoint.prototype.calcBbox = function () {
             max: [px, py, maxz, maxt]};
 };
 
+
+CanvasPoint.prototype.updateStroke = function(){
+    var scale = this.renderer.stage.scale();
+    var r = this.pointSize/scale.x;
+    this.sprite.radius(r);
+    this.sprite.strokeWidth(2.0*this.pointSize/scale.x);
+};
+
 CanvasPoint.prototype.updateLocal = function () {
 
     var viewstate = this.renderer.viewer.current_view;

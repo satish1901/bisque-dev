@@ -8,10 +8,13 @@
 
 function ImageCache(renderer){
     this.renderer = renderer;
+    this.init();
+};
+
+ImageCache.prototype.init = function(){
     this.caches = {};
     this.nodeHashes = {};
 };
-
 
 ImageCache.prototype.getCurrentNodeHashes = function(node){
 
@@ -131,6 +134,13 @@ ImageCache.prototype.setImageAtCurrent = function(img, node){
 }
 
 ImageCache.prototype.clearAll = function(node){
+    if(!node){
+        delete this.caches;
+        delete this.nodeHashes;
+        this.init();
+        return;
+    }
+
     var nodeHashes = this.getCurrentNodeHashes(node);
     for(var i = 0; i < nodeHashes.length; i++){
         var hash = nodeHashes[i];
@@ -565,10 +575,12 @@ QuadTree.prototype.cull = function(frust){
     renderer.currentLayer.removeChildren();
 
     var leaves = this.collectObjectsInRegion(frust, this.nodes[0]);
+
     leaves.forEach(function(e){
         e.updateStroke();
         renderer.currentLayer.add(e.sprite);
     });
+    return leaves;
 };
 
 
@@ -646,6 +658,7 @@ QuadTree.prototype.cullCached = function(frust){
 QuadTree.prototype.clearCache = function(frust){
     var me = this;
     //var fArea = this.calcBoxVol(frust);
+    /*
     var z = this.renderer.viewer.tiles.cur_z;
     var t = this.renderer.viewer.tiles.cur_t;
 
@@ -657,6 +670,8 @@ QuadTree.prototype.clearCache = function(frust){
         return true;
     };
     this.traverseDown(this.nodes[0], atSprite);
+    */
+    this.imageCache.clearAll();
 };
 
 QuadTree.prototype.cacheScene = function(frust){
@@ -870,10 +885,10 @@ CanvasControl.prototype.setFrustum = function(e, scale){
 
     var proj = viewstate.imagedim.project,
     proj_gob = viewstate.gob_projection;
-    var z0 = z;
-    var z1 = z;
-    var t0 = t;
-    var t1 = t;
+    var z0 = z-0.5;
+    var z1 = z+0.5;
+    var t0 = t-0.5;
+    var t1 = t+0.5;
 
     if (proj_gob==='all') {
         z0 = 0;
@@ -1301,6 +1316,10 @@ CanvasRenderer.prototype.setMode = function (mode){
         this.lassoRect.height(0);
         this.selectLayer.moveToBottom();
         this.editLayer.moveToTop();
+        if(this.editableObjects)
+            for(var i = 0; i < this.editableObjects.length; i++){
+                this.removeSpriteEvents(this.editableObjects[i]);
+            }
     }
 
 
@@ -1479,7 +1498,11 @@ CanvasRenderer.prototype.updateVisible = function(){
         //this.quadtree.cullCached(this.viewFrustum);
     }
     else{
-        this.quadtree.cull(this.viewFrustum);
+
+        this.editableObjects = this.quadtree.cull(this.viewFrustum);
+        for(var i = 0; i < this.editableObjects.length; i++){
+            this.addSpriteEvents(this.editableObjects[i]);
+        }
         me.draw();
     }
     //this.quadtree.drawBboxes(this.viewFrustum);
@@ -2069,7 +2092,8 @@ CanvasRenderer.prototype.toggleWidgets = function(fcn){
     }
 };
 
-CanvasRenderer.prototype.removeSpriteEvents = function(poly,gob){
+CanvasRenderer.prototype.removeSpriteEvents = function(shape){
+    var poly = shape.sprite;
     poly.off('mousedown');
     poly.off('dragstart');
     poly.off('dragmove');
@@ -2077,11 +2101,12 @@ CanvasRenderer.prototype.removeSpriteEvents = function(poly,gob){
     poly.off('mouseup');
 };
 
-CanvasRenderer.prototype.addSpriteEvents = function(poly, gob){
+CanvasRenderer.prototype.addSpriteEvents = function(shape){
     var me = this;
     if(!this.dragCache) this.dragCache = [0,0];
     //poly.setDraggable(true);
-
+    var poly = shape.sprite;
+    var gob = shape.gob;
     poly.on('mousedown', function(evt) {
         //select(view, gob);
         if(me.mode === 'delete'){
@@ -2203,9 +2228,9 @@ CanvasRenderer.prototype.viewShape = function (gob, move, select){
     var dragStart = false;
     var dragEnd = false;
 
-    this.addSpriteEvents(poly, gob);
-    if(gob.shape.text)
-        this.addSpriteEvents(gob.shape.text, gob);
+    //this.addSpriteEvents(poly, gob);
+    //if(gob.shape.text)
+    //    this.addSpriteEvents(gob.shape.text, gob);
 
     /*
     this.appendSvg ( gob );

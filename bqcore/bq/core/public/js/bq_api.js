@@ -1599,6 +1599,7 @@ BQProxyClassVisitor.prototype.callnode = function (n, arglist){
         var args = [this, n].concat (arglist);
         f.apply (this.proxy, args);
     }
+
 };
 //////////////////////////////////////////////////
 // Visitor Utility function
@@ -1609,6 +1610,7 @@ function visit_all (node, cb) {
     var v = new BQVisitor();
     v.visit = cb;
     v.visitall(node, args);
+
 };
 function visit_array (arr, cb) {
     var args = Array.prototype.slice.call(arguments,2);
