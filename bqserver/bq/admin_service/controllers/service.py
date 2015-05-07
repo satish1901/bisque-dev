@@ -170,10 +170,12 @@ class AdminController(ServiceController):
             DELETE user/uniq/image
                 Deletes only the users image data and not the user itself
         """
+        http_method = request.method.upper()
+        
         if len(arg)==1:
-            if request.method == 'GET':
+            if http_method == 'GET':
                 return self.get_user(arg[0], **kw)
-            elif request.method == 'PUT':
+            elif http_method == 'PUT':
                 if request.body:
                     return self.put_user(arg[0], request.body, **kw)
             elif request.method == 'DELETE':
@@ -182,10 +184,10 @@ class AdminController(ServiceController):
                 abort(400)
         elif len(arg)==2:
             if arg[1]=='login':
-                if request.method == 'GET':
+                if http_method == 'GET':
                     return self.loginasuser(arg[0])
             elif arg[1]=='image':
-                if request.method == 'DELETE':
+                if http_method == 'DELETE':
                     bquser = data_service.resource_load(uniq=uniq)
                     #bquser = DBSession.query(BQUser).filter(BQUser.resource_uniq == uniq).first()
                     if bquser:
@@ -194,12 +196,11 @@ class AdminController(ServiceController):
                     else:
                         abort(404)
         else:
-            if request.method == 'GET':
+            if http_method == 'GET':
                 return self.get_all_users(*arg, **kw)
-            elif request.method == 'POST':
+            elif http_method == 'POST':
                 if request.body:
                     return self.post_user(request.body, **kw)
-
         abort(400)
 
 
@@ -221,17 +222,12 @@ class AdminController(ServiceController):
                     <user>...
                 </resource>
         """
+        
+        kw['wpublic'] = 1
+        users =  data_service.query(resource_type = 'user', **kw)
         view=kw.pop('view', None)
-        users =  data_service.query (resource_type = 'user', view=view, wpublic='1')
-        #users = BQUser.query.all()
         resource = etree.Element('resource', uri=str(request.url))
         for u in users:
-            #view = kw.get('view', None)
-            #if view:
-            #    view = [x.strip() for x in view.split(',')]
-            #else:
-            #    view = []
-            #user = db2tree(u, baseuri=self.url, view=view)
             user = self.add_admin_info2node(u, view)
             resource.append(user)
         return etree.tostring(resource)
@@ -252,16 +248,9 @@ class AdminController(ServiceController):
                     ...
                 </user>
         """
-        #u = data_service
-        user = data_service.resource_load(uniq)
-        #u = BQUser.query.filter(BQUser.resource_uniq == uniq).first()
-        if user:
-            #view = kw.get('view', None)
-            #if view:
-            #    view = [x.strip() for x in view.split(',')]
-            #else:
-            #    view = []
-            #user = db2tree(u,baseuri=self.url, view=view)
+        view=kw.pop('view', 'short')
+        user = data_service.resource_load(uniq, view=view)
+        if user is not None and user.tag =='user':
             user = self.add_admin_info2node(user, view)
             return etree.tostring(user)
         else:
