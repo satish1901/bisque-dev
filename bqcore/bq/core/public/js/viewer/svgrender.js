@@ -35,7 +35,7 @@ function SVGRenderer (viewer,name) {
     this.base = ViewerPlugin;
     this.base (viewer, name);
     this.events  = {};
-    
+
     //overlay Editor
     var me = this;
     if (this.viewer.toolbar) { //required toolbar to initialize
@@ -58,7 +58,7 @@ function SVGRenderer (viewer,name) {
                                 modal: true,
                                 closeAction:'hide',
                                 viewer: me.viewer,
-                                phys: me.viewer.imagephys,       
+                                phys: me.viewer.imagephys,
                                 image_resource:resource,
                             });
                         }
@@ -99,7 +99,7 @@ SVGRenderer.prototype.onPreferences = function(pref) {
     this.loadPreferences(pref);
     var view = this.viewer.view();
     if (this.showOverlay !== 'false' && view)
-        this.populate_overlay();    
+        this.populate_overlay();
 };
 
 SVGRenderer.prototype.enable_edit = function (enabled) {
@@ -198,7 +198,7 @@ SVGRenderer.prototype.newImage = function () {
     marker.appendChild(circle);
     defs.appendChild(marker);
     this.svgdoc.appendChild(defs);
-    
+
     // define global g object for all svg elements
     this.svggobs = document.createElementNS(svgns, "g");
     this.svgdoc.appendChild(this.svggobs);
@@ -216,7 +216,7 @@ SVGRenderer.prototype.updateView = function (view) {
     this.loadPreferences(this.viewer.preferences);
     if (this.showOverlay !== 'false')
         this.populate_overlay();
-        
+
 };
 
 SVGRenderer.prototype.appendSvg = function (gob){
@@ -956,8 +956,8 @@ SVGRenderer.prototype.select_label = function (state){
 //----------------------------------------------------------------------------
 
 SVGRenderer.prototype.loadPreferences = function (p) {
-    //this.showOverlay  = 'showOverlay' in p ? p.showOverlay  : this.default_showOverlay;
-    this.overlayPref = 'Overlay' in p ? p.Overlay  : this.default_overlayPref;
+    //this.showOverlay  = 'showOverlay' in  p ? p.showOverlay  : this.default_showOverlay;
+    this.overlayPref =  p.Overlay  || this.default_overlayPref;
 };
 
 
@@ -1077,14 +1077,14 @@ SVGRenderer.prototype.updateTransform = function() {
                 points[5]*(view.width/view.original_width),points[6]*(view.height/view.original_height),
                 points[7]*(view.width/view.original_width),points[8]*(view.height/view.original_height)
             );
-            
+
             t = [
                 h[0], h[3], 0, h[6],
                 h[1], h[4], 0, h[7],
                 0,       0, 1,    0,
                 h[2], h[5], 0, h[8],
             ];
-            
+
             var transform = 'matrix3d('+t.join(',')+')';
             this.overlay.style['transform-origin'] = '0 0';
             this.overlay.style['transform'] = transform;
@@ -1095,17 +1095,17 @@ SVGRenderer.prototype.updateTransform = function() {
 
 SVGRenderer.prototype.populate_overlay = function () {
     removeAllChildren (this.overlay);
-    
+
     var gobs = document.createElementNS(svgns, "g");
     this.overlay.appendChild(gobs);
     if (this.overlayPref.enable) {
         var dx = 0; // in %
-        var dy = 0; // in %    
+        var dy = 0; // in %
         if (this.overlayPref.position) { //position reads p1;p2;p3;p4 p=x,y
             this.updateTransform();
         }
-        
-    
+
+
         if (this.overlayPref.shape === 'dots') {
             for (var x=9; x<=95; x+=9)
             for (var y=12; y<=95; y+=9) {
@@ -1197,7 +1197,7 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'cy', ''+y+'%');
                 circ.setAttributeNS(null, 'r', '1%' );
                 gobs.appendChild(circ);
-            } 
+            }
         } else if (this.overlayPref.shape === 'grid') {
             for (var y=12; y<=95; y+=9) {
                 var circ = document.createElementNS( svgns, 'line');
@@ -1231,11 +1231,11 @@ Ext.define('BQ.overlayEditor.Window', {
     extend: 'Ext.window.Window',
     image_resource: '',
     layout: 'vbox',
-    
+
     initComponent: function(config) {
         var config = config || {};
         var me = this;
-        
+
         this.miniViewer =  Ext.create('BQ.viewer.Image',{
             width:'100%',
             height: '75%',
@@ -1268,10 +1268,10 @@ Ext.define('BQ.overlayEditor.Window', {
             ],
             flex: 1,
         },
-            this.miniViewer, 
+            this.miniViewer,
         ];
-        
-        
+
+
         var fbar = [{
             scale: 'large',
             xtype: 'button',
@@ -1284,21 +1284,21 @@ Ext.define('BQ.overlayEditor.Window', {
                     BQ.ui.notification('For points are required to set the overlay');
                     return
                 }
-                
+
                 view = me.viewer.view();
-                
+
                 corners = [
                     {x:0,y:0},
                     {x:view.original_width,y:0},
                     {x:0, y:view.original_height},
                     {x:view.original_width, y:view.original_height}
                 ];
-                
+
                 //select and order the points
                 var points = gobs;
                 /*
                 var points = []
-                
+
                 for (var c=0; c<4; c++) {
                     var lengths = [];
                     for (var g = 0;g<gobs.length;g++) {
@@ -1308,35 +1308,35 @@ Ext.define('BQ.overlayEditor.Window', {
                     points.push(gobs.splice(i, 1)[0]);
                 }
                 */
-                
+
                 //create put to the preference
                 var preferenceTag = document.createElement('preference');
-                
+
                 var viewerTag = document.createElement('tag');
                 viewerTag.setAttribute('name', 'Viewer');
                 preferenceTag.appendChild(viewerTag);
-                
+
                 var layoutTag = document.createElement('tag');
                 layoutTag.setAttribute('name', 'Overlay');
                 viewerTag.appendChild(layoutTag);
-                
+
                 var enableTag = document.createElement('tag');
                 enableTag.setAttribute('name', 'enable');
                 enableTag.setAttribute('value', 'true');
                 layoutTag.appendChild(enableTag);
-                
+
                 var positionTag = document.createElement('tag');
                 positionTag.setAttribute('name', 'position');
                 positionTag.setAttribute('value', points[0].vertices[0].x+','+points[0].vertices[0].y+';'+points[1].vertices[0].x+','+points[1].vertices[0].y+';'+points[2].vertices[0].x+','+points[2].vertices[0].y+';'+points[3].vertices[0].x+','+points[3].vertices[0].y);
                 layoutTag.appendChild(positionTag);
-                
+
                 var shapeTag = document.createElement('tag');
                 shapeTag.setAttribute('name', 'shape');
                 shapeTag.setAttribute('value', 'dots_custom');
                 layoutTag.appendChild(shapeTag);
-                
+
                 BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML);
-                
+
                 //remove all the gobjects
                 var editor   = me.miniViewer.viewer.plugins_by_name.edit;
                 var renderer = me.miniViewer.viewer.plugins_by_name.renderer;
@@ -1345,7 +1345,7 @@ Ext.define('BQ.overlayEditor.Window', {
                 editor.remove_gobject(gobs[2]);
                 editor.remove_gobject(gobs[1]);
                 editor.remove_gobject(gobs[0]);
-                renderer.updateVisible();                
+                renderer.updateVisible();
             },
         }, { //toggles disable enable of the mask
             scale: 'large',
@@ -1354,11 +1354,11 @@ Ext.define('BQ.overlayEditor.Window', {
             text: 'Disable',
             handler: function () {
                 var preferenceTag = document.createElement('preference');
-                
+
                 var viewerTag = document.createElement('tag');
                 viewerTag.setAttribute('name', 'Viewer');
                 preferenceTag.appendChild(viewerTag);
-                
+
                 var layoutTag = document.createElement('tag');
                 layoutTag.setAttribute('name', 'Overlay');
                 viewerTag.appendChild(layoutTag);
@@ -1366,7 +1366,7 @@ Ext.define('BQ.overlayEditor.Window', {
                 enableTag.setAttribute('name', 'enable');
                 enableTag.setAttribute('value', 'false');
                 layoutTag.appendChild(enableTag);
-                
+
                 BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML);
             },
         }, {
@@ -1386,18 +1386,18 @@ Ext.define('BQ.overlayEditor.Window', {
                             BQ.Preferences.resetResourceTag(me.miniViewer.resource.resource_uniq, match[1]);
                         }
                     }
-                    
+
                 }
             },
         }]
-        
+
         Ext.apply(me, {
             items: items,
             fbar: fbar,
         });
         this.callParent([config]);
-        
+
     },
-    
-    
+
+
 });
