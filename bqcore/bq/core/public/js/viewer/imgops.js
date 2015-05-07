@@ -36,22 +36,18 @@ ImgOperations.prototype.updateView = function (view) {
         this.params = {};
 
         var channels_separate = 'cs'; // cs cc
-
+        var b = this.menu.queryById('slider_brightness').getValue();
+        var c = this.menu.queryById('slider_contrast').getValue();
         var enh = this.combo_enhancement.getValue();
         this.params.enhancement = enh;
         if (enh.indexOf('hounsfield') != 0) {
+            if (b!==0 || c!==0) view.addParams  ('brightnesscontrast='+b+','+c);
             view.addParams  ('depth=8,' + this.combo_enhancement.getValue() + ',u,cs');
         } else {
             var a = enh.split(':');
             view.addParams  ('depth=8,hounsfield,u,,'+a[1]);
+            if (b!==0 || c!==0) view.addParams  ('brightnesscontrast='+b+','+c);
         }
-
-        /*
-        var b = this.menu.queryById('slider_brightness').getValue();
-        var c = this.menu.queryById('slider_contrast').getValue();
-        if (b!==0 || c!==0)
-            view.addParams  ('brightnesscontrast='+b+','+c);
-        */
 
         var fusion='';
         for (var i=0; i<this.channel_colors.length; i++) {
@@ -82,8 +78,8 @@ ImgOperations.prototype.doUpdate = function () {
 };
 
 ImgOperations.prototype.changed = function () {
-  if (!this.update_check || (this.update_check && this.update_check.checked) )
-    this.viewer.need_update();
+    if (!this.update_check || (this.update_check && this.update_check.checked) )
+        this.viewer.need_update();
 };
 
 ImgOperations.prototype.createMenu = function () {
@@ -110,10 +106,11 @@ ImgOperations.prototype.createMenu = function () {
         cls: 'heading',
     });
 
-    /*this.menu.add({
+    this.menu.add({
         xtype: 'slider',
         itemId: 'slider_brightness',
         fieldLabel: 'Brightness',
+        cls: 'contrast',
         width: 400,
         value: 0,
         minValue: -100,
@@ -130,6 +127,7 @@ ImgOperations.prototype.createMenu = function () {
         xtype: 'slider',
         itemId: 'slider_contrast',
         fieldLabel: 'Contrast',
+        cls: 'contrast',
         width: 400,
         value: 0,
         minValue: -100,
@@ -141,7 +139,7 @@ ImgOperations.prototype.createMenu = function () {
             scope: this,
             change: this.changed,
         },
-    });*/
+    });
 
     this.combo_fusion = this.viewer.createCombo( 'Fusion', [
         {"value":"a", "text":"Average"},

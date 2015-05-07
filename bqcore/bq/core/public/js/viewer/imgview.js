@@ -463,10 +463,9 @@ ImgViewer.prototype.resize = function  (sz) {
 
 
 ImgViewer.prototype.need_update = function () {
-//     if (this.update_needed == null) {
-//         this.update_needed = setTimeout(callback(this, 'updateImage'), 50);
-//     }
-    this.updateImage();
+    if (this.update_needed == null) {
+        this.update_needed = setTimeout(callback(this, 'updateImage'), this.update_delay_ms);
+    }
 };
 
 ImgViewer.prototype.load = function (uri){
@@ -488,7 +487,7 @@ ImgViewer.prototype.newImage = function (bqimage) {
 
     if (BQ.Preferences) {
         //needs to remove call back if new image is added
-        
+
         BQ.Preferences.loadResource(this.image.resource_uniq);
         //begin loading request for viewer
         BQ.Preferences.on('update_'+this.image.resource_uniq+'_pref', function(el, resourcePrefDict, resourcePrefXML){
