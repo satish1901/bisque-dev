@@ -89,7 +89,7 @@ ImgOperations.prototype.createMenu = function () {
     var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.parent;
     surf.appendChild(this.viewer.menubutton);
 
-    this.loadPreferences(this.viewer.preferences);
+    this.loadPreferences(this.viewer.preferences || {});
 
     var dim = this.viewer.imagedim;
 
@@ -186,12 +186,12 @@ ImgOperations.prototype.createChannelMap = function ( ) {
 };
 
 ImgOperations.prototype.loadPreferences = function (p) {
-    this.default_autoupdate  = 'autoUpdate'  in p ? p.autoUpdate  : this.default_autoupdate;
-    this.default_negative    = 'negative'    in p ? p.negative    : this.default_negative;
-    this.default_enhancement = 'enhancement' in p ? p.enhancement : this.default_enhancement;
-    this.default_rotate      = 'rotate'      in p ? p.rotate      : this.default_rotate;
-    this.default_fusion      = 'fusion'      in p ? p.fusion      : this.default_fusion;
-    this.default_enhancement_8bit = 'enhancement-8bit' in p ? p['enhancement-8bit'] : this.default_enhancement_8bit;
-    this.default_fusion_4plus = 'fusion_4plus' in p ? p['fusion_4plus'] : this.default_fusion_4plus;
+    this.default_autoupdate  = ('autoUpdate'  in p) ? p.autoUpdate  : this.default_autoupdate;
+    this.default_negative    = ('negative'    in p) ? p.negative    : this.default_negative;
+    this.default_enhancement = ('enhancement' in p) ? p.enhancement : this.default_enhancement;
+    this.default_rotate      = ('rotate'      in p) ? p.rotate      : this.default_rotate;
+    this.default_fusion      = ('fusion'      in p) ? p.fusion      : this.default_fusion;
+    this.default_enhancement_8bit = ('enhancement-8bit' in p) ? p['enhancement-8bit'] : this.default_enhancement_8bit;
+    this.default_fusion_4plus = ('fusion_4plus' in p) ? p['fusion_4plus'] : this.default_fusion_4plus;
 };
 
