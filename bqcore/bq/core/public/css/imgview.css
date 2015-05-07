@@ -607,6 +607,14 @@
     background-size: 36px;
 }
 
+.contrast .x-form-item-body {
+    background-image: url('/images/viewer/slider_contrast.svg');
+    background-repeat: no-repeat;
+    background-size: 96.5%;
+    padding-top: 5px;
+    background-position: 4px 0px;
+}
+
 /*******************************************************************************
   edit control buttons
 *******************************************************************************/
