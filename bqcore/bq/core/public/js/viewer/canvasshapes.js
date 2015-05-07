@@ -125,8 +125,8 @@ CanvasShape.prototype.hasOverlap  = function(bbox){
     bb2 = this.bbox;
     //for each dimension test to see if axis are seperate
     for(var i = 0; i < 4; i++){
-        if (bb1.max[i] < bb2.min[i]) overlap = false;
-        if (bb1.min[i] > bb2.max[i]) overlap = false;
+        if (bb1.max[i] <=  bb2.min[i]) overlap = false;
+        if (bb1.min[i] >  bb2.max[i]) overlap = false;
     }
     return overlap;
 };
@@ -573,6 +573,13 @@ CanvasShape.prototype.rotation = function(input){
     else return this.rotation;
 };
 */
+
+
+CanvasShape.prototype.updateStroke = function(){
+    var scale = this.renderer.stage.scale();
+    this.sprite.strokeWidth(1.0/scale.x); //reset the moves to zero
+};
+
 CanvasShape.prototype.update = function () {
     //this.sprite.clearCache();
 
@@ -746,6 +753,14 @@ CanvasPolyLine.prototype.closed = function(setter){
     this.sprite.closed(setter);
 },
 
+CanvasPolyLine.prototype.updateStroke = function(){
+    var scale = this.renderer.stage.scale();
+    if(this._closed)
+        this.sprite.strokeWidth(1.0/scale.x); //reset the moves to zero
+    else
+        this.sprite.strokeWidth(3.0/scale.x); //reset the moves to zero
+};
+
 CanvasPolyLine.prototype.updateLocal = function () {
     //if(this.destroy)
     var vertices = [];
@@ -791,11 +806,7 @@ CanvasPolyLine.prototype.updateLocal = function () {
 
     this.applyColor();
 
-    if(this._closed)
-        this.sprite.strokeWidth(1.0/scale.x); //reset the moves to zero
-    else
-        this.sprite.strokeWidth(2.5/scale.x); //reset the moves to zero
-
+    this.updateStroke();
     this.sprite.points(vertices);
     this.bbox = this.calcBbox();
     this.x(mx); //reset the moves to zero
