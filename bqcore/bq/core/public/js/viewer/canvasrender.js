@@ -563,7 +563,7 @@ QuadTree.prototype.cache = function(frust, onCache){
     var renderer = this.renderer;
     var scale = renderer.stage.scale().x;
     var cache = false;
-    var L = renderer.viewer.tiles.tiled_viewer.zoomLevel;
+    //var L = renderer.viewer.tiles.tiled_viewer.zoomLevel;
 
     this.cachesDestroyed = 0;
     this.cachesRendered = 0;
@@ -604,7 +604,7 @@ QuadTree.prototype.cullCached = function(frust){
 
     var z = this.renderer.viewer.tiles.cur_z;
     var t = this.renderer.viewer.tiles.cur_t;
-    var L = renderer.viewer.tiles.tiled_viewer.zoomLevel;
+    //var L = renderer.viewer.tiles.tiled_viewer.zoomLevel;
 
     var collectSprite = function(node){
         var nArea = me.calcBoxVol(node.bbox);
