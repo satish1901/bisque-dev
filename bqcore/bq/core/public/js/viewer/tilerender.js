@@ -64,16 +64,10 @@ TilesRenderer.prototype.updateImage = function (){
           loadingTile     : PanoJS.STATIC_BASE_URL + 'images/progress_' + this.tile_size+ '.gif'
       });
 
-      // this listner will correctly resize and move SVG element
-      //this.mySvgListener = new SvgControl( this.tiled_viewer, this.viewer.renderer.svgdoc );
-      if (this.viewer.overlay) {
-        this.myOverListener = new SvgControl( this.tiled_viewer, this.viewer.overlay.overlay );
-      }
-
-      // this listner will update viewer if scale has changed in the tiled viewer
+      // this listener will update viewer if scale has changed in the tiled viewer
       this.myZoomListener = new ZoomListner(this.tiled_viewer, this.viewer);
 
-      // this listner will update viewer if scale has changed in the tiled viewer
+      // this listener will update viewer if scale has changed in the tiled viewer
       this.myCursorListner = new CursorListner(this.tiled_viewer, this.viewer);
 
       //Ext.EventManager.addListener( window, 'resize', callback(this.tiled_viewer, this.tiled_viewer.resize) );
