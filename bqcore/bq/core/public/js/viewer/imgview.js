@@ -490,7 +490,7 @@ ImgViewer.prototype.newImage = function (bqimage) {
 
         BQ.Preferences.on('update_'+this.image.resource_uniq+'_pref', function(el, resourcePrefDict, resourcePrefXML){
             var viewerPref = {};
-            if (resourcePrefDict.Viewer);
+            if (resourcePrefDict.Viewer)
                 viewerPref = resourcePrefDict.Viewer;
             me.onPreferences(viewerPref); //update preferences
         })
