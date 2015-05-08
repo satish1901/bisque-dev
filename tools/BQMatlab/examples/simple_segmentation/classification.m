@@ -1,5 +1,5 @@
-user = 'dima';
-pass = 'bio2008';
+user = '';
+pass = '';
 image_url = 'http://bisque.ece.ucsb.edu/data_service/00-dcJZKvcHcmKLwQoktSgnfP';
 
 image = bq.Factory.fetch([image_url '?view=deep'], [], user, pass); 
