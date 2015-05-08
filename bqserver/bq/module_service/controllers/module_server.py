@@ -660,8 +660,8 @@ class ModuleServer(ServiceController):
         """
         kw.setdefault('wpublic', '1')
         kw.setdefault ('view','short')
-        #kw.pop('setadmin', None)
-
+        if 'set_admin' in kw:
+            kw.pop('set_admin') #protect from setting admin
         #xml= self.modules.default(**kw)
         #modules = etree.XML(xml)
         #log.debug ("all modules = %s " % xml)
