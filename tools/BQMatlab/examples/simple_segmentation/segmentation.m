@@ -1,5 +1,5 @@
-user = 'dima';
-pass = 'bio2008';
+user = '';
+pass = '';
 image_url = 'http://bisque.ece.ucsb.edu/data_service/00-dcJZKvcHcmKLwQoktSgnfP';
 
 %http://bisque.ece.ucsb.edu/image_service/00-dcJZKvcHcmKLwQoktSgnfP?slice=,,1,1&transform=rgb2hsv&remap=1&depth=8,d,u&negative&threshold=220,both&format=jpeg
