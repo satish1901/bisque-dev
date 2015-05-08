@@ -68,12 +68,13 @@ import bq
 from bq import data_service
 from bq.core.service import ServiceController
 from bq.core import identity
+from bq.core.identity import set_admin_mode, set_current_user, get_username
 from bq.util.paths import data_path
 from bq.core.model import  User, Group #, Visit
 from bq.core.model import DBSession
 from bq.data_service.model import  BQUser, Image, TaggableAcl
 from bq.util.bisquik2db import bisquik2db, db2tree
-
+from sqlalchemy.exc import IntegrityError
 #from bq.image_service.model import  FileAcl
 from tg import redirect
 from tg import request
@@ -159,7 +160,7 @@ class AdminController(ServiceController):
 
             GET user/uniq: returns user in xml info see get_user for format
 
-            GET user/uniq/login:
+            GET user/uniq/login: logins in the admin as the user resource provided
 
             POST user: creates new user, see post_user for format
 
@@ -259,7 +260,7 @@ class AdminController(ServiceController):
 
     def post_user(self, doc, **kw):
         """
-            Creates new user
+            Creates new user with tags, the owner of the tags is assigned to the user
 
             document format:
                 <user name="user">
@@ -280,16 +281,25 @@ class AdminController(ServiceController):
                     if (t.attrib['name']=='password') or (t.attrib['name']=='email'):
                         t.getparent().remove(t) #removes email and password
                         if t.attrib['name'] == 'email':
-                            userxml.attrib['value'] = t.attrib['value']#set it as value of the user
+                            userxml.attrib['value'] = t.attrib['value'] #set it as value of the user
                 if all(k in tags for k in required_tags):
-                    log.debug("ADMIN: Adding user: " + str(user_name) )
+                    log.debug("ADMIN: Adding user: " + str(user_name))
                     u = User(user_name=tags['user_name'], password=tags['password'], email_address=tags['email'], display_name=tags['display_name'])
                     DBSession.add(u)
-                    transaction.commit()
+                    try:
+                        transaction.commit()
+                    except IntegrityError:
+                        abort(405, 'Another user already has this user name or email address')
                     #r = BQUser.query.filter(BQUser.resource_name == tags['user_name']).first()
-                    r = data_service.query (resource_type  = 'user', name=tags['user_name'])
-                    #r = data_service.update_resource('/data_service/%s'%r.resource_uniq, new_resource=userxml)
-                    return self.get_user('%s'%r.attrib['resource_uniq'], **kw)
+                    r = data_service.query(resource_type='user', name=tags['user_name'], wpublic=1)
+                    if len(r)>0:
+                        admin = get_username() #get admin user
+                        set_current_user(tags['user_name']) #change document as user so that all changes are owned by the new user
+                        r = data_service.update_resource('/data_service/%s'%r[0].attrib.get('resource_uniq'), new_resource=userxml)
+                        set_current_user(admin) #set back to admin user
+                        return self.get_user('%s'%r.attrib.get('resource_uniq'), **kw)
+                    else:
+                        abort(400)
         abort(400)
 
 
@@ -342,7 +352,10 @@ class AdminController(ServiceController):
 
                     #userxml.attrib['resource_uniq'] = r.attrib['resource_uniq']
                     #reset BQUser
+                    admin = get_username() #get admin user
+                    set_current_user(tags['user_name']) #change document as user so that all changes are owned by the new user
                     r = data_service.update_resource('/data_service/%s'%uniq, new_resource=userxml)
+                    set_current_user(admin) #set back to admin user
                     return self.get_user(r.attrib['resource_uniq'], **kw)
         abort(400)
 
@@ -369,7 +382,6 @@ class AdminController(ServiceController):
                     DBSession.delete(p)
                 self.deleteimages(bquser.resource_name, will_redirect=False)
                 #transaction.commit()
-
                 #data_service.del_resource('/data_service/%s'%uniq)
                 DBSession.delete(bquser)
                 transaction.commit()
