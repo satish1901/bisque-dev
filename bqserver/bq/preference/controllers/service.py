@@ -78,28 +78,41 @@ LEVEL = {
             'resource':2
          }
 
-
+#TagValueNode: leaf node is a node no other tag resources in its first level children
+#    - value: the value of the tag resource (in prepartation for .06 xml syntax change since the value will not be stored in he attribute node)
+#    - node_attrib: dictionary of the node attributes for the node
+#    - sub_node: list of sub nodes attached to the TagValueNode
 TagValueNode = namedtuple('TagValueNode',['value','node_attrib','sub_node'])
 TagValueNode.__new__.__defaults__ = ('', {}, [])
 
+#TagNameNode: parent node is a node with tag resources in its first level children (values will be removed during dict 2 etree conversion)
+#    - sub_node_dict: stores an ordered dictionary of either TagValueNode or TagNomeNode referenced by the tag resource's name attribute
+#    - node_attrib: dictionary of the node attributes for the node (Note: value attribute will be removed)
+#    - sub_none_tag_node: list of none tag resource elements (ex. templates)
 TagNameNode = namedtuple('TagNameNode',['sub_node_dict','node_attrib', 'sub_none_tag_node'])
 TagNameNode.__new__.__defaults__ = (OrderedDict(), {}, [])
-
 
 def mergeDocuments(minorDoc, majorDoc, attrib={}):
     """
         Merges two xml documents. Minor elements are replace with major.
+        
         
         @param: minorDoc - preference etree
         @param: majorDoc - preference etree
     """
     minorDocDict = to_dict(minorDoc)
     majorDocDict = to_dict(majorDoc)
+    
     def merge(new, current):
+        #merges the new docucument to the current one
         for k in new.sub_node_dict.keys():
-            if k in current.sub_node_dict:
+            if k in current.sub_node_dict: 
+                #deals with the cases when the current needs to be merged with the new document
+                #case 1: both current and new are parent nodes
                 if (type(current.sub_node_dict[k]) is TagNameNode) and (type(new.sub_node_dict[k]) is TagNameNode):
                     node_attrib = new.sub_node_dict[k].node_attrib
+                    #type and templates are added from the current node and all other attributes are appended from the
+                    #new node
                     if 'type' in current.sub_node_dict[k].node_attrib:
                         node_attrib['type'] = current.sub_node_dict[k].node_attrib['type']
                     current.sub_node_dict[k] = TagNameNode(
@@ -107,11 +120,13 @@ def mergeDocuments(minorDoc, majorDoc, attrib={}):
                         node_attrib = node_attrib,
                         sub_none_tag_node = current.sub_node_dict[k].sub_none_tag_node
                     )
+                    #merge the parents' children
                     merge(new.sub_node_dict[k], current.sub_node_dict[k])
                     
-                    
-                elif (type(current.sub_node_dict[k]) is TagValueNode) and (type(new.sub_node_dict[k]) is TagValueNode): #both are tag nodes
-                    #over write value
+                #case 2: both are leaf nodes
+                elif (type(current.sub_node_dict[k]) is TagValueNode) and (type(new.sub_node_dict[k]) is TagValueNode):
+                    #type and templates are added from the minor node and all other attributes are appended from the
+                    #major node
                     node_attrib = new.sub_node_dict[k].node_attrib
                     if 'type' in current.sub_node_dict[k].node_attrib:
                         node_attrib['type'] = current.sub_node_dict[k].node_attrib['type']
@@ -120,21 +135,38 @@ def mergeDocuments(minorDoc, majorDoc, attrib={}):
                         node_attrib = node_attrib,
                         sub_node = current.sub_node_dict[k].sub_node
                     )
+                
+                #case 3: current node is a parent node and new node is a leaf
                 elif (type(current.sub_node_dict[k]) is TagNameNode) and (type(new.sub_node_dict[k]) is TagValueNode):
+                    # replaces the parent node of the current node with the leaf node
                     current.sub_node_dict[k] = TagValueNode(
                         value = new.sub_node_dict[k].value,
                         node_attrib = new.sub_node_dict[k].node_attrib,
                     )
+                    
+                #case 4: current node is a leaf node and new node is a parent
+                elif (type(current.sub_node_dict[k]) is TagNameNode) and (type(new.sub_node_dict[k]) is TagValueNode):
+                    #nothing is changed in the current node and the new node is skipped
+                    #keeps users from modifying existing structure of the preferences
+                    pass
+                
+            #deals with the case when the major document appends new nodes
             else:
+                #add the child node to the document
                 if (type(new.sub_node_dict[k]) is TagValueNode):
                     current.sub_node_dict[k] = TagValueNode(
                         value = new.sub_node_dict[k].value,
                         node_attrib = new.sub_node_dict[k].node_attrib,
                     )
+                    
+                #adds the parent node to the document with all of its children
                 elif (type(new.sub_node_dict[k]) is TagNameNode):
                     current.sub_node_dict[k] = new.sub_node_dict[k]
-                
+                    
+            #all nodes in the current are added to the document by default 
+             
         return current
+    
     m_dict = merge(majorDocDict, minorDocDict)
     
     return to_etree(m_dict, attrib=attrib)
@@ -148,16 +180,17 @@ def to_dict(tree):
         sub_node_dict = OrderedDict()
         sub_none_tag_node = []
         for e in tree:
-            if e.tag == 'tag':
-                if 'value' in e.attrib: #if it has a value it is an end node
+            if e.tag == 'tag': #check if tag
+                if len(e.xpath('tag'))<1:  #if nodes has no tag children
                     sub_node_dict[e.attrib.get('name','')] = TagValueNode(
                         value = e.attrib.get('value'),
                         node_attrib = e.attrib,
                         sub_node = e.getchildren(),
                     )
-                else: #continue to add names to the dictionary
+                else: #remove the value and add it as a parent node
+                    if 'value' in e.attrib: e.attrib.pop('value')
                     sub_node_dict[e.attrib.get('name','')] = build(e)
-            else:
+            else: #append it to the parent node as a none tag element
                 sub_none_tag_node.append(e)
         return TagNameNode(
             sub_node_dict = sub_node_dict,
@@ -263,31 +296,25 @@ class PreferenceController(ServiceController):
     """
     service_type = "preference"
 
-    #allow_only = Any(in_group("admin"), in_group('admins'))
-    #allow_only = is_user('admin')
-    #admin = BisqueAdminController([User, Group], DBSession)
-
     @expose(content_type='text/xml')
     def _default(self, *arg, **kw):
         """
             Returns system level preferences
         """
         admin_check = Any(in_group("admin"), in_group('admins')).is_met(request.environ)
-        if request.method == 'GET' and len(arg)<1:
+        http_method = request.method.upper()
+        if http_method == 'GET' and len(arg)<1:
             log.info('GET /preference -> fetching system level preference')
             return self.get(resource_uniq=None, level=0, **kw)
-        elif request.method == 'PUT' and admin_check and len(arg)<1:
-            abort(405)
-            #if request.body: 
-            #    return self.system_put(body=request.body, **kw)
-        elif request.method == 'POST' and admin_check and len(arg)<1:
-            abort(405)
-            #if request.body:
-            #    return self.system_post(resource=None, body=request.body, **kw)
-        elif request.method == 'DELETE' and admin_check:
-            abort(405)
-            #path = arg.join('/')
-            #return self.system_delete(path=path, level=0, **kw)
+        elif http_method == 'PUT' and admin_check and len(arg)<1:
+            if request.body: 
+                return self.system_put(body=request.body, **kw)
+        elif http_method == 'POST' and admin_check and len(arg)<1:
+            if request.body:
+                return self.system_post(resource=None, body=request.body, **kw)
+        elif http_method == 'DELETE' and admin_check:
+            path = arg.join('/')
+            return self.system_delete(path=path, **kw)
         abort(404)
         
         
@@ -297,25 +324,26 @@ class PreferenceController(ServiceController):
             checks user level
         """
         not_annon = not_anonymous().is_met(request.environ)
+        http_method = request.method.upper()
         if resource_uniq:
             if is_uniq_code(resource_uniq):
-                if request.method == 'GET':
+                if http_method == 'GET':
                     log.info('GET /preference/user -> fetching user level preference')
                     return self.get(resource_uniq=resource_uniq, level=2, **kw)
-                elif request.method == 'PUT' and not_annon:
+                elif http_method == 'PUT' and not_annon:
                     if request.body:
                         return self.resource_put(resource_uniq, body=request.body, **kw)
-                elif request.method == 'DELETE' and not_annon:
+                elif http_method == 'DELETE' and not_annon:
                     path = '/'.join(arg) #no path deletes the preference
                     return self.resource_delete(resource_uniq, path=path, **kw)
         else:
-            if request.method == 'GET':
+            if http_method == 'GET':
                 log.info('GET /preference/user -> fetching resource level preference for %s',resource_uniq)
                 return self.get(resource_uniq=resource_uniq, level=1, **kw)
-            elif request.method == 'PUT' and not_annon:
+            elif http_method == 'PUT' and not_annon:
                 if request.body:
                     return self.user_put(body=request.body, **kw);
-            elif request.method == 'DELETE' and not_annon:
+            elif http_method == 'DELETE' and not_annon:
                 path = '/'.join(arg) #no path deletes the preference
                 return self.user_delete(path=path, **kw)
         abort(404)
@@ -331,7 +359,7 @@ class PreferenceController(ServiceController):
         system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
         system_preference_list = system.xpath('//system/preference')
         if len(system_preference_list) > 0:
-            system_preference = data_service.get_resource(system_preference_list[0].attrib['uri'], wpublic=1, **kw)
+            system_preference = data_service.get_resource(system_preference_list[0].attrib.get('uri'), wpublic=1, **kw)
         else:
             system_preference  = etree.Element('preference') #no preference found
         if level <= LEVEL['system']:
@@ -341,7 +369,9 @@ class PreferenceController(ServiceController):
         user = self.get_current_user(view='full')
         user_preference_list = user.xpath('preference')
         if len(user_preference_list)>0: #if user is not signed in no user preferences are added
-            user_preference = data_service.get_resource(user_preference_list[0].attrib['uri'], **kw)
+            user_preference = data_service.get_resource(user_preference_list[0].attrib.get('uri'), **kw)
+            if not user_preference: #handles a bug in the data_service with permissions and full verse deep views
+                user_preference = etree.Element('prefererence')
             attrib = {}
             if 'clean' not in kw.get('view', ''):
                 attrib = system_preference.attrib
@@ -362,7 +392,7 @@ class PreferenceController(ServiceController):
         
         resource_preference_list = resource.xpath('preference')
         if len(resource_preference_list)>0:
-            resource_preference = data_service.get_resource(resource_preference_list[0].attrib['uri'], **kw)
+            resource_preference = data_service.get_resource(resource_preference_list[0].attrib.get('uri'), **kw)
             if not resource_preference: #handles a bug in the data_service with permissions and full verse deep views
                 resource_preference = etree.Element('prefererence')
             attrib = {}
@@ -378,7 +408,7 @@ class PreferenceController(ServiceController):
         #annotation_resource = data_service.get_resource('/data_service/annotation/%s'%annotation_uniq, view='full')
         resource_preference_list = annotation.xpath('preference')
         if len(resource_preference_list)>0:
-            annotation_preference = data_service.get_resource(resource_preference_list[0].attrib['uri'], **kw)
+            annotation_preference = data_service.get_resource(resource_preference_list[0].attrib.get('uri'), **kw)
             attrib = {}
             if 'clean' not in kw.get('view', ''):
                 attrib.update(resource_preference.attrib)
@@ -435,7 +465,7 @@ class PreferenceController(ServiceController):
             Only admin can change the system level
             the user has to be logged in to make any changes
             
-            @param: resource
+            @param: path
             @param: body
         """
         preference_doc = etree.fromstring(body)
@@ -463,8 +493,8 @@ class PreferenceController(ServiceController):
             Only admin can change the system level
             the user has to be logged in to make any changes
             
-            @param: resource_uniq
-            @param: doc
+            @param: path
+            @param: body
         """
         preference_doc = etree.fromstring(body)
         if preference_doc.tag == 'preference' or path:
@@ -536,7 +566,6 @@ class PreferenceController(ServiceController):
                 attrib = {'uri':user_preference_uri}
             else: #create a new preferences
                 user_preference = etree.Element('preference')
-                #current_preference_dict = {}
                 attrib = {}
             current_preference_etree = update_level(new_preference_etree, user_preference, attrib=attrib)
             user.append(current_preference_etree)
@@ -631,7 +660,8 @@ class PreferenceController(ServiceController):
         if len(resource_preference_list)>0:
             preference_location = resource_preference_list[0].attrib['uri']
             if path:
-                if len(resource_preference_list[0].xpath('tag[@uri="%s"]'%(preference_location+'/'+path))) == 1:
+                preference = data_service.get_resource(preference_location, view='deep')
+                if len(preference.xpath('//tag[@uri="%s"]'%(preference_location+'/'+path))) == 1:
                     data_service.del_resource(preference_location+'/'+path)
                 else:
                     abort(404)
