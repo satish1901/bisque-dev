@@ -529,6 +529,43 @@ def test_mergeDocument_8():
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
     
+def test_mergeDocument_9():
+    """
+        Merge Document Test 9
+        
+        Strange Case
+        
+        With a tag nusted under a tag with a value 
+    """
+    etree_1 = etree.XML("""
+        <preference name="Preferences" value="">
+            <tag name="first_level" value="old">
+                <tag name="name1" value="old"/>
+                <tag name="name2" value="old"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+
+    etree_2 = etree.XML("""
+        <preference name="Preferences" value="">
+            <tag name="first_level" value="">
+                <tag name="name1" value="new"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    answer = etree.XML("""
+        <preference>
+            <tag name="first_level">
+                <tag name="name1" value="new"/>
+                <tag name="name2" value="old"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    
+    result = mergeDocuments(etree_1, etree_2)
+    compare_etree(answer, result)
+    
+    
 def test_to_dict_1():
     """
         To Dict Test 1

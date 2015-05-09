@@ -6,7 +6,7 @@ Ext.define('BQ.setting.MainPage', {
     modal : true,
     border: false,
     
-    tools_none:  [],
+    tools_none:  [], //a none user has no settings
     tools_user:  ['settings_module_manager', 'settings_module_developer', 'setting_preference'], 
     tools_admin: ['settings_user_manager', 'settings_cache_manager', 'settings_system', 'settings_log_viewer'],
                   
@@ -22,6 +22,7 @@ Ext.define('BQ.setting.MainPage', {
         },{
             title: 'Cache Manager',
             padding: '8px',
+            border: false,
             itemId: 'settings_cache_manager',
             hidden: true,
             items: [{
