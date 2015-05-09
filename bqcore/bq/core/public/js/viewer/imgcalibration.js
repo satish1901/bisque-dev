@@ -735,7 +735,7 @@ Ext.define('BQ.viewer.Calibration', {
         }
     },
     
-    //POST all values back to data_service
+    
     getImageMetaTag: function(cb) {
         var me = this;
         //request for image meta
@@ -756,6 +756,7 @@ Ext.define('BQ.viewer.Calibration', {
         });
     },
     
+    //POST all values back to data_service
     updateImageMeta: function(imMetaXML) {
         //image meta check for multi tiff to put the correct tags
         //from xml document to post
