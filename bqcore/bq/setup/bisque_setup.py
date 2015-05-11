@@ -1516,22 +1516,15 @@ def install_bioformats():
             if os.path.exists(p):
                 os.remove(p)
 
-
-        #for bf in bio_files:
-        #    copy_link (os.path.join(BQDEPOT, bf), BQBIN)
-
         biozip = zipfile.ZipFile (archive)
         for fname in  biozip.namelist():
             if fname[-1] == '/':  # skip dirs
                 continue
             dest = os.path.join(BQBIN, os.path.basename(fname))
-            #destdir = os.path.dirname(dest)
-            #if not os.path.isdir(destdir):
-            #    os.makedirs(destdir)
+
             data = biozip.read(fname)
-            fd = open(dest, 'w')
+            fd = open(dest, 'wb')
             fd.write(data)
-            #os.fchmod (f, os.fstat(f) | stat.S_IXUSR)  # User exec
             if not fname.endswith ('jar'):
                 os.chmod (dest, os.fstat(fd.fileno()).st_mode | stat.S_IXUSR)  # User exec
             fd.close()
