@@ -444,12 +444,12 @@ class PreferenceController(ServiceController):
             
         """
         user =  request.identity.get('user')
-        u = data_service.query(resource_type='user', name=user.user_name, wpublic=1)
-        user_list = u.xpath('user')
-        if len(user_list)>0:
-            return data_service.get_resource('/data_service/%s'%u[0].attrib.get('resource_uniq'), **kw)
-        else:
-            return etree.Element('user') #return empty user
+        if user:
+            u = data_service.query(resource_type='user', name=user.user_name, wpublic=1)
+            user_list = u.xpath('user')
+            if len(user_list)>0:
+                return data_service.get_resource('/data_service/%s'%u[0].attrib.get('resource_uniq'), **kw)
+        return etree.Element('user') #return empty user
     
     
     def get_current_user_annotation(self, resource_uniq, **kw):

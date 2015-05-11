@@ -188,8 +188,23 @@ Ext.define('BQ.Preferences', {
         }
     },
     
+    resetSystemTag : function(path, cb) {
+        var me = this;
+        Ext.Ajax.request({
+            method: 'DELETE',
+            url: me.preference_user_uri+'/'+path,
+            disableCaching: false,
+            success: function(response) {
+                me.loadSystem(cb);
+            },
+            failure: function(response) {
+                BQ.ui.error('failed to delete system preference tag');
+            },
+            scope: me,
+        });
+    },
     
-    resetUserTag : function(path) {
+    resetUserTag : function(path, cb) {
         var me = this;
         Ext.Ajax.request({
             method: 'DELETE',
@@ -223,9 +238,6 @@ Ext.define('BQ.Preferences', {
         });
     },
     
-    resetResource: function(resource_uniq) {
-        this.resource_uniq = resource_uniq
-    },
     
     parseValueType: function parseValueType(v, t) { //taken from bqapi
         try {
@@ -241,29 +253,27 @@ Ext.define('BQ.Preferences', {
 
     toDict: function(dom) {
         var pref = {}
-        function conv(dom,node) {
-            for (var d=0; d<dom.children.length; d++) {
-                if (dom.children[d].tagName == 'tag') {
-                    if (dom.children[d].getAttribute('value')===null && dom.children[d].children.length<1) { //no value found but end of string
-                        node[dom.children[d].getAttribute('name')] = '';
-                    } else if (dom.children[d].getAttribute('value')===null) { //had no value set as dictionary
-                        node[dom.children[d].getAttribute('name')] = {};
-                        conv(dom.children[d], node[dom.children[d].getAttribute('name')]);
-                    } else if (dom.children[d].getAttribute('value')===undefined) { //no value found
-                        node[dom.children[d].getAttribute('name')] = '';
-                    } else { //set value
-                        var value = dom.children[d].getAttribute('value');
-                        var type = dom.children[d].getAttribute('type'); //cast if type is boolean or number
-                        node[dom.children[d].getAttribute('name')] = parseValueType(value, type);
-                    }
+        
+        
+        function conv(tagList, node) {
+            for (var t=0; t<tagList.length; t++) {
+                var childList = BQ.util.xpath_nodes(tagList[t], 'tag');
+                var name = tagList[t].getAttribute('name');
+                if (childList.length>0) { //parent node
+                    node[name] = {};
+                    conv(childList, node[name]);
+                } else { //child node
+                    var value = tagList[t].getAttribute('value');
+                    var type = tagList[t].getAttribute('type'); //cast if type is boolean or number                    
+                    node[name] = parseValueType(value, type);
                 }
             }
-            return node
-        }
-        if (dom.children[0].tagName == 'preference')
-            return conv(dom.children[0], pref)
-        else
-            return pref
+            return node;
+        };
+        
+        //check if its a preference document
+        var tagElements = BQ.util.xpath_nodes(dom, 'preference/tag');
+        return conv(tagElements, pref);
     },
     
     /*
