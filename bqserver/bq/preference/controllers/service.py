@@ -680,7 +680,7 @@ class PreferenceController(ServiceController):
                 
             if len(resource_preference_list)>0: #merge the documentes
                 resource_preference_uri = resource_preference_list[0].attrib.get('uri')
-                log.debug('Preference found at %s' % preference_uri)
+                log.debug('Preference found at %s' % resource_preference_uri)
                 resource_preference = data_service.get_resource(resource_preference_uri, view='deep')
                 attrib = {'uri': resource_preference_uri}
             else: #create a new preferences
