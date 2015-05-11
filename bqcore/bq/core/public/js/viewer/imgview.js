@@ -781,15 +781,14 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
 
 ImgViewer.prototype.onPreferences = function(pref) {
     this.preferences = Ext.apply(pref, this.parameters || {}); // local defines overwrite preferences
+     for (var i = 0; i < this.plugins.length; i++) {
+        plugin = this.plugins[i];
+        plugin.onPreferences(this.preferences);
+    }
     if (this.requires_update) {
         this.updateImage();
         //this.updateView();
     }
-    for (var i = 0; i < this.plugins.length; i++) {
-        plugin = this.plugins[i];
-        plugin.onPreferences(this.preferences);
-    }
-    //this.loadPreference(this.preferences);
 };
 
 ImgViewer.prototype.updatePref = function(el, resourcePrefDict, resourcePrefXML){
