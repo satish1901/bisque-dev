@@ -482,6 +482,7 @@ ImgEdit.prototype.remove_gobject = function (gob) {
         return;
 
     var pars = this.viewer.parameters || {};
+
     gob.delete_(pars.ondone, pars.onerror);
 };
 
@@ -505,21 +506,20 @@ ImgEdit.prototype.on_move = function (gob) {
     if(gob.uri)//only save if object has been awarded a uri from the database
         this.gobQueue[gob.uri] = gob; //store a unique
 
-    var timeOut = function() {
+    if(this.saveTimeout) clearTimeout(this.saveTimeout);
+    var timeout = function() {
         console.log('post');
         var keys = Object.keys(me.gobQueue);
+        keys.forEach(function(k){
+            var gob = me.gobQueue[k];
+            gob.save_me(pars.ondone, pars.onerror ); // check why save_ should not be used
 
-        if(keys.length === 0) return;
-        var lastKey = keys.pop();
-        var lastGob = me.gobQueue[lastKey];
-        lastGob.save_me(pars.ondone, pars.onerror ); // check why save_ should not be used
-        delete me.gobQueue[lastKey];
-        if(keys.length > 0)
-            timeOut();
-        else return;
+        });
+
+        me.gobQueue = {};
     }
 
-    setTimeout( timeOut, 10 )
+    this.saveTimeout = setTimeout( timeout, 500 );
     /*
     if (this.saving_timeout) clearTimeout (this.saving_timeout);
     this.saving_timeout = setTimeout( function() {

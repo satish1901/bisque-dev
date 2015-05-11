@@ -27,6 +27,12 @@
       nosave         - disables saving gobjects
       editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
                        can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
+     gobjectDeleted
+     gobjectCreated
+
+     gobjectMove      - returns shape object when manipulating a gobject, shape object has pointer to gob
+     gobjectMoveStart - returns shape object when beginning a gobject manipulation, shape object has pointer to gob
+     gobjectMoveEnd   - returns shape object when ending a gobject manipulation, shape object has pointer to gob
 
     blockforsaves  - set to true to show saving of gobjects, def: true
     showmanipulators - turns off advanced manipulators in the canvas renderer
@@ -115,6 +121,13 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.onerror   = callback(this, 'onerror');
         this.parameters.onselect  = callback(this, 'onselect');
         this.parameters.onhover   = callback(this, 'onhover');
+
+        /*
+        this.parameters.onmovestart   = callback(this, 'onmovestart');
+        this.parameters.onmoveend   = callback(this, 'onmoveend');
+        this.parameters.onmove   = callback(this, 'onmove');
+        */
+
         this.parameters.onloaded  = callback(this, this.onloaded);
         this.parameters.onphys    = callback(this, this.onphys);
         this.parameters.oneditcontrols = callback(this, this.oneditcontrols);

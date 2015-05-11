@@ -555,6 +555,7 @@ QuadTree.prototype.collectObjectsInRegion = function(frust, node){
                 var leaf = node.leaves[i];
                 if(leaf.collected || !leaf.isVisible(z, t)) continue;
                 if(me.hasOverlap(frust, leaf.bbox)){
+
                     collection.push(leaf);
                     leaf.collected = true;
                 }
@@ -578,7 +579,10 @@ QuadTree.prototype.cull = function(frust){
 
     leaves.forEach(function(e){
         e.updateStroke();
-        renderer.currentLayer.add(e.sprite);
+        //if(e.text)
+        //    renderer.currentLayer.add(e.text);
+        //renderer.currentLayer.add(e.sprite);
+        e.setLayer(renderer.currentLayer);
     });
     return leaves;
 };
@@ -651,6 +655,41 @@ QuadTree.prototype.cullCached = function(frust){
     collection.forEach(function(e){
         if(e)
             renderer.currentLayer.add(e);
+    });
+};
+
+
+QuadTree.prototype.cullLayers = function(frust){
+    var me = this;
+    var fArea = this.calcBoxVol(frust);
+    var me = this;
+    var collection = [];
+    var renderer = this.renderer;
+    var scale = renderer.stage.scale().x;
+    var cache = false;
+
+    var z = this.renderer.viewer.tiles.cur_z;
+    var t = this.renderer.viewer.tiles.cur_t;
+    //var L = renderer.viewer.tiles.tiled_viewer.zoomLevel;
+
+    var collectSprite = function(node){
+        var nArea = me.calcBoxVol(node.bbox);
+        var cache = null;
+        //if(L === node.L || node.leaves.length > 0){
+        if(nArea <= 0.6*fArea || node.leaves.length > 0) {
+            //collection.push(me.imageCache.getCacheAtCurrent(node));
+            collection.push(me.layer);
+            return false;
+        }
+
+        else return true;
+    };
+    this.traverseDownBB(this.nodes[0], frust, collectSprite);
+    renderer.currentLayer.removeChildren();
+    collection.forEach(function(e){
+        if(e)
+            renderer.stage.add(e);
+
     });
 };
 
@@ -750,18 +789,23 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
     this.imageCache.createAtCurrent(node);
 
     //create a temp layer to capture the appropriate objects
-    var layer = new Kinetic.Layer({
-        scaleX: scale,
-        scaleY: scale,
-        width: w*scale,
-        height: h*scale
+    if(!this.layer)
+    this.layer = new Kinetic.Layer({
     });
 
+    this.layer.removeChildren();
+    this.layer.scale({x: scale, y: scale});
+    this.layer.width(w);
+    this.layer.height(h);
+
+    var layer = this.layer;
     //fetch the objects in the tree that are in that node
     var leaves = this.collectObjectsInRegion(nbbox, node);
     leaves.forEach(function(e){
         e.updateLocal();
-        layer.add(e.sprite);
+        e.getSprites().forEach(function(f){
+            layer.add(f);
+        });
     });
     layer.draw();
 
@@ -1498,11 +1542,14 @@ CanvasRenderer.prototype.updateVisible = function(){
         //this.quadtree.cullCached(this.viewFrustum);
     }
     else{
+        //this.editableObjects = this.quadtree.cullLayers(this.viewFrustum);
+
 
         this.editableObjects = this.quadtree.cull(this.viewFrustum);
         for(var i = 0; i < this.editableObjects.length; i++){
             this.addSpriteEvents(this.editableObjects[i]);
         }
+
         me.draw();
     }
     //this.quadtree.drawBboxes(this.viewFrustum);
@@ -1570,6 +1617,8 @@ CanvasRenderer.prototype.updateImage = function (e) {
         this.addedListeners = true;
         this.myCanvasListener = new CanvasControl( this, this.stage );
     }
+    this.myCanvasListener.setFrustum({x:x, y:y}, scale);
+    //this.myCanvasListener.setFrustum(e,scale);
 
     //get the gobs and walk the tree to rerender them
     //update visible objects in the tree... next iteration may be 3D.
@@ -1908,6 +1957,18 @@ CanvasRenderer.prototype.hideDrawer = function(){
 CanvasRenderer.prototype.select = function (gobs) {
     var me = this;
 
+    if(this.mode === 'navigate'){
+        gobs.forEach(function(e){
+            me.quadtree.remove(e);
+            e.setStroke(4.0);
+            me.quadtree.insert(e);
+            me.updateVisible();
+            //me.currentLayer.draw();
+
+        });
+        return;
+    }
+
     this.editLayer.removeChildren();
 
     this.initManipulators(gobs);
@@ -1952,6 +2013,17 @@ CanvasRenderer.prototype.select = function (gobs) {
 CanvasRenderer.prototype.unselect = function (gobs) {
     //var shape = gobs.shape;
     var me = this;
+
+    if(this.mode === 'navigate'){
+        gobs.forEach(function(e){
+            me.quadtree.remove(e);
+            e.setStroke(1.0);
+            me.quadtree.insert(e);
+            me.updateVisible();
+
+        });
+        return;
+    }
 
     gobs.forEach(function(e,i,a){
         e.setLayer(me.currentLayer);
@@ -2146,6 +2218,9 @@ CanvasRenderer.prototype.addSpriteEvents = function(shape){
             me.quadtree.remove(me.selectedSet[j]);
         };
 
+        if(me.viewer.parameters.gobjectMoveStart)
+            me.viewer.parameters.gobjectMoveStart(me.selectedSet);
+
     });
 
     poly.on('dragstart', function() {
@@ -2192,6 +2267,8 @@ CanvasRenderer.prototype.addSpriteEvents = function(shape){
         if(this.shape.selfAnchor)
            this.shape.drag(evt,this);
         //me.currentLayer.draw();
+        if(me.viewer.parameters.gobjectMove)
+            me.viewer.parameters.gobjectMove(me.selectedSet);
         me.editLayer.draw();
     });
 
@@ -2209,7 +2286,9 @@ CanvasRenderer.prototype.addSpriteEvents = function(shape){
             //me.quadtree.in(f);
             me.quadtree.insert(e)
         });
-        ;
+        if(me.viewer.parameters.gobjectMoveEnd)
+            me.viewer.parameters.gobjectMoveEnd(me.selectedSet);
+
         //me.selectedSet.forEach(function(e,i,d){
         //     me.move_shape(e.gob);
         //});
@@ -2321,10 +2400,15 @@ CanvasRenderer.prototype.makeShape = function ( gob,  viewstate, shapeDescriptio
                         callback(this,'select_shape'));
 
     }
-
     gob.shape.visibility = visibility;
-    gob.shape.update();
-    this.quadtree.insert(gob.shape);
+
+    if(!visibility) {
+        this.quadtree.remove(gob.shape);
+    } else{
+        gob.shape.update();
+        this.quadtree.insert(gob.shape);
+    }
+
     if(gob.dirty)
         this.stage.draw();
 };

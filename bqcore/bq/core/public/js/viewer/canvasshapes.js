@@ -574,10 +574,16 @@ CanvasShape.prototype.rotation = function(input){
 };
 */
 
+CanvasShape.prototype.setStroke = function(sw){
+    var scale = this.renderer.stage.scale();
+    this.strokeWidth = sw;
+    this.sprite.strokeWidth(this.strokeWidth/scale.x); //reset the moves to zero
+};
 
 CanvasShape.prototype.updateStroke = function(){
     var scale = this.renderer.stage.scale();
-    this.sprite.strokeWidth(1.0/scale.x); //reset the moves to zero
+    if(!this.strokeWidth) this.strokeWidth = 1.0;
+    this.sprite.strokeWidth(this.strokeWidth/scale.x); //reset the moves to zero
 };
 
 CanvasShape.prototype.update = function () {
@@ -606,6 +612,12 @@ CanvasShape.prototype.setLayer = function (layer) {
         this.currentLayer.add(this.sprite);
 };
 
+CanvasShape.prototype.getSprites = function (collection) {
+    if(this.isVisible()){
+        return[this.sprite];
+    }
+    else return [];
+};
 
 CanvasShape.prototype.move = function () {
     if(!this.postEnabled) return;
@@ -1945,13 +1957,22 @@ CanvasLabel.prototype.setLayer = function (layer) {
     this.text.remove();
     this.arrow.remove();
 
-    //this.currentLayer.add(this.sprite);
-    //this.currentLayer.add(this.text);
-    //this.currentLayer.add(this.arrow);
+    layer.add(this.sprite);
+    layer.add(this.text);
+    layer.add(this.arrow);
 
     this.sprite.shapeId = 0;
     this.text.shapeId = -1;
 
+};
+
+CanvasLabel.prototype.getSprites = function (collection) {
+    if(this.isVisible()){
+        return[this.sprite,
+               this.text,
+               this.arrow];
+    }
+    else return [];
 };
 
 CanvasLabel.prototype.calcBbox = function () {
