@@ -357,7 +357,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         this.westPanel.doComponentLayout(null, null, true);
     },
 
-    /*
+    
     btnOrganizerClickOriginal : function(reload) {
         this.westPanel.setWidth(420).show().expand();
         //this.westPanel.queryById('organizer').removeAll(false); //this.westPanel.removeAll(false);
@@ -395,7 +395,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         });
         this.westPanel.add(this.organizerCt);
     },
-    */
+    
 
     btnOrganizerClickTreeNew : function(reload) {
         this.westPanel.setWidth(420).show().expand();

@@ -137,53 +137,6 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                     if (newCard.setActive)
                         newCard.setActive();
                 },
-                afterrender: function(el) {
-                    if (me.showOrganizer) {
-                        me.organizerCt = Ext.create('BQ.tree.organizer.Panel', {
-                            title: 'Organizer',
-                            itemId: 'organizer',
-                            browserParams : me.browserParams,
-                            url: me.browserState['baseURL'],
-                            listeners : {
-                                scope : this,
-                                selected : function(url, organizer) {
-                                    me.msgBus.fireEvent('Browser_ReloadData', {
-                                        baseURL : organizer.getUrl(),
-                                        offset: 0,
-                                        tag_query: organizer.getQuery(),
-                                        tag_order: organizer.getOrder(),
-                                    });
-                                },
-                            },
-                        });
-                        el.add(me.organizerCt);
-                        el.setActiveTab(0);
-                        if (me.dataset && !(me.dataset instanceof BQDataset)) {
-                            el.add({
-                                xtype: 'bq-tree-files-panel',
-                                itemId: 'files',
-                                title: 'Files',
-                                tag_order : me.browserParams.tagOrder,
-                                listeners : {
-                                    scope : this,
-                                    selected : function(url, files) {
-                                        me.msgBus.fireEvent('Browser_ReloadData', {
-                                            baseURL : url.slice(-1)!=='/' ? url+'/value' : url+'value',
-                                            offset : 0,
-                                            tag_query : '',
-                                            tag_order : files.tag_order,
-                                            //wpublic : false,
-                                        });
-                                    }
-                                },
-                            });
-                        }
-                        el.setVisible(true);
-                    }
-                    if (me.showModuleOrganizer) {
-                        me.initModuleOrganizer();
-                    }
-                }
             }
         });
 
@@ -293,13 +246,11 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                 tag_order : this.browserParams.tagOrder
             });
 
-            //var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
-            //this.showOrganizer ? btnOrganize.handler.call(this.commandBar) : '';
-            /*
+            var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
+            this.showOrganizer ? btnOrganize.handler.call(this.commandBar) : '';
             if (this.showModuleOrganizer) {
                 this.initModuleOrganizer();
             }
-            */
         }
     },
 
