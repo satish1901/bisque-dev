@@ -35,8 +35,8 @@ def int2hex(v):
 # Upload
 ##################################################################
 
-num_gobs = 20000
-gobs_sz = 10
+num_gobs = 100
+gobs_sz = 1000
 image_uri = sys.argv[1]
 
 config = ConfigParser.ConfigParser()
