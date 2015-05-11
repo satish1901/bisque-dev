@@ -326,7 +326,10 @@ class LocalDriver (StorageDriver):
         path = url2localpath(path.replace('\\', '/'))
         log.debug("deleting %s", path)
         if os.path.isfile (path):
-            os.remove (path)
+            try:
+                os.remove (path)
+            except OSError:
+                log.exception("Could not delete %s", path)
 
     def __str__(self):
         return "localstore[%s, %s]" % (self.mount_url, self.top)

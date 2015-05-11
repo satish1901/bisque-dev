@@ -110,9 +110,10 @@ class ConverterOpenSlide(ConverterBase):
         cls.installed_formats['hamamatsu'] = Format(name='hamamatsu', fullname='Hamamatsu', ext=['ndpi','vms','vmu'], reading=True, multipage=False, metadata=True)
         cls.installed_formats['leica']     = Format(name='leica', fullname='Leica', ext=['scn'], reading=True, multipage=False, metadata=True)
         cls.installed_formats['mirax']     = Format(name='mirax', fullname='MIRAX', ext=['mrxs'], reading=True, multipage=False, metadata=True)
+        cls.installed_formats['philips']   = Format(name='philips', fullname='Philips', ext=['tiff'], reading=True, multipage=False, metadata=True)
         cls.installed_formats['sakura']    = Format(name='sakura', fullname='Sakura', ext=['svslide'], reading=True, multipage=False, metadata=True)
         cls.installed_formats['trestle']   = Format(name='trestle', fullname='Trestle', ext=['tif'], reading=True, multipage=False, metadata=True)
-        cls.installed_formats['ventana']   = Format(name='ventana', fullname='Ventana', ext=['bif'], reading=True, multipage=False, metadata=True)
+        cls.installed_formats['ventana']   = Format(name='ventana', fullname='Ventana', ext=['bif', 'tif'], reading=True, multipage=False, metadata=True)
         cls.installed_formats['tiff']      = Format(name='tiff', fullname='Generic tiled TIFF', ext=['tif','tiff'], reading=True, multipage=False, metadata=True)
 
     #######################################
