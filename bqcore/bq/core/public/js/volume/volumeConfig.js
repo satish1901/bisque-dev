@@ -853,7 +853,7 @@ VolumeShader.prototype.config = function(config){
             '      float r0 = 1.0 - 2.0*rand(pos.xy + eye_d.zx); //create three random numbers for each dimension',
             '      float r1 = 1.0 - 2.0*rand(pos.yz + eye_d.zx);',
             '      float r2 = 1.0 - 2.0*rand(pos.xz + eye_d.yx);',
-            '    for(int j=1; j<5; j++){ ',
+            '    for(int j=1; j<4; j++){ ',
             //'    for(int j=0; j<maxStepsLight; j++){ ',
             '      //if (j > LIGHT_SAMPLES) break;',
 

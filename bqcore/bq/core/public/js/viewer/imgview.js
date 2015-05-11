@@ -619,6 +619,9 @@ ImgViewer.prototype.showGObjects = function(gobs) {
 ImgViewer.prototype.hideGObjects = function(gobs) {
     if (!(gobs instanceof Array))
         gobs = [gobs];
+
+    //gobs.forEach();
+    this.renderer.unselectCurrent();
     this.renderer.rerender(gobs, [this.current_view, false]);
 };
 
@@ -656,7 +659,7 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
     this.renderer.highlight(gob, selection);
 };
 
-ImgViewer.prototype.color_gbject = function(gob, color) {
+ImgViewer.prototype.color_gobject = function(gob, color) {
     this.renderer.setcolor(gob, color);
     var xml = gob.xmlNode();
     var tagColor = BQ.util.xpath_nodes(xml,'tag[@name="color"]');
@@ -673,6 +676,7 @@ ImgViewer.prototype.color_gbject = function(gob, color) {
 
 ImgViewer.prototype.delete_gobjects = function(gobs) {
     var g=undefined;
+
     for (var i=0; (g=gobs[i]); i++)
         this.editor.remove_gobject(g);
 };
