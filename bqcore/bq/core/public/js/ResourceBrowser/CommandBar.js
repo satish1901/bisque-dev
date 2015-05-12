@@ -357,7 +357,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         this.westPanel.doComponentLayout(null, null, true);
     },
 
-    
+    /*
     btnOrganizerClickOriginal : function(reload) {
         this.westPanel.setWidth(420).show().expand();
         //this.westPanel.queryById('organizer').removeAll(false); //this.westPanel.removeAll(false);
@@ -395,28 +395,30 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         });
         this.westPanel.add(this.organizerCt);
     },
-    
+    */
 
     btnOrganizerClickTreeNew : function(reload) {
         this.westPanel.setWidth(420).show().expand();
-        this.organizerCt = (reload ? undefined : this.organizerCt) || Ext.create('BQ.tree.organizer.Panel', {
-            title: 'Organizer',
-            itemId: 'organizer',
-            browserParams : this.browser.browserParams,
-            url: this.browser.browserState['baseURL'],
-            listeners : {
-                scope : this,
-                selected : function(url, organizer) {
-                    this.msgBus.fireEvent('Browser_ReloadData', {
-                        baseURL : organizer.getUrl(),
-                        offset: 0,
-                        tag_query: organizer.getQuery(),
-                        tag_order: organizer.getOrder(),
-                    });
+        if (!this.organizerCt) {
+            this.organizerCt = Ext.create('BQ.tree.organizer.Panel', {
+                title: 'Organizer',
+                itemId: 'organizer',
+                browserParams : this.browser.browserParams,
+                url: this.browser.browserState['baseURL'],
+                listeners : {
+                    scope : this,
+                    selected : function(url, organizer) {
+                        this.msgBus.fireEvent('Browser_ReloadData', {
+                            baseURL : organizer.getUrl(),
+                            offset: 0,
+                            tag_query: organizer.getQuery(),
+                            tag_order: organizer.getOrder(),
+                        });
+                    },
                 },
-            },
-        });
-        this.westPanel.add(this.organizerCt);
+            });
+            this.westPanel.add(this.organizerCt);
+        }
         this.westPanel.setActiveTab(0);
     },
 
