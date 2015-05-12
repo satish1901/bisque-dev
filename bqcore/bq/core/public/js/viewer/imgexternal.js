@@ -1,7 +1,7 @@
 function ImgExternal (viewer,name){
     this.base = ViewerPlugin;
     this.base (viewer, name);
-    
+    var me = this;
 	this.imgCurrentView = new ImgCurrentView(viewer)
 
     this.viewer.addMenu([{
@@ -119,9 +119,11 @@ function ImgExternal (viewer,name){
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_calibrate_image',
                 text   : 'Calibrate Image',
-                //disabled: true,
+                //disabled: !BQApp.hasUser(), //too slow to initialize
+                disabled: true,
                 handler: this.calibrateResolution,
-            }/*, {
+            }
+            /*, {
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_precache',
                 text   : 'Pre-cache current view',
@@ -130,6 +132,12 @@ function ImgExternal (viewer,name){
             }*/]
         },
     }]);
+    
+    //enables the calibrate image if user is found
+    BQApp.on('gotuser', function() {
+        var calibrateResolution = me.viewer.toolbar.queryById('menu_viewer_calibrate_image');
+        calibrateResolution.setDisabled(false);
+    });
 };
 
 ImgExternal.prototype = new ViewerPlugin();

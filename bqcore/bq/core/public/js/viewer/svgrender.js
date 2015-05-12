@@ -16,15 +16,17 @@ function SVGRenderer (viewer,name) {
     
     //overlay Editor
     var me = this;
-    if (this.viewer.toolbar) { //required toolbar to initialize
-        var operation_menu = this.viewer.toolbar.queryById('menu_viewer_operations')
+    if (this.viewer.toolbar) { //required toolbar to initialize and the user to be signed in
+        var operation_menu = this.viewer.toolbar.queryById('menu_viewer_operations');
         if (operation_menu) {
             var image = this.viewer.image;
             var resource = image ? image.uri : '';
-            operation_menu.menu.add({
-                xtype  : 'menuitem',
-                itemId : 'menu_viewer_operation_overlayEditor',
-                text   : 'Overlay Editor',
+            overlayEditor = operation_menu.menu.add({
+                xtype   : 'menuitem',
+                itemId  : 'menu_viewer_operation_overlayEditor',
+                text    : 'Overlay Editor',
+                //disabled: !BQApp.hasUser(),
+                disabled: true,
                 handler: function() {
                     if (!me.overlayEditorWin) {
                         var image = this.viewer.image;
@@ -42,7 +44,11 @@ function SVGRenderer (viewer,name) {
                     }
                     me.overlayEditorWin.show();
                 },
+                
             });
+            BQApp.on('gotuser', function() {
+                overlayEditor.setDisabled(false);
+            }); //enable editor since user was found
         }
     }
 };
@@ -412,50 +418,10 @@ Ext.define('BQ.overlayEditor.Window', {
                 intialMode: 'point',
             },
             listeners: {
-                'afterPhys': function(el) {
-                    var overlay = me.viewer.plugins_by_name.overlay; //pull the preference from the main viewer
-                    var editor   = el.viewer.plugins_by_name.edit;
-                    if (overlay.overlayPref.position) {
-                        var pattern = /([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+)/;
-                        var points = overlay.overlayPref.position.match(pattern);
-                        if (points && (points.length == 9)) {
-                            var g1 = new BQGObject('point');
-                            g1.vertices.push (new BQVertex (points[1], points[2], null, null, null, 0));
-                            el.setGobjects(g1);
-                            var g2 = new BQGObject('point');
-                            g2.vertices.push (new BQVertex (points[3], points[4], null, null, null, 0));
-                            el.setGobjects(g2);
-                            var g3 = new BQGObject('point');
-                            g3.vertices.push (new BQVertex (points[7], points[8], null, null, null, 0));
-                            el.setGobjects(g3);
-                            var g4 = new BQGObject('point');
-                            g4.vertices.push (new BQVertex (points[5], points[6], null, null, null, 0));
-                            el.setGobjects(g4);
-                            //editor.new_point(null, null, points[1], points[2]);
-                            //editor.new_point(null, null, points[3], points[4]);
-                            //editor.new_point(null, null, points[7], points[8]);
-                            //editor.new_point(null, null, points[5], points[6]);
-                        }
-                    }
-                },
-                'changed': function(el) {
-                    var gobs = el.getGobjects();
-                    var overlay = el.viewer.plugins_by_name.overlay;
-                    if (gobs.length>4) {
-                        var editor   = el.viewer.plugins_by_name.edit;
-                        var renderer = el.viewer.plugins_by_name.renderer;
-                        editor.remove_gobject(gobs[0]);
-                        renderer.updateVisible();
-                    }
-                    if (gobs.length==4) {
-                        var points = me.mapPoints(gobs);
-                        overlay.overlayPref.position = points.x1+','+points.y1+';'+points.x2+','+points.y2+';'+points.x3+','+points.y3+';'+points.x4+','+points.y4; //update preference for this view only
-                        overlay.populate_overlay();
-                    } else {
-                        overlay.overlayPref.position = '';
-                        overlay.populate_overlay();
-                    }
-                },
+                'afterPhys': me.onAfterPhys.bind(me),
+                'changed': me.onChanged.bind(me),
+                'delete': me.onChanged.bind(me),
+                'moveend': me.onChanged.bind(me),
             },
         });
         var items = [{
@@ -467,7 +433,7 @@ Ext.define('BQ.overlayEditor.Window', {
             ],
             flex: 1,
         },
-            this.miniViewer, 
+            this.miniViewer,
         ];
         
         
@@ -480,7 +446,7 @@ Ext.define('BQ.overlayEditor.Window', {
                 var gobs = me.miniViewer.getGobjects();
                 var gobs = gobs.slice();
                 if (gobs.length!=4) {
-                    BQ.ui.notification('For points are required to set the overlay');
+                    BQ.ui.notification('Four points are required to set the overlay');
                     return
                 }
                 
@@ -524,7 +490,7 @@ Ext.define('BQ.overlayEditor.Window', {
                 shapeTag.setAttribute('value', 'dots_custom');
                 layoutTag.appendChild(shapeTag);
                 
-                BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML);
+                BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML, function() {BQ.ui.notification('Successfully updated overlay');});
             },
         }, { //toggles disable, enable of the mask
             scale: 'large',
@@ -547,7 +513,10 @@ Ext.define('BQ.overlayEditor.Window', {
                 enableTag.setAttribute('value', me.viewer.plugins_by_name.overlay.overlayPref.enable ? 'false':'true');
                 layoutTag.appendChild(enableTag);
                 
-                BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML);
+                BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML, function() {
+                    if (me.viewer.plugins_by_name.overlay.overlayPref.enable) me.onChanged(me.miniViewer);
+                    BQ.ui.notification((me.viewer.plugins_by_name.overlay.overlayPref.enable?'Enabled':'Disabled')+' Overlay');
+                });
             },
         }, {
             scale: 'large',
@@ -563,7 +532,10 @@ Ext.define('BQ.overlayEditor.Window', {
                         var uri = overlay[0].getAttribute('uri');
                         var match = uri.match(pattern);
                         if (match.length == 2) {
-                            BQ.Preferences.resetResourceTag(me.miniViewer.resource.resource_uniq, match[1]);
+                            BQ.Preferences.resetResourceTag(me.miniViewer.resource.resource_uniq, match[1], function() {
+                                me.removeAllGobjects(me.miniViewer);
+                                BQ.ui.notification('Set overlay to user preference');
+                            });
                         }
                     }
                 }
@@ -576,6 +548,63 @@ Ext.define('BQ.overlayEditor.Window', {
         });
         this.callParent([config]);
         
+    },
+    
+    onChanged: function(el) {
+        var me = this;
+        var gobs = el.getGobjects();
+        var overlay = el.viewer.plugins_by_name.overlay;
+        if (gobs.length>4) {
+            var editor   = el.viewer.plugins_by_name.edit;
+            var renderer = el.viewer.plugins_by_name.renderer;
+            editor.remove_gobject(gobs[0]);
+            renderer.updateVisible();
+        }
+        if (gobs.length==4) {
+            var points = me.mapPoints(gobs);
+            overlay.overlayPref.position = points.x1+','+points.y1+';'+points.x2+','+points.y2+';'+points.x3+','+points.y3+';'+points.x4+','+points.y4; //update preference for this view only
+            overlay.populate_overlay();
+        } else {
+            overlay.overlayPref.position = '';
+            overlay.populate_overlay();
+        }
+    },
+    
+    removeAllGobjects: function(el) {
+        var me = this;
+        var gobs = el.getGobjects();
+        var overlay = el.viewer.plugins_by_name.overlay;
+        var editor   = el.viewer.plugins_by_name.edit;
+        var renderer = el.viewer.plugins_by_name.renderer;
+        while (gobs.length>0) {
+            editor.remove_gobject(gobs[0]);
+        }
+        renderer.updateVisible();
+    },
+    
+    onAfterPhys: function(el) {
+        var me = this;
+        var gobs = el.getGobjects();
+        var overlay = me.viewer.plugins_by_name.overlay; //pull the preference from the main viewer
+        var editor   = el.viewer.plugins_by_name.edit;
+        if (overlay.overlayPref.position) {
+            var pattern = /([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+)/;
+            var points = overlay.overlayPref.position.match(pattern);
+            if (points && (points.length == 9)) {
+                var g1 = new BQGObject('point');
+                g1.vertices.push (new BQVertex (points[1], points[2], null, null, null, 0));
+                el.setGobjects(g1);
+                var g2 = new BQGObject('point');
+                g2.vertices.push (new BQVertex (points[3], points[4], null, null, null, 0));
+                el.setGobjects(g2);
+                var g3 = new BQGObject('point');
+                g3.vertices.push (new BQVertex (points[7], points[8], null, null, null, 0));
+                el.setGobjects(g3);
+                var g4 = new BQGObject('point');
+                g4.vertices.push (new BQVertex (points[5], points[6], null, null, null, 0));
+                el.setGobjects(g4);
+            }
+        }
     },
     
     mapPoints: function(gobsList) {

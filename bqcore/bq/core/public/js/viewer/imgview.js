@@ -11,20 +11,43 @@
   Available parameters:
     simpleviewer   - sets a minimal set of plug-ins and also read-only view for gobjects
     onlyedit       - only sets plug-in needed for editing of gobjects
-
+    
+    *** NOT IMPLEMENTED ***
+        intialMode     - Sets the first mode on the viewer after instantiated. 
+            Modes:
+                : navigation - initializes in navigation mode
+                : edit - initializes in edit mode 
+                : delete - intializes in delete mode
+                : point - starts in edit mode with points
+                : rectangle - starts in edit mode with rectangle
+                : polyline - starts in edit mode with polyline
+                : polygon - starts in edit mode with polygons
+                : circle - starts in edit mode with circles
+                
+        disableMaximize - disables the maximize window option form the viewer
+        disableViewOptions - 
+        disableThumbnail - 
+        minimizeThumbnail - 
+    *** NOT IMPLEMENTED ***
+            
     nogobects      - disable loading gobjects by default
     gobjects       - load gobjects from the givel URL, 'gobjects':'http://gobejcts_url'
 
     noedit         - read-only view for gobjects
-      alwaysedit     - instantiates editor right away and disables hiding it
-      nosave         - disables saving gobjects
-      editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
+    alwaysedit     - instantiates editor right away and disables hiding it
+    nosave         - disables saving gobjects
+    editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
                        can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
-
+    
     external_edit_controls - when set to true will stop the viewer creating any editor buttons
 
     gobjectschanged - callback to call when graphical objects have changed
+    gobjectDeleted - callback to call when graphical objects have been deleted
 
+    gobjectMove      - returns shape object when manipulating a gobject, shape object has pointer to gob
+    gobjectMoveStart - returns shape object when beginning a gobject manipulation, shape object has pointer to gob
+    gobjectMoveEnd   - returns shape object when ending a gobject manipulation, shape object has pointer to gob
+    
     onworking - callback to call when graphical objects have changed
     ondone - callback to call when graphical objects have changed
     onerror - callback to call when graphical objects have changed
@@ -747,6 +770,7 @@ ImgViewer.prototype.newPhys = function (phys) {
     }
 
     this.renderer.rerender(this.image.gobjects, [this.current_view, true]);
+    if (this.parameters.afterphys) this.parameters.afterphys();
 };
 
 ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
