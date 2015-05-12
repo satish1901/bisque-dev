@@ -252,8 +252,7 @@ Ext.define('BQ.Preferences', {
     },
 
     toDict: function(dom) {
-        var pref = {}
-        
+        var pref = {};
         
         function conv(tagList, node) {
             for (var t=0; t<tagList.length; t++) {

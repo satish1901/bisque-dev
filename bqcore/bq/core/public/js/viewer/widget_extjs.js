@@ -14,6 +14,9 @@
       working
       done
       error
+      delete     - event fired when gobject(s) is(are) deleted
+      moveend    - event fired when mouse up on selected gobject
+      afterPhys  - event fired after phys is loaded
 
   Parameters:
     simpleviewer   - sets a minimal set of plug-ins and also read-only view for gobjects
@@ -27,12 +30,12 @@
       nosave         - disables saving gobjects
       editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
                        can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
-     gobjectDeleted
-     gobjectCreated
+    gobjectDeleted
+    gobjectCreated
 
-     gobjectMove      - returns shape object when manipulating a gobject, shape object has pointer to gob
-     gobjectMoveStart - returns shape object when beginning a gobject manipulation, shape object has pointer to gob
-     gobjectMoveEnd   - returns shape object when ending a gobject manipulation, shape object has pointer to gob
+    gobjectMove      - returns shape object when manipulating a gobject, shape object has pointer to gob
+    gobjectMoveStart - returns shape object when beginning a gobject manipulation, shape object has pointer to gob
+    gobjectMoveEnd   - returns shape object when ending a gobject manipulation, shape object has pointer to gob
 
     blockforsaves  - set to true to show saving of gobjects, def: true
     showmanipulators - turns off advanced manipulators in the canvas renderer
@@ -116,22 +119,20 @@ Ext.define('BQ.viewer.Image', {
         if (this.toolbar)
             this.parameters.toolbar = this.toolbar;
         this.parameters.gobjectschanged = callback(this, 'onchanged');
-        this.parameters.onworking = callback(this, 'onworking');
-        this.parameters.ondone    = callback(this, 'ondone');
-        this.parameters.onerror   = callback(this, 'onerror');
-        this.parameters.onselect  = callback(this, 'onselect');
-        this.parameters.onhover   = callback(this, 'onhover');
-
-        /*
-        this.parameters.onmovestart   = callback(this, 'onmovestart');
-        this.parameters.onmoveend   = callback(this, 'onmoveend');
-        this.parameters.onmove   = callback(this, 'onmove');
-        */
-
-        this.parameters.onloaded  = callback(this, this.onloaded);
-        this.parameters.onphys    = callback(this, this.onphys);
-        this.parameters.oneditcontrols = callback(this, this.oneditcontrols);
-        this.parameters.onposition = callback(this, this.onposition);
+        this.parameters.gobjectDeleted  = callback(this, 'ondelete');
+        this.parameters.onworking       = callback(this, 'onworking');
+        this.parameters.ondone          = callback(this, 'ondone');
+        this.parameters.onerror         = callback(this, 'onerror');
+        this.parameters.onselect        = callback(this, 'onselect');
+        this.parameters.onhover         = callback(this, 'onhover');
+        //this.parameters.gobjectMoveStart= callback(this, 'onmovestart'); on mouse down
+        this.parameters.gobjectMoveEnd  = callback(this, 'onmoveend'); //mouse up on gobject
+        //this.parameters.gobjectMove          = callback(this, 'onmove'); expensive
+        this.parameters.onloaded        = callback(this, this.onloaded);
+        this.parameters.onphys          = callback(this, this.onphys);
+        this.parameters.afterphys       = callback(this, this.afterphys);
+        this.parameters.oneditcontrols  = callback(this, this.oneditcontrols);
+        this.parameters.onposition      = callback(this, this.onposition);
 
         //var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
         var id = this.getId();
@@ -149,13 +150,26 @@ Ext.define('BQ.viewer.Image', {
     onloaded : function() {
         this.setLoading(false);
     },
-
+    
     onphys : function() {
         this.fireEvent( 'loadedPhys', this, this.viewer.imagephys, this.viewer.imagedim );
+    },
+    
+    
+    afterphys : function() {
+        this.fireEvent( 'afterPhys', this, this.viewer.imagephys, this.viewer.imagedim );
     },
 
     onchanged : function(gobs) {
         this.fireEvent( 'changed', this, gobs );
+    },
+    
+    ondelete: function(gobs) {
+        this.fireEvent( 'delete', this, gobs );
+    },
+    
+    onmoveend : function(gobs) {
+        this.fireEvent( 'moveend', this, gobs );
     },
 
     getGobjects : function() {
