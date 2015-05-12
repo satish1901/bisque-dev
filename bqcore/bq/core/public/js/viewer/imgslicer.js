@@ -47,6 +47,19 @@ ImgSlicer.prototype.getParams = function () {
 };
 
 ImgSlicer.prototype.updateView = function (view) {
+
+    var zMax = view.imagedim.z;
+    var tMax = view.imagedim.t;
+
+    if(view.z >= zMax){
+        BQ.ui.error('gobject z-dimension exceeds viewing plane');
+        this.z = zMax-1;
+    }
+    if(view.t >= tMax){
+        BQ.ui.error('gobject t-dimension exceeds viewing plane');
+        this.t = tMax-1;
+    }
+
     if (this.z<0 && this.t<0) {
         this.z = view.z;
         this.t = view.t;

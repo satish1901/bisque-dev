@@ -575,16 +575,14 @@ CanvasShape.prototype.rotation = function(input){
 */
 
 CanvasShape.prototype.setStroke = function(sw){
+    if(sw) this.strokeWidth = sw;
+    else if(!this.strokeWidth) this.strokeWidth = 1.0;
+
     var scale = this.renderer.stage.scale();
     this.strokeWidth = sw;
-    this.sprite.strokeWidth(this.strokeWidth/scale.x); //reset the moves to zero
+    this.sprite.strokeWidth(1.25*this.strokeWidth/scale.x); //reset the moves to zero
 };
 
-CanvasShape.prototype.updateStroke = function(){
-    var scale = this.renderer.stage.scale();
-    if(!this.strokeWidth) this.strokeWidth = 1.0;
-    this.sprite.strokeWidth(this.strokeWidth/scale.x); //reset the moves to zero
-};
 
 CanvasShape.prototype.update = function () {
     //this.sprite.clearCache();
@@ -765,12 +763,16 @@ CanvasPolyLine.prototype.closed = function(setter){
     this.sprite.closed(setter);
 },
 
-CanvasPolyLine.prototype.updateStroke = function(){
+
+CanvasPolyLine.prototype.setStroke = function(sw){
     var scale = this.renderer.stage.scale();
+    if(sw) this.strokeWidth = sw;
+    else if(!this.strokeWidth) this.strokeWidth = 1.0;
+
     if(this._closed)
-        this.sprite.strokeWidth(1.0/scale.x); //reset the moves to zero
+        this.sprite.strokeWidth(1.25*this.strokeWidth/scale.x); //reset the moves to zero
     else
-        this.sprite.strokeWidth(3.0/scale.x); //reset the moves to zero
+        this.sprite.strokeWidth(2.5*this.strokeWidth/scale.x); //reset the moves to zero
 };
 
 CanvasPolyLine.prototype.updateLocal = function () {
@@ -818,7 +820,7 @@ CanvasPolyLine.prototype.updateLocal = function () {
 
     this.applyColor();
 
-    this.updateStroke();
+    this.setStroke();
     this.sprite.points(vertices);
     this.bbox = this.calcBbox();
     this.x(mx); //reset the moves to zero
@@ -1206,8 +1208,7 @@ CanvasEllipse.prototype.updateLocal = function () {
     ellipse.radiusX(rx);
     ellipse.radiusY(ry);
     ellipse.rotation(ang);
-    ellipse.strokeWidth(1.0/scale.x);
-
+    this.setStroke();
     this.bbox = this.calcBbox();
     //this.currentLayer.add(this.sprite);
 }
@@ -1479,7 +1480,7 @@ CanvasCircle.prototype.updateLocal = function () {
     this.y(p1.y);
     sprite.radius(r);
     sprite.rotation(ang + 180);
-    sprite.strokeWidth(1.0/scale.x);
+    this.setStroke();
     this.bbox = this.calcBbox();
     //this.currentLayer.add(this.sprite);
 }
@@ -1656,6 +1657,18 @@ CanvasPoint.prototype.calcBbox = function () {
 };
 
 
+CanvasPoint.prototype.setStroke = function(sw){
+    if(sw) this.strokeWidth = sw;
+    else if(!this.strokeWidth) this.strokeWidth = 1.0;
+    if(!this.pointSize) this.pointSize = 2.5;
+    this.pointSize *= this.strokeWidth;
+
+    var scale = this.renderer.stage.scale();
+    var r = this.pointSize/scale.x;
+    this.sprite.radius(r);
+    this.sprite.strokeWidth(2.0*this.pointSize/scale.x);
+};
+
 CanvasPoint.prototype.updateStroke = function(){
     var scale = this.renderer.stage.scale();
     var r = this.pointSize/scale.x;
@@ -1707,7 +1720,8 @@ CanvasPoint.prototype.updateLocal = function () {
     this.y(p1.y);
     //this.sprite.scale({x: 1.0/scale.x, y: 1.0/scale.y });
     sprite.radius(r);
-    sprite.strokeWidth(2.0*this.pointSize/scale.x);
+    this.setStroke();
+
     this.bbox = this.calcBbox();
     //this.currentLayer.add(this.sprite);
 }
@@ -2021,6 +2035,22 @@ CanvasLabel.prototype.calcBbox = function () {
 CanvasLabel.prototype.clearCache = function(){};
 CanvasLabel.prototype.cacheSprite = function(){};
 
+
+CanvasLabel.prototype.setStroke = function(sw){
+    if(sw) this.strokeWidth = sw;
+    else if(!this.strokeWidth) this.strokeWidth = 1.0;
+    if(!this.pointSize) this.pointSize = 2.5;
+    this.pointSize *= this.strokeWidth;
+
+    var scale = this.renderer.stage.scale();
+    var r = this.pointSize/scale.x;
+    this.sprite.radius(r);
+    this.sprite.strokeWidth(2.0*this.pointSize/scale.x);
+    this.text.fontSize(14/scale.x);
+
+};
+
+
 CanvasLabel.prototype.updateArrow = function(strokeColor){
     var scale = this.renderer.stage.scale();
 
@@ -2310,7 +2340,7 @@ CanvasRectangle.prototype.updateLocal = function () {
 
     this.sprite.fill(color);
     this.sprite.stroke(strokeColor);
-    this.sprite.strokeWidth(1.0/scale.x);
+    this.setStroke();
     this.bbox = this.calcBbox();
     //this.currentLayer.add(this.sprite);
 }
@@ -2521,6 +2551,7 @@ CanvasSquare.prototype.updateLocal = function () {
     this.sprite.stroke(strokeColor);
 
     this.sprite.strokeWidth(1.0/scale.x);
+    this.setStroke();
     this.bbox = this.calcBbox();
     //this.currentLayer.add(this.sprite);
 }
