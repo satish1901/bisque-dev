@@ -598,6 +598,9 @@ Ext.define('Bisque.Resource.Image.Page', {
                         var tagArr = [], tags = {
                         }, found = '';
                         while(gob.parent){
+                            if(!gob.type)
+                                tagArr.push(gob.name);
+                            else
                             tagArr.push(gob.type);
                             gob = gob.parent;
                             size += 1;

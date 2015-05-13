@@ -420,7 +420,9 @@ QuadTree.prototype.insertInNode  = function(gob, node, stack){
     gob.page = node;
     //node.bbox = this.calcBbox(node.leaves);
     var maxLevel = 6;
-    var maxTileLevel = this.renderer.viewer.tiles.pyramid.levels;
+
+    if(this.renderer.viewer.tiles.pyramid)
+        var maxTileLevel = this.renderer.viewer.tiles.pyramid.levels;
     if((node.leaves.length >= this.maxChildren || node.L < maxTileLevel + 2) &&
        node.L < maxLevel){
         this.splitNode(node, stack);
@@ -705,8 +707,6 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
     var buffer = renderer.getPointSize();
     buffer = 0;
 
-    //create a new image
-    this.imageCache.createAtCurrent(node);
 
     //create a temp layer to capture the appropriate objects
     if(!this.layer)
@@ -735,6 +735,8 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
     var image = layer.toImage({
         callback: function(img){
             //if(!node.dirty) return;
+                //create a new image
+            me.imageCache.createAtCurrent(node);
 
             node.image = img;
             me.imageCache.createAtCurrent(node);
@@ -744,11 +746,12 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
             node.dirty = false;
             me.cachesRendered += 1; //count the caches that have been rerendered since performing a cache call
             //console.log(img.src);
-            if(me.cachesRendered >= me.cachesDestroyed && onCache){
+            if(me.timeout) clearTimeout(me.timeout);
+            me.timeout = setTimeout(function(){
                 me.cachesRendered = 0;
                 me.cachesDestroyed = 0;
                 onCache();
-            }
+            }, 1);
 
         },
 
@@ -758,7 +761,7 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
         height: h*scale + 2.0*buffer,
     });
 
-    me.imageCache.setPositionAtCurrent(node);
+    //me.imageCache.setPositionAtCurrent(node);
 };
 
 QuadTree.prototype.setDirty = function(node){
@@ -830,6 +833,7 @@ function CanvasControl(viewer, element) {
 }
 
 CanvasControl.prototype.setFrustum = function(e, scale){
+
     var dim = this.viewer.viewer.imagedim,
     viewstate = this.viewer.viewer.current_view,
     z = this.viewer.viewer.tiles.cur_z,
