@@ -2366,7 +2366,7 @@ class ImageServer(object):
             subdir = image_id[3]
         else:
             subdir = image_id[0]
-        return os.path.realpath(os.path.join(self.workdir, user_name, subdir, image_id))
+        return os.path.realpath(os.path.join(self.workdir, user_name or '', subdir, image_id))
 
     def ensureWorkPath(self, path, image_id, user_name):
         """path may be a workdir path OR an original image path to transformed into

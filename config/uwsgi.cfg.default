@@ -20,17 +20,17 @@ bisque.services_disabled = engine_service
 
 [uwsgi]
 #main options
-lazy = true
+#lazy = true
 
 #socket on which uwsgi listens
 socket =
 chmod-socket = 666
 
 #number of worker processes to run
-processes = 1
+processes = 4
 
 #number of threads per worker process
-threads = 4
+threads = 1
 
 #########
 #path to the uwsgi log file
