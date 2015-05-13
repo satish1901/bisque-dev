@@ -182,6 +182,38 @@ def test_update_level_3():
     result = update_level(new, current)
     compare_etree(answer, result)
     
+def test_update_level_4():
+    """
+        Update Level Test 4
+        
+        first level value
+    """
+    
+    current = etree.XML("""
+        <preference>
+            <tag name="test1"/>
+        </preference>
+    """, parser=parser)
+    
+    new = etree.XML("""
+        <preference>
+            <tag name="test1">
+                <tag name="test1" value="new"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    
+    answer = etree.XML("""
+        <preference>
+            <tag name="test1">
+                <tag name="test1" value="new"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    
+    result = update_level(new, current)
+    compare_etree(answer, result)
+    
     
 def test_mergeDocument_1():
     """
@@ -564,6 +596,40 @@ def test_mergeDocument_9():
     
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
+    
+    
+def test_mergeDocument_10():
+    """
+        Merge Document Test 10
+        
+        Strange Case
+        
+        With a tag nusted under a tag with a value 
+    """
+    etree_1 = etree.XML("""
+        <preference name="Preferences" value="">
+            <tag name="first_level">
+                <tag name="name1" value="old"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+
+    etree_2 = etree.XML("""
+        <preference name="Preferences" value="">
+            <tag name="first_level"/>
+        </preference>
+    """, parser=parser)
+    answer = etree.XML("""
+        <preference>
+            <tag name="first_level">
+                <tag name="name1" value="old"/>
+            </tag>
+        </preference>
+    """, parser=parser)
+    
+    result = mergeDocuments(etree_1, etree_2)
+    compare_etree(answer, result)
+    
     
     
 def test_to_dict_1():

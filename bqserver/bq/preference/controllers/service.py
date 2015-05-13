@@ -143,11 +143,14 @@ def mergeDocuments(current, new, attrib={}):
                 
                 #case 3: current node is a parent node and new node is a leaf
                 elif (type(current.sub_node_dict[k]) is TagNameNode) and (type(new.sub_node_dict[k]) is TagValueNode):
-                    # replaces the parent node of the current node with the leaf node
-                    current.sub_node_dict[k] = TagValueNode(
-                        value = new.sub_node_dict[k].value,
-                        node_attrib = new.sub_node_dict[k].node_attrib,
-                    )
+                    # replaces the parent node of the current node with the leaf node unless the value node has nothing
+                    if new.sub_node_dict[k].value:
+                        current.sub_node_dict[k] = TagValueNode(
+                            value = new.sub_node_dict[k].value,
+                            node_attrib = new.sub_node_dict[k].node_attrib,
+                        )
+                    else: #value does not equal anything set it back to the tag name node
+                        pass
                     
                 #case 4: current node is a leaf node and new node is a parent
                 elif (type(current.sub_node_dict[k]) is TagNameNode) and (type(new.sub_node_dict[k]) is TagValueNode):
@@ -208,7 +211,7 @@ def to_dict(tree):
 
 def to_etree(dictionary, attrib={}):
     """
-        @param: preference dictionary structure
+        @param: preference dictionary stucture (TagNameNode)
         @return: etree
     """
     def build(dict, node):
@@ -233,14 +236,22 @@ def to_etree(dictionary, attrib={}):
 
 def update_level(new_doc, current_doc, attrib={}):
     """
-        prepares the new elements to be place in the preference
+        prepares the new elements to be place in the preference resource
     """
     new_dict = to_dict(new_doc)
     current_dict = to_dict(current_doc)
     def build(new, current):
+        """
+            merges TagNameNode elements
+        """
         for nk in new.sub_node_dict.keys():
             if nk in current.sub_node_dict: #set current node 
-                if type(new.sub_node_dict[nk]) is TagValueNode: #over write the value node
+                if type(new.sub_node_dict[nk]) is TagNameNode and type(current.sub_node_dict[nk]) is TagNameNode:
+                    #both new and current are TagNameNodes
+                    build(new.sub_node_dict[nk], current.sub_node_dict[nk])
+                elif type(new.sub_node_dict[nk]) is TagNameNode: #over write the value node on the current document
+                    current.sub_node_dict[nk] = new.sub_node_dict[nk]
+                elif type(new.sub_node_dict[nk]) is TagValueNode: #over write the value node
                     if type(current.sub_node_dict[nk]) is TagValueNode:
                         attrib = current.sub_node_dict[nk].node_attrib
                         #add value and maybe type
@@ -250,12 +261,10 @@ def update_level(new_doc, current_doc, attrib={}):
                         node_attrib = attrib,
                         #non system preferences never get subnodes
                     )
-                elif type(new.sub_node_dict[nk]) is TagNameNode:
-                    build(new.sub_node_dict[nk], current.sub_node_dict[nk])
             else: #set new node
                 if type(new.sub_node_dict[nk]) is TagValueNode:
                     attrib = {}
-                    #add value, name and maybe type
+                    #add value and name; type always cascades
                     attrib['name'] = new.sub_node_dict[nk].node_attrib.get('name', '')
                     attrib['value'] = new.sub_node_dict[nk].node_attrib.get('value', '')
                     current.sub_node_dict[nk] = TagValueNode(
@@ -266,7 +275,11 @@ def update_level(new_doc, current_doc, attrib={}):
                 elif type(new.sub_node_dict[nk]) is TagNameNode:
                     current.sub_node_dict[nk] = new.sub_node_dict[nk]
         return current
+    
     update_dict = build(new_dict, current_dict)
+        
+    
+    
     return to_etree(update_dict, attrib=attrib)
 
 
@@ -603,7 +616,9 @@ class PreferenceController(ServiceController):
                 user_preference = etree.Element('preference')
                 attrib = {}
             #merging the new and current user preference documents
-            current_preference_etree = update_level(new_preference_etree, user_preference, attrib=attrib)
+            mergeDocuments
+            current_preference_etree = mergeDocuments(new_preference_etree, user_preference, attrib=attrib)
+            #current_preference_etree = update_level(new_preference_etree, user_preference, attrib=attrib)
             user.append(current_preference_etree)
             log.debug('Updating user preference.')
             data_service.update_resource(user.attrib.get('resource_uniq'), new_resource=user)
