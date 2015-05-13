@@ -616,9 +616,7 @@ class PreferenceController(ServiceController):
                 user_preference = etree.Element('preference')
                 attrib = {}
             #merging the new and current user preference documents
-            mergeDocuments
-            current_preference_etree = mergeDocuments(new_preference_etree, user_preference, attrib=attrib)
-            #current_preference_etree = update_level(new_preference_etree, user_preference, attrib=attrib)
+            current_preference_etree = update_level(new_preference_etree, user_preference, attrib=attrib)
             user.append(current_preference_etree)
             log.debug('Updating user preference.')
             data_service.update_resource(user.attrib.get('resource_uniq'), new_resource=user)
