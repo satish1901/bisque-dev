@@ -334,6 +334,11 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     public_vals = { 'false': False, '0': False, 'private':False, 0:False,
                     'true': True, '1': True, 'public': True, 1:True
                     }
+    
+    
+    if isinstance(with_public, list): # protects against lists, that are not hashable -chris
+        with_public = with_public[-1]
+        
     with_public = public_vals.get(with_public, False)
     user_id = user_id or get_user_id()
 
