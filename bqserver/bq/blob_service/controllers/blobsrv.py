@@ -228,7 +228,7 @@ class PathService (TGController):
     def list_path(self, path, *args,  **kwargs):
         'Find a resource identified by a path'
         log.info("move() called %s" ,  path)
-        resource = data_service.query('image|file', resource_value = path, cache=False)
+        resource = data_service.query('image|file', resource_value = path, wpublic='1', cache=False)
         return etree.tostring(resource)
 
     @expose(content_type='text/xml')
@@ -245,7 +245,7 @@ class PathService (TGController):
     def move_path(self, path, dst, *args,  **kwargs):
         ' Move a resource identified by path  '
         log.info("move() called %s" , args)
-        resource = data_service.query("file|image", resource_value = path, cache=False)
+        resource = data_service.query("file|image", resource_value = path, wpublic='1', cache=False)
         for child in resource:
             child.set('resource_value',  dst)
             resource = data_service.update(child)
@@ -256,7 +256,7 @@ class PathService (TGController):
     def delete_path(self, path,  **kwargs):
         ' Delete a resource identified by path  '
         log.info("delete() called %s" , path)
-        resource = data_service.query("file|image", resource_value = path, cache=False)
+        resource = data_service.query("file|image", resource_value = path, wpublic='1', cache=False)
         for child in resource:
             data_service.del_resource(child)
         return ""

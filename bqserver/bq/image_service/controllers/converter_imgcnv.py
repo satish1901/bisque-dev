@@ -76,8 +76,10 @@ if os.name == 'nt':
         return r, out
 else:
     def call_imgcnvlib(command):
+        #log.info ('CALLING IMGCNVLIB %s', command)
         arr = (ctypes.c_char_p * len(command))()
-        arr[:] = [i.encode('utf-8') for i in command]
+        #arr[:] = [i.encode('utf-8') for i in command]
+        arr[:] =  command
         res = ctypes.pointer(ctypes.c_char_p())
 
         try:
