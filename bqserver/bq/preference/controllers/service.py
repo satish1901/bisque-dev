@@ -486,12 +486,12 @@ class PreferenceController(ServiceController):
             log.debug('No annotation document found for document (%s)'%resource_uniq)
             return etree.Element('annotation', value=resource_uniq)
     
-    def strip_attributes(self, xml):
+    def strip_attributes(self, xml, save_attrib=['name','value', 'type']):
         """
         """
         def strip(node):
             for a in node.attrib.keys():
-                if a not in set(['name','value','type']):
+                if a not in set(save_attrib):
                     del node.attrib[a]
             for n in node:
                 strip(n)
@@ -605,21 +605,23 @@ class PreferenceController(ServiceController):
                 #raise error
                 log.debug('User was not found')
                 abort(404)
-            
+            attrib = {}
+            user_preference_uri = None
             if len(user_preference_list)>0:
                 log.debug('Found user preference.')
                 user_preference = data_service.get_resource(user_preference_list[0].attrib['uri'], view='deep')
                 user_preference_uri = user_preference_list[0].attrib['uri']
-                attrib = {'uri':user_preference_uri}
+                #attrib = {'uri':user_preference_uri}
             else: #no preference found, create a new preferences
                 log.debug('No user preference found. Creating new preference resource for user.')
                 user_preference = etree.Element('preference')
-                attrib = {}
+                
             #merging the new and current user preference documents
             current_preference_etree = update_level(new_preference_etree, user_preference, attrib=attrib)
-            user.append(current_preference_etree)
-            log.debug('Updating user preference.')
-            data_service.update_resource(user.attrib.get('resource_uniq'), new_resource=user)
+            if user_preference_uri: data_service.del_resource(user_preference_uri)
+            resource_uniq = user.attrib.get('resource_uniq')
+            current_preference_etree = self.strip_attributes(current_preference_etree, save_attrib=['name','value','type','ts'])
+            data_service.new_resource(current_preference_etree, parent='data_service/%s' % resource_uniq)
             return self.get(uniq=None, level=1, **kw) #return the new merged document
         abort(404)
         
@@ -690,20 +692,24 @@ class PreferenceController(ServiceController):
                     log.debug('No annotation document found. Creating an annotation for document at (%s)'%resource_uniq)
                     resource = data_service.new_resource(resource)
                     resource_preference_list = []
-                
+            resource_preference_uri = None
+            attrib = {}
             if len(resource_preference_list)>0: #merge the documentes
                 resource_preference_uri = resource_preference_list[0].attrib.get('uri')
                 log.debug('Preference found at %s' % resource_preference_uri)
                 resource_preference = data_service.get_resource(resource_preference_uri, view='deep')
-                attrib = {'uri': resource_preference_uri}
+                
+                #attrib = {'uri': resource_preference_uri}
             else: #create a new preferences
                 log.debug('No resource preference found. Creating new preference resource for resource: %s'%resource.attrib.get('resource_uniq'))
                 resource_preference = etree.Element('preference')
-                attrib = {}
             
             current_preference_etree = update_level(new_preference_etree, resource_preference, attrib=attrib)
-            resource.append(current_preference_etree)
-            data_service.update_resource('data_service/%s' % resource.attrib.get('resource_uniq'), new_resource=resource)
+            if resource_preference_uri: data_service.del_resource(resource_preference_uri)
+            resource_uniq = resource.attrib.get('resource_uniq')
+            current_preference_etree = self.strip_attributes(current_preference_etree, save_attrib=['name','value','type','ts'])
+            data_service.new_resource(current_preference_etree, parent='data_service/%s' % resource_uniq)
+            #data_service.update_resource('data_service/%s' % resource.attrib.get('resource_uniq'), new_resource=resource)
             return self.get(resource_uniq=resource_uniq, level=2, **kw) #remerge
         log.debug('Preference was not found!')
         abort(404)
