@@ -376,10 +376,6 @@ Ext.define('BQ.Application.Toolbar', {
                 hidden: true,
                 handler: this.settingPreferencePage,
             }, {
-                text: 'System',
-                itemId: 'menu_system',
-                hidden: true,
-            }, {
                 xtype: 'menuseparator',
                 itemId: 'menu_user_signout_sep',
                 hidden: true,
