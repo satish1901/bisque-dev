@@ -226,7 +226,7 @@ class AdminController(ServiceController):
         
         kw['wpublic'] = 1
         users =  data_service.query(resource_type = 'user', **kw)
-        view=kw.pop('view', None)
+        view = kw.pop('view', None)
         resource = etree.Element('resource', uri=str(request.url))
         for u in users:
             user = self.add_admin_info2node(u, view)
@@ -374,6 +374,7 @@ class AdminController(ServiceController):
             log.debug("ADMIN: Deleting user: " + str(bquser) )
             user = DBSession.query(User).filter (User.user_name == bquser.resource_name).first()
             log.debug ("Renaming internal user %s" % user)
+            
             if user:
                 DBSession.delete(user)
                 # delete the access permission
@@ -381,12 +382,11 @@ class AdminController(ServiceController):
                     log.debug ("KILL ACL %s" % p)
                     DBSession.delete(p)
                 self.deleteimages(bquser.resource_name, will_redirect=False)
+                #DBSession.delete(bquser)
+                
                 #transaction.commit()
-                #data_service.del_resource('/data_service/%s'%uniq)
-                DBSession.delete(bquser)
-                transaction.commit()
-                #data_service.del_resource('/%s'%uniq)
-                return '<resource>Delete User</resource>'
+            data_service.del_resource(bquser)
+            return '<resource>Delete User</resource>'
 
         abort(400)
 
