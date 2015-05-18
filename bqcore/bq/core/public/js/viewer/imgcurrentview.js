@@ -66,7 +66,7 @@ ImgCurrentView.prototype.cropBorders = function (canvas_view) {
 
 	var logScale = this.getlogScale();
 	var scale = Math.pow(2, logScale);
-	var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plugin list
+	var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer; //finding tiled viewer in the plug-in list
 	
     var tile_height = parseInt(tiled_viewer.height);
     var tile_width = parseInt(tiled_viewer.width);
@@ -132,17 +132,16 @@ ImgCurrentView.prototype.drawScaleBar = function(canvas_view) {
 	if (scalebar.scalebar) { //no scalebar found
 		var scalebar_size = scalebar.scalebar.widget.getBoundingClientRect();
 		var viewer_size = this.viewer.viewer_controls_surface.getBoundingClientRect();
-		var svg_box = this.viewer.plugins_by_name['renderer'].svgimg.getBoundingClientRect() //gets the full image view
         var tiled_viewer = this.viewer.plugins_by_name['tiles'].tiled_viewer;
 		var viewer_top = tiled_viewer.y;
 		var viewer_left = tiled_viewer.x;
-		var viewer_width = tiled_viewer.width;
-		var viewer_height = tiled_viewer.height;
+		var viewer_right = viewer_left + tiled_viewer.width;
+		var viewer_bottom = viewer_top + tiled_viewer.height;
 		
-		if (svg_box.top - viewer_size.top <= scalebar_size.top - viewer_size.top &&
-			svg_box.left - viewer_size.left <= scalebar_size.left - viewer_size.left &&
-			svg_box.right - viewer_size.left >= scalebar_size.right - viewer_size.left &&
-			svg_box.bottom - viewer_size.top >= scalebar_size.bottom - viewer_size.top) {
+		if (viewer_top - viewer_size.top <= scalebar_size.top - viewer_size.top &&
+			viewer_left - viewer_size.left <= scalebar_size.left - viewer_size.left &&
+			viewer_right - viewer_size.left >= scalebar_size.right - viewer_size.left &&
+			viewer_bottom - viewer_size.top >= scalebar_size.bottom - viewer_size.top) {
 			
 			//check if image leave the view
 			if (viewer_top < 0) {
@@ -209,8 +208,8 @@ ImgCurrentView.prototype.getTilesInView = function() {
             }
         }
     }
-	return inViewImages
-}
+	return inViewImages;
+};
 
 
 /*
@@ -221,13 +220,13 @@ ImgCurrentView.prototype.getTilesInView = function() {
 *	@return: level
 */
 ImgCurrentView.prototype.getCurrentLevel = function() {
-    var scale = this.viewer.view().scale
+    var scale = this.viewer.view().scale;
     if (scale>1){ //if scale is greater than 1 no tile scaling is used any more
         var level = 0;
     } else {
         var level = Math.log(1/scale)/Math.log(2);
     }
-	return level
+	return level;
 }
 
 /*
@@ -276,8 +275,8 @@ ImgCurrentView.prototype.getlogScale = function(level) {
 */
 ImgCurrentView.prototype.divideTile = function(tile) {
 	var tileviewer = this.viewer.plugins_by_name['tiles'].tiled_viewer;
-	var yoffset = parseInt(tile.style.top);
-	var xoffset = parseInt(tile.style.left);
+	var yoffsetTile = parseInt(tile.style.top);
+	var xoffsetTile = parseInt(tile.style.left);
 	var scaled_imgwidth = tile.width;
 	var scaled_imgheight = tile.height;	
 	var src = tile.src;
@@ -291,7 +290,7 @@ ImgCurrentView.prototype.divideTile = function(tile) {
 	var current_view_state = this.viewer.view();
 	
 	function createNewTile(xOffset, yOffset, width, height, lvl, xTile, yTile) {
-		return { 
+		return {
 			style : {
                 top: yOffset, 
                 left: xOffset
@@ -300,68 +299,72 @@ ImgCurrentView.prototype.divideTile = function(tile) {
 			height: height,
 			level: lvl,
 			src: u.protocol+'://'+u.authority+u.path+'?'+url_query.replace(/tile=(\d*),(\d*),(\d*),/, 'tile=' + lvl + ','+ xTile +','+ yTile +','),
-		}
-	}
+		};
+	};
 	
 	//returning root level
-	if (level <= this.opt.level) return [createNewTile(xoffset, yoffset, scaled_imgwidth, scaled_imgheight, level, xtile, ytile)]
+	if (level<=this.opt.level) return [createNewTile(xoffsetTile, yoffsetTile, scaled_imgwidth, scaled_imgheight, level, xtile, ytile)];
 	
-	//drop a level and reducing the image into at most 4 smaller images 
+	//drop a level and reducing the image into at most 4 smaller images
     var tiles = [];
 	var level = level - 1;
-	var xoffset = 2*xoffset;
-	var yoffset = 2*yoffset;
+	var xoffset = 2*xoffsetTile;
+	var yoffset = 2*yoffsetTile;
+    var scaleDiff = Math.pow(2,this.getCurrentLevel()-level);
+    var xTileViewerOffset = scaleDiff*tileviewer.x;
+    var yTileViewerOffset = scaleDiff*tileviewer.y;
+    
+    var current_view_state_width = current_view_state.width*scaleDiff;
+    var current_view_state_height = current_view_state.height*scaleDiff;
+    
 	
 	//top left
-	if ((xoffset + tiles_size - 2*tileviewer.x) < 2*current_view_state.width) var scaled_imgwidth = tiles_size;
-	else var scaled_imgwidth = 2*current_view_state.width + 2*tileviewer.x - xoffset;
-	
-	if ((yoffset + tiles_size - 2*tileviewer.y) < 2*current_view_state.height) var scaled_imgheight = tiles_size;
-	else var scaled_imgheight = 2*current_view_state.height + 2*tileviewer.y - yoffset;
-	
-    tiles.push(createNewTile(xoffset, yoffset, tiles_size, tiles_size, level, 2*xtile, 2*ytile));
-	//tiles.push(createNewTile(xoffset, yoffset, scaled_imgwidth, scaled_imgheight, level, 2*xtile, 2*ytile));
-	
+    if ((xoffset + tiles_size - xTileViewerOffset) < current_view_state_width) var scaled_imgwidth = tiles_size;
+    else var scaled_imgwidth = current_view_state_width + xTileViewerOffset - xoffset;
+    
+    if ((yoffset + tiles_size - yTileViewerOffset) < current_view_state_height) var scaled_imgheight = tiles_size;
+    else var scaled_imgheight = current_view_state_height + yTileViewerOffset - yoffset;
+    
+    tiles.push(createNewTile(xoffset, yoffset, scaled_imgwidth, scaled_imgheight, level, 2*xtile, 2*ytile));
+    
+    
 	//top right
-	if (xoffset + tiles_size - 2*tileviewer.x < 2*current_view_state.width) {
-		if (xoffset + 2*tiles_size - 2*tileviewer.x < 2*current_view_state.width) var scaled_imgwidth = tiles_size;
-		else var scaled_imgwidth = 2*current_view_state.width + 2*tileviewer.x - xoffset - tiles_size;
+	if ((xoffset + tiles_size - xTileViewerOffset) < current_view_state_width) {
+		if ((xoffset + 2*tiles_size - xTileViewerOffset) < current_view_state_width) var scaled_imgwidth = tiles_size;
+		else var scaled_imgwidth = current_view_state_width + xTileViewerOffset - xoffset - tiles_size;
 		
-		if (yoffset + tiles_size - 2*tileviewer.y < 2*current_view_state.height) var scaled_imgheight = tiles_size;
-		else var scaled_imgheight = 2*current_view_state.height + 2*tileviewer.y - yoffset;	
+		if ((yoffset + tiles_size - yTileViewerOffset) < current_view_state_height) var scaled_imgheight = tiles_size;
+		else var scaled_imgheight = current_view_state_height + yTileViewerOffset - yoffset;
 		
-        tiles.push(createNewTile(xoffset + tiles_size, yoffset, tiles_size, tiles_size, level, 2*xtile+1, 2*ytile));
-		//tiles.push(createNewTile(xoffset + tiles_size, yoffset, scaled_imgwidth, scaled_imgheight, level, 2*xtile+1, 2*ytile));
+		tiles.push(createNewTile(xoffset + tiles_size, yoffset, scaled_imgwidth, scaled_imgheight, level, 2*xtile+1, 2*ytile));
 	}
 	
 	//bottom left 
-	if (yoffset + tiles_size - 2*tileviewer.y < 2*current_view_state.height) {
-		if (xoffset + tiles_size - 2*tileviewer.x < 2*current_view_state.width) var scaled_imgwidth = tiles_size;
-		else var scaled_imgwidth = 2*current_view_state.width + 2*tileviewer.x - xoffset;
+	if ((yoffset + tiles_size - yTileViewerOffset) < current_view_state_height) {
+		if (xoffset + tiles_size - xTileViewerOffset < current_view_state_width) var scaled_imgwidth = tiles_size;
+		else var scaled_imgwidth = current_view_state_width + xTileViewerOffset - xoffset;
 		
-		if (yoffset + 2*tiles_size - 2*tileviewer.y < 2*current_view_state.height) var scaled_imgheight = tiles_size;
-		else var scaled_imgheight = 2*current_view_state.height + 2*tileviewer.y - yoffset - tiles_size;	
+		if (yoffset + 2*tiles_size - yTileViewerOffset < current_view_state_height) var scaled_imgheight = tiles_size;
+		else var scaled_imgheight = current_view_state_height + yTileViewerOffset - yoffset - tiles_size;	
 		
-        tiles.push(createNewTile(xoffset, yoffset + tiles_size, tiles_size, tiles_size, level, 2*xtile, 2*ytile+1));
-		//tiles.push(createNewTile(xoffset, yoffset + tiles_size, scaled_imgwidth, scaled_imgheight, level, 2*xtile, 2*ytile+1));
+		tiles.push(createNewTile(xoffset, yoffset + tiles_size, scaled_imgwidth, scaled_imgheight, level, 2*xtile, 2*ytile+1));
 	}
 	
 	//bottom right
 	if (
-		(xoffset + tiles_size - 2*tileviewer.x < 2*current_view_state.width ) &&
-		(yoffset + tiles_size - 2*tileviewer.y < 2*current_view_state.height)
+		((xoffset + tiles_size - xTileViewerOffset) < current_view_state_width ) &&
+		((yoffset + tiles_size - yTileViewerOffset) < current_view_state_height)
 	) {
-		if (xoffset + 2*tiles_size - 2*tileviewer.x < 2*current_view_state.width ) var scaled_imgwidth = tiles_size;
-		else var scaled_imgwidth = 2*current_view_state.width + 2*tileviewer.x - xoffset - tiles_size;
+		if (xoffset + 2*tiles_size - xTileViewerOffset < current_view_state_width) var scaled_imgwidth = tiles_size;
+		else var scaled_imgwidth = current_view_state_width + xTileViewerOffset - xoffset - tiles_size;
 		
-		if (yoffset + 2*tiles_size - 2*tileviewer.y < 2*current_view_state.height) var scaled_imgheight = tiles_size;
-		else var scaled_imgheight = 2*current_view_state.height + 2*tileviewer.y - yoffset - tiles_size;
+		if (yoffset + 2*tiles_size - yTileViewerOffset < current_view_state_height) var scaled_imgheight = tiles_size;
+		else var scaled_imgheight = current_view_state_height + yTileViewerOffset - yoffset - tiles_size;
 		
-        tiles.push(createNewTile(xoffset + tiles_size, yoffset + tiles_size, tiles_size, tiles_size, level, 2*xtile+1, 2*ytile+1));
-		//tiles.push(createNewTile(xoffset + tiles_size, yoffset + tiles_size, scaled_imgwidth, scaled_imgheight, level, 2*xtile+1, 2*ytile+1));
+		tiles.push(createNewTile(xoffset + tiles_size, yoffset + tiles_size, scaled_imgwidth, scaled_imgheight, level, 2*xtile+1, 2*ytile+1));
 	}
 	return tiles;
-}
+};
 
 
 /*
@@ -384,8 +387,9 @@ ImgCurrentView.prototype.returnCurrentView = function(cb) {
     canvas_view.height = Math.pow(2,logScale)*control_surface_size.height;
     canvas_view.width = Math.pow(2,logScale)*control_surface_size.width;
     var ctx_view = canvas_view.getContext("2d");
-    ctx_view.fillStyle = 'rgba(67, 67, 67, 1)'//"#FF0000"; //the background of the image
+    ctx_view.fillStyle = 'rgba(67, 67, 67, 1)'; //the background of the image
     ctx_view.fillRect(0, 0, canvas_view.width, canvas_view.height);
+    
     
 	//scaled images in view
 	var inViewImagesScaled = [];
@@ -393,10 +397,10 @@ ImgCurrentView.prototype.returnCurrentView = function(cb) {
 		var tile = inViewImages.shift();
 		var tileList = this.divideTile(tile);
 		for (var t=0; t < tileList.length; t++) {
-			if (tileList[t].level <= this.opt.level) {
-				inViewImagesScaled.push(tileList[t])
-			} else {
-				inViewImages.push(tileList[t])
+			if (tileList[t].level <= this.opt.level) { //done scaling the image
+				inViewImagesScaled.push(tileList[t]);
+			} else { //still needs to be scaled more levels
+				inViewImages.push(tileList[t]);
 			}
 		}
 	}
@@ -417,7 +421,6 @@ ImgCurrentView.prototype.returnCurrentView = function(cb) {
 			ctx_view.drawImage( this, this.xoffset, this.yoffset, this.scaled_imgwidth, this.scaled_imgheight);
 			delete request_queue[this.id];
 			if (Object.getOwnPropertyNames(request_queue).length===0) {
-			
 				if (me.opt.wGobjects) canvas_view = me.drawGobjects(canvas_view);
 				if (!me.opt.wBorders) canvas_view = me.cropBorders(canvas_view);
 				if (me.opt.wScaleBar) canvas_view = me.drawScaleBar(canvas_view);
@@ -426,15 +429,7 @@ ImgCurrentView.prototype.returnCurrentView = function(cb) {
 		}.bind(img));
 		
 		img.addEventListener("error", function() { //error handling
-            BQ.ui.error('Image did not return correctly')
-            /*
-			delete request_queue[this.id];
-			if (Object.getOwnPropertyNames(request_queue).length===0)  {
-				if (me.opt.wGobjects) canvas_view = me.drawGobjects(canvas_view);
-				if (!me.opt.wBorders) canvas_view = me.cropBorders(canvas_view);
-				if (me.opt.wScaleBar) canvas_view = me.drawScaleBar(canvas_view);
-				if (cb) cb(canvas_view);
-			}*/
+            BQ.ui.error('Image did not return correctly');
 		}.bind(img))
 		img.src = inViewImagesScaled[i].src;
 	
