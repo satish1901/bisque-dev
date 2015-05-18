@@ -4,7 +4,8 @@ setup(name='bisque_ops',
       version='1.0',
       install_requires = [
         'requests',
-        'argparse'
+        'argparse',
+        'six',
         ],
 
       py_modules = ['bisque_ops' ],
