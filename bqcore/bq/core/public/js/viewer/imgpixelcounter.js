@@ -31,7 +31,7 @@ function ImgPixelCounter(viewer, name) {
     operations.menu.insert(1, {
         xtype  : 'menuitem',
         itemId : 'menu_viewer_pixel_counting',
-        text   : 'Pixel counter',
+        text   : 'Pixel Counter',
         handler: this.pixelCounter,
         scope  : this,
     });
@@ -102,6 +102,11 @@ ImgPixelCounter.prototype.pixelCounter = function () {
 		// pixel counter will be destroyed.
 		window.addEventListener('resize', function() {
 			if (me.pixelCounterPanel) {
+                Ext.MessageBox.show({
+                   title: 'Notification',
+                   msg: 'Resizing the page will disable to pixel counter. If you need to adjust the view, close the pixel counter, set the desired view in the viewer and open the pixel counter again.',
+                   buttons: Ext.MessageBox.OK,
+               });
 				me.pixelCounterPanel.close();
 			}
 		});
@@ -332,7 +337,7 @@ ImgPixelCounter.prototype.thresholdImage = function(value_th) {
 	if (this.pixelCounterPanel) {
 		this.pixelCounterPanel.updataGlobalPanel();
 	}
-}
+};
 
 
 /*
@@ -563,7 +568,7 @@ ImgPixelCounter.prototype.undoConnectedComponents = function(x,y,id) {
 	
 	var ctx_thresh = this.canvas_theshold.getContext("2d")
     var threshData = ctx_thresh.getImageData(0, 0, this.canvas_theshold.width, this.canvas_theshold.height);
-    var thresh_data = threshData.data;	
+    var thresh_data = threshData.data;
 	
     var edge_points_queue = new Array();
     var seed = 4*(y*this.canvas_image.width+x); //enforce channel zero
@@ -726,7 +731,12 @@ ImgPixelCounter.prototype.loadPreferences = function (p) {
     this.default_threshold      = 'threshold'      in p ? p.threshold      : this.default_threshold;
 };
 
-
+/*
+*   BQ.Panel.PixelCounter
+*
+*   The panel to display information and to change the
+*   threshold value
+*/
 Ext.define('BQ.Panel.PixelCounter', {
     extend: 'Ext.Panel',
     itemId: 'pixelcounter-panel',
@@ -860,6 +870,7 @@ Ext.define('BQ.Panel.PixelCounter', {
             itemId : 'px_regioncount_grid',
             store: this.regionCountStore,
             multiSelect: true,
+            minHeight: 300,
             columns: {
                 items: columns,
                 defaults: {flex: 1},
@@ -911,8 +922,7 @@ Ext.define('BQ.Panel.PixelCounter', {
                         this.updateRegionPanel();
                     }
                 },
-            },
-            { //Resets Button
+            }, { //Resets Button
                 itemId : 'px_reset_button',
                 iconCls: 'converter',
                 xtype: 'button',
@@ -928,9 +938,7 @@ Ext.define('BQ.Panel.PixelCounter', {
 						this.updateRegionPanel();
                     }
                 }
-            },
-            '->',
-            { //Export Button
+            }, '->', { //Export Button
                 itemId : 'px_export_button',
                 xtype: 'button',
                 text: 'Export CSV',
