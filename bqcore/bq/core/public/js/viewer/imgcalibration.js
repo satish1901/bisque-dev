@@ -597,10 +597,12 @@ Ext.define('BQ.viewer.Calibration', {
                     nosave: true,
                     editprimitives: 'Line',
                 },
+                
                 listeners: {
-                    'changed': function() {
-                        me.updateReferenceLength()
-                    }
+                    'afterPhys': me.updateReferenceLength.bind(me),
+                    'changed': me.updateReferenceLength.bind(me),
+                    'delete': me.updateReferenceLength.bind(me),
+                    'moveend': me.updateReferenceLength.bind(me),
                 },
             })
         );
