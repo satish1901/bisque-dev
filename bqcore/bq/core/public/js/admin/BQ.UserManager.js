@@ -134,7 +134,7 @@ Ext.define('BQ.ResourceTagger.User', {
                 failure: function(response) {
                     this.setProgress(false);
                     this.tree.setLoading(false);
-                    BQ.ui.error('Failed to delete resource: '+id);
+                    BQ.ui.error('Failed to delete resource tag on: '+id);
                     this.setResource('/admin/user/'+id) //reset resource
                     me.fireEvent('onError', me, response)
                 },
@@ -177,6 +177,7 @@ Ext.define('BQ.ResourceTagger.User', {
                     this.setProgress(false);
                     //this.reload()
                     this.setResource('/admin/user/'+id)
+                    //this.reload()
                     me.fireEvent('onError', me, response)
                 },
                 scope: this,
@@ -216,7 +217,7 @@ Ext.define('BQ.admin.UserTable', {
             text: 'User Name', dataIndex: 'name', sortable: true, flex:1,
         },{
             text: 'Email', dataIndex: 'email', sortable: true, flex:1,
-        }, {
+        },{
             text: 'Display Name', dataIndex: 'display_name', sortable: true, flex:1,
         }],
         defaults: {
@@ -226,6 +227,12 @@ Ext.define('BQ.admin.UserTable', {
             }
         }
     },   
+    
+    plugins: {
+        ptype: 'bufferedrenderer',
+        trailingBufferZone: 20,  // Keep 20 rows rendered in the table behind scroll
+        leadingBufferZone: 50   // Keep 50 rows rendered in the table ahead of scroll
+    },
     renderTo: Ext.getBody(),
     initComponent: function(config) {
         var config = config || {};
@@ -340,12 +347,16 @@ Ext.define('BQ.admin.UserTable', {
             //autoLoad: true,
             autoSync: false,
             proxy: {
+                type: 'rest',
                 noCache: false,
                 type: 'ajax',
                 limitParam: undefined,
                 pageParam: undefined,
                 startParam: undefined,
-                url: '/admin/user?view=full',
+                url: '/admin/user',
+                extraParams: {
+                    view: 'clean,full',
+                },
                 reader: {
                     type: 'xml',
                     root: 'resource',
@@ -353,7 +364,8 @@ Ext.define('BQ.admin.UserTable', {
                 },
             },
         });
-        this.store.reload();
+        this.store.load();
+        //this.store.reload();
     },
     
     addUserWin : function() {
