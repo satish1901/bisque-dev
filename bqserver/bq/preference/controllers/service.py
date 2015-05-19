@@ -519,18 +519,17 @@ class PreferenceController(ServiceController):
                 else:
                     resource = data_service.update_resource(system_preference_list[0].attrib['uri'], preference_doc, **kw)
             else: #create a new preferences for the system
-                systemList[0].uri
                 resource = data_service.update_resource(systemList[0].uri, preference_doc, **kw)
                 
         else:
-            pass
+            abort(400)
             #raise
         return etree.tostring(resource)
     
     
     def system_put(self, path=None, body=None, **kw):
         """
-            Replaces all the preferences with the document at the level
+            Replaces all the preferences with the document
             Only admin can change the system level
             the user has to be logged in to make any changes
             
@@ -547,10 +546,10 @@ class PreferenceController(ServiceController):
                 else:
                     resource = data_service.update_resource(resource_preference_list[0].uri, preference_doc, **kw)
             else: #create a new preferences
-                pass
+                abort(400)
                 #raise
         else:
-            pass
+            abort(400)
             #raise
         return etree.tostring(resource)
     
