@@ -827,7 +827,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             resource : this.resource,
         };
 
-
+        /*
         var graph = {
             xtype : 'bq_graphviewer_panel',
             itemId: 'graph',
@@ -848,7 +848,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             },
             resource : this.resource,
         };
-
+        */
         var resTab = {
             xtype: 'tabpanel',
             itemId: 'tabs',
@@ -862,7 +862,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             split : true,
             width : 400,
             plain : true,
-            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, graph, map]
+            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, /*graph,*/ map]
         };
 
         this.add({
