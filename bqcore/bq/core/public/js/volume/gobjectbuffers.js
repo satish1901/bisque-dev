@@ -243,6 +243,41 @@ pointBuffer.prototype.allocateMesh = function (geometry, material) {
 	return cloud;
 };
 
+pointBuffer.prototype.initPermutationArray = function(){
+    if(!this.backGeom)
+        this.initBackBuffer();
+
+    var gpositions = this.mesh.geometry.getAttribute('position').array;
+	var gindex     = this.mesh.geometry.getAttribute('index').array;
+	var gcolor     = this.mesh.geometry.getAttribute('color').array;
+
+	var bpositions = this.backGeom.getAttribute('position').array;
+	var bindex     = this.backGeom.getAttribute('index').array;
+	var bcolor     = this.backGeom.getAttribute('color').array;
+
+    //var shape = this.shapeIndex
+	if (!this.permutation) {
+		//preallocate the distance array and fill the back buffer positions
+		this.permutation = new Array(gindex.length);
+		for (var i = 0; i < this.permutation.length; i++) {
+			this.permutation[i] = {
+				i : i,
+				dist : 0.0,
+				visited : false
+			};
+		}
+        for(var i = 0; i < gpositions.length; i++){
+            bpositions[i] = gpositions[i];
+        }
+        for(var i = 0; i < gindex.length; i++){
+            bindex[i] = gindex[i];
+        }
+        for(var i = 0; i < gcolor.length; i++){
+            bcolor[i] = gcolor[i];
+        }
+	}
+};
+
 pointBuffer.prototype.sortParticles = function (pos) {
 	if(!this.backGeom)
         this.initBackBuffer();
@@ -908,6 +943,7 @@ gObjectTool.prototype.initBuffers = function(){
 	//todo: I think we want to build buffers for every frame right here,
 	//      rather than load lazily... if we have 10 million gobjects to
 	//      sift through, then this will get pretty slow
+
     BQFactory3D.set(cBuffer, lBuffer, pBuffer);
 };
 
@@ -936,6 +972,7 @@ gObjectTool.prototype.loadGObjects = function () {
 	this.gObjectBuffers[t].points.buildBuffer();
 	this.gObjectBuffers[t].polylines.buildBuffer();
 	this.gObjectBuffers[t].polygons.buildBuffer();
+    this.gObjectBuffers[t].points.initPermutationArray();
 	this.updateScene();
 	this.rescalePoints(this.volume.scale);
     this.volume.rerender();
@@ -1036,7 +1073,7 @@ gObjectTool.prototype.initControls = function(){
 		var panel = this.volume;
 		//move this to background plug-in
 		var camPos = this.volume.canvas3D.camera.position;
-		this.currentSet.points.sortParticles(camPos);
+		//this.currentSet.points.sortParticles(camPos);
 		panel.canvas3D.renderer.clearTarget(this.accumBuffer0,
 				                            true, true, true);
 		var buffer = this.accumBuffer0;
@@ -1219,7 +1256,7 @@ gObjectTool.prototype.initControls = function(){
 
 	this.addUniforms();
 	this.isLoaded = true;
-	this.volume.canvas3D.animate_funcs[0] = callback(this, this.sortPoints);
+    //this.volume.canvas3D.animate_funcs[0] = callback(this, this.sortPoints);
 
 	//this.updateScene();
 

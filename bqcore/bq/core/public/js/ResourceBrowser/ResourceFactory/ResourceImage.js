@@ -832,6 +832,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             xtype : 'bq_graphviewer_panel',
             itemId: 'graph',
             title : 'Graph',
+            resource: this.resource,
             listeners:{
                 'context' : function(res, div, graph) {
                     var node = graph.g.node(res);
