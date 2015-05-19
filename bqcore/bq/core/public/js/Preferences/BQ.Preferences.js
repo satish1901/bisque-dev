@@ -46,7 +46,8 @@ Ext.define('BQ.Preferences', {
                 if (cb) cb(BQ.Preferences.systemDict, BQ.Preferences.systemXML);
             },
             failure: function(response) {
-                BQ.ui.error('failed to load system preference');
+                console.log('Warning: Failed to load system preference');
+                //BQ.ui.error('failed to load system preference');
                 BQ.Preferences.fireEvent('onerror_system_pref');
             },
             scope: me,
@@ -69,7 +70,8 @@ Ext.define('BQ.Preferences', {
                 if (cb) cb(BQ.Preferences.userDict, BQ.Preferences.userXML);
             },
             failure: function(response) {
-                BQ.ui.error('failed to load user preference');
+                console.log('Warning: Failed to load user preference');
+                //BQ.ui.error('failed to load user preference');
                 BQ.Preferences.fireEvent('onerror_user_pref');
             },
             scope: me,
@@ -98,7 +100,8 @@ Ext.define('BQ.Preferences', {
                 if (cb) cb(BQ.Preferences.resourceDict[uniq], BQ.Preferences.resourceXML[uniq]);
             },
             failure: function(response) {
-                BQ.ui.error('Failed to load resource:'+uniq+' preference!');
+                console.log('Warning: Failed to load resource:'+uniq+' preference!')
+                //BQ.ui.error('Failed to load resource:'+uniq+' preference!');
                 BQ.Preferences.fireEvent('onerror_'+uniq+'_pref');
             },
             scope: me,
@@ -127,7 +130,8 @@ Ext.define('BQ.Preferences', {
                 if (cb) cb(BQ.Preferences.systemDict, BQ.Preferences.systemXML);
             },
             failure: function(response) {
-                BQ.ui.error('failed to update system preference');
+                //console.log('Warning: Failed to update system preference');
+                BQ.ui.error('Failed to update system preference.');
                 BQ.Preferences.fireEvent('onerror_system_pref');
             },
             scope: me,
@@ -157,7 +161,8 @@ Ext.define('BQ.Preferences', {
                 //me.fireEvent('updateResource', me, me.userDict);
             },
             failure: function(response) {
-                BQ.ui.error('failed to load user preference')
+                //console.log('Warning: Failed to update user preference');
+                BQ.ui.error('Failed to load user preference.')
             },
             scope: me,
         });
@@ -179,12 +184,14 @@ Ext.define('BQ.Preferences', {
                     if (cb) cb(BQ.Preferences.resourceDict[uniq], BQ.Preferences.resourceXML[uniq]);
                 },
                 failure: function(response) {
-                    BQ.ui.error('failed to load resource preference');
+                    //console.log('Warning: Failed to update resource preference.');
+                    BQ.ui.error('Failed to update resource preference');
                 },
                 scope: me,
             });
         } else {
-            BQ.ui.error('No resource set to preferences, Update failed')
+            //console.log('Warning: No resource set to preferences, Update failed.');
+            BQ.ui.error('No resource set to preferences, Update failed.')
         }
     },
     
@@ -198,7 +205,7 @@ Ext.define('BQ.Preferences', {
                 me.loadSystem(cb);
             },
             failure: function(response) {
-                BQ.ui.error('failed to delete system preference tag');
+                BQ.ui.error('Failed to delete system preference tag.');
             },
             scope: me,
         });
@@ -214,7 +221,7 @@ Ext.define('BQ.Preferences', {
                 me.loadUser(cb);
             },
             failure: function(response) {
-                BQ.ui.error('failed to delete user preference tag');
+                BQ.ui.error('Failed to delete user preference tag.');
             },
             scope: me,
         });
@@ -232,7 +239,7 @@ Ext.define('BQ.Preferences', {
                 me.loadResource(uniq, cb); //reset the element
             },
             failure: function(response) {
-                BQ.ui.error('failed to delete resource preference tag');
+                BQ.ui.error('Failed to delete resource preference tag.');
             },
             scope: me,
         });
