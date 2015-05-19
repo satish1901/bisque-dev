@@ -1562,17 +1562,56 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 this.useAnimation = false;
         }
 
+        var compute_atlas_size = function(w, h, n){
+            //w: image width
+            //h: image height
+            //n: numbe rof image planes, Z stacks or time points
+            //start with atlas composed of a row of images
+            var ww = w*n,
+                hh = h,
+                ratio = ww / hh;
+            // optimize side to be as close to ratio of 1.0
+            for (var r=2; r < n; ++r){
+                var ipr = Math.ceil(n / r),
+                    aw = w*ipr,
+                    ah = h*r,
+                    rr = Math.max(aw, ah) / Math.min(aw, ah);
+                if (rr < ratio){
+                    ratio = rr
+                    ww = aw
+                    hh = ah
+                }
+                else
+                    break;
+            }
+            return {w: Math.round(ww/w), h: Math.round(hh/h)};
+        }
+
+
+        var
+        x = this.dims.slice.x,
+        y = this.dims.slice.y,
+        z = this.dims.slice.z,
+        t = this.dims.t;
+
+        var atlasDims = compute_atlas_size(x, y, z*t);
+
+
+
 		var dims = 'dims';
 		var meta = 'meta';
 		var atlas = 'textureatlas';
-		var resize_safeguard = 'resize=1024,1024,BC,MX'; // resize designed to safeguard against very large planar images
+		//var resize_safeguard = 'resize=1024,1024,BC,MX'; // resize designed to safeguard against very large planar images
 		// we probably need to add safeguard against very large Z series
 		var maxTexture = this.getMaxTextureSize();
-		var resize = 'resize=' + this.maxTextureSize + ',' + this.maxTextureSize + ',BC,MX';
+        var resizeX = Math.floor(this.maxTextureSize/atlasDims.w);
+        var resizeY = Math.floor(this.maxTextureSize/atlasDims.h);
 
-		var fullUrl = resUniqueUrl + '?' + [slice, resize_safeguard, dims].join('&');
-		var fullAtlasUrl = resUniqueUrl + '?' + [slice, resize_safeguard, atlas, dims].join('&');
-		var resizeAtlasUrl = resUniqueUrl + '?' + [slice, resize_safeguard, atlas, resize, dims].join('&');
+		var resize = 'resize=' + resizeX + ',' + resizeY + ',BC,MX';
+
+		var fullUrl = resUniqueUrl + '?' + [slice, resize, dims].join('&');
+		var fullAtlasUrl = resUniqueUrl + '?' + [slice, resize, atlas, dims].join('&');
+		var resizeAtlasUrl = resUniqueUrl + '?' + [slice, resize, atlas, dims].join('&');
 
 		this.loadedDimFullAtlas = false;
 		this.loadedDimResizeAtlas = false;
