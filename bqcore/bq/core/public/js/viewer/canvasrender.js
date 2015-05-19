@@ -833,80 +833,41 @@ function CanvasControl(viewer, element) {
 }
 
 CanvasControl.prototype.setFrustum = function(e, scale){
-
-    var dim = this.viewer.viewer.imagedim,
-    viewstate = this.viewer.viewer.current_view,
-    z = this.viewer.viewer.tiles.cur_z,
-    t = this.viewer.viewer.tiles.cur_t,
-    sz = dim.z,
-    st = dim.t,
-    cw = this.viewer.viewer.imagediv.clientWidth/scale.x,
-    ch = this.viewer.viewer.imagediv.clientHeight/scale.y,
-    x = e.x < 0 ? -e.x/scale.x : 0,
-    y = e.y < 0 ? -e.y/scale.y : 0,
-    w = e.x < 0 ? dim.x + e.x/scale.x : cw - e.x/scale.x,
-    h = e.y < 0 ? dim.y + e.y/scale.y : ch - e.y/scale.y;
-
-    w = Math.min(cw, w);
-    w = Math.min(dim.x, w);
-    h = Math.min(ch, h);
-    h = Math.min(dim.y, h);
-
-    var proj = viewstate.imagedim.project,
-    proj_gob = viewstate.gob_projection;
-    var z0 = z-0.5;
-    var z1 = z+0.5;
-    var t0 = t-0.5;
-    var t1 = t+0.5;
-
-    if (proj_gob==='all') {
-        z0 = 0;
-        z1 = sz;
-        t0 = 0;
-        t1 = st;
-    } else if (proj === 'projectmaxz' || proj === 'projectminz' || proj_gob==='Z') {
-        z0 = 0;
-        z1 = sz;
-    } else if (proj === 'projectmaxt' || proj === 'projectmint' || proj_gob==='T') {
-        t0 = 0;
-        t1 = st;
-    } else if (proj === 'projectmax' || proj === 'projectmin') {
-        z0 = 0;
-        z1 = sz;
-        t0 = 0;
-        t1 = st;
-    }
-
-    this.viewer.setFrustum({
-        min: [x,   y,   z0, t0],
-        max: [x+w, y+h, z1, t1]
-    });
+     this.viewer.setFrustum(this.viewer.calcFrustum(e.x, e.y, scale));
 };
 
 CanvasControl.prototype.viewerMoved = function(e) {
-    //this.viewer.stage.setPosition({x: e.x, y: e.y});
-    //var canvas = this.viewer.currentLayer.getCanvas()._canvas;
+
     var scale = this.viewer.stage.scale();
-    this.setFrustum(e, scale);
+    this.setFrustum(e, scale.x);
 
     this.viewer.stage.x(e.x);
     this.viewer.stage.y(e.y);
     var frust = this.viewer.viewFrustum;
-    //var w = frust.max[0] - frust.min[0];
-    //var h = frust.max[1] - frust.min[1];
-    //this.viewer.stage.width(w*scale.x);
-    //this.viewer.stage.height(h*scale.y);
 
     this.viewer.updateVisible();
     var me = this;
-    /*
-    var draw = function(){
-        if(!me.timeout)
-            me.viewer.draw();
-        me.timeout = null;
-    };
-    setTimeout(draw, 100);
-    */
+
+    if(0){
+        var viewer = this.viewer;
+        if(!viewer.frustRect){
+
+            viewer.frustRect = new Kinetic.Rect({
+                fill: 'rgba(200,200,200,0.1)',
+                stroke: 'grey',
+                strokeWidth: 1,
+                listening: false,
+            });
+
+        }
+        viewer.currentLayer.add(viewer.frustRect);
+        var frust = this.viewer.calcFrustum(e.x, e.y, scale.x);
+
+        viewer.frustRect.x(frust.min[0]);
+        viewer.frustRect.y(frust.min[1]);
+        viewer.frustRect.width(frust.max[0] - frust.min[0]);
+        viewer.frustRect.height(frust.max[1] - frust.min[1]);
+    }
     this.viewer.draw();
     //this.viewer.stage.content.style.left = e.x + 'px';
     //this.viewer.stage.content.style.top = e.y + 'px';
@@ -1490,10 +1451,68 @@ CanvasRenderer.prototype.resetTree = function (e) {
     this.quadtree.reset();
 };
 
+CanvasRenderer.prototype.calcFrustum = function(x,y, scale){
+    var dim = this.viewer.imagedim,
+    viewstate = this.viewer.current_view,
+    z = this.viewer.tiles.cur_z,
+    t = this.viewer.tiles.cur_t,
+    sz = dim.z,
+    st = dim.t,
+    cw = this.viewer.imagediv.clientWidth/scale,
+    ch = this.viewer.imagediv.clientHeight/scale,
+    xp = x < 0 ? -x/scale : 0,
+    yp = y < 0 ? -y/scale : 0,
+    w = x < 0 ? dim.x + x/scale : cw - x/scale,
+    h = y < 0 ? dim.y + y/scale : ch - y/scale;
+
+    w = Math.min(cw, w);
+    w = Math.min(dim.x, w);
+    h = Math.min(ch, h);
+    h = Math.min(dim.y, h);
+
+    var proj = viewstate.imagedim.project,
+    proj_gob = viewstate.gob_projection;
+    var z0 = z-0.5;
+    var z1 = z+0.5;
+    var t0 = t-0.5;
+    var t1 = t+0.5;
+
+    if (proj_gob==='all') {
+        z0 = 0;
+        z1 = sz;
+        t0 = 0;
+        t1 = st;
+    } else if (proj === 'projectmaxz' || proj === 'projectminz' || proj_gob==='Z') {
+        z0 = 0;
+        z1 = sz;
+    } else if (proj === 'projectmaxt' || proj === 'projectmint' || proj_gob==='T') {
+        t0 = 0;
+        t1 = st;
+    } else if (proj === 'projectmax' || proj === 'projectmin') {
+        z0 = 0;
+        z1 = sz;
+        t0 = 0;
+        t1 = st;
+    }
+
+    if(0)
+        return {
+            min: [xp + 10,   yp + 10,   z0, t0],
+            max: [xp+w - 10, yp+h - 10, z1, t1]
+        };
+    else
+
+        return {
+            min: [xp,   yp,   z0, t0],
+            max: [xp+w, yp+h, z1, t1]
+        };
+}
+
 CanvasRenderer.prototype.updateImage = function (e) {
+    if(!this.viewer.imagedim) return;
     var me = this;
     var viewstate = this.viewer.current_view;
-    var url = this.viewer.image_url();
+    //var url = this.viewer.image_url();
     var scale = this.viewer.current_view.scale;
     var x = this.viewer.tiles.tiled_viewer.x;
     var y = this.viewer.tiles.tiled_viewer.y;
@@ -1520,12 +1539,14 @@ CanvasRenderer.prototype.updateImage = function (e) {
 
     var width = window.innerWidth;
     var height = window.innerHeight;
+    var frust = this.calcFrustum(x,y,scale);
+    this.stage.setWidth(this.viewer.imagediv.clientWidth);
+    this.stage.setHeight(this.viewer.imagediv.clientHeight);
+    //this.stage.x(frust.min[0]);
+    //this.stage.y(frust.min[1]);
 
-    this.stage.setWidth(width);
-    this.stage.setHeight(height);
-
-    this.selectRect.width(viewstate.width/scale);
-    this.selectRect.height(viewstate.height/scale);
+    this.selectRect.width(this.viewer.imagediv.clientWidth/scale);
+    this.selectRect.height(this.viewer.imagediv.clientWidth/scale);
 
     this.lassoRect.strokeWidth(1.0/scale);
 
@@ -1541,7 +1562,7 @@ CanvasRenderer.prototype.updateImage = function (e) {
         this.addedListeners = true;
         this.myCanvasListener = new CanvasControl( this, this.stage );
     }
-    this.myCanvasListener.setFrustum({x:x, y:y}, {x: scale, y:scale});
+    this.setFrustum(frust);
     //this.myCanvasListener.setFrustum(e,scale);
 
     //get the gobs and walk the tree to rerender them
@@ -1804,19 +1825,38 @@ CanvasRenderer.prototype.resetSelectedSet = function(){
     this.selectedSet = [];
 };
 
+
+CanvasRenderer.prototype.removeFromSelectedSet = function(shape){
+    var inSet = this.inSelectedSet(shape);
+    if(inSet < 0) return;
+    else {
+        this.selectedSet.splice(inSet,1);
+    }
+    if(this.mode === 'navigate'){
+        this.quadtree.remove(shape);
+        shape.setStroke(1.0);
+        this.quadtree.insert(shape);
+        this.updateVisible();
+    } else {
+        this.quadtree.insert(shape);
+        shape.setLayer(this.currentLayer);
+        shape.sprite.moveToBottom();
+        shape.resetManipulators();
+    }
+};
+
 CanvasRenderer.prototype.addToSelectedSet = function(shape){
     var inSet = this.inSelectedSet(shape);
-    if(!inSet)
+    if(inSet < 0)
         this.selectedSet.push(shape);
 };
 
 CanvasRenderer.prototype.inSelectedSet = function(shape){
-    var inSet = false;
+    var inSet = -1;
     for(var i = 0; i < this.selectedSet.length; i++){
         //check _id for now, id() tries to fetch an attribute, which doesn't exist
-        if(this.selectedSet[i].sprite._id ===
-           shape.sprite._id)
-            inSet = true;
+        if(this.selectedSet[i].sprite._id === shape.sprite._id)
+            inSet = i;
     }
 
     return inSet;
@@ -1933,6 +1973,7 @@ CanvasRenderer.prototype.select = function (gobs) {
     this.currentLayer.draw();
     this.editLayer.draw();
 };
+
 
 CanvasRenderer.prototype.unselect = function (gobs) {
     //var shape = gobs.shape;
@@ -2120,7 +2161,7 @@ CanvasRenderer.prototype.addSpriteEvents = function(shape){
 
         var inSet = me.inSelectedSet(gob.shape);
 
-        if(!inSet){
+        if(inSet < 0){
             me.unselect(me.selectedSet);
             me.resetSelectedSet();
             me.selectedSet[0] = gob.shape;
@@ -2269,15 +2310,16 @@ CanvasRenderer.prototype.highlight = function (gob, selection) {
 
     var me = this;
     if(!selection){
-        this.unselect(this.selectedSet);
-        this.selectedSet = [];
-        return;
+        this.removeFromSelectedSet(gob.shape);
+        //this.unselect(this.selectedSet);
+        //this.selectedSet = [];
     }
-    visit_all(gob, function(g, args) {
-        if (g.shape)
-            me.addToSelectedSet(g.shape);
-    }, selection );
-
+    else {
+        visit_all(gob, function(g, args) {
+            if (g.shape)
+                me.addToSelectedSet(g.shape);
+        }, selection );
+    }
     this.select(this.selectedSet);
 };
 

@@ -1,5 +1,4 @@
 
-
 function ResourceCard(node, resource) {
     this.resource = resource;
     this.node = node;
@@ -972,7 +971,8 @@ Ext.define('BQ.viewer.Graph.Panel', {
     },
 
     fetchGraphData : function(){
-        var resUniqueUrl = (this.hostName ? this.hostName : '') + '/graph?query=' + this.resource.resource_uniq;
+        var resUniqueUrl = (this.hostName ? this.hostName : '') +
+            '/graph?query=' + this.resource.resource_uniq;
         Ext.Ajax.request({
 			url : resUniqueUrl,
 			scope : this,
