@@ -188,10 +188,14 @@ ImgExternal.prototype.getCurrentView = function(levelDiff) {
 
     var level = this.imgCurrentView.getCurrentLevel();
     this.imgCurrentView.setLevel(level-levelDiff);
-    
     function callback(canvas_view) {
-        var url = canvas_view.toDataURL("image/png");
-        window.open(url);
+        var pixels = canvas_view.width*canvas_view.height;
+        if(pixels<268435456) { // limit of canvas
+            var url = canvas_view.toDataURL("image/jpeg");
+            window.open(url);
+        } else {
+            BQ.ui.notification('Screen capture is too large! Select a smaller size or reduce the viewer size.')
+        }
     }
     
     var canvas_view = this.imgCurrentView.returnCurrentView(callback);
