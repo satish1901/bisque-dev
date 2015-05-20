@@ -35,13 +35,8 @@ def int2hex(v):
 # Upload
 ##################################################################
 
-<<<<<<< local
-num_gobs = 50000
-gobs_sz = 50
-=======
 num_gobs = 100
 gobs_sz = 1000
->>>>>>> other
 image_uri = sys.argv[1]
 
 config = ConfigParser.ConfigParser()
@@ -73,7 +68,7 @@ gob = etree.SubElement (img, 'gobject', name='Annotations', type='Annotations')
 
 for j in range(num_gobs):
 
-    poly = etree.SubElement (gob, 'point', name='%s'%j)
+    poly = etree.SubElement (gob, 'polygon', name='%s'%j)
     dx = random.randint(0, w)
     dy = random.randint(0, h)
     r = random.randint(0, 255)
@@ -84,7 +79,7 @@ for j in range(num_gobs):
     tt = random.randint(0, t)
 
     vrtx = []
-    for i in range(1):
+    for i in range(10):
         x = dx + random.randint(-gobs_sz, gobs_sz)
         y = dy + random.randint(-gobs_sz, gobs_sz)
         vrtx.append((x,y))

@@ -1926,7 +1926,7 @@ class TextureAtlasOperation(BaseOperation):
 
         if not os.path.exists(ofile):
             if token.hasQueue():
-                token = self.server.process_queue(token)
+                token = self.server.process_queue(token) # need to process queue first since textureatlas can't deal with all kinds of inputs
             ifile = token.first_input_file()
             ofile = '%s.textureatlas'%(token.data)
             log.debug('Texture Atlas %s: %s to %s', token.resource_id, ifile, ofile)
@@ -2315,24 +2315,28 @@ class ImageServer(object):
         log.debug('Queue: %s', token.getQueue())
         return token
 
-    def imageconvert(self, token, ifnm, ofnm, fmt=None, extra=[], dims=None, **kw):
+    def imageconvert(self, token, ifnm, ofnm, fmt=None, extra=None, dims=None, **kw):
         if not token.isFile():
             abort(400, 'Convert: input is not an image...' )
         fmt = fmt or token.format or default_format
 
+        command = []
         if token.hasQueue():
-            extra.extend(token.drainQueue())
+            command.extend(token.drainQueue())
+
+        if extra is not None:
+            command.extend(extra)
 
         # create pyramid for large images
         dims = dims or token.dims or {}
-        if dims.get('image_num_x',0)>4000 and dims.get('image_num_y',0)>4000 and 'tiff' in fmt and '-options' not in extra:
-            extra.extend(['-options', 'compression lzw tiles %s pyramid subdirs'%default_tile_size])
+        if dims.get('image_num_x',0)>4000 and dims.get('image_num_y',0)>4000 and 'tiff' in fmt and '-options' not in command:
+            command.extend(['-options', 'compression lzw tiles %s pyramid subdirs'%default_tile_size])
 
         if token.histogram is not None:
-            extra.extend(['-ihst', token.histogram])
+            command.extend(['-ihst', token.histogram])
 
         if kw.get('try_imgcnv', True) is True:
-            r = self.converters[ConverterImgcnv.name].convert( token, ofnm, fmt=fmt, extra=extra, respect_command_inputs=True, **kw)
+            r = self.converters[ConverterImgcnv.name].convert( token, ofnm, fmt=fmt, extra=command, respect_command_inputs=True, **kw)
             if r is not None:
                 return r
 
@@ -2359,7 +2363,7 @@ class ImageServer(object):
                 log.error('Convert %s: failed for [%s]', token.resource_id, ifnm)
                 abort(415, 'Convert failed' )
 
-        return self.converters[ConverterImgcnv.name].convert( ProcessToken(ifnm=ometiff), ofnm, fmt=fmt, extra=extra)
+        return self.converters[ConverterImgcnv.name].convert( ProcessToken(ifnm=ometiff), ofnm, fmt=fmt, extra=command)
 
     def initialWorkPath(self, image_id, user_name):
         if len(image_id)>3 and image_id[2]=='-':

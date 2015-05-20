@@ -1441,9 +1441,13 @@ Ext.define('BQ.viewer.Volume.Panel', {
 						var ny = parseInt(BQ.util.xpath_string(xmlDoc, "//tag[@name='image_num_y']/@value"));
 
 						if (type == 'atlas') {
-							this.loadedDimFullAtlas = true;
-							this.dims.atlas.x = nx;
-							this.dims.atlas.y = ny;
+                            this.loadedDimFullAtlas = true;
+                            this.dims.atlas.x = nx;
+                            this.dims.atlas.y = ny;
+
+                            this.loadedDimResizedAtlas = true;
+                            this.dims.atlasResized.x = nx;
+                            this.dims.atlasResized.y = ny;
 						} else if (type == 'resized') {
 							this.loadedDimResizedAtlas = true;
 							this.dims.atlasResized.x = nx;
@@ -1457,7 +1461,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 							this.dims.slice.y = ny;
 							this.dims.pixel.x *= rx;
 							this.dims.pixel.y *= ry;
-							this.dims.pixel.z *= rx; // dima: scaling Z to keep aspect ratio
+							//this.dims.pixel.z *= rx; // dima: scaling Z to keep aspect ratio
 						}
 					}
 
@@ -1606,12 +1610,13 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		var maxTexture = this.getMaxTextureSize();
         var resizeX = Math.floor(this.maxTextureSize/atlasDims.w);
         var resizeY = Math.floor(this.maxTextureSize/atlasDims.h);
+        this.max_texture_tile_size = { w: resizeX, h: resizeY };
 
 		var resize = 'resize=' + resizeX + ',' + resizeY + ',BC,MX';
 
 		var fullUrl = resUniqueUrl + '?' + [slice, resize, dims].join('&');
 		var fullAtlasUrl = resUniqueUrl + '?' + [slice, resize, atlas, dims].join('&');
-		var resizeAtlasUrl = resUniqueUrl + '?' + [slice, resize, atlas, dims].join('&');
+		//var resizeAtlasUrl = resUniqueUrl + '?' + [slice, resize, atlas, dims].join('&');
 
 		this.loadedDimFullAtlas = false;
 		this.loadedDimResizeAtlas = false;
@@ -1619,7 +1624,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		//Ajax request the values pertinent to the volume atlases
 		this.fetchDimensions(fullUrl, 'update_dims');
 		this.fetchDimensions(fullAtlasUrl, 'atlas');
-		this.fetchDimensions(resizeAtlasUrl, 'resized');
+		//this.fetchDimensions(resizeAtlasUrl, 'resized');
         //this.fetchHistogram();
 	},
 
@@ -2371,10 +2376,12 @@ VolumeAtlas.prototype = new VolumePlugin();
 VolumeAtlas.prototype.init = function () {};
 
 VolumeAtlas.prototype.addCommand = function (command, pars) {
-	command.push('resize=1024,1024,BC,MX'); // resize designed to safeguard against very large planar images
+	var maxsz = this.volume.max_texture_tile_size;
+    //command.push('resize=1024,1024,BC,MX'); // resize designed to safeguard against very large planar images
+    command.push('resize=' + maxsz.w + ',' + maxsz.h + ',BC,MX');
 	command.push('textureatlas');
-	var maxTexture = this.volume.getMaxTextureSize();
-	command.push('resize=' + maxTexture + ',' + maxTexture + ',BC,MX');
+	//var maxTexture = this.volume.getMaxTextureSize();
+	//command.push('resize=' + maxTexture + ',' + maxTexture + ',BC,MX');
 };
 
 //--------------------------------------------------------------------------------------
