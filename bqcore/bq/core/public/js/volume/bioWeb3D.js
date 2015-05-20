@@ -1598,7 +1598,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
         z = this.dims.slice.z,
         t = this.dims.t;
 
-        var atlasDims = compute_atlas_size(x, y, z*t);
+        var atlasDims = compute_atlas_size(x, y, z<2 ? t : z);
 
 
 
