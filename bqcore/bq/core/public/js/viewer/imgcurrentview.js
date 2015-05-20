@@ -34,8 +34,7 @@ function ImgCurrentView(viewer, opt){
 	this.opt.wGobjects = (typeof opt.wGobjects === 'boolean')  ?  opt.wGobjects:true;
 	this.opt.wBorders = (typeof opt.wBorders === 'boolean')  ?  opt.wBorders:false;
 	this.opt.wScaleBar = (typeof opt.wScaleBar === 'boolean')  ?  opt.wScaleBar:true;
-	
-}
+};
 
 /*
 *	drawGobjects
@@ -51,7 +50,7 @@ ImgCurrentView.prototype.drawGobjects = function(canvas_view) {
     var ctx_view = canvas_view.getContext('2d');
 	ctx_view.drawImage(gobject_view, 0, 0, scale*gobject_view.width,scale*gobject_view.height);
 	return canvas_view;
-}
+};
 
 /*
 *	cropBorders
@@ -114,7 +113,7 @@ ImgCurrentView.prototype.cropBorders = function (canvas_view) {
 	var ctx_border = canvas_border.getContext('2d');
 	ctx_border.drawImage(canvas_view, scale*xoffset, scale*yoffset, scale*tile_width, scale*tile_height);
 	return canvas_border;
-}
+};
 
 /*
 *	drawScaleBar
@@ -165,7 +164,7 @@ ImgCurrentView.prototype.drawScaleBar = function(canvas_view) {
 		}
 	}
 	return canvas_view;
-}
+};
 
 /*
 *	getTilesInView
@@ -227,7 +226,7 @@ ImgCurrentView.prototype.getCurrentLevel = function() {
         var level = Math.log(1/scale)/Math.log(2);
     }
 	return level;
-}
+};
 
 /*
 *	setLevel
@@ -240,7 +239,7 @@ ImgCurrentView.prototype.getCurrentLevel = function() {
 ImgCurrentView.prototype.setLevel = function(level) {
 	if (level<0) var level = 0; //level cannot be below zero
 	this.opt.level = level;
-}
+};
 
 /*
 *	getlogScale
@@ -260,7 +259,7 @@ ImgCurrentView.prototype.getlogScale = function(level) {
 		var logScale = 0;
 	}
 	return logScale;
-}
+};
 
 //divides tiles into 4 quadrants scaling the tile up by one
 /*
@@ -389,7 +388,7 @@ ImgCurrentView.prototype.returnCurrentView = function(cb) {
     var ctx_view = canvas_view.getContext("2d");
     ctx_view.fillStyle = 'rgba(67, 67, 67, 1)'; //the background of the image
     ctx_view.fillRect(0, 0, canvas_view.width, canvas_view.height);
-    
+
     
 	//scaled images in view
 	var inViewImagesScaled = [];
@@ -435,4 +434,4 @@ ImgCurrentView.prototype.returnCurrentView = function(cb) {
 	
 	}
 	
-}
+};
