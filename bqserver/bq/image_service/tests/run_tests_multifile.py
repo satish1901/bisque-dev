@@ -356,7 +356,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         self.validate_image_variant(resource, filename, commands, meta_required)
 
     def test_format_package_tiff_depth (self):
-        print 'dima: This test will fail, IS is not using external meta for export yet'
+        #print 'dima: This test will fail, IS is not using external meta for export yet'
         package = package_tiff_depth
         self.assertIsNotNone(package['resource'], 'Resource was not uploaded')
         self.assertIsNotNone(package['last'], 'Item was not found')
@@ -378,7 +378,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
 
 
     # ---------------------------------------------------
-    # package_tiff_depth
+    # package_tiff_time
     # ---------------------------------------------------
 
     def test_contents_package_tiff_time (self):
@@ -466,7 +466,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         self.validate_image_variant(resource, filename, commands, meta_required)
 
     def test_format_package_tiff_time (self):
-        print 'dima: This test will fail, IS is not using external meta for export yet'
+        #print 'dima: This test will fail, IS is not using external meta for export yet'
         package = package_tiff_time
         self.assertIsNotNone(package['resource'], 'Resource was not uploaded')
         self.assertIsNotNone(package['last'], 'Item was not found')
@@ -487,7 +487,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         self.validate_image_variant(resource, filename, commands, meta_required)
 
     # ---------------------------------------------------
-    # package_tiff_depth
+    # package_tiff_5d
     # ---------------------------------------------------
 
     def test_contents_package_tiff_5d (self):
@@ -576,7 +576,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         self.validate_image_variant(resource, filename, commands, meta_required)
 
     def test_format_package_tiff_5d (self):
-        print 'dima: This test will fail, IS is not using external meta for export yet'
+        #print 'dima: This test will fail, IS is not using external meta for export yet'
         package = package_tiff_5d
         self.assertIsNotNone(package['resource'], 'Resource was not uploaded')
         self.assertIsNotNone(package['last'], 'Item was not found')
@@ -946,7 +946,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         meta_required = {
             'format': 'JPEG',
             'image_num_x': '128',
-            'image_num_y': '128',
+            'image_num_y': '125',
             'image_num_c': '3',
             'image_num_z': '1',
             'image_num_t': '1',
