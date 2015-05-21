@@ -582,7 +582,7 @@ QuadTree.prototype.cull = function(frust){
     var leaves = this.collectObjectsInRegion(frust, this.nodes[0]);
 
     leaves.forEach(function(e){
-        e.setStroke();
+        //e.setStroke();
         //if(e.text)
         //    renderer.currentLayer.add(e.text);
         //renderer.currentLayer.add(e.sprite);
@@ -815,6 +815,10 @@ QuadTree.prototype.drawBboxes = function(frust){
     this.traverseDownBB(node, frust, collectSprite);
 };
 
+
+
+
+
 ////////////////////////////////////////////////////////////////
 //Controller
 ////////////////////////////////////////////////////////////////
@@ -878,7 +882,7 @@ CanvasControl.prototype.viewerZoomed = function(e) {
     //this.viewer.stage.content.style.top = e.y + 'px';
 
     this.viewer.stage.scale({x:e.scale,y:e.scale});
-    this.setFrustum(e, {x: e.scale, y: e.scale});
+    this.setFrustum(e, e.scale);
 
     this.viewer.stage.x(e.x);
     this.viewer.stage.y(e.y);
@@ -926,6 +930,350 @@ CanvasControl.prototype.cursorMoved = function(e) {
     this.pastPoint = e;
 };
 
+
+
+
+
+////////////////////////////////////////////////////////////////
+//interaction widgets
+////////////////////////////////////////////////////////////////
+
+
+function CanvasWidget(renderer) {
+    this.renderer = renderer;
+};
+
+CanvasWidget.prototype.init = function(){};
+CanvasWidget.prototype.update = function(shapes){};
+CanvasWidget.prototype.select = function(shapes){};
+CanvasWidget.prototype.unselect = function(shapes){};
+CanvasWidget.prototype.destroy = function(shapes){};
+
+function CanvasManipulators(renderer) {
+	this.renderer = renderer;
+    CanvasWidget.call(this, renderer);
+};
+
+CanvasManipulators.prototype = new CanvasWidget();
+
+CanvasManipulators.prototype.update = function(shapes){
+    if(!shapes) return;
+    var me = this;
+    for(var i = 0; i < shapes.length; i++){
+        shapes[i].updateManipulators();
+    }
+};
+
+
+CanvasManipulators.prototype.toggle = function(fcn){
+
+    this.update(this.renderer.selectedSet);
+    this.manipulators.forEach(function(e){
+        e[fcn]();
+    });
+};
+
+CanvasManipulators.prototype.select = function(shapes){
+    var manipMode = shapes.length > 1 ? 'multiple' : 'single';
+    manipMode = shapes.length > 5 ? 'many' : manipMode;
+    manipMode = this.renderer.viewer.parameters.showmanipulators ? 'multiple' : manipMode;
+
+    var me = this;
+    this.manipulators = [];
+
+    for(var i = 0; i < shapes.length; i++){
+        var manipulators = shapes[i].getManipulators(manipMode);
+        manipulators.forEach(function(e){
+            me.renderer.editLayer.add(e);
+        });
+        this.manipulators = this.manipulators.concat(manipulators);
+    }
+    this.update(shapes);
+};
+
+
+CanvasManipulators.prototype.unselect = function(shapes){
+    shapes.forEach(function(e,i,a){
+        e.resetManipulators();
+    });
+};
+
+CanvasManipulators.prototype.destroy = function(shapes){
+    if(this.manipulators){
+        this.manipulators.forEach(function(e,i,d){
+            e.remove(); //remove all current corners
+            e.off('mousedown');
+            e.off('dragmove'); //kill their callbacks
+            e.off('mouseup');
+        });
+    }
+}
+
+
+function CanvasBbox(renderer) {
+	this.renderer = renderer;
+    CanvasWidget.call(this, renderer);
+};
+
+CanvasBbox.prototype = new CanvasWidget();
+
+CanvasBbox.prototype.init = function(){
+    this.bbRect = new Kinetic.Rect({
+        fill: 'rgba(255,255,255,0.0)',
+        stroke: 'grey',
+        strokeWidth: 1,
+        listening: false,
+    });
+
+    this.bbCorners = []
+    for(var i = 0; i < 4; i++){
+        this.bbCorners.push(
+        new Kinetic.Rect({
+            width: 6,
+            height: 6,
+            fill: 'grey',
+            listening: true
+        }));
+    }
+
+    this.bbCorners.forEach(function(e,i,d){
+        e.setDraggable(true);
+    });
+};
+
+CanvasBbox.prototype.update = function(){
+    this.updateBbox(this.renderer.selectedSet);
+}
+
+CanvasBbox.prototype.editBbox = function(gobs,i, e) {
+    //return;
+    //this.renderer.updateManipulators(gobs);
+    var scale = this.renderer.scale();
+
+    var offx = 8/scale;
+    var offy = 8/scale;
+
+    var me = this;
+    //var points = gobs.shape.getAttr('points');
+
+   //ar x0 = shape.x();
+    //var y0 = shape.y();
+    var px0 = this.bbCorners[0].x() + offx/2;
+    var py0 = this.bbCorners[0].y() + offy/2;
+    var px1 = this.bbCorners[1].x() + offx/2;
+    var py1 = this.bbCorners[1].y() + offy/2;
+    var px2 = this.bbCorners[2].x() + offx/2;
+    var py2 = this.bbCorners[2].y() + offy/2;
+    var px3 = this.bbCorners[3].x() + offx/2;
+    var py3 = this.bbCorners[3].y() + offy/2;
+    var dx = e.evt.movementX;
+    var dy = e.evt.movementY;
+    var oCorner;
+
+    if(i == 0){
+        this.bbCorners[1].x(px0 - offx/2);
+        this.bbCorners[2].y(py0 - offy/2);
+        oCorner = [this.bbCorners[3].x() + offx/2,
+                   this.bbCorners[3].y() + offy/2];
+
+    }
+    if(i == 1){
+        this.bbCorners[0].x(px1 - offx/2);
+        this.bbCorners[3].y(py1 - offy/2);
+        oCorner = [this.bbCorners[2].x() + offx/2,
+                   this.bbCorners[2].y() + offy/2];
+    }
+    if(i == 2){
+        this.bbCorners[3].x(px2 - offx/2);
+        this.bbCorners[0].y(py2 - offy/2);
+        oCorner = [this.bbCorners[1].x() + offx/2,
+                   this.bbCorners[1].y() + offy/2];
+
+    }
+    if(i == 3){
+        this.bbCorners[2].x(px3 - offx/2);
+        this.bbCorners[1].y(py3 - offy/2);
+        oCorner = [this.bbCorners[0].x() + offx/2,
+                   this.bbCorners[0].y() + offy/2];
+    }
+
+    var nWidth  = px3-px0;
+    var nHeight = py3-py0;
+    var sx = nWidth/this.bbRect.width();
+    var sy = nHeight/this.bbRect.height();
+    //var scale = this.stage.scale();
+    //var off = 10/scale.x;
+
+    this.bbRect.x(px0);
+    this.bbRect.y(py0);
+    this.bbRect.width(px3-px0);
+    this.bbRect.height(py3-py0);
+
+
+    gobs.forEach(function(shape,i,a){
+        var sbbox = shape.getBbox();
+
+        var sprite = shape.sprite;
+        var x = shape.x();
+        var y = shape.y();
+
+        var sdx = x - oCorner[0];
+        var sdy = y - oCorner[1];
+
+        var nx = oCorner[0] + sx*sdx;
+        var ny = oCorner[1] + sy*sdy;
+
+        //KineticJS's scenegraph stretches shapes and outlines.
+        //Manually resizing gobs then updating is simpler and I don't have to
+        //worry about transforms
+
+        shape.gob.vertices.forEach(function(v){
+            var dx = v.x - x;
+            var dy = v.y - y;
+            v.x = nx + sx*dx;
+            v.y = ny + sy*dy;
+        });
+
+        /* here is the code that uses KineticJS transform hierarchy
+        sprite.scaleX(sprite.scaleX()*sx);
+        sprite.scaleY(sprite.scaleY()*sy);
+
+        sprite.x(oCorner[0] + sx*sdx);
+        sprite.y(oCorner[1] + sy*sdy);
+        */
+        shape.dirty = true;
+        shape.update();
+        //var mx = 0.5*(px0 + px3);
+        //var my = 0.5*(py0 + py3);
+    });
+};
+
+CanvasBbox.prototype.updateBbox = function (gobs){
+
+    //this.renderer.updateManipulators(gobs);
+
+    var scale = this.renderer.scale();
+    var min = [ 9999999, 9999999];
+    var max = [-9999999,-9999999];
+
+    for(var i = 0; i < gobs.length; i++){
+
+        var shape = gobs[i];
+        var bb = shape.getBbox();
+        if(!bb) continue;
+        min[0] = min[0] < bb.min[0] ? min[0] : bb.min[0];
+        min[1] = min[1] < bb.min[1] ? min[1] : bb.min[1];
+
+        max[0] = max[0] > bb.max[0] ? max[0] : bb.max[0];
+        max[1] = max[1] > bb.max[1] ? max[1] : bb.max[1];
+    }
+    var pad = 8/scale;
+    //pad the bbox
+    min[0] -=  pad;
+    min[1] -=  pad;
+    max[0] +=  pad;
+    max[1] +=  pad;
+
+    var offx = 8/scale;
+    var offy = 8/scale;
+
+    this.bbRect.x(min[0]);
+    this.bbRect.y(min[1]);
+
+    this.bbWidth  = max[0] - min[0];
+    this.bbHeight = max[1] - min[1];
+
+    this.bbRect.width(this.bbWidth);
+    this.bbRect.height(this.bbHeight);
+    this.bbRect.strokeWidth(1.5/scale);
+
+    this.bbCorners.forEach(function(e,i,a){
+        e.width(offx);
+        e.height(offy);
+    });
+
+    //offset the bbox vertices
+    min[0] -= offx/2;
+    min[1] -= offy/2;
+    max[0] -= offx/2;
+    max[1] -= offy/2;
+
+    //console.log(scale, off);
+    this.bbCorners[0].x(min[0]);
+    this.bbCorners[0].y(min[1]);
+
+    this.bbCorners[1].x(min[0]);
+    this.bbCorners[1].y(max[1]);
+
+    this.bbCorners[2].x(max[0]);
+    this.bbCorners[2].y(min[1]);
+
+    this.bbCorners[3].x(max[0]);
+    this.bbCorners[3].y(max[1]);
+    //this.updateDrawer();
+};
+
+CanvasBbox.prototype.select = function(gobs){
+    var me = this;
+    this.bbCorners.forEach(function(e,i,d){
+        me.renderer.editLayer.add(e); //add corners
+        /*
+        e.on('mousedown', function(evt) {
+        });
+        */
+        e.on('dragmove', function(evt) {
+            //if(this.mode != 'edit') return;
+            me.editBbox(gobs,i,evt, e);
+            e.moveToTop();
+            me.renderer.editLayer.batchDraw(); // don't want to use default draw command, as it updates the bounding box
+        });
+
+        e.on('mouseup',function(evt){
+            e.dirty = true;
+            //me.updateDrawer();
+            me.renderer.selectedSet.forEach(function(e,i,d){
+                if(e.dirty)
+                    me.move_shape(e.gob);
+            });
+        });
+    });
+    this.updateBbox(gobs);
+    this.renderer.editLayer.add(this.bbRect);
+
+}
+
+CanvasBbox.prototype.unselect = function(gobs){
+
+    this.bbCorners.forEach(function(e,i,d){
+        e.remove(); //remove all current corners
+        e.off('mousedown');
+        e.off('dragmove');
+        e.off('mouseup');
+    });
+};
+
+CanvasBbox.prototype.destroy = function(gobs){
+
+    this.bbCorners.forEach(function(e,i,d){
+        e.remove(); //remove all current corners
+        e.off('mousedown');
+        e.off('dragmove');
+        e.off('mouseup');
+    });
+};
+
+CanvasBbox.prototype.toggle = function(fcn){
+    this.updateBbox(this.renderer.selectedSet);
+    this.bbCorners.forEach(function(e,i,a){
+        e[fcn]();
+    });
+
+    this.bbRect[fcn]();
+
+}
+
+
+
 ////////////////////////////////////////////////////////////////
 //Renderer
 ////////////////////////////////////////////////////////////////
@@ -941,6 +1289,11 @@ function CanvasRenderer (viewer,name) {
     this.base (viewer, name);
     this.events  = {};
     this.visit_render = new BQProxyClassVisitor (this);
+
+    //this.plug_ins = [];
+
+    this.plug_ins = [new CanvasManipulators(this), new CanvasBbox(this)];
+
     //this.visit render
 
 }
@@ -978,6 +1331,8 @@ CanvasRenderer.prototype.create = function (parent) {
     this.gobs = [];
     this.visitedFrame = [];
     this.cur_z = 0;
+
+
     return parent;
 };
 
@@ -1146,36 +1501,32 @@ CanvasRenderer.prototype.lassoSelect = function(x0,y0, x1,y1){
 }
 
 CanvasRenderer.prototype.initUiShapes = function(){
-
-    this.bbRect = new Kinetic.Rect({
-        fill: 'rgba(255,255,255,0.0)',
-        stroke: 'grey',
-        strokeWidth: 1,
-        listening: false,
-    });
-    this.bbCorners = []
-    for(var i = 0; i < 4; i++){
-        this.bbCorners.push(
-        new Kinetic.Rect({
-            width: 6,
-            height: 6,
-            fill: 'grey',
-            listening: true
-        }));
-    }
-    this.bbCorners.forEach(function(e,i,d){
-        e.setDraggable(true);
+    this.plug_ins.forEach(function(e){
+        e.init();
     });
 
 
+
+};
+
+
+CanvasRenderer.prototype.scale = function (){
+    return this.stage.scale().x;
 };
 
 CanvasRenderer.prototype.draw = function (){
     this.stage.draw();
 };
 
+CanvasRenderer.prototype.updatePlugins = function(){
+    this.plug_ins.forEach(function(e){
+        e.update();
+    });
+
+};
+
 CanvasRenderer.prototype.drawEditLayer = function (){
-    this.updateBbox(this.selectedSet);
+    this.updatePlugins();
     this.editLayer.draw();
 };
 
@@ -1219,12 +1570,9 @@ CanvasRenderer.prototype.getUserCoord = function (e ){
 
 CanvasRenderer.prototype.setMode = function (mode){
     var me = this;
-    this.unselectCurrent();
-
     this.mode = mode;
-
+    this.unselectCurrent();
     me.updateVisible();
-
     if(mode === 'add' || mode === 'delete' || mode === 'edit') {
         this.currentLayer._getIntersection = this.defaultIntersection;
         this.editLayer._getIntersection = this.defaultIntersection;
@@ -1550,9 +1898,10 @@ CanvasRenderer.prototype.updateImage = function (e) {
 
     this.lassoRect.strokeWidth(1.0/scale);
 
-    if(this.cur_z != z){
+    if(this.cur_z != z || this.cur_t != t){
+        this.currentLayer.removeChildren();
     }
-
+    this.cur_t = t
     this.cur_z = z;
 
     //dump the currently viewed objects
@@ -1568,179 +1917,13 @@ CanvasRenderer.prototype.updateImage = function (e) {
     //get the gobs and walk the tree to rerender them
     //update visible objects in the tree... next iteration may be 3D.
 
-    this.updateBbox(this.selectedSet);
+    this.plug_ins.foreach(function(e){
+        e.update();
+    });
+
     this.updateVisible(); //update visible has a draw call
     //this.draw();
 };
-
-CanvasRenderer.prototype.editBbox = function(gobs,i, e) {
-    //return;
-    this.updateManipulators(gobs);
-    var scale = this.stage.scale();
-
-    var offx = 8/scale.x;
-    var offy = 8/scale.x;
-
-    var me = this;
-    //var points = gobs.shape.getAttr('points');
-
-   //ar x0 = shape.x();
-    //var y0 = shape.y();
-    var px0 = this.bbCorners[0].x() + offx/2;
-    var py0 = this.bbCorners[0].y() + offy/2;
-    var px1 = this.bbCorners[1].x() + offx/2;
-    var py1 = this.bbCorners[1].y() + offy/2;
-    var px2 = this.bbCorners[2].x() + offx/2;
-    var py2 = this.bbCorners[2].y() + offy/2;
-    var px3 = this.bbCorners[3].x() + offx/2;
-    var py3 = this.bbCorners[3].y() + offy/2;
-    var dx = e.evt.movementX;
-    var dy = e.evt.movementY;
-    var oCorner;
-
-    if(i == 0){
-        this.bbCorners[1].x(px0 - offx/2);
-        this.bbCorners[2].y(py0 - offy/2);
-        oCorner = [this.bbCorners[3].x() + offx/2,
-                   this.bbCorners[3].y() + offy/2];
-
-    }
-    if(i == 1){
-        this.bbCorners[0].x(px1 - offx/2);
-        this.bbCorners[3].y(py1 - offy/2);
-        oCorner = [this.bbCorners[2].x() + offx/2,
-                   this.bbCorners[2].y() + offy/2];
-    }
-    if(i == 2){
-        this.bbCorners[3].x(px2 - offx/2);
-        this.bbCorners[0].y(py2 - offy/2);
-        oCorner = [this.bbCorners[1].x() + offx/2,
-                   this.bbCorners[1].y() + offy/2];
-
-    }
-    if(i == 3){
-        this.bbCorners[2].x(px3 - offx/2);
-        this.bbCorners[1].y(py3 - offy/2);
-        oCorner = [this.bbCorners[0].x() + offx/2,
-                   this.bbCorners[0].y() + offy/2];
-    }
-
-    var nWidth  = px3-px0;
-    var nHeight = py3-py0;
-    var sx = nWidth/this.bbRect.width();
-    var sy = nHeight/this.bbRect.height();
-    //var scale = this.stage.scale();
-    //var off = 10/scale.x;
-
-    this.bbRect.x(px0);
-    this.bbRect.y(py0);
-    this.bbRect.width(px3-px0);
-    this.bbRect.height(py3-py0);
-
-
-    gobs.forEach(function(shape,i,a){
-        var sbbox = shape.getBbox();
-
-        var sprite = shape.sprite;
-        var x = shape.x();
-        var y = shape.y();
-
-        var sdx = x - oCorner[0];
-        var sdy = y - oCorner[1];
-
-        var nx = oCorner[0] + sx*sdx;
-        var ny = oCorner[1] + sy*sdy;
-
-        //KineticJS's scenegraph stretches shapes and outlines.
-        //Manually resizing gobs then updating is simpler and I don't have to
-        //worry about transforms
-
-        shape.gob.vertices.forEach(function(v){
-            var dx = v.x - x;
-            var dy = v.y - y;
-            v.x = nx + sx*dx;
-            v.y = ny + sy*dy;
-        });
-
-        /* here is the code that uses KineticJS transform hierarchy
-        sprite.scaleX(sprite.scaleX()*sx);
-        sprite.scaleY(sprite.scaleY()*sy);
-
-        sprite.x(oCorner[0] + sx*sdx);
-        sprite.y(oCorner[1] + sy*sdy);
-        */
-        shape.dirty = true;
-        shape.update();
-        //var mx = 0.5*(px0 + px3);
-        //var my = 0.5*(py0 + py3);
-    });
-};
-
-CanvasRenderer.prototype.updateBbox = function (gobs){
-
-    this.updateManipulators(gobs);
-
-    var scale = this.stage.scale();
-    var min = [ 9999999, 9999999];
-    var max = [-9999999,-9999999];
-
-    for(var i = 0; i < gobs.length; i++){
-
-        var shape = gobs[i];
-        var bb = shape.getBbox();
-        if(!bb) continue;
-        min[0] = min[0] < bb.min[0] ? min[0] : bb.min[0];
-        min[1] = min[1] < bb.min[1] ? min[1] : bb.min[1];
-
-        max[0] = max[0] > bb.max[0] ? max[0] : bb.max[0];
-        max[1] = max[1] > bb.max[1] ? max[1] : bb.max[1];
-    }
-    var pad = 8/scale.x;
-    //pad the bbox
-    min[0] -=  pad;
-    min[1] -=  pad;
-    max[0] +=  pad;
-    max[1] +=  pad;
-
-    var offx = 8/scale.x;
-    var offy = 8/scale.x;
-
-    this.bbRect.x(min[0]);
-    this.bbRect.y(min[1]);
-
-    this.bbWidth  = max[0] - min[0];
-    this.bbHeight = max[1] - min[1];
-
-    this.bbRect.width(this.bbWidth);
-    this.bbRect.height(this.bbHeight);
-    this.bbRect.strokeWidth(1.5/scale.x);
-
-    this.bbCorners.forEach(function(e,i,a){
-        e.width(offx);
-        e.height(offy);
-    });
-
-    //offset the bbox vertices
-    min[0] -= offx/2;
-    min[1] -= offy/2;
-    max[0] -= offx/2;
-    max[1] -= offy/2;
-
-    //console.log(scale, off);
-    this.bbCorners[0].x(min[0]);
-    this.bbCorners[0].y(min[1]);
-
-    this.bbCorners[1].x(min[0]);
-    this.bbCorners[1].y(max[1]);
-
-    this.bbCorners[2].x(max[0]);
-    this.bbCorners[2].y(min[1]);
-
-    this.bbCorners[3].x(max[0]);
-    this.bbCorners[3].y(max[1]);
-    //this.updateDrawer();
-};
-
 
 CanvasRenderer.prototype.initPointImageCache = function () {
     var me = this;
@@ -1786,39 +1969,11 @@ CanvasRenderer.prototype.mouseUp = function(){
 };
 
 CanvasRenderer.prototype.resetShapeCornerFill = function(){
-    this.manipulators.forEach(function(e,i,a){
-        e.fill('rgba(255,0,0,1)');
+
+
+    this.plug_ins.forEach(function(e,i,a){
+        e.update();
     });
-};
-
-CanvasRenderer.prototype.updateManipulators = function(shapes){
-    if(!shapes) return;
-
-    var me = this;
-    var totalPoints = 0;
-    var scale = this.stage.scale();
-
-    for(var i = 0; i < shapes.length; i++){
-        shapes[i].updateManipulators();
-    }
-};
-
-CanvasRenderer.prototype.initManipulators = function(shapes){
-
-    var manipMode = shapes.length > 1 ? 'multiple' : 'single';
-    manipMode = shapes.length > 5 ? 'many' : manipMode;
-    manipMode = this.viewer.parameters.showmanipulators ? 'multiple' : manipMode;
-
-    var me = this;
-    this.manipulators = [];
-
-    for(var i = 0; i < shapes.length; i++){
-        var manipulators = shapes[i].getManipulators(manipMode);
-        manipulators.forEach(function(e){
-            me.editLayer.add(e);
-        });
-        this.manipulators = this.manipulators.concat(manipulators);
-    }
 };
 
 CanvasRenderer.prototype.resetSelectedSet = function(){
@@ -1935,40 +2090,17 @@ CanvasRenderer.prototype.select = function (gobs) {
 
     this.editLayer.removeChildren();
 
-    this.initManipulators(gobs);
-    this.updateBbox(gobs);
-
-    this.bBoxScale = [1,1];
-
+    //this.initManipulators(gobs);
     gobs.forEach(function(e,i,a){
         e.setLayer(me.editLayer);
         e.sprite.moveToBottom();
     });
 
-    this.editLayer.add(this.bbRect);
 
-    this.bbCorners.forEach(function(e,i,d){
-        me.editLayer.add(e); //add corners
-        /*
-        e.on('mousedown', function(evt) {
-        });
-        */
-        e.on('dragmove', function(evt) {
-            //if(this.mode != 'edit') return;
-            me.editBbox(gobs,i,evt, e);
-            e.moveToTop();
-            me.editLayer.batchDraw(); // don't want to use default draw command, as it updates the bounding box
-        });
-
-        e.on('mouseup',function(evt){
-            e.dirty = true;
-            //me.updateDrawer();
-            me.selectedSet.forEach(function(e,i,d){
-                if(e.dirty)
-                    me.move_shape(e.gob);
-            });
-        });
+    this.plug_ins.forEach(function(e){
+        e.select(gobs);
     });
+
     //this.showDrawer();
     this.currentLayer.draw();
     this.editLayer.draw();
@@ -1987,21 +2119,18 @@ CanvasRenderer.prototype.unselect = function (gobs) {
             me.updateVisible();
 
         });
-        return;
+        //return;
     }
 
     gobs.forEach(function(e,i,a){
         e.setLayer(me.currentLayer);
         e.sprite.moveToBottom();
-        e.resetManipulators();
+        //e.resetManipulators();
     });
 
-    this.bbCorners.forEach(function(e,i,d){
-        e.remove(); //remove all current corners
-        e.off('mousedown');
-        e.off('dragmove');
-        e.off('mouseup');
-    });
+    this.plug_ins.forEach(function(e){
+        e.unselect(gobs);
+    });;
     /*
     if(this.manipulators){
         this.manipulators.forEach(function(e,i,d){
@@ -2022,14 +2151,10 @@ CanvasRenderer.prototype.unselect = function (gobs) {
 CanvasRenderer.prototype.destroy = function (gobs) {
     //var shape = gobs.shape;
     var me = this;
-
-    this.bbCorners.forEach(function(e,i,d){
-        e.remove(); //remove all current corners
-        e.off('mousedown');
-        e.off('dragmove');
-        e.off('mouseup');
+    this.plug_ins.forEach(function(e){
+        e.destroy(gobs);
     });
-
+    /*
     if(this.manipulators){
         this.manipulators.forEach(function(e,i,d){
             e.remove(); //remove all current corners
@@ -2038,6 +2163,7 @@ CanvasRenderer.prototype.destroy = function (gobs) {
             e.off('mouseup');
         });
     }
+    */
     this.editLayer.removeChildren();
 
 };
@@ -2111,15 +2237,16 @@ CanvasRenderer.prototype.toggleWidgets = function(fcn){
             e.sprite.strokeWidth(1/scale.x);
         });
     }*/
-
+    /*
     this.manipulators.forEach(function(e){
         e[fcn]();
     });
-    this.updateBbox(this.selectedSet);
-    this.bbRect[fcn]();
-    this.bbCorners.forEach(function(e,i,a){
-        e[fcn]();
+    */
+    this.plug_ins.forEach(function(e){
+        e.toggle(fcn);
     });
+
+
     this.editLayer.draw();
     if(fcn === 'hide')
         //this.hideDrawer();
@@ -2309,6 +2436,8 @@ CanvasRenderer.prototype.highlight = function (gob, selection) {
     // visitall to enhance on the node and its children
 
     var me = this;
+
+    //this.currentLayer.removeChildren();
     if(!selection){
         this.removeFromSelectedSet(gob.shape);
         //this.unselect(this.selectedSet);

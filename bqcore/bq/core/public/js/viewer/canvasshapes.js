@@ -390,14 +390,16 @@ CanvasShape.prototype.getCornerManipulators = function(){
         e.on('mouseover', function(evt) {
             //e.fill('rgba(255,128,128,1.0)');
             e.image(me.pointImageCacheOver);
-            renderer.drawEditLayer();
+            if(i===0)
+                renderer.drawEditLayer();
         });
 
 
         e.on('mouseleave', function(evt) {
             //e.fill('red');
             e.image(me.pointImageCache);
-            renderer.drawEditLayer();
+            if(i===0)
+                renderer.drawEditLayer();
 
         });
 
@@ -407,7 +409,6 @@ CanvasShape.prototype.getCornerManipulators = function(){
             var i = this.shapeId;
             this.gob.drag(evt, this);
 
-            renderer.updateBbox(renderer.selectedSet);
             e.moveToTop();
             renderer.drawEditLayer();
         });
@@ -579,7 +580,6 @@ CanvasShape.prototype.setStroke = function(sw){
     else if(!this.strokeWidth) this.strokeWidth = 1.0;
 
     var scale = this.renderer.stage.scale();
-    this.strokeWidth = sw;
     this.sprite.strokeWidth(1.25*this.strokeWidth/scale.x); //reset the moves to zero
 };
 
@@ -1661,10 +1661,10 @@ CanvasPoint.prototype.setStroke = function(sw){
     if(sw) this.strokeWidth = sw;
     else if(!this.strokeWidth) this.strokeWidth = 1.0;
     if(!this.pointSize) this.pointSize = 2.5;
-    this.pointSize *= this.strokeWidth;
+    //this.pointSize = 2.5*this.strokeWidth;
 
     var scale = this.renderer.stage.scale();
-    var r = this.pointSize/scale.x;
+    var r = this.pointSize*this.strokeWidth/scale.x;
     this.sprite.radius(r);
     this.sprite.strokeWidth(2.0*this.pointSize/scale.x);
 };
@@ -2289,7 +2289,7 @@ CanvasRectangle.prototype.calcBbox = function () {
     }
 
     return {min: [xmin, ymin, minz, mint],
-            max: [xmax, ymax, maxz, minz]};
+            max: [xmax, ymax, maxz, maxt]};
 };
 
 CanvasRectangle.prototype.clearCache = function(){};
@@ -2496,7 +2496,7 @@ CanvasSquare.prototype.calcBbox = function () {
     }
 
     return {min: [xmin, ymin, minz, mint],
-            max: [xmax, ymax, maxz, minz]};
+            max: [xmax, ymax, maxz, maxt]};
 
 };
 

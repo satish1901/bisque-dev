@@ -542,11 +542,13 @@ Ext.define('Bisque.Resource.Image.Page', {
                     this.gobjectTagger.appendGObject(gob);
                 }, this),
 
-                gobjectDeleted : Ext.bind(function(gi) {
-                    this.gobjectTagger.deleteGObject(gi);
-                }, this),
+                //gobjectDeleted :
             },
             listeners : {
+                delete: Ext.bind(function(scope, gob) {
+                    this.gobjectTagger.deleteGObject(gob);
+                }, this),
+
                 loaded: function(vc) {
                     var editor = vc.viewer.editor;
                     this.gobjectTagger.on('createGob', editor.onCreateGob, editor);

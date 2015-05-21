@@ -431,7 +431,7 @@ VolSpinnerTool.prototype.initControls = function () {
 				         fragmentShader : frag,
 				         //side : THREE.DoubleSide,
 			         });
-                     this.plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 8, 8), shader);
+                     this.plane = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1, 8, 8), shader);
                      this.scene.add(this.plane);
                      var sphereGeometry = new THREE.SphereGeometry(0.05);
 
