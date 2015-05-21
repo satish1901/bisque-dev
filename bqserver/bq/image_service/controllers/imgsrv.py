@@ -550,8 +550,19 @@ class SliceOperation(BaseOperation):
         if z1==z2==0: z1=1; z2=dims.get('image_num_z', 1)
         if t1==t2==0: t1=1; t2=dims.get('image_num_t', 1)
 
+        new_w = x2-x1
+        new_h = y2-y1
+        new_z = max(1, z2 - z1 + 1)
+        new_t = max(1, t2 - t1 + 1)
+        info = {
+            'image_num_z': new_z,
+            'image_num_t': new_t,
+        }
+        if new_w>0: info['image_num_x'] = new_w+1
+        if new_h>0: info['image_num_y'] = new_h+1
+
         ofname = '%s.%d-%d,%d-%d,%d-%d,%d-%d.ome.tif' % (token.data, x1,x2,y1,y2,z1,z2,t1,t2)
-        return token.setImage(ofname, fmt=default_format)
+        return token.setImage(ofname, fmt=default_format, dims=info)
 
     def action(self, token, arg):
         '''arg = x1-x2,y1-y2,z|z1-z2,t|t1-t2'''
@@ -2274,6 +2285,8 @@ class ImageServer(object):
                 info.setdefault('format', default_format)
                 if not 'filesize' in info:
                     info.setdefault('filesize', os.path.getsize(filename))
+                if meta is not None:
+                    info.update(meta)
 
                 # cache file info into a file
                 image = etree.Element ('image')
@@ -2321,11 +2334,17 @@ class ImageServer(object):
         fmt = fmt or token.format or default_format
 
         command = []
+
+        # dima: FIXME, extra was being appended before the queue
+        if extra is not None:
+            command.extend(extra)
+
         if token.hasQueue():
             command.extend(token.drainQueue())
 
-        if extra is not None:
-            command.extend(extra)
+        # dima: FIXME, extra was being appended before the queue
+        #if extra is not None:
+        #    command.extend(extra)
 
         # create pyramid for large images
         dims = dims or token.dims or {}
@@ -2414,7 +2433,7 @@ class ImageServer(object):
             # pre-compute final filename and check if it exists before starting any other processing
             if len(query)>0:
                 token.setFile(self.initialWorkPath(ident, user_name=kw.get('user_name', None)))
-                token.dims = self.getImageInfo(filename=token.data, series=token.series, infofile='%s.info'%token.data )
+                token.dims = self.getImageInfo(filename=token.data, series=token.series, infofile='%s.info'%token.data, meta=kw.get('imagemeta', None) )
                 token.init(resource_id=ident, ifnm=token.data, imagemeta=kw.get('imagemeta', None), timeout=kw.get('timeout', None), resource_name=resource.get('name'))
                 for action, args in query:
                     try:
