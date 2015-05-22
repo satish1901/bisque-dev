@@ -201,23 +201,40 @@ class ImageServiceTestBase(unittest.TestCase):
 
     @classmethod
     def delete_package(self, package):
-        # delete dataset
         if 'dataset' in package:
+            # delete dataset
             url = package['dataset']
             print 'Deleting dataset: %s'%(url)
             try:
-                self.session.deletexml(url)
+                self.session.fetchxml('/dataset_service/delete?duri=%s'%url)
             except BQCommError:
                 print 'Error deleting the dataset'
-
-        # delete all items
-        if 'items' in package:
+        elif 'items' in package:
+            # delete all items
             for url in package['items']:
                 print 'Deleting item: %s'%(url)
                 try:
                     self.session.deletexml(url)
                 except BQCommError:
                     print 'Error deleting the item'
+
+        # # delete dataset
+        # if 'dataset' in package:
+        #     url = package['dataset']
+        #     print 'Deleting dataset: %s'%(url)
+        #     try:
+        #         self.session.deletexml(url)
+        #     except BQCommError:
+        #         print 'Error deleting the dataset'
+
+        # # delete all items
+        # if 'items' in package:
+        #     for url in package['items']:
+        #         print 'Deleting item: %s'%(url)
+        #         try:
+        #             self.session.deletexml(url)
+        #         except BQCommError:
+        #             print 'Error deleting the item'
 
     @classmethod
     def ensure_bisque_file(self, filename, metafile=None):

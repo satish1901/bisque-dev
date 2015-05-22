@@ -580,7 +580,7 @@ class MountServer(TGController):
     def _save_store(self, store, storepath, resource, fileobj=None, rooturl=None):
         'store the file to the named store'
 
-        _, sub  = split_subpath (resource.get ('name'))
+        resource_name, sub  = split_subpath (resource.get ('name'))
         if fileobj:
             with  self._get_driver(store) as driver:
                 if driver.readonly:
@@ -590,12 +590,14 @@ class MountServer(TGController):
                 log.debug('_save_store: %s from %s %s', storeurl, driver.mount_url, storepath)
                 storeurl, localpath = driver.push (fileobj, storeurl, resource.get('resource_uniq'))
 
-                resource.set('name', join_subpath(tounicode(url2localpath(os.path.basename(storeurl))), sub))
+                name = os.path.basename(resource_name) or tounicode(url2localpath(os.path.basename(storeurl)))
+                resource.set('name', join_subpath(name, sub))
                 resource.set('value', join_subpath(storeurl, sub))
                 log.debug('_save_store: %s', etree.tostring(resource))
         else:
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
-            resource.set('name', join_subpath(tounicode(url2localpath(os.path.basename(storeurl))), sub))
+            name = os.path.basename(resource_name) or tounicode(url2localpath(os.path.basename(storeurl)))
+            resource.set('name', join_subpath(name, sub))
 
         if self.store_paths:
             # Update the store path reference to similar to the storeurl
@@ -755,16 +757,19 @@ class MountServer(TGController):
 
             log.debug ("fetch_blob %s -> %s", resource.get ('resource_uniq'), bloburls)
 
-            files = []
-            sub = ''
-            for storeurl in bloburls:
-                # sanity check . ensure exactly one reference to store url before delete
-                # Since storeurl can contain '#' marks for series files
-                # What about directory URL.. this may match too many
-                blobrefs = data_service.query(parent= False, value = storeurl, cache=False)
-                if len(blobrefs) != 1:
-                    continue
-                driver.delete (storeurl)
+            file_query, sub = split_subpath (bloburls[0])
+            if len(sub)>0:
+                file_query = '%s#*'%file_query
+
+            # sanity check . ensure exactly one reference to store url before delete
+            # Since storeurl can contain '#' marks for series files
+            # What about directory URL.. this may match too many
+            blobrefs = data_service.query(parent=False, value=file_query, cache=False)
+
+            if len(blobrefs) < 2:
+                for storeurl in bloburls:
+                    driver.delete (storeurl)
+
         # Delete the reference in the store
         link = data_service.query ('link', parent=False, value = resource.get ('resource_uniq'), cache=False)
         if len(link)==1:
