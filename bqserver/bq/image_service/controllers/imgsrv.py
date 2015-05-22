@@ -56,7 +56,7 @@ from .converter_imaris import ConverterImaris
 from .converter_bioformats import ConverterBioformats
 from .converter_openslide import ConverterOpenSlide
 
-log = logging.getLogger('bq._service.server')
+log = logging.getLogger('bq.image_service.server')
 
 # needed_versions = { 'imgcnv'     : '1.66.0',
 #                     'imaris'     : '8.0.0',
