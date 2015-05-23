@@ -494,12 +494,19 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
             { 'xpath': '//tag[@name="image_num_x"]', 'attr': 'value', 'val': '256' },
             { 'xpath': '//tag[@name="image_num_y"]', 'attr': 'value', 'val': '256' },
             { 'xpath': '//tag[@name="image_num_c"]', 'attr': 'value', 'val': '1' },
-            { 'xpath': '//tag[@name="image_num_z"]', 'attr': 'value', 'val': '16' },
-            { 'xpath': '//tag[@name="image_num_t"]', 'attr': 'value', 'val': '1' },
+            { 'xpath': '//tag[@name="image_num_z"]', 'attr': 'value', 'val': '1' },
+            { 'xpath': '//tag[@name="image_num_t"]', 'attr': 'value', 'val': '16' },
             { 'xpath': '//tag[@name="image_pixel_depth"]', 'attr': 'value', 'val': '8' },
             { 'xpath': '//tag[@name="image_pixel_format"]', 'attr': 'value', 'val': 'unsigned integer' },
             { 'xpath': '//tag[@name="format"]', 'attr': 'value', 'val': 'DICOM' },
-            { 'xpath': '//tag[@name="image_num_series"]', 'attr': 'value', 'val': '1' },
+            { 'xpath': '//tag[@name="pixel_resolution_x"]', 'attr': 'value', 'val': '1.000000' },
+            { 'xpath': '//tag[@name="pixel_resolution_y"]', 'attr': 'value', 'val': '1.000000' },
+            { 'xpath': '//tag[@name="pixel_resolution_z"]', 'attr': 'value', 'val': '10.00' },
+            { 'xpath': '//tag[@name="pixel_resolution_t"]', 'attr': 'value', 'val': '69.470000' },
+            { 'xpath': '//tag[@name="pixel_resolution_unit_x"]', 'attr': 'value', 'val': 'mm' },
+            { 'xpath': '//tag[@name="pixel_resolution_unit_y"]', 'attr': 'value', 'val': 'mm' },
+            { 'xpath': '//tag[@name="pixel_resolution_unit_z"]', 'attr': 'value', 'val': 'mm' },
+            { 'xpath': '//tag[@name="pixel_resolution_unit_t"]', 'attr': 'value', 'val': 'seconds' },
         ]
         self.validate_xml(resource, filename, commands, meta_required)
 
@@ -528,8 +535,8 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
             'image_num_x': '256',
             'image_num_y': '256',
             'image_num_c': '1',
-            'image_num_z': '16',
-            'image_num_t': '1',
+            'image_num_z': '1',
+            'image_num_t': '16',
             'image_pixel_depth': '8',
             'image_pixel_format': 'unsigned integer'
         }
@@ -567,13 +574,12 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
             { 'xpath': '//tag[@name="image_pixel_depth"]', 'attr': 'value', 'val': '16' },
             { 'xpath': '//tag[@name="image_pixel_format"]', 'attr': 'value', 'val': 'signed integer' },
             { 'xpath': '//tag[@name="format"]', 'attr': 'value', 'val': 'DICOM' },
-            { 'xpath': '//tag[@name="image_num_series"]', 'attr': 'value', 'val': '1' },
-            { 'xpath': '//tag[@name="pixel_resolution_x"]', 'attr': 'value', 'val': '1.01562' },
-            { 'xpath': '//tag[@name="pixel_resolution_y"]', 'attr': 'value', 'val': '1.01562' },
-            { 'xpath': '//tag[@name="pixel_resolution_z"]', 'attr': 'value', 'val': '10.0' },
-            { 'xpath': '//tag[@name="pixel_resolution_unit_x"]', 'attr': 'value', 'val': 'microns' },
-            { 'xpath': '//tag[@name="pixel_resolution_unit_y"]', 'attr': 'value', 'val': 'microns' },
-            { 'xpath': '//tag[@name="pixel_resolution_unit_z"]', 'attr': 'value', 'val': 'microns' },
+            { 'xpath': '//tag[@name="pixel_resolution_x"]', 'attr': 'value', 'val': '1.015620' },
+            { 'xpath': '//tag[@name="pixel_resolution_y"]', 'attr': 'value', 'val': '1.015620' },
+            { 'xpath': '//tag[@name="pixel_resolution_z"]', 'attr': 'value', 'val': '5' },
+            { 'xpath': '//tag[@name="pixel_resolution_unit_x"]', 'attr': 'value', 'val': 'mm' },
+            { 'xpath': '//tag[@name="pixel_resolution_unit_y"]', 'attr': 'value', 'val': 'mm' },
+            { 'xpath': '//tag[@name="pixel_resolution_unit_z"]', 'attr': 'value', 'val': 'mm' },
         ]
         self.validate_xml(resource, filename, commands, meta_required)
 
@@ -659,7 +665,7 @@ class ImageServiceTestsThirdParty(ImageServiceTestBase):
         filename = 'svs.tile.tif'
         commands = [('tile', '0,0,0,512')]
         meta_required = {
-            'format': 'TIFF',
+            'format': 'BigTIFF', #'TIFF',
             'image_num_x': '512',
             'image_num_y': '512',
             'image_num_c': '3',
