@@ -948,9 +948,11 @@ CanvasWidget.prototype.update = function(shapes){};
 CanvasWidget.prototype.select = function(shapes){};
 CanvasWidget.prototype.unselect = function(shapes){};
 CanvasWidget.prototype.destroy = function(shapes){};
+CanvasWidget.prototype.toggle = function(fcn){};
 
 function CanvasManipulators(renderer) {
 	this.renderer = renderer;
+    this.name = 'manipulator';
     CanvasWidget.call(this, renderer);
 };
 
@@ -1012,6 +1014,7 @@ CanvasManipulators.prototype.destroy = function(shapes){
 
 function CanvasBbox(renderer) {
 	this.renderer = renderer;
+    this.name = 'bbox';
     CanvasWidget.call(this, renderer);
 };
 
@@ -1217,23 +1220,24 @@ CanvasBbox.prototype.select = function(gobs){
     var me = this;
     this.bbCorners.forEach(function(e,i,d){
         me.renderer.editLayer.add(e); //add corners
-        /*
+
         e.on('mousedown', function(evt) {
+            me.renderer.toggleWidgets('hide', 'bbox');
         });
-        */
+
         e.on('dragmove', function(evt) {
-            //if(this.mode != 'edit') return;
             me.editBbox(gobs,i,evt, e);
             e.moveToTop();
+
             me.renderer.editLayer.batchDraw(); // don't want to use default draw command, as it updates the bounding box
         });
 
         e.on('mouseup',function(evt){
             e.dirty = true;
-            //me.updateDrawer();
+            me.renderer.toggleWidgets('show', 'bbox');
             me.renderer.selectedSet.forEach(function(e,i,d){
                 if(e.dirty)
-                    me.move_shape(e.gob);
+                    me.renderer.move_shape(e.gob);
             });
         });
     });
@@ -1756,6 +1760,16 @@ CanvasRenderer.prototype.getProjectionRange = function(zrange, trange){
 
 CanvasRenderer.prototype.updateVisible = function(){
     var me = this;
+    //console.log();
+    if(this.uvTimeout) clearTimeout(this.uvTimeout);
+    this.uvTimeout = setTimeout(function(){
+        me.updateVisibleDelay();
+    },1)
+
+};
+
+CanvasRenderer.prototype.updateVisibleDelay = function(){
+    var me = this;
     //this.quadtree.cull(this.viewFrustum);
     var z = this.viewer.tiles.cur_z;
     var t = this.viewer.tiles.cur_t;
@@ -1763,7 +1777,7 @@ CanvasRenderer.prototype.updateVisible = function(){
     var zrange = [z, z+1];
     var trange = [t, t+1];
     this.getProjectionRange(zrange, trange);
-
+    console.log('update');
     if(this.mode == 'navigate'){
         this.quadtree.cache(this.viewFrustum, function(){
             me.quadtree.cullCached(me.viewFrustum);
@@ -2224,26 +2238,10 @@ CanvasRenderer.prototype.default_move = function (view, gob) {
 };
 
 
-CanvasRenderer.prototype.toggleWidgets = function(fcn){
-    /*
-    var scale = this.stage.scale();
-    if(fcn === 'hide'){
-        this.selectedSet.forEach(function(e){
-            e.sprite.strokeWidth(2/scale.x);
-        });
-    }
-    else {
-        this.selectedSet.forEach(function(e){
-            e.sprite.strokeWidth(1/scale.x);
-        });
-    }*/
-    /*
-    this.manipulators.forEach(function(e){
-        e[fcn]();
-    });
-    */
+CanvasRenderer.prototype.toggleWidgets = function(fcn, exclude){
     this.plug_ins.forEach(function(e){
-        e.toggle(fcn);
+        if(e.name != exclude)
+            e.toggle(fcn);
     });
 
 
