@@ -505,6 +505,7 @@ class BQSession(object):
 
     def deletexml(self, url):
         "Delete a resource"
+        url = self.c.prepare_url(url)
         r = self.c.webreq (method='delete', url=url)
         return r
 
