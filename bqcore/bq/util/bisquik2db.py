@@ -596,6 +596,7 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None, **kw)
 
 
 def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
+    from bq.data_service.controllers.resource_query import resource_permission
     log.debug ("db2node dbo=%s view=%s" % ( dbo, view))
     if dbo is None:
         log.error ("None pass to as DB object parent = %s", parent)
@@ -625,7 +626,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
             q = q.offset (int(kw.pop('offset')))
         if kw.has_key('limit'):
             q = q.limit (int(kw.pop('limit')))
-        tl = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in q ]
+        tl = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in resource_permission(q) ]
         #gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
 #    elif "deep" in view:
 #         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ]
