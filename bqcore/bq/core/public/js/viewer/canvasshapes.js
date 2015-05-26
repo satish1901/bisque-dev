@@ -2051,6 +2051,36 @@ CanvasLabel.prototype.setStroke = function(sw){
 };
 
 
+CanvasLabel.prototype.setStroke = function(sw){
+    if(sw) this.strokeWidth = sw;
+    else if(!this.strokeWidth) this.strokeWidth = 1.0;
+    if(!this.pointSize) this.pointSize = 2.5;
+    //this.pointSize = 2.5*this.strokeWidth;
+
+    var scale = this.renderer.scale();
+    var r = this.pointSize*this.strokeWidth/scale;
+    this.sprite.radius(r);
+    this.sprite.strokeWidth(2.0*this.pointSize/scale);
+    this.text.fontSize(14/scale);
+    if(this.arrow)
+        this.arrow.strokeWidth(1.0*this.pointSize/scale);
+
+
+};
+
+CanvasLabel.prototype.updateStroke = function(){
+    var scale = this.renderer.stage.scale();
+    var r = this.pointSize/scale;
+    this.sprite.radius(r);
+    this.sprite.strokeWidth(2.0*this.pointSize/scale);
+
+    this.text.fontSize(14/scale);
+    if(this.arrow)
+        this.arrow.strokeWidth(1.0*this.pointSize/scale);
+
+};
+
+
 CanvasLabel.prototype.updateArrow = function(strokeColor){
     var scale = this.renderer.stage.scale();
 
@@ -2144,8 +2174,9 @@ CanvasLabel.prototype.updateLocal = function () {
     text.fontSize(14/scale.x);
     this.x(p1.x);
     this.y(p1.y);
-    sprite.radius(r);
-    sprite.strokeWidth(6.0/scale.x);
+
+    this.setStroke();
+
     this.updateArrow(strokeColor);
     this.bbox = this.calcBbox();
     //this.currentLayer.add(this.sprite);

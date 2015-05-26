@@ -1369,16 +1369,21 @@ function CanvasRenderer (viewer,name) {
     this.visit_render = new BQProxyClassVisitor (this);
 
     this.plug_ins = [];
-    this.plug_ins.push(new CanvasCorners(this)); //we always want corners
+
     var me = this;
     if(viewer.parameters.render_plugins){
         viewer.parameters.render_plugins.forEach(function(e){
             if(e === 'color')
                 me.plug_ins.push(new CanvasShapeColor(me));
+            if(e === 'corners')
+                me.plug_ins.push(new CanvasCorners(me));
+
             if(e === 'bbox')
                 me.plug_ins.push(new CanvasBbox(me));
         });
     }
+    else //default just loads corners.
+        this.plug_ins.push(new CanvasCorners(this));
 
     //this.visit render
 
