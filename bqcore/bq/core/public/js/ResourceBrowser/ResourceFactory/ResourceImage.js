@@ -541,7 +541,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                 gobjectCreated : Ext.bind(function(gob) {
                     this.gobjectTagger.appendGObject(gob);
                 }, this),
-
+                render_plugins: ['color', 'bbox'],
                 //gobjectDeleted :
             },
             listeners : {

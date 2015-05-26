@@ -950,15 +950,15 @@ CanvasWidget.prototype.unselect = function(shapes){};
 CanvasWidget.prototype.destroy = function(shapes){};
 CanvasWidget.prototype.toggle = function(fcn){};
 
-function CanvasManipulators(renderer) {
+function CanvasCorners(renderer) {
 	this.renderer = renderer;
-    this.name = 'manipulator';
+    this.name = 'corner';
     CanvasWidget.call(this, renderer);
 };
 
-CanvasManipulators.prototype = new CanvasWidget();
+CanvasCorners.prototype = new CanvasWidget();
 
-CanvasManipulators.prototype.update = function(shapes){
+CanvasCorners.prototype.update = function(shapes){
     if(!shapes) return;
     var me = this;
     for(var i = 0; i < shapes.length; i++){
@@ -967,7 +967,7 @@ CanvasManipulators.prototype.update = function(shapes){
 };
 
 
-CanvasManipulators.prototype.toggle = function(fcn){
+CanvasCorners.prototype.toggle = function(fcn){
 
     this.update(this.renderer.selectedSet);
     this.manipulators.forEach(function(e){
@@ -975,7 +975,22 @@ CanvasManipulators.prototype.toggle = function(fcn){
     });
 };
 
-CanvasManipulators.prototype.select = function(shapes){
+
+CanvasCorners.prototype.select = function(shapes){
+    var me = this;
+    this.manipulators = [];
+
+    for(var i = 0; i < shapes.length; i++){
+        var manipulators = shapes[i].getCornerManipulators();
+        manipulators.forEach(function(e){
+            me.renderer.editLayer.add(e);
+        });
+        this.manipulators = this.manipulators.concat(manipulators);
+    }
+    this.update(shapes);
+};
+/*
+CanvasCorners.prototype.select = function(shapes){
     var manipMode = shapes.length > 1 ? 'multiple' : 'single';
     manipMode = shapes.length > 5 ? 'many' : manipMode;
     manipMode = this.renderer.viewer.parameters.showmanipulators ? 'multiple' : manipMode;
@@ -992,15 +1007,74 @@ CanvasManipulators.prototype.select = function(shapes){
     }
     this.update(shapes);
 };
+*/
 
-
-CanvasManipulators.prototype.unselect = function(shapes){
+CanvasCorners.prototype.unselect = function(shapes){
     shapes.forEach(function(e,i,a){
         e.resetManipulators();
     });
 };
 
-CanvasManipulators.prototype.destroy = function(shapes){
+CanvasCorners.prototype.destroy = function(shapes){
+    if(this.manipulators){
+        this.manipulators.forEach(function(e,i,d){
+            e.remove(); //remove all current corners
+            e.off('mousedown');
+            e.off('dragmove'); //kill their callbacks
+            e.off('mouseup');
+        });
+    }
+}
+
+
+function CanvasShapeColor(renderer) {
+	this.renderer = renderer;
+    this.name = 'shapecolor';
+    CanvasWidget.call(this, renderer);
+};
+
+CanvasShapeColor.prototype = new CanvasWidget();
+
+CanvasShapeColor.prototype.update = function(shapes){
+    if(!shapes) return;
+    var me = this;
+    for(var i = 0; i < shapes.length; i++){
+        shapes[i].updateManipulators();
+    }
+};
+
+
+CanvasShapeColor.prototype.toggle = function(fcn){
+
+    this.update(this.renderer.selectedSet);
+    this.manipulators.forEach(function(e){
+        e[fcn]();
+    });
+};
+
+CanvasShapeColor.prototype.select = function(shapes){
+    var me = this;
+    this.manipulators = [];
+
+    for(var i = 0; i < shapes.length; i++){
+        var manipulators = shapes[i].getColorManipulator();
+        manipulators.forEach(function(e){
+            me.renderer.editLayer.add(e);
+        });
+        this.manipulators = this.manipulators.concat(manipulators);
+    }
+
+    this.update(shapes);
+};
+
+
+CanvasShapeColor.prototype.unselect = function(shapes){
+    shapes.forEach(function(e,i,a){
+        e.resetManipulators();
+    });
+};
+
+CanvasShapeColor.prototype.destroy = function(shapes){
     if(this.manipulators){
         this.manipulators.forEach(function(e,i,d){
             e.remove(); //remove all current corners
@@ -1294,9 +1368,17 @@ function CanvasRenderer (viewer,name) {
     this.events  = {};
     this.visit_render = new BQProxyClassVisitor (this);
 
-    //this.plug_ins = [];
-
-    this.plug_ins = [new CanvasManipulators(this), new CanvasBbox(this)];
+    this.plug_ins = [];
+    this.plug_ins.push(new CanvasCorners(this)); //we always want corners
+    var me = this;
+    if(viewer.parameters.render_plugins){
+        viewer.parameters.render_plugins.forEach(function(e){
+            if(e === 'color')
+                me.plug_ins.push(new CanvasShapeColor(me));
+            if(e === 'bbox')
+                me.plug_ins.push(new CanvasBbox(me));
+        });
+    }
 
     //this.visit render
 
@@ -1931,7 +2013,7 @@ CanvasRenderer.prototype.updateImage = function (e) {
     //get the gobs and walk the tree to rerender them
     //update visible objects in the tree... next iteration may be 3D.
 
-    this.plug_ins.foreach(function(e){
+    this.plug_ins.forEach(function(e){
         e.update();
     });
 
