@@ -421,8 +421,9 @@ QuadTree.prototype.insertInNode  = function(gob, node, stack){
     //node.bbox = this.calcBbox(node.leaves);
     var maxLevel = 6;
 
-    if(this.renderer.viewer.tiles.pyramid)
-        var maxTileLevel = this.renderer.viewer.tiles.pyramid.levels;
+    //if(this.renderer.viewer.tiles.pyramid)
+    //    maxTileLevel = this.renderer.viewer.tiles.pyramid.levels;
+
     if((node.leaves.length >= this.maxChildren || node.L < maxTileLevel + 2) &&
        node.L < maxLevel){
         this.splitNode(node, stack);
@@ -958,11 +959,12 @@ function CanvasCorners(renderer) {
 
 CanvasCorners.prototype = new CanvasWidget();
 
-CanvasCorners.prototype.update = function(shapes){
-    if(!shapes) return;
+CanvasCorners.prototype.update = function(){
     var me = this;
+    var shapes = this.renderer.selectedSet;
+
     for(var i = 0; i < shapes.length; i++){
-        shapes[i].updateManipulators();
+        shapes[i].updateCorners();
     }
 };
 
@@ -970,9 +972,10 @@ CanvasCorners.prototype.update = function(shapes){
 CanvasCorners.prototype.toggle = function(fcn){
 
     this.update(this.renderer.selectedSet);
-    this.manipulators.forEach(function(e){
-        e[fcn]();
-    });
+    if(this.manipulators)
+        this.manipulators.forEach(function(e){
+            e[fcn]();
+        });
 };
 
 
@@ -1035,8 +1038,9 @@ function CanvasShapeColor(renderer) {
 
 CanvasShapeColor.prototype = new CanvasWidget();
 
-CanvasShapeColor.prototype.update = function(shapes){
-    if(!shapes) return;
+CanvasShapeColor.prototype.update = function(){
+    var shapes = this.renderer.selectedSet;
+
     var me = this;
     for(var i = 0; i < shapes.length; i++){
         shapes[i].updateManipulators();
@@ -1047,9 +1051,10 @@ CanvasShapeColor.prototype.update = function(shapes){
 CanvasShapeColor.prototype.toggle = function(fcn){
 
     this.update(this.renderer.selectedSet);
-    this.manipulators.forEach(function(e){
-        e[fcn]();
-    });
+    if(this.manipulators)
+        this.manipulators.forEach(function(e){
+            e[fcn]();
+        });
 };
 
 CanvasShapeColor.prototype.select = function(shapes){
@@ -1421,6 +1426,7 @@ CanvasRenderer.prototype.create = function (parent) {
     this.quadtree = new QuadTree(this);
     this.gobs = [];
     this.visitedFrame = [];
+    this.selectedSet = [];
     this.cur_z = 0;
 
 
@@ -1845,12 +1851,14 @@ CanvasRenderer.prototype.getProjectionRange = function(zrange, trange){
     }
 };
 
-CanvasRenderer.prototype.updateVisible = function(){
+CanvasRenderer.prototype.updateVisible = function(afterUpdate){
     var me = this;
     //console.log();
     if(this.uvTimeout) clearTimeout(this.uvTimeout);
     this.uvTimeout = setTimeout(function(){
         me.updateVisibleDelay();
+        if(afterUpdate)
+            afterUpdate();
     },1);
 
 };
@@ -2018,11 +2026,20 @@ CanvasRenderer.prototype.updateImage = function (e) {
     //get the gobs and walk the tree to rerender them
     //update visible objects in the tree... next iteration may be 3D.
 
+    /*
     this.plug_ins.forEach(function(e){
-        e.update();
+        e.unselect(me.selectedSet);
     });
 
-    this.updateVisible(); //update visible has a draw call
+    this.plug_ins.forEach(function(e){
+        e.select(me.selectedSet);
+    });
+    */
+    this.updateVisible(function(){
+        me.unselect(me.selectedSet);
+        me.select(me.selectedSet);
+    }); //update visible has a draw call
+
     //this.draw();
 };
 
@@ -2355,121 +2372,125 @@ CanvasRenderer.prototype.addSpriteEvents = function(shape){
     var me = this;
     if(!this.dragCache) this.dragCache = [0,0];
     //poly.setDraggable(true);
-    var poly = shape.sprite;
+    var polys = shape.sprites;
+    if(!polys) polys = [shape.sprite]; // hack to work with single sprites
+
     var gob = shape.gob;
-    poly.on('mousedown', function(evt) {
-        //select(view, gob);
-        if(me.mode === 'delete'){
-            //me.quadtree.remove(gob.shape);
-            gob.isDestroyed = true;
-            me.delete_fun(gob);
-            return;
-        }
-
-        else if(me.mode != 'edit') return;
-
-        evt.evt.cancelBubble = true;
-        poly.shape.clearCache();
-
-        var inSet = me.inSelectedSet(gob.shape);
-
-        if(inSet < 0){
-            me.unselect(me.selectedSet);
-            me.resetSelectedSet();
-            me.selectedSet[0] = gob.shape;
-        }
-
-        poly.setDraggable(true);
-        me.editLayer.moveToTop();
-
-        me.mouseselect = true;
-        me.select( me.selectedSet);
-        me.default_select(me.selectedSet);
-
-        var scale = me.stage.scale();
-        me.dragCache[0] = evt.evt.offsetX/scale.x;
-        me.dragCache[1] = evt.evt.offsetY/scale.y;
-
-        //me.shapeCache = [];
-        for(var j = 0; j < me.selectedSet.length; j++){
-            me.selectedSet[j].dragStart();
-            me.quadtree.remove(me.selectedSet[j]);
-        };
-
-        if(me.viewer.parameters.gobjectMoveStart)
-            me.viewer.parameters.gobjectMoveStart(me.selectedSet);
-
-    });
-
-    poly.on('dragstart', function() {
-        me.toggleWidgets('hide');
-    });
-
-    poly.on('dragmove', function(evt) {
-        var scale = me.stage.scale();
-        var pos = [evt.evt.offsetX/scale.x,
-                   evt.evt.offsetY/scale.y];
-
-        poly.shape.position.x = poly.x();
-        poly.shape.position.y = poly.y();
-        //console.log(pos, poly.x(), poly.y());
-        var bbox, bboxCache, shape, shapeCache, gsprite, fsprite;
-        var dxy = [0,0];
-        for(var j = 0; j < me.selectedSet.length; j++){
-
-            var f = me.selectedSet[j];
-
-
-            f.dirty = true;
-            dxy[0] = pos[0] - me.dragCache[0];
-            dxy[1] = pos[1] - me.dragCache[1];
-
-            gsprite = gob.shape.sprite;
-            fsprite = f;
-
-            bbox = f.bbox;
-            bboxCache = f.bboxCache;
-            shapeCache = f.spriteCache;
-
-            bbox.min[0] = bboxCache.min[0] + dxy[0];
-            bbox.max[0] = bboxCache.max[0] + dxy[0];
-            bbox.min[1] = bboxCache.min[1] + dxy[1];
-            bbox.max[1] = bboxCache.max[1] + dxy[1];
-
-            if(fsprite._id != gsprite._id){
-                fsprite.x(shapeCache[0] + dxy[0]);
-                fsprite.y(shapeCache[1] + dxy[1]);
+    polys.forEach(function(poly){
+        poly.on('mousedown', function(evt) {
+            //select(view, gob);
+            if(me.mode === 'delete'){
+                //me.quadtree.remove(gob.shape);
+                gob.isDestroyed = true;
+                me.delete_fun(gob);
+                return;
             }
-        }
-        //me.updateBbox(me.selectedSet);
-        if(this.shape.selfAnchor)
-           this.shape.drag(evt,this);
-        //me.currentLayer.draw();
-        if(me.viewer.parameters.gobjectMove)
-            me.viewer.parameters.gobjectMove(me.selectedSet);
-        me.editLayer.draw();
-    });
 
-    poly.on('dragend', function() {
-        me.toggleWidgets('show');
-    });
+            else if(me.mode != 'edit') return;
 
-    poly.on('mouseup', function() {
-        poly.setDraggable(false);
+            evt.evt.cancelBubble = true;
+            poly.shape.clearCache();
 
-        me.selectedSet.forEach(function(e,i,d){
-            if(e.dirty)
-                me.move_shape(e.gob);
+            var inSet = me.inSelectedSet(gob.shape);
 
-            //me.quadtree.in(f);
-            me.quadtree.insert(e)
+            if(inSet < 0){
+                me.unselect(me.selectedSet);
+                me.resetSelectedSet();
+                me.selectedSet[0] = gob.shape;
+            }
+
+            poly.setDraggable(true);
+            me.editLayer.moveToTop();
+
+            me.mouseselect = true;
+            me.select( me.selectedSet);
+            me.default_select(me.selectedSet);
+
+            var scale = me.stage.scale();
+            me.dragCache[0] = evt.evt.offsetX/scale.x;
+            me.dragCache[1] = evt.evt.offsetY/scale.y;
+
+            //me.shapeCache = [];
+            for(var j = 0; j < me.selectedSet.length; j++){
+                me.selectedSet[j].dragStart();
+                me.quadtree.remove(me.selectedSet[j]);
+            };
+
+            if(me.viewer.parameters.gobjectMoveStart)
+                me.viewer.parameters.gobjectMoveStart(me.selectedSet);
+
         });
-        if(me.viewer.parameters.gobjectMoveEnd)
-            me.viewer.parameters.gobjectMoveEnd(me.selectedSet);
 
-        //me.selectedSet.forEach(function(e,i,d){
-        //     me.move_shape(e.gob);
-        //});
+        poly.on('dragstart', function() {
+            me.toggleWidgets('hide');
+        });
+
+        poly.on('dragmove', function(evt) {
+            var scale = me.stage.scale();
+            var pos = [evt.evt.offsetX/scale.x,
+                       evt.evt.offsetY/scale.y];
+
+            poly.shape.position.x = poly.x();
+            poly.shape.position.y = poly.y();
+            //console.log(pos, poly.x(), poly.y());
+            var bbox, bboxCache, shape, shapeCache, gsprite, fsprite;
+            var dxy = [0,0];
+            for(var j = 0; j < me.selectedSet.length; j++){
+
+                var
+                fsprite = me.selectedSet[j],
+                gsprite = gob.shape.sprite;
+
+                fsprite.dirty = true;
+                dxy[0] = pos[0] - me.dragCache[0];
+                dxy[1] = pos[1] - me.dragCache[1];
+
+
+                bbox = fsprite.bbox;
+                bboxCache = fsprite.bboxCache;
+                shapeCache = fsprite.spriteCache;
+
+                bbox.min[0] = bboxCache.min[0] + dxy[0];
+                bbox.max[0] = bboxCache.max[0] + dxy[0];
+                bbox.min[1] = bboxCache.min[1] + dxy[1];
+                bbox.max[1] = bboxCache.max[1] + dxy[1];
+
+                if(fsprite._id != gsprite._id){
+                    fsprite.x(shapeCache[0] + dxy[0]);
+                    fsprite.y(shapeCache[1] + dxy[1]);
+                }
+            }
+            //me.updateBbox(me.selectedSet);
+            if(this.shape.selfAnchor)
+                this.shape.drag(evt,this);
+            //me.currentLayer.draw();
+            if(me.viewer.parameters.gobjectMove)
+                me.viewer.parameters.gobjectMove(me.selectedSet);
+            me.editLayer.draw();
+        });
+
+        poly.on('dragend', function() {
+            me.toggleWidgets('show');
+        });
+
+        poly.on('mouseup', function() {
+            poly.setDraggable(false);
+
+            me.selectedSet.forEach(function(e,i,d){
+                if(e.dirty)
+                    me.move_shape(e.gob);
+
+                //me.quadtree.in(f);
+                me.quadtree.insert(e)
+            });
+            if(me.viewer.parameters.gobjectMoveEnd)
+                me.viewer.parameters.gobjectMoveEnd(me.selectedSet);
+
+            //me.selectedSet.forEach(function(e,i,d){
+            //     me.move_shape(e.gob);
+            //});
+        });
+
     });
 
 };
@@ -2519,22 +2540,23 @@ CanvasRenderer.prototype.hideShape = function (gob, view) {
 
 CanvasRenderer.prototype.highlight = function (gob, selection) {
     // visitall to enhance on the node and its children
-
     var me = this;
 
-    //this.currentLayer.removeChildren();
-    if(!selection){
-        this.removeFromSelectedSet(gob.shape);
-        //this.unselect(this.selectedSet);
-        //this.selectedSet = [];
-    }
-    else {
-        visit_all(gob, function(g, args) {
-            if (g.shape)
-                me.addToSelectedSet(g.shape);
-        }, selection );
-    }
-    this.select(this.selectedSet);
+
+        if(!selection){
+            me.removeFromSelectedSet(gob.shape);
+        }
+        else {
+            visit_all(gob, function(g, args) {
+                if (g.shape)
+                    me.addToSelectedSet(g.shape);
+            }, selection );
+        }
+        me.select(me.selectedSet);
+    /*
+    if(this.highTimeout) clearTimeout(this.highTimeout);
+    this.highTimeout = setTimeout(highlight, 1);
+    */
 };
 
 CanvasRenderer.prototype.setcolor = function (gob, color) {
