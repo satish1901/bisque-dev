@@ -214,15 +214,14 @@ CanvasShape.prototype.resetManipulatorSet = function(set){
         e.off('dragmove'); //kill their callbacks
         e.off('mouseup');
         delete e;
-    })
-    set = [];
+    });
 };
 
 CanvasShape.prototype.resetManipulators = function(){
     if(this.renderer.colorMenu)
         this.renderer.colorMenu.hide();
-    this.resetManipulatorSet(this.shapeCorners);
-    this.resetManipulatorSet(this.manipulators);
+    this.resetManipulatorSet(this.shapeCorners); this.shapeCorners = [];
+    this.resetManipulatorSet(this.manipulators); this.manipulators = [];
 }
 
 CanvasShape.prototype.getColorManipulator = function(){
@@ -247,19 +246,44 @@ CanvasShape.prototype.getColorManipulator = function(){
         height: 16/scale.x,
     });
     */
-
-    var image = new Kinetic.Image({
+    this.manipulators = [];
+    if(!this.colorImage){
+        this.colorImage = new Kinetic.Image({
             x: x + 12/scale.x,
             y: y, //+ 2/scale.x,
             image: imageObj,
             width: 16/scale.x,
             height: 16/scale.x
+        });
+
+        imageObj.onload = function() {
+            me.colorImage.setImage(imageObj);
+        };
+        imageObj.src = '/images/viewer/color_wheel.png';
+
+    }
+
+    //renderer.colorMenu.hide();
+    this.colorImage.on('mousedown', function(evt){
+        var e = evt.evt;
+        //var ix = image.x();
+        //var iy = image.y();
+        if(renderer.colorMenu.isVisible()) {
+            renderer.colorMenu.hide();
+            return;
+        }
+        var ip = me.colorImage.getAbsolutePosition();
+        renderer.colorMenu.currentShape = me;
+        renderer.colorMenu.show();
+        renderer.colorMenu.setX(ip.x + 22);
+        renderer.colorMenu.setY(ip.y + 78);
+        var picker = renderer.colorMenu.queryById('picker');
+        var c = Kinetic.Util._hexToRgb('#' + me.gob.color_override);
+        picker.setColorRgb(c.r/255, c.g/255, c.b/255, 1.0);
+
     });
 
-    imageObj.onload = function() {
-        image.setImage(imageObj);
-    };
-    imageObj.src = '/images/viewer/color_wheel.png';
+    this.manipulators.push(this.colorImage); // right now we have one manipulator...
 
     if(!renderer.colorMenu)
         renderer.colorMenu = Ext.create('Ext.tip.Tip', {
@@ -319,27 +343,7 @@ CanvasShape.prototype.getColorManipulator = function(){
 
     if(renderer.colorMenu.isVisible()) renderer.colorMenu.hide();
 
-    //renderer.colorMenu.hide();
-    image.on('mousedown', function(evt){
-        var e = evt.evt;
-        //var ix = image.x();
-        //var iy = image.y();
-        if(renderer.colorMenu.isVisible()) {
-            renderer.colorMenu.hide();
-            return;
-        }
-        var ip = image.getAbsolutePosition();
-        renderer.colorMenu.currentShape = me;
-        renderer.colorMenu.show();
-        renderer.colorMenu.setX(ip.x + 22);
-        renderer.colorMenu.setY(ip.y + 78);
-        var picker = renderer.colorMenu.queryById('picker');
-        var c = Kinetic.Util._hexToRgb('#' + me.gob.color_override);
-        picker.setColorRgb(c.r/255, c.g/255, c.b/255, 1.0);
-
-    });
-    this.manipulators.push(image)
-    return [image];
+    return [this.colorImage];
 };
 
 CanvasShape.prototype.getCornerManipulators = function(){
@@ -451,7 +455,8 @@ CanvasShape.prototype.getManipulators = function(mode){
     return manipulators;
 }
 
-CanvasShape.prototype.updateManipulators = function(){
+
+CanvasShape.prototype.updateCorners = function(){
     //if(!shapes) return;
 
     var me = this,
@@ -467,11 +472,26 @@ CanvasShape.prototype.updateManipulators = function(){
 
     for(var j = 0; j < points.length; j+=2){
         if(!me.shapeCorners[j/2]) continue;
-        //me.shapeCorners[totalPoints + j/2].radius(3.0/scale.x);
-        //me.shapeCorners[totalPoints + j/2].strokeWidth(6.0/scale.x);
         me.shapeCorners[j/2].x(x + sx*points[j + 0]);
         me.shapeCorners[j/2].y(y + sy*points[j + 1]);
+
+        me.shapeCorners[j/2].width(8/scale.x);
+        me.shapeCorners[j/2].height(8/scale.x);
     };
+}
+
+CanvasShape.prototype.updateManipulators = function(){
+    //if(!shapes) return;
+
+    var me = this,
+    renderer = this.renderer,
+    scale = renderer.stage.scale();
+
+    var points = this.points();
+    var x  = this.x();
+    var y  = this.y();
+    var sx = this.sprite.scaleX();
+    var sy = this.sprite.scaleY();
 
     var bbox = this.getBbox(),
     x = bbox.max[0],
@@ -542,14 +562,18 @@ CanvasShape.prototype.setXY = function(field, input){
         this.position[field] = input;
 
         var bb = this.bbox;
-        //console.log(this.bbox);
         var index = field === 'x' ? 0:1;
         var offset = this.cacheOffset();
-        //var h = bb.max[1] - bb.min[1];
-        if(this.cached)
-            this.sprite[field](input - offset[field]/2);
+        var offSetIn = this.cached ? input - offset[field]/2 : input;
+
+        if(this.sprites){
+            this.sprites.forEach(function(e){
+                e[field](offSetIn);
+            });
+        }
         else
-            this.sprite[field](input);
+            this.sprite[field](offSetIn);
+
         return;
     }
     else
@@ -1953,6 +1977,7 @@ CanvasLabel.prototype.init = function(gob){
         fontSize: 14/scale.x,
         fill: 'red',
     });;
+    this.sprites = [this.sprite, this.text];
     gob.shape = this;
     this.gob = gob;
     this.sprite.shape = this;
@@ -2034,22 +2059,6 @@ CanvasLabel.prototype.calcBbox = function () {
 
 CanvasLabel.prototype.clearCache = function(){};
 CanvasLabel.prototype.cacheSprite = function(){};
-
-
-CanvasLabel.prototype.setStroke = function(sw){
-    if(sw) this.strokeWidth = sw;
-    else if(!this.strokeWidth) this.strokeWidth = 1.0;
-    if(!this.pointSize) this.pointSize = 2.5;
-    this.pointSize *= this.strokeWidth;
-
-    var scale = this.renderer.stage.scale();
-    var r = this.pointSize/scale.x;
-    this.sprite.radius(r);
-    this.sprite.strokeWidth(2.0*this.pointSize/scale.x);
-    this.text.fontSize(14/scale.x);
-
-};
-
 
 CanvasLabel.prototype.setStroke = function(sw){
     if(sw) this.strokeWidth = sw;
@@ -2611,6 +2620,7 @@ CanvasSquare.prototype.drag = function(evt, corner){
         rect.height(min);
     }
     this.bbox = this.calcBbox();
+    this.renderer.move_shape(this.gob);
 }
 
 

@@ -607,7 +607,28 @@ ImgEdit.prototype.new_point = function (parent, e, x, y) {
     this.renderer.unselectCurrent();
     this.renderer.selectedSet = [g.shape];
     this.renderer.select(this.renderer.selectedSet);
+    this.renderer.unselectCurrent();
 };
+
+ImgEdit.prototype.begin_add = function(g, parent){
+    this.renderer.unselectCurrent();
+    this.renderer.selectedSet = [g.shape];
+    this.renderer.select(this.renderer.selectedSet);
+    this.renderer.toggleWidgets('hide');
+}
+
+
+ImgEdit.prototype.finish_add = function(g, parent){
+    g.shape.postEnabled = true;
+    if(this.current_gob)
+        this.on_move(this.current_gob);
+    this.current_gob = null;
+    this.renderer.setmousemove(null);
+    this.renderer.setmouseup(null);
+    this.renderer.toggleWidgets('show');
+    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
+    this.renderer.unselectCurrent();
+}
 
 ImgEdit.prototype.basic_drag_callback = function(g, parent, x, y){
     var me = this;
@@ -617,22 +638,13 @@ ImgEdit.prototype.basic_drag_callback = function(g, parent, x, y){
 
     this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
     this.renderer.setmouseup(callback(this, function(e){
-        me.on_move(me.current_gob);
-        me.current_gob = null;
-        me.renderer.setmousemove(null);
-        me.renderer.setmouseup(null);
-        me.renderer.toggleWidgets('show');
-        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-
+        this.finish_add(g, parent);
         //if (this.viewer.parameters.onselect)
         //    this.viewer.parameters.onselect([g]);
     }));
 
     if(g.shape){
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-        me.renderer.toggleWidgets('hide');
+        this.begin_add(g, parent);
     }
 
 }
@@ -697,14 +709,14 @@ ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
 
 };
 
-ImgEdit.prototype.new_polygon = function (parent, e, x, y) {
+ImgEdit.prototype.basic_polygon = function (type, parent, e, x, y) {
 
     var v = this.viewer.current_view;
     var g = this.current_gob;
     parent = parent || this.global_parent;
 
     if (g == null) {
-        g = new BQGObject('polygon');
+        g = new BQGObject(type);
         if (parent) {
             parent.addgobjects(g);
             g.edit_parent = parent;
@@ -725,11 +737,9 @@ ImgEdit.prototype.new_polygon = function (parent, e, x, y) {
         var dp = dx*dx + dy*dy;
 
         if(dp < 16){
-            this.current_gob = null;
-            this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-            g.shape.postEnabled = true;
-            this.renderer.setmousemove(null);
+            this.finish_add(g, g.edit_parent);
             this.renderer.resetShapeCornerFill();
+
             return;
         };
     }
@@ -741,9 +751,7 @@ ImgEdit.prototype.new_polygon = function (parent, e, x, y) {
     this.current_gob = (e.evt.detail > 1)?null:g;
 
     if (!this.current_gob){
-        this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-        g.shape.postEnabled = true;
-        this.renderer.setmousemove(null);
+        this.finish_add(g, g.edit_parent);
         return;
     }
     else{
@@ -751,83 +759,29 @@ ImgEdit.prototype.new_polygon = function (parent, e, x, y) {
             g.shape.sprite.remove();
         this.visit_render.visitall(g, [v]);
         g.shape.postEnabled = false;
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
         this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
+        this.begin_add(g, g.edit_parent);
     }
+};
+
+
+ImgEdit.prototype.new_polygon = function (parent, e, x, y) {
+    this.basic_polygon('polygon', parent, e, x, y);
 };
 
 ImgEdit.prototype.new_polyline = function (parent, e, x, y) {
-
-    var v = this.viewer.current_view;
-    var g = this.current_gob;
-    parent = parent || this.global_parent;
-
-    if (g == null) {
-        g = new BQGObject('polyline');
-        if (parent) {
-            parent.addgobjects(g);
-            g.edit_parent = parent;
-        } else
-            this.viewer.image.addgobjects(g);
-    }
-
-    var pt = v.inverseTransformPoint(x,y);
-    var index = g.vertices.length;
-    var prev = index>0?g.vertices[index-1]:{x:-1,y:-1};
-
-    //
-    //this little bit allows the user to close the loop
-    if(index > 2){
-        //var ip = v.inverseTransformPoint(g.vertices[0].x,g.vertices[0].y);
-        var dx = g.vertices[0].x - pt.x;
-        var dy = g.vertices[0].y - pt.y;
-        var dp = dx*dx + dy*dy;
-
-        if(dp < 16){
-            this.current_gob = null;
-            this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-            g.shape.postEnabled = true;
-            this.renderer.setmousemove(null);
-            this.renderer.resetShapeCornerFill();
-            return;
-        };
-    }
-
-    if (e.evt.detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
-        g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
-
-    // Double click ends the object otherwise add points
-    this.current_gob = (e.evt.detail > 1)?null:g;
-
-    if (!this.current_gob){
-        this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-        g.shape.postEnabled = true;
-        this.renderer.setmousemove(null);
-        return;
-    }
-    else{
-        if(g.shape)
-            g.shape.sprite.remove();
-        this.visit_render.visitall(g, [v]);
-        g.shape.postEnabled = false;
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-        this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    }
+    this.basic_polygon('polyline', parent, e, x, y);
 };
 
 
-ImgEdit.prototype.new_freehand_closed = function (parent, e, x, y) {
+ImgEdit.prototype.new_freehand = function (type, parent, e, x, y) {
     var me = this;
     var v = this.viewer.current_view;
     var g = this.current_gob;
     parent = parent || this.global_parent;
 
     if (g == null) {
-        g = new BQGObject('polygon');
+        g = new BQGObject(type);
         if (parent) {
             parent.addgobjects(g);
             g.edit_parent = parent;
@@ -871,64 +825,20 @@ ImgEdit.prototype.new_freehand_closed = function (parent, e, x, y) {
         me.renderer.selectedSet = [g.shape];
         me.renderer.select(me.renderer.selectedSet);
         me.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
+        this.renderer.unselectCurrent();
     }));
+};
+
+ImgEdit.prototype.new_freehand_closed = function (parent, e, x, y) {
+    this.new_freehand('polygon', parent, e, x, y);
 };
 
 ImgEdit.prototype.new_freehand_open = function (parent, e, x, y) {
-    var me = this;
-    var v = this.viewer.current_view;
-    var g = this.current_gob;
-    parent = parent || this.global_parent;
-
-    if (g == null) {
-        g = new BQGObject('polyline');
-        if (parent) {
-            parent.addgobjects(g);
-            g.edit_parent = parent;
-        } else
-            this.viewer.image.addgobjects(g);
-    }
-
-    var pt = v.inverseTransformPoint(x,y);
-    var index = g.vertices.length;
-    var prev = index>0?g.vertices[index-1]:{x:-1,y:-1};
-
-
-    //if we want to close this sucker without adding more points
-    //var ip = v.inverseTransformPoint(g.vertices[0].x,g.vertices[0].y);
-
-
-    if (e.evt.detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
-        g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
-
-    // Double click ends the object otherwise add points
-    this.current_gob = (e.evt.detail > 1)?null:g;
-
-    this.visit_render.visitall(g, [v]);
-    g.shape.postEnabled = false;
-    this.renderer.unselectCurrent();
-    this.renderer.selectedSet = [g.shape];
-    this.renderer.select(this.renderer.selectedSet);
-    var n = g.vertices.length;
-    var dx = g.vertices[n-1].x - pt.x;
-    var dy = g.vertices[n-1].y - pt.y;
-    var dp = dx*dx + dy*dy;
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]},g.shape.onDragFree));
-    this.renderer.setmouseup(callback(this,function(e){
-        me.on_move(me.current_gob);
-        me.current_gob = null;
-        me.renderer.setmousemove(null);
-        me.renderer.setmouseup(null);
-        g.shape.visvalingamSimplify();
-        g.shape.moveLocal();
-        me.renderer.unselectCurrent();
-        me.renderer.selectedSet = [g.shape];
-        me.renderer.select(me.renderer.selectedSet);
-        me.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-    }));
+    this.new_freehand('polyline', parent, e, x, y);
 };
 
 ImgEdit.prototype.new_line = function (parent, e, x, y) {
+
     var v = this.viewer.current_view;
     var g = this.current_gob;
     parent = parent || this.global_parent;
@@ -952,10 +862,8 @@ ImgEdit.prototype.new_line = function (parent, e, x, y) {
         this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
         g.shape.postEnabled = true;
         this.renderer.setmousemove(null);
+        this.renderer.unselectCurrent();
     } else {
-        //if (!g.shape)
-        //    this.renderer.polyline( undefined, g, v, true); // there's no SVG element square, force specific shape
-
         if(g.shape)
             g.shape.sprite.remove();
         this.visit_render.visitall(g, [v]);
@@ -964,18 +872,11 @@ ImgEdit.prototype.new_line = function (parent, e, x, y) {
         this.renderer.selectedSet = [g.shape];
         this.renderer.select(this.renderer.selectedSet);
         this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
+
     }
     this.visit_render.visitall(g, [v]);
+
 };
-
-/*ImgEdit.prototype.finishPolys = function (e, x, y) {
-    //var v = this.viewer.current_view;
-    var g = this.current_gob;
-    this.current_gob = null;
-    //this.visit_render.visitall(g, [v]);
-    this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-};*/
-
 
 ImgEdit.prototype.new_label = function (parent, e, x, y) {
     var v = this.viewer.current_view;
@@ -995,8 +896,13 @@ ImgEdit.prototype.new_label = function (parent, e, x, y) {
             else
                 me.viewer.image.addgobjects(g);
             g.value = text;
-            me.visit_render.visitall(g, [v]);
             me.store_new_gobject ((parent && !parent.uri) ? parent : g);
+            me.visit_render.visitall(g, [v]);
+
+            me.renderer.unselectCurrent();
+            me.renderer.selectedSet = [g.shape];
+            me.renderer.select(me.renderer.selectedSet);
+            me.renderer.unselectCurrent();
         }
     });
 };
