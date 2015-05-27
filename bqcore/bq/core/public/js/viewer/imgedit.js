@@ -609,12 +609,40 @@ ImgEdit.prototype.new_point = function (parent, e, x, y) {
     this.renderer.select(this.renderer.selectedSet);
 };
 
-ImgEdit.prototype.new_rectangle = function (parent, e, x, y) {
-    e.evt.cancelBubble = true;
+ImgEdit.prototype.basic_drag_callback = function(g, parent, x, y){
+    var me = this;
+    var v =  this.viewer.current_view;
+    this.current_gob = g;
+    this.visit_render.visitall(g, [v]);
+
+    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
+    this.renderer.setmouseup(callback(this, function(e){
+        me.on_move(me.current_gob);
+        me.current_gob = null;
+        me.renderer.setmousemove(null);
+        me.renderer.setmouseup(null);
+        me.renderer.toggleWidgets('show');
+        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
+
+        //if (this.viewer.parameters.onselect)
+        //    this.viewer.parameters.onselect([g]);
+    }));
+
+    if(g.shape){
+        this.renderer.unselectCurrent();
+        this.renderer.selectedSet = [g.shape];
+        this.renderer.select(this.renderer.selectedSet);
+        me.renderer.toggleWidgets('hide');
+    }
+
+}
+
+ImgEdit.prototype.basic_shape  = function (shape, parent, e, x, y){
+     e.evt.cancelBubble = true;
 
     var me = this;
     var v =  this.viewer.current_view;
-    var g =  new BQGObject('rectangle');
+    var g =  new BQGObject(shape);
     parent = parent || this.global_parent;
 
     if (parent)
@@ -626,31 +654,32 @@ ImgEdit.prototype.new_rectangle = function (parent, e, x, y) {
     var pt2 = v.inverseTransformPoint(x+1,y+1);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
     g.vertices.push (new BQVertex (pt2.x, pt2.y, v.z, v.t, null, 1));
+    this.basic_drag_callback(g,parent,x,y);
+};
 
-    this.current_gob = g;
-    this.visit_render.visitall(g, [v]);
-
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    this.renderer.setmouseup(callback(this, function(e){
-        me.on_move(me.current_gob);
-        me.current_gob = null;
-        me.renderer.setmousemove(null);
-        me.renderer.setmouseup(null);
-        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-    }));
-
-    if(g.shape){
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-    }
+ImgEdit.prototype.new_rectangle = function (parent, e, x, y) {
+    this.basic_shape('rectangle', parent, e, x, y);
 };
 
 ImgEdit.prototype.new_square = function (parent, e, x, y) {
-    var me = this;
+    this.basic_shape('square', parent, e, x, y);
+};
 
+ImgEdit.prototype.new_circle = function (parent, e, x, y) {
+    this.basic_shape('circle', parent, e, x, y);
+};
+
+ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
+    this.basic_shape('ellipse', parent, e, x, y);
+};
+
+ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
+    e.evt.cancelBubble = true;
+
+    var me = this;
     var v = this.viewer.current_view;
-    var g = new BQGObject('square');
+    var g = new BQGObject('ellipse');
+
     parent = parent || this.global_parent;
 
     if (parent)
@@ -659,28 +688,13 @@ ImgEdit.prototype.new_square = function (parent, e, x, y) {
         this.viewer.image.addgobjects(g);
 
     var pt = v.inverseTransformPoint(x,y);
-    var pt2 = v.inverseTransformPoint(x+5,y+5);
+    var ptX = v.inverseTransformPoint(x,y);
+    var ptY = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
-    g.vertices.push (new BQVertex (pt2.x, pt2.y, v.z, v.t, null, 1));
+    g.vertices.push (new BQVertex (ptX.x + 1, ptX.y, v.z, v.t, null, 1));
+    g.vertices.push (new BQVertex (ptY.x, ptY.y + 1, v.z, v.t, null, 2));
+    this.basic_drag_callback(g,parent,x,y);
 
-    this.current_gob = g;
-    this.renderer.square( undefined, g, v, true); // there's no SVG element square, force specific shape
-    this.visit_render.visitall(g, [v]);
-
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    this.renderer.setmouseup(callback(this, function(e){
-        me.on_move(me.current_gob);
-        me.current_gob = null;
-        me.renderer.setmousemove(null);
-        me.renderer.setmouseup(null);
-        me.store_new_gobject ((parent && !parent.uri) ? parent : g);
-    }));
-
-    if(g.shape){
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-    }
 };
 
 ImgEdit.prototype.new_polygon = function (parent, e, x, y) {
@@ -961,89 +975,6 @@ ImgEdit.prototype.new_line = function (parent, e, x, y) {
     //this.visit_render.visitall(g, [v]);
     this.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
 };*/
-
-ImgEdit.prototype.new_circle = function (parent, e, x, y) {
-    var me = this;
-
-    e.evt.cancelBubble = true;
-
-    var v = this.viewer.current_view;
-    var g = new BQGObject('circle');
-    parent = parent || this.global_parent;
-
-    if (parent)
-        parent.addgobjects(g);
-    else
-        this.viewer.image.addgobjects(g); //this.gobjects.push(g);
-
-    var pt = v.inverseTransformPoint(x,y);
-    var ptR = v.inverseTransformPoint(x+50,y);
-    g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
-    g.vertices.push (new BQVertex (ptR.x, ptR.y, v.z, v.t, null, 1));
-
-    //this.current_gob = null;
-    this.current_gob = g;
-    this.visit_render.visitall(g, [v]);
-
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    this.renderer.setmouseup(callback(this, function(e){
-        me.on_move(me.current_gob);
-        me.current_gob = null;
-        me.renderer.setmousemove(null);
-        me.renderer.setmouseup(null);
-        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-    }));
-
-    if(g.shape){
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-    }
-};
-
-ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
-    e.evt.cancelBubble = true;
-
-    var me = this;
-    var v = this.viewer.current_view;
-    var g = new BQGObject('ellipse');
-
-    parent = parent || this.global_parent;
-
-    if (parent)
-        parent.addgobjects(g);
-    else
-        this.viewer.image.addgobjects(g);
-
-    var pt = v.inverseTransformPoint(x,y);
-    var ptX = v.inverseTransformPoint(x,y);
-    var ptY = v.inverseTransformPoint(x,y);
-    g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
-    g.vertices.push (new BQVertex (ptX.x + 1, ptX.y, v.z, v.t, null, 1));
-    g.vertices.push (new BQVertex (ptY.x, ptY.y + 1, v.z, v.t, null, 2));
-
-    //this.current_gob = null;
-    this.current_gob = g;
-    this.visit_render.visitall(g, [v]);
-
-    //this.startCoord = [x,y];
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-    this.renderer.setmouseup(callback(this, function(e){
-        me.on_move(me.current_gob);
-        me.current_gob = null;
-        me.renderer.setmousemove(null);
-        me.renderer.setmouseup(null);
-        me.store_new_gobject ((parent && !parent.uri) ? parent : g);
-
-    }));
-
-    if(g.shape){
-        this.renderer.unselectCurrent();
-        this.renderer.selectedSet = [g.shape];
-        this.renderer.select(this.renderer.selectedSet);
-    }
-};
-
 
 
 ImgEdit.prototype.new_label = function (parent, e, x, y) {

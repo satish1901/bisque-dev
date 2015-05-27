@@ -720,7 +720,7 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
 
     var layer = this.layer;
     //fetch the objects in the tree that are in that node
-    var leaves = this.collectObjectsInRegion(nbbox, node);
+    var leaves = this.collectObjectsInRegion(bbox, node);
     leaves.forEach(function(e){
         //e.setStroke(1.0);
         e.updateLocal();
@@ -1851,7 +1851,7 @@ CanvasRenderer.prototype.updateVisible = function(){
     if(this.uvTimeout) clearTimeout(this.uvTimeout);
     this.uvTimeout = setTimeout(function(){
         me.updateVisibleDelay();
-    },1)
+    },1);
 
 };
 
@@ -1864,7 +1864,7 @@ CanvasRenderer.prototype.updateVisibleDelay = function(){
     var zrange = [z, z+1];
     var trange = [t, t+1];
     this.getProjectionRange(zrange, trange);
-    console.log('update');
+
     if(this.mode == 'navigate'){
         this.quadtree.cache(this.viewFrustum, function(){
             me.quadtree.cullCached(me.viewFrustum);

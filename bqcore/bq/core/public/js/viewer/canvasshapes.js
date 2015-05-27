@@ -2458,7 +2458,7 @@ CanvasRectangle.prototype.points = function(){
 
 
 ///////////////////////////////////////////////
-// sqyare:
+// square:
 // *-----
 // |    |
 // -----*
@@ -2637,6 +2637,7 @@ CanvasSquare.prototype.onDragCreate = function(e){
 
     g.vertices[1].x = ptc[0] + 0.5*min;
     g.vertices[1].y = ptc[1] + 0.5*min;
+    g.shape.update();
 
     me.bbox = me.calcBbox();
     me.renderer.drawEditLayer();
