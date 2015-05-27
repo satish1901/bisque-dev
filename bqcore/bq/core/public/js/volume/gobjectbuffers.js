@@ -1041,7 +1041,8 @@ gObjectTool.prototype.initControls = function(){
     };
 
     this.volume.color_gobjects = function(g, color){
-        var resource = me.currentSet[resourceMap[g.resource_type]];
+        var resource = me.currentSet[resourceMap[g.type]];
+        if(!g.shape3D || !resource) return;
         var id = g.shape3D.index3D;
         color = resource.getColor(color);
         g.shape3D.color = color;
@@ -1051,7 +1052,8 @@ gObjectTool.prototype.initControls = function(){
     };
 
     this.volume.highlight_gobject = function(g){
-        var resource = me.currentSet[resourceMap[g.resource_type]];
+        var resource = me.currentSet[resourceMap[g.type]];
+        if(!g.shape3D || !resource) return;
         var id = g.shape3D.index3D;
         resource.highlight(id);
         resource.update();
@@ -1060,7 +1062,8 @@ gObjectTool.prototype.initControls = function(){
 
 
     this.volume.unhighlight_gobject = function(g){
-        var resource = me.currentSet[resourceMap[g.resource_type]];
+        var resource = me.currentSet[resourceMap[g.type]];
+        if(!g.shape3D || !resource) return;
         var id = g.shape3D.index3D;
         resource.unhighlight(id);
         resource.update();
