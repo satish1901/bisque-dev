@@ -329,10 +329,10 @@ QuadTree.prototype.splitNode  = function(node, stack){
 
     var nbb = node.bbox;
     var bbMin = [0,0,0];
-    bbMin[0] = Math.ceil(nbb.min[0]);
-    bbMin[1] = Math.ceil(nbb.min[1]);
-    bbMin[2] = Math.ceil(nbb.min[2]);
-    bbMin[3] = Math.ceil(nbb.min[3]);
+    bbMin[0] = nbb.min[0];
+    bbMin[1] = nbb.min[1];
+    bbMin[2] = nbb.min[2];
+    bbMin[3] = nbb.min[3];
 
     var bbw = nbb.max[0] - nbb.min[0];
     var bbh = nbb.max[1] - nbb.min[1];
@@ -419,10 +419,11 @@ QuadTree.prototype.insertInNode  = function(gob, node, stack){
 
     gob.page = node;
     //node.bbox = this.calcBbox(node.leaves);
-    var maxLevel = 6;
+    var maxLevel = 8;
+    var maxTileLevel = 8;
 
-    //if(this.renderer.viewer.tiles.pyramid)
-    //    maxTileLevel = this.renderer.viewer.tiles.pyramid.levels;
+    if(this.renderer.viewer.tiles.pyramid)
+        maxTileLevel = this.renderer.viewer.tiles.pyramid.levels;
 
     if((node.leaves.length >= this.maxChildren || node.L < maxTileLevel + 2) &&
        node.L < maxLevel){
