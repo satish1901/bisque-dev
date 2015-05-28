@@ -419,8 +419,8 @@ QuadTree.prototype.insertInNode  = function(gob, node, stack){
 
     gob.page = node;
     //node.bbox = this.calcBbox(node.leaves);
-    var maxLevel = 8;
-    var maxTileLevel = 8;
+    var maxLevel = 6;
+    var maxTileLevel = 6;
 
     if(this.renderer.viewer.tiles.pyramid)
         maxTileLevel = this.renderer.viewer.tiles.pyramid.levels;
@@ -594,13 +594,13 @@ QuadTree.prototype.cull = function(frust){
 };
 
 
-QuadTree.prototype.cache = function(frust, onCache){
+QuadTree.prototype.cache = function(frust, scale, onCache){
     var me = this;
     var fArea = this.calcBoxVol(frust);
     var me = this;
     var collection = [];
     var renderer = this.renderer;
-    var scale = renderer.stage.scale().x;
+
     var cache = false;
     //var L = renderer.viewer.tiles.tiled_viewer.zoomLevel;
 
@@ -618,7 +618,7 @@ QuadTree.prototype.cache = function(frust, onCache){
 
             if(!me.imageCache.getCacheAtCurrent(node)){
                 me.cachesDestroyed += 1;
-                me.cacheChildSprites(node, onCache);
+                me.cacheChildSprites(node, scale, onCache);
                 cache = true;
                 return false;
             }
@@ -683,7 +683,7 @@ QuadTree.prototype.cacheScene = function(frust){
     this.traverseDownBB(this.nodes[0], frust, collectSprite);
 };
 
-QuadTree.prototype.cacheChildSprites = function(node, onCache){
+QuadTree.prototype.cacheChildSprites = function(node, scale, onCache){
     //delete cache if it exists
 
     this.imageCache.deleteAtCurrent(node);
@@ -694,8 +694,6 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
     var bbox = node.bbox;
     var w = bbox.max[0] - bbox.min[0];
     var h = bbox.max[1] - bbox.min[1];
-    var scale = renderer.stage.scale().x;
-
 
     var z = this.renderer.viewer.tiles.cur_z;
     var t = this.renderer.viewer.tiles.cur_t;
@@ -726,7 +724,7 @@ QuadTree.prototype.cacheChildSprites = function(node, onCache){
     leaves.forEach(function(e){
         //e.setStroke(1.0);
         e.updateLocal();
-        e.getSprites().forEach(function(f){
+        e.getRenderableSprites().forEach(function(f){
             layer.add(f);
         });
     });
@@ -1613,6 +1611,7 @@ CanvasRenderer.prototype.scale = function (){
 };
 
 CanvasRenderer.prototype.draw = function (){
+    //this.quadtree.drawBboxes(this.viewFrustum);
     this.stage.draw();
 };
 
@@ -1873,9 +1872,9 @@ CanvasRenderer.prototype.updateVisibleDelay = function(){
     var zrange = [z, z+1];
     var trange = [t, t+1];
     this.getProjectionRange(zrange, trange);
-
+    var scale = this.scale();
     if(this.mode == 'navigate'){
-        this.quadtree.cache(this.viewFrustum, function(){
+        this.quadtree.cache(this.viewFrustum, scale, function(){
             me.quadtree.cullCached(me.viewFrustum);
             me.draw();
         });
@@ -1895,7 +1894,7 @@ CanvasRenderer.prototype.updateVisibleDelay = function(){
 
         me.draw();
     }
-    //this.quadtree.drawBboxes(this.viewFrustum);
+
 
 };
 
@@ -2373,8 +2372,8 @@ CanvasRenderer.prototype.addSpriteEvents = function(shape){
     var me = this;
     if(!this.dragCache) this.dragCache = [0,0];
     //poly.setDraggable(true);
-    var polys = shape.sprites;
-    if(!polys) polys = [shape.sprite]; // hack to work with single sprites
+    var polys = shape.getSprites();
+    //if(!polys) polys = [shape.sprite]; // hack to work with single sprites
 
     var gob = shape.gob;
     polys.forEach(function(poly){
@@ -2390,7 +2389,8 @@ CanvasRenderer.prototype.addSpriteEvents = function(shape){
             else if(me.mode != 'edit') return;
 
             evt.evt.cancelBubble = true;
-            poly.shape.clearCache();
+
+            //poly.shape.clearCache();
 
             var inSet = me.inSelectedSet(gob.shape);
 

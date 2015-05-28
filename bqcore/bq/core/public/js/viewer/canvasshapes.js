@@ -264,6 +264,7 @@ CanvasShape.prototype.getColorManipulator = function(){
     }
 
     //renderer.colorMenu.hide();
+    this.colorImage.off('mousedown');
     this.colorImage.on('mousedown', function(evt){
         var e = evt.evt;
         //var ix = image.x();
@@ -635,6 +636,14 @@ CanvasShape.prototype.setLayer = function (layer) {
 };
 
 CanvasShape.prototype.getSprites = function (collection) {
+    if(this.isVisible()){
+        return[this.sprite];
+    }
+    else return [];
+};
+
+
+CanvasShape.prototype.getRenderableSprites = function (collection) {
     if(this.isVisible()){
         return[this.sprite];
     }
@@ -1982,6 +1991,18 @@ CanvasLabel.prototype.init = function(gob){
     this.gob = gob;
     this.sprite.shape = this;
     this.text.shape = this;
+
+
+
+    var xml = this.gob.xmlNode();
+    var tagOffset = BQ.util.xpath_nodes(xml,'tag[@name="offset"]');
+    var uri = null;
+    if(tagOffset.length > 0){
+        uri = tagOffset[0].getAttribute('uri');
+        var xy = tagOffset[0].getAttribute('value').split(',');
+        this.offset = {x: parseFloat(xy[0]), y: parseFloat(xy[1])};
+    }
+
     /*
     this.renderer.viewShape (gob,
                              callback(this,'move_sprite'),
@@ -2005,11 +2026,22 @@ CanvasLabel.prototype.setLayer = function (layer) {
 
 };
 
+
 CanvasLabel.prototype.getSprites = function (collection) {
     if(this.isVisible()){
-        return[this.sprite,
-               this.text,
-               this.arrow];
+        return [this.sprite,
+                this.text];
+
+    }
+    else return [];
+};
+
+CanvasLabel.prototype.getRenderableSprites = function (collection) {
+    if(this.isVisible()){
+        return [this.sprite,
+                this.text,
+                this.arrow];
+
     }
     else return [];
 };
@@ -2170,19 +2202,15 @@ CanvasLabel.prototype.updateLocal = function () {
     if(!this.offset)
         this.offset = {x: 4, y: 0};
 
-    if(this.gob.vertices.length > 1){
-        var p2 = this.gob.vertices[1];
-        this.offset.x = (p2.x - p1.x);
-        this.offset.y = (p2.y - p1.y);
-    }
 
+    this.x(p1.x);
+    this.y(p1.y);
 
     text.x(p1.x + this.offset.x);
     text.y(p1.y + this.offset.y);
 
     text.fontSize(14/scale.x);
-    this.x(p1.x);
-    this.y(p1.y);
+
 
     this.setStroke();
 
@@ -2202,22 +2230,30 @@ CanvasLabel.prototype.drag = function(evt, corner){
     var text = this.text;
 
     var p1 = this.gob.vertices[0];
-    console.log('drag');
+
     if(i == -1){ //this means the text itself is being passed as a manipulator
 
-        text.x(corner.x());
-        text.y(corner.y());
+        var ox = corner.x();
+        var oy = corner.y();
+        var cx = corner.x() + this.offset.x;
+        var cy = corner.y() + this.offset.y;
 
-        this.x(corner.x() - this.offset.x);
-        this.y(corner.y() - this.offset.y);
+        this.x(ox);
+        this.y(oy);
+        text.x(cx);
+        text.y(cy);
+
     }
 
     if(i == 0){
-        text.x(corner.x() + this.offset.x);
-        text.y(corner.y() + this.offset.y);
-
         this.x(corner.x());
         this.y(corner.y());
+
+        var ox = this.sprite.x() + this.offset.x;
+        var oy = this.sprite.y() + this.offset.y;
+        text.x(ox);
+        text.y(oy);
+
     }
 
     if(i == 1){
@@ -2230,18 +2266,37 @@ CanvasLabel.prototype.drag = function(evt, corner){
     }
     this.bbox = this.calcBbox();
     this.updateArrow();
+
 }
 
+CanvasLabel.prototype.saveLabelPosition = function(){
+    var xml = this.gob.xmlNode();
+    var tagOffset = BQ.util.xpath_nodes(xml,'tag[@name="offset"]');
+    var uri = null;
+    if(tagOffset.length > 0){
+        uri = tagOffset[0].getAttribute('uri');
+    }
+    //console.log(tagOffset[0].getAttribute('value'));
+
+    var  off =
+        this.offset.x.toString() + ', ' +
+        this.offset.y.toString();
+    var t = this.gob.addtag(new BQTag(uri, 'offset', off, 'offset'));
+    t.save_reload(this.gob.uri);
+    //console.log(this.gob.uri + '?view=deep');
+};
 
 CanvasLabel.prototype.moveLocal = function(){
     var p1 = this.gob.vertices[0];
     p1.x = this.x();
     p1.y = this.y();
+    this.saveLabelPosition();
+    /*
     if(this.gob.vertices[0].length > 1){
         var p2 = this.gob.vertices[1];
         p2.x = this.x() + this.offset.x;
         p2.y = this.y() + this.offset.y;
-    }
+    }*/
 }
 
 CanvasLabel.prototype.points = function(){
