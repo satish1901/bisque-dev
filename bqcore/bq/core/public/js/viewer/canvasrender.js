@@ -440,8 +440,7 @@ QuadTree.prototype.insertInNode  = function(gob, node, stack){
     var maxLevel = this.maxLevel;
     var maxTileLevel = this.maxLevel;
 
-    if((node.leaves.length >= this.maxChildren || node.L < maxTileLevel + 2) &&
-       node.L < maxLevel){
+    if((node.leaves.length >= this.maxChildren || node.L < maxTileLevel + 2)){
         this.splitNode(node, stack);
     }
 
@@ -2019,11 +2018,12 @@ CanvasRenderer.prototype.updateImage = function (e) {
     var frust = this.calcFrustum(x,y,scale);
     this.stage.setWidth(this.viewer.imagediv.clientWidth);
     this.stage.setHeight(this.viewer.imagediv.clientHeight);
+
+    this.selectRect.width(this.viewer.tiles.pyramid.width);
+    this.selectRect.height(this.viewer.tiles.pyramid.height);
+
     //this.stage.x(frust.min[0]);
     //this.stage.y(frust.min[1]);
-
-    this.selectRect.width(this.viewer.imagediv.clientWidth/scale);
-    this.selectRect.height(this.viewer.imagediv.clientWidth/scale);
 
     this.lassoRect.strokeWidth(1.0/scale);
 
