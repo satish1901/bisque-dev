@@ -408,6 +408,23 @@ QuadTree.prototype.splitNode  = function(node, stack){
     node.leaves = [];
 };
 
+QuadTree.prototype.calcMaxLevel = function(){
+    this.maxLevel = 8;
+
+    if(this.renderer.viewer.tiles.pyramid){
+        var levels = this.renderer.viewer.tiles.pyramid;
+        var max = Math.max(levels.width, levels.height);
+        var L = 0;
+
+        while(max > 512){
+            max /= 2;
+            ++L;
+        }
+        this.maxLevel = L;
+    }
+    return L;
+};
+
 QuadTree.prototype.insertInNode  = function(gob, node, stack){
     var inSet = false;
     for(var i = 0; i < node.leaves.length; i++){
@@ -419,16 +436,15 @@ QuadTree.prototype.insertInNode  = function(gob, node, stack){
 
     gob.page = node;
     //node.bbox = this.calcBbox(node.leaves);
-    var maxLevel = 6;
-    var maxTileLevel = 6;
-
-    if(this.renderer.viewer.tiles.pyramid)
-        maxTileLevel = this.renderer.viewer.tiles.pyramid.levels;
+    if(!this.maxLevel) this.calcMaxLevel();
+    var maxLevel = this.maxLevel;
+    var maxTileLevel = this.maxLevel;
 
     if((node.leaves.length >= this.maxChildren || node.L < maxTileLevel + 2) &&
        node.L < maxLevel){
         this.splitNode(node, stack);
     }
+
     /*
     //make sure that the leaves are no larger than the client view
     var xc = this.renderer.viewer.tiles.div.clientWidth;
@@ -1978,6 +1994,10 @@ CanvasRenderer.prototype.updateImage = function (e) {
     this.gobsSlice = this.gobs[z];
 
     this.stage.scale({x: scale, y:scale});
+
+    if(this.viewer.tiles.pyramid)
+        this.quadtree.calcMaxLevel();
+
     //this.initDrawer();
     /*
     if(this.selectedSet.length> 0){
