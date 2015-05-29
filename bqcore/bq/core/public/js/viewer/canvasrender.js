@@ -74,8 +74,13 @@ ImageCache.prototype.getCurrentHash = function(node){
     return hash;
 }
 
-ImageCache.prototype.createAtFrame = function(i){
-    this.caches[i] = new Kinetic.Image({});
+ImageCache.prototype.createAtFrame = function(i,j){
+    if(!this.caches[i]) this.caches[i] = [];
+    /*
+    this.caches[i][j] = new Kinetic.Image({stroke: 'red',
+                                           strokeWidth: 2});
+    */
+    this.caches[i][j] = new Kinetic.Image({});
 };
 
 ImageCache.prototype.deleteAtFrame = function(i){
@@ -90,13 +95,13 @@ ImageCache.prototype.getCacheAtFrame = function(i){
     return this.caches[i];
 };
 
-ImageCache.prototype.setPositionAtFrame = function(i, node){
+ImageCache.prototype.setPositionAtFrame = function(i, j, node, bbox){
     var
-    cache = this.caches[i],
+    cache = this.caches[i][j],
     scale = this.renderer.stage.scale().x,
-    bbox = node.bbox,
-    w = bbox.max[0] - bbox.min[0];
-    h = bbox.max[1] - bbox.min[1];
+
+    w = bbox.max[0] - bbox.min[0],
+    h = bbox.max[1] - bbox.min[1],
     buffer = 0;
 
     cache.x(bbox.min[0] - buffer/scale);
@@ -105,13 +110,13 @@ ImageCache.prototype.setPositionAtFrame = function(i, node){
     cache.height(h + 2.0*buffer/scale);
 };
 
-ImageCache.prototype.setImageAtFrame = function(i, img){
-    this.caches[i].setImage(img);
+ImageCache.prototype.setImageAtFrame = function(i,j, img){
+    this.caches[i][j].setImage(img);
 };
 
-ImageCache.prototype.createAtCurrent = function(node){
+ImageCache.prototype.createAtCurrent = function(node,j){
     var i = this.getCurrentHash(node);
-    this.createAtFrame(i);
+    this.createAtFrame(i,j);
 };
 
 ImageCache.prototype.deleteAtCurrent = function(node){
@@ -125,14 +130,14 @@ ImageCache.prototype.getCacheAtCurrent = function(node){
 }
 
 
-ImageCache.prototype.setPositionAtCurrent = function(node){
+ImageCache.prototype.setPositionAtCurrent = function(node, j, bbox){
     var i = this.getCurrentHash(node);
-    this.setPositionAtFrame(i,node);
+    this.setPositionAtFrame(i,j,node, bbox);
 }
 
-ImageCache.prototype.setImageAtCurrent = function(img, node){
+ImageCache.prototype.setImageAtCurrent = function(node,j,img){
     var i = this.getCurrentHash(node);
-    this.setImageAtFrame(i,img);
+    this.setImageAtFrame(i,j,img);
 }
 
 ImageCache.prototype.clearAll = function(node){
@@ -157,7 +162,9 @@ function QuadTree(renderer, z, t){
     this.renderer = renderer;
     this.reset();
     this.maxChildren = 256;
-    this.imageCache = new ImageCache(renderer);
+    this.tilesPerNode = {x: 4, y: 4};
+
+    this.imageCache = new ImageCache(renderer, this.tilesPerNode);
 };
 
 QuadTree.prototype.reset = function(){
@@ -178,6 +185,7 @@ QuadTree.prototype.reset = function(){
     var view = this.renderer.viewer.imagedim;
     if(!view)
         view = {x:0, y:0, z:0, t: 0};
+
 
     this.nodes = [{
         id: 0,
@@ -409,7 +417,7 @@ QuadTree.prototype.splitNode  = function(node, stack){
 };
 
 QuadTree.prototype.calcMaxLevel = function(){
-    this.maxLevel = 8;
+    this.maxLevel = 4;
 
     if(this.renderer.viewer.tiles.pyramid){
         var levels = this.renderer.viewer.tiles.pyramid;
@@ -420,9 +428,9 @@ QuadTree.prototype.calcMaxLevel = function(){
             max /= 2;
             ++L;
         }
-        this.maxLevel = L;
+        this.maxLevel = L-2;
     }
-    return L;
+    return L - 2;
 };
 
 QuadTree.prototype.insertInNode  = function(gob, node, stack){
@@ -440,7 +448,7 @@ QuadTree.prototype.insertInNode  = function(gob, node, stack){
     var maxLevel = this.maxLevel;
     var maxTileLevel = this.maxLevel;
 
-    if((node.leaves.length >= this.maxChildren || node.L < maxTileLevel + 2)){
+    if((node.leaves.length >= this.maxChildren || node.L < maxTileLevel + 1)){
         this.splitNode(node, stack);
     }
 
@@ -628,7 +636,7 @@ QuadTree.prototype.cache = function(frust, scale, onCache){
         var cache = null;
         //if(L === node.L || node.leaves.length > 0){
 
-        if(nArea <= 0.6*fArea || node.leaves.length > 0) {
+        if(nArea <= 4.0*fArea || node.leaves.length > 0) {
             //if(!node.imageCache.getCacheAtCurrent()){
 
             if(!me.imageCache.getCacheAtCurrent(node)){
@@ -664,8 +672,23 @@ QuadTree.prototype.cullCached = function(frust){
         var nArea = me.calcBoxVol(node.bbox);
         var cache = null;
         //if(L === node.L || node.leaves.length > 0){
-        if(nArea <= 0.6*fArea || node.leaves.length > 0) {
-            collection.push(me.imageCache.getCacheAtCurrent(node));
+        if(nArea <= 4.0*fArea || node.leaves.length > 0) {
+            var cache = me.imageCache.getCacheAtCurrent(node);
+            for(var i = 0; i < cache.length; i++){
+                var w = cache[i].width();
+                var h = cache[i].height();
+                var x = cache[i].x();
+                var y = cache[i].y();
+                var fnz = frust.min[2];
+                var fnt = frust.min[3];
+                var fxz = frust.max[2];
+                var fxt = frust.max[3];
+
+                var bb = {min: [x,y,fnz, fnt], max: [x+w,y+h,fxz, fxt]};
+                if(me.hasOverlap(frust, bb)){
+                    collection.push(cache[i]);
+                }
+            };
             return false;
         }
 
@@ -724,57 +747,82 @@ QuadTree.prototype.cacheChildSprites = function(node, scale, onCache){
 
 
     //create a temp layer to capture the appropriate objects
-    if(!this.layer)
-    this.layer = new Kinetic.Layer({
-    });
+    var nx = this.tilesPerNode.x;
+    var ny = this.tilesPerNode.y;
 
-    this.layer.removeChildren();
-    this.layer.scale({x: scale, y: scale});
-    this.layer.width(w);
-    this.layer.height(h);
+    var bbw = bbox.max[0] - bbox.min[0];
+    var bbh = bbox.max[1] - bbox.min[1];
 
-    var layer = this.layer;
-    //fetch the objects in the tree that are in that node
-    var leaves = this.collectObjectsInRegion(bbox, node);
-    leaves.forEach(function(e){
-        //e.setStroke(1.0);
-        e.updateLocal();
-        e.getRenderableSprites().forEach(function(f){
-            layer.add(f);
-        });
-    });
-    layer.draw();
+    var tw = bbw/nx; //tile width
+    var th = bbh/ny; //tile height
 
-    //create a new image, in the async callback assign the image to the node's imageCache
-    //scale the image region
-    var image = layer.toImage({
-        callback: function(img){
-            //if(!node.dirty) return;
+    for(var i = 0; i < nx; ++i){
+        for(var j = 0; j < ny; ++j){
+            var ind = i + j*nx;
+
+            var tMinX = bbox.min[0] + i*tw;
+            var tMinY = bbox.min[1] + j*th;
+
+            var layer = new Kinetic.Layer({});
+
+            layer.removeChildren();
+            layer.scale({x: scale, y: scale});
+            layer.width(w);
+            layer.height(h);
+
+            //fetch the objects in the tree that are in that node
+            var nbb =
+            {min: [tMinX,      tMinY,      bbox.min[2], bbox.min[3]],
+             max: [tMinX + tw, tMinY + th, bbox.max[2], bbox.max[3]]};
+            var leaves = this.collectObjectsInRegion(nbb, node);
+            leaves.forEach(function(e){
+                //e.setStroke(1.0);
+                e.updateLocal();
+                e.getRenderableSprites().forEach(function(f){
+                    layer.add(f);
+                });
+            });
+            layer.draw();
+
+
+            //create a new image, in the async callback assign the image to the node's imageCache
+            //scale the image region
+
+            var afterImage = function(img){
+                //if(!node.dirty) return;
                 //create a new image
-            me.imageCache.createAtCurrent(node);
+                //this.imageCache.createAtCurrent(node);
+                var scope = this.scope;
+                this.node.image = img;
+                scope.imageCache.createAtCurrent(this.node, this.index);
+                scope.imageCache.setPositionAtCurrent(this.node, this.index, this.bbox);
+                scope.imageCache.setImageAtCurrent(this.node, this.index, img);
 
-            node.image = img;
-            me.imageCache.createAtCurrent(node);
-            me.imageCache.setPositionAtCurrent(node);
-            me.imageCache.setImageAtCurrent(img, node);
+                this.node.dirty = false;
+                scope.cachesRendered += 1; //count the caches that have been rerendered since performing a cache call
+                //console.log(img.src);
+                if(scope.timeout) clearTimeout(scope.timeout);
+                scope.timeout = setTimeout(function(){
+                    scope.cachesRendered = 0;
+                    scope.cachesDestroyed = 0;
+                    onCache();
+                }, 1);
 
-            node.dirty = false;
-            me.cachesRendered += 1; //count the caches that have been rerendered since performing a cache call
-            //console.log(img.src);
-            if(me.timeout) clearTimeout(me.timeout);
-            me.timeout = setTimeout(function(){
-                me.cachesRendered = 0;
-                me.cachesDestroyed = 0;
-                onCache();
-            }, 1);
+            };
 
-        },
+            var image = layer.toImage({
+                callback: afterImage.bind({scope: this,
+                                          index: ind,
+                                          bbox: nbb,
+                                          node: node}),
+                x: nbb.min[0]*scale - buffer,
+                y: nbb.min[1]*scale - buffer,
+                width: tw*scale + 2.0*buffer,
+                height:th*scale + 2.0*buffer,
+            });
 
-        x: bbox.min[0]*scale - buffer,
-        y: bbox.min[1]*scale - buffer,
-        width: w*scale + 2.0*buffer,
-        height: h*scale + 2.0*buffer,
-    });
+        }
+    }
 
     //me.imageCache.setPositionAtCurrent(node);
 };
@@ -994,6 +1042,7 @@ CanvasCorners.prototype.toggle = function(fcn){
 
 
 CanvasCorners.prototype.select = function(shapes){
+    if(this.renderer.selectedSet.length > 4) return;
     var me = this;
     this.manipulators = [];
 
@@ -1072,6 +1121,8 @@ CanvasShapeColor.prototype.toggle = function(fcn){
 };
 
 CanvasShapeColor.prototype.select = function(shapes){
+    if(this.renderer.selectedSet.length > 4) return;
+
     var me = this;
     this.manipulators = [];
 
