@@ -170,7 +170,7 @@ Ext.define('BQ.module.UnregisteredPanel', {
         rowBodyTpl : [
             '<tpl if="registration == \'Registered\'"><div style="margin:5px;opacity:0.4;"></tpl>',
             '<tpl if="registration != \'Registered\'"><div style="margin:5px;"></tpl>',
-                '<h1 style="padding-top:10px; height:30px; float:left; text-overflow:ellipsis; width:90%; white-space: nowrap; overflow:hidden; margin:0px;">{name}</h1>',
+                '<h1 style="padding-top:10px; height:30px;  text-overflow:ellipsis;  white-space: nowrap; overflow:hidden; margin:0px;">{name}</h1>', //float:left;width:90%;
                 '<div style="width: 100%; overflow: hidden;">',
                     '<img src="{thumbnail_uri}" alt="Not Found!" style="width:128px; height:128px; float:left; margin:11px"/>',
                     '<div style="margin-left:148px;">',
@@ -629,7 +629,7 @@ Ext.define('BQ.module.RegisteredPanel', {
         rowBodyTpl : [
             '<tpl if="status == \'Good!\'"><div style="margin:5px;"></tpl>',
             '<tpl if="status != \'Good!\'"><div style="margin:5px; background-color:#FFCECE;"></tpl>',
-                '<h1 style="padding-top:10px; height:30px; float:left; text-overflow:ellipsis; width:90%; white-space: nowrap; overflow:hidden; margin:0px;">{name}</h1>',
+                '<h1 style="padding-top:10px; height:30px; text-overflow:ellipsis; white-space: nowrap; overflow:hidden; margin:0px;">{name}</h1>', //float:left;width:90%;
                 '<div style="width: 100%; overflow: hidden;">',
                     '<img src="{thumbnail_uri}" alt="Not Found!" style="width:128px; height:128px; float:left; margin:11px"/>',
                     '<div style="margin-left:148px;">',
