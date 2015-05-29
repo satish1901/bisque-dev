@@ -56,7 +56,6 @@ Ext.define('Bisque.ResourceFactoryWrapper', {
                         return '';
                     },
                 });
-
                 resource.prefetch(layoutCls);
             }
 
@@ -71,13 +70,15 @@ Ext.define('Bisque.ResourceFactoryWrapper', {
                 height : layoutCls.layoutEl.height
             });
             resource.addCls(layoutCls.layoutCSS || '');
-
+            
+            preferencesLoaded(BQ.Preferences.get('user','ResourceBrowser',{}), resource, layoutCls);
+            /*
             BQ.Preferences.get({
                 type : 'user',
                 key : 'ResourceBrowser',
                 callback : Ext.bind(preferencesLoaded, this, [resource, layoutCls], true)
             });
-
+            */
             return resource;
         }
     }
@@ -248,8 +249,8 @@ Ext.define('Bisque.Resource', {
     getFields : function()
     {
         var resource = this.resource, record = BQApp.userList[this.resource.owner];
-        var name = record ? record.find_tags('display_name').value : '';
-
+        var display_name = record ? record.find_tags('display_name') : undefined;
+        var name = display_name ? display_name.value : '';
         return ['', resource.name || '', name || '', resource.resource_type, resource.ts, this, {height:21}];
     },
 

@@ -185,26 +185,16 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         
         //load preferences
         var me = this;
-        if (BQ.Preferences) {
-            BQ.Preferences.on('update_user_pref', function(el, userPrefDict, userPrefXML){
-                var resourcebrowserPref = {};
-                if (userPrefDict.ResourceBrowser)
-                    resourcebrowserPref = userPrefDict.ResourceBrowser;
-                me.onPreferences(resourcebrowserPref) //update preferences
-            })
-            BQ.Preferences.on('onerror_user_pref', function() {
-                me.onPreferences({}) //set default preferences no preference was found                
-            });
-            //check to see if resource preferences was updated already
-            if (BQ.Preferences.userDict) {
-                var resourcebrowserPref = {};
-                if (BQ.Preferences.userDict.ResourceBrowser)
-                    resourcebrowserPref = BQ.Preferences.userDict.ResourceBrowser
-                me.onPreferences(resourcebrowserPref) //update preferences
-            }
-        } else {
-            me.onPreferences({}) //set default preferences no preference was found
-        }
+        
+        
+        
+        var me = this;
+        BQ.Preferences.on('update_user_pref', function(el, resourcePrefXML){
+            me.onPreferences(); //update preferences
+        })
+        
+        me.onPreferences() //onPreferences has to be initialized before the view shows anything  
+        
         //this.loadPreferences();
 
         if (Ext.supports.Touch)
@@ -212,10 +202,10 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
     },
     
     
-    onPreferences : function(preferences) {
-        this.preferences = preferences;
-        this.applyPreferences();
-
+    onPreferences : function() {
+        this.preferences = {};
+        //this.applyPreferences();
+        
         // defaults (should be loaded from system preferences)
         Ext.apply(this.browserParams, {
             layout : this.browserParams.layout || 1,
@@ -235,7 +225,13 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         this.showModuleOrganizer = this.browserParams.showModuleOrganizer || false;
         this.selectState = this.browserParams.selectState || 'ACTIVATE';
         this.commandBar.applyPreferences();
-
+        
+        if (!this.browserParams.viewMode) {
+            this.browserParams.tagQuery = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Tag Query', this.browserParams.tagQuery);
+            this.layoutKey = parseInt(BQ.Preferences.get('user', 'ResourceBrowser/Browser/Layout', this.browserParams.layout));
+            this.browserParams.wpublic = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Include Public Resources', this.browserParams.wpublic);
+        }
+        
         if (this.browserParams.dataset != "None") {
             var baseURL = (this.browserParams.dataset instanceof BQDataset) ? this.browserParams.dataset.uri + '/value' : this.browserParams.dataset;
 
@@ -251,17 +247,6 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             if (this.showModuleOrganizer) {
                 this.initModuleOrganizer();
             }
-        }
-    },
-
-    applyPreferences : function() {
-        var browserPref = this.preferences.Browser;
-
-        // Browser preferences
-        if (browserPref != undefined && !this.browserParams.viewMode) {
-            this.browserParams.tagQuery = this.browserParams.tagQuery || browserPref["Tag Query"];
-            this.layoutKey = parseInt(this.browserParams.layout || Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS[browserPref["Layout"]]);
-            this.browserParams.wpublic = (browserPref["Include published resources"] == undefined) ? this.browserParams.wpublic : browserPref["Include published resources"];
         }
     },
 
@@ -488,7 +473,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                     var user = BQSession.current_session.user;
 
                     if (user) {
-                        BQ.Preferences.loadUser();
+                        BQ.Preferences.load('user');
                         this.browserParams = {
                         };
                         //this.onPreferences(this.preferences);

@@ -123,6 +123,7 @@ Ext.define('BQ.Application', {
     onReady : function()
     {
         // Load user information for all users.
+        this.userList = {}; //so there is a userList even if the users have not be populated
         BQFactory.request({
             uri :   BQ.Server.url('/data_service/user?view=deep&wpublic=true'),
             cb  :   Ext.bind(userInfoLoaded, this)
@@ -130,7 +131,7 @@ Ext.define('BQ.Application', {
 
         function userInfoLoaded(data)
         {
-            this.userList = {};
+            //this.userList = {};
 
             for (var i=0; i<data.children.length;i++)
                 this.userList[data.children[i].uri] = data.children[i];
@@ -154,14 +155,14 @@ Ext.define('BQ.Application', {
 
     onGotUser: function() {
         this.user = BQSession.current_session.user;
+        if (BQ.Preferences) BQ.Preferences.load('user'); //loads on initialization of BQ.Preferences
         this.fireEvent( 'gotuser', BQSession.current_session.user);
-        if (BQ.Preferences) BQ.Preferences.loadUser(); //loads on initialization of BQ.Preferences
     },
 
     onNoUser: function() {
         this.user = null;
+        if (BQ.Preferences) BQ.Preferences.load('user'); //loads on initialization of BQ.Preferences
         this.fireEvent( 'nouser');
-        if (BQ.Preferences) BQ.Preferences.loadUser(); //loads on initialization of BQ.Preferences
     },
 
     hasUser: function() {

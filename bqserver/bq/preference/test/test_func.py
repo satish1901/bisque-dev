@@ -94,7 +94,7 @@ def compare_etree(answer, result):
     compare(answer, result)
     
     
-parser = etree.XMLParser(remove_blank_text=True)
+XMLPARSER = etree.XMLParser(remove_blank_text=True)
     
     
 def test_update_level_1():
@@ -107,18 +107,18 @@ def test_update_level_1():
         <preference>
             <tag name="test1" value="old" uri="/data_service/preference/1234/tag/12345"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
 
     new = etree.XML("""
         <preference>
             <tag name="test1" value="new"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     answer = etree.XML("""
         <preference>
             <tag name="test1" value="new" uri="/data_service/preference/1234/tag/12345"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = update_level(new, current)
     compare_etree(answer, result)
@@ -133,20 +133,20 @@ def test_update_level_2():
         <preference>
             <tag name="test1" value="old" uri="/data_service/preference/1234/tag/12345"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
 
     new = etree.XML("""
         <preference>
             <tag name="test2" value="new"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     answer = etree.XML("""
         <preference>
             <tag name="test1" value="old" uri="/data_service/preference/1234/tag/12345"/>
             <tag name="test2" value="new"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = update_level(new, current)
     compare_etree(answer, result)
@@ -161,7 +161,7 @@ def test_update_level_3():
         <preference>
             <tag name="test1" value="old" uri="/data_service/preference/1234/tag/12345"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     new = etree.XML("""
         <preference>
@@ -171,14 +171,14 @@ def test_update_level_3():
                 </template>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     answer = etree.XML("""
         <preference>
             <tag name="test1" value="old" uri="/data_service/preference/1234/tag/12345" />
             <tag name="test2" value="new"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     result = update_level(new, current)
     compare_etree(answer, result)
     
@@ -193,7 +193,7 @@ def test_update_level_4():
         <preference>
             <tag name="test1"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     new = etree.XML("""
         <preference>
@@ -201,7 +201,7 @@ def test_update_level_4():
                 <tag name="test1" value="new"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     answer = etree.XML("""
         <preference>
@@ -209,7 +209,7 @@ def test_update_level_4():
                 <tag name="test1" value="new"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = update_level(new, current)
     compare_etree(answer, result)
@@ -226,18 +226,18 @@ def test_mergeDocument_1():
         <preference>
             <tag name="name" value="old"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
 
     etree_2 = etree.XML("""
         <preference>
             <tag name="name" value="new"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     answer = etree.XML("""
         <preference>
             <tag name="name" value="new"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
@@ -255,7 +255,7 @@ def test_mergeDocument_2():
                 <tag name="name" value="old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
 
     etree_2 = etree.XML("""
         <preference>
@@ -263,14 +263,15 @@ def test_mergeDocument_2():
                 <tag name="name" value="new"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
+    
     answer = etree.XML("""
         <preference>
             <tag name="first_level">
                 <tag name="name" value="new"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
@@ -290,7 +291,7 @@ def test_mergeDocument_3():
                 <tag name="name" value="old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
 
     etree_2 = etree.XML("""
         <preference>
@@ -298,14 +299,14 @@ def test_mergeDocument_3():
                 <tag name="name" value="new"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     answer = etree.XML("""
         <preference>
             <tag name="first_level">
                 <tag name="name" value="new"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
@@ -334,7 +335,7 @@ def test_mergeDocument_4():
                 <tag name= "node2" value="value2_old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     etree_2 = etree.XML("""
         <preference>
@@ -350,7 +351,7 @@ def test_mergeDocument_4():
                 <tag name= "node1" value="value1_new"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     answer = etree.XML("""
         <preference>
@@ -367,7 +368,7 @@ def test_mergeDocument_4():
                 <tag name= "node2" value="value2_old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
@@ -398,7 +399,7 @@ def test_mergeDocument_5():
                 </tag>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     etree_2 = etree.XML("""
         <preference>
@@ -416,7 +417,7 @@ def test_mergeDocument_5():
                 </tag>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     answer = etree.XML("""
         <preference>
@@ -436,7 +437,7 @@ def test_mergeDocument_5():
                 </tag>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
@@ -461,7 +462,7 @@ def test_mergeDocument_6():
                 <tag name="test3" type="Boolean" value="true"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     etree_2 = etree.XML("""
         <preference>
@@ -472,7 +473,7 @@ def test_mergeDocument_6():
                 <tag name="test3" type="String" value="false"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     answer = etree.XML("""
         <preference>
@@ -485,7 +486,8 @@ def test_mergeDocument_6():
                 <tag name="test3" type="Boolean" value="false"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
+    
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
     
@@ -503,7 +505,7 @@ def test_mergeDocument_7():
                 <tag name="test1" type="Boolean" value="true" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1271/tag/1278/tag/1530"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     etree_2 = etree.XML("""
         <preference>
@@ -512,7 +514,7 @@ def test_mergeDocument_7():
                 <tag name="test1" value="false" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1272/tag/1235/tag/1423"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     answer = etree.XML("""
         <preference>
@@ -521,7 +523,8 @@ def test_mergeDocument_7():
                 <tag name="test1" type="Boolean" value="false" uri="http://host/data_service/00-RhsMCPzWzqd577N34mZZVC/preference/1272/tag/1235/tag/1423"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
+    
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
     
@@ -540,7 +543,7 @@ def test_mergeDocument_8():
                 <tag name="name2" value="old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
 
     etree_2 = etree.XML("""
         <preference>
@@ -548,7 +551,8 @@ def test_mergeDocument_8():
                 <tag name="name1" value="new"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
+    
     answer = etree.XML("""
         <preference>
             <tag name="first_level">
@@ -556,7 +560,7 @@ def test_mergeDocument_8():
                 <tag name="name2" value="old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
@@ -576,7 +580,7 @@ def test_mergeDocument_9():
                 <tag name="name2" value="old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
 
     etree_2 = etree.XML("""
         <preference name="Preferences" value="">
@@ -584,7 +588,8 @@ def test_mergeDocument_9():
                 <tag name="name1" value="new"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
+    
     answer = etree.XML("""
         <preference>
             <tag name="first_level">
@@ -592,7 +597,7 @@ def test_mergeDocument_9():
                 <tag name="name2" value="old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
@@ -612,20 +617,21 @@ def test_mergeDocument_10():
                 <tag name="name1" value="old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
 
     etree_2 = etree.XML("""
         <preference name="Preferences" value="">
             <tag name="first_level"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
+    
     answer = etree.XML("""
         <preference>
             <tag name="first_level">
                 <tag name="name1" value="old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = mergeDocuments(etree_1, etree_2)
     compare_etree(answer, result)
@@ -651,7 +657,7 @@ def test_to_dict_1():
                 </tag>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     answer = TagNameNode(
         sub_node_dict = OrderedDict([(
@@ -733,7 +739,7 @@ def test_to_dict_2():
                 <tag name="test2" value="test2_old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     answer = TagNameNode(
         sub_node_dict = OrderedDict([(
@@ -795,7 +801,7 @@ def test_to_dict_3():
             </template>
             <tag name="test1" value="test1_old"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     template = etree.Element('template')
     etree.SubElement(template, 'tag', name='test1', value="templateTest")
@@ -844,7 +850,7 @@ def test_to_dict_4():
                 <tag name="test4" value=""/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     template = etree.Element('template')
     etree.SubElement(template, 'tag', name='test4', value="templateTest")
@@ -1005,7 +1011,8 @@ def test_to_etree_1():
                 </tag>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
+    
     result = to_etree(dict)
     
     compare_etree(answer, result)
@@ -1055,7 +1062,7 @@ def test_to_etree_2():
                 <tag name="test2" value="test2_old"/>
             </tag>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
 
     result = to_etree(dict)
@@ -1091,7 +1098,7 @@ def test_to_etree_3():
             </template>
             <tag name="test1" value="test1_old"/>
         </preference>
-    """, parser=parser)
+    """, parser=XMLPARSER)
     
     result = to_etree(dict)
     compare_etree(answer, result)

@@ -660,26 +660,12 @@ Ext.define('BQ.Application.Toolbar', {
 
         //call preferences
         var me = this;
-        if (BQ.Preferences) {
-            BQ.Preferences.on('update_user_pref', function(el, userPrefDict, userPrefXML){
-                var toolbarPref = {};
-                if (userPrefDict.Toolbar)
-                    toolbarPref = userPrefDict.Toolbar;
-                me.onPreferences(toolbarPref); //update preferences
-            });
-            BQ.Preferences.on('onerror_user_pref', function() {
-                me.onPreferences({}); //set default preferences                
-            });
-            //check to see if resource preferences was updated already
-            if (BQ.Preferences.userDict) {
-                var toolbarPref = {};
-                if (BQ.Preferences.userDict.Toolbar)
-                    toolbarPref = BQ.Preferences.userDict.Toolbar;
-                me.onPreferences(toolbarPref); //update preferences
-            }
-        } else {
-            me.onPreferences({}); //set default preferences
-        }
+        BQ.Preferences.on('update_user_pref', function(el, resourcePrefXML){
+            me.onPreferences(); //update preferences
+        })
+        
+        me.onPreferences() //onPreferences has to be initialized before the view shows anything        
+        
         
         
         // update user menu based on application events
@@ -1120,8 +1106,22 @@ Ext.define('BQ.Application.Toolbar', {
             menuitem.setHandler( Ext.Function.pass(pageAction, BQ.Server.url(url || _def)), this );
         }
     },
-    onPreferences: function(pref) {
-        this.preferences = pref;
+    onPreferences: function() {
+        this.toolbarDefault = {
+            registration      : '/auth_service/login',
+            password_recovery : '/auth_service/login',
+            user_profile      : '/registration/edit_user',
+        };
+        this.titlesDefault = {
+            organization      : '',
+            title             : '',
+        };
+        this.preferences.registration      = BQ.Preferences.get('user', 'Toolbar/registration',      this.toolbarDefault.registration);
+        this.preferences.password_recovery = BQ.Preferences.get('user', 'Toolbar/password_recovery', this.toolbarDefault.password_recovery);
+        this.preferences.user_profile      = BQ.Preferences.get('user', 'Toolbar/user_profile',      this.toolbarDefault.user_profile);
+
+        this.preferences.organization      = BQ.Preferences.get('user', 'titles/organization', this.titlesDefault.organization);
+        this.preferences.title             = BQ.Preferences.get('user', 'titles/title',        this.titlesDefault.title);
 
         this.setMenuHandler( this.queryById('menu_user_profile'), this.preferences.user_profile, undefined );
         this.setMenuHandler( this.queryById('menu_user_register'), this.preferences.registration, undefined );

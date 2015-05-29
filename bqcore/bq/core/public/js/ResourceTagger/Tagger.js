@@ -1777,16 +1777,18 @@ Ext.define('BQ.grid.GobsPanel', {
 
     afterRender : function() {
         this.callParent();
-
         this.setLoading('Fetching types of graphical annotations');
-        BQ.Preferences.get({
-            key : 'Viewer',
-            callback : Ext.bind(this.onPreferences, this),
+        var me = this;
+        BQ.Preferences.on('update_user_pref', function(el, resourcePrefXML){
+            me.onPreferences(); //update preferences
         });
+        this.onPreferences();
     },
 
-    onPreferences: function(pref) {
-        this.preferences = Ext.apply(pref, this.parameters || {}); // local defines overwrite preferences
+    onPreferences: function() {
+        this.preferences = {};
+        this.preferences.hide_gobjects_creation = BQ.Preferences.get('user','Viewer/hide_gobjects_creation','');
+        this.preferences = Ext.apply(this.preferences, this.parameters || {});
         if (this.preferences.hide_gobjects_creation) {
             var l = this.preferences.hide_gobjects_creation.split(',');
             var n=null;

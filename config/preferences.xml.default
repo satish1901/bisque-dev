@@ -25,6 +25,7 @@
                         <tag type="boolean" name="allowBlank" value="false"/>
                         <tag type="boolean" name="Editable" value="true"/>
                         <tag type="string" name="select" value="Compact,Grid,Card,Full"/>
+                        <tag name="passedValues" value="1,2,8,4"/>
                     </template>
                 </tag>
                 <tag name="Include Public Resources" value="false">
