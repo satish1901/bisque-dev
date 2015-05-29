@@ -63,13 +63,12 @@ SVGRenderer.prototype.create = function (parent) {
     this.overlay.style.position = "absolute";
     this.overlay.style.top = "0px";
     this.overlay.style.left = "0px";
-
     this.parent = parent;
     return parent;
 };
 
-SVGRenderer.prototype.onPreferences = function(pref) {
-    this.loadPreferences(pref);
+SVGRenderer.prototype.onPreferences = function() {
+    this.loadPreferences();
     if (this.overlay) //check to see if the overlay is attached to the viewer
         this.populate_overlay();
 };
@@ -122,9 +121,12 @@ SVGRenderer.prototype.updateImage = function () {
 // preferences and overlays
 //----------------------------------------------------------------------------
 
-SVGRenderer.prototype.loadPreferences = function (p) {
-    var i = 0;
-    this.overlayPref = 'Overlay' in p ? p.Overlay  : this.default_overlayPref;
+SVGRenderer.prototype.loadPreferences = function () {
+    this.overlayPref = {};
+    var resource_uniq = this.viewer.image.resource_uniq;
+    this.overlayPref.enable   = BQ.Preferences.get(resource_uniq, 'Viewer/Overlay/enable',   this.default_overlayPref.enable);
+    this.overlayPref.position = BQ.Preferences.get(resource_uniq, 'Viewer/Overlay/position', this.default_overlayPref.position);
+    this.overlayPref.shape    = BQ.Preferences.get(resource_uniq, 'Viewer/Overlay/shape',    this.default_overlayPref.shape);
 };
 
 
@@ -465,32 +467,29 @@ Ext.define('BQ.overlayEditor.Window', {
                 var points = me.mapPoints(gobs);
                 
                 //create put to the preference
-                var preferenceTag = document.createElement('preference');
-                
-                var viewerTag = document.createElement('tag');
-                viewerTag.setAttribute('name', 'Viewer');
-                preferenceTag.appendChild(viewerTag);
-                
-                var layoutTag = document.createElement('tag');
-                layoutTag.setAttribute('name', 'Overlay');
-                viewerTag.appendChild(layoutTag);
+                var overlayTag = document.createElement('tag');
+                overlayTag.setAttribute('name', 'Overlay');
                 
                 var enableTag = document.createElement('tag');
                 enableTag.setAttribute('name', 'enable');
                 enableTag.setAttribute('value', 'true');
-                layoutTag.appendChild(enableTag);
+                overlayTag.appendChild(enableTag);
                 
                 var positionTag = document.createElement('tag');
                 positionTag.setAttribute('name', 'position');
                 positionTag.setAttribute('value', points.x1+','+points.y1+';'+points.x2+','+points.y2+';'+points.x3+','+points.y3+';'+points.x4+','+points.y4);
-                layoutTag.appendChild(positionTag);
+                overlayTag.appendChild(positionTag);
                 
                 var shapeTag = document.createElement('tag');
                 shapeTag.setAttribute('name', 'shape');
                 shapeTag.setAttribute('value', 'dots_custom');
-                layoutTag.appendChild(shapeTag);
+                overlayTag.appendChild(shapeTag);
                 
-                BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML, function() {BQ.ui.notification('Successfully updated overlay');});
+                
+                BQ.Preferences.set(me.miniViewer.resource.resource_uniq, 'Viewer/Overlay', overlayTag.outerHTML, function() {
+                    BQ.ui.notification('Successfully updated overlay');
+                })
+                //BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML, function() {BQ.ui.notification('Successfully updated overlay');});
             },
         }, { //toggles disable, enable of the mask
             scale: 'large',
@@ -498,22 +497,12 @@ Ext.define('BQ.overlayEditor.Window', {
             xtype: 'button',
             text: me.viewer.plugins_by_name.overlay.overlayPref.enable?'Disable':'Enable',
             handler: function (el) {
-                var preferenceTag = document.createElement('preference');
-                
-                var viewerTag = document.createElement('tag');
-                viewerTag.setAttribute('name', 'Viewer');
-                preferenceTag.appendChild(viewerTag);
-                
-                var layoutTag = document.createElement('tag');
-                layoutTag.setAttribute('name', 'Overlay');
-                viewerTag.appendChild(layoutTag);
                 var enableTag = document.createElement('tag');
                 enableTag.setAttribute('name', 'enable');
                 el.setText(me.viewer.plugins_by_name.overlay.overlayPref.enable ? 'Enable':'Disable');
                 enableTag.setAttribute('value', me.viewer.plugins_by_name.overlay.overlayPref.enable ? 'false':'true');
-                layoutTag.appendChild(enableTag);
                 
-                BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML, function() {
+                BQ.Preferences.set(me.miniViewer.resource.resource_uniq, 'Viewer/Overlay/enable', enableTag.outerHTML, function() {
                     if (me.viewer.plugins_by_name.overlay.overlayPref.enable) me.onChanged(me.miniViewer);
                     BQ.ui.notification((me.viewer.plugins_by_name.overlay.overlayPref.enable?'Enabled':'Disabled')+' Overlay');
                 });
@@ -524,21 +513,15 @@ Ext.define('BQ.overlayEditor.Window', {
             xtype: 'button',
             text: 'User Default',
             handler: function () {
-                if (BQ.Preferences.resourceXML[me.miniViewer.resource.resource_uniq]) {
-                    var resourceDoc = BQ.Preferences.resourceXML[me.miniViewer.resource.resource_uniq]
-                    var overlay = BQ.util.xpath_nodes(resourceDoc, '//tag[@name="Viewer"]/tag[@name="Overlay"]');
-                    if (overlay.length>0) {
-                        var pattern = /preference\/[0-9]+\/(.+)/;
-                        var uri = overlay[0].getAttribute('uri');
-                        var match = uri.match(pattern);
-                        if (match.length == 2) {
-                            BQ.Preferences.resetResourceTag(me.miniViewer.resource.resource_uniq, match[1], function() {
-                                me.removeAllGobjects(me.miniViewer);
-                                BQ.ui.notification('Set overlay to user preference');
-                            });
-                        }
+                BQ.Preferences.set(me.miniViewer.resource.resource_uniq, 'Viewer/Overlay', undefined, 
+                    function() {
+                        me.removeAllGobjects(me.miniViewer);
+                        BQ.ui.notification('Set overlay to user preference');
+                    }, 
+                    function() {
+                        BQ.ui.notification('Already set to user default');
                     }
-                }
+                );
             },
         }];
         

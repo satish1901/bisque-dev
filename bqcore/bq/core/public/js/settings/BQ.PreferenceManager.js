@@ -12,7 +12,7 @@ Ext.define('BQ.preference.Tagger', {
         config.tree = config.tree || {
             btnAdd : false,
             btnDelete : false,
-        }, 
+        },
         this.callParent([config]);
     },
     
@@ -22,22 +22,6 @@ Ext.define('BQ.preference.Tagger', {
             'user'    : '/preference/user',
             'resource': '/preference/user/'+resource_uniq,
         };
-        
-        /*
-        var load = {
-            'system':BQ.Preferences.loadSystem,
-            'user':BQ.Preferences.loadUser,
-            'resource':BQ.Preferences.loadResource,
-        };
-        if (this.level=='resource') {
-            this.resource_uniq = resource_uniq
-            load[this.level](this.resource_uniq, Ext.bind(this.loadResourceInfo, this))
-            //load[this.level](this.resource_uniq, Ext.bind(this.loadResourceInfo, this))
-        } else {
-            load[this.level](Ext.bind(this.loadResourceInfo, this))
-            //load[this.level](Ext.bind(this.loadResourceInfo, this))
-        }
-        */
         
         if (!(this.level in preferenceUrl)) {
             BQ.ui.error('Not a valid preference level');
@@ -123,40 +107,18 @@ Ext.define('BQ.preference.Tagger', {
         if (silent === undefined)
             silent = this.silent !== undefined ? this.silent : false;
 
-        if (tag) {
-            //create document to put to the preference service
-            var prefDOM = document.createElement(tag.resource_type)
-            for (var a = 0; a<tag.xmlfields.length; a++) {
-                if (tag[tag.xmlfields[a]]!=null || tag[tag.xmlfields[a]]!=undefined)
-                    prefDOM.setAttribute(tag.xmlfields[a], tag[tag.xmlfields[a]])
-            }
-            while(tag.resource_type!='preference'||tag.parent) {
+        if (tag && tag.resource_type=='tag' && this.store.applyModifications() && this.level) {
+            var level = (this.level == 'resource') ? this.resource_uniq : this.level;
+            var tagDom = document.createElement('tag');
+            tagDom.setAttribute('name', tag['name']); //get name
+            tagDom.setAttribute('value', tag['value']); //get value
+            var path = [];
+            while(tag.resource_type!='preference'&&tag.parent) {
+                path.unshift(tag['name']);
                 var tag = tag.parent
-                var tagDOM = document.createElement(tag.resource_type)
-                for (var a = 0; a<tag.xmlfields.length; a++) {
-                    if (tag[tag.xmlfields[a]]!=null || tag[tag.xmlfields[a]]!=undefined)
-                        tagDOM.setAttribute(tag.xmlfields[a], tag[tag.xmlfields[a]])
-                }
-                tagDOM.appendChild(prefDOM)
-                prefDOM = tagDOM
             }
-            
-            if (prefDOM.nodeName == 'PREFERENCE' && this.store.applyModifications() && this.level) {
-                var update = {
-                    'system': BQ.Preferences.updateSystem,
-                    'user':BQ.Preferences.updateUser,
-                    'resource':BQ.Preferences.updateResource,
-                }
-                if (this.level=='resource' && this.resource_uniq) {
-                    update[this.level](this.resource_uniq, prefDOM.outerHTML);
-                } else if (this.level in update) {
-                    update[this.level](prefDOM.outerHTML);
-                } else {
-                    if (!silent) BQ.ui.notification('No records modified, save canceled! Not a valid level!');
-                }
-            } else {
-                if (!silent) BQ.ui.notification('No records modified, save canceled!');
-            }
+            var path = path.join('/');
+            BQ.Preferences.set(level, path, tagDom.outerHTML);
         } else {
             if (!silent) BQ.ui.notification('No records modified, save canceled!');
         }
@@ -164,6 +126,8 @@ Ext.define('BQ.preference.Tagger', {
     
     //admin only on system
     addTags: function () {
+        BQ.ui.notification('Tags cannot be added through this tagger');
+        /*
         var currentItem = this.tree.getSelectionModel().getSelection();
         var editor = this.rowEditor || this.tree.plugins[1];
 
@@ -180,10 +144,13 @@ Ext.define('BQ.preference.Tagger', {
         this.newNode = newNode;
         currentItem.expand();
         editor.startEdit(newNode, 0);
+        */
     },
     
-    //admin only on system or reset
+    //admin needs to be implimented in a special way
     deleteTags : function() {
+        BQ.ui.notification('Tags cannot be deleted through this tagger');
+        /*
         var selectedItems = this.tree.getSelectionModel().getSelection(), parent;
         var root = BQ.Preferences.user.tag;
 
@@ -222,6 +189,7 @@ Ext.define('BQ.preference.Tagger', {
             BQ.ui.notification(selectedItems.length + ' record(s) deleted!');
             this.tree.getSelectionModel().deselectAll();
         }
+        */
     },
 });
 

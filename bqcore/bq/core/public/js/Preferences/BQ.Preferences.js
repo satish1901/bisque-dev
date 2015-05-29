@@ -17,7 +17,15 @@ Ext.define('BQ.Preferences', {
     systemDict: undefined,
     userDict: undefined,
     resourceDict: {},
+    silence: false,
     resource_uniq: undefined, //if the preference has a resource set
+    
+    level : {
+        'system'  : '/preference',
+        'user'    : '/preference/user',
+        //'resource': '/preference/user',
+    },
+    preferenceXML : {}, 
     
     // load system preferences
     constructor : function() {
@@ -28,221 +36,87 @@ Ext.define('BQ.Preferences', {
             'onerror_user_pref' : true,
         });
         this.mixins.observable.constructor.call(this);
-        this.loadSystem();
+        this.load('system');
         //this.loadUser();
     },
     
-    loadSystem : function(cb) {
-        var me = this;
-        Ext.Ajax.request({
-            method: 'GET',
-            url: '/preference',
-            params: {view:'deep'},
-            disableCaching: false,
-            success: function(response) {
-                BQ.Preferences.systemXML = response.responseXML;
-                BQ.Preferences.systemDict = BQ.Preferences.toDict(BQ.Preferences.systemXML);
-                BQ.Preferences.fireEvent('update_system_pref', BQ.Preferences, BQ.Preferences.systemDict, BQ.Preferences.systemXML);
-                if (cb) cb(BQ.Preferences.systemDict, BQ.Preferences.systemXML);
-            },
-            failure: function(response) {
-                console.log('Warning: Failed to load system preference');
-                //BQ.ui.error('failed to load system preference');
-                BQ.Preferences.fireEvent('onerror_system_pref');
-            },
-            scope: me,
-        })
-    },
-
-    // bq_ui_application raises event loadUser
-    loadUser : function(cb) {
-        var me = this;
-
-        Ext.Ajax.request({
-            method: 'GET',
-            url: '/preference/user',
-            params: {view:'deep'},
-            disableCaching: false,
-            success: function(response) {
-                BQ.Preferences.userXML = response.responseXML;
-                BQ.Preferences.userDict = BQ.Preferences.toDict(BQ.Preferences.userXML);
-                BQ.Preferences.fireEvent('update_user_pref', BQ.Preferences, BQ.Preferences.userDict, BQ.Preferences.userXML);
-                if (cb) cb(BQ.Preferences.userDict, BQ.Preferences.userXML);
-            },
-            failure: function(response) {
-                console.log('Warning: Failed to load user preference');
-                //BQ.ui.error('failed to load user preference');
-                BQ.Preferences.fireEvent('onerror_user_pref');
-            },
-            scope: me,
-        });
+    setSilence: function(bool) {
+        this.silence = bool;
     },
     
-    loadResource: function(uniq, cb) {
+    load : function(lvl, path, cb) {
         var me = this;
-        if (!BQ.Preferences.resourceXML[uniq] || !BQ.Preferences.resourceDict[uniq]) {
-            BQ.Preferences.resourceXML[uniq] = {};
-            BQ.Preferences.resourceDict[uniq] = {};
-            var events = {}
-            events['update_'+uniq+'_pref'] = true;
-            events['onerror_'+uniq+'_pref'] = true;
-            me.addEvents(events);
-        }
-        Ext.Ajax.request({
-            method: 'GET',
-            url: '/preference/user/'+uniq,
-            params: {view:'deep'},
-            disableCaching: false,
-            success: function(response) {
-                BQ.Preferences.resourceXML[uniq] = response.responseXML;
-                BQ.Preferences.resourceDict[uniq] = BQ.Preferences.toDict(BQ.Preferences.resourceXML[uniq]);
-                BQ.Preferences.fireEvent('update_'+uniq+'_pref', BQ.Preferences, BQ.Preferences.resourceDict[uniq], BQ.Preferences.resourceXML[uniq]);
-                if (cb) cb(BQ.Preferences.resourceDict[uniq], BQ.Preferences.resourceXML[uniq]);
-            },
-            failure: function(response) {
-                console.log('Warning: Failed to load resource:'+uniq+' preference!')
-                //BQ.ui.error('Failed to load resource:'+uniq+' preference!');
-                BQ.Preferences.fireEvent('onerror_'+uniq+'_pref');
-            },
-            scope: me,
-        });
-    },
-    
-    updateSystem: function(body, cb) {
-        var me = this;
-        Ext.Ajax.request({
-            method: 'PUT',
-            url: '/preference',
-            params: {view:'deep'},
-            disableCaching: false,
-            xmlData: body,
-            success: function(response) {
-                BQ.Preferences.systemXML = response.responseXML;
-                BQ.Preferences.systemDict = BQ.Preferences.toDict(me.systemXML);
-                BQ.Preferences.fireEvent('onerror_system_pref', BQ.Preferences, BQ.Preferences.systemDict, BQ.Preferences.systemXML);
-                
-                //reload lower levels
-                BQ.Preferences.loadUser();
-                if (BQ.Preferences.resource_uniq) {
-                    BQ.Preferences.loadResource(BQ.Preferences.resource_uniq);
-                }
-                
-                if (cb) cb(BQ.Preferences.systemDict, BQ.Preferences.systemXML);
-            },
-            failure: function(response) {
-                //console.log('Warning: Failed to update system preference');
-                BQ.ui.error('Failed to update system preference.');
-                BQ.Preferences.fireEvent('onerror_system_pref');
-            },
-            scope: me,
-        });        
-    },
-    
-    updateUser: function(body, cb) {
-        var me = this;
-        Ext.Ajax.request({
-            method: 'PUT',
-            url: '/preference/user',
-            params: {view:'deep'},
-            disableCaching: false,
-            xmlData: body,
-            success: function(response) {
-                BQ.Preferences.userXML = response.responseXML;
-                BQ.Preferences.userDict = BQ.Preferences.toDict(BQ.Preferences.userXML);
-                BQ.Preferences.fireEvent('update_user_pref', BQ.Preferences, BQ.Preferences.userDict, BQ.Preferences.userXML);
-                
-                //reload lower level
-                if (BQ.Preferences.resource_uniq) {
-                    BQ.Preferences.loadResource(BQ.Preferences.resource_uniq);
-                }
-                
-                if (cb) cb(BQ.Preferences.userDict, BQ.Preferences.userXML);
-                //me.fireEvent('updateUser', me, me.userDict);
-                //me.fireEvent('updateResource', me, me.userDict);
-            },
-            failure: function(response) {
-                //console.log('Warning: Failed to update user preference');
-                BQ.ui.error('Failed to load user preference.')
-            },
-            scope: me,
-        });
-    },
-    
-    updateResource: function(uniq, body, cb) {
-        var me = this;
-        if (BQ.Preferences.resourceXML[uniq]) {
+        var path = (!path) ? '' : '/'+path;
+        var url = (lvl in me.level) ? me.level[lvl]+path: me.level['user']+'/'+lvl+path;
+        if (url) {
             Ext.Ajax.request({
-                method: 'PUT',
-                url: '/preference/user/'+uniq,
+                method: 'GET',
+                url: url,
+                params: {view:'deep'},
+                disableCaching: false,
+                success: function(response) {
+                    BQ.Preferences.preferenceXML[lvl] = response.responseXML;
+                    //BQ.Preferences.systemDict = BQ.Preferences.toDict(BQ.Preferences.systemXML);
+                    BQ.Preferences.fireEvent('update_'+lvl+'_pref', response.responseXML);
+                    if (cb) cb(response.responseXML);
+                },
+                failure: function(response) {
+                    if (me.silence) console.log('Warning: Failed to load '+lvl+' preference');
+                    //BQ.ui.error('failed to load system preference');
+                    BQ.Preferences.fireEvent('onerror_'+lvl+'_pref');
+                },
+                scope: me,
+            });
+        }
+    },
+    
+    update: function(lvl, path, body, cb, errorcb) {
+        var me = this;
+        var path = (!path) ? '' : '/'+path;
+        var url = (lvl in me.level) ? me.level[lvl]+path: me.level['user']+'/'+lvl+path;
+        if (url) {
+            Ext.Ajax.request({
+                method: 'POST',
+                url: url,
                 params: {view:'deep'},
                 disableCaching: false,
                 xmlData: body,
                 success: function(response) {
-                    BQ.Preferences.resourceXML[uniq] = response.responseXML;
-                    BQ.Preferences.resourceDict[uniq] = BQ.Preferences.toDict(BQ.Preferences.resourceXML[uniq]);
-                    BQ.Preferences.fireEvent('update_'+uniq+'_pref', BQ.Preferences, BQ.Preferences.resourceDict[uniq], BQ.Preferences.resourceXML[uniq]);
-                    if (cb) cb(BQ.Preferences.resourceDict[uniq], BQ.Preferences.resourceXML[uniq]);
+                    //BQ.Preferences.preferenceXML[lvl] = response.responseXML;
+                    BQ.Preferences.load(lvl, '', cb) //to fetch the entire document and call update_pref
+                    //BQ.Preferences.fireEvent('update_'+lvl+'_pref', response.responseXML);
+                    //if (cb) cb(response.responseXML);
                 },
                 failure: function(response) {
-                    //console.log('Warning: Failed to update resource preference.');
-                    BQ.ui.error('Failed to update resource preference');
+                    if (me.silence) BQ.ui.error('Failed to update '+lvl+' preference.');
+                    BQ.Preferences.fireEvent('onerror_'+lvl+'_pref');
+                    if (errorcb) errorcb();
                 },
                 scope: me,
             });
-        } else {
-            //console.log('Warning: No resource set to preferences, Update failed.');
-            BQ.ui.error('No resource set to preferences, Update failed.')
         }
     },
     
-    resetSystemTag : function(path, cb) {
+    remove: function(lvl, path, cb, errorcb) {
         var me = this;
-        Ext.Ajax.request({
-            method: 'DELETE',
-            url: me.preference_user_uri+'/'+path,
-            disableCaching: false,
-            success: function(response) {
-                me.loadSystem(cb);
-            },
-            failure: function(response) {
-                BQ.ui.error('Failed to delete system preference tag.');
-            },
-            scope: me,
-        });
-    },
-    
-    resetUserTag : function(path, cb) {
-        var me = this;
-        Ext.Ajax.request({
-            method: 'DELETE',
-            url: me.preference_user_uri+'/'+uniq+'/'+path,
-            disableCaching: false,
-            success: function(response) {
-                me.loadUser(cb);
-            },
-            failure: function(response) {
-                BQ.ui.error('Failed to delete user preference tag.');
-            },
-            scope: me,
-        });
-    },
-    
-    
-    resetResourceTag : function(uniq, path, cb) {
-        var me = this;
-        path = path?path:'';
-        Ext.Ajax.request({
-            method: 'DELETE',
-            url: me.preference_user_uri+'/'+uniq+'/'+path,
-            disableCaching: false,
-            success: function(response) {
-                me.loadResource(uniq, cb); //reset the element
-            },
-            failure: function(response) {
-                BQ.ui.error('Failed to delete resource preference tag.');
-            },
-            scope: me,
-        });
+        var path = (!path) ? '' : '/'+path;
+        var url = (lvl in me.level) ? me.level[lvl]+path: me.level['user']+'/'+lvl+path;
+        if (url) {
+            Ext.Ajax.request({
+                method: 'DELETE',
+                url: url,
+                disableCaching: false,
+                success: function(response) {
+                    me.load(lvl, path, cb);
+                },
+                failure: function(response) {
+                    if (me.silence) BQ.ui.error('Failed to delete '+lvl+' preference tag.');
+                    BQ.Preferences.fireEvent('onerror_'+lvl+'_pref');
+                    if (errorcb) errorcb();
+                },
+                scope: me,
+            });
+        }
     },
     
     
@@ -257,10 +131,10 @@ Ext.define('BQ.Preferences', {
         }
         return v;
     },
+    
 
-    toDict: function(dom) {
+    toDict: function(tagElements) {
         var pref = {};
-        
         function conv(tagList, node) {
             for (var t=0; t<tagList.length; t++) {
                 var childList = BQ.util.xpath_nodes(tagList[t], 'tag');
@@ -278,48 +152,57 @@ Ext.define('BQ.Preferences', {
         };
         
         //check if its a preference document
-        var tagElements = BQ.util.xpath_nodes(dom, 'preference/tag');
+        //var tagElements = BQ.util.xpath_nodes(dom, 'preference/tag');
         return conv(tagElements, pref);
     },
     
+    
     /*
-     * Caller object:
-     *
-     * Caller.key = Component's key e.g. "ResourceBrowser"
-     * Caller.type = 'user' or 'system' or 'resource'
-     * Caller.callback = Component's callback function when the preferences are loaded
-     */
-    get : function(caller) {
-        var me = this;
-        caller.type = caller.type || 'user';
-        
-        var resource = {
-            'system':this.systemDict,
-            'user':this.userDict,
-            'resource':this.resourceDict,
-        };
-        
-        if (resource[caller.type]) {
-            if (caller.callback) {
-                setTimeout(function(){
-                    if (resource[caller.type][caller.key]) {
-                        caller.callback(resource[caller.type][caller.key])
-                    } else {
-                        caller.callback({})
-                    }
-                }, 1);
-            } else {
-                return resource[caller.type][caller.key]||{}
+    * get
+    *
+    * @param: lvl - 
+    * @param: path -
+    * @param: value - 
+    */
+    get : function(lvl, path, defaultValue) {
+        var pattern = /\s*\/\s*/;
+        if (path) {
+            var names = path.split(pattern);
+            var xpath = 'preference';
+            for (var n = 0; n<names.length; n++) {
+                xpath += '/tag[@name="'+names[n]+'"]';
             }
+            var nodes = BQ.util.xpath_nodes(BQ.Preferences.preferenceXML[lvl], xpath);
+            return nodes.length ? this.toDict(nodes)[names[names.length-1]]: defaultValue;
+        } else {
+            var nodes = BQ.util.xpath_nodes(BQ.Preferences.preferenceXML[lvl], 'preference/tag');
+            return nodes.length ? this.toDict(nodes): defaultValue;
         }
     },
     
-/*
- * Listens for an update and calls the other updates accordingly
- *
- *
- */
+    /*
+    * set
+    *
+    * @param: lvl - 
+    * @param: path - 
+    * @param: value - xml string
+    *
+    * if no value is set to undefined or not set the value is removed from the resource document
+    */
+    set : function(lvl, path, value, cb, errorcb) {
+        if (value===undefined) { //forces the removal 
+            BQ.Preferences.remove(lvl, path, cb, errorcb);
+        } else {
+            BQ.Preferences.update(lvl, path, value, cb, errorcb);
+        }
+    },
+    
+    /*
+     * Listens for an update and calls the other updates accordingly
+     *
+     *
+     */
     onPreference: function() {
         
-    }
+    },
 });

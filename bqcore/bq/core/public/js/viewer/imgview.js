@@ -511,30 +511,14 @@ ImgViewer.prototype.newImage = function (bqimage) {
     var phys = new BQImagePhys (this.image);
     phys.load (callback (this, 'newPhys') );
 
-    if (BQ.Preferences) {
-        //needs to remove call back if new image is added
+    BQ.Preferences.on('update_'+this.image.resource_uniq+'_pref', function(el, resourcePrefXML){
+        me.onPreferences(); //update preferences
+    });
+    //begin loading request for viewer
+    BQ.Preferences.load(this.image.resource_uniq);
 
-        BQ.Preferences.on('update_'+this.image.resource_uniq+'_pref', function(el, resourcePrefDict, resourcePrefXML){
-            var viewerPref = {};
-            if (resourcePrefDict.Viewer)
-                viewerPref = resourcePrefDict.Viewer;
-            me.onPreferences(viewerPref); //update preferences
-        })
-        BQ.Preferences.on('onerror_'+this.image.resource_uniq+'_pref', function(el, resourcePrefDict, resourcePrefXML){
-            me.onPreferences({}); //update preferences
-        })
-        //begin loading request for viewer
-        BQ.Preferences.loadResource(this.image.resource_uniq);
-        //check to see if resource preferences was updated already
-        //if (BQ.Preferences.resourceDict[this.image.resource_uniq]) {
-        //    var viewerPref = {};
-        //    if (BQ.Preferences.resourceDict.Viewer)
-        //        viewerPref = BQ.Preferences.resourceDict[this.image.resource_uniq].Viewer;
-        //    me.onPreferences(viewerPref); //update preferences
-        //}
-    } else {
-        me.onPreferences({}) //onPreferences has to be initialized before the view shows anything
-    }
+    me.onPreferences() //onPreferences has to be initialized before the view shows anything
+    
 
     // this probably should be run after the imagephys is acquired
     // in order to disable the use of "default" service at all!
@@ -811,10 +795,11 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
 //----------------------------------------------------------------------
 
 ImgViewer.prototype.onPreferences = function(pref) {
+
     this.preferences = Ext.apply(pref, this.parameters || {}); // local defines overwrite preferences
      for (var i = 0; i < this.plugins.length; i++) {
         plugin = this.plugins[i];
-        plugin.onPreferences(this.preferences);
+        plugin.onPreferences();
     }
     if (this.requires_update) {
         this.updateImage();
