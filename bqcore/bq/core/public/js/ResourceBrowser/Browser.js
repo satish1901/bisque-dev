@@ -228,7 +228,12 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         
         if (!this.browserParams.viewMode) {
             this.browserParams.tagQuery = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Tag Query', this.browserParams.tagQuery);
-            this.layoutKey = parseInt(BQ.Preferences.get('user', 'ResourceBrowser/Browser/Layout', this.browserParams.layout));
+            
+            //all these check for backwards comparability; if there is not template a user can set any of the layout types
+            var prefLayout = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Layout', this.browserParams.layout);
+            var layout = (parseInt(prefLayout)!=parseInt(prefLayout))? Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS[prefLayout] : parseInt(prefLayout);
+            this.layoutKey = (!layout) ? this.browserParams.layout : layout; //layout key must be an int
+            
             this.browserParams.wpublic = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Include Public Resources', this.browserParams.wpublic);
         }
         
