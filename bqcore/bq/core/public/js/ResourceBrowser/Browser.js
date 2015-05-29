@@ -186,16 +186,12 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         //load preferences
         var me = this;
         
-        
-        
-        var me = this;
+        //onPreferences has to be initialized before the view shows anything  
+        var timedOnPreference = setTimeout(function(){ me.onPreferences(); }, 500);
         BQ.Preferences.on('update_user_pref', function(el, resourcePrefXML){
+            clearTimeout(timedOnPreference); //remove the time out if preference came back
             me.onPreferences(); //update preferences
-        })
-        
-        me.onPreferences() //onPreferences has to be initialized before the view shows anything  
-        
-        //this.loadPreferences();
+        });
 
         if (Ext.supports.Touch)
             this.gestureMgr = new Bisque.Misc.GestureManager();
@@ -481,8 +477,6 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                         BQ.Preferences.load('user');
                         this.browserParams = {
                         };
-                        //this.onPreferences(this.preferences);
-                        //this.loadPreferences();
                     }
                 } else
                     this.loadData(uri);
