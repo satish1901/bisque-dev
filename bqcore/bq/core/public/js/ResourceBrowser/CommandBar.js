@@ -423,9 +423,10 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
     },
 
     btnOrganizerClickFiles : function(reload) {
+        if (this.filesCt) return;
         this.westPanel.setWidth(420).show().expand();
         //this.westPanel.queryById('files').removeAll(false);
-        this.westPanel.add({
+        this.filesCt = this.westPanel.add({
             xtype: 'bq-tree-files-panel',
             itemId: 'files',
             title: 'Files',

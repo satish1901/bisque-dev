@@ -400,12 +400,22 @@ Ext.define('BQ.tree.organizer.Panel', {
         sortable: true,
     }, {
         text: 'Count',
-        width: 40,
+        width: 50,
         dataIndex: 'count',
         sortable: true,
         tdCls: 'counts',
         //align: 'center',
         align: 'right',
+        renderer: function(value) {
+            if (value<Math.pow(10, 3))
+                return value;
+            else if (value>=Math.pow(10, 3) && value<Math.pow(10, 6)) // K
+                return (value/Math.pow(10, 3)).toFixed(2)+'K';
+            else if (value>=Math.pow(10, 6) && value<Math.pow(10, 9)) // G
+                return (value/Math.pow(10, 6)).toFixed(2)+'M';
+            else
+                return (value/Math.pow(10, 9)).toFixed(2)+'G';
+        },
     }],
 
     initComponent : function () {
@@ -700,14 +710,10 @@ Ext.define('BQ.tree.organizer.Panel', {
         this.fireEvent('selected', this.url_selected, this);
     },
 
-    onSelect : function (me, record, index, eOpts) {
-        record.expand();
-    },
-
-    onBeforeItemExpand: function (record, eOpts) {
-        if (this.no_selects===true || record.data.loaded===true) return;
+    setActiveNode : function (record) {
+        if (this.no_selects===true) return; // || node.data.loaded===true) return;
         var node = record,
-            nodes=[];
+                   nodes=[];
         while (node) {
             if (!(node.raw instanceof Node)) break;
             nodes.push(node);
@@ -783,11 +789,21 @@ Ext.define('BQ.tree.organizer.Panel', {
             proxy.projections.tag_values = null;
         }
 
-        var url = path.join('/');
-        if (this.url_selected !== url) {
-            this.url_selected = url;
-            this.fireEvent('selected', url, this);
+        this.url_selected = path.join('/');
+        this.fireEvent('selected', this.url_selected, this);
+    },
+
+    onSelect : function (me, record, index, eOpts) {
+        if (record.isExpanded()) {
+            this.setActiveNode(record);
+        } else {
+            record.expand();
         }
+    },
+
+    onBeforeItemExpand: function (record, eOpts) {
+        if (this.no_selects===true) return; // || record.data.loaded===true) return;
+        this.setActiveNode(record);
     },
 
     onAfterItemExpand : function ( node, index, item, eOpts ) {
