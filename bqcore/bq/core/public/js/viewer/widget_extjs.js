@@ -125,6 +125,8 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.onerror         = callback(this, 'onerror');
         this.parameters.onselect        = callback(this, 'onselect');
         this.parameters.onhover         = callback(this, 'onhover');
+        this.parameters.onmodechange    = callback(this, 'onmodechange');
+
         //this.parameters.gobjectMoveStart= callback(this, 'onmovestart'); on mouse down
         this.parameters.gobjectMoveEnd  = callback(this, 'onmoveend'); //mouse up on gobject
         //this.parameters.gobjectMove          = callback(this, 'onmove'); expensive
@@ -150,24 +152,25 @@ Ext.define('BQ.viewer.Image', {
     onloaded : function() {
         this.setLoading(false);
     },
-    
+
     onphys : function() {
         this.fireEvent( 'loadedPhys', this, this.viewer.imagephys, this.viewer.imagedim );
     },
-    
-    
+
+
     afterphys : function() {
         this.fireEvent( 'afterPhys', this, this.viewer.imagephys, this.viewer.imagedim );
+
     },
 
     onchanged : function(gobs) {
         this.fireEvent( 'changed', this, gobs );
     },
-    
+
     ondelete: function(gobs) {
         this.fireEvent( 'delete', this, gobs );
     },
-    
+
     onmoveend : function(gobs) {
         this.fireEvent( 'moveend', this, gobs );
     },
@@ -206,6 +209,12 @@ Ext.define('BQ.viewer.Image', {
     onhover : function(gob, e) {
         //console.log(gob,e);
         this.fireEvent( 'hover', this, gob, e );
+    },
+
+
+    onmodechange : function(type) {
+        //console.log(gob,e);
+        this.fireEvent( 'modechange', this, type );
     },
 
     onselect : function(gob) {
