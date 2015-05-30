@@ -539,6 +539,7 @@ ImgEdit.prototype.setmode = function (type, mode_fun) {
     this.mode_type = type;
     if (type)
         this.createButtonsDeselect();
+    this.viewer.parameters.onmodechange(type);
 };
 
 ImgEdit.prototype.select = function (e, x, y) {

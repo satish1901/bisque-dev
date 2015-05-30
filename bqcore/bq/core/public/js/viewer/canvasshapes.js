@@ -119,6 +119,13 @@ CanvasShape.prototype.rescale = function (scale) {
 CanvasShape.prototype.calcBbox = function () {
 };
 
+
+CanvasShape.prototype.getBbox = function (scaleIn) {
+    if(!this.bbox)
+        this.bbox = this.calcBbox(scaleIn);
+    return this.bbox;
+};
+
 CanvasShape.prototype.hasOverlap  = function(bbox){
     var overlap = true,
     bb1 = bbox,
@@ -147,11 +154,6 @@ CanvasShape.prototype.dragStart = function () {
     this.bboxCache.max[1] = this.bbox.max[1];
 };
 
-CanvasShape.prototype.getBbox = function () {
-    if(!this.bbox)
-        this.bbox = this.calcBbox();
-    return this.bbox;
-};
 
 
 
@@ -1661,12 +1663,14 @@ CanvasPoint.prototype.setPointSize = function(size){
 CanvasPoint.prototype.clearCache = function(){};
 CanvasPoint.prototype.cacheSprite = function(){};
 
-CanvasPoint.prototype.calcBbox = function () {
+CanvasPoint.prototype.calcBbox = function (scaleIn) {
     var sprite = this.sprite;
     var px = this.x();
     var py = this.y();
+    var scale = scaleIn ? scaleIn : this.renderer.scale();
 
-    var
+    var buffer = this.pointSize/scale;
+
     minz =  99999999999,
     maxz = -99999999999,
     mint  = 99999999999,
@@ -1685,8 +1689,8 @@ CanvasPoint.prototype.calcBbox = function () {
     }
 
 
-    return {min: [px, py, minz, mint],
-            max: [px, py, maxz, maxt]};
+    return {min: [px - buffer, py - buffer, minz, mint],
+            max: [px + buffer, py + buffer, maxz, maxt]};
 };
 
 
@@ -1981,11 +1985,16 @@ CanvasLabel.prototype.init = function(gob){
         stroke: 'red',
         strokeWidth: 1.5/scale.x,
     });
+
+    this.fullText = gob.value;
+    this.choppedText = this.fullText.length > 16 ?
+        this.fullText.substr(0,16) + '...' : this.fullText;
+
     this.text = new Kinetic.Text({
-        text: gob.value,
+        text: this.choppedText,
         fontSize: 14/scale.x,
         fill: 'red',
-    });;
+    });
     this.sprites = [this.sprite, this.text];
     gob.shape = this;
     this.gob = gob;
@@ -2046,13 +2055,19 @@ CanvasLabel.prototype.getRenderableSprites = function (collection) {
     else return [];
 };
 
-CanvasLabel.prototype.calcBbox = function () {
+CanvasLabel.prototype.calcBbox = function (scaleIn) {
     var sprite = this.sprite;
     var px = this.x();
     var py = this.y();
-    var r = 2.0/this.renderer.stage.scale().x;
-    var w = this.text.width();
+    var r = 2.0/this.renderer.scale();
+
     var h = this.text.height();
+    var w = this.text.width();
+
+    var scale = scaleIn ? scaleIn : this.renderer.scale();
+    console.log(this.text.text().length/scale*6, w, h);
+    w = this.text.text().length/scale*6;
+
     var x0 = px;
     var x1 = px + this.offset.x;
     var x2 = px + this.offset.x + w;

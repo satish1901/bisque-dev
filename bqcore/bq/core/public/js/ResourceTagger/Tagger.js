@@ -1325,6 +1325,11 @@ Ext.define('Bisque.GObjectTagger', {
         if (p) p.deselect();
     },
 
+
+    deselectAll: function () {
+        this.tree.getSelectionModel().deselectAll();
+    },
+
     onExpand: function(node, eOpts) {
         var me = this;
         function callOnMexLoaded(mex) {

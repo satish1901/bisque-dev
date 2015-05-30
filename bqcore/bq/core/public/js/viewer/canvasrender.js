@@ -76,11 +76,12 @@ ImageCache.prototype.getCurrentHash = function(node){
 
 ImageCache.prototype.createAtFrame = function(i,j){
     if(!this.caches[i]) this.caches[i] = [];
-    /*
-    this.caches[i][j] = new Kinetic.Image({stroke: 'red',
-                                           strokeWidth: 2});
-    */
-    this.caches[i][j] = new Kinetic.Image({});
+
+    if(window.location.hash == "#debug")
+        this.caches[i][j] = new Kinetic.Image({stroke: 'red',
+                                               strokeWidth: 2});
+    else
+        this.caches[i][j] = new Kinetic.Image({});
 };
 
 ImageCache.prototype.deleteAtFrame = function(i){
@@ -418,19 +419,21 @@ QuadTree.prototype.splitNode  = function(node, stack){
 
 QuadTree.prototype.calcMaxLevel = function(){
     this.maxLevel = 4;
+    this.zoomLevel = 1;
+    if(this.renderer.viewer.current_view){
 
-    if(this.renderer.viewer.tiles.pyramid){
-        var levels = this.renderer.viewer.tiles.pyramid;
-        var max = Math.max(levels.width, levels.height);
+        var view = this.renderer.viewer.current_view;
+        var max = Math.max(view.width, view.height);
+        this.zoomLevel = 4.0*512/max;
         var L = 0;
 
         while(max > 512){
             max /= 2;
             ++L;
         }
-        this.maxLevel = L-2;
+        this.maxLevel = L;
     }
-    return L - 2;
+    return L;
 };
 
 QuadTree.prototype.insertInNode  = function(gob, node, stack){
@@ -489,7 +492,7 @@ QuadTree.prototype.insert = function(shape){
     //if(shape.page) return;  //if the shapeject has a page then we insert it
     //if(shape.inTree) return;
     shape.inTree = true;
-    shape.bbox = shape.calcBbox();
+    shape.bbox = shape.calcBbox(this.zoomLevel);
 
     //if(this.nodes.length > 10) return;
     var k = 0;
@@ -636,7 +639,7 @@ QuadTree.prototype.cache = function(frust, scale, onCache){
         var cache = null;
         //if(L === node.L || node.leaves.length > 0){
 
-        if(nArea <= 4.0*fArea || node.leaves.length > 0) {
+        if(nArea <= 16.0*fArea || node.leaves.length > 0) {
             //if(!node.imageCache.getCacheAtCurrent()){
 
             if(!me.imageCache.getCacheAtCurrent(node)){
@@ -672,9 +675,13 @@ QuadTree.prototype.cullCached = function(frust){
         var nArea = me.calcBoxVol(node.bbox);
         var cache = null;
         //if(L === node.L || node.leaves.length > 0){
-        if(nArea <= 4.0*fArea || node.leaves.length > 0) {
-            var cache = me.imageCache.getCacheAtCurrent(node);
+        if(nArea <= 16.0*fArea || node.leaves.length > 0) {
+
+            cache = me.imageCache.getCacheAtCurrent(node);
+            if(!cache) return false;
+
             for(var i = 0; i < cache.length; i++){
+                if(!cache[i]) continue;
                 var w = cache[i].width();
                 var h = cache[i].height();
                 var x = cache[i].x();
@@ -701,6 +708,8 @@ QuadTree.prototype.cullCached = function(frust){
             renderer.currentLayer.add(e);
     });
 };
+
+
 
 QuadTree.prototype.clearCache = function(frust){
     var me = this;
@@ -806,7 +815,7 @@ QuadTree.prototype.cacheChildSprites = function(node, scale, onCache){
                     scope.cachesRendered = 0;
                     scope.cachesDestroyed = 0;
                     onCache();
-                }, 1);
+                }, 10);
 
             };
 
@@ -1494,7 +1503,6 @@ CanvasRenderer.prototype.create = function (parent) {
     this.selectedSet = [];
     this.cur_z = 0;
 
-
     return parent;
 };
 
@@ -1671,13 +1679,14 @@ CanvasRenderer.prototype.initUiShapes = function(){
 
 };
 
-
 CanvasRenderer.prototype.scale = function (){
     return this.stage.scale().x;
 };
 
 CanvasRenderer.prototype.draw = function (){
-    //this.quadtree.drawBboxes(this.viewFrustum);
+
+    if(window.location.hash == "#debug")
+        this.quadtree.drawBboxes(this.viewFrustum);
     this.stage.draw();
 };
 
@@ -1826,6 +1835,7 @@ CanvasRenderer.prototype.newImage = function () {
 
     this.rendered_gobjects = [];
     if(!this.viewFrustum) this.initFrustum();
+    this.quadtree.calcMaxLevel();
 
 };
 
@@ -1917,7 +1927,8 @@ CanvasRenderer.prototype.getProjectionRange = function(zrange, trange){
     }
 };
 
-CanvasRenderer.prototype.updateVisible = function(afterUpdate){
+/*
+CanvasRenderer.prototype.updateVisiblet = function(afterUpdate){
     var me = this;
     //console.log();
     if(this.uvTimeout) clearTimeout(this.uvTimeout);
@@ -1927,9 +1938,9 @@ CanvasRenderer.prototype.updateVisible = function(afterUpdate){
             afterUpdate();
     },1);
 
-};
+};*/
 
-CanvasRenderer.prototype.updateVisibleDelay = function(){
+CanvasRenderer.prototype.updateVisible = function(){
     var me = this;
     //this.quadtree.cull(this.viewFrustum);
     var z = this.viewer.tiles.cur_z;
@@ -2031,7 +2042,18 @@ CanvasRenderer.prototype.calcFrustum = function(x,y, scale){
         };
 }
 
-CanvasRenderer.prototype.updateImage = function (e) {
+CanvasRenderer.prototype.updateImage = function(e){
+    var me = this;
+    //console.log();
+    if(this.uiTimeout) clearTimeout(this.uiTimeout);
+    this.uiTimeout = setTimeout(function(){
+        me.updateImageDelay(e);
+    },5);
+
+};
+
+
+CanvasRenderer.prototype.updateImageDelay = function (e, fcn) {
     if(!this.viewer.imagedim) return;
     var me = this;
     var viewstate = this.viewer.current_view;
@@ -2041,12 +2063,10 @@ CanvasRenderer.prototype.updateImage = function (e) {
     var y = this.viewer.tiles.tiled_viewer.y;
     var z = this.viewer.tiles.cur_z;
     var t = this.viewer.tiles.cur_t;
+
     this.gobsSlice = this.gobs[z];
 
     this.stage.scale({x: scale, y:scale});
-
-    if(this.viewer.tiles.pyramid)
-        this.quadtree.calcMaxLevel();
 
     //this.initDrawer();
     /*
@@ -2067,6 +2087,8 @@ CanvasRenderer.prototype.updateImage = function (e) {
     var width = window.innerWidth;
     var height = window.innerHeight;
     var frust = this.calcFrustum(x,y,scale);
+    this.stage.x(x);
+    this.stage.y(y);
     this.stage.setWidth(this.viewer.imagediv.clientWidth);
     this.stage.setHeight(this.viewer.imagediv.clientHeight);
 
@@ -2106,10 +2128,10 @@ CanvasRenderer.prototype.updateImage = function (e) {
         e.select(me.selectedSet);
     });
     */
-    this.updateVisible(function(){
-        me.unselect(me.selectedSet);
-        me.select(me.selectedSet);
-    }); //update visible has a draw call
+    this.updateVisible();
+    me.unselect(me.selectedSet);
+    me.select(me.selectedSet);
+    //update visible has a draw call
 
     //this.draw();
 };

@@ -596,7 +596,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                     tagData  = function(gob) {
                         //this.tagsLoaded = true;
                         //this.resource.tags = data.tags;
-
+                        var val = gob.value ? 'value: ' + gob.value : '';
                         var tagArr = [], tags = {
                         }, found = '';
                         while(gob.parent){
@@ -612,7 +612,8 @@ Ext.define('Bisque.Resource.Image.Page', {
                             found += (spaces + '-' + tagArr[tagArr.length - 1 -i] + '<br>');
                             spaces += '&nbsp &nbsp'
                         }
-                        return found;
+
+                        return found + val;
                     }
 
 
@@ -620,7 +621,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 			            target : panel.getEl(),
 			            anchor : 'top',
 			            anchorToTarget : true,
-			            maxWidth : 460,
+			            maxWidth : 200,
                         header : false,
                         html: tagData(gob),
 
@@ -642,6 +643,10 @@ Ext.define('Bisque.Resource.Image.Page', {
                     //}
 
                     //console.log(panel.hoverMenu);
+                },
+                modechange: function(viewer, type){
+                    console.log(viewer, type);
+                    this.gobjectTagger.deselectAll();
                 },
 
                 loadedPhys: this.onImagePhys,
