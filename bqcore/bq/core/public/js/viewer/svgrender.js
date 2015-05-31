@@ -67,12 +67,6 @@ SVGRenderer.prototype.create = function (parent) {
     return parent;
 };
 
-SVGRenderer.prototype.onPreferences = function() {
-    this.loadPreferences();
-    if (this.overlay) //check to see if the overlay is attached to the viewer
-        this.populate_overlay();
-};
-
 SVGRenderer.prototype.newImage = function () {
     var me = this;
     if (me.overlayEditorWin) {
@@ -89,14 +83,6 @@ SVGRenderer.prototype.newImage = function () {
         for (var g = 0;g<gobs.length;g++) { //remove all existing gobs on the viewer
             editor.remove_gobject(gobs[g]);
         }
-        /*
-        if (points && (points.length == 9)) {
-            editor.new_point('','',points[1],points[2]);
-            editor.new_point('','',points[3],points[4]);
-            editor.new_point('','',points[5],points[6]);
-            editor.new_point('','',points[7],points[8]);
-        }
-        */
     }
 };
 
@@ -104,7 +90,6 @@ SVGRenderer.prototype.updateView = function (view) {
     if (this.initialized || !this.viewer.tiles.tiled_viewer) return;
     this.initialized = true;
     this.myListener = new SvgControl( this.viewer.tiles.tiled_viewer, this.overlay );
-    this.loadPreferences(this.viewer.preferences);
     if (this.overlayPref.enable)
         this.populate_overlay(this.showOverlay);
 };
@@ -121,12 +106,14 @@ SVGRenderer.prototype.updateImage = function () {
 // preferences and overlays
 //----------------------------------------------------------------------------
 
-SVGRenderer.prototype.loadPreferences = function () {
+SVGRenderer.prototype.onPreferences = function() {
     this.overlayPref = {};
     var resource_uniq = this.viewer.image.resource_uniq;
     this.overlayPref.enable   = BQ.Preferences.get(resource_uniq, 'Viewer/Overlay/enable',   this.default_overlayPref.enable);
     this.overlayPref.position = BQ.Preferences.get(resource_uniq, 'Viewer/Overlay/position', this.default_overlayPref.position);
     this.overlayPref.shape    = BQ.Preferences.get(resource_uniq, 'Viewer/Overlay/shape',    this.default_overlayPref.shape);
+    if (this.overlay) //check to see if the overlay is attached to the viewer
+        this.populate_overlay();
 };
 
 
@@ -263,6 +250,7 @@ SVGRenderer.prototype.updateTransform = function() {
         }
         var transform = 'matrix3d('+t.join(',')+')';
         this.overlay.style['transform-origin'] = '0 0';
+        this.overlay.style['-webkit-transform-origin'] = '0 0';
         this.overlay.style['transform'] = transform;
         this.overlay.style['-webkit-transform'] = transform;
     }
@@ -488,7 +476,7 @@ Ext.define('BQ.overlayEditor.Window', {
                 
                 BQ.Preferences.set(me.miniViewer.resource.resource_uniq, 'Viewer/Overlay', overlayTag.outerHTML, function() {
                     BQ.ui.notification('Successfully updated overlay');
-                })
+                });
                 //BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML, function() {BQ.ui.notification('Successfully updated overlay');});
             },
         }, { //toggles disable, enable of the mask

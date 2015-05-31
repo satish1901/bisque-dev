@@ -155,13 +155,13 @@ Ext.define('BQ.Application', {
 
     onGotUser: function() {
         this.user = BQSession.current_session.user;
-        if (BQ.Preferences) BQ.Preferences.load('user'); //loads on initialization of BQ.Preferences
+        BQ.Preferences.load('user'); //loads on initialization of BQ.Preferences
         this.fireEvent( 'gotuser', BQSession.current_session.user);
     },
 
     onNoUser: function() {
         this.user = null;
-        if (BQ.Preferences) BQ.Preferences.load('user'); //loads on initialization of BQ.Preferences
+        BQ.Preferences.load('user'); //loads on initialization of BQ.Preferences
         this.fireEvent( 'nouser');
     },
 

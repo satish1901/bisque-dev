@@ -25,7 +25,7 @@ Ext.define('BQ.Preferences', {
         'user'    : '/preference/user',
         //'resource': '/preference/user',
     },
-    preferenceXML : {}, 
+    preferenceXML : {}, //list of all preferences loaded
     
     // load system preferences
     constructor : function() {
@@ -37,7 +37,6 @@ Ext.define('BQ.Preferences', {
         });
         this.mixins.observable.constructor.call(this);
         this.load('system');
-        //this.loadUser();
     },
     
     setSilence: function(bool) {
@@ -63,6 +62,7 @@ Ext.define('BQ.Preferences', {
                 failure: function(response) {
                     if (me.silence) console.log('Warning: Failed to load '+lvl+' preference');
                     //BQ.ui.error('failed to load system preference');
+                    if (!lvl in BQ.Preferences.preferenceXML) BQ.Preferences.preferenceXML[lvl] = undefined; //makes it equal to nothing
                     BQ.Preferences.fireEvent('onerror_'+lvl+'_pref');
                 },
                 scope: me,
@@ -185,7 +185,7 @@ Ext.define('BQ.Preferences', {
     *
     * @param: lvl - 
     * @param: path - 
-    * @param: value - xml string
+    * @param: value - xml string 
     *
     * if no value is set to undefined or not set the value is removed from the resource document
     */

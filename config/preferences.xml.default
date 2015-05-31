@@ -69,12 +69,14 @@
                 </template>
             </tag>
 
-            <tag type="boolean" name="negative" value="false">
+            <tag name="negative" value="">
                 <template>
-                    <tag type="string" name="Type" value="Boolean"/>
-                    <tag type="string" name="defaultValue" value="false"/>
+                    <tag type="string" name="Type" value="ComboBox"/>
+                    <tag type="string" name="defaultValue" value=""/>
                     <tag type="boolean" name="allowBlank" value="false"/>
                     <tag type="boolean" name="Editable" value="true"/>
+                    <tag type="string" name="select" value="Yes,No"/>
+                    <tag type="string" name="passedValues" value="negative,"/>
                 </template>
             </tag>
 
@@ -150,9 +152,7 @@
                     </template>
                 </tag>
             </tag>
-
-            <tag name="hide_gobjects_creation" value="" />
-
+            <tag name="hide_gobjects_creation" value=""/>
         </tag>
 
         <tag name="Viewer3D" >

@@ -595,13 +595,9 @@ Ext.define('BQ.module.RegisteredPanel', {
         this.store.on('add', function(store, records, index, eOpts) {
             for (var r=0; r<records.length;r++) {
                 var owner_uri = records[r].get('owner_uri');
-                if (owner_uri) {
-                    me.setOwner(records[r], owner_uri);
-                }
                 var name = records[r].get('name');
-                if (name) {
-                    me.setStatus(records[r], name);
-                }
+                if (owner_uri) me.setOwner(records[r], owner_uri);
+                if (name) me.setStatus(records[r], name);
             }
         });
 
@@ -695,7 +691,6 @@ Ext.define('BQ.module.RegisteredPanel', {
                 var xml = response.responseXML;
                 var moduleNodes = BQ.util.xpath_nodes(xml, '//module');
                 if (moduleNodes.length>0) {
-                    //me.updateEntry(moduleNodes[i], record);
                     record.set('moduleXmlDoc', moduleNodes[0]);
                     record.set('resource_uniq', moduleNodes[0].attributes['resource_uniq'].value || '');
                     record.set('name', moduleNodes[0].attributes['name'].value || '');
@@ -716,107 +711,93 @@ Ext.define('BQ.module.RegisteredPanel', {
     updateEntry: function(record) {
         var me = this;
         var owner_uri = record.get('owner_uri');
-        if (owner_uri) {
-            me.setOwner(record, owner_uri);
-        }
         var name = record.get('name');
-        if (name) {
-            me.setStatus(record, name);
-        }
         var engine = record.get('engine');
-        if (engine) {
-            me.setEngine(record, engine)
-        }
+        if (owner_uri) me.setOwner(record, owner_uri);
+        if (name) me.setStatus(record, name);
+        if (engine) me.setEngine(record, engine);
     },
 
     removeEntry: function(record) {
         var me = this;
         var uniq = record.get('resource_uniq');
         var name = record.get('name');
+        /*
         if (uniq) {
             var row = me.store.findRecord('resource_uniq', uniq);
         } else {
             var row = me.store.findRecord('name', uniq);
-        }
+        }*/
+        var row = (uniq)? me.store.findRecord('resource_uniq', uniq) : me.store.findRecord('name', name)
         me.store.remove(row);
     },
 
     setEngine: function(record, engine) {
         var me = this;
-        if (engine) {
-            var engine_httpless = engine.replace(/.*?:\/\//g, "");
-            Ext.Ajax.request({
-                url: '/proxy/'+engine_httpless+'/definition',
-                method: 'GET',
-                headers: { 'Content-Type': 'text/xml' },
-                disableCaching: false,
-                success: function(response) {
-                    var xml = response.responseXML;
-                    var definition = BQ.util.xpath_nodes(xml, '//module');
-                    if (definition.length>0) {
-                        definition = definition[0];
-                        function getTagValues(node, name) {
-                            if(node) {
-                                var tag = node.querySelector('tag[name="'+name+'"]')
-                                if (tag) {
-                                    var value = tag.attributes['value']||'';
-                                    if (value) value = value.value;
-                                } else {
-                                    var value = '';
-                                }
+        var engine_httpless = engine.replace(/.*?:\/\//g, "");
+        Ext.Ajax.request({
+            url: '/proxy/'+engine_httpless+'/definition',
+            method: 'GET',
+            headers: { 'Content-Type': 'text/xml' },
+            disableCaching: false,
+            success: function(response) {
+                var xml = response.responseXML;
+                var definition = BQ.util.xpath_nodes(xml, '//module');
+                if (definition.length>0) {
+                    definition = definition[0];
+                    function getTagValues(node, name) {
+                        if(node) {
+                            var tag = node.querySelector('tag[name="'+name+'"]')
+                            if (tag) {
+                                var value = tag.attributes['value']||'';
+                                if (value) value = value.value;
                             } else {
                                 var value = '';
                             }
-                            return value;
+                        } else {
+                            var value = '';
                         }
+                        return value;
+                    }
 
-                        function getVersion(node) {
-                            if(node) {
-                                var module_options = node.querySelector('tag[name="module_options"]')
-                                if (module_options) {
-                                    var version = module_options.querySelector('tag[name="version"]')
-                                    if (version) {
-                                        var value = version.attributes['value']||'';
-                                        if (value) value = value.value;
-                                        else var value = ''
-                                    }
+                    function getVersion(node) {
+                        if(node) {
+                            var module_options = node.querySelector('tag[name="module_options"]')
+                            if (module_options) {
+                                var version = module_options.querySelector('tag[name="version"]')
+                                if (version) {
+                                    var value = version.attributes['value']||'';
+                                    if (value) value = value.value;
+                                    else var value = ''
                                 }
                             }
-                            return value||'';
                         }
-
-                        function getThumbnail(node) {
-                            // var thumbnail = getTagValues( node, 'thumbnail');
-                            // if (thumbnail) {
-                            //     //strip public
-                            //     var thumbnail = thumbnail.replace(new RegExp("^['public']+", "g"), "");
-                            //     //add proxy url
-                            //     return (node.attributes['value'].value || '')+thumbnail;
-                            // } else {
-                            //     return '';
-                            //}
-                            //return node.attributes['value'].value + '/thumbnail';
-                            return '/proxy/'+engine_httpless+ '/thumbnail';
-                        }
-
-                        record.set('title', getTagValues(definition, 'title'));
-                        record.set('authors', getTagValues(definition, 'authors'));
-                        record.set('description', getTagValues(definition, 'description'));
-                        record.set('definition', definition);
-                        record.set('groups', '');
-                        record.set('thumbnail_uri', getThumbnail(definition));
-                        record.set('version', getVersion(definition));
-                    } else {
-                        BQ.ui.error('Failed to find module defintion at: '+ engine);
+                        return value||'';
                     }
-                },
-                failure: function(response) {
-                    BQ.ui.error('Failed to find engine at: '+ engine);
-                },
-                scope: me,
-            });
-        }
 
+                    function getThumbnail(node) {
+                        return '/proxy/'+engine_httpless+ '/thumbnail';
+                    }
+
+                    record.set('title', getTagValues(definition, 'title'));
+                    record.set('authors', getTagValues(definition, 'authors'));
+                    record.set('description', getTagValues(definition, 'description'));
+                    record.set('definition', definition);
+                    record.set('groups', '');
+                    record.set('thumbnail_uri', getThumbnail(definition));
+                    record.set('version', getVersion(definition));
+                   
+                } /*else {
+                    BQ.ui.error('Failed to find module defintion at: '+ engine);
+                }
+                */
+            },
+            /*
+            failure: function(response) {
+                BQ.ui.error('Failed to find engine at: '+ engine);
+            },*/
+            scope: me,
+        });
     },
 
     //sets the owner of all the nodes one node at a time
@@ -848,7 +829,7 @@ Ext.define('BQ.module.RegisteredPanel', {
         var me = this;
         if (name) {
             Ext.Ajax.request({
-                url: '/module_service/'+name,
+                url: '/module_service/'+name+'/definition',
                 method: 'GET',
                 headers: { 'Content-Type': 'text/xml' },
                 disableCaching: false,
@@ -1155,12 +1136,15 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                     var visibility = (visibility == 'private') ? 'published' : 'private';
 
                                     setButton = function() {
-                                        var visibility = record.get('visibility')
-                                            if (visibility=='published') {
-                                                el.setText('Set<br>Private');
-                                            } else {
-                                                el.setText('Set<br>Public');
-                                        }
+                                        var visibility = record.get('visibility');
+                                        var text = (visibility=='published')? 'Set<br>Private': 'Set<br>Public';
+                                        el.setText(text);
+                                        /*
+                                        if (visibility=='published') {
+                                            el.setText('Set<br>Private');
+                                        } else {
+                                            el.setText('Set<br>Public');
+                                        }*/
                                     }
 
                                     me.setVisibility(visibility, record, setButton);
@@ -1177,7 +1161,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
                                     this.setText('Set<br>Public');
                                 }
                             },
-                        },{ //admin only
+                        },{ //admin only not fully implemented
                             text: 'Owner: ',
                             scale: 'large',
                             height: '50px',
@@ -1412,13 +1396,12 @@ Ext.define('BQ.module.ModuleManagerMain', {
         this.registerPanel.getView().on('beforedrop', function(node, data, overModel, dropPosition,  dropFunction,  eOpts){ //check whether the registration worked
             var record = data.records[0];
             var registration = record.get('registration');
-            if (registration == 'Registered') {
+            if (registration == 'Registered') { //checks for registration by state of the tag on the record
                 BQ.ui.notification('Cannot register a module that is already registered.')
-                return false
+                return false //fails the drop proccess
             } else {
                 me.registerModule(record, dropFunction);
                 dropFunction.wait = true;
-                //return false;
             }
         });
 
@@ -1553,7 +1536,6 @@ Ext.define('BQ.module.ModuleManagerMain', {
                     me.fireEvent('unregistered', me, record);
                 }
                 me.unregisterPanel.updateRegistration(fireUnregisteredEvent);
-
                 if (cb) cb();
             },
             failure: function(response) {

@@ -566,7 +566,7 @@ class PreferenceController(ServiceController):
         if len(system_preference_list)>0:
             system_preference = data_service.get_resource(system_preference_list[0].attrib.get('uri'), wpublic=1, view='deep')
             if xpath:
-                tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_ ]+)"\]',xpath) #only alphanumeric tag names are allowed right now 
+                tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]',xpath) #only alphanumeric tag names are allowed right now 
                 if len(tagNames)>0 and preference_doc.attrib.get('name')==tagNames[-1]:
                     #parse xpath and form the xml doc to merge
                     preference = etree.Element('preference')
@@ -882,7 +882,7 @@ class PreferenceController(ServiceController):
             resource_preference = data_service.get_resource(resource_preference_list[0].attrib.get('uri'), view='deep')
             
         if xpath:
-            tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_ ]+)"\]', xpath) #only alphanumeric tag names are allowed right now 
+            tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]', xpath) #only alphanumeric tag names are allowed right now 
             if len(tagNames)>0 and preference_doc.attrib.get('name')==tagNames[-1]:
                 #parse xpath and form the xml doc to merge
                 preference = etree.Element('preference')
