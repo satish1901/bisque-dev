@@ -89,8 +89,6 @@ ImgOperations.prototype.createMenu = function () {
     var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.parent;
     surf.appendChild(this.viewer.menubutton);
 
-    this.loadPreferences(this.viewer.preferences || {});
-
     var dim = this.viewer.imagedim;
 
     this.createChannelMap( );
@@ -140,20 +138,43 @@ ImgOperations.prototype.createMenu = function () {
             change: this.changed,
         },
     });
-
+    
     this.combo_fusion = this.viewer.createCombo( 'Fusion', [
         {"value":"a", "text":"Average"},
         {"value":"m", "text":"Maximum"},
-    ], fusion, this, this.changed);
+    ], fusion, this,
+    function() {
+        var fusionTag = document.createElement('tag');
+        fusionTag.setAttribute('name', 'fusion');
+        fusionTag.setAttribute('value', this.combo_fusion.value);
+        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/fusion', fusionTag.outerHTML);
+        this.changed();
+    });
 
     var enhancement_options = phys.getEnhancementOptions();
     enhancement = enhancement_options.prefferred || enhancement;
-    this.combo_enhancement = this.viewer.createCombo( 'Enhancement', enhancement_options, enhancement, this, this.changed, 300);
+    this.combo_enhancement = this.viewer.createCombo( 'Enhancement', enhancement_options, enhancement, this, 
+    function() {
+        var enhancementVer = phys && parseInt(phys.pixel_depth)===8 ? 'enhancement-8bit' : 'enhancement';
+        var enhancementTag = document.createElement('tag');
+        enhancementTag.setAttribute('name', enhancementVer);
+        enhancementTag.setAttribute('value', this.combo_enhancement.value);
+        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/'+enhancementVer, enhancementTag.outerHTML);
+        this.changed();
+    },
+    300);
 
     this.combo_negative = this.viewer.createCombo( 'Negative', [
+        {"value":"negative", "text":"Yes"},
         {"value":"", "text":"No"},
-        {"value":"negative", "text":"Negative"},
-    ], this.default_negative, this, this.changed);
+    ], this.default_negative, this, 
+    function() {
+        var negativeTag = document.createElement('tag');
+        negativeTag.setAttribute('name', 'negative');
+        negativeTag.setAttribute('value', this.combo_negative.value);
+        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/negative', negativeTag.outerHTML);
+        this.changed();
+    });
 };
 
 ImgOperations.prototype.createChannelMap = function ( ) {
@@ -185,13 +206,14 @@ ImgOperations.prototype.createChannelMap = function ( ) {
     }
 };
 
-ImgOperations.prototype.loadPreferences = function (p) {
-    this.default_autoupdate  = ('autoUpdate'  in p) ? p.autoUpdate  : this.default_autoupdate;
-    this.default_negative    = ('negative'    in p) ? p.negative    : this.default_negative;
-    this.default_enhancement = ('enhancement' in p) ? p.enhancement : this.default_enhancement;
-    this.default_rotate      = ('rotate'      in p) ? p.rotate      : this.default_rotate;
-    this.default_fusion      = ('fusion'      in p) ? p.fusion      : this.default_fusion;
-    this.default_enhancement_8bit = ('enhancement-8bit' in p) ? p['enhancement-8bit'] : this.default_enhancement_8bit;
-    this.default_fusion_4plus = ('fusion_4plus' in p) ? p['fusion_4plus'] : this.default_fusion_4plus;
-};
 
+ImgOperations.prototype.onPreferences = function () {
+    var resource_uniq = this.viewer.image.resource_uniq;
+    this.default_autoupdate       = BQ.Preferences.get(resource_uniq, 'Viewer/autoUpdate',       this.default_autoupdate);
+    this.default_negative         = BQ.Preferences.get(resource_uniq, 'Viewer/negative',         this.default_negative);
+    this.default_enhancement      = BQ.Preferences.get(resource_uniq, 'Viewer/enhancement',      this.default_enhancement);
+    this.default_rotate           = BQ.Preferences.get(resource_uniq, 'Viewer/rotate',           this.default_rotate);
+    this.default_fusion           = BQ.Preferences.get(resource_uniq, 'Viewer/fusion',           this.default_fusion);
+    this.default_enhancement_8bit = BQ.Preferences.get(resource_uniq, 'Viewer/enhancement-8bit', this.default_enhancement_8bit);
+    this.default_fusion_4plus     = BQ.Preferences.get(resource_uniq, 'Viewer/fusion_4plus',     this.default_fusion_4plus);
+};

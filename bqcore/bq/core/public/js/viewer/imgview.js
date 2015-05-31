@@ -274,7 +274,7 @@ ViewerPlugin.prototype.newImage = function (){
 ViewerPlugin.prototype.updateImage = function (){
 };
 
-ViewerPlugin.prototype.onPreferences = function (pref){
+ViewerPlugin.prototype.onPreferences = function (){
 };
 
 ViewerPlugin.prototype.updateView = function (view){
@@ -500,7 +500,6 @@ ImgViewer.prototype.load = function (uri){
 
 
 ImgViewer.prototype.newImage = function (bqimage) {
-    var me = this;
     if (! (bqimage instanceof BQImage) ) {
         throw BQOperationError;
     }
@@ -510,15 +509,10 @@ ImgViewer.prototype.newImage = function (bqimage) {
 
     var phys = new BQImagePhys (this.image);
     phys.load (callback (this, 'newPhys') );
-
-    BQ.Preferences.on('update_'+this.image.resource_uniq+'_pref', function(el, resourcePrefXML){
-        me.onPreferences(); //update preferences
-    });
-    //begin loading request for viewer
+     
+    BQ.Preferences.on('update_'+this.image.resource_uniq+'_pref', this.onPreferences, this);
+    BQ.Preferences.on('onerror_'+this.image.resource_uniq+'_pref', this.onPreferences, this);
     BQ.Preferences.load(this.image.resource_uniq);
-
-    me.onPreferences() //onPreferences has to be initialized before the view shows anything
-    
 
     // this probably should be run after the imagephys is acquired
     // in order to disable the use of "default" service at all!
@@ -794,10 +788,10 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
 // viewer preferences
 //----------------------------------------------------------------------
 
-ImgViewer.prototype.onPreferences = function(pref) {
+ImgViewer.prototype.onPreferences = function() {
 
-    this.preferences = Ext.apply(pref, this.parameters || {}); // local defines overwrite preferences
-     for (var i = 0; i < this.plugins.length; i++) {
+    this.preferences = this.parameters || {}; // local defines overwrite preferences
+    for (var i = 0; i < this.plugins.length; i++) {
         plugin = this.plugins[i];
         plugin.onPreferences();
     }
@@ -806,17 +800,6 @@ ImgViewer.prototype.onPreferences = function(pref) {
         //this.updateView();
     }
 };
-
-ImgViewer.prototype.updatePref = function(el, resourcePrefDict, resourcePrefXML){
-    var viewerPref = {};
-    if (resourcePrefDict.Viewer)
-        viewerPref = resourcePrefDict.Viewer;
-    this.onPreferences(viewerPref) //update preferences
-};
-
-ImgViewer.prototype.onErrorPref = function(el){
-    this.onPreferences({}) //update preferences
-}
 
 //----------------------------------------------------------------------
 // view menu

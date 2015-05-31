@@ -182,17 +182,15 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
 
         this.callParent([arguments]);
         
-        
         //load preferences
         var me = this;
         
-        //onPreferences has to be initialized before the view shows anything  
-        var timedOnPreference = setTimeout(function(){ me.onPreferences(); }, 500);
-        BQ.Preferences.on('update_user_pref', function(el, resourcePrefXML){
-            clearTimeout(timedOnPreference); //remove the time out if preference came back
-            me.onPreferences(); //update preferences
-        });
-
+        //need to be called before bq_ui_application onGotUser or a load preferences
+        //needs to be called to initialize this component
+        BQ.Preferences.on('update_user_pref', this.onPreferences, this);
+        BQ.Preferences.on('onerror_user_pref', this.onPreferences, this);
+        if ('user' in BQ.Preferences.preferenceXML) this.onPreferences();
+        
         if (Ext.supports.Touch)
             this.gestureMgr = new Bisque.Misc.GestureManager();
     },
@@ -200,6 +198,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
     
     onPreferences : function() {
         this.preferences = {};
+        
         //this.applyPreferences();
         
         // defaults (should be loaded from system preferences)
@@ -235,14 +234,12 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         
         if (this.browserParams.dataset != "None") {
             var baseURL = (this.browserParams.dataset instanceof BQDataset) ? this.browserParams.dataset.uri + '/value' : this.browserParams.dataset;
-
             this.loadData({
                 baseURL : baseURL,
                 offset : this.browserParams.offset,
                 tag_query : this.browserParams.tagQuery,
                 tag_order : this.browserParams.tagOrder
             });
-
             var btnOrganize = this.commandBar.getComponent("btnGear").menu.getComponent("btnOrganize");
             this.showOrganizer ? btnOrganize.handler.call(this.commandBar) : '';
             if (this.showModuleOrganizer) {

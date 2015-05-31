@@ -657,14 +657,9 @@ Ext.define('BQ.Application.Toolbar', {
         //--------------------------------------------------------------------------------------
         //this.addListener( 'resize', this.onResized, this);
         this.callParent();
-
-        //call preferences
-        var me = this;
-        BQ.Preferences.on('update_user_pref', function(el, resourcePrefXML){
-            me.onPreferences(); //update preferences
-        })
-        
-        me.onPreferences() //onPreferences has to be initialized before the view shows anything        
+        BQ.Preferences.on('update_user_pref', this.onPreferences, this);
+        BQ.Preferences.on('onerror_user_pref', this.onPreferences, this);
+        if ('user' in BQ.Preferences.preferenceXML) this.onPreferences(); //checks to see if preference has been loaded already
         
         
         
@@ -1121,7 +1116,7 @@ Ext.define('BQ.Application.Toolbar', {
         this.preferences.user_profile      = BQ.Preferences.get('user', 'Toolbar/user_profile',      this.toolbarDefault.user_profile);
 
         this.preferences.organization      = BQ.Preferences.get('user', 'titles/organization', this.titlesDefault.organization);
-        this.preferences.title             = BQ.Preferences.get('user', 'titles/title',        this.titlesDefault.title);
+        //this.preferences.title             = BQ.Preferences.get('user', 'titles/title',        this.titlesDefault.title);
 
         this.setMenuHandler( this.queryById('menu_user_profile'), this.preferences.user_profile, undefined );
         this.setMenuHandler( this.queryById('menu_user_register'), this.preferences.registration, undefined );
@@ -1133,9 +1128,9 @@ Ext.define('BQ.Application.Toolbar', {
             this.queryById('menu_user_recover').setVisible(false);
         }
 
-        if (this.preferences.title)
-            this.queryById('menu_title').setText( '<h3><a href="/">'+this.preferences.title+'</a></h3>' );
-
+        //if (this.preferences.title)
+        //    this.queryById('menu_title').setText( '<h3><a href="/">'+this.preferences.title+'</a></h3>' );
+        
     },
 
     setActiveHelpVideo: function(url) {
