@@ -164,14 +164,14 @@ CanvasShape.prototype.isVisible = function (z,t, tolerance_z) {
     if(!this.visibility) return false; //visibility is a tag passed from the tagger
 
     var test_visible_dim = function(min, max,  pos_view, tolerance ) {
-        return (pos_view >= min && pos_view <= max);
+        return (pos_view >= min - 0.5*tolerance && pos_view <= max + 0.5*tolerance);
     }
 
     var viewstate = this.renderer.viewer.current_view;
 
     //if(!pos) return false;
     var proj = viewstate.imagedim.project,
-        proj_gob = viewstate.gob_projection;
+        proj_gob = viewstate.gob_projection,
 
     tolerance_z = tolerance_z || viewstate.gob_tolerance.z || 1.0;
     var tolerance_t = viewstate.gob_tolerance.t || 1.0;

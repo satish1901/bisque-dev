@@ -2004,12 +2004,17 @@ CanvasRenderer.prototype.calcFrustum = function(x,y, scale){
     h = Math.min(ch, h);
     h = Math.min(dim.y, h);
 
+
+    var
+    tolerance_z = viewstate.gob_tolerance.z || 1.0,
+    tolerance_t = viewstate.gob_tolerance.t || 1.0;
+
     var proj = viewstate.imagedim.project,
     proj_gob = viewstate.gob_projection;
-    var z0 = z-0.5;
-    var z1 = z+0.5;
-    var t0 = t-0.5;
-    var t1 = t+0.5;
+    var z0 = z-0.5*tolerance_z;
+    var z1 = z+0.5*tolerance_z;
+    var t0 = t-0.5*tolerance_t;
+    var t1 = t+0.5*tolerance_t;
 
     if (proj_gob==='all') {
         z0 = 0;
