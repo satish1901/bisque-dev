@@ -2259,10 +2259,15 @@ class ImageServer(object):
         info = {}
         if os.path.exists(infofile):
             # load image info from cached copy
-            image = etree.parse(infofile).getroot()
-            for k,v in image.attrib.iteritems():
-                info[k] = safetypeparse(v)
-            return info
+            try:
+                image = etree.parse(infofile).getroot()
+                for k,v in image.attrib.iteritems():
+                    info[k] = safetypeparse(v)
+                return info
+            except  etree.XMLSyntaxError:
+                log.debug ("attempt to read empty file")
+                # Empty file created by next Lock
+                pass
 
         if not os.path.exists(filename):
             return None
