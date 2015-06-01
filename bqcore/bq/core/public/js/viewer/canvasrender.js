@@ -334,6 +334,30 @@ QuadTree.prototype.traverseUp  = function(node, func){
     }
 };
 
+QuadTree.prototype.allocateNode = function(){
+    if(!this.currentAllocatedNode)
+        this.currentAllocatedNode = this.nodes.length;
+
+    var clength = 2*this.nodes.length;
+    clength /= 2;
+    if(this.currentAllocatedNode >= clength){
+        this.nodes.length = 2*clength;
+        for(var i = 0; i < clength; i++){
+            this.nodes[clength + i] =
+            {
+                parent: null,
+                children:[],
+                leaves:[],
+                bbox: {min:[0,0,0,0], max: [9999,9999,9999,9999]},
+                L: -1
+            };
+        }
+    }
+    return this.nodes[this.currentAllocatedNode++];
+
+
+}
+
 QuadTree.prototype.splitNode  = function(node, stack){
 
     var nbb = node.bbox;
@@ -378,6 +402,7 @@ QuadTree.prototype.splitNode  = function(node, stack){
                 for(var l = 0; l < nTTiles; l++){
 
                     var ind = i + j*nXTiles + k*nXTiles*nYTiles + l*nXTiles*nYTiles*nZTiles;
+                    /*
                     var newNode = {
                         parent: node,
                         children:[],
@@ -385,7 +410,11 @@ QuadTree.prototype.splitNode  = function(node, stack){
                         bbox: {min:[0,0,0,0], max: [9999,9999,9999,9999]},
                         L: node.L+1
                     }
+                    */
+                    var newNode = this.allocateNode();
                     //node.children.push(newNode);
+                    newNode.parent = node;
+                    newNode.L = node.L+1;
                     var tMinX = bbMin[0] + i*tw;
                     var tMinY = bbMin[1] + j*th;
                     var tMinZ = bbMin[2] + k*tz;
@@ -394,10 +423,11 @@ QuadTree.prototype.splitNode  = function(node, stack){
                     newNode.bbox.max = [tMinX + tw, tMinY + th, tMinZ + tz, tMinT + tt ];
                     var id = this.nodes.length;
                     newNode.id = id;
-                    this.updateSprite(newNode);
+                    if(window.location.hash == "#debug")
+                        this.updateSprite(newNode);
 
                     node.children.push(newNode);
-                    this.nodes.push(newNode);
+                    //this.nodes.push(newNode);
                 }
             }
         }
@@ -558,10 +588,14 @@ QuadTree.prototype.remove = function(shape){
         //node.bbox = this.calcBbox(node.leaves);
         //this.updateSprite(node);
         //node = node.parent;
+
         while(node){
             //if(node.parent === null) break;
             if(!node.children)       continue;
-            this.updateSprite(node);
+
+            if(window.location.hash == "#debug")
+                this.updateSprite(node);
+
             node.dirty = true;
 
             this.imageCache.clearAll(node);
