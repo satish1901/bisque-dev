@@ -105,6 +105,7 @@ function CanvasShape(gob, renderer) {
 
     this.manipulators = [];
     this.shapeCorners = [];
+    this.zindex = Math.random(); //generate a false zindex for depth sorting.
     //this.rotation = 0;
 };
 
@@ -501,6 +502,8 @@ CanvasShape.prototype.updateManipulators = function(){
     y = bbox.min[1];
 
     for(var j = 0; j < this.manipulators.length; j++){
+        this.manipulators[j].width(16/scale.x);
+        this.manipulators[j].height(16/scale.x);
         this.manipulators[j].x(x + 12/scale.x);
         this.manipulators[j].y(y + 2/scale.x);
     }
@@ -1995,6 +1998,8 @@ CanvasLabel.prototype.init = function(gob){
         fontSize: 14/scale.x,
         fill: 'red',
     });
+    this.offset = {x: 4, y: 0};
+
     this.sprites = [this.sprite, this.text];
     gob.shape = this;
     this.gob = gob;
@@ -2002,7 +2007,7 @@ CanvasLabel.prototype.init = function(gob){
     this.text.shape = this;
 
 
-
+    /*
     var xml = this.gob.xmlNode();
     var tagOffset = BQ.util.xpath_nodes(xml,'tag[@name="offset"]');
     var uri = null;
@@ -2011,6 +2016,7 @@ CanvasLabel.prototype.init = function(gob){
         var xy = tagOffset[0].getAttribute('value').split(',');
         this.offset = {x: parseFloat(xy[0]), y: parseFloat(xy[1])};
     }
+    */
 
     /*
     this.renderer.viewShape (gob,
@@ -2180,6 +2186,7 @@ CanvasLabel.prototype.updateLocal = function () {
     var viewstate = this.renderer.viewer.current_view;
 
     var pnt1 = this.gob.vertices[0];
+
     /*
     if (!test_visible(pnt1, viewstate)){
         this.sprite.remove();
@@ -2189,6 +2196,8 @@ CanvasLabel.prototype.updateLocal = function () {
     var scale = this.renderer.stage.scale();
 
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
+    var p2 = this.gob.vertices[1];
+
     var r = 3.0/scale.x;
 
     var color = 'rgba(255,0,0,1.0)';
@@ -2214,9 +2223,12 @@ CanvasLabel.prototype.updateLocal = function () {
 
     var sprite = this.sprite;
     var text = this.text;
-    if(!this.offset)
-        this.offset = {x: 4, y: 0};
 
+
+    if(p2){
+        this.offset.x = p2.x - p1.x;
+        this.offset.y = p2.y - p1.y;
+    }
 
     this.x(p1.x);
     this.y(p1.y);
@@ -2305,13 +2317,16 @@ CanvasLabel.prototype.moveLocal = function(){
     var p1 = this.gob.vertices[0];
     p1.x = this.x();
     p1.y = this.y();
-    this.saveLabelPosition();
-    /*
-    if(this.gob.vertices[0].length > 1){
+    //this.saveLabelPosition();
+
+    if(!this.gob.vertices[1])
+        this.gob.vertices.push (new BQVertex (0, 0, 0, 0, null, 1));
+
+    if(this.gob.vertices.length > 1){
         var p2 = this.gob.vertices[1];
         p2.x = this.x() + this.offset.x;
         p2.y = this.y() + this.offset.y;
-    }*/
+    }
 }
 
 CanvasLabel.prototype.points = function(){

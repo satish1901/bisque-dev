@@ -886,7 +886,7 @@ ImgEdit.prototype.new_label = function (parent, e, x, y) {
 
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0)); //label location
-    g.vertices.push (new BQVertex (pt.x + 2, pt.y, v.z, v.t, null, 0)); //label offset
+    g.vertices.push (new BQVertex (pt.x + 2, pt.y, v.z, v.t, null, 1)); //label offset
 
     this.current_gob = null;
     var me = this;
