@@ -111,7 +111,7 @@ class ArchiveStreamer():
     # Creates an export summary file
     def writeSummary(self, flist, archiver):
         summary = etree.Element('resource', type='bisque_package')
-        etree.SubElement(summary, 'tag', name='origin', value=config.get('bisque.root'))
+        etree.SubElement(summary, 'tag', name='origin', value=config.get('bisque.root', request.host))
         etree.SubElement(summary, 'tag', name='version', value=__VERSION__)
         etree.SubElement(summary, 'tag', name='datetime', value=str(datetime.datetime.now()))
 
