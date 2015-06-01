@@ -1058,11 +1058,17 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 //register preferences
                 //---------------------------------------------------------
                 // preferences need to be retreived after ui has been built
+                /*
                 if (BQ.Preferences)
                     BQ.Preferences.get({
                         key : 'Viewer3D',
                         callback : Ext.bind(this.onPreferences, this),
                     });
+                */
+                BQ.Preferences.on('update_'+me.resource.resource_uniq+'_pref', me.onPreferences, me);
+                BQ.Preferences.on('onerror_'+me.resource.resource_uniq+'_pref', me.onPreferences, me);
+                BQ.Preferences.load(me.resource.resource_uniq);
+
 				//this.setLoading(false);
 
             },
@@ -1848,7 +1854,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
     onPreferences: function(pref) {
         this.preferences = pref;
-
+        var resource_uniq = this.resource.resource_uniq;
 
         //this.preferences.
         for (var key in this.tools) {
@@ -1857,8 +1863,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 continue;
             }
             //if(this.preferences[key] && key != 'transfer_editor'){ //save for debug
-            if(this.preferences[key]){
-                this.tools[key].loadPreferences(this.preferences[key]);
+
+            var pref = BQ.Preferences.get(resource_uniq, 'Viewer3D/' + key, null);
+            if(pref){
+                this.tools[key].loadPreferences(pref);
             }
             else
                 this.tools[key].loadDefaults();
@@ -1936,7 +1944,6 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
         if(window.location.hash == "#debug"){
             tools.push(new loseContextTool(this));
-
         }
 
         tools.push(new transferTool(this),

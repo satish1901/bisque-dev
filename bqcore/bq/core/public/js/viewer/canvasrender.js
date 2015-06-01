@@ -596,6 +596,9 @@ QuadTree.prototype.collectObjectsInRegion = function(frust, node){
         return true;
     };
     this.traverseDownBB(node, frust, collectSprite);
+    collection.sort(function(a,b){
+        return a.zindex - b.zindex;
+    });
     collection.forEach(function(e){
         e.collected = false;
     });
