@@ -997,7 +997,7 @@ CanvasControl.prototype.viewerZoomed = function(e) {
     this.viewer.stage.y(e.y);
     this.viewer.currentLayer.removeChildren();
     //this.viewer.quadtree.cullCached(this.viewer.viewFrustum);
-    this.viewer.updateVisible(100); //update visible has draw function
+    this.viewer.updateVisible(200); //update visible has draw function
     //this.viewer.draw();
 
     //this.viewer.draw();
@@ -2207,7 +2207,7 @@ CanvasRenderer.prototype.updateImageDelay = function (e, fcn) {
         e.select(me.selectedSet);
     });
     */
-    this.updateVisible(120);
+    this.updateVisible(200);
     me.unselect(me.selectedSet);
     me.select(me.selectedSet);
     //update visible has a draw call

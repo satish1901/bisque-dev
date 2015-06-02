@@ -331,6 +331,7 @@ CanvasShape.prototype.getColorManipulator = function(){
                      //width: 250,
                      //height: 200,
                      itemId : 'picker',
+                     alphaSlider : false,
                      listeners : {
                          change: function(d, i, a){
                              var rgb = this.getColorRgb();

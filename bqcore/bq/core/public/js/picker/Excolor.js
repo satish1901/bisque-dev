@@ -803,40 +803,41 @@ Ext.define('BQ.viewer.Volume.valueSlider', {
 });
 
 Ext.define('BQ.viewer.Volume.excolorpicker', {
-  extend : 'Ext.container.Container',
-  alias : 'widget.excolorpicker',
+    extend : 'Ext.container.Container',
+    alias : 'widget.excolorpicker',
 
-  layout : {
-    type : 'hbox',
-    align : 'stretch',
-    pack : 'end',
-  },
+    layout : {
+        type : 'hbox',
+        align : 'stretch',
+        pack : 'end',
+    },
 
-  initComponent : function () {
-    this.title = 'excolorpicker';
-    var me = this;
-    this.rampSvg = Ext.create('BQ.viewer.Volume.fieldSlider', {
-        //margin : '0 2 0 2',
-        flex : 1,
-        listeners : {
-          change : function (e, slider) {
-            //var hsv = me.rampSvg.getHsv();
-            var rgb = me.rampSvg.getRgb();
-            //var rgb = me.rampSvg.HSVtoRGB(hsv.h, hsv.s, 1.0);
-            me.valueSlider.setColor(Math.floor(rgb[0]),
-              Math.floor(rgb[1]),
-              Math.floor(rgb[2]), 1.0);
-            me.alphaSlider.setColor(Math.floor(rgb[0]),
-              Math.floor(rgb[1]),
-              Math.floor(rgb[2]), 1.0);
-            me.fireEvent('change', me);
-            if (me.handler)
-              me.handler(e, me);
-          }
-        }
-      });
+    initComponent : function () {
+        this.title = 'excolorpicker';
+        var me = this;
+        this.rampSvg = Ext.create('BQ.viewer.Volume.fieldSlider', {
+            //margin : '0 2 0 2',
+            flex : 1,
+            listeners : {
+                change : function (e, slider) {
+                    //var hsv = me.rampSvg.getHsv();
+                    var rgb = me.rampSvg.getRgb();
+                    //var rgb = me.rampSvg.HSVtoRGB(hsv.h, hsv.s, 1.0);
+                    me.valueSlider.setColor(Math.floor(rgb[0]),
+                                            Math.floor(rgb[1]),
+                                            Math.floor(rgb[2]), 1.0);
+                    if(me.alphaSlider)
+                        me.alphaSlider.setColor(Math.floor(rgb[0]),
+                                                Math.floor(rgb[1]),
+                                                Math.floor(rgb[2]), 1.0);
+                    me.fireEvent('change', me);
+                    if (me.handler)
+                        me.handler(e, me);
+                }
+            }
+        });
 
-    this.valueSlider = Ext.create('BQ.viewer.Volume.valueSlider', {
+        this.valueSlider = Ext.create('BQ.viewer.Volume.valueSlider', {
         cls : 'val-slider',
         vertical : true,
         minValue : 0.00,
@@ -851,26 +852,26 @@ Ext.define('BQ.viewer.Volume.excolorpicker', {
 
           scope : me,
         }
-      });
-
-    this.alphaSlider = Ext.create('BQ.viewer.Volume.alphaSlider', {
-        cls : 'val-slider',
-        vertical : true,
-        minValue : 0.00,
-        maxValue : 100,
-        values : [50],
-        margin : '0 2 0 2',
-        listeners : {
-          change : function (slider, value, thumb) {
-             me.fireEvent('change', me);
-          },
-          scope : me,
-        }
-      });
-
-    Ext.apply(this, {
-      items : [this.rampSvg, this.valueSlider, this.alphaSlider],
     });
+      if(this.alphaSlider)
+          this.alphaSlider = Ext.create('BQ.viewer.Volume.alphaSlider', {
+              cls : 'val-slider',
+              vertical : true,
+              minValue : 0.00,
+              maxValue : 100,
+              values : [50],
+              margin : '0 2 0 2',
+              listeners : {
+                  change : function (slider, value, thumb) {
+                      me.fireEvent('change', me);
+                  },
+                  scope : me,
+              }
+          });
+
+      Ext.apply(this, {
+          items : [this.rampSvg, this.valueSlider, this.alphaSlider],
+      });
 
     this.callParent();
   },
@@ -890,7 +891,8 @@ Ext.define('BQ.viewer.Volume.excolorpicker', {
 
       this.valueSlider.setValue(0, 100 * hsv.v, true);
     }
-    this.alphaSlider.setValue(0, 100 * a, true);
+      if(this.alphaSlider)
+          this.alphaSlider.setValue(0, 100 * a, true);
   },
 
   getColorRgb : function () {
@@ -900,7 +902,9 @@ Ext.define('BQ.viewer.Volume.excolorpicker', {
     rgb[0] *= val / 100;
     rgb[1] *= val / 100;
     rgb[2] *= val / 100;
-    rgb[3] = this.alphaSlider.getValue(0) / 100;
+      if(this.alphaSlider)
+          rgb[3] = this.alphaSlider.getValue(0) / 100;
+      else rgb[3] = 1.0;
     return rgb;
   },
 
