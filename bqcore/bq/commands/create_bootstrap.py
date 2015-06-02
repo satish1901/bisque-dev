@@ -56,6 +56,7 @@ def bisque_install(options, home_dir, bindir):
     print "********************************"
     print
     print
+    subprocess.call([os.path.join(home_dir, bindir, 'pip'), 'install', '-U', 'pip', 'setuptools'])
     subprocess.call([os.path.join(home_dir, bindir, 'pip'), 'install', '-r', 'requirements.txt'])
 
     print "*********************************"
