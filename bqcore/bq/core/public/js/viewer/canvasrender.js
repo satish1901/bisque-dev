@@ -958,7 +958,7 @@ CanvasControl.prototype.viewerMoved = function(e) {
     this.viewer.stage.y(e.y);
     var frust = this.viewer.viewFrustum;
 
-    this.viewer.updateVisible();
+    this.viewer.updateVisible(0);
     var me = this;
 
     if(0){
@@ -981,7 +981,7 @@ CanvasControl.prototype.viewerMoved = function(e) {
         viewer.frustRect.width(frust.max[0] - frust.min[0]);
         viewer.frustRect.height(frust.max[1] - frust.min[1]);
     }
-    this.viewer.draw();
+    //this.viewer.draw();
     //this.viewer.stage.content.style.left = e.x + 'px';
     //this.viewer.stage.content.style.top = e.y + 'px';
 };
@@ -997,7 +997,7 @@ CanvasControl.prototype.viewerZoomed = function(e) {
     this.viewer.stage.y(e.y);
     this.viewer.currentLayer.removeChildren();
     //this.viewer.quadtree.cullCached(this.viewer.viewFrustum);
-    this.viewer.updateVisible(); //update visible has draw function
+    this.viewer.updateVisible(100); //update visible has draw function
     //this.viewer.draw();
 
     //this.viewer.draw();
@@ -1088,6 +1088,8 @@ CanvasCorners.prototype.toggle = function(fcn){
 
 
 CanvasCorners.prototype.select = function(shapes){
+    if(this.renderer.mode == 'navigate') return;
+
     if(this.renderer.selectedSet.length > 4) return;
     var me = this;
     this.manipulators = [];
@@ -1122,12 +1124,14 @@ CanvasCorners.prototype.select = function(shapes){
 */
 
 CanvasCorners.prototype.unselect = function(shapes){
+    if(this.renderer.mode == 'navigate') return;
     shapes.forEach(function(e,i,a){
         e.resetManipulators();
     });
 };
 
 CanvasCorners.prototype.destroy = function(shapes){
+
     if(this.manipulators){
         this.manipulators.forEach(function(e,i,d){
             e.remove(); //remove all current corners
@@ -1167,6 +1171,7 @@ CanvasShapeColor.prototype.toggle = function(fcn){
 };
 
 CanvasShapeColor.prototype.select = function(shapes){
+    if(this.renderer.mode == 'navigate') return;
     if(this.renderer.selectedSet.length > 4) return;
 
     var me = this;
@@ -1185,6 +1190,7 @@ CanvasShapeColor.prototype.select = function(shapes){
 
 
 CanvasShapeColor.prototype.unselect = function(shapes){
+    if(this.renderer.mode == 'navigate') return;
     shapes.forEach(function(e,i,a){
         e.resetManipulators();
     });
@@ -1781,7 +1787,7 @@ CanvasRenderer.prototype.setMode = function (mode){
     var me = this;
     this.mode = mode;
     this.unselectCurrent();
-    me.updateVisible();
+    me.updateVisible(50);
     if(mode === 'add' || mode === 'delete' || mode === 'edit') {
         this.currentLayer._getIntersection = this.defaultIntersection;
         this.editLayer._getIntersection = this.defaultIntersection;
@@ -1977,7 +1983,34 @@ CanvasRenderer.prototype.updateVisiblet = function(afterUpdate){
 
 };*/
 
-CanvasRenderer.prototype.updateVisible = function(){
+CanvasRenderer.prototype.startWait = function(fcn, delay){
+    var me = this;
+    this.waiting = true;
+    var waitCursor = function(){
+        var el = document.getElementById("viewer_controls_surface");
+        if(el) el.style.cursor = "wait";
+        if(me.waiting){
+            if(el) el.style.cursor = "wait";
+            setTimeout(waitCursor, 100);
+        }
+        else
+            if(el) el.style.cursor = "pointer";
+
+    };
+    waitCursor();
+    if(!delay) delay = 0;
+    if(fcn)
+        //fcn();
+        setTimeout(fcn,delay);
+};
+
+
+CanvasRenderer.prototype.endWait = function(){
+    var me = this;
+    this.waiting = false;
+};
+
+CanvasRenderer.prototype.updateVisible = function(delay){
     var me = this;
     //this.quadtree.cull(this.viewFrustum);
     var z = this.viewer.tiles.cur_z;
@@ -1987,29 +2020,33 @@ CanvasRenderer.prototype.updateVisible = function(){
     var trange = [t, t+1];
     this.getProjectionRange(zrange, trange);
     var scale = this.scale();
-    if(this.mode == 'navigate'){
-        this.quadtree.cache(this.viewFrustum, scale, function(){
-            me.quadtree.cullCached(me.viewFrustum);
-            me.draw();
-        });
 
-        //this.quadtree.cache(this.viewFrustum);
-        //this.quadtree.cullCached(this.viewFrustum);
-    }
-    else{
-        //this.editableObjects = this.quadtree.cullLayers(this.viewFrustum);
+    console.log('update');
+    this.startWait(function(){
+        if(me.mode == 'navigate'){
+            me.quadtree.cache(me.viewFrustum, scale, function(){
+                me.quadtree.cullCached(me.viewFrustum);
+                me.endWait();
+                me.draw();
+            });
 
-
-        this.editableObjects = this.quadtree.cull(this.viewFrustum);
-        for(var i = 0; i < this.editableObjects.length; i++){
-            this.editableObjects[i].setStroke(1.0);
-            this.addSpriteEvents(this.editableObjects[i]);
+            //this.quadtree.cache(this.viewFrustum);
+            //this.quadtree.cullCached(this.viewFrustum);
         }
+        else{
+            //this.editableObjects = this.quadtree.cullLayers(this.viewFrustum);
 
-        me.draw();
-    }
 
+            me.editableObjects = me.quadtree.cull(me.viewFrustum);
+            for(var i = 0; i < me.editableObjects.length; i++){
+                me.editableObjects[i].setStroke(1.0);
+                me.addSpriteEvents(me.editableObjects[i]);
+            }
 
+            me.endWait();
+            me.draw();
+        }
+    }, delay);
 };
 
 CanvasRenderer.prototype.resetTree = function (e) {
@@ -2170,7 +2207,7 @@ CanvasRenderer.prototype.updateImageDelay = function (e, fcn) {
         e.select(me.selectedSet);
     });
     */
-    this.updateVisible();
+    this.updateVisible(120);
     me.unselect(me.selectedSet);
     me.select(me.selectedSet);
     //update visible has a draw call
@@ -2244,7 +2281,7 @@ CanvasRenderer.prototype.removeFromSelectedSet = function(shape){
         this.quadtree.remove(shape);
         shape.setStroke(1.0);
         this.quadtree.insert(shape);
-        this.updateVisible();
+        this.updateVisible(100);
     } else {
         this.quadtree.insert(shape);
         shape.setLayer(this.currentLayer);
@@ -2328,7 +2365,7 @@ CanvasRenderer.prototype.hideDrawer = function(){
 
 CanvasRenderer.prototype.select = function (gobs) {
     var me = this;
-
+    /*
     if(this.mode === 'navigate'){
         gobs.forEach(function(e){
             me.quadtree.remove(e);
@@ -2340,6 +2377,7 @@ CanvasRenderer.prototype.select = function (gobs) {
         });
         return;
     }
+    */
 
     this.editLayer.removeChildren();
 
@@ -2363,7 +2401,7 @@ CanvasRenderer.prototype.select = function (gobs) {
 CanvasRenderer.prototype.unselect = function (gobs) {
     //var shape = gobs.shape;
     var me = this;
-
+    /*
     if(this.mode === 'navigate'){
         gobs.forEach(function(e){
             me.quadtree.remove(e);
@@ -2373,7 +2411,7 @@ CanvasRenderer.prototype.unselect = function (gobs) {
 
         });
         //return;
-    }
+    }*/
 
     gobs.forEach(function(e,i,a){
         e.setLayer(me.currentLayer);
@@ -2434,11 +2472,17 @@ CanvasRenderer.prototype.rerender = function (gobs, params) {
     if (!params)
         params = [this.viewer.current_view];
 
-    this.visit_render.visit_array(gobs, params);
-    this.quadtree.clearCache();
+    var me = this;
 
-    this.updateVisible();
-    this.draw();
+    this.startWait(function(){
+        me.visit_render.visit_array(gobs, params);
+        me.endWait();
+
+        me.quadtree.clearCache();
+        me.updateVisible();
+        me.draw();
+    },100);
+
 };
 
 CanvasRenderer.prototype.visitall = function (gobs, show) {

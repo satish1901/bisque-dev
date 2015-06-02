@@ -123,7 +123,7 @@ PanoJS.REVISION_FLAG = '';
 
 // CSS definition settings
 PanoJS.SURFACE_STYLE_CLASS  = 'surface';
-PanoJS.SURFACE_ID           = 'viewer_contorls_surface';
+PanoJS.SURFACE_ID           = 'viewer_controls_surface';
 PanoJS.SURFACE_STYLE_ZINDEX = 20;
 PanoJS.WELL_STYLE_CLASS     = 'well';
 PanoJS.CONTROLS_STYLE_CLASS = 'controls';
@@ -1388,4 +1388,3 @@ assembleUrl: function(xIndex, yIndex, zoom) {
     (PanoJS.REVISION_FLAG ? '?r=' + PanoJS.REVISION_FLAG : '');
 }
 }
-
