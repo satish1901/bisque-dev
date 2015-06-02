@@ -2071,7 +2071,6 @@ CanvasLabel.prototype.calcBbox = function (scaleIn) {
     var w = this.text.width();
 
     var scale = scaleIn ? scaleIn : this.renderer.scale();
-    console.log(this.text.text().length/scale*6, w, h);
     w = this.text.text().length/scale*6;
 
     var x0 = px;
