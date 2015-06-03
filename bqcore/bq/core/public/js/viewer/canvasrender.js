@@ -676,8 +676,8 @@ QuadTree.prototype.cache = function(frust, scale, onCache){
     var cache = false;
     //var L = renderer.viewer.tiles.tiled_viewer.zoomLevel;
 
-    this.cachesDestroyed = 0;
-    this.cachesRendered = 0;
+    //this.cachesDestroyed = 0;
+    //this.cachesRendered = 0;
 
 
     var cacheSprite = function(node){
@@ -689,7 +689,7 @@ QuadTree.prototype.cache = function(frust, scale, onCache){
             //if(!node.imageCache.getCacheAtCurrent()){
 
             if(!me.imageCache.getCacheAtCurrent(node)){
-                me.cachesDestroyed += 1;
+                //me.cachesDestroyed += 1;
                 me.cacheChildSprites(node, scale, onCache);
                 cache = true;
                 return false;
@@ -875,6 +875,7 @@ QuadTree.prototype.cacheChildSprites = function(node, scale, onCache){
                 width: tw*scale + 2.0*buffer,
                 height:th*scale + 2.0*buffer,
             });
+            if(!image) onCache();
 
         }
     }
