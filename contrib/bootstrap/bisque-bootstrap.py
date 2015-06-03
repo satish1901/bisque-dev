@@ -16,7 +16,7 @@ def main():
     parser.add_argument('install', nargs="?", default='server', choices=['server', 'engine'])
 
     args = parser.parse_args()
-    
+
     shell = False
     print 'Creating virtual environment for BisQue installation\n'
     if os.name != 'nt':
@@ -27,8 +27,8 @@ def main():
         # so we have to first create a virtualenv without setuptools and pip and then
         # install them into the virtualenv
         r = subprocess.call(["virtualenv", args.bqenv, '--no-setuptools'])
-        activate = os.path.join(args.bqenv, 'Scripts', 'activate_this.py')        
-        shell = True        
+        activate = os.path.join(args.bqenv, 'Scripts', 'activate_this.py')
+        shell = True
 
 
 
@@ -80,7 +80,7 @@ def main():
     print "********************************"
     print
     print
-    subprocess.call(['pip', 'install', '-r', 'requirements.txt'], shell=shell)
+    subprocess.call(['pip', 'install', '--trusted-host', 'biodev.ece.ucsb.edu', '-r', 'requirements.txt'], shell=shell)
 
     print "**************************************************************"
     print "To finish installation, please, execute the following commands"
@@ -89,12 +89,12 @@ def main():
     print "Please visit:"
     print "  http://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions"
     print "for more information"
-    print "*************************************************************\n"    
+    print "*************************************************************\n"
     if os.name == 'nt':
         print "bqenv\\Scripts\\activate.bat"
     else:
         print "source bqenv/bin/activate"
-        
+
     print "paver setup    [server|engine]"
     print "bq-admin setup [server|engine]"
     print "bq-admin deploy public"
