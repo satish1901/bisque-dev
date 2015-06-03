@@ -461,9 +461,9 @@ QuadTree.prototype.calcMaxLevel = function(){
             max /= 2;
             ++L;
         }
-        this.maxLevel = L;
+        this.maxLevel = L - 3;
     }
-    return L;
+    return L - 3;
 };
 
 QuadTree.prototype.insertInNode  = function(gob, node, stack){
@@ -631,7 +631,16 @@ QuadTree.prototype.collectObjectsInRegion = function(frust, node){
     };
     this.traverseDownBB(node, frust, collectSprite);
     collection.sort(function(a,b){
-        return a.zindex - b.zindex;
+        var bbwa = a.bbox.max[0] - a.bbox.min[0];
+        var bbha = a.bbox.max[1] - a.bbox.min[1];
+        var bbwb = b.bbox.max[0] - b.bbox.min[0];
+        var bbhb = b.bbox.max[1] - b.bbox.min[1];
+        var aa = bbwa*bbha;
+        var ab = bbwb*bbhb;
+        if(aa === ab)
+            return b.zindex - a.zindex;
+        else
+            return ab - aa;
     });
     collection.forEach(function(e){
         e.collected = false;
@@ -958,7 +967,7 @@ CanvasControl.prototype.viewerMoved = function(e) {
     this.viewer.stage.y(e.y);
     var frust = this.viewer.viewFrustum;
 
-    this.viewer.updateVisible(0);
+    this.viewer.updateVisible();
     var me = this;
 
     if(0){
@@ -997,7 +1006,7 @@ CanvasControl.prototype.viewerZoomed = function(e) {
     this.viewer.stage.y(e.y);
     this.viewer.currentLayer.removeChildren();
     //this.viewer.quadtree.cullCached(this.viewer.viewFrustum);
-    this.viewer.updateVisible(200); //update visible has draw function
+    this.viewer.updateVisible(150); //update visible has draw function
     //this.viewer.draw();
 
     //this.viewer.draw();
@@ -1171,7 +1180,7 @@ CanvasShapeColor.prototype.toggle = function(fcn){
 };
 
 CanvasShapeColor.prototype.select = function(shapes){
-    if(this.renderer.mode == 'navigate') return;
+    if(this.renderer.mode != 'edit') return;
     if(this.renderer.selectedSet.length > 4) return;
 
     var me = this;
@@ -1787,7 +1796,7 @@ CanvasRenderer.prototype.setMode = function (mode){
     var me = this;
     this.mode = mode;
     this.unselectCurrent();
-    me.updateVisible(50);
+    me.updateVisible(100);
     if(mode === 'add' || mode === 'delete' || mode === 'edit') {
         this.currentLayer._getIntersection = this.defaultIntersection;
         this.editLayer._getIntersection = this.defaultIntersection;
@@ -1998,10 +2007,13 @@ CanvasRenderer.prototype.startWait = function(fcn, delay){
 
     };
     waitCursor();
-    if(!delay) delay = 0;
-    if(fcn)
-        //fcn();
-        setTimeout(fcn,delay);
+
+    if(fcn){
+        if(!delay)
+            fcn();
+        else
+            setTimeout(fcn,delay);
+    }
 };
 
 
@@ -2021,7 +2033,6 @@ CanvasRenderer.prototype.updateVisible = function(delay){
     this.getProjectionRange(zrange, trange);
     var scale = this.scale();
 
-    console.log('update');
     this.startWait(function(){
         if(me.mode == 'navigate'){
             me.quadtree.cache(me.viewFrustum, scale, function(){
@@ -2207,7 +2218,7 @@ CanvasRenderer.prototype.updateImageDelay = function (e, fcn) {
         e.select(me.selectedSet);
     });
     */
-    this.updateVisible(200);
+    this.updateVisible(150);
     me.unselect(me.selectedSet);
     me.select(me.selectedSet);
     //update visible has a draw call

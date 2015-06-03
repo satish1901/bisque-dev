@@ -2326,6 +2326,8 @@ CanvasLabel.prototype.moveLocal = function(){
         var p2 = this.gob.vertices[1];
         p2.x = this.x() + this.offset.x;
         p2.y = this.y() + this.offset.y;
+        p2.z = p1.z;
+        p2.t = p1.t;
     }
 }
 

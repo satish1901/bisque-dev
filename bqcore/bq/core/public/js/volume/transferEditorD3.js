@@ -754,6 +754,7 @@ Ext.define('BQ.viewer.volume.transfer.editor', {
         this.colorPicker = Ext.create('BQ.viewer.Volume.excolorpicker', {
             //height: '100%',
             height: '100%',
+            alphaSlider : true,
             listeners: {
                 change: function(){
                     if(blockChange){

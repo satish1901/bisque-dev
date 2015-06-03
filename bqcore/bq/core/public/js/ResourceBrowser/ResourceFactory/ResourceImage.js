@@ -540,11 +540,16 @@ Ext.define('Bisque.Resource.Image.Page', {
                 main: this,
                 gobjectCreated : Ext.bind(function(gob) {
                     this.gobjectTagger.appendGObject(gob);
+
+                    var node = this.gobjectTagger.findNodeByGob(gob);
+                    this.gobjectTagger.tree.getSelectionModel().select(node);
                 }, this),
                 render_plugins: ['color', 'corners', 'bbox'],
                 //gobjectDeleted :
             },
             listeners : {
+
+
                 delete: Ext.bind(function(scope, gob) {
                     this.gobjectTagger.deleteGObject(gob);
                 }, this),
@@ -645,7 +650,6 @@ Ext.define('Bisque.Resource.Image.Page', {
                     //console.log(panel.hoverMenu);
                 },
                 modechange: function(viewer, type){
-                    console.log(viewer, type);
                     this.gobjectTagger.deselectAll();
                 },
 

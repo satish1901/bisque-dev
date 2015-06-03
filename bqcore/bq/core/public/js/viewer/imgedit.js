@@ -826,6 +826,7 @@ ImgEdit.prototype.new_freehand = function (type, parent, e, x, y) {
         me.renderer.selectedSet = [g.shape];
         me.renderer.select(me.renderer.selectedSet);
         me.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
+        g.shape.postEnabled = true;
         this.renderer.unselectCurrent();
     }));
 };
