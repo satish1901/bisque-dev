@@ -7,7 +7,7 @@ import glob
 import shutil
 
 
-PIP_LIST=["pip", "setuptools"]
+PIP_LIST=["pip==1.5.4", "setuptools==2.2"]
 
 def main():
     parser = argparse.ArgumentParser(description='Boostrap bisque')
@@ -57,8 +57,8 @@ def main():
             pass
 
     # dima, maybe we don't need this given previous lines?
-    #for install in PIP_LIST:
-    #    subprocess.call (["pip", "install", "-U", install], shell=shell)
+    for install in PIP_LIST:
+        subprocess.call (["pip", "install", "-U", install], shell=shell)
 
     try:
        r = subprocess.call(['hg', '--version'], shell=shell)
