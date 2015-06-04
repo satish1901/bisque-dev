@@ -624,8 +624,7 @@ class ModuleServer(ServiceController):
             log.info ("SERVICE PROXY %s -> %s" , str(name), str(engine))
             if name and engine :
                 if not name in service_list: #names are protected
-                    service = ServiceDelegate(name, engine, module, self.mex.fulluri)
-                    service_list[name] = service
+                    service_list[name] = ServiceDelegate(name, engine, module, self.mex.fulluri)
 
         if set_admin: #remove all system access
             set_current_user(user)
@@ -719,7 +718,8 @@ class ModuleServer(ServiceController):
 
 
             #xml =  self.engine._default (**kw)
-            #self.load_services()  #-is this even neccessary?
+            #update service list
+            self.service_list  = self.load_services(wpublic='1')
             return etree.tostring(module)
         abort(400)
 
@@ -778,6 +778,9 @@ class ModuleServer(ServiceController):
         else:
             log.info ("Engine Not found")
             abort(404, "Engine Not found")
+            
+        #update service list
+        self.service_list  = self.load_services(wpublic='1')
         #module_list = self.load_services(module_name)
 
     def execute(self, module_uri, **kw):
