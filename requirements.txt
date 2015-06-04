@@ -7,7 +7,7 @@ Genshi==0.7
 Mako==0.9.1
 MarkupSafe==0.21
 Minimatic==1.0.4
-Paste==1.7.5.1+bisque2
+Paste==1.7.5.2
 PasteDeploy==1.3.4
 PasteScript==1.7.3
 Paver==1.2.2

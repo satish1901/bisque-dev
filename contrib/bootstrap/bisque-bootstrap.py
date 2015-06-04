@@ -57,8 +57,8 @@ def main():
             pass
 
     # dima, maybe we don't need this given previous lines?
-    for install in PIP_LIST:
-        subprocess.call (["pip", "install", "-U", install], shell=shell)
+    #for install in PIP_LIST:
+    #    subprocess.call (["pip", "install", "-U", install], shell=shell)
 
     try:
        r = subprocess.call(['hg', '--version'], shell=shell)
@@ -80,7 +80,7 @@ def main():
     print "********************************"
     print
     print
-    subprocess.call(['pip', 'install', '--trusted-host', 'biodev.ece.ucsb.edu', '-i', 'http://biodev.ece.ucsb.edu/py/bisque/dev/+simple', 'Paste==1.7.5.1+bisque2'], shell=shell)
+    #subprocess.call(['pip', 'install', '--trusted-host', 'biodev.ece.ucsb.edu', '-i', 'http://biodev.ece.ucsb.edu/py/bisque/dev/+simple', 'Paste==1.7.5.1+bisque2'], shell=shell)
     subprocess.call(['pip', 'install', '--trusted-host', 'biodev.ece.ucsb.edu', '-r', 'requirements.txt'], shell=shell)
 
     print "**************************************************************"
