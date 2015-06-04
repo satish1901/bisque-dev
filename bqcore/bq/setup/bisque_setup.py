@@ -829,9 +829,9 @@ def initialize_database(params, DBURL=None):
 def migrate_database(DBURL=None):
     "Attempt to migrate existing database to latest version"
 
-    if DBURL and test_db_sqlmigrate(DBURL):
-        print "Upgrading database version (sqlmigrate)"
-        call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
+    #if DBURL and test_db_sqlmigrate(DBURL):
+    #    print "Upgrading database version (sqlmigrate)"
+    #    call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
 
     #if not params['new_database'] : #and test_db_alembic(DBURL):
     print "Upgrading database version (alembic)"
