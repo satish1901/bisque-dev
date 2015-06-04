@@ -1995,10 +1995,11 @@ CanvasRenderer.prototype.updateVisiblet = function(afterUpdate){
 
 CanvasRenderer.prototype.startWait = function(fcn, delay){
     var me = this;
-    this.waiting = true;
-
     var el = document.getElementById("viewer_controls_surface");
-    this.currentCursor = el.style.cursor;
+    if(!el) return;
+
+    this.waiting = true;
+    this.currentCursor = 'move';
     var waitCursor = function(){
         //var el = document.getElementById("viewer_controls_surface");
         if(el) el.style.cursor = "wait";
@@ -2008,7 +2009,7 @@ CanvasRenderer.prototype.startWait = function(fcn, delay){
         }
         else{
 
-            if(el) el.style.cursor = this.currentCursor;
+            if(el) el.style.cursor = me.currentCursor;
         }
 
         };
