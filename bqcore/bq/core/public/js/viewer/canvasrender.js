@@ -1996,17 +1996,22 @@ CanvasRenderer.prototype.updateVisiblet = function(afterUpdate){
 CanvasRenderer.prototype.startWait = function(fcn, delay){
     var me = this;
     this.waiting = true;
+
+    var el = document.getElementById("viewer_controls_surface");
+    this.currentCursor = el.style.cursor;
     var waitCursor = function(){
-        var el = document.getElementById("viewer_controls_surface");
+        //var el = document.getElementById("viewer_controls_surface");
         if(el) el.style.cursor = "wait";
         if(me.waiting){
             if(el) el.style.cursor = "wait";
             setTimeout(waitCursor, 100);
         }
-        else
-            if(el) el.style.cursor = "pointer";
+        else{
 
-    };
+            if(el) el.style.cursor = this.currentCursor;
+        }
+
+        };
     waitCursor();
 
     if(fcn){
@@ -2056,6 +2061,11 @@ CanvasRenderer.prototype.updateVisible = function(delay){
             }
 
             me.endWait();
+
+            if(me.selectedSet.length > 0){
+                me.unselect(me.selectedSet);
+                me.select(me.selectedSet);
+            }
             me.draw();
         }
     }, delay);
