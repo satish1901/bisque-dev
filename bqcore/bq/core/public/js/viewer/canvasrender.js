@@ -1005,10 +1005,11 @@ CanvasControl.prototype.viewerZoomed = function(e) {
 
     this.viewer.stage.x(e.x);
     this.viewer.stage.y(e.y);
+    this.viewer.draw(); //draw lower resolution annotation
     this.viewer.currentLayer.removeChildren();
-    //this.viewer.quadtree.cullCached(this.viewer.viewFrustum);
+
     this.viewer.updateVisible(150); //update visible has draw function
-    //this.viewer.draw();
+    //
 
     //this.viewer.draw();
 };
@@ -2158,6 +2159,7 @@ CanvasRenderer.prototype.updateImage = function(e){
 CanvasRenderer.prototype.updateImageDelay = function (e, fcn) {
     if(!this.viewer.imagedim) return;
     if(!this.viewer.tiles.tiled_viewer) return;
+
     var me = this;
     var viewstate = this.viewer.current_view;
     //var url = this.viewer.image_url();
