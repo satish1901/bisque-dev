@@ -2157,6 +2157,7 @@ CanvasRenderer.prototype.updateImage = function(e){
 
 CanvasRenderer.prototype.updateImageDelay = function (e, fcn) {
     if(!this.viewer.imagedim) return;
+    if(!this.viewer.tiles.tiled_viewer) return;
     var me = this;
     var viewstate = this.viewer.current_view;
     //var url = this.viewer.image_url();
