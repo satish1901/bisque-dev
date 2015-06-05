@@ -701,8 +701,12 @@ PanoJS.prototype.notifyCursorMoved = function(pt) {
 };
 
 
-PanoJS.prototype.zoom = function(direction) {
+PanoJS.prototype.zoom = function(direction, recenter, e) {
     // ensure we are not zooming out of range
+    if (typeof recenter === 'undefined') recenter = false;
+
+    //var rcoords = this.resolveCoordinates(e);
+
     if (this.zoomLevel + direction < 0) {
       if (PanoJS.MSG_BEYOND_MIN_ZOOM) {
         alert(PanoJS.MSG_BEYOND_MIN_ZOOM);
@@ -724,9 +728,20 @@ PanoJS.prototype.zoom = function(direction) {
 
     var coords = { 'x' : Math.floor(this.width / 2), 'y' : Math.floor(this.height / 2) };
 
+    var motion = {
+            'x' : 0,
+            'y' : 0
+        };
+
+    if(recenter){
+        var rcoords = this.resolveCoordinates(e);
+        motion.x = direction*Math.floor((this.width / 2) - rcoords.x);
+        motion.y = direction*Math.floor((this.height / 2) - rcoords.y);
+    }
+
     var before = {
-      'x' : (coords.x - this.x),
-      'y' : (coords.y - this.y)
+      'x' : (coords.x - this.x + (direction < 0 ? motion.x : 0)),
+      'y' : (coords.y - this.y + (direction < 0 ? motion.y : 0))
     };
 
     var after = {
@@ -734,10 +749,17 @@ PanoJS.prototype.zoom = function(direction) {
       'y' : Math.floor(before.y * Math.pow(2, direction))
     };
 
-    this.x = coords.x - after.x;
-    this.y = coords.y - after.y;
+    //var rcoords = this.resolveCoordinates(e);
+    //if(recenter && direction < 0 && this.zoomLevel > 0)
+    //    this.recenterZoom(rcoords, false);
+
+
+    this.x = coords.x - after.x + motion.x;
+    this.y = coords.y - after.y + motion.y;
     this.zoomLevel += direction;
 
+    //if(recenter && direction > 0 && this.zoomLevel > this.maxZoomLevel+PanoJS.MAX_OVER_ZOOM)
+     //   this.recenterZoom(rcoords, false);
     this.positionTiles();
     this.notifyViewerZoomed();
 };
@@ -822,7 +844,8 @@ PanoJS.prototype.ensureVisible = function(coords) {
  * image, rather than only the viewable portion.
  */
 PanoJS.prototype.recenter = function(coords, absolute, skip_motion) {
-  skip_motion = typeof(skip_motion) != 'undefined' ? skip_motion : false;
+
+    skip_motion = typeof(skip_motion) != 'undefined' ? skip_motion : false;
   if (absolute) {
     coords.x += this.x;
     coords.y += this.y;
@@ -830,8 +853,8 @@ PanoJS.prototype.recenter = function(coords, absolute, skip_motion) {
   if (coords.x == this.x && coords.y == this.y) return;
 
   var motion = {
-    'x' : Math.floor((this.width / 2) - coords.x),
-    'y' : Math.floor((this.height / 2) - coords.y)
+      'x' : Math.floor((this.width / 2) - coords.x),
+      'y' : Math.floor((this.height / 2) - coords.y)
   };
 
   if (motion.x == 0 && motion.y == 0) {
@@ -870,12 +893,15 @@ PanoJS.prototype.recenter = function(coords, absolute, skip_motion) {
     'y' : coords.y + motion.y
   };
 
-  var self = this;
-  // TODO: use an exponential growth rather than linear (should also depend on how far we are going)
-  // FIXME: this could be optimized by calling positionTiles directly perhaps
-  this.slideAcceleration += PanoJS.SLIDE_ACCELERATION_FACTOR;
-  this.slideMonitor = setTimeout(function() { self.recenter(newcoords); }, PanoJS.SLIDE_DELAY );
+    var self = this;
+    // TODO: use an exponential growth rather than linear (should also depend on how far we are going)
+    // FIXME: this could be optimized by calling positionTiles directly perhaps
+
+    this.slideAcceleration += PanoJS.SLIDE_ACCELERATION_FACTOR;
+    this.slideMonitor = setTimeout(function() { self.recenter(newcoords); }, PanoJS.SLIDE_DELAY );
+
 };
+
 
 PanoJS.prototype.resize = function() {
   // IE fires a premature resize event
@@ -1141,10 +1167,23 @@ PanoJS.prototype.mouseWheelHandler = function(e) {
   e = e ? e : window.event;
   this.blockPropagation(e);
 
+    var coords = this.resolveCoordinates(e);
   if (PanoJS.USE_WHEEL_FOR_ZOOM) {
-      if (e.wheelDelta<0) this.zoom(-1);
-      else
-      if (e.wheelDelta>0) this.zoom(1);
+      if (e.wheelDelta<0) {
+
+          //if(this.zoomLevel > 0)
+          //    this.recenterZoom(coords, false);
+          this.zoom(-1, true, e);
+      }
+      else if (e.wheelDelta>0){
+          var recenter = this.zoomLevel < this.maxZoomLevel+PanoJS.MAX_OVER_ZOOM;
+          this.zoom(1, true, e);
+          //if(recenter)
+          //    this.recenterZoom(coords, true);
+      }
+
+          //if (this.pointExceedsBoundaries(coords))
+
   } else {
       var dx = e.wheelDeltaX/PanoJS.WHEEL_SCALE;
       var dy = e.wheelDeltaY/PanoJS.WHEEL_SCALE;
