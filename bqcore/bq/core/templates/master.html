@@ -14,6 +14,8 @@
     Bisque<py:if test="title">: ${title}</py:if>
     </title>
 
+
+
     <!-- Bisque styles -->
     <!--<link href="http://fonts.googleapis.com/css?family=Abel|Varela+Round" rel="stylesheet" type="text/css" />-->
     <link href="//fonts.googleapis.com/css?family=Abel|Varela+Round|Roboto:400,300,100" rel="stylesheet" type="text/css" />
@@ -25,6 +27,28 @@
     <!-- ExtJS5 styles -->
     <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/packages/ext-theme-classic/build/resources/ext-theme-classic-all.css')}"/>-->
     <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/packages/ext-theme-crisp/build/resources/ext-theme-crisp-all.css')}"/>-->
+    <!-- BisQue UI code -->
+    <?python
+       if tg.config.get('bisque.js_environment', None) == 'production':
+          link_kw = dict (fs_root = h.file_public(),
+                          combined= '/js/all_js.js',
+                          combined_path = h.file_root() + '/bqcore/bq/core/public/js/all_js.js',
+                          checkts = False,
+                          #minify= 'minify', # D3 breaks with minify
+                          version=bq.release.__VERSION_HASH__)
+          css_kw = dict (fs_root=h.file_public(),
+                         combined='/css/all_css.css',
+                         combined_path = h.file_root() + '/bqcore/bq/core/public/css/all_css.css',
+                         checkts = False,
+                         version=bq.release.__VERSION_HASH__ )
+      else:
+          link_kw = {}
+          css_kw = {}
+    ?>
+
+
+
+
 
     <!-- BisQue styles -->
     ${h.stylesheet_link (
@@ -61,8 +85,12 @@
 
     # combined will not work for now due to relative urls in .css files
     #fs_root=h.file_public(),
-    #combined='/css/b.css',
-    version=bq.release.__VERSION_HASH__
+    #combined='/css/all_css.css',
+    #combined_path = h.file_root() + '/bqcore/bq/core/public/css/all_css.css',
+    #checkts = False,
+    #version=bq.release.__VERSION_HASH__
+
+     **css_kw
     )}
 
     <!-- ExtJS 4 -->
@@ -98,19 +126,6 @@
 
     <!-- GMaps API -->
     <!--<script type="text/javascript" src="//maps.googleapis.com/maps/api/js?sensor=false"></script>-->
-
-    <!-- BisQue UI code -->
-    <?python
-       if tg.config.get('bisque.js_environment', None) == 'production':
-          link_kw = dict (fs_root = h.file_public(),
-                          combined= '/js/all_js.js',
-                          combined_path = h.file_root() + '/bqcore/bq/core/public/js/all_js.js',
-                          checkts = False,
-                          #minify= 'minify', # D3 breaks with minify
-                          version=bq.release.__VERSION_HASH__)
-      else:
-          link_kw = {}
-    ?>
 
     <!-- Bisque Application instantiation, must be one of the first onReady to run -->
     <script type="text/javascript" >
