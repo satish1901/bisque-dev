@@ -982,11 +982,18 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     onworking : function(msg) {
+        this.setLoading(msg);
+        /*
         if (this.gobjectTagger) this.gobjectTagger.setLoading(msg);
+        if (this.viewerContainer) this.viewerContainer.setLoading(msg);
+        */
     },
 
     ondone : function() {
-        if (this.gobjectTagger) this.gobjectTagger.setLoading(false);
+        this.setLoading(false);
+        /*if (this.gobjectTagger) this.gobjectTagger.setLoading(false);
+        if (this.viewerContainer) this.viewerContainer.setLoading(false);
+        */
     },
 
     onerror : function(error) {
