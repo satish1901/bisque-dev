@@ -55,7 +55,7 @@
 
 .bq-download-panel .icon {
     width: 34px;
-    background-image: url('icons.svg');
+    background-image: url('/export_service/public/css/icons.svg');
     background-repeat: no-repeat;
     background-size: 200px;
     background-position: 0px 0px;
@@ -75,11 +75,11 @@
 }
 
 .icon-gdocs {
-    background-image: url('../images/gdocs.png') !important;
+    background-image: url('/export_service/public/images/gdocs.png') !important;
 }
 
 .icon-delete-cross {
-    background-image: url('../images/delete.png') !important;
+    background-image: url('/export_service/public/images/delete.png') !important;
 }
 
 .align {
