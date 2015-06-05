@@ -46,10 +46,10 @@
     text-align: center;
     color: #666;
 }
-/*.organizer .counts::before { 
+/*.organizer .counts::before {
     content: "(";
 }
-.organizer .counts::after { 
+.organizer .counts::after {
     content: ")";
 }*/
 
@@ -61,28 +61,28 @@
 }
 
 .organizer .icon-tag-name .x-tree-icon-parent {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 70px;
     background-position: 0px 2px;
 }
 
 .organizer .icon-tag-value .x-tree-icon {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 70px;
     background-position: -18px 2px;
 }
 
 .organizer .icon-gob-type .x-tree-icon {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 70px;
     background-position: 0px -16px;
 }
 
 .organizer .icon-gob-name .x-tree-icon {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 70px;
     background-position: -18px -16px;
@@ -96,35 +96,35 @@
 }
 
 .organizer .icon-tags {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 100px;
     background-position: -0px -52px !important;
 }
 
 .organizer .icon-gobs {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 100px;
     background-position: -26px -52px !important;
 }
 
 .organizer .icon-types {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 100px;
     background-position: 0px -79px !important;
 }
 
 .organizer .icon-names {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 100px;
     background-position: -26px -79px !important;
 }
 
 .organizer .icon-values {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 100px;
     background-position: -52px -79px !important;
@@ -132,7 +132,7 @@
 
 
 .organizer .icon-sorting {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 100px;
     background-position: 0px -106px !important;
@@ -144,7 +144,7 @@
 }
 
 .organizer .icon-sort {
-    background-image: url('images/organizer_icons.svg');
+    background-image: url('/js/tree/images/organizer_icons.svg');
     background-repeat: no-repeat;
     background-size: 75px;
     background-position: -20px -80px !important;
