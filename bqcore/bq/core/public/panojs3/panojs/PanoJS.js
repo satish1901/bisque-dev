@@ -287,11 +287,18 @@ PanoJS.prototype.init = function() {
       this.surface.addEventListener ("DOMMouseScroll", callback(this, this.mouseScrollHandler), false);
 
     // dima: support for HTML5 touch interfaces like iphone and android
-    this.ui_listener.ontouchstart    = callback(this, this.touchStartHandler);
-    this.ui_listener.ontouchmove     = callback(this, this.touchMoveHandler);
-    this.ui_listener.ongesturestart  = callback(this, this.gestureStartHandler);
-    this.ui_listener.ongesturechange = callback(this, this.gestureChangeHandler);
-    this.ui_listener.ongestureend    = callback(this, this.gestureEndHandler);
+    //this.ui_listener.ontouchstart    = callback(this, this.touchStartHandler);
+    //this.ui_listener.ontouchmove     = callback(this, this.touchMoveHandler);
+    this.ui_listener.addEventListener("touchstart", callback(this, this.touchStartHandler));
+    this.ui_listener.addEventListener("touchmove", callback(this, this.touchMoveHandler));
+
+    this.ui_listener.addEventListener("gesturestart", callback(this, this.gestureStartHandler));
+    this.ui_listener.addEventListener("gesturechange", callback(this, this.gestureChangeHandler));
+    this.ui_listener.addEventListener("gestureend", callback(this, this.gestureEndHandler));
+
+    //this.ui_listener.ongesturestart  = callback(this, this.gestureStartHandler);
+    //this.ui_listener.ongesturechange = callback(this, this.gestureChangeHandler);
+    //this.ui_listener.ongestureend    = callback(this, this.gestureEndHandler);
 
     // notify listners
     //this.notifyViewerZoomed();

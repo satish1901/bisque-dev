@@ -58,6 +58,7 @@ PanoControls.prototype.createButton = function(control) {
     this.dom_element.appendChild(btn);
 
     btn.onclick = callback(this.viewer, this.viewer[control.id + 'Handler']);
+    btn.addEventListener("touchstart", callback(this.viewer, this.viewer[control.id + 'Handler']));
+
     return btn;
 };
-

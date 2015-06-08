@@ -100,6 +100,17 @@ ImgEdit.prototype.createButton = function(surf, basecls, cls, cb, sel, ctrls, to
         btn.operation();
     });
 
+    el.on('touchstart', function(e, btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        var c=undefined;
+        for (var i=0; (c=ctrls[i]); i++)
+            c.setSelected(false);
+        btn.setSelected(true);
+        btn.operation();
+    });
+
+
     if (tooltip)
     var tip = Ext.create('Ext.tip.ToolTip', {
         target: el,
