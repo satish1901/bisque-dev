@@ -679,7 +679,7 @@ QuadTree.prototype.cache = function(frust, scale, onCache){
     //this.cachesDestroyed = 0;
     //this.cachesRendered = 0;
 
-
+    var caching = false;
     var cacheSprite = function(node){
         var nArea = me.calcBoxVol(node.bbox);
         var cache = null;
@@ -690,6 +690,7 @@ QuadTree.prototype.cache = function(frust, scale, onCache){
 
             if(!me.imageCache.getCacheAtCurrent(node)){
                 //me.cachesDestroyed += 1;
+                caching = true;
                 me.cacheChildSprites(node, scale, onCache);
                 cache = true;
                 return false;
@@ -699,7 +700,7 @@ QuadTree.prototype.cache = function(frust, scale, onCache){
         else return true;
     };
     this.traverseDownBB(this.nodes[0], frust, cacheSprite);
-    if(this.cachesDestroyed === 0){
+    if(!caching){
         onCache();
     }
 };
@@ -818,14 +819,11 @@ QuadTree.prototype.cacheChildSprites = function(node, scale, onCache){
             var tMinX = bbox.min[0] + i*tw;
             var tMinY = bbox.min[1] + j*th;
 
-            var layer = new Kinetic.Layer({});
+            var layer = new Kinetic.Layer({scale: {x:scale, y:scale},
+                                           width: w,
+                                           height: h});
 
             layer.removeChildren();
-            layer.scale({x: scale, y: scale});
-            layer.width(w);
-            layer.height(h);
-
-            //fetch the objects in the tree that are in that node
             var nbb =
             {min: [tMinX,      tMinY,      bbox.min[2], bbox.min[3]],
              max: [tMinX + tw, tMinY + th, bbox.max[2], bbox.max[3]]};
@@ -867,15 +865,15 @@ QuadTree.prototype.cacheChildSprites = function(node, scale, onCache){
 
             var image = layer.toImage({
                 callback: afterImage.bind({scope: this,
-                                          index: ind,
-                                          bbox: nbb,
-                                          node: node}),
+                                           index: ind,
+                                           bbox: nbb,
+                                           node: node}),
                 x: nbb.min[0]*scale - buffer,
                 y: nbb.min[1]*scale - buffer,
                 width: tw*scale + 2.0*buffer,
                 height:th*scale + 2.0*buffer,
             });
-            if(!image) onCache();
+            //if(!image) onCache();
 
         }
     }
@@ -2043,7 +2041,7 @@ CanvasRenderer.prototype.updateVisible = function(delay){
 
     this.startWait(function(){
         if(me.mode == 'navigate'){
-            me.quadtree.cache(me.viewFrustum, scale, function(){
+            me.quadtree.cache(me.viewFrustum, me.scale(), function(){
                 me.quadtree.cullCached(me.viewFrustum);
                 me.endWait();
                 me.draw();
@@ -2164,6 +2162,7 @@ CanvasRenderer.prototype.updateImageDelay = function (e, fcn) {
     var viewstate = this.viewer.current_view;
     //var url = this.viewer.image_url();
     var scale = this.viewer.current_view.scale;
+
     var x = this.viewer.tiles.tiled_viewer.x;
     var y = this.viewer.tiles.tiled_viewer.y;
     var z = this.viewer.tiles.cur_z;
