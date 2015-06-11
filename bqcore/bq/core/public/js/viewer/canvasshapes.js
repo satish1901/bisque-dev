@@ -1104,10 +1104,11 @@ CanvasPolyLine.prototype.getRenderableSprites = function(){
 
     if(!this.isVisible()) return [];
     var zl = this.bbox.max[2] - this.bbox.min[2];
+    var tl = this.bbox.max[3] - this.bbox.min[3];
     if(zl <= 0) return [this.sprite];
 
     var points = this.sprite.points();
-    var intersectionPoints = [];
+    var spaceIntersections = [];
     var out = [];
     if(this._closed)
         out.push(this.sprite);
@@ -1119,10 +1120,15 @@ CanvasPolyLine.prototype.getRenderableSprites = function(){
     for(var i = 0; i < verts.length - 1; i++){
         var v0 = verts[i];
         var v1 = verts[i+1];
-        var t = (viewstate.z - v0.z)/(v1.z - v0.z);
-        if(t >= 0 && t <= 1)
-            intersectionPoints.push([v0.x + t*(v1.x - v0.x),
-                                     v0.y + t*(v1.y - v0.y)]);
+        var zt = (viewstate.z - v0.z)/(v1.z - v0.z - 0.000001);
+        var tt = 0.5;
+        if(tl > 0)
+            tt = (viewstate.t - v0.t)/(v1.t - v0.t - 0.000001);
+        if((zt >= 0 && zt <= 1) &&
+           (tt >= 0 && tt <= 1))
+            spaceIntersections.push([v0.x + zt*(v1.x - v0.x),
+                                     v0.y + zt*(v1.y - v0.y)]);
+
         var za = 0.5*(v0.z + v1.z);
         var dz = Math.abs(viewstate.z - za)/zl;
         var colorStr = this.getColorString(color, 1.0-dz);
@@ -1139,8 +1145,8 @@ CanvasPolyLine.prototype.getRenderableSprites = function(){
     }
 
 
-    for(var i = 0; i < intersectionPoints.length; i++){
-        var pt = intersectionPoints[i];
+    for(var i = 0; i < spaceIntersections.length; i++){
+        var pt = spaceIntersections[i];
 
         var sprite = new Kinetic.Circle({
             //radius: {x: rx, y: ry},
