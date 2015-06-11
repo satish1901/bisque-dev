@@ -20,6 +20,7 @@ def s3_cache_fetch(bucket, key):
     if not os.path.exists(cache_filename):
         k = Key(bucket)
         k.key = key
+        _mkdir(os.path.dirname(cache_filename))
         k.get_contents_to_filename(cache_filename)
     return cache_filename
 
