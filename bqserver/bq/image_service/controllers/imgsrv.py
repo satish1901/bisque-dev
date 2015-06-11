@@ -2257,18 +2257,8 @@ class ImageServer(object):
         if infofile is None:
             infofile = '%s.info'%filename
         info = {}
-        if os.path.exists(infofile):
-            # load image info from cached copy
-            try:
-                image = etree.parse(infofile).getroot()
-                for k,v in image.attrib.iteritems():
-                    info[k] = safetypeparse(v)
-                return info
-            except  etree.XMLSyntaxError:
-                log.debug ("attempt to read empty file")
-                # Empty file created by next Lock
-                pass
 
+        # sanity check
         if not os.path.exists(filename):
             return None
 
@@ -2303,8 +2293,15 @@ class ImageServer(object):
 
         if os.path.exists(infofile):
             with Locks(infofile):
-                return self.getImageInfo(filename, series, infofile=infofile, meta=meta)
-
+                try:
+                    image = etree.parse(infofile).getroot()
+                    for k,v in image.attrib.iteritems():
+                        info[k] = safetypeparse(v)
+                    return info
+                except  etree.XMLSyntaxError:
+                    log.debug ("attempt to read empty file")
+                    # Empty file created by next Lock
+                    pass
         return None
 
     def process_queue(self, token):
