@@ -759,10 +759,14 @@ Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
 
 
 def setup_database (params):
-    dburi = params.get('sqlalchemy.url', None)
-    DBURL = sa.engine.url.make_url (dburi)
+    try:
+        params, DBURL = get_dburi(params)
+    except sa.exc.ArgumentError:
+        log.exception( "Unable to understand DB url. Please see SqlAlchemy" )
+        return params
     # Step 2: check whether the database exists and is accessible
     if not create_database(DBURL):
+        print "database not created"
         return params
     # Step 3: find out whether the database needs initialization
     params = initialize_database(params, DBURL)
