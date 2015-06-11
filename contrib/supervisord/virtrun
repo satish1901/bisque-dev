@@ -4,6 +4,10 @@
 . bqenv/bin/activate
 mkdir -p /tmp/bisque-python-eggs
 export PYTHON_EGG_CACHE=/tmp/bisque-python-eggs
-echo "STARTING " $(date)
+PATH=.:$PATH
 
+IP_ADDRESS=$(resolve-container-ip || hostname --ip-address)
+export IP_ADDRESS
+
+echo "STARTING " $(date)
 exec $@
