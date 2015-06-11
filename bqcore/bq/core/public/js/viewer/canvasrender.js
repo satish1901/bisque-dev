@@ -32,21 +32,41 @@ ImageCache.prototype.init = function(){
     this.nodeHashes = {};
 };
 
-ImageCache.prototype.getCurrentNodeHashes = function(node){
+ImageCache.prototype.getCurrentNodeHashes = function(node, shapeBbox){
 
     var z = this.renderer.viewer.tiles.cur_z;
     var t = this.renderer.viewer.tiles.cur_t;
     var bbox = node.bbox;
 
-    var nHash =
-        'mn: '  +  bbox.min[0] + "," + bbox.min[1] + "," + bbox.min[2] + "," +
-        ' mx: ' +  bbox.max[0] + "," + bbox.max[1] + "," + bbox.max[2] + "," +
-        ' z: '  + z + ', t: ' + t;
+    var nHashes = [];
+    var z0 = z;
+    var z1 = z+1;
+    var t0 = t;
+    var t1 = t+1;
+
+    if(shapeBbox){
+        z0 = shapeBbox.min[2];
+        z1 = shapeBbox.max[2]+1;
+        t0 = shapeBbox.min[3];
+        t1 = shapeBbox.max[3]+1;
+    }
+
+    for(var i  = z0; i < z1; i++)
+        for(var j  = t0; j < t1; j++){
+            var nHash =
+                'mn: '  +  bbox.min[0] + "," + bbox.min[1] + "," + bbox.min[2] + "," +
+                ' mx: ' +  bbox.max[0] + "," + bbox.max[1] + "," + bbox.max[2] + "," +
+                ' z: '  + i + ', t: ' + j;
+            nHashes.push(nHash);
+        }
 
     var hashes = [];
-    for (var key in this.nodeHashes[nHash]) {
-        if (this.nodeHashes[nHash].hasOwnProperty(key)) {
-            hashes.push(key);
+
+    for(var i = 0; i < nHashes.length; i++){
+        for (var key in this.nodeHashes[nHashes[i]]) {
+            if (this.nodeHashes[nHashes[i]].hasOwnProperty(key)) {
+                hashes.push(key);
+            }
         }
     }
     return hashes;
@@ -157,7 +177,7 @@ ImageCache.prototype.setImageAtCurrent = function(node,j,img){
     this.setImageAtFrame(i,j,img);
 }
 
-ImageCache.prototype.clearAll = function(node){
+ImageCache.prototype.clearAll = function(node, bbox){
     if(!node){
         delete this.caches;
         delete this.nodeHashes;
@@ -165,7 +185,7 @@ ImageCache.prototype.clearAll = function(node){
         return;
     }
 
-    var nodeHashes = this.getCurrentNodeHashes(node);
+    var nodeHashes = this.getCurrentNodeHashes(node, bbox);
     for(var i = 0; i < nodeHashes.length; i++){
         var hash = nodeHashes[i];
         delete this.caches[hash];
@@ -614,7 +634,7 @@ QuadTree.prototype.remove = function(shape){
 
             node.dirty = true;
 
-            this.imageCache.clearAll(node);
+            this.imageCache.clearAll(node, shape.bbox);
             node = node.parent;
             //
         }

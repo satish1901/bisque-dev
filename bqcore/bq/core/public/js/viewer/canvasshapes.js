@@ -689,26 +689,31 @@ CanvasShape.prototype.setColor = function (r,g,b) {
 
 
 CanvasShape.prototype.applyColor = function () {
-    var color = 'rgba(255,0,0,0.5)';
-    var strokeColor = 'rgba(255,0,0,1.0)';
-    if(this.gob.color_override){
-        var c = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
-        color = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            0.5+')';
-        strokeColor = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            1.0+')';
-        //color = ;
-    }
-
-    this.sprite.fill(color);
-    this.sprite.stroke(strokeColor);
+    var color = this.getColor();
+    var colorStr = this.getColorString(color);
+    this.sprite.fill(this.getColorString(color,0.5));
+    this.sprite.stroke(this.getColorString(color,1.0));
 };
+
+
+CanvasShape.prototype.getColorString = function (c, alpha) {
+    var color = 'rgba('+
+            c.r+','+
+            c.g+','+
+            c.b+','+
+            alpha+')';
+
+    return color;
+};
+
+CanvasShape.prototype.getColor = function () {
+    var color = {r: 255, g: 0,b: 0};
+    if(this.gob.color_override){
+        color = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
+    }
+    return color;
+};
+
 
 function CanvasPolyLine(gob, renderer) {
 	this.renderer = renderer;
@@ -1071,8 +1076,8 @@ CanvasPolyLine.prototype.moveLocal = function(){
                 this.gob.vertices[i/2] = new BQVertex();
             this.gob.vertices[i/2].x = sx*x + offx;
             this.gob.vertices[i/2].y = sy*y + offy;
-            this.gob.vertices[i/2].z = z;
-            this.gob.vertices[i/2].t = t;
+            this.gob.vertices[i/2].z = this.gob.vertices[i/2].z;
+            this.gob.vertices[i/2].t = this.gob.vertices[i/2].t;
         }
     }
 }
@@ -1094,6 +1099,62 @@ CanvasPolyLine.prototype.points = function(){
     return output;
 }
 
+
+CanvasPolyLine.prototype.getRenderableSprites = function(){
+
+    if(!this.isVisible()) return [];
+    var zl = this.bbox.max[2] - this.bbox.min[2];
+    if(zl <= 0) return [this.sprite];
+
+    var points = this.sprite.points();
+    var intersectionPoints = [];
+    var out = [];
+    if(this._closed)
+        out.push(this.sprite);
+
+    var viewstate = this.renderer.viewer.current_view;
+    var scale = this.renderer.scale();
+    var verts = this.gob.vertices;
+    var color = this.getColor();
+    for(var i = 0; i < verts.length - 1; i++){
+        var v0 = verts[i];
+        var v1 = verts[i+1];
+        var t = (viewstate.z - v0.z)/(v1.z - v0.z);
+        if(t >= 0 && t <= 1)
+            intersectionPoints.push([v0.x + t*(v1.x - v0.x),
+                                     v0.y + t*(v1.y - v0.y)]);
+        var za = 0.5*(v0.z + v1.z);
+        var dz = Math.abs(viewstate.z - za)/zl;
+        var colorStr = this.getColorString(color, 1.0-dz);
+        var poly = new Kinetic.Line({
+            points: [v0.x, v0.y, v1.x, v1.y],
+            close: false,
+            //fill: ,
+            //fillAlpha: 0.5,
+            stroke: colorStr,
+            strokeWidth: 3.0/scale,
+        });
+        out.push(poly);
+
+    }
+
+
+    for(var i = 0; i < intersectionPoints.length; i++){
+        var pt = intersectionPoints[i];
+
+        var sprite = new Kinetic.Circle({
+            //radius: {x: rx, y: ry},
+            x: pt[0],
+            y: pt[1],
+            radius: 4.0/scale,
+            fill: 'rgba(255,0,0,0.1)',
+            stroke: 'rgba(0,0,255,1.0)',
+            strokeWidth: 2.0/scale,
+        });
+        out.push(sprite);
+    }
+    return out;
+}
 
 
 ///////////////////////////////////////////////
