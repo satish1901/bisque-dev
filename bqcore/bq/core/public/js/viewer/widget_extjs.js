@@ -153,6 +153,11 @@ Ext.define('BQ.viewer.Image', {
         this.setLoading(false);
     },
 
+    setButtonLoading : function(msg) {
+        if(this.viewer.plugins_by_name.edit)
+            this.viewer.plugins_by_name.edit.setButtonLoading(msg);
+    },
+
     onphys : function() {
         this.fireEvent( 'loadedPhys', this, this.viewer.imagephys, this.viewer.imagedim );
     },

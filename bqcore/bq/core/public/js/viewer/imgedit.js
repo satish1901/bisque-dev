@@ -90,7 +90,10 @@ ImgEdit.prototype.createButton = function(surf, basecls, cls, cb, sel, ctrls, to
         return btn;
 
     var el = Ext.get(btn);
+    //prevent editing while the database is being pinged
+    el.disabled = false;
     el.on('mousedown', function(e, btn) {
+        if(el.disabled) return;
         e.preventDefault();
         e.stopPropagation();
         var c=undefined;
@@ -101,6 +104,7 @@ ImgEdit.prototype.createButton = function(surf, basecls, cls, cb, sel, ctrls, to
     });
 
     el.on('touchstart', function(e, btn) {
+        if(el.disabled) return;
         e.preventDefault();
         e.stopPropagation();
         var c=undefined;
@@ -119,6 +123,20 @@ ImgEdit.prototype.createButton = function(surf, basecls, cls, cb, sel, ctrls, to
 
     return btn;
 };
+
+ImgEdit.prototype.setButtonLoading = function(disabled){
+    //set buttons to be transparent during loading and disable their callback
+    this.button_controls.forEach(function(btn){
+        var el = Ext.get(btn);
+        el.disabled = disabled;
+        if(disabled)
+            el.dom.style.opacity = 0.25;
+        else
+            el.dom.style.opacity = 1.0;
+    });
+}
+
+
 
 ImgEdit.prototype.createMenuButton = function(p) {
     return {
