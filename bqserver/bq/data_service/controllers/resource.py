@@ -188,8 +188,11 @@ class ResponseCache(object):
         scheme, authority, request_uri, defrag_uri = urlnorm(url)
         return safename ( defrag_uri, user ).replace(',data_service','').replace(',,',',').replace(',#','#')
 
-    def _resource_cache_name(self, resource, user):
-        return "%s,%s" % (user if user else '',  resource.resource_uniq if resource else '')
+    def _resource_cache_names(self, resource, user):
+        names = [ "%s,%s" % (user if user else '',  resource.resource_uniq if resource else '') ]
+        if resource.permission == 'published':
+            names.append ( '0,%s' % resource.resource_uniq if resource else '' )
+        return names
     def _resource_query_names(self, resource, user, *args):
         base = "%s,%s" % (user if user else '', resource.resource_type if resource else '')
         top = "%s#" % (user if user else 0)
@@ -391,9 +394,9 @@ class HierarchicalCache(ResponseCache):
         log.debug ("CACHE invalidate: resource %s user %s", resource and resource.resource_uniq, user)
 
         files = os.listdir(self.cachepath)
-        cache_name = self._resource_cache_name(resource, user)
+        cache_names = self._resource_cache_names(resource, user)
         query_names = self._resource_query_names(resource, user, 'tag_values', 'tag_query', 'tag_names', 'gob_types')
-        log.info ("CACHE invalidate %s for %s %s:%s" , resource and resource.resource_uniq , user, cache_name, query_names)
+        log.info ("CACHE invalidate %s for %s %s:%s" , resource and resource.resource_uniq , user, cache_names, query_names)
         # invalidate cached resource varients
         def delete_matches (files, names, user):
             for f in list(files):
@@ -407,7 +410,7 @@ class HierarchicalCache(ResponseCache):
                     files.remove (f)
                     log.debug ('cache  remove %s' % f)
 
-        names  = [ cache_name ]
+        names  = list( cache_names )
         names.extend (query_names)
         # Delete user matches
         try:
