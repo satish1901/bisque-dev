@@ -32,6 +32,16 @@ processes = 4
 #number of threads per worker process
 threads = 1
 
+fastrouter_keys =
+fastrouter_ip =
+fastrouter_port =
+
+# Subscribe this instance to a fastrouter
+for = %(fastrouter_keys)
+subscribe-to=%(fastrouter_ip):%(fastrouter_port):%(_)
+endfor =
+
+
 #########
 #path to the uwsgi log file
 #daemonize =
