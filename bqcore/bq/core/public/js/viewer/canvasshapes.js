@@ -1130,7 +1130,9 @@ CanvasPolyLine.prototype.getRenderableSprites = function(){
                                      v0.y + zt*(v1.y - v0.y)]);
 
         var za = 0.5*(v0.z + v1.z);
-        var dz = Math.abs(viewstate.z - za)/zl;
+        var ta = 0.5*(v0.t + v1.t);
+        var dz = Math.sqrt((viewstate.z - za)*(viewstate.z - za) +
+                           (viewstate.t - ta)*(viewstate.t - ta))/(zl + tl);
         var colorStr = this.getColorString(color, 1.0-dz);
         var poly = new Kinetic.Line({
             points: [v0.x, v0.y, v1.x, v1.y],
