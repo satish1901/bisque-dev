@@ -1014,6 +1014,7 @@ Ext.define('Bisque.GObjectTagger', {
         },{
             xtype: 'toolbar',
             cls: 'bq-gob-toolbar',
+            itemId: 'AnnoToolbar',
             border: 0,
             dock: 'top',
             items: [{
@@ -1464,7 +1465,7 @@ Ext.define('Bisque.GObjectTagger', {
             //maxWidth: w,
             //height:  h,
             minHeight: h,
-
+            autoDestroy: true,
             layout: 'fit',
             autoHide: false,
             shadow: false,
@@ -1475,6 +1476,9 @@ Ext.define('Bisque.GObjectTagger', {
                 listeners: {
                     select: function(picker, selColor) {
                         this.onColorSelected(picker, selColor);
+                    },
+                    hide: function(e){
+                        this.close();
                     },
                     scope: this,
                 },
@@ -1536,6 +1540,7 @@ Ext.define('Bisque.GObjectTagger', {
                 selvis = item;
             //me.selectColor(item);
         });
+        selvis = selvis ? selvis : this.queryById('AnnoToolbar').getEl();
         this.selectColor(selvis);
         //if(selvis) //JD: this is a quick fix, but still doesn't work properly
 

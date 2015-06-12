@@ -318,7 +318,7 @@ CanvasShape.prototype.getColorManipulator = function(){
 
             listeners: {
                 close : function(){
-                    debugger;
+                    //debugger;
                 },
                 show: function(){
                     if(renderer.selectedSet.length === 0) this.hide();
