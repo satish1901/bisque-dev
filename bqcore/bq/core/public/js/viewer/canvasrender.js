@@ -417,10 +417,10 @@ QuadTree.prototype.splitNode  = function(node, stack){
     if( mDim/mDimZ < 5 ) var mDim = Math.min(mDim, mDimZ);
 
     //var K = (mDim === bbz || mDim === bbt) ? 1 : 2;
-    var nXTiles = Math.max(Math.floor(bbw/mDim),1);
-    var nYTiles = Math.max(Math.floor(bbh/mDim),1);
-    var nZTiles = Math.max(Math.floor(bbz/mDimZ),1);
-    var nTTiles = Math.max(Math.floor(bbt/mDimT),1);
+    var nXTiles = Math.max(bbw/mDim,1);
+    var nYTiles = Math.max(bbh/mDim,1);
+    var nZTiles = Math.max(bbz/mDimZ,1);
+    var nTTiles = Math.max(bbt/mDimT,1);
 
     var tw = bbw/nXTiles; //tile width
     var th = bbh/nYTiles; //tile height
@@ -1039,8 +1039,8 @@ CanvasControl.prototype.viewerZoomed = function(e) {
 
     this.viewer.stage.x(e.x);
     this.viewer.stage.y(e.y);
-    this.viewer.draw(); //draw lower resolution annotation
-    this.viewer.currentLayer.removeChildren();
+    this.viewer.draw(true); //draw lower resolution annotation
+    //this.viewer.currentLayer.removeChildren();
 
     this.viewer.updateVisible(150); //update visible has draw function
     //
@@ -1795,11 +1795,24 @@ CanvasRenderer.prototype.scale = function (){
     return this.stage.scale().x;
 };
 
-CanvasRenderer.prototype.draw = function (){
+CanvasRenderer.prototype.compareViewstate = function(vs0, vs1){
+    return (vs0.x     === vs1.x &&
+            vs0.y     === vs1.y &&
+            vs0.scale === vs1.scale);
+};
+
+CanvasRenderer.prototype.draw = function (force){
 
     if(window.location.hash == "#debug")
         this.quadtree.drawBboxes(this.viewFrustum);
-    this.stage.draw();
+
+    //var viewstate = {scale : this.scale(), x: this.stage.x(), y: this.stage.y()};
+    //if(!this.pastViewstate)
+    //    this.pastViewstate = viewstate;
+    //var cmp = this.compareViewstate(viewstate,this.pastViewstate);
+    //if(!cmp || force)
+        this.stage.draw();
+    //this.pastViewstate = viewstate;
 };
 
 CanvasRenderer.prototype.updatePlugins = function(){
@@ -2058,7 +2071,6 @@ CanvasRenderer.prototype.startWait = function(fcn, delay){
 
     if(el){
         this.waiting = true;
-        this.currentCursor = 'move';
         var waitCursor = function(){
             //var el = document.getElementById("viewer_controls_surface");
             if(el) el.style.cursor = "wait";
@@ -2067,8 +2079,11 @@ CanvasRenderer.prototype.startWait = function(fcn, delay){
                 setTimeout(waitCursor, 100);
             }
             else{
+                var pointer = PanoJS.GRAB_MOUSE_CURSOR;
+                var move = PanoJS.GRABBING_MOUSE_CURSOR;
+                var panojs = me.viewer.tiles.tiled_viewer;
+                if(el) el.style.cursor = panojs.pressed ? move : pointer;
 
-                if(el) el.style.cursor = me.currentCursor;
             }
 
         };
@@ -2210,7 +2225,7 @@ CanvasRenderer.prototype.updateImage = function(e){
     if(this.uiTimeout) clearTimeout(this.uiTimeout);
     this.uiTimeout = setTimeout(function(){
         me.updateImageDelay(e);
-    },5);
+    },20);
 
 };
 
@@ -2293,7 +2308,7 @@ CanvasRenderer.prototype.updateImageDelay = function (e, fcn) {
         e.select(me.selectedSet);
     });
     */
-    this.updateVisible(150);
+    this.updateVisible(300);
     me.unselect(me.selectedSet);
     me.select(me.selectedSet);
     //update visible has a draw call
