@@ -2262,34 +2262,35 @@ class ImageServer(object):
         if not os.path.exists(filename):
             return None
 
-        # read image info
-        with Locks(filename, infofile, failonexist=True) as l:
-            if l.locked: # the file is not being currently written by another process
-                # parse image info from original file
-                for n,c in self.converters.iteritems():
-                    info = c.info(ProcessToken(ifnm=filename, series=series))
-                    if info is not None and len(info)>0:
-                        info['converter'] = n
-                        break
-                if info is None or 'image_num_x' not in info:
-                    return None
+        # read image info using converters
+        if not os.path.exists(infofile):
+            with Locks(filename, infofile, failonexist=True) as l:
+                if l.locked: # the file is not being currently written by another process
+                    # parse image info from original file
+                    for n,c in self.converters.iteritems():
+                        info = c.info(ProcessToken(ifnm=filename, series=series))
+                        if info is not None and len(info)>0:
+                            info['converter'] = n
+                            break
+                    if info is None or 'image_num_x' not in info:
+                        return None
 
-                info.setdefault('image_num_t', 1)
-                info.setdefault('image_num_z', 1)
-                info.setdefault('image_num_p', info['image_num_t'] * info['image_num_z'])
-                info.setdefault('format', default_format)
-                if not 'filesize' in info:
-                    info.setdefault('filesize', os.path.getsize(filename))
-                if meta is not None:
-                    info.update(meta)
+                    info.setdefault('image_num_t', 1)
+                    info.setdefault('image_num_z', 1)
+                    info.setdefault('image_num_p', info['image_num_t'] * info['image_num_z'])
+                    info.setdefault('format', default_format)
+                    if not 'filesize' in info:
+                        info.setdefault('filesize', os.path.getsize(filename))
+                    if meta is not None:
+                        info.update(meta)
 
-                # cache file info into a file
-                image = etree.Element ('image')
-                for k,v in info.iteritems():
-                    image.set(k, '%s'%v)
-                with open(infofile, 'w') as f:
-                    f.write(etree.tostring(image))
-                return info
+                    # cache file info into a file
+                    image = etree.Element ('image')
+                    for k,v in info.iteritems():
+                        image.set(k, '%s'%v)
+                    with open(infofile, 'w') as f:
+                        f.write(etree.tostring(image))
+                    return info
 
         if os.path.exists(infofile):
             with Locks(infofile):
