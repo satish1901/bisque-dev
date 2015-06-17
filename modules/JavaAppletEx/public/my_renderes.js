@@ -43,7 +43,6 @@ Ext.define('BQ.javaappletex.AppletRunner', {
                 params += par.apply({name: ii.name, value: ii.value});
         }
         var html = new Ext.Template('<object type="application/x-java-applet" height="100%" width="100%" >\
-            <param name="cache_option" value="no" />\
             <param name="code" value="Sample" />\
             <param name="archive" value="Sample.jar" />\
             <param name="java_arguments" value="-Djnlp.packEnabled=true"/>\

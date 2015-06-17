@@ -227,7 +227,7 @@ class PathService (TGController):
     @require(predicates.not_anonymous())
     def list_path(self, path, *args,  **kwargs):
         'Find a resource identified by a path'
-        log.info("list() called %s" ,  path)
+        log.info("move() called %s" ,  path)
         resource = data_service.query('image|file', resource_value = path, wpublic='1', cache=False)
         return etree.tostring(resource)
 
@@ -236,32 +236,9 @@ class PathService (TGController):
     def insert_path(self, path, resource_type = 'file', *args,  **kwargs):
         ' Move a resource identified by path  '
         log.info("insert_path() called %s %s" , path, args)
-
-        from bq import import_service
-
-        import_service.transfer ()
-
         resource = etree.Element(resource_type, value = path)
         resource = self.blobsrv.store_blob(resource)
         return etree.tostring(resource)
-
-    @expose(content_type='text/xml')
-    @require(predicates.not_anonymous())
-    def link_path(self,  *args,  **kwargs):
-        ' Move a resource identified by path  '
-        log.info("link_path() called %s %s" , path, args)
-
-        from bq import import_service
-
-    #    resource = "<resource name='%s' value='%s' />" % (os.path.basename(args.srcpath), args.srcpath )
-    #    payload = { 'path_resource': resource }
-
-        #import_service.transfer_inplace ( )
-
-        resource = etree.Element(resource_type, value = path)
-        resource = self.blobsrv.store_blob(resource)
-        return etree.tostring(resource)
-
 
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())

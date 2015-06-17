@@ -46,14 +46,12 @@ def bisque_link(session, args):
     payload = None
     params = None
 
-    #if args.srcpath:
-    #    resource = "<resource name='%s' value='%s' />" % (os.path.basename(args.srcpath), args.srcpath )
-    #    payload = { 'path_resource': resource }
-    params = { 'path' : args.srcpath }
+    if args.srcpath:
+        resource = "<resource name='%s' value='%s' />" % (os.path.basename(args.srcpath), args.srcpath )
+        payload = { 'path_resource': resource }
     if args.alias:
-        params[ 'user' ] = args.alias
-
-    r  =  session.post (url,  params=params)
+        params = { 'user': args.alias }
+    r  =  session.post (url, data=payload, params=params)
     if r.status_code == requests.codes.ok:
         six.print_(r.text)
     r.raise_for_status()
@@ -65,17 +63,13 @@ def bisque_insert(session, args):
     payload = None
     params = None
 
-    if not os.path.exists (args.srcpath):
-        six.print_()
-        return
-        resource = ET.Element ('resource', name=os.path.basename(args.srcpath))
-        if args.alias:
-            resource.attrib['owner'] = args.alias
-        xml = ET.tostring(resource)
-        #resource = "<resource name='%s' value='%s' />" % (os.path.basename(args.srcpath), args.srcpath )
+    if args.srcpath:
+        resource = "<resource name='%s' value='%s' />" % (os.path.basename(args.srcpath), args.srcpath )
         files  = { 'file': ( os.path.basename(args.srcpath), open(args.srcpath, 'rb')),
                    'file_resource' : ( None, xml, 'text/xml'),}
-    r  =  session.post (url, files=files)
+    if args.alias:
+        params = { 'user': args.alias }
+    r  =  session.post (url, files=files, params=params)
     if r.status_code == requests.codes.ok:
         six.print_(r.text)
     r.raise_for_status()
@@ -120,7 +114,7 @@ def main():
     parser.add_argument('--alias', help="do action on behalf of user specified")
     parser.add_argument('-d', '--debug', action="store_true", default=False, help="log debugging")
     parser.add_argument('-H', '--host', default=defaults['bisque_host'], help="bisque host")
-    parser.add_argument('-c', '--credentials', default="%s:%s" % (defaults['bisque_admin_user'], defaults["bisque_admin_pass"]), help="user credentials (default %s) " %defaults['bisque_admin_user'] )
+    parser.add_argument('-c', '--credentials', default="%s:%s" % (defaults['bisque_admin_user'], defaults["bisque_admin_pass"]), help="user credentials")
     parser.add_argument('-r', '--resource', default = None)
     parser.add_argument('-f', '--resource_file', default = None, help="tag document for insert")
 
