@@ -3,12 +3,12 @@
   extjs fixes
 -------------------------------------------------------*/
 
-.x-btn-group-default-framed {
+.webapp .x-btn-group-default-framed {
     background-color: #DDDDDD;
     border-color: #BBBBBB;
 }
 
-.x-menu-body {
+.webapp .x-menu-body {
     background-color: #f0f0f0 !important;
 }
 
@@ -20,23 +20,23 @@
   html styles
 -------------------------------------------------------*/
 
-body {
+body#webapp {
     background-color: white !important;
 }
 
-h2 {
+.webapp h2 {
   clear: left;
 }
 
-h3 {
+.webapp h3 {
     font-size: 18px;
 }
 
-.content {
+.webapp .content {
   margin: 0px 20px 0px 20px;
 }
 
-.content p {
+.webapp .content p {
   text-align: left;
 }
 
@@ -67,28 +67,28 @@ ol li {
   scrollbars
 -------------------------------------------------------*/
 
-::-webkit-scrollbar {
+.webapp ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
-::-webkit-scrollbar-track {
+.webapp ::-webkit-scrollbar-track {
     background-color: transparent;
 }
 
-::-webkit-scrollbar-track:hover {
+.webapp ::-webkit-scrollbar-track:hover {
     border-radius: 6px;
     background-color: rgba(0,0,0,0.2);
 }
 
-::-webkit-scrollbar-thumb {
+.webapp ::-webkit-scrollbar-thumb {
     /*background-color: transparent;*/
     /*-webkit-box-shadow: none;*/
     border-radius: 6px;
     background-color: rgba(0,0,0,0.05);
 }
 
-::-webkit-scrollbar-thumb:hover {
+.webapp ::-webkit-scrollbar-thumb:hover {
     border-radius: 6px;
     /*-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);*/
     background-color: rgba(0,0,0,0.4);
