@@ -186,13 +186,13 @@ Ext.define('BQ.Export.Panel', {
         });
     },
 
-    download : function(btn) {
+    download : function(_btn) {
         if (!this.resourceStore.count()) {
             BQ.ui.notification('Nothing to download! Please add files or datasets first...');
             return;
         }
         var btn = this.queryById('button_download');
-        btn.compression = btn.compression;
+        btn.compression = _btn.compression;
         btn.setLoading(true);
         setTimeout(function(){ btn.setLoading(false); }, 3000);
 
