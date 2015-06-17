@@ -877,6 +877,15 @@ QuadTree.prototype.cacheChildSprites = function(node, scale, onCache){
             //create a new image, in the async callback assign the image to the node's imageCache
             //scale the image region
 
+            var timeout = function(scope, cb){
+                if(scope.timeout) clearTimeout(scope.timeout);
+                scope.timeout = setTimeout(function(){
+                    scope.cachesRendered = 0;
+                    scope.cachesDestroyed = 0;
+                   cb();
+                }, 10);
+            }
+
             var afterImage = function(img){
                 //if(!node.dirty) return;
                 //create a new image
@@ -890,13 +899,7 @@ QuadTree.prototype.cacheChildSprites = function(node, scale, onCache){
                 this.node.dirty = false;
                 scope.cachesRendered += 1; //count the caches that have been rerendered since performing a cache call
                 //console.log(img.src);
-                if(scope.timeout) clearTimeout(scope.timeout);
-                scope.timeout = setTimeout(function(){
-                    scope.cachesRendered = 0;
-                    scope.cachesDestroyed = 0;
-                    onCache();
-                }, 10);
-
+                timeout(scope, onCache);
             };
 
             var image = layer.toImage({
@@ -909,7 +912,9 @@ QuadTree.prototype.cacheChildSprites = function(node, scale, onCache){
                 width: tw*scale + 2.0*buffer,
                 height:th*scale + 2.0*buffer,
             });
-            //if(!image) onCache();
+            //we have to do the timeout as well in case there is no image callback
+            if(!image)
+                timeout(this, onCache);
 
         }
     }
