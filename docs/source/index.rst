@@ -21,6 +21,9 @@ Some key ingredients are:
    * Data visualization system
 
 
+Is this compiling?
+
+
 .. toctree::
    :maxdepth: 2
 
@@ -29,6 +32,7 @@ Some key ingredients are:
    installation.rst
    advanced
    bisque-admin.rst
+   api.rst
 
 
 

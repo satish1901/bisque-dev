@@ -521,7 +521,7 @@ class MountServer(TGController):
             log.debug ("checking %s and %s" ,  prefix, storeurls[0])
             # KGK: TEMPORARY .. this should check readability by the driver
             driver = self._get_driver(store)
-            if driver.valid (storeurls[0]):
+            if driver and driver.valid (storeurls[0]):
                 # All *must* be valid for the same store
                 for storeurl in storeurls[1:]:
                     if not driver.valid (storeurl):
@@ -583,6 +583,9 @@ class MountServer(TGController):
         resource_name, sub  = split_subpath (resource.get ('name'))
         if fileobj:
             with  self._get_driver(store) as driver:
+                if driver is None:
+                    raise IllegalOperation("store doesn't exist")
+
                 if driver.readonly:
                     raise IllegalOperation('readonly store')
 
@@ -624,6 +627,10 @@ class MountServer(TGController):
             n.text = v
 
         with  self._get_driver(store) as driver:
+            if driver is None:
+                raise IllegalOperation("store doesn't exist")
+
+
             refs = resource.get ('value')
             if refs is not None:
                 refs = [ (resource, setval, split_subpath(refs), storepath) ]
@@ -706,6 +713,9 @@ class MountServer(TGController):
             return None
 
         with self._get_driver(store) as driver:
+            if driver is None:
+                raise IllegalOperation("store doesn't exist")
+
             uniq     = resource.get('resource_uniq')
             bloburls = resource.get('value')
             if bloburls is not None:
@@ -746,6 +756,9 @@ class MountServer(TGController):
             return None
 
         with self._get_driver(store) as driver:
+            if driver is None:
+                raise IllegalOperation("store doesn't exist")
+
             uniq     = resource.get('resource_uniq')
             bloburls = resource.get('value')
             if bloburls is None:
@@ -828,6 +841,9 @@ class MountServer(TGController):
     def _get_driver(self, store):
         "Create a  driver  for the user store"
         store_name = store.get ('name')
+        if store_name not in self.drivers:
+            return None
+
         driver_opts = dict(self.drivers.get (store_name))
 
         # Replace any default driver opts with tags
