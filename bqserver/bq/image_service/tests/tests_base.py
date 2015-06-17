@@ -184,7 +184,6 @@ class ImageServiceTestBase(unittest.TestCase):
     def upload_file(self, path, resource=None):
         #if resource is not None:
         #    print etree.tostring(resource)
-        print "PATH", path
         r = save_blob(self.session, path, resource=resource)
         if r is None or r.get('uri') is None:
             print 'Error uploading: %s'%path.encode('ascii', 'replace')
