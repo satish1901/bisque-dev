@@ -190,7 +190,7 @@ class ResponseCache(object):
 
     def _resource_cache_names(self, resource, user):
         names = [ "%s,%s" % (user if user else '',  resource.resource_uniq if resource else '') ]
-        if resource.permission == 'published':
+        if resource and resource.permission == 'published':
             names.append ( '0,%s' % resource.resource_uniq if resource else '' )
         return names
     def _resource_query_names(self, resource, user, *args):
