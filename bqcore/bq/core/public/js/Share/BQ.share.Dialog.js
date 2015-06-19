@@ -411,7 +411,10 @@ Ext.define('BQ.share.Panel', {
 
     onAddShare: function() {
         var email = this.queryById('user_combo').getValue();
-        if (!email) return;
+        if (!email) {
+            BQ.ui.notification('User must have an e-mail for sharing...');
+            return;
+        }
         if (!(/\S+@\S+\.\S+/.test(email))) {
             BQ.ui.notification('The e-mail seems malformed...');
             return;
@@ -442,6 +445,9 @@ Ext.define('BQ.share.Panel', {
         });
         recs[0].setDirty();
         this.queryById('main_grid').view.refresh();
+
+        // clear combo box when successfully added share
+        this.queryById('user_combo').setValue('');
     },
 
     onRemoveShare: function(grid, rowIndex) {
