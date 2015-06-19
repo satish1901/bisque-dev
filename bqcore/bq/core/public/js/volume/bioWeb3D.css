@@ -227,11 +227,10 @@ toolbar
 
 .bq-volume-toolbar {
     position: absolute;
-    z-index: 100 !important;
+    z-index: 0 !important;
     border: 0px;
     border-width: 0px;
     top: 80px;
-    height: 80% !important;
     right: 10px;
     width: 220px;
     padding: 0px 0px 0px 0px;
@@ -273,7 +272,7 @@ toolbar
     border: 0px; /*border: 2px solid #333333;*/
     height: 80% !important;
     border-radius: 0px 0px 5px 5px;
-    vertical-align: middle;
+    vertical-align: middle;;
 }
 
 
