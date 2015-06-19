@@ -1361,20 +1361,36 @@ function BQGObject(ty, uri){
 };
 BQGObject.prototype = new BQObject();
 //extend(BQGObject,BQObject)
-
-BQGObject.primitives = {
-    circle   : 'circle',
-    ellipse  : 'ellipse',
-    label    : 'label',
-    line     : 'line',
-    point    : 'point',
-    polygon  : 'polygon',
-    polyline : 'polyline',
-    freehand_line : 'freehand_line',
-    freehand_shape: 'freehand_shapse',
-    rectangle: 'rectangle',
-    square   : 'square',
-};
+if(window.location.hash == "#experimental"){
+    BQGObject.primitives = {
+        circle   : 'circle',
+        ellipse  : 'ellipse',
+        label    : 'label',
+        line     : 'line',
+        point    : 'point',
+        polygon  : 'polygon',
+        polyline : 'polyline',
+        freehand_line : 'freehand_line',
+        freehand_shape: 'freehand_shape',
+        smart_shape: 'smart_shape',
+        rectangle: 'rectangle',
+        square   : 'square',
+    };
+}
+else
+    BQGObject.primitives = {
+        circle   : 'circle',
+        ellipse  : 'ellipse',
+        label    : 'label',
+        line     : 'line',
+        point    : 'point',
+        polygon  : 'polygon',
+        polyline : 'polyline',
+        freehand_line : 'freehand_line',
+        freehand_shape: 'freehand_shape',
+        rectangle: 'rectangle',
+        square   : 'square',
+    };
 
 BQGObject.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);

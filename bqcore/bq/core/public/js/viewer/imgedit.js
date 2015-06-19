@@ -16,6 +16,7 @@ ImgViewer.gobFunction = {
     'polygon'   : 'new_polygon',
     'freehand_line'  : 'new_freehand_open',
     'freehand_shape'  : 'new_freehand_closed',
+    'smart_shape'  : 'new_smart_shape',
     'circle'    : 'new_circle',
     'ellipse'   : 'new_ellipse',
     'label'     : 'new_label',
@@ -936,6 +937,443 @@ ImgEdit.prototype.new_label = function (parent, e, x, y) {
             me.renderer.unselectCurrent();
         }
     });
+};
+
+/*
+ImgEdit.prototype.matchShape = function(parent, points, eigs){
+
+    var v = this.viewer.current_view;
+    var g;
+
+    if(points.length === 1){
+        g = new BQGObject('point');
+        parent = parent || this.global_parent;
+
+        if (parent) {
+            parent.addgobjects(g);
+            g.edit_parent = parent;
+        } else
+            this.viewer.image.addgobjects(g);
+        var p = points[0];
+        g.vertices.push (new BQVertex (p.x, p.y, v.z, v.t, null, 0));
+
+        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
+        return;
+    }
+
+    var A = 0;
+    var n = points.length;
+
+    var c = eigs.center;
+    var r = eigs.vals;
+    var rv = eigs.vecs;
+    var r0 = [r[0]*rv[0][0], r[0]*rv[0][1]];
+    var r1 = [r[1]*rv[1][0], r[1]*rv[1][1]];
+
+    var x1 = points[0];
+    var x2 = points[points.length - 1];
+
+    var l = Math.sqrt((x2.x - x1.x)*(x2.x - x1.x) + (x2.y - x1.y)*(x2.y - x1.y));
+    console.log(l/r[0]);
+    if(r[1]/r[0] < 0.5 && l/r[0] > 1){
+        g = new BQGObject('line');
+        parent = parent || this.global_parent;
+
+        if (parent) {
+            parent.addgobjects(g);
+            g.edit_parent = parent;
+        } else
+            this.viewer.image.addgobjects(g);
+
+        g.vertices.push (new BQVertex (c[0] - r[0]*rv[0][0], c[1] - r[0]*rv[0][1], v.z, v.t, null, 0));
+        g.vertices.push (new BQVertex (c[0] + r[0]*rv[0][0], c[1] + r[0]*rv[0][1], v.z, v.t, null, 1));
+
+        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
+        return;
+    }
+
+    bb = {min: [99999999,99999999], max: [-9999999,-9999999]};
+    for(var i = 0; i < points.length; i++){
+        var i_n = (i+1)%n;
+        var p0 = {x: c[0], y: c[1]};
+        var p1 = points[i];
+        var p2 = points[i_n];
+        bb.min[0] = Math.min(bb.min[0], points[i].x);
+        bb.min[1] = Math.min(bb.min[1], points[i].y);
+        bb.max[0] = Math.max(bb.max[0], points[i].x);
+        bb.max[1] = Math.max(bb.max[1], points[i].y);
+
+        var Ai = 0.5*((p1.x-p0.x)*(p2.y-p0.y) - (p1.y-p0.y)*(p2.x-p0.x));
+        A += Ai;
+    }
+    A = Math.abs(A);
+    var ra = 0.5*(r[0] + r[1]);
+
+    var dx = bb.max[0] - bb.min[0];
+    var dy = bb.max[1] - bb.min[1];
+    var da = 0.5*(dx + dy);
+    var Aell  = Math.PI*r[0]*r[1];
+    var Acirc = Math.PI*ra*ra;
+    //var Arect = 4*Math.abs((r0[0]*r1[1] - r0[1]*r1[0]));
+    var Arect = 4*r[0]*r[1];
+
+    //var Arect = dx*dy;
+
+    //var ArectBB = bb.min[0];
+    var Asqr = (da*da);
+
+
+    var testRect = new ShapeAnalyzer();
+    var dr = testRect.projectToRect(points, eigs);
+    var de = testRect.projectToEllipse(points, eigs);
+
+    var dell  = Math.sqrt((Aell - A)*(Aell - A))/A;
+    var drect = Math.sqrt((Arect - A)*(Arect - A))/A;
+
+
+    if(dr/A > 0.01 && de/A > 0.01){
+
+        g = new BQGObject('polygon');
+        parent = parent || this.global_parent;
+
+        if (parent) {
+            parent.addgobjects(g);
+            g.edit_parent = parent;
+        } else
+            this.viewer.image.addgobjects(g);
+        var points2 = [];
+        for(var i = 0; i < points.length; i++){
+            var p = points[i];
+            points2.push(p.x, p.y);
+        }
+        var simplePoints = visvalingamSimplify(points2, this.renderer.scale());
+
+        for(var i = 0; i < simplePoints.length; i+=2){
+            var px = simplePoints[i+0];
+            var py = simplePoints[i+1];
+            g.vertices.push (new BQVertex (px, py, v.z, v.t, null, i));
+        }
+
+        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
+        return;
+    }
+
+    if(de < dr){
+
+        if(Math.abs(1.0 - r[0]/r[1]) < 0.2){
+            g = new BQGObject('circle');
+            parent = parent || this.global_parent;
+
+            if (parent) {
+                parent.addgobjects(g);
+                g.edit_parent = parent;
+            } else
+                this.viewer.image.addgobjects(g);
+
+            g.vertices.push (new BQVertex (c[0], c[1], v.z, v.t, null, 0));
+            g.vertices.push (new BQVertex (c[0] + r[0]*rv[0][0], c[1] + r[0]*rv[0][1], v.z, v.t, null, 1));
+        }
+
+        else{
+            g = new BQGObject('ellipse');
+            parent = parent || this.global_parent;
+
+            if (parent) {
+                parent.addgobjects(g);
+                g.edit_parent = parent;
+            } else
+                this.viewer.image.addgobjects(g);
+
+            g.vertices.push (new BQVertex (c[0], c[1], v.z, v.t, null, 0));
+            g.vertices.push (new BQVertex (c[0] + r[0]*rv[0][0], c[1] + r[0]*rv[0][1], v.z, v.t, null, 1));
+            g.vertices.push (new BQVertex (c[0] + r[1]*rv[1][0], c[1] + r[1]*rv[1][1], v.z, v.t, null, 2));
+        }
+    }
+    else {
+        if(Math.abs(1.0 - r[0]/r[1]) < 0.2){
+            g = new BQGObject('square');
+        }
+
+        else{
+            g = new BQGObject('rectangle');
+        }
+            parent = parent || this.global_parent;
+
+        if (parent) {
+            parent.addgobjects(g);
+            g.edit_parent = parent;
+        } else
+            this.viewer.image.addgobjects(g);
+
+        g.vertices.push (new BQVertex (bb.min[0], bb.min[1], v.z, v.t, null, 0));
+        g.vertices.push (new BQVertex (bb.max[0], bb.max[1], v.z, v.t, null, 1));
+    }
+
+    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
+};
+*/
+
+ImgEdit.prototype.matchShape = function(parent, points, eigs){
+
+    var v = this.viewer.current_view;
+    var g;
+    var shape = {name: '', attributes: {}};
+    if(points.length === 1){
+        shape.name = 'point';
+        shape.vertices = [points[0]];
+        return shape;
+    }
+
+    var c = eigs.center;
+    var r = eigs.vals;
+    var v = eigs.vecs;
+    var bb = eigs.bbox;
+
+    var A = eigs.area;
+    var testRect = new ShapeAnalyzer();
+
+    var dl = testRect.projectToLine(points, eigs);
+    var dr = testRect.projectToRect(points, eigs);
+    var de = testRect.projectToEllipse(points, eigs);
+    if(isNaN(dl)) dl = 99999999;
+    if(isNaN(dr)) dr = 99999999;
+    if(isNaN(de)) de = 99999999;
+    //console.log(dl, dr, de);
+    if(dl < de && dl < dr){
+        shape.name = 'line';
+        shape.vertices = [{x: c[0] + r[0]*v[0][0], y: c[1] + r[0]*v[0][1]},
+                          {x: c[0] - r[0]*v[0][0], y: c[1] - r[0]*v[0][1]}]
+    }
+
+    /*
+    if(dr/A > 0.01 && de/A > 0.01){
+
+        g = new BQGObject('polygon');
+        parent = parent || this.global_parent;
+
+        if (parent) {
+            parent.addgobjects(g);
+            g.edit_parent = parent;
+        } else
+            this.viewer.image.addgobjects(g);
+        var points2 = [];
+        for(var i = 0; i < points.length; i++){
+            var p = points[i];
+            points2.push(p.x, p.y);
+        }
+        var simplePoints = visvalingamSimplify(points2, this.renderer.scale());
+
+        for(var i = 0; i < simplePoints.length; i+=2){
+            var px = simplePoints[i+0];
+            var py = simplePoints[i+1];
+            g.vertices.push (new BQVertex (px, py, v.z, v.t, null, i));
+        }
+
+        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
+        return;
+    }*/
+
+    else if(de < dr){
+        if(Math.abs(1.0 - r[0]/r[1]) < 0.2){
+            shape.name = 'circle';
+            shape.vertices = [{x: c[0], y: c[1]},
+                              {x: c[0] + r[0]*v[0][0], y: c[1] + r[0]*v[0][1]}];
+
+        }
+
+        else{
+            shape.name = 'ellipse';
+            shape.vertices = [{x: c[0], y: c[1]},
+                              {x: c[0] + r[0]*v[0][0], y: c[1] + r[0]*v[0][1]},
+                              {x: c[0] + r[1]*v[1][0], y: c[1] + r[1]*v[1][1]}];
+        }
+    }
+    else {
+        if(Math.abs(1.0 - r[0]/r[1]) < 0.2){
+            shape.name = 'square';
+
+        }
+
+        else{
+            shape.name = 'rectangle';
+        }
+        shape.vertices = [{x: bb.min[0], y: bb.min[1]},
+                          {x: bb.max[0], y: bb.max[1]}];
+    }
+    return shape;
+};
+
+ImgEdit.prototype.new_smart_shape = function (parent, e, x, y) {
+
+    var me = this;
+    var v = this.viewer.current_view;
+    var g = this.current_gob;
+    parent = parent || this.global_parent;
+
+    var points = [];
+    var gpoints = [];
+
+    var ept = me.renderer.getUserCoord(e);
+    var pte = v.inverseTransformPoint(ept.x, ept.y);
+    points.push(pte);
+
+
+    var gestureLayer = new Kinetic.Layer();
+    this.renderer.stage.add(gestureLayer);
+    var scale = this.renderer.scale();
+
+    var gesture = new Kinetic.Line({
+        points: gpoints,
+        close: true,
+        //fill: ,
+        //fillAlpha: 0.5,
+        stroke: 'rgb(255,0,0)',
+        strokeWidth: 2/scale,
+    });
+
+    var line = new Kinetic.Line({
+        points: [],
+        fill: 'rgba(128,128,128, 0.25)',
+        stroke: 'rgb(128,128,128)',
+        strokeWidth: 2/scale,
+    });
+
+    var ellipse = new Kinetic.Ellipse({
+        points: [],
+        close: true,
+        fill: 'rgba(128,128,128,0.5)',
+        stroke: 'rgba(128,128,128,0.25)',
+        strokeWidth: 1/scale,
+    });
+
+    var circle = new Kinetic.Circle({
+        fill: 'rgba(128,128,128,0.5)',
+        stroke: 'rgba(128,128,128,0.25)',
+        strokeWidth: 1/scale,
+    });
+
+    var rect = new Kinetic.Rect({
+        fill: 'rgba(128,128,128,0.5)',
+        stroke: 'rgba(128,128,128,0.25)',
+        strokeWidth: 1/scale,
+    });
+
+    gestureLayer.add(gesture);
+    var cshape = line;
+    gestureLayer.add(cshape);
+
+    var drag = function(e){
+        e.evt.cancelBubble = true;
+
+        var me = this.context;
+        var v = me.renderer.viewer.current_view;
+
+        var ept = me.renderer.getUserCoord(e);
+        var pte = v.inverseTransformPoint(ept.x, ept.y);
+        points.push(pte);
+        gpoints.push(pte.x, pte.y);
+
+        var testShape = new ShapeAnalyzer();
+        var L = testShape.PCA(points);
+        var shape = me.matchShape(parent, points, L);
+        cshape.remove();
+        switch(shape.name){
+            case 'line': {
+                console.log(shape.vertices);
+                line.points([shape.vertices[0].x, shape.vertices[0].y,
+                             shape.vertices[1].x, shape.vertices[1].y]);
+                cshape = line;
+                break;
+            }
+
+            case 'ellipse': {
+                var p1 = shape.vertices[0];
+                var p2 = shape.vertices[1];
+                var p3 = shape.vertices[2];
+                var rx =  L.vals[0];
+                var ry =  L.vals[1];
+                var ang = Math.atan2(p1.y-p2.y, p1.x-p2.x) * 180.0/Math.PI;
+                ellipse.x(p1.x);
+                ellipse.y(p1.y);
+                ellipse.radiusX(rx);
+                ellipse.radiusY(ry);
+                ellipse.rotation(ang + 180);
+                cshape = ellipse;
+                break;
+            }
+
+            case 'circle': {
+                var p1 = shape.vertices[0];
+                var p2 = shape.vertices[1];
+                var r =  L.vals[0];
+                var ang = Math.atan2(p1.y-p2.y, p1.x-p2.x) * 180.0/Math.PI;
+                circle.x(p1.x);
+                circle.y(p1.y);
+                circle.radius(r);
+                circle.rotation(ang + 180);
+                cshape = circle;
+                break;
+            }
+
+            case 'rectangle': {
+                var p1 = shape.vertices[0];
+                var p2 = shape.vertices[1];
+                var r =  L.vals[0];
+                var ang = Math.atan2(p1.y-p2.y, p1.x-p2.x) * 180.0/Math.PI;
+                rect.width(L.width);
+                rect.height(L.height);
+                rect.x(p1.x);
+                rect.y(p1.y);
+                cshape = rect;
+                break;
+            }
+
+            case 'square': {
+                var p1 = shape.vertices[0];
+                var p2 = shape.vertices[1];
+                var r =  L.vals[0];
+                var ang = Math.atan2(p1.y-p2.y, p1.x-p2.x) * 180.0/Math.PI;
+                rect.width(L.width);
+                rect.height(L.height);
+                rect.x(p1.x);
+                rect.y(p1.y);
+                cshape = rect;
+                break;
+            }
+
+        }
+        gestureLayer.add(cshape);
+        gestureLayer.draw();
+    };
+
+
+    this.renderer.setmousemove(callback({context: this, points: points},drag));
+    this.renderer.setmouseup(callback(this,function(e){
+        //me.on_move(me.current_gob);
+        me.current_gob = null;
+        me.renderer.setmousemove(null);
+        me.renderer.setmouseup(null);
+        me.renderer.unselectCurrent();
+        //me.renderer.selectedSet = [g.shape];
+        //me.renderer.select(me.renderer.selectedSet);
+        //me.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
+        //g.shape.postEnabled = true;
+        //var pca = new ShapeAnalyzer();
+        //var L = pca.PCA(points);
+        //me.matchShape(parent, points, L);
+        setTimeout(function(){
+
+            gestureLayer.remove();
+            gesture.remove();
+            delete gestureLayer;
+            delete gesture;
+            delete points;
+            delete gpoints;
+        },300);
+
+        me.renderer.unselectCurrent();
+    }));
+
 };
 
 ImgEdit.prototype.newComplex = function (type, internal_gob, parent, e, x, y) {
