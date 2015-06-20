@@ -1,3 +1,5 @@
+
+
 Ext.define('BQ.Calibration.StackCount', {
     extend: 'Ext.form.NumberField',
     dimension: 'z',
@@ -47,7 +49,7 @@ Ext.define('BQ.Calibration.ChannelOrder', {
         var config = config || {};
         Ext.apply(me, {
             dimsXpath: '//tag[@name="dimension"]',
-        }); 
+        });
         this.callParent([config]);
     },
     setValues: function(xmlDoc) {
@@ -68,7 +70,7 @@ Ext.define('BQ.Calibration.ChannelOrder', {
             }
         }
     },
-    
+
     changed: function() {
         var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.dimsXpath+'/@value')||'';
         return oldValue!=this.value
@@ -76,7 +78,10 @@ Ext.define('BQ.Calibration.ChannelOrder', {
 })
 
 Ext.define('BQ.Calibration.PixelResolution', {
+    alias: 'widget.bq-calibration-pixel-resolution',
     extend: 'Ext.form.Panel',
+    componentCls: 'bq-pixel-resolution',
+
     dimension: 'x',
     width: '100%',
     border: false,
@@ -84,42 +89,38 @@ Ext.define('BQ.Calibration.PixelResolution', {
         type: 'hbox',
         //pack: 'center',
     },
-    initComponent: function(config) {
-        var me = this;
-        var config = config || {};
-        var items = [];
-        items.push({
-            text: 'Pixel Resolution '+this.dimension,
+    initComponent: function() {
+        var d = this.dimension;
+        this.items = [{
+            text: 'Pixel Resolution '+d,
             xtype: 'label',
-            margins: '5px',
-        });
-        items.push({
-            name: 'pixel_resolution_'+this.dimension,
+            margins: '0 10px 0 0',
+        }, {
+            name: 'pixel_resolution_'+d,
             xtype: 'numberfield',
             decimalPrecision : 6,
-            margins: '5px',
-        });        
-        items.push({
-            name: 'pixel_resolution_unit_'+this.dimension,
+            margins: '0 10px 0 0',
+        }, {
+            name: 'pixel_resolution_unit_'+d,
             xtype:'combobox',
             store: Object.keys(BQ.api.Phys.units),
-            margins: '5px',
-        });
-        Ext.apply(me, {
+            margins: '0 10px 0 0',
+        }];
+        Ext.apply(this, {
             //fieldLabel: this.dimension.toUpperCase()+'-Stack Count',
-            resolutionXpath: '//tag[@name="pixel_resolution_'+this.dimension+'"]',
-            unitsXpath: '//tag[@name="pixel_resolution_unit_'+this.dimension+'"]',
+            resolutionXpath: '//tag[@name="pixel_resolution_'+d+'"]',
+            unitsXpath: '//tag[@name="pixel_resolution_unit_'+d+'"]',
             bodyStyle: 'margin: "center"',
-            items: items,
-        }); 
-        this.callParent([config]);
+            //items: items,
+        });
+        this.callParent(arguments);
     },
     setValues: function(xmlDoc) {
         this.originalMetaDoc = xmlDoc; //save document
         var resolutionValue = BQ.util.xpath_number(xmlDoc, this.resolutionXpath+'/@value');
         var resolutionForm = this.getForm().findField('pixel_resolution_'+this.dimension.toLowerCase());
         resolutionForm.setValue(resolutionValue||'');
-            
+
         var unitValue = BQ.util.xpath_string(xmlDoc, this.unitsXpath+'/@value');
         var unitForm = this.getForm().findField('pixel_resolution_unit_'+this.dimension.toLowerCase());
         unitForm.setValue(unitValue||'');
@@ -136,7 +137,7 @@ Ext.define('BQ.Calibration.PixelResolution', {
                 var tag = document.createElement('tag');
                 tag.setAttribute('name', 'pixel_resolution_'+this.dimension.toLowerCase());
                 tag.setAttribute('type', 'number');
-                tag.setAttribute('value', value);              
+                tag.setAttribute('value', value);
                 tagList.push(tag);
             }
         }
@@ -152,20 +153,20 @@ Ext.define('BQ.Calibration.PixelResolution', {
                 tagList.push(tag);
             }
         }
-        return tagList; 
+        return tagList;
     },
-    
+
     changed: function() {
         var unitForm = this.getForm().findField('pixel_resolution_'+this.dimension);
         var value = unitForm.getValue()||'';
         var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.resolutionXpath+'/@value')||'';
         var changedFlag = oldValue!=value;
-        
+
         var unitForm = this.getForm().findField('pixel_resolution_unit_'+this.dimension);
         var value = unitForm.getValue()||'';
-        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.unitsXpath+'/@value')||'';  
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.unitsXpath+'/@value')||'';
         var changedFlag = oldValue!=value || changedFlag;
-        
+
         return changedFlag;
     },
 });
@@ -186,7 +187,7 @@ Ext.define('BQ.Calibration.ChannelPanel', {
         items.push({ //channel number
             text: this.channel,
             xtype: 'label',
-            labelAlign: 'right', 
+            labelAlign: 'right',
             margins: '8px',
             flex: 1,
             style: {
@@ -221,7 +222,7 @@ Ext.define('BQ.Calibration.ChannelPanel', {
                 id: 'channel_color_'+me.channel,
                 xtype: 'colorfield',
                 value: this.color.toString().replace('#', ''),
-                
+
                 listeners: {
                     scope: this,
                     change: function(field, value) {
@@ -236,7 +237,7 @@ Ext.define('BQ.Calibration.ChannelPanel', {
         });
         this.callParent([config]);
     },
-    
+
     setValues: function(xmlDoc) {
         this.originalMetaDoc = xmlDoc; //save document
         if (this.channel != undefined){
@@ -251,7 +252,7 @@ Ext.define('BQ.Calibration.ChannelPanel', {
             var colorValue = BQ.util.xpath_string(xmlDoc, colorXpath)||'0,0,0';
             if (colorValue) { //add color if color found
                 //convert to hex
-                var colors = colorValue.match(/(\d*),(\d*),(\d*)/); //return the value only	
+                var colors = colorValue.match(/(\d*),(\d*),(\d*)/); //return the value only
                 if (colors) {
                     var r = parseInt(colors[1]);
                     var g = parseInt(colors[2]);
@@ -266,9 +267,9 @@ Ext.define('BQ.Calibration.ChannelPanel', {
                 }
             }
         }
-        
+
     },
-    
+
     fromXmlNode: function(imageMeta) {
         var tagList = [];
         var nameXpath = '//tag[@name="channel_'+this.channel+'_name"]/@value';
@@ -297,18 +298,18 @@ Ext.define('BQ.Calibration.ChannelPanel', {
         }
         return tagList
     },
-    
+
     changed: function() {
         var nameXpath = '//tag[@name="channel_'+this.channel+'_name"]/@value';
         var oldValue = BQ.util.xpath_string(this.originalMetaDoc, nameXpath)||'';
         var changedFlag = oldValue!=this.name
-        
+
         var colorXpath = '//tag[@name="channel_color_'+this.channel+'"]/@value';
         var oldValue = BQ.util.xpath_string(this.originalMetaDoc, colorXpath)||'0,0,0';
         var color = Ext.draw.Color.fromString(this.color);
         var color = color.r+','+color.g+','+color.b;
         var changedFlag = oldValue!=color || changedFlag;
-        
+
         return changedFlag;
     },
 });
@@ -323,17 +324,17 @@ Ext.define('BQ.Calibration.ChannelOrganizer', {
     height: '200px',
     width: '80%',
     margin: '10px',
-    
+
     initComponent: function(config) {
         var me = this;
         var config = config || {};
-        var items = [];  
+        var items = [];
         Ext.apply(me, {
             items: items,
-        }); 
+        });
         this.callParent([config]);
     },
-    
+
     setValues: function(xmlDoc) { //resets the entire panel
         this.originalMetaDoc = xmlDoc; //save document
         this.chStore = []; //resets chStore
@@ -341,7 +342,7 @@ Ext.define('BQ.Calibration.ChannelOrganizer', {
         while(i = this.items.first()){ //clear old panel
             this.remove(i, true);
         }
-        
+
         this.add({ //title
             width: '100%',
             xtype: 'panel',
@@ -373,26 +374,26 @@ Ext.define('BQ.Calibration.ChannelOrganizer', {
                 }
             }]
         });
-        
+
         for (var c=0; c<this.channelNum; c++) {
             var channelPanel = Ext.create('BQ.Calibration.ChannelPanel', {
                 channel: c.toString(),
             });
             this.add(channelPanel)
-            channelPanel.setValues(xmlDoc) 
+            channelPanel.setValues(xmlDoc)
             this.chStore.push(channelPanel)
         }
         this.doLayout();
     },
-    
+
     fromXmlNode: function(imageMeta) {
         var tagList = [];
         for (var c=0; c<this.chStore.length; c++) {
             tagList = tagList.concat(this.chStore[c].fromXmlNode(imageMeta));
         }
-        return tagList;        
+        return tagList;
     },
-    
+
     changed: function() {
         var changedFlag = false;
         for (var c=0; c<this.chStore.length; c++) {
@@ -400,7 +401,7 @@ Ext.define('BQ.Calibration.ChannelOrganizer', {
         }
         return changedFlag;
     },
-    
+
     setChannelNum: function(value, xmlDoc) {
         this.channelNum = value;
         this.setValues(xmlDoc);
@@ -416,11 +417,12 @@ Ext.define('BQ.viewer.Calibration', {
     image_resource: '', //data_service url (ex. '/data_service/($id)')
     //viewer: {}, //required
     buttonAlign: 'center',
+
     initComponent: function(config) {
         var config = config || {};
         var items = [];
         var me = this;
-        
+
         fbar = [{
             scale: 'large',
             xtype: 'button',
@@ -448,7 +450,7 @@ Ext.define('BQ.viewer.Calibration', {
                         BQ.ui.error('Image Meta failed to be servered for this resource from image service!');
                     },
                     scope: me,
-                });      
+                });
             },
         }, {
             scale: 'large',
@@ -456,8 +458,8 @@ Ext.define('BQ.viewer.Calibration', {
             xtype: 'button',
             text: 'Set Default',
             handler: me.getImageMetaTag.bind(me, me.deleteImageMeta),
-        }],        
-        
+        }],
+
         this.imageMetaForm = Ext.create('Ext.form.Panel', {
             height : '100%',
             width : '50%',
@@ -493,8 +495,8 @@ Ext.define('BQ.viewer.Calibration', {
                 BQ.ui.error('Image Meta failed to be servered for this resource from image service!');
             },
             scope: this,
-        });        
-        
+        });
+
         //set the scales of the lines and return the pixel scaling factor
         this.imageCalibForm = Ext.create('Ext.form.Panel', {
             //flex: 2,
@@ -518,21 +520,21 @@ Ext.define('BQ.viewer.Calibration', {
                 margins: '5px',
             },
         });
-        
+
         items.push(this.imageMetaForm);
         items.push(this.imageCalibForm);
-        
+
         Ext.apply(me, {
             fbar: fbar,
             items: items,
-        }); 
+        });
         this.callParent([config]);
         this.constructImageCalibrationForm()
     },
-    
+
     constructImageCalibrationForm: function() {
         var me = this;
-        
+
         this.imageCalibForm.add({
             xtype: 'box',
             html: '<h2>Image Resolution Calibration</h2><p>A fast an easy way to calibrate pixel resolution when the values are not present.</p>',
@@ -541,20 +543,19 @@ Ext.define('BQ.viewer.Calibration', {
             padding: '0px',
             margins:'0px',
         });
-        
+
         this.imageCalibForm.formComponents['reference_length'] = Ext.createWidget('numberfield',{
             fieldLabel: 'Reference Length',
             //xtype: 'numberfield',
             decimalPrecision : 6,
             margin: '10px',
-            minValue: 0,           
+            minValue: 0,
             listeners: {
-                change : function() {
-                    me.updateReferenceLength()
-                }
+                scope: this,
+                change: this.updateReferenceLength,
             },
         });
-        
+
         this.imageCalibForm.add({
             border: false,
             layout: {
@@ -562,7 +563,7 @@ Ext.define('BQ.viewer.Calibration', {
                 type: 'hbox',
                 //pack: 'justify'
                 //pack: 'center',
-            },            
+            },
             width: '100%',
             padding: '0px',
             margins:'0px',
@@ -577,7 +578,7 @@ Ext.define('BQ.viewer.Calibration', {
                 },
             ],
         });
-        
+
         this.imageCalibForm.add({
             xtype: 'box',
             html: '<p>Select the gobject line in the image viewer and draw a line spanning the reference length in the image. The average of the lines drawn will update the x-y pixel resolutions.</p>',
@@ -586,20 +587,20 @@ Ext.define('BQ.viewer.Calibration', {
             padding: 0,
             margins:'0px',
         });
-        
+
         this.imageCalibForm.formComponents['imgViewer'] = this.imageCalibForm.add(
             Ext.create('BQ.viewer.Image',{
                 width:'100%',
                 flex: 1,
-                resource: me.image_resource,               
+                resource: me.image_resource,
                 parameters: {
                     onlyedit: true,
                     nosave: true,
                     editprimitives: 'Line',
                 },
-                
+
                 listeners: {
-                    'afterPhys': me.updateReferenceLength.bind(me),
+                    //'afterPhys': me.updateReferenceLength.bind(me),
                     'changed': me.updateReferenceLength.bind(me),
                     'delete': me.updateReferenceLength.bind(me),
                     'moveend': me.updateReferenceLength.bind(me),
@@ -607,11 +608,11 @@ Ext.define('BQ.viewer.Calibration', {
             })
         );
     },
-    
+
     constructImageMetaForm: function(imMetaXML) {
         //add components
         var me = this;
-        
+
         this.imageMetaForm.add({
             xtype: 'box',
             html: '<h2>Image Calibrator</h2><p>Welcome to the image calibrator. Edit the fields that need to be corrected and update the metadata by selecting Save. If a field is left empty or 0 the original metadata will be applied.</p>',
@@ -619,59 +620,59 @@ Ext.define('BQ.viewer.Calibration', {
             cls: 'imgmetaeditor',
             padding: '0px',
             margins:'0px',
-        });        
-        
-        
+        });
+
+
         //stack count panel
         this.imageMetaForm.formComponents['image_num_z'] = this.imageMetaForm.add(
             Ext.create('BQ.Calibration.StackCount',{
                 dimension: 'z',
             })
         );
-        
+
         this.imageMetaForm.formComponents['image_num_t'] = this.imageMetaForm.add(
             Ext.create('BQ.Calibration.StackCount',{
                 dimension: 't',
             })
         );
-        
+
         this.imageMetaForm.formComponents['image_num_c'] = this.imageMetaForm.add(
             Ext.create('BQ.Calibration.StackCount',{
                 dimension: 'c',
             })
         );
-        
+
         /*
         this.imageMetaForm.formComponents['dimension'] = this.imageMetaForm.add(
             Ext.create('BQ.Calibration.ChannelOrder')
         );
         */
-        
+
         //dimensions panel
         this.imageMetaForm.formComponents['pixel_resolution_x'] = this.imageMetaForm.add(
             Ext.create('BQ.Calibration.PixelResolution',{
                 dimension: 'x',
             })
         );
-        
+
         this.imageMetaForm.formComponents['pixel_resolution_y'] = this.imageMetaForm.add(
             Ext.create('BQ.Calibration.PixelResolution',{
                 dimension: 'y',
             })
         );
-        
+
         this.imageMetaForm.formComponents['pixel_resolution_z'] = this.imageMetaForm.add(
             Ext.create('BQ.Calibration.PixelResolution',{
                 dimension: 'z',
             })
         );
-        
+
         this.imageMetaForm.formComponents['pixel_resolution_t'] = this.imageMetaForm.add(
             Ext.create('BQ.Calibration.PixelResolution',{
                 dimension: 't',
             })
         );
-        
+
         //channel panel
         this.imageMetaForm.add({
             xtype: 'box',
@@ -681,18 +682,18 @@ Ext.define('BQ.viewer.Calibration', {
             padding: '0px',
             margins:'0px',
         });
-        
+
         this.imageMetaForm.formComponents['channels'] = this.imageMetaForm.add(
             Ext.create('BQ.Calibration.ChannelOrganizer')
         );
-        
+
         //adding listeners to components
         this.imageMetaForm.formComponents['image_num_c'].on('change', function() {
             //var image_num_c_value = me.value;
             //set back to default
             me.imageMetaForm.formComponents['channels'].setChannelNum(this.value, imMetaXML)
         });
-        
+
         //populate values
         this.setFormValues(imMetaXML);
     },
@@ -701,7 +702,7 @@ Ext.define('BQ.viewer.Calibration', {
         var me = this;
         var gobjects = this.imageCalibForm.formComponents['imgViewer'].getGobjects();
         var estimated = this.imageCalibForm.formComponents['reference_length'].getValue();
-        var xform = me.imageMetaForm.formComponents['pixel_resolution_x'].getForm().findField('pixel_resolution_x'); 
+        var xform = me.imageMetaForm.formComponents['pixel_resolution_x'].getForm().findField('pixel_resolution_x');
         var yform = me.imageMetaForm.formComponents['pixel_resolution_y'].getForm().findField('pixel_resolution_y');
         if (estimated && gobjects.length>0) {
             var lengths = [];
@@ -709,7 +710,7 @@ Ext.define('BQ.viewer.Calibration', {
                 //distance of gobjcts times scalar
                 var x1 = gobjects[g].vertices[0].x;
                 var x2 = gobjects[g].vertices[1].x;
-                
+
                 var y1 = gobjects[g].vertices[0].y;
                 var y2 = gobjects[g].vertices[1].y;
                 lengths.push(Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2)));
@@ -726,9 +727,9 @@ Ext.define('BQ.viewer.Calibration', {
         } else {
             xform.setValue();
             yform.setValue();
-        }        
+        }
     },
-    
+
     setFormValues: function(imMetaXML) {
         if (this.imageMetaForm.formComponents) {
             for (var k in this.imageMetaForm.formComponents) {
@@ -736,8 +737,8 @@ Ext.define('BQ.viewer.Calibration', {
             }
         }
     },
-    
-    
+
+
     getImageMetaTag: function(cb) {
         var me = this;
         //request for image meta
@@ -757,7 +758,7 @@ Ext.define('BQ.viewer.Calibration', {
             scope: this,
         });
     },
-    
+
     //POST all values back to data_service
     updateImageMeta: function(imMetaXML) {
         //image meta check for multi tiff to put the correct tags
@@ -787,13 +788,13 @@ Ext.define('BQ.viewer.Calibration', {
             BQ.ui.notification('Nothing updated.');
             return
         }
-        
+
         //since nothing is in image meta the tag is removed
         if (image_meta.childElementCount<1) {
             me.deleteImageMeta(imMetaXML); //remove image meta
             return;
         }
-        
+
         me.setLoading('Setting Metadata')
         //post to image meta
         Ext.Ajax.request({
@@ -812,7 +813,7 @@ Ext.define('BQ.viewer.Calibration', {
             scope: this,
         });
     },
-    
+
     deleteImageMeta: function(imMetaXML) {
         var me = this;
         var uri = BQ.util.xpath_string(imMetaXML, '//tag[@name="image_meta"]/@uri');
@@ -831,21 +832,52 @@ Ext.define('BQ.viewer.Calibration', {
                     BQ.ui.error('Failed to delete Image Meta Tag!');
                 },
                 scope: this,
-            });               
+            });
         } else {
             BQ.ui.notification('No image meta found.');
             return
         }
     },
-    
+
     cleanImageCache: function() {
-        var me = this;
+        var me = this,
+            url = this.image_resource.replace('/data_service/', '/image_service/');
         Ext.Ajax.request({
             method: 'POST',
             disableCaching: false,
             headers: { 'Content-Type': 'text/xml' },
             url: this.image_resource+'/pixels?cleancache=true',
             success: function(response) {
+
+                // invalidate browser cache of image metadata
+                Ext.Ajax.request({
+                    method: 'GET',
+                    disableCaching: false,
+                    headers: { 'Cache-Control': 'no-cache, max-age=0, must-revalidate', 'Pragma': 'no-cache', },
+                    //If-Modified-Since: Fri, 12 May 2006 19:03:59 GMT
+                    //If-None-Match: W/"50b1c1d4f775c61:df3"
+
+                    url: url+'?meta',
+                    scope: this,
+                    success: function(response) {
+                        me.setLoading(false);
+                        Ext.MessageBox.show({
+                            title: 'Updated Image Meta Data',
+                            msg: 'Updating image metadata was successful! Clean browser cache and then click ok to reload the page.',
+                            buttons: Ext.MessageBox.OK,
+                            scope: this,
+                            fn: function() {
+                                location.reload(true);
+                            },
+                        });
+                    },
+                    failure: function(response) {
+                        me.setLoading(false);
+                        BQ.ui.error('Browser cache has failed to clear!');
+                    },
+                });
+
+                /*
                 me.setLoading(false);
                 Ext.MessageBox.show({
                     title: 'Updated Image Meta Data',
@@ -856,10 +888,11 @@ Ext.define('BQ.viewer.Calibration', {
                         location.reload(true);
                     },
                 });
+                */
             },
             failure: function(response) {
                 me.setLoading(false);
-                BQ.ui.error('Image cache has failed to clear!');
+                BQ.ui.error('Server side cache has failed to clear!');
             },
             scope: this,
         });
