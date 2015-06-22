@@ -179,9 +179,19 @@ ShapeAnalyzer.prototype.projectToLine = function(points, eigs, Ls){
     return dtotal;
 }
 
-ShapeAnalyzer.prototype.projectToRect = function(points, eigs, Ls){
+ShapeAnalyzer.prototype.projectToRect = function(points, eigs, layer, scale){
 
     //projects points to an axis aligned bounding defined by the eigenvalues and returns a score
+    var Ls = [];
+    for(var i = 0; i < 4; i++){
+        var line = new Kinetic.Line({
+            points: [],
+            stroke: 'rgb(0,256,0)',
+            strokeWidth: 4/scale,
+        });
+        Ls.push(line);
+        layer.add(line);
+    }
     var c = eigs.center;
     var r = eigs.vals;
     var v = eigs.vecs;
@@ -206,6 +216,16 @@ ShapeAnalyzer.prototype.projectToRect = function(points, eigs, Ls){
             (x1[0] - p.x  )*(x2[1] - x1[1]);
         var den = (x2[0] - x1[0])*(x2[0] - x1[0]) + (x2[1] - x1[1])*(x2[1] - x1[1]);
         return num*num/den;
+    };
+
+    var dProj = function(p, x1, r){
+        //project a point, p onto a ray x1 and r(unit).
+        //r us unit
+        var v = [p[0] - x1[0], p[1] - x1[1]];
+        var C =
+            v[0]*r[0] + v[1]*r[1];
+        var out = [x1[0] + C*r[0], x1[1] + C*r[1]];
+        return out;
     };
 
     for(var i = 0; i < points.length; i++){
@@ -249,6 +269,12 @@ ShapeAnalyzer.prototype.projectToRect = function(points, eigs, Ls){
         cp[i][0] = cpi[0];
         cp[i][1] = cpi[1];
     }
+    //var cpt = [];
+
+    cp[0] = dProj(cp[0], c, v[1]);
+    cp[1] = dProj(cp[1], c, v[1]);
+    cp[2] = dProj(cp[2], c, v[0]);
+    cp[3] = dProj(cp[3], c, v[0]);
 
     /*
     if(Ls){
@@ -280,12 +306,13 @@ ShapeAnalyzer.prototype.projectToRect = function(points, eigs, Ls){
     }
     /*
     if(Ls){
-        Ls[0].points([cp[0][0],cp[0][1], cp[0][0]+200*cL[0][0], cp[0][1]+200*cL[0][1]]);
-        Ls[1].points([cp[1][0],cp[1][1], cp[1][0]+200*cL[1][0], cp[1][1]+200*cL[1][1]]);
-        Ls[2].points([cp[2][0],cp[2][1], cp[2][0]+200*cL[2][0], cp[2][1]+200*cL[2][1]]);
-        Ls[3].points([cp[3][0],cp[3][1], cp[3][0]+200*cL[3][0], cp[3][1]+200*cL[3][1]]);
-    }
-    */
+        Ls[0].points([cp[0][0],cp[0][1], cp[0][0]+r[0]*cL[0][0], cp[0][1]+r[0]*cL[0][1]]);
+        Ls[1].points([cp[1][0],cp[1][1], cp[1][0]+r[0]*cL[1][0], cp[1][1]+r[0]*cL[1][1]]);
+        Ls[2].points([cp[2][0],cp[2][1], cp[2][0]+r[1]*cL[2][0], cp[2][1]+r[1]*cL[2][1]]);
+        Ls[3].points([cp[3][0],cp[3][1], cp[3][0]+r[1]*cL[3][0], cp[3][1]+r[1]*cL[3][1]]);
+
+    }*/
+
     //eigs.width =
     //console.log(cp);
     //eigs.width = cp[1][0] - cp[0][0];

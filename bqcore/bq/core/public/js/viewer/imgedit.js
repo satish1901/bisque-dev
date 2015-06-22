@@ -939,181 +939,8 @@ ImgEdit.prototype.new_label = function (parent, e, x, y) {
     });
 };
 
-/*
-ImgEdit.prototype.matchShape = function(parent, points, eigs){
 
-    var v = this.viewer.current_view;
-    var g;
-
-    if(points.length === 1){
-        g = new BQGObject('point');
-        parent = parent || this.global_parent;
-
-        if (parent) {
-            parent.addgobjects(g);
-            g.edit_parent = parent;
-        } else
-            this.viewer.image.addgobjects(g);
-        var p = points[0];
-        g.vertices.push (new BQVertex (p.x, p.y, v.z, v.t, null, 0));
-
-        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-        return;
-    }
-
-    var A = 0;
-    var n = points.length;
-
-    var c = eigs.center;
-    var r = eigs.vals;
-    var rv = eigs.vecs;
-    var r0 = [r[0]*rv[0][0], r[0]*rv[0][1]];
-    var r1 = [r[1]*rv[1][0], r[1]*rv[1][1]];
-
-    var x1 = points[0];
-    var x2 = points[points.length - 1];
-
-    var l = Math.sqrt((x2.x - x1.x)*(x2.x - x1.x) + (x2.y - x1.y)*(x2.y - x1.y));
-    console.log(l/r[0]);
-    if(r[1]/r[0] < 0.5 && l/r[0] > 1){
-        g = new BQGObject('line');
-        parent = parent || this.global_parent;
-
-        if (parent) {
-            parent.addgobjects(g);
-            g.edit_parent = parent;
-        } else
-            this.viewer.image.addgobjects(g);
-
-        g.vertices.push (new BQVertex (c[0] - r[0]*rv[0][0], c[1] - r[0]*rv[0][1], v.z, v.t, null, 0));
-        g.vertices.push (new BQVertex (c[0] + r[0]*rv[0][0], c[1] + r[0]*rv[0][1], v.z, v.t, null, 1));
-
-        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-        return;
-    }
-
-    bb = {min: [99999999,99999999], max: [-9999999,-9999999]};
-    for(var i = 0; i < points.length; i++){
-        var i_n = (i+1)%n;
-        var p0 = {x: c[0], y: c[1]};
-        var p1 = points[i];
-        var p2 = points[i_n];
-        bb.min[0] = Math.min(bb.min[0], points[i].x);
-        bb.min[1] = Math.min(bb.min[1], points[i].y);
-        bb.max[0] = Math.max(bb.max[0], points[i].x);
-        bb.max[1] = Math.max(bb.max[1], points[i].y);
-
-        var Ai = 0.5*((p1.x-p0.x)*(p2.y-p0.y) - (p1.y-p0.y)*(p2.x-p0.x));
-        A += Ai;
-    }
-    A = Math.abs(A);
-    var ra = 0.5*(r[0] + r[1]);
-
-    var dx = bb.max[0] - bb.min[0];
-    var dy = bb.max[1] - bb.min[1];
-    var da = 0.5*(dx + dy);
-    var Aell  = Math.PI*r[0]*r[1];
-    var Acirc = Math.PI*ra*ra;
-    //var Arect = 4*Math.abs((r0[0]*r1[1] - r0[1]*r1[0]));
-    var Arect = 4*r[0]*r[1];
-
-    //var Arect = dx*dy;
-
-    //var ArectBB = bb.min[0];
-    var Asqr = (da*da);
-
-
-    var testRect = new ShapeAnalyzer();
-    var dr = testRect.projectToRect(points, eigs);
-    var de = testRect.projectToEllipse(points, eigs);
-
-    var dell  = Math.sqrt((Aell - A)*(Aell - A))/A;
-    var drect = Math.sqrt((Arect - A)*(Arect - A))/A;
-
-
-    if(dr/A > 0.01 && de/A > 0.01){
-
-        g = new BQGObject('polygon');
-        parent = parent || this.global_parent;
-
-        if (parent) {
-            parent.addgobjects(g);
-            g.edit_parent = parent;
-        } else
-            this.viewer.image.addgobjects(g);
-        var points2 = [];
-        for(var i = 0; i < points.length; i++){
-            var p = points[i];
-            points2.push(p.x, p.y);
-        }
-        var simplePoints = visvalingamSimplify(points2, this.renderer.scale());
-
-        for(var i = 0; i < simplePoints.length; i+=2){
-            var px = simplePoints[i+0];
-            var py = simplePoints[i+1];
-            g.vertices.push (new BQVertex (px, py, v.z, v.t, null, i));
-        }
-
-        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-        return;
-    }
-
-    if(de < dr){
-
-        if(Math.abs(1.0 - r[0]/r[1]) < 0.2){
-            g = new BQGObject('circle');
-            parent = parent || this.global_parent;
-
-            if (parent) {
-                parent.addgobjects(g);
-                g.edit_parent = parent;
-            } else
-                this.viewer.image.addgobjects(g);
-
-            g.vertices.push (new BQVertex (c[0], c[1], v.z, v.t, null, 0));
-            g.vertices.push (new BQVertex (c[0] + r[0]*rv[0][0], c[1] + r[0]*rv[0][1], v.z, v.t, null, 1));
-        }
-
-        else{
-            g = new BQGObject('ellipse');
-            parent = parent || this.global_parent;
-
-            if (parent) {
-                parent.addgobjects(g);
-                g.edit_parent = parent;
-            } else
-                this.viewer.image.addgobjects(g);
-
-            g.vertices.push (new BQVertex (c[0], c[1], v.z, v.t, null, 0));
-            g.vertices.push (new BQVertex (c[0] + r[0]*rv[0][0], c[1] + r[0]*rv[0][1], v.z, v.t, null, 1));
-            g.vertices.push (new BQVertex (c[0] + r[1]*rv[1][0], c[1] + r[1]*rv[1][1], v.z, v.t, null, 2));
-        }
-    }
-    else {
-        if(Math.abs(1.0 - r[0]/r[1]) < 0.2){
-            g = new BQGObject('square');
-        }
-
-        else{
-            g = new BQGObject('rectangle');
-        }
-            parent = parent || this.global_parent;
-
-        if (parent) {
-            parent.addgobjects(g);
-            g.edit_parent = parent;
-        } else
-            this.viewer.image.addgobjects(g);
-
-        g.vertices.push (new BQVertex (bb.min[0], bb.min[1], v.z, v.t, null, 0));
-        g.vertices.push (new BQVertex (bb.max[0], bb.max[1], v.z, v.t, null, 1));
-    }
-
-    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-};
-*/
-
-ImgEdit.prototype.matchShape = function(parent, points, eigs){
+ImgEdit.prototype.matchShape = function(parent, points, eigs, layer){
 
     var v = this.viewer.current_view;
     var g;
@@ -1133,45 +960,17 @@ ImgEdit.prototype.matchShape = function(parent, points, eigs){
     var testRect = new ShapeAnalyzer();
 
     var dl = testRect.projectToLine(points, eigs);
-    var dr = testRect.projectToRect(points, eigs);
+    var dr = testRect.projectToRect(points, eigs, layer, this.renderer.scale());
     var de = testRect.projectToEllipse(points, eigs);
     if(isNaN(dl)) dl = 99999999;
     if(isNaN(dr)) dr = 99999999;
     if(isNaN(de)) de = 99999999;
-    //console.log(dl, dr, de);
+//    console.log(dl, dr, de);
     if(dl < de && dl < dr){
         shape.name = 'line';
         shape.vertices = [{x: c[0] + r[0]*v[0][0], y: c[1] + r[0]*v[0][1]},
                           {x: c[0] - r[0]*v[0][0], y: c[1] - r[0]*v[0][1]}]
     }
-
-    /*
-    if(dr/A > 0.01 && de/A > 0.01){
-
-        g = new BQGObject('polygon');
-        parent = parent || this.global_parent;
-
-        if (parent) {
-            parent.addgobjects(g);
-            g.edit_parent = parent;
-        } else
-            this.viewer.image.addgobjects(g);
-        var points2 = [];
-        for(var i = 0; i < points.length; i++){
-            var p = points[i];
-            points2.push(p.x, p.y);
-        }
-        var simplePoints = visvalingamSimplify(points2, this.renderer.scale());
-
-        for(var i = 0; i < simplePoints.length; i+=2){
-            var px = simplePoints[i+0];
-            var py = simplePoints[i+1];
-            g.vertices.push (new BQVertex (px, py, v.z, v.t, null, i));
-        }
-
-        this.store_new_gobject ((parent && !parent.uri) ? parent : g);
-        return;
-    }*/
 
     else if(de < dr){
         if(Math.abs(1.0 - r[0]/r[1]) < 0.2){
@@ -1201,6 +1000,28 @@ ImgEdit.prototype.matchShape = function(parent, points, eigs){
                           {x: bb.max[0], y: bb.max[1]}];
     }
     return shape;
+};
+
+ImgEdit.prototype.make_from_gesture = function(parent, gesture){
+    g = new BQGObject(gesture.name);
+    parent = parent || this.global_parent;
+
+    if (parent) {
+        parent.addgobjects(g);
+        g.edit_parent = parent;
+    } else
+        this.viewer.image.addgobjects(g);
+
+    var v = this.viewer.current_view;
+    for(var i = 0; i < gesture.vertices.length; i++){
+        var c = gesture.vertices[i];
+        g.vertices.push (new BQVertex (c.x, c.y, v.z, v.t, null, i));
+    }
+
+    this.visit_render.visitall(g, [v]);
+    this.renderer.updateVisible();
+    g.shape.postEnabled = true;
+    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
 };
 
 ImgEdit.prototype.new_smart_shape = function (parent, e, x, y) {
@@ -1239,8 +1060,6 @@ ImgEdit.prototype.new_smart_shape = function (parent, e, x, y) {
     });
 
     var ellipse = new Kinetic.Ellipse({
-        points: [],
-        close: true,
         fill: 'rgba(128,128,128,0.5)',
         stroke: 'rgba(128,128,128,0.25)',
         strokeWidth: 1/scale,
@@ -1272,14 +1091,14 @@ ImgEdit.prototype.new_smart_shape = function (parent, e, x, y) {
         var pte = v.inverseTransformPoint(ept.x, ept.y);
         points.push(pte);
         gpoints.push(pte.x, pte.y);
+        gestureLayer.removeChildren();
 
         var testShape = new ShapeAnalyzer();
         var L = testShape.PCA(points);
-        var shape = me.matchShape(parent, points, L);
+        var shape = me.matchShape(parent, points, L, gestureLayer);
         cshape.remove();
         switch(shape.name){
             case 'line': {
-                console.log(shape.vertices);
                 line.points([shape.vertices[0].x, shape.vertices[0].y,
                              shape.vertices[1].x, shape.vertices[1].y]);
                 cshape = line;
@@ -1342,6 +1161,8 @@ ImgEdit.prototype.new_smart_shape = function (parent, e, x, y) {
             }
 
         }
+
+        gestureLayer.add(gesture);
         gestureLayer.add(cshape);
         gestureLayer.draw();
     };
@@ -1354,20 +1175,21 @@ ImgEdit.prototype.new_smart_shape = function (parent, e, x, y) {
         me.renderer.setmousemove(null);
         me.renderer.setmouseup(null);
         me.renderer.unselectCurrent();
-        //me.renderer.selectedSet = [g.shape];
-        //me.renderer.select(me.renderer.selectedSet);
-        //me.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-        //g.shape.postEnabled = true;
-        //var pca = new ShapeAnalyzer();
-        //var L = pca.PCA(points);
-        //me.matchShape(parent, points, L);
-        setTimeout(function(){
 
+        var testShape = new ShapeAnalyzer();
+        var L = testShape.PCA(points);
+        var shape = me.matchShape(parent, points, L, gestureLayer);
+        me.make_from_gesture(parent, shape);
+        setTimeout(function(){
             gestureLayer.remove();
             gesture.remove();
             delete gestureLayer;
             delete gesture;
             delete points;
+            delete rect;
+            delete circle;
+            delete ellipse;
+            delete line;
             delete gpoints;
         },300);
 
