@@ -444,6 +444,11 @@ Ext.define('BQ.viewer.Calibration', {
                     params: {meta:''},
                     success: function(response) {
                         var xml = response.responseXML;
+                        var viewer = this.imageCalibForm.formComponents['imgViewer'];
+                        var gobs = viewer.getGobjects();
+                        while (gobs.length>0) { //remove all existing gobs on the viewer
+                            viewer.viewer.delete_gobjects(gobs);
+                        }
                         this.setFormValues(xml);
                     },
                     failure: function(response) {
@@ -547,6 +552,7 @@ Ext.define('BQ.viewer.Calibration', {
         this.imageCalibForm.formComponents['reference_length'] = Ext.createWidget('numberfield',{
             fieldLabel: 'Reference Length',
             //xtype: 'numberfield',
+            
             decimalPrecision : 6,
             margin: '10px',
             minValue: 0,
@@ -702,6 +708,7 @@ Ext.define('BQ.viewer.Calibration', {
         var me = this;
         var gobjects = this.imageCalibForm.formComponents['imgViewer'].getGobjects();
         var estimated = this.imageCalibForm.formComponents['reference_length'].getValue();
+        
         var xform = me.imageMetaForm.formComponents['pixel_resolution_x'].getForm().findField('pixel_resolution_x');
         var yform = me.imageMetaForm.formComponents['pixel_resolution_y'].getForm().findField('pixel_resolution_y');
         if (estimated && gobjects.length>0) {
@@ -719,14 +726,21 @@ Ext.define('BQ.viewer.Calibration', {
             for (var i=0; i<lengths.length; i++) {
                  avg_lengths += lengths[i];
             }
-            avg_lengths = avg_lengths/lengths.length
+            avg_lengths = avg_lengths/lengths.length;
             //average all the distances together
 
             xform.setValue(estimated/avg_lengths);
             yform.setValue(estimated/avg_lengths);
         } else {
-            xform.setValue();
-            yform.setValue();
+            if (!estimated) { //if no reference length is added but a gobject is selected 
+                var referenceLength = this.imageCalibForm.formComponents['reference_length'];
+                BQ.ui.tip(referenceLength.getId(), 'You need to set a reference length!', {
+                    anchor:'left',
+                    color: 'red',
+                });
+                referenceLength.getEl().highlight('ff0000', {duration:250, iterations:6}); //suppose to flash red
+                this.imageCalibForm.formComponents['reference_length'].markInvalid('Requires a reference length'); //underline because highlight it is not working
+            }
         }
     },
 
