@@ -4,7 +4,7 @@ Ext.define('BQ.preference.Tagger', {
     full_load_on_creation: true,
     borders: false,
     //autoSave : true,
-    
+
     constructor : function(config) {
         config = config || {};
         //config.viewMode = 'PreferenceTagger';
@@ -15,19 +15,19 @@ Ext.define('BQ.preference.Tagger', {
         },
         this.callParent([config]);
     },
-    
+
     setResource : function(resource_uniq) {
         var preferenceUrl = {
             'system'  : '/preference',
             'user'    : '/preference/user',
             'resource': '/preference/user/'+resource_uniq,
         };
-        
+
         if (!(this.level in preferenceUrl)) {
             BQ.ui.error('Not a valid preference level');
-            return            
+            return
         }
-        
+
         // assume it is a resource URI otherwise
         if (this.level=='resource' && !resource_uniq) {
             BQ.ui.error('set resource without resource uniq')
@@ -44,14 +44,14 @@ Ext.define('BQ.preference.Tagger', {
             },
             uri_params: {view:'deep'},
         });
-        
+
         //this.tree.expandAll(); //show all preferences
     },
-    
+
     reloadResource: function() {
         this.setResource(this.resource_uniq)
     },
-    
+
     /*
     * finishEdit
     *
@@ -101,7 +101,7 @@ Ext.define('BQ.preference.Tagger', {
 
         this.editing = false;
     },
-    
+
     saveTags : function(tag, silent, child) {
         var me = this;
         if (silent === undefined)
@@ -123,7 +123,7 @@ Ext.define('BQ.preference.Tagger', {
             if (!silent) BQ.ui.notification('No records modified, save canceled!');
         }
     },
-    
+
     //admin only on system
     addTags: function () {
         BQ.ui.notification('Tags cannot be added through this tagger');
@@ -146,7 +146,7 @@ Ext.define('BQ.preference.Tagger', {
         editor.startEdit(newNode, 0);
         */
     },
-    
+
     //admin needs to be implimented in a special way
     deleteTags : function() {
         BQ.ui.notification('Tags cannot be deleted through this tagger');
@@ -198,11 +198,11 @@ Ext.define('BQ.preference.PreferencePage', {
     extend : 'Ext.tab.Panel',
     layout : 'fit',
     border: false,
-    
+
     initComponent: function(config) {
         var config = config || {};
         var me = this;
-        
+
         var resource_uniq = undefined;
         var systemPref = undefined;
         var userPref = undefined;
@@ -212,14 +212,14 @@ Ext.define('BQ.preference.PreferencePage', {
             var userPref = Ext.create('BQ.preference.Tagger', {
                 level: 'user',
             });
-            
-            if (BQApp.user.name=='admin') { //dumb I know
+
+            if (BQApp.user.is_admin()) { //dumb I know
                 var systemPref = Ext.create('BQ.preference.Tagger', {
                     level: 'system',
                 });
             }
         }
-        
+
         if (BQApp.resource){ //initialize resource preference
             var resource_uniq = BQApp.resource.resource_uniq
             var resourcePref = Ext.create('BQ.preference.Tagger', {
@@ -227,7 +227,7 @@ Ext.define('BQ.preference.PreferencePage', {
                 resource: resource_uniq,
             });
         }
-        
+
         var items = [{ //admin can view
             title: 'System',
             layout: 'fit',

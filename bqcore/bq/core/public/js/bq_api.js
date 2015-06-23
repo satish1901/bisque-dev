@@ -2201,6 +2201,11 @@ BQUser.prototype.on_credentials = function(cb, cred) {
 };
 
 
+BQUser.prototype.is_admin = function () {
+    return this.groups && this.groups.indexOf ('admin')>-1;
+}
+
+
 //-------------------------------------------------------------------------------
 // BQAuth
 //-------------------------------------------------------------------------------
@@ -2678,6 +2683,7 @@ BQSession.prototype.session_timeout = function (baseurl) {
 BQSession.prototype.parse_session  = function (){
     var timeout = this.find_tags ('timeout');
     var expires = this.find_tags ('expires');
+
     if (expires && timeout) {
         console.log ("session (timeout, expires) " + timeout.value + ':' + expires.value);
         this.timeout = parseInt (timeout.value) * 1000;
@@ -2687,6 +2693,10 @@ BQSession.prototype.parse_session  = function (){
     if (user) {
         this.user_uri = user.value;
     }
+    var groups  = this.find_tags ('group');
+    if (groups){
+        this.groups = groups.value;
+    }
 };
 
 BQSession.prototype.hasUser = function () {
@@ -2695,6 +2705,7 @@ BQSession.prototype.hasUser = function () {
 
 BQSession.prototype.setUser = function (user) {
     this.user = user;
+    user.groups = this.groups
     if (this.callbacks.ongotuser)
         this.callbacks.ongotuser(this.user);
 };

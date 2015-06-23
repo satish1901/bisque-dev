@@ -101,6 +101,10 @@ class AdminController(ServiceController):
     #allow_only = is_user('admin')
 
     #admin = BisqueAdminController([User, Group], DBSession)
+    @expose ("bq.admin_service.templates.manager")
+    def manager(self):
+        return dict()
+
 
     @expose(content_type='text/xml')
     def _default(self, *arg, **kw):
@@ -172,7 +176,7 @@ class AdminController(ServiceController):
                 Deletes only the users image data and not the user itself
         """
         http_method = request.method.upper()
-        
+
         if len(arg)==1:
             if http_method == 'GET':
                 return self.get_user(arg[0], **kw)
@@ -223,7 +227,7 @@ class AdminController(ServiceController):
                     <user>...
                 </resource>
         """
-        
+
         kw['wpublic'] = 1
         users =  data_service.query(resource_type = 'user', **kw)
         view = kw.pop('view', None)
@@ -374,7 +378,7 @@ class AdminController(ServiceController):
             log.debug("ADMIN: Deleting user: " + str(bquser) )
             user = DBSession.query(User).filter (User.user_name == bquser.resource_name).first()
             log.debug ("Renaming internal user %s" % user)
-            
+
             if user:
                 DBSession.delete(user)
                 # delete the access permission
@@ -383,7 +387,7 @@ class AdminController(ServiceController):
                     DBSession.delete(p)
                 self.deleteimages(bquser.resource_name, will_redirect=False)
                 #DBSession.delete(bquser)
-                
+
                 #transaction.commit()
             data_service.del_resource(bquser)
             return '<resource>Delete User</resource>'
