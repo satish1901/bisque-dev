@@ -1295,9 +1295,10 @@ BQImage.prototype = new BQObject();
 BQImage.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);
     if (this.resource_uniq) {
-        this.src  = '/image_service/images/' + this.resource_uniq;
+        //this.src  = '/image_service/' + this.resource_uniq;
         // in the case the the data is coming from another server, make sure to load proper URL
-        this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
+        //this.src = this.uri.replace(/\/data_service\/.*$/i, this.src);
+        this.src = this.uri.replace('/data_service/', '/image_service/');
     }
 
     /*
