@@ -501,9 +501,10 @@ class PreferenceController(ServiceController):
             @return: etree element
             
         """
-        user =  request.identity.get('user')
+        user = identity.get_username()
+        #user =  request.identity.get('user')
         if user:
-            u = data_service.query(resource_type='user', name=user.user_name, wpublic=1)
+            u = data_service.query(resource_type='user', name=user, wpublic=1)
             user_list = u.xpath('user')
             if len(user_list)>0:
                 return data_service.get_resource('/data_service/%s'%u[0].attrib.get('resource_uniq'), **kw)
