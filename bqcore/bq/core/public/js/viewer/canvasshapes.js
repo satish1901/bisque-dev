@@ -304,7 +304,7 @@ CanvasShape.prototype.resetManipulatorSet = function(set){
 };
 
 CanvasShape.prototype.resetManipulators = function(){
-    if(this.renderer.colorMenu)
+    if(this.renderer.colorMenu.shapeId != this.id())
         this.renderer.colorMenu.hide();
     this.resetManipulatorSet(this.shapeCorners); this.shapeCorners = [];
     this.resetManipulatorSet(this.manipulators); this.manipulators = [];
@@ -361,9 +361,10 @@ CanvasShape.prototype.getColorManipulator = function(){
         }
         var ip = me.colorImage.getAbsolutePosition();
         renderer.colorMenu.currentShape = me;
-        renderer.colorMenu.show();
-        renderer.colorMenu.setX(ip.x + 22);
-        renderer.colorMenu.setY(ip.y + 78);
+        renderer.colorMenu.showAt([ip.x + 22, ip.y + 78]);
+        renderer.colorMenu.shapeId = me.id();
+        //renderer.colorMenu.setX(ip.x + 22);
+        //renderer.colorMenu.setY(ip.y + 78);
         var picker = renderer.colorMenu.queryById('picker');
         var c = {r: 255, g: 0, b: 0};
         if(me.gob.color_override)
@@ -376,7 +377,7 @@ CanvasShape.prototype.getColorManipulator = function(){
 
     if(!renderer.colorMenu)
         renderer.colorMenu = Ext.create('Ext.tip.Tip', {
-		    anchor : renderer.viewer.viewer_controls_surface,
+		    //target : renderer.viewer.viewer_controls_surface,
 		    //itemId : 'viewer_color',
            // anchor : 'right',
 		   //anchorToTarget : true,
@@ -385,7 +386,8 @@ CanvasShape.prototype.getColorManipulator = function(){
 		    //shadow: false,
             width : 250,
             height: 220,
-            //closeable: true,
+            closeable: false,
+            trackMouse: false,
             //autoDestroy: true,
             //headerPosition: 'right',
             header: {
@@ -402,9 +404,14 @@ CanvasShape.prototype.getColorManipulator = function(){
             },
 
             listeners: {
+                /*
                 close : function(){
-                    //debugger;
+                    debugger;
                 },
+                hide : function(){
+                    debugger;
+                },
+                */
                 show: function(){
                     if(renderer.selectedSet.length === 0) this.hide();
                 }
@@ -425,13 +432,14 @@ CanvasShape.prototype.getColorManipulator = function(){
                                             Math.floor(rgb[1]),
                                             Math.floor(rgb[2]));
                              renderer.drawEditLayer();
+                             renderer.colorMenu.focus();
                          },
                      }
                      //region: 'west'
                     }]
 	    });
 
-    if(renderer.colorMenu.isVisible()) renderer.colorMenu.hide();
+    if(renderer.colorMenu.shapeId != me.id()) renderer.colorMenu.hide();
 
     return [this.colorImage];
 };
@@ -978,11 +986,11 @@ CanvasPolyLine.prototype.drag = function(evt, corner){
 
 }
 
-CanvasPolyLine.prototype.onDragCreate = function(e){
+CanvasPolyLine.prototype.onDragCreate = function(e, start){
     e.evt.cancelBubble = true;
 
     //this is a callback with a uniqe scope which defines the shape and the start of the bounding box
-    var me = this.shape;
+    var me = this;
     var g = me.gob;
     var v = me.renderer.viewer.current_view;
     var cx = me.x();
@@ -1026,13 +1034,13 @@ CanvasPolyLine.prototype.onDragCreate = function(e){
 }
 
 
-CanvasPolyLine.prototype.onDragFree = function(e){
+CanvasPolyLine.prototype.onDragFree = function(e, start){
     e.evt.cancelBubble = true;
 
     //this is a callback with a uniqe scope which defines the shape and the start of the bounding box
-    var start = this.start;
+    var start = start;
 
-    var me = this.shape;
+    var me = this;
 
     var v = me.renderer.viewer.current_view;
 
@@ -1469,16 +1477,16 @@ CanvasEllipse.prototype.drag = function(evt, corner){
 
 }
 
-CanvasEllipse.prototype.onDragCreate = function(e){
+CanvasEllipse.prototype.onDragCreate = function(e, start){
     e.evt.cancelBubble = true;
     //this is a callback with a uniqe scope which defines the shape and the start of the bounding box
-    var me = this.shape;
+    var me = this;
     var g = me.gob;
 
     var v = me.renderer.viewer.current_view;
 
     var ept = me.renderer.getUserCoord(e);
-    var spt = this.start;
+    var spt = start;
 
     var pts = v.inverseTransformPoint(spt[0], spt[1]);
     var pte = v.inverseTransformPoint(ept.x, ept.y);
@@ -1721,16 +1729,16 @@ CanvasCircle.prototype.drag = function(evt, corner){
 }
 
 
-CanvasCircle.prototype.onDragCreate = function(e){
+CanvasCircle.prototype.onDragCreate = function(e, start){
     e.evt.cancelBubble = true;
     //this is a callback with a uniqe scope which defines the shape and the start of the bounding box
-    var me = this.shape;
+    var me = this;
     var g = me.gob;
 
     var v = me.renderer.viewer.current_view;
 
     var ept = me.renderer.getUserCoord(e);
-    var spt = this.start;
+    var spt = start;
 
     var pts = v.inverseTransformPoint(spt[0], spt[1]);
     var pte = v.inverseTransformPoint(ept.x, ept.y);
@@ -2665,16 +2673,16 @@ CanvasRectangle.prototype.drag = function(evt, corner){
 }
 
 
-CanvasRectangle.prototype.onDragCreate = function(e){
+CanvasRectangle.prototype.onDragCreate = function(e, start){
     e.evt.cancelBubble = true;
     //this is a callback with a uniqe scope which defines the shape and the start of the bounding box
-    var me = this.shape;
+    var me = this;
     var g = me.gob;
 
     var v = me.renderer.viewer.current_view;
 
     var ept = me.renderer.getUserCoord(e);
-    var spt = this.start;
+    var spt = start;
 
     var pts = v.inverseTransformPoint(spt[0], spt[1]);
     var pte = v.inverseTransformPoint(ept.x, ept.y);
@@ -2876,16 +2884,16 @@ CanvasSquare.prototype.drag = function(evt, corner){
 }
 
 
-CanvasSquare.prototype.onDragCreate = function(e){
+CanvasSquare.prototype.onDragCreate = function(e, start){
     e.evt.cancelBubble = true;
     //this is a callback with a uniqe scope which defines the shape and the start of the bounding box
-    var me = this.shape;
+    var me = this;
     var g = me.gob;
 
     var v = me.renderer.viewer.current_view;
 
     var ept = me.renderer.getUserCoord(e);
-    var spt = this.start;
+    var spt = start;
 
     var pts = v.inverseTransformPoint(spt[0], spt[1]);
     var pte = v.inverseTransformPoint(ept.x, ept.y);

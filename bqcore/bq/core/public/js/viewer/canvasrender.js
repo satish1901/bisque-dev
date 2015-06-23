@@ -1598,7 +1598,7 @@ CanvasRenderer.prototype.create = function (parent) {
         listening: true,
     });
 
-    this.stage._mousemove = Kinetic.Util._throttle( this.stage._mousemove, 30);
+    this.stage._mousemove = Kinetic.Util._throttle( this.stage._mousemove, 10);
     this.stage.content.style.setProperty('z-index', 15);
 
     this.initShapeLayer();
