@@ -650,6 +650,7 @@ CanvasShape.prototype.cacheSprite = function(){
 };
 
 CanvasShape.prototype.setXY = function(field, input){
+    input = parseFloat(input);
     if(input){
         this.position[field] = input;
 
@@ -765,7 +766,7 @@ CanvasShape.prototype.setColor = function (r,g,b) {
 
     if(this.colorTimeout) clearTimeout(this.colorTimeout);
     this.colorTimeout = setTimeout( function(){
-        me.renderer.viewer.color_gobject(me.gob, h);
+        me.renderer.viewer.editor.color_gobject(me.gob, h);
     }, 100);
 
     this.sprite.fill(color);
@@ -1001,10 +1002,21 @@ CanvasPolyLine.prototype.onDragCreate = function(e){
     var by = points[1];
     var dx = ex - bx;
     var dy = ey - by;
-    if(dx*dx + dy*dy < 16){
-        me.shapeCorners[0].fill('rgba(0,255,0,1)');
+    if(dx*dx + dy*dy < 128/me.renderer.scale()){
+        if(!me.closeCircle)
+            me.closeCircle = new Kinetic.Circle({
+                x: cx + bx,
+                y: cy + by,
+                stroke: 'rgba(128,128,128,0.5)',
+                strokeWidth: 4/me.renderer.scale(),
+                radius: 8/me.renderer.scale(),
+            });
+        me.renderer.editLayer.add(me.closeCircle);
+        me.renderer.drawEditLayer();
     } else{
-        me.shapeCorners[0].fill('rgba(255,0,0,1)');
+        if(me.closeCircle)
+            me.closeCircle.remove();
+        me.renderer.drawEditLayer();
     }
 
     me.bbox = me.calcBbox();
@@ -2600,7 +2612,6 @@ CanvasRectangle.prototype.updateLocal = function () {
     this.sprite.height(h);
 
     var scale = this.renderer.stage.scale();
-
 
     var color = 'rgba(255,0,0,0.5)';
     var strokeColor = 'rgba(255,0,0,1.0)';
