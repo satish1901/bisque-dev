@@ -575,15 +575,18 @@ class PreferenceController(ServiceController):
                         tagElement = etree.SubElement(tagElement, 'tag', name = t)
                     tagElement.append(preference_doc) #add path the preference doc
                     current_preference_etree = update_level(preference, system_preference)
-                    data_service.del_resource(system_preference.attrib.get('uri'))
-                    data_service.new_resource(current_preference_etree, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'))
+                    
+                    data_service.update_resource(resource=system_preference, new_resource=current_preference_etree)
+                    #data_service.del_resource(system_preference.attrib.get('uri'))
+                    #data_service.new_resource(current_preference_etree, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'))
                     return self.get(xpath=xpath, **kw) #return the correct resource
                 else:
                     abort(400)
             elif preference_doc.tag == 'preference': #merge the old with the new
                 current_preference_etree = update_level(preference_doc, system_preference)
-                data_service.del_resource(system_preference.attrib.get('uri'))
-                resource = data_service.new_resource(current_preference_etree, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'), **kw)
+                resource = data_service.update_resource(resource=system_preference, new_resource=current_preference_etree, **kw)
+                #data_service.del_resource(system_preference.attrib.get('uri'))
+                #resource = data_service.new_resource(current_preference_etree, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'), **kw)
             else:
                 abort(400)
         else:
@@ -612,23 +615,35 @@ class PreferenceController(ServiceController):
             preference_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
             abort(400, 'XML parsing error')
-        
+            
         system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
         system_preference_list = system.xpath('/resource/system/preference')
-        
         if len(system_preference_list)>0:
+            system_preference = data_service.get_resource(system_preference_list[0].attrib.get('uri'), wpublic=1, view='deep')
             if xpath:
-                system_preference = data_service.get_resource(system_preference_list[0].attrib.get('uri'), wpublic=1, view='deep')
-                tag = system_preference.xpath('/preference/'+xpath)
-                if len(tag)>0 and preference_doc.attrib.get('name')==tag[0].attrib.get('name'):
-                    tag_parent_uri = tag[0].getparent().get('uri')
-                    data_service.del_resource(tag[0].attrib.get('uri'))
-                    resource = data_service.new_resource(preference_doc, parent=tag_parent_uri, **kw)
+                tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]',xpath) #only alphanumeric tag names are allowed right now 
+                if len(tagNames)>0 and preference_doc.attrib.get('name')==tagNames[-1]:
+                    #parse xpath and form the xml doc to merge
+                    preference = etree.Element('preference')
+                    tagElement = preference
+                    for t in tagNames[:-1]: #last element should already be included
+                        tagElement = etree.SubElement(tagElement, 'tag', name = t)
+                    tagElement.append(preference_doc) #add path the preference doc
+                    current_preference_etree = update_level(preference, system_preference)
+                    
+                    data_service.update_resource(resource=system_preference, new_resource=current_preference_etree)
+                    #data_service.del_resource(system_preference.attrib.get('uri'))
+                    #data_service.new_resource(current_preference_etree, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'))
+                    return self.get(xpath=xpath, **kw) #return the correct resource
                 else:
-                    abort(404)
-            else: #delete old preference and replace it with a new one
-                data_service.del_resource(system_preference_list[0].attrib.get('uri'))
-                resource = data_service.new_resource(preference_doc, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'), **kw)
+                    abort(400)
+            elif preference_doc.tag == 'preference': #merge the old with the new
+                current_preference_etree = update_level(preference_doc, system_preference)
+                resource = data_service.update_resource(resource=system_preference, new_resource=current_preference_etree, **kw)
+                #data_service.del_resource(system_preference.attrib.get('uri'))
+                #resource = data_service.new_resource(current_preference_etree, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'), **kw)
+            else:
+                abort(400)
         else:
             if preference_doc.tag == 'preference': #creating a new preference
                 system_list = system.xpath('/resource/system')
@@ -637,7 +652,7 @@ class PreferenceController(ServiceController):
                 else: #system document is not there
                     abort(400) 
             else: #not correct format and no xpath
-                abort(404)
+                abort(400)
                 
         return etree.tostring(resource)
     
@@ -695,39 +710,19 @@ class PreferenceController(ServiceController):
             @param: kw - pass through query parameters to data_service
         """
         try:
-            new_preference_etree = etree.fromstring(body)
+            preference_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
             abort(400, 'XML parsing error')
+        user = self.get_current_user(view='full')
+        if 'name' in user.attrib:
+            user_preference_list = user.xpath('/user/preference')
+        else:
+            #raise error
+            log.debug('User was not found')
+            abort(404)
         
-        #strip body of all none name, value, tag elements
-        new_preference_etree = self.strip_attributes(new_preference_etree)
-        
-        if new_preference_etree.tag == 'preference':
-            #user = data_service.get_resource('/data_service/user', view='full')
-            user = self.get_current_user(view='full')
-            if 'name' in user.attrib:
-                user_preference_list = user.xpath('/user/preference')
-            else:
-                #raise error
-                log.debug('User was not found')
-                abort(404)
-            user_preference_uri = None
-            if len(user_preference_list)>0:
-                log.debug('Found user preference.')
-                user_preference = data_service.get_resource(user_preference_list[0].attrib['uri'], view='deep')
-                user_preference_uri = user_preference_list[0].attrib['uri']
-            else: #no preference found, create a new preferences
-                log.debug('No user preference found. Creating new preference resource for user.')
-                user_preference = etree.Element('preference')
-                
-            #merging the new and current user preference documents
-            current_preference_etree = update_level(new_preference_etree, user_preference)
-            if user_preference_uri: data_service.del_resource(user_preference_uri)
-            resource_uniq = user.attrib.get('resource_uniq')
-            current_preference_etree = self.strip_attributes(current_preference_etree, save_attrib=['name','value','type','ts'])
-            data_service.new_resource(current_preference_etree, parent='data_service/%s' % resource_uniq)
-            return self.get(uniq=None, level=1, **kw) #return the new merged document
-        abort(404)
+        self.post(user, user_preference_list, preference_doc, xpath=xpath)
+        return self.get(xpath=xpath, level=1, **kw) #return the correct resource
     
     
     def user_delete(self, xpath=None, **kw):
@@ -796,47 +791,29 @@ class PreferenceController(ServiceController):
             @param: kw - pass through query parameters to data_service
         """
         try:
-            new_preference_etree = etree.fromstring(body)
+            preference_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
             abort(400, 'XML parsing error')
-        #strip body of all none name, value, tag elements
-        new_preference_etree = self.strip_attributes(new_preference_etree)
-        
-        if new_preference_etree.tag == 'preference':
+        resource = data_service.resource_load(resource_uniq, action=RESOURCE_READ, view='short')
+        if resource is not None:
             resource = data_service.resource_load(resource_uniq, action=RESOURCE_EDIT, view='full')
-            if resource:
+            if resource is not None:
                 log.debug('Reading preference from resource document.')
-                resource_preference_list = resource.xpath('preference')
+                resource_preference_list = resource.xpath('/*/preference')
             else:
                 log.debug('Reading preference from resource annotation document.')
                 resource = self.get_current_user_annotation(resource_uniq, view='full')
                 if 'resource_uniq' in resource.attrib:
-                    resource_preference_list = resource.xpath('preference')
+                    resource_preference_list = resource.xpath('/annotation/preference')
                 else: #create annotations document
                     log.debug('No annotation document found. Creating an annotation for document at (%s)'%resource_uniq)
                     resource = data_service.new_resource(resource)
                     resource_preference_list = []
-            resource_preference_uri = None
-            attrib = {}
-            if len(resource_preference_list)>0: #merge the documentes
-                resource_preference_uri = resource_preference_list[0].attrib.get('uri')
-                log.debug('Preference found at %s' % resource_preference_uri)
-                resource_preference = data_service.get_resource(resource_preference_uri, view='deep')
+        else:
+            abort(404)
+        self.post(resource, resource_preference_list, preference_doc, xpath=xpath)
                 
-                #attrib = {'uri': resource_preference_uri}
-            else: #create a new preferences
-                log.debug('No resource preference found. Creating new preference resource for resource: %s'%resource.attrib.get('resource_uniq'))
-                resource_preference = etree.Element('preference')
-            
-            current_preference_etree = update_level(new_preference_etree, resource_preference, attrib=attrib)
-            if resource_preference_uri: data_service.del_resource(resource_preference_uri)
-            resource_uniq = resource.attrib.get('resource_uniq')
-            current_preference_etree = self.strip_attributes(current_preference_etree, save_attrib=['name','value','type','ts'])
-            data_service.new_resource(current_preference_etree, parent='data_service/%s' % resource_uniq)
-            #data_service.update_resource('data_service/%s' % resource.attrib.get('resource_uniq'), new_resource=resource)
-            return self.get(resource_uniq=resource_uniq, level=2, **kw) #remerge
-        log.debug('Preference was not found!')
-        abort(404)
+        return self.get(resource_uniq, xpath=xpath, level=2, **kw) #return the correct resource
     
     
     def resource_delete(self, resource_uniq, xpath=None, **kw):
@@ -901,9 +878,11 @@ class PreferenceController(ServiceController):
         else:
             abort(400)
             
-        if resource_preference:
-            data_service.del_resource(resource_preference.attrib.get('uri'))
-        data_service.new_resource(current_preference_etree, parent='/data_service/%s' % resource.attrib.get('resource_uniq'))
+        if resource_preference: #replace element
+            data_service.update_resource(resource=resource_preference, new_resource=current_preference_etree)
+            #data_service.del_resource(resource_preference.attrib.get('uri'))
+        else: #create new element
+            data_service.new_resource(current_preference_etree, parent='/data_service/%s' % resource.attrib.get('resource_uniq'))
     
     
     def put(self):
