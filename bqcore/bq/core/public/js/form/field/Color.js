@@ -145,9 +145,9 @@ Ext.define('BQ.form.field.Color', {
 
     onCheckClick: function(e) {
         if (this.checkbox.dom.checked) {
-            this.onColorSelected(undefined, this.color_stored);            
+            this.onColorSelected(undefined, this.color_stored? this.color_stored:'000000');            
         } else {
-            this.color_stored = this.color; //must be hex without #  (chris - use to assign from this.value)
+            this.color_stored = this.color? this.color:'000000'; //must be hex without #  (chris - use to assign from this.value)
             this.onColorSelected(undefined, '000000');
         }
     },
