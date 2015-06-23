@@ -5,11 +5,11 @@ Ext.define('BQ.setting.MainPage', {
     width : '85%',
     modal : true,
     border: false,
-    
+
     tools_none:  [], //a none user has no settings
-    tools_user:  ['settings_module_manager', 'settings_module_developer', 'setting_preference'], 
+    tools_user:  ['settings_module_manager', 'settings_module_developer', 'setting_preference'],
     tools_admin: ['settings_user_manager', 'settings_cache_manager', 'settings_system', 'settings_log_viewer'],
-                  
+
     initComponent: function(config) {
         var config = config || {};
         var me = this;
@@ -88,16 +88,16 @@ Ext.define('BQ.setting.MainPage', {
             hidden: true,
             disabled: true,
         }];
-        
+
         this.on('beforerender', this.setVisibility)
-        
+
         Ext.apply(me, {
             items: items,
         });
         this.callParent([config]);
-        
+
     },
-    
+
     setVisibility : function() {
         // hide no user menus
         for (var i=0; (p=this.tools_none[i]); i++)
@@ -108,15 +108,15 @@ Ext.define('BQ.setting.MainPage', {
                 this.setSettingTabVisibility(p, true);
 
             // show admin menus
-            if (BQApp.user.user_name == 'admin') //needs to change
+            if (BQApp.user.is_admin() ) //needs to change
             for (var i=0; (p=this.tools_admin[i]); i++)
                 this.setSettingTabVisibility(p, true);
         }
     },
-    
+
     setSettingTabVisibility: function(id, v) {
         var m = this.queryById(id);
         if (m) m.tab.setVisible(v);
-        
+
     },
 });

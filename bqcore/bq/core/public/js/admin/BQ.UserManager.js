@@ -1,4 +1,4 @@
-// a patch resource tagger to view and modify xml 
+// a patch resource tagger to view and modify xml
 // in the admin service (needs to be replaced with the
 // updated tag viewer)
 Ext.define('BQ.ResourceTagger.User', {
@@ -7,7 +7,7 @@ Ext.define('BQ.ResourceTagger.User', {
     border: false,
     setResource: function (resource, template) {
         this.setLoading(true);
-        
+
         if (resource instanceof BQObject)
             this.loadResourceInfo(resource);
         else if (resource) {
@@ -23,7 +23,7 @@ Ext.define('BQ.ResourceTagger.User', {
             this.setLoading(false);
         }
     },
-    
+
     loadResourceTags: function(data, template) {
         var type = this.resource.type || this.resource.resource_type;
 
@@ -36,7 +36,7 @@ Ext.define('BQ.ResourceTagger.User', {
             });
             return;
         }
-        
+
         this.setLoading(false);
 
         var root = {};
@@ -50,13 +50,13 @@ Ext.define('BQ.ResourceTagger.User', {
         this.relayEvents(this.tree, ['itemclick']);
         if (this.onLoaded) this.onLoaded();
     },
-    
+
     updateQueryTagValues: function(tag_name) {
         //var proxy = this.store_values.getProxy();
         //proxy.url = '/data_service/'+this.resource.resource_type+'?tag_values=' + encodeURIComponent(tag_name);
         this.store_values.load();
     },
-    
+
     importMenu: function (btn, e) {
         if (!btn.menu) {
             var menuItems = [];
@@ -76,7 +76,7 @@ Ext.define('BQ.ResourceTagger.User', {
         }
         btn.showMenu();
     },
-    
+
     loadResourceInfo: function (resource) {
         this.fireEvent('beforeload', this, resource);
         this.resource = resource;
@@ -91,28 +91,28 @@ Ext.define('BQ.ResourceTagger.User', {
                 depth: 'deep&wpublic=1'
             });
     },
-    
+
     //delete will be a removal of the node and putting the rest of the body back
     // this will be changed in the next iteration when deltas are added and hopefully
     // this custom component can be removed
     deleteTags: function () {
         var me = this;
         var selectedItems = this.tree.getSelectionModel().getSelection(), parent;
-        
+
         // removes elements for the xml
         if (selectedItems.length) {
             this.tree.setLoading(true);
-            
+
             for (var i = 0; i < selectedItems.length; i++) {
                 //parent = (selectedItems[i].parentNode.isRoot()) ? this.resource : selectedItems[i].parentNode.raw; //this resource will always be parent
                 this.resource.remove(selectedItems[i].raw); //removes child node
-                
+
                 if (selectedItems[i].parentNode.childNodes.length <= 1)
                     selectedItems[i].parentNode.data.iconCls = 'icon-tag';
                 selectedItems[i].parentNode.removeChild(selectedItems[i], true);
-                
+
             }
-            
+
             //PUT the modified xml back into the db
             var id = this.resource.resource_uniq;
             var xmlBody = this.resource.toXML();
@@ -139,13 +139,13 @@ Ext.define('BQ.ResourceTagger.User', {
                     me.fireEvent('onError', me, response)
                 },
                 scope: this,
-            });      
-            
+            });
+
             this.tree.getSelectionModel().deselectAll();
         } else
             BQ.ui.notification('No records modified!');
     },
-    
+
     //saveTags will put the entire body back
     // this will be changed in the next iteration when deltas are added
     saveTags: function (parent, silent) {
@@ -168,7 +168,7 @@ Ext.define('BQ.ResourceTagger.User', {
                 success: function(response) {
                     var xml = response.responseXML;
                     this.setProgress(false);
-                    
+
                     BQ.ui.notification('Tag(s) successfully modified');
                     me.fireEvent('onDone', me, xml.documentElement)
                 },
@@ -226,8 +226,8 @@ Ext.define('BQ.admin.UserTable', {
                 return '<div style="line-height:32px; text-align:center; height:32px; overflow:hidden; text-overflow:ellipsis">'+value+'</div>';
             }
         }
-    },   
-    
+    },
+
     plugins: {
         ptype: 'bufferedrenderer',
         trailingBufferZone: 20,  // Keep 20 rows rendered in the table behind scroll
@@ -237,7 +237,7 @@ Ext.define('BQ.admin.UserTable', {
     initComponent: function(config) {
         var config = config || {};
         var me = this;
-        
+
         var tbar = new Ext.Toolbar({
             margin: false,
             border: false,
@@ -258,7 +258,7 @@ Ext.define('BQ.admin.UserTable', {
                 scale: 'large',
                 tooltip: 'Delete existing user',
                 handler: this.deleteUserWin,
-                
+
                 scope: this,
             },{
                 xtype: 'button',
@@ -295,10 +295,10 @@ Ext.define('BQ.admin.UserTable', {
                         me.on('select',
                             function(el, record) {
                                 buttonEl.setDisabled(false);
-                        });   
+                        });
                         me.on('deselect',
                             function(el, record) {
-                                buttonEl.setDisabled(true);                  
+                                buttonEl.setDisabled(true);
                         });
                         var store = me.getStore();
                         store.on('load',
@@ -309,7 +309,7 @@ Ext.define('BQ.admin.UserTable', {
                 }
             },
         });
-        if (BQApp.user.name=='admin') { //the way to check for admin needs to be changed
+        if (BQApp.user && BQApp.user.is_admin()) { //the way to check for admin needs to be changed
             this.initTable();
         }
         Ext.apply(me, {
@@ -318,13 +318,13 @@ Ext.define('BQ.admin.UserTable', {
         });
         this.callParent([config]);
     },
-    
+
     initTable: function() {
         Ext.define('BQ.model.adminUsers', {
             extend: 'Ext.data.Model',
             fields: [{
                 name: 'name' ,
-                mapping: '@name', 
+                mapping: '@name',
             },{
                 name: 'resource_uniq',
                 mapping: '@resource_uniq',
@@ -336,7 +336,7 @@ Ext.define('BQ.admin.UserTable', {
                 mapping: "tag[@name='profile_picture']/@value",
             },{
                 name: 'display_name',
-                mapping: "tag[@name='display_name']/@value",                
+                mapping: "tag[@name='display_name']/@value",
             }],
         });
 
@@ -367,7 +367,7 @@ Ext.define('BQ.admin.UserTable', {
         this.store.load();
         //this.store.reload();
     },
-    
+
     addUserWin : function() {
         var me = this;
         var userForm = Ext.create('Ext.form.Panel', {
@@ -387,7 +387,7 @@ Ext.define('BQ.admin.UserTable', {
                 name: 'password',
                 inputType: 'password',
                 allowBlank: false,
-                //invalidText: 
+                //invalidText:
             },{
                 padding: '5px',
                 fieldLabel: 'Display Name',
@@ -400,7 +400,7 @@ Ext.define('BQ.admin.UserTable', {
                 allowBlank: false,
             }],
         });
-        
+
         var win = Ext.create('Ext.window.Window', {
             border: false,
             modal : true,
@@ -432,7 +432,7 @@ Ext.define('BQ.admin.UserTable', {
         });
         win.show();
     },
-    
+
     addUser: function(username, password, display_name, email) {
         var user = document.createElement("user");
         user.setAttribute('name',username);
@@ -448,7 +448,7 @@ Ext.define('BQ.admin.UserTable', {
         display_nameTag.setAttribute('name','display_name');
         display_nameTag.setAttribute('value',display_name);
         user.appendChild(display_nameTag);
-        
+
         Ext.Ajax.request({
             url: '/admin/user',
             xmlData: user.outerHTML,
@@ -464,7 +464,7 @@ Ext.define('BQ.admin.UserTable', {
             scope: this
         })
     },
-    
+
     deleteUserWin : function() {
         var record = this.getSelectionModel().getSelection();
         if (record.length>0) {
@@ -491,7 +491,7 @@ Ext.define('BQ.admin.UserTable', {
             });
         }
     },
-    
+
     deleteUser: function(uniq) {
         var me = this;
         Ext.Ajax.request({
@@ -510,7 +510,7 @@ Ext.define('BQ.admin.UserTable', {
             scope: this,
         })
     },
-    
+
     deleteUserImagesMessage: function() {
         var record = this.getSelectionModel().getSelection();
         if (record.length>0) {
@@ -535,9 +535,9 @@ Ext.define('BQ.admin.UserTable', {
                 buttons: Ext.MessageBox.OK,
                 scope: this,
             });
-        }       
+        }
     },
-    
+
     deleteUserImages: function() {
          Ext.Ajax.request({
             url: '/admin/user/'+uniq+'/image',
@@ -552,9 +552,9 @@ Ext.define('BQ.admin.UserTable', {
                 BQ.ui.error('Failed to delete all of users: '+uniq+' images')
             },
             scope: this,
-        })        
+        })
     },
-    
+
     loginUserMessage : function(){
         var record = this.getSelectionModel().getSelection();
         if (record.length==1) {
@@ -579,7 +579,7 @@ Ext.define('BQ.admin.UserTable', {
                 msg: 'Only one user can be login at a time.',
                 buttons: Ext.MessageBox.OK,
                 scope: this,
-            });            
+            });
         } else {
             var win = Ext.MessageBox.show({
                 border: false,
@@ -588,9 +588,9 @@ Ext.define('BQ.admin.UserTable', {
                 buttons: Ext.MessageBox.OK,
                 scope: this,
             });
-        }        
+        }
     },
-    
+
     loginUser : function(userUniq) {
          Ext.Ajax.request({
             url: '/admin/user/'+userUniq+'/login',
@@ -606,9 +606,9 @@ Ext.define('BQ.admin.UserTable', {
                 BQ.ui.error('An issue occured when tryin to log in as '+userUniq)
             },
             scope: this,
-        })        
+        })
     },
-    
+
     reload : function() {
         if (this.userInfoPanel) {
             this.userInfoPanel.deselectUser();
@@ -626,7 +626,7 @@ Ext.define('BQ.admin.UserInfo', {
     initComponent: function(config) {
         items = [];
         var me = this;
-        
+
         this.tagger = Ext.create('BQ.ResourceTagger.User', {
             layout : 'fit',
             editable: true,
@@ -640,7 +640,7 @@ Ext.define('BQ.admin.UserInfo', {
             resource: '',
             //flex: 1,
         });
-        
+
         this.userManagerWelcomePage = Ext.createWidget('box',{
             border: false,
             padding: '10px',
@@ -664,11 +664,11 @@ Ext.define('BQ.admin.UserInfo', {
         });
         this.callParent([config]);
     },
-    
+
     selectUser: function(resource_uri) {
         this.layout.setActiveItem(this.tagger);
         this.tagger.setResource(resource_uri+'?view=deep');
-        
+
     },
     deselectUser: function() {
         this.layout.setActiveItem(this.userManagerWelcomePage);
@@ -686,7 +686,7 @@ Ext.define('BQ.admin.UserManager', {
         var config = config || {};
         items = [];
         var me = this;
-        
+
         this.userInfo = Ext.create('BQ.admin.UserInfo',{
             width: '35%',
             plain : true,
@@ -697,7 +697,7 @@ Ext.define('BQ.admin.UserManager', {
             resource: '',
             minimizable: true,
         });
-        
+
         this.userTable = Ext.create('BQ.admin.UserTable', {
             split: true,
             region: 'center',
@@ -705,19 +705,19 @@ Ext.define('BQ.admin.UserManager', {
             plain : true,
             userInfoPanel: this.userInfo,
         });
-        
+
         this.userTable.on('select',
             function(el, record) {
                 var resource_uniq = record.get('resource_uniq');
                 me.userInfo.selectUser('/admin/user/'+resource_uniq);
         });
-        
+
         this.userTable.on('deselect',
             function(el, record) {
                 me.userInfo.deselectUser();
         });
-        
-        this.userInfo.tagger.on('onDone', 
+
+        this.userInfo.tagger.on('onDone',
             function(el, xmlResponse) {
                 var userName = xmlResponse.attributes['name'].value;
                 var record = me.userTable.store.findRecord('name', userName);
@@ -728,16 +728,16 @@ Ext.define('BQ.admin.UserManager', {
                 var profile_picture = xmlResponse.querySelector('tag[name="profile_picture"]');
                 record.set('profile_picture', profile_picture ?  profile_picture.attributes['value'].value : '');
                 var display_name = xmlResponse.querySelector('tag[name="display_name"]');
-                record.set('display_name', display_name ?  display_name.attributes['value'].value : '');                
+                record.set('display_name', display_name ?  display_name.attributes['value'].value : '');
         });
-        
+
         items.push(this.userTable);
         items.push(this.userInfo);
-        
+
         Ext.apply(me, {
             items: items,
-        }); 
+        });
         this.callParent([config]);
-        
+
     },
 });

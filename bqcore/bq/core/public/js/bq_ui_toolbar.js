@@ -160,7 +160,7 @@ Ext.define('BQ.Application.Toolbar', {
 
     tools_none: [ 'menu_user_signin', 'menu_user_register', 'menu_user_register_sep','menu_user_recover' ],
     tools_user: ['menu_user_name', 'menu_user_profile', 'menu_user_signout', 'menu_user_prefs',
-                 'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', 'button_create', 'button_upload', 
+                 'menu_user_signout_sep', 'menu_resource_template', 'menu_resource_create', 'button_create', 'button_upload',
                   'menu_module', 'menu_module_developer','menu_preference', 'menu_user_admin_separator'], //chris's new stuff
     tools_admin: ['menu_user_admin', 'menu_user_admin_prefs', 'menu_user_manager',
                   'menu_system',],
@@ -172,7 +172,7 @@ Ext.define('BQ.Application.Toolbar', {
         Ext.QuickTips.init();
         Ext.tip.QuickTipManager.init();
         var toolbar = this;
-        
+
         /*
         BQ.Preferences.get({
             key : 'Toolbar',
@@ -660,9 +660,9 @@ Ext.define('BQ.Application.Toolbar', {
         BQ.Preferences.on('update_user_pref', this.onPreferences, this);
         BQ.Preferences.on('onerror_user_pref', this.onPreferences, this);
         if ('user' in BQ.Preferences.preferenceXML) this.onPreferences(); //checks to see if preference has been loaded already
-        
-        
-        
+
+
+
         // update user menu based on application events
         Ext.util.Observable.observe(BQ.Application);
         BQ.Application.on('gotuser', function(u) {
@@ -678,7 +678,7 @@ Ext.define('BQ.Application.Toolbar', {
                 this.setSubMenuVisibility(p, true);
 
             // show admin menus
-            if (u.user_name == 'admin')
+            if (u && u.is_admin())
             for (var i=0; (p=this.tools_admin[i]); i++)
                 this.setSubMenuVisibility(p, true);
 
@@ -721,7 +721,7 @@ Ext.define('BQ.Application.Toolbar', {
                this.queryById(id).setVisible(true);
         }*/
     },
-    
+
     //only admin
     settingUserPage: function() {
         var settingWindow = Ext.create('Ext.window.Window', {
@@ -729,14 +729,14 @@ Ext.define('BQ.Application.Toolbar', {
             height : '85%',
             width : '85%',
             layout: 'fit',
-            modal : true, 
+            modal : true,
             items: Ext.create('BQ.setting.MainPage',{
                 activeTab: 0,
             }),
         });
         settingWindow.show();
     },
-    
+
     //always visible
     settingModuleManagerPage: function() {
         var settingWindow = Ext.create('Ext.window.Window', {
@@ -744,14 +744,14 @@ Ext.define('BQ.Application.Toolbar', {
             height : '85%',
             width : '85%',
             layout: 'fit',
-            modal : true, 
+            modal : true,
             items: Ext.create('BQ.setting.MainPage',{
                 activeTab: 2,
             }),
         });
         settingWindow.show();
     },
-    
+
     //always visible
     settingModuleDeveloperPage: function() {
         var settingWindow = Ext.create('Ext.window.Window', {
@@ -759,14 +759,14 @@ Ext.define('BQ.Application.Toolbar', {
             height : '85%',
             width : '85%',
             layout: 'fit',
-            modal : true, 
+            modal : true,
             items: Ext.create('BQ.setting.MainPage',{
                 activeTab: 3,
             }),
         });
         settingWindow.show();
     },
-    
+
     //should go to the highest level
     settingPreferencePage: function() {
         var settingWindow = Ext.create('Ext.window.Window', {
@@ -774,14 +774,14 @@ Ext.define('BQ.Application.Toolbar', {
             height : '85%',
             width : '85%',
             layout: 'fit',
-            modal : true, 
+            modal : true,
             items: Ext.create('BQ.setting.MainPage',{
                 activeTab: 4,
             }),
         });
         settingWindow.show();
     },
-    
+
     fetchResourceTypes : function() {
         BQFactory.request ({
             uri : '/data_service/',
@@ -1130,7 +1130,7 @@ Ext.define('BQ.Application.Toolbar', {
 
         //if (this.preferences.title)
         //    this.queryById('menu_title').setText( '<h3><a href="/">'+this.preferences.title+'</a></h3>' );
-        
+
     },
 
     setActiveHelpVideo: function(url) {

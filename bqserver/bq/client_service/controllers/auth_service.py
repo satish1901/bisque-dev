@@ -264,8 +264,11 @@ class AuthenticationServer(ServiceController):
             if current_user:
                 etree.SubElement(sess,'tag',
                                  name='user', value=data_service.uri() + current_user.uri)
+                etree.SubElement(sess, 'tag', name='group', value=",".join([ g.group_name for g in  current_user.get_groups()]))
+
             etree.SubElement (sess, 'tag', name='expires', value= expires.isoformat() )
             etree.SubElement (sess, 'tag', name='timeout', value= str(timeout) )
+
         return etree.tostring(sess)
 
 
