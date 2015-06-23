@@ -48,6 +48,7 @@ ImgEdit.prototype.newImage = function () {
     this.renderer.set_move_handler( callback(this, this.on_move) );
     this.gobjects = this.viewer.image.gobjects;
     this.visit_render = new BQProxyClassVisitor (this.renderer);
+
 };
 
 ImgEdit.prototype.updateImage = function () {
@@ -439,6 +440,14 @@ ImgEdit.prototype.test_save_permission = function (uri) {
     return true;
 };
 
+ImgEdit.prototype.issuePermissionsWarnings = function(){
+    if(!BQApp.user && !this.issuedUserWarning){
+        BQ.ui.warning('You not currently logged in.  Any changes made during this session will not be saved.');
+        this.issuedUserWarning = true;
+        return;
+    }
+};
+
 ImgEdit.prototype.store_new_gobject = function (gob) {
     this.display_gob_info(gob);
     //if (this.viewer.parameters.gobjectCreated)
@@ -452,7 +461,7 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
     }
 
     var pars = this.viewer.parameters || {};
-    if (pars.onworking)
+    if (pars.onworking && BQApp.user)
         pars.onworking('Saving annotations...');
 
     // create a temporary backup object holding children in order to properly hide shapes later to prevent blinking
@@ -464,21 +473,24 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
         uri = gob.parent.uri;
 
     var me = this;
-    gob.save_reload(
-        uri,
-        function(resource) {
-            // show the newly returned object from the DB, here gob and resource point to the same things
-            me.visit_render.visitall(gob, [me.viewer.current_view]);
-            // remove all shapes from old children because save_reload replaces gobjects vector
-            me.visit_render.visitall(bck, [me.viewer.current_view, false]);
+    this.issuePermissionsWarnings();
+    if(BQApp.user){
+        gob.save_reload(
+            uri,
+            function(resource) {
+                // show the newly returned object from the DB, here gob and resource point to the same things
+                me.visit_render.visitall(gob, [me.viewer.current_view]);
+                // remove all shapes from old children because save_reload replaces gobjects vector
+                me.visit_render.visitall(bck, [me.viewer.current_view, false]);
 
-            if (me.viewer.parameters.gobjectCreated)
-                me.viewer.parameters.gobjectCreated(gob);
+                if (me.viewer.parameters.gobjectCreated)
+                    me.viewer.parameters.gobjectCreated(gob);
 
-            pars.ondone();
-        },
-        pars.onerror
-    );
+                pars.ondone();
+            },
+            pars.onerror
+        );
+    }
 };
 
 ImgEdit.prototype.remove_gobject = function (gob) {
@@ -526,6 +538,26 @@ ImgEdit.prototype.on_selected = function (gob) {
     }
 };
 
+
+ImgEdit.prototype.color_gobject = function(gob, color) {
+    this.renderer.setcolor(gob, color);
+    this.issuePermissionsWarnings();
+    if(BQApp.user){
+        var xml = gob.xmlNode();
+        var tagColor = BQ.util.xpath_nodes(xml,'tag[@name="color"]');
+        var uri = null;
+        if(tagColor.length > 0){
+            uri = tagColor[0].getAttribute('uri');
+        }
+
+        var t = gob.addtag(new BQTag(uri, 'color', color, 'color'));
+        t.save_reload(gob.uri);
+    }
+    this.renderer.rerender([gob], [this.current_view, true]);
+    console.log(gob.uri + '?view=deep');
+};
+
+
 ImgEdit.prototype.on_move = function (gob) {
     if(!gob.shape.postEnabled) return;
 
@@ -535,20 +567,21 @@ ImgEdit.prototype.on_move = function (gob) {
     if(!this.gobQueue) this.gobQueue = {};
     if(gob.uri)//only save if object has been awarded a uri from the database
         this.gobQueue[gob.uri] = gob; //store a unique
+    this.issuePermissionsWarnings();
+    if(BQApp.user){
+        if(this.saveTimeout) clearTimeout(this.saveTimeout);
+        var timeout = function() {
+            console.log('post');
+            var keys = Object.keys(me.gobQueue);
+            keys.forEach(function(k){
+                var gob = me.gobQueue[k];
+                gob.save_me(pars.ondone, pars.onerror ); // check why save_ should not be used
 
-    if(this.saveTimeout) clearTimeout(this.saveTimeout);
-    var timeout = function() {
-        console.log('post');
-        var keys = Object.keys(me.gobQueue);
-        keys.forEach(function(k){
-            var gob = me.gobQueue[k];
-            gob.save_me(pars.ondone, pars.onerror ); // check why save_ should not be used
+            });
 
-        });
-
-        me.gobQueue = {};
+            me.gobQueue = {};
+        }
     }
-
     this.saveTimeout = setTimeout( timeout, 500 );
     /*
     if (this.saving_timeout) clearTimeout (this.saving_timeout);
@@ -767,7 +800,7 @@ ImgEdit.prototype.basic_polygon = function (type, parent, e, x, y) {
         var dy = g.vertices[0].y - pt.y;
         var dp = dx*dx + dy*dy;
 
-        if(dp < 16){
+        if(dp < 128/this.renderer.scale()){
             this.finish_add(g, g.edit_parent);
             this.renderer.resetShapeCornerFill();
 
@@ -846,6 +879,7 @@ ImgEdit.prototype.new_freehand = function (type, parent, e, x, y) {
     var dp = dx*dx + dy*dy;
     this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]},g.shape.onDragFree));
     this.renderer.setmouseup(callback(this,function(e){
+        g.shape.postEnabled = true;
         me.on_move(me.current_gob);
         me.current_gob = null;
         me.renderer.setmousemove(null);
@@ -856,7 +890,7 @@ ImgEdit.prototype.new_freehand = function (type, parent, e, x, y) {
         me.renderer.selectedSet = [g.shape];
         me.renderer.select(me.renderer.selectedSet);
         me.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
-        g.shape.postEnabled = true;
+
         this.renderer.unselectCurrent();
     }));
 };
