@@ -172,7 +172,8 @@ Ext.define('BQ.Calibration.PixelResolution', {
 });
 
 Ext.define('BQ.Calibration.ChannelPanel', {
-    extend: 'Ext.form.Panel',
+    //extend: 'Ext.form.Panel',
+    extend: 'Ext.container.Container',
     layout: 'hbox',
     width: '100%',
     channel: 0,
@@ -183,8 +184,7 @@ Ext.define('BQ.Calibration.ChannelPanel', {
     initComponent: function(config) {
         var me = this;
         var config = config || {};
-        var items = [];
-        items.push({ //channel number
+        var items = [{ //channel number
             text: this.channel,
             xtype: 'label',
             labelAlign: 'right',
@@ -194,8 +194,7 @@ Ext.define('BQ.Calibration.ChannelPanel', {
                 textAlign: 'center',
             }
             //width: '20%',
-        });
-        items.push({ //channel name editor
+        },{ //channel name editor
             value: this.name,
             id: 'channel_'+me.channel+'_name',
             xtype: 'textfield',
@@ -208,9 +207,8 @@ Ext.define('BQ.Calibration.ChannelPanel', {
                     me.name = value;
                 },
             },
-        });
-        items.push({
-            xtype:'panel',
+        },{
+            xtype:'container',
             //width:'100%',
             height: '100%',
             flex: 5,
@@ -231,7 +229,7 @@ Ext.define('BQ.Calibration.ChannelPanel', {
                     },
                 },
             }],
-        });
+        }];
         Ext.apply(me, {
             items: items,
         });
@@ -315,14 +313,14 @@ Ext.define('BQ.Calibration.ChannelPanel', {
 });
 
 Ext.define('BQ.Calibration.ChannelOrganizer', {
-    extend: 'Ext.panel.Panel',
+    extend: 'Ext.container.Container',
     layout: 'vbox',
     channelNum: 0,
     border: false,
     chStore: [],
-    autoScroll: true,
-    height: '200px',
-    width: '80%',
+    //autoScroll: true,
+    //height: '500px',
+    width: '100%',
     margin: '10px',
 
     initComponent: function(config) {
@@ -342,10 +340,10 @@ Ext.define('BQ.Calibration.ChannelOrganizer', {
         while(i = this.items.first()){ //clear old panel
             this.remove(i, true);
         }
-
+        
         this.add({ //title
             width: '100%',
-            xtype: 'panel',
+            xtype: 'container',
             layout: 'hbox',
             border: false,
             items: [{
@@ -542,7 +540,7 @@ Ext.define('BQ.viewer.Calibration', {
 
         this.imageCalibForm.add({
             xtype: 'box',
-            html: '<h2>Image Resolution Calibration</h2><p>A fast an easy way to calibrate pixel resolution when the values are not present.</p>',
+            html: '<h2>Image Resolution Calibration</h2><p>A fast and easy way to calibrate pixel resolution when the values are not present.</p>',
             width: '100%',
             cls: 'imgmetaeditor',
             padding: '0px',
@@ -697,9 +695,14 @@ Ext.define('BQ.viewer.Calibration', {
         this.imageMetaForm.formComponents['image_num_c'].on('change', function() {
             //var image_num_c_value = me.value;
             //set back to default
-            me.imageMetaForm.formComponents['channels'].setChannelNum(this.value, imMetaXML)
+            var value = this.value;
+            if (me.imageMetaForm.formComponents['image_num_c'].event_timeout) clearTimeout (me.imageMetaForm.formComponents['image_num_c'].event_timeout);
+            me.imageMetaForm.formComponents['image_num_c'].event_timeout = setTimeout(function(){
+                me.imageMetaForm.formComponents['channels'].setChannelNum(value, imMetaXML)
+            }, 250);
         });
-
+        
+        
         //populate values
         this.setFormValues(imMetaXML);
     },
