@@ -393,11 +393,12 @@ ImgEdit.prototype.mousemove = function (e) {
 };*/
 
 ImgEdit.prototype.display_gob_info = function (gob) {
-    /*
+
     var view = this.viewer.current_view;
     var phys = this.viewer.imagephys;
 
     var text = '';
+
     var perimeter_px = gob.perimeter();
 
     if (perimeter_px>0)
@@ -415,7 +416,40 @@ ImgEdit.prototype.display_gob_info = function (gob) {
 
     var ip = this.viewer.plugins_by_name['infobar'];
     ip.posbar.innerText = text;
-    */
+
+};
+
+
+ImgEdit.prototype.display_gob_info_group = function (gobs) {
+
+    var view = this.viewer.current_view;
+    var phys = this.viewer.imagephys;
+
+    var text = 'group: ';
+
+    var perimeter_px = 0;
+    var area_px = 0;
+
+    gobs.forEach(function(e){
+        perimeter_px += e.gob.perimeter();
+        area_px += e.gob.area();
+    });
+
+    if (perimeter_px>0)
+        text += ' Length: '+perimeter_px.toFixed(2)+'px';
+    if (perimeter_px>0 && phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
+        text += ' '+gob.perimeter({x: phys.pixel_size[0], y: phys.pixel_size[1]}).toFixed(2)+phys.units;
+    }
+
+    if (area_px>0)
+        text += ' Area: '+area_px.toFixed(2)+'px²';
+    if (area_px>0 && phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
+        text += ' '+gob.area({x: phys.pixel_size[0], y: phys.pixel_size[1]}).toFixed(2)+phys.units+'²';
+    }
+
+    var ip = this.viewer.plugins_by_name['infobar'];
+    ip.posbar.innerText = text;
+
 };
 
 ImgEdit.prototype.test_save_permission = function (uri) {
@@ -437,15 +471,35 @@ ImgEdit.prototype.test_save_permission = function (uri) {
         //return false;
     }*/
 
+    if(!BQApp.user){
+        if(!this.issuedUserWarning)
+            BQ.ui.warning('You not currently logged in.  Any changes made during this session will not be saved.');
+        this.issuedUserWarning = true;
+        return false;
+    }
+    //Hack which stores flag after permissions have been tested
+    if(this.insufficientPrivelage){
+        return false;
+    }
+
     return true;
 };
 
-ImgEdit.prototype.issuePermissionsWarnings = function(){
-    if(!BQApp.user && !this.issuedUserWarning){
-        BQ.ui.warning('You not currently logged in.  Any changes made during this session will not be saved.');
-        this.issuedUserWarning = true;
-        return;
+ImgEdit.prototype.on_error = function(e){
+    if(e.request.status === 403 &&
+       !this.issuedPrivelageWarning){
+
+        if(e.message.length > 256)
+            BQ.ui.warning('You have insufficient privelages to edit this document. Any changes made during this session will not be saved.');
+        else
+            BQ.ui.warning(e.message + ' Any changes made during this session will not be saved.');
+        this.insufficientPrivelage = true;
+        this.issuedPrivelageWarning = true;
     }
+    else
+        this.viewer.parameters.onerror(e)
+    //this is here because its required to release the ui from working state
+    this.viewer.parameters.ondone();
 };
 
 ImgEdit.prototype.store_new_gobject = function (gob) {
@@ -461,7 +515,7 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
     }
 
     var pars = this.viewer.parameters || {};
-    if (pars.onworking && BQApp.user)
+    if (pars.onworking)
         pars.onworking('Saving annotations...');
 
     // create a temporary backup object holding children in order to properly hide shapes later to prevent blinking
@@ -473,29 +527,29 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
         uri = gob.parent.uri;
 
     var me = this;
-    this.issuePermissionsWarnings();
-    if(BQApp.user){
-        gob.save_reload(
-            uri,
-            function(resource) {
-                // show the newly returned object from the DB, here gob and resource point to the same things
-                me.visit_render.visitall(gob, [me.viewer.current_view]);
-                // remove all shapes from old children because save_reload replaces gobjects vector
-                me.visit_render.visitall(bck, [me.viewer.current_view, false]);
+    gob.save_reload(
+        uri,
+        function(resource) {
+            // show the newly returned object from the DB, here gob and resource point to the same things
+            me.visit_render.visitall(gob, [me.viewer.current_view]);
+            // remove all shapes from old children because save_reload replaces gobjects vector
+            me.visit_render.visitall(bck, [me.viewer.current_view, false]);
 
-                if (me.viewer.parameters.gobjectCreated)
-                    me.viewer.parameters.gobjectCreated(gob);
+            if (me.viewer.parameters.gobjectCreated)
+                me.viewer.parameters.gobjectCreated(gob);
 
-                pars.ondone();
-            },
-            pars.onerror
-        );
-    }
+            pars.ondone();
+        },
+        callback(this, 'on_error')
+    );
+
 };
 
 ImgEdit.prototype.remove_gobject = function (gob) {
     // dima: a hack to stop writing into a MEX
+
     this.renderer.quadtree.remove(gob.shape);
+
 
     if (gob.uri && gob.uri.indexOf('/mex/')>=0) {
         BQ.ui.warning('Can\'t delete annotation from a Module EXecution document...');
@@ -505,6 +559,18 @@ ImgEdit.prototype.remove_gobject = function (gob) {
     // remove rendered shape first
     this.renderer.hideShape(gob, this.viewer.current_view);
     this.visit_render.visitall(gob, [this.viewer.current_view, false]); // make sure to hide all the children if any
+
+
+    //test privelages and abort if we don't, we still want to reflect changes in renderer, though
+    if (!this.test_save_permission(this.viewer.image.uri + '/gobject')) {
+        if (this.viewer.parameters.gobjectschanged)
+            this.viewer.parameters.gobjectschanged(gob);
+        return;
+    }
+
+    var pars = this.viewer.parameters || {};
+    if (pars.onworking)
+        pars.onworking('Saving annotations...');
 
     // try to find parent gobject and if it have single child, remove parent
     //var p = gob.findParentGobject();
@@ -525,34 +591,44 @@ ImgEdit.prototype.remove_gobject = function (gob) {
 
     var pars = this.viewer.parameters || {};
 
-    gob.delete_(pars.ondone, pars.onerror);
+    gob.delete_(pars.ondone, callback(this, 'on_error'));
 };
 
-ImgEdit.prototype.on_selected = function (gob) {
+ImgEdit.prototype.on_selected = function (gobs) {
+    var me = this;
     if (this.mode_type === 'delete') {
-        this.remove_gobject(gob);
+        this.remove_gobject(gobs);
     } else if (this.mode_type === 'select') {
         if (this.viewer.parameters.onselect)
-            this.viewer.parameters.onselect(gob);
-        this.display_gob_info(gob);
+            this.viewer.parameters.onselect(gobs);
+        if(gobs.length > 1)
+            me.display_gob_info_group(gobs);
+        else
+            me.display_gob_info(gobs[0].gob);
     }
 };
 
 
 ImgEdit.prototype.color_gobject = function(gob, color) {
     this.renderer.setcolor(gob, color);
-    this.issuePermissionsWarnings();
-    if(BQApp.user){
-        var xml = gob.xmlNode();
-        var tagColor = BQ.util.xpath_nodes(xml,'tag[@name="color"]');
-        var uri = null;
-        if(tagColor.length > 0){
-            uri = tagColor[0].getAttribute('uri');
-        }
 
-        var t = gob.addtag(new BQTag(uri, 'color', color, 'color'));
-        t.save_reload(gob.uri);
+
+    if (!this.test_save_permission(this.viewer.image.uri + '/gobject')) {
+        if (this.viewer.parameters.gobjectschanged)
+            this.viewer.parameters.gobjectschanged(gob);
+        return;
     }
+
+    var xml = gob.xmlNode();
+    var tagColor = BQ.util.xpath_nodes(xml,'tag[@name="color"]');
+    var uri = null;
+    if(tagColor.length > 0){
+        uri = tagColor[0].getAttribute('uri');
+    }
+
+    var t = gob.addtag(new BQTag(uri, 'color', color, 'color'));
+    t.save_reload(gob.uri);
+
     this.renderer.rerender([gob], [this.current_view, true]);
     console.log(gob.uri + '?view=deep');
 };
@@ -561,27 +637,34 @@ ImgEdit.prototype.color_gobject = function(gob, color) {
 ImgEdit.prototype.on_move = function (gob) {
     if(!gob.shape.postEnabled) return;
 
+
+    if (!this.test_save_permission(this.viewer.image.uri + '/gobject')) {
+        if (this.viewer.parameters.gobjectschanged)
+            this.viewer.parameters.gobjectschanged(gob);
+        return;
+    }
+
     this.display_gob_info(gob);
     var me = this;
     var pars = this.viewer.parameters || {};
     if(!this.gobQueue) this.gobQueue = {};
     if(gob.uri)//only save if object has been awarded a uri from the database
         this.gobQueue[gob.uri] = gob; //store a unique
-    this.issuePermissionsWarnings();
-    if(BQApp.user){
-        if(this.saveTimeout) clearTimeout(this.saveTimeout);
-        var timeout = function() {
-            console.log('post');
-            var keys = Object.keys(me.gobQueue);
-            keys.forEach(function(k){
-                var gob = me.gobQueue[k];
-                gob.save_me(pars.ondone, pars.onerror ); // check why save_ should not be used
 
-            });
+    if(this.saveTimeout) clearTimeout(this.saveTimeout);
+    var timeout = function() {
+        console.log('post');
+        var keys = Object.keys(me.gobQueue);
+        keys.forEach(function(k){
+            var gob = me.gobQueue[k];
+            gob.save_me(pars.ondone,
+                        callback(this, 'on_error')); // check why save_ should not be used
 
-            me.gobQueue = {};
-        }
+        });
+
+        me.gobQueue = {};
     }
+
     this.saveTimeout = setTimeout( timeout, 500 );
     /*
     if (this.saving_timeout) clearTimeout (this.saving_timeout);
@@ -700,7 +783,11 @@ ImgEdit.prototype.basic_drag_callback = function(g, parent, x, y){
     this.current_gob = g;
     this.visit_render.visitall(g, [v]);
 
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
+    this.renderer.setmousemove(function(e){
+        g.shape.onDragCreate(e, [x,y]);
+        me.display_gob_info(g);
+    });
+
     this.renderer.setmouseup(callback(this, function(e){
         this.finish_add(g, parent);
         //if (this.viewer.parameters.onselect)
@@ -777,6 +864,7 @@ ImgEdit.prototype.basic_polygon = function (type, parent, e, x, y) {
 
     var v = this.viewer.current_view;
     var g = this.current_gob;
+    var me = this;
     parent = parent || this.global_parent;
 
     if (g == null) {
@@ -823,7 +911,12 @@ ImgEdit.prototype.basic_polygon = function (type, parent, e, x, y) {
             g.shape.sprite.remove();
         this.visit_render.visitall(g, [v]);
         g.shape.postEnabled = false;
-        this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
+        //this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
+        this.renderer.setmousemove(function(e){
+            g.shape.onDragCreate(e,[x,y]);
+            me.display_gob_info(g);
+        });
+
         this.begin_add(g, g.edit_parent);
     }
 };
@@ -877,7 +970,11 @@ ImgEdit.prototype.new_freehand = function (type, parent, e, x, y) {
     var dx = g.vertices[n-1].x - pt.x;
     var dy = g.vertices[n-1].y - pt.y;
     var dp = dx*dx + dy*dy;
-    this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]},g.shape.onDragFree));
+    this.renderer.setmousemove(function(e){
+        g.shape.onDragFree(e, [x,y]);
+        me.display_gob_info(g);
+    });
+
     this.renderer.setmouseup(callback(this,function(e){
         g.shape.postEnabled = true;
         me.on_move(me.current_gob);
@@ -937,7 +1034,10 @@ ImgEdit.prototype.new_line = function (parent, e, x, y) {
         this.renderer.unselectCurrent();
         this.renderer.selectedSet = [g.shape];
         this.renderer.select(this.renderer.selectedSet);
-        this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
+        this.renderer.setmousemove( function(e){
+            g.shape.onDragCreate(e,[x,y]);
+            me.editor.display_gob_info(g);
+        });
 
     }
     this.visit_render.visitall(g, [v]);

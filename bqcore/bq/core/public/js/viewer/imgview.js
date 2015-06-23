@@ -509,7 +509,7 @@ ImgViewer.prototype.newImage = function (bqimage) {
 
     var phys = new BQImagePhys (this.image);
     phys.load (callback (this, 'newPhys') );
-     
+
     BQ.Preferences.on('update_'+this.image.resource_uniq+'_pref', this.onPreferences, this);
     BQ.Preferences.on('onerror_'+this.image.resource_uniq+'_pref', this.onPreferences, this);
     BQ.Preferences.load(this.image.resource_uniq);
@@ -662,7 +662,7 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
     // highlight the selected object
     this.renderer.highlight(gob, selection);
 };
-
+/*
 ImgViewer.prototype.color_gobject = function(gob, color) {
     this.renderer.setcolor(gob, color);
     var xml = gob.xmlNode();
@@ -677,7 +677,7 @@ ImgViewer.prototype.color_gobject = function(gob, color) {
     this.renderer.rerender([gob], [this.current_view, true]);
     console.log(gob.uri + '?view=deep');
 };
-
+*/
 ImgViewer.prototype.delete_gobjects = function(gobs) {
     var g=undefined;
 

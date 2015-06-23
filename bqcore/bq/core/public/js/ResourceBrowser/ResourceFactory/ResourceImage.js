@@ -771,7 +771,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                         if(image3d){
                             image3d.color_gobjects(gobs[i], color);
                         }
-                        this.viewerContainer.viewer.color_gobject(gobs[i], color);
+                        this.viewerContainer.viewer.editor.color_gobject(gobs[i], color);
 
                     }
                 },
