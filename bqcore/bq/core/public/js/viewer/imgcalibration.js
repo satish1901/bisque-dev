@@ -220,7 +220,6 @@ Ext.define('BQ.Calibration.ChannelPanel', {
                 id: 'channel_color_'+me.channel,
                 xtype: 'colorfield',
                 value: this.color.toString().replace('#', ''),
-
                 listeners: {
                     scope: this,
                     change: function(field, value) {
@@ -273,27 +272,27 @@ Ext.define('BQ.Calibration.ChannelPanel', {
         var nameXpath = '//tag[@name="channel_'+this.channel+'_name"]/@value';
         var oldValue = BQ.util.xpath_string(this.originalMetaDoc, nameXpath);
         var metaValue = BQ.util.xpath_number(imageMeta, nameXpath);
-        if (metaValue || oldValue!=this.name) {
-            if (this.name) {
-                var tag = document.createElement('tag');
-                tag.setAttribute('name', 'channel_'+this.channel+'_name');
-                tag.setAttribute('value', this.name);
-                tagList.push(tag);
-            }
+        //if (metaValue || oldValue!=this.name) {
+        if (this.name) {
+            var tag = document.createElement('tag');
+            tag.setAttribute('name', 'channel_'+this.channel+'_name');
+            tag.setAttribute('value', this.name);
+            tagList.push(tag);
         }
+        //}
         var color = Ext.draw.Color.fromString(this.color);
         var color = color.r+','+color.g+','+color.b;
         var colorXpath = '//tag[@name="channel_color_'+this.channel+'"]/@value';
         var oldValue = BQ.util.xpath_string(this.originalMetaDoc, colorXpath);
         var metaValue = BQ.util.xpath_number(imageMeta, colorXpath);
-        if (metaValue || oldValue!=color) {
-            if (color) {
-                var tag = document.createElement('tag');
-                tag.setAttribute('name', 'channel_color_'+this.channel);
-                tag.setAttribute('value', color);
-                tagList.push(tag);
-            }
+        //if (metaValue || oldValue!=color) {
+        if (color) {
+            var tag = document.createElement('tag');
+            tag.setAttribute('name', 'channel_color_'+this.channel);
+            tag.setAttribute('value', color);
+            tagList.push(tag);
         }
+        //}
         return tagList
     },
 
@@ -789,7 +788,7 @@ Ext.define('BQ.viewer.Calibration', {
             image_meta.setAttribute('uri', uri);
             var method = 'PUT';
         }
-        var changedFlag = false; //a flag that keeps track if any changes had occured to the image meta document
+        var changedFlag = false; //a flag that keeps track if any changes had occurred to the image meta document
         if (this.imageMetaForm.formComponents) {
             for (var k in this.imageMetaForm.formComponents) {
                 var tag = this.imageMetaForm.formComponents[k].fromXmlNode(imMetaXML);
