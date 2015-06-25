@@ -433,12 +433,12 @@ Ext.define('BQ.viewer.Calibration', {
             text: 'Reload',
             handler: function() {
                 //request for image meta
+                var url = me.image_resource.replace('/data_service/', '/image_service/');
                 Ext.Ajax.request({
                     method: 'GET',
                     disableCaching: false,
                     headers: { 'Content-Type': 'text/xml' },
-                    url: me.image_resource+'/pixels',
-                    params: {meta:''},
+                    url: url+'?meta',
                     success: function(response) {
                         var xml = response.responseXML;
                         var viewer = this.imageCalibForm.formComponents['imgViewer'];
@@ -483,12 +483,12 @@ Ext.define('BQ.viewer.Calibration', {
         });
 
         //request for image meta
+        var url = this.image_resource.replace('/data_service/', '/image_service/');
         Ext.Ajax.request({
             method: 'GET',
             disableCaching: false,
             headers: { 'Content-Type': 'text/xml' },
-            url: this.image_resource+'/pixels',
-            params: {meta:''},
+            url: url+'?meta',
             success: function(response) {
                 var xml = response.responseXML;
                 this.constructImageMetaForm(xml);
@@ -862,7 +862,7 @@ Ext.define('BQ.viewer.Calibration', {
             method: 'POST',
             disableCaching: false,
             headers: { 'Content-Type': 'text/xml' },
-            url: this.image_resource+'/pixels?cleancache=true',
+            url: url+'?cleancache=true',
             success: function(response) {
 
                 // invalidate browser cache of image metadata
@@ -879,7 +879,7 @@ Ext.define('BQ.viewer.Calibration', {
                         me.setLoading(false);
                         Ext.MessageBox.show({
                             title: 'Updated Image Meta Data',
-                            msg: 'Updating image metadata was successful! Clean browser cache and then click ok to reload the page.',
+                            msg: 'Updating image metadata was successful! Click ok to reload the page.',
                             buttons: Ext.MessageBox.OK,
                             scope: this,
                             fn: function() {
