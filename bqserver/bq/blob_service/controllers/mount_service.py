@@ -575,6 +575,9 @@ class MountServer(TGController):
             except IllegalOperation, e:
                 log.debug ("failed %s store on %s with %s", storepath, store_name, e )
                 storeurl = lpath = None
+            except:
+                log.exception ("failed %s store on %s with %s", storepath, store_name, e )
+                storeurl = lpath = None
         log.debug('store_blob: %s %s %s', storeurl, lpath, etree.tostring(resource))
         if storeurl is None:
             log.error ('storing %s failed (%s)', storepath, storeurl)
