@@ -622,11 +622,12 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
         #v = filter (lambda x: x != 'full', view)
         log.debug ('FULL %s', kw)
         q = dbo.childrenq
+        q = resource_permision (q)
         if kw.has_key('offset'):
             q = q.offset (int(kw.pop('offset')))
         if kw.has_key('limit'):
             q = q.limit (int(kw.pop('limit')))
-        tl = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in resource_permission(q) ]
+        tl = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in q ]
         #gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
 #    elif "deep" in view:
 #         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ]

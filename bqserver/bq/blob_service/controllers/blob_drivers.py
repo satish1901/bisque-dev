@@ -261,7 +261,7 @@ class LocalDriver (StorageDriver):
     def push(self, fp, storeurl, uniq=None):
         "Push a local file (file pointer)  to the store"
 
-        log.debug('local.push: %s' , storeurl)
+        log.debug('local.push: %s', storeurl)
         origpath = localpath = url2localpath(storeurl)
         fpath,ext = os.path.splitext(origpath)
         _mkdir (os.path.dirname(localpath))
@@ -380,11 +380,15 @@ class IrodsDriver(StorageDriver):
         log.debug('irods.push: %s' , storeurl)
         fpath,ext = os.path.splitext(storeurl)
         uniq = uniq or make_uniq_code()
-        for x in xrange(len(uniq)-7):
-            if not irods_handler.irods_isfile (storeurl, user=self.user, password = self.password):
-                break
-            storeurl = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
-        flocal = irods_handler.irods_push_file(fp, storeurl, user=self.user, password=self.password)
+        try:
+            for x in xrange(len(uniq)-7):
+                if not irods_handler.irods_isfile (storeurl, user=self.user, password = self.password):
+                    break
+                storeurl = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
+            flocal = irods_handler.irods_push_file(fp, storeurl, user=self.user, password=self.password)
+        except irods_handler.IrodsError:
+            log.exception ("During Irods Push")
+            raise IllegalOperation ("irods push failed")
         return storeurl, flocal
 
     def pull (self, storeurl, localpath=None):
