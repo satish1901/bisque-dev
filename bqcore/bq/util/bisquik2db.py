@@ -622,7 +622,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
         #v = filter (lambda x: x != 'full', view)
         log.debug ('FULL %s', kw)
         q = dbo.childrenq
-        q = resource_permision (q)
+        q = resource_permission (q)
         if kw.has_key('offset'):
             q = q.offset (int(kw.pop('offset')))
         if kw.has_key('limit'):
