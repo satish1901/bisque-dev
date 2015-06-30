@@ -118,8 +118,13 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.blockforsaves = 'blockforsaves' in this.parameters ? this.parameters.blockforsaves : true;
         if (this.toolbar)
             this.parameters.toolbar = this.toolbar;
+
+        this.parameters.gobjectCreated  = callback(this, 'oncreate')
         this.parameters.gobjectschanged = callback(this, 'onchanged');
         this.parameters.gobjectDeleted  = callback(this, 'ondelete');
+        this.parameters.gobjectMove     = callback(this, 'onmove');
+        this.parameters.gobjectMoveEnd  = callback(this, 'onmoveend'); //mouse up on gobject
+
         this.parameters.onworking       = callback(this, 'onworking');
         this.parameters.ondone          = callback(this, 'ondone');
         this.parameters.onerror         = callback(this, 'onerror');
@@ -128,7 +133,6 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.onmodechange    = callback(this, 'onmodechange');
 
         //this.parameters.gobjectMoveStart= callback(this, 'onmovestart'); on mouse down
-        this.parameters.gobjectMoveEnd  = callback(this, 'onmoveend'); //mouse up on gobject
         //this.parameters.gobjectMove          = callback(this, 'onmove'); expensive
         this.parameters.onloaded        = callback(this, this.onloaded);
         this.parameters.onphys          = callback(this, this.onphys);
@@ -168,12 +172,24 @@ Ext.define('BQ.viewer.Image', {
 
     },
 
+
+
     onchanged : function(gobs) {
         this.fireEvent( 'changed', this, gobs );
     },
 
+    oncreate : function(gobs) {
+        this.fireEvent( 'create', this, gobs );
+    },
+
+
     ondelete: function(gobs) {
         this.fireEvent( 'delete', this, gobs );
+    },
+
+
+    onmove : function(gobs) {
+        this.fireEvent( 'gobmove', this, gobs );
     },
 
     onmoveend : function(gobs) {

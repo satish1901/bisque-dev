@@ -485,7 +485,9 @@ ImgEdit.prototype.test_save_permission = function (uri) {
     return true;
 };
 
-ImgEdit.prototype.on_error = function(e){
+ImgEdit.prototype.on_error = function(gob, e){
+
+
     if(e.request.status === 403 &&
        !this.issuedPrivelageWarning){
 
@@ -496,6 +498,11 @@ ImgEdit.prototype.on_error = function(e){
         this.insufficientPrivelage = true;
         this.issuedPrivelageWarning = true;
     }
+
+    else if(e.request.status >= 400){
+       this.remove_gobject(gob);
+    }
+
     else
         this.viewer.parameters.onerror(e)
     //this is here because its required to release the ui from working state
@@ -540,7 +547,7 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
 
             pars.ondone();
         },
-        callback(this, 'on_error')
+        callback(this, 'on_error', gob)
     );
 
 };
@@ -562,15 +569,17 @@ ImgEdit.prototype.remove_gobject = function (gob) {
 
 
     //test privelages and abort if we don't, we still want to reflect changes in renderer, though
-    if (!this.test_save_permission(this.viewer.image.uri + '/gobject')) {
-        if (this.viewer.parameters.gobjectschanged)
-            this.viewer.parameters.gobjectschanged(gob);
-        return;
-    }
+
+    //if (!this.test_save_permission(this.viewer.image.uri + '/gobject')) {
+    //    if (this.viewer.parameters.gobjectschanged)
+     //       this.viewer.parameters.gobjectschanged(gob);
+     //   return;
+    //}
 
     var pars = this.viewer.parameters || {};
-    if (pars.onworking)
-        pars.onworking('Saving annotations...');
+    if (this.test_save_permission(gob.uri))
+        if (pars.onworking)
+            pars.onworking('Saving annotations...');
 
     // try to find parent gobject and if it have single child, remove parent
     //var p = gob.findParentGobject();
@@ -590,21 +599,23 @@ ImgEdit.prototype.remove_gobject = function (gob) {
         return;
 
     var pars = this.viewer.parameters || {};
-
-    gob.delete_(pars.ondone, callback(this, 'on_error'));
+    if(gob.uri)
+        gob.delete_(pars.ondone, callback(this, 'on_error', null));
 };
 
 ImgEdit.prototype.on_selected = function (gobs) {
+    if(gobs.length === 0) return;
     var me = this;
     if (this.mode_type === 'delete') {
-        this.remove_gobject(gobs);
+        this.remove_gobject(gob);
     } else if (this.mode_type === 'select') {
         if (this.viewer.parameters.onselect)
             this.viewer.parameters.onselect(gobs);
         if(gobs.length > 1)
             me.display_gob_info_group(gobs);
-        else
+        else{
             me.display_gob_info(gobs[0].gob);
+        }
     }
 };
 
@@ -658,7 +669,7 @@ ImgEdit.prototype.on_move = function (gob) {
         keys.forEach(function(k){
             var gob = me.gobQueue[k];
             gob.save_me(pars.ondone,
-                        callback(this, 'on_error')); // check why save_ should not be used
+                        callback(this, 'on_error', null)); // check why save_ should not be used
 
         });
 
@@ -748,12 +759,12 @@ ImgEdit.prototype.new_point = function (parent, e, x, y) {
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0));
 
     this.current_gob = null;
+        this.renderer.unselectCurrent();
     this.visit_render.visitall(g, [v]);
-    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
 
-    this.renderer.unselectCurrent();
     this.renderer.selectedSet = [g.shape];
     this.renderer.select(this.renderer.selectedSet);
+    this.store_new_gobject ((parent && !parent.uri) ? parent : g);
     this.renderer.unselectCurrent();
 };
 
@@ -761,7 +772,6 @@ ImgEdit.prototype.begin_add = function(g, parent){
     this.renderer.unselectCurrent();
     this.renderer.selectedSet = [g.shape];
     this.renderer.select(this.renderer.selectedSet);
-    this.renderer.toggleWidgets('hide');
 }
 
 
@@ -772,7 +782,7 @@ ImgEdit.prototype.finish_add = function(g, parent){
     this.current_gob = null;
     this.renderer.setmousemove(null);
     this.renderer.setmouseup(null);
-    this.renderer.toggleWidgets('show');
+    //this.renderer.toggleWidgets('show');
     this.store_new_gobject ((parent && !parent.uri) ? parent : g);
     this.renderer.unselectCurrent();
 }
@@ -983,12 +993,10 @@ ImgEdit.prototype.new_freehand = function (type, parent, e, x, y) {
         me.renderer.setmouseup(null);
         g.shape.visvalingamSimplify();
         g.shape.moveLocal();
-        me.renderer.unselectCurrent();
-        me.renderer.selectedSet = [g.shape];
-        me.renderer.select(me.renderer.selectedSet);
-        me.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
 
-        this.renderer.unselectCurrent();
+        me.store_new_gobject ((g.edit_parent && !g.edit_parent.uri) ? g.edit_parent : g);
+        this.renderer.drawEditLayer();
+        //this.renderer.updateVisible();
     }));
 };
 
@@ -1107,7 +1115,7 @@ ImgEdit.prototype.matchShape = function(parent, points, eigs, layer){
     }
 
     else if(de < dr){
-        if(Math.abs(1.0 - r[0]/r[1]) < 0.2){
+       if(Math.abs(1.0 - r[0]/r[1]) < 0.2){
             shape.name = 'circle';
             shape.vertices = [{x: c[0], y: c[1]},
                               {x: c[0] + r[0]*v[0][0], y: c[1] + r[0]*v[0][1]}];

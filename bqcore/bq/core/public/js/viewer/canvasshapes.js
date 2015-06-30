@@ -176,7 +176,6 @@ function visvalingamSimplify(points, scale){
 };
 
 
-
 function CanvasShape(gob, renderer) {
 	this.renderer = renderer;
     if(renderer)
@@ -189,6 +188,7 @@ function CanvasShape(gob, renderer) {
     this.manipulators = [];
     this.shapeCorners = [];
     this.zindex = Math.random(); //generate a false zindex for depth sorting.
+    this.isDestroyed = false;
     //this.rotation = 0;
 };
 
@@ -222,7 +222,14 @@ CanvasShape.prototype.hasOverlap  = function(bbox){
     return overlap;
 };
 
+CanvasShape.prototype.isInside  = function(point){
+    var bbox = this.bbox;
+    if(point.x < bbox.max[0] && point.y < bbox.max[1] &&
+       point.x > bbox.min[0] && point.y > bbox.min[1])
+        return true;
+    else return false;
 
+};
 
 CanvasShape.prototype.dragStart = function () {
     if(!this.bboxCache || !this.spriteCache ){
@@ -237,8 +244,6 @@ CanvasShape.prototype.dragStart = function () {
     this.bboxCache.min[1] = this.bbox.min[1];
     this.bboxCache.max[1] = this.bbox.max[1];
 };
-
-
 
 
 CanvasShape.prototype.isVisible = function (z,t, tolerance_z) {
@@ -304,6 +309,7 @@ CanvasShape.prototype.resetManipulatorSet = function(set){
 };
 
 CanvasShape.prototype.resetManipulators = function(){
+    if(!this.renderer.colorMenu) return;
     if(this.renderer.colorMenu.shapeId != this.id())
         this.renderer.colorMenu.hide();
     this.resetManipulatorSet(this.shapeCorners); this.shapeCorners = [];
@@ -865,6 +871,41 @@ CanvasPolyLine.prototype.calcBbox = function () {
     return {min: min, max: max};
 };
 
+CanvasPolyLine.prototype.isInside  = function(point){
+    //use the polygon winding number to determine if point is inside
+    //adapted from: http://geomalgorithms.com/a03-_inclusion.html
+
+    if(this._closed){
+        var test = new ShapeAnalyzer();
+        //crossing number appears to be a bit more robust than winding number.
+        return test.crossingNumberPointPoly( point, this.gob.vertices );
+    } else{
+        var dLine = function(p, x1, x2){
+            //distance from a line described by a point, p, and two points x1 and x2.
+            var num =
+                (x2.y - x1.y)*p.x - (x2.x - x1.x)*p.y + x2.x*x1.y - x2.y*x1.x;
+            var den = (x2.x - x1.x)*(x2.x - x1.x) + (x2.y - x1.y)*(x2.y - x1.y);
+            return num*num/den;
+        };
+
+        var verts = this.gob.vertices;
+        var minLength = 99999999;
+        for(var i = 0; i < verts.length-1 ; i++){
+            var p0 = {x: point.x - verts[i].x, y: point.y - verts[i].y}
+            var p1 = {x: point.x - verts[i+1].x, y: point.y - verts[i+1].y}
+            var dl0 = p0.x*p0.x + p0.y*p0.y;
+            var dl1 = p1.x*p1.x + p1.y*p1.y;
+            var dl = dLine(point, verts[i], verts[i+1]);
+            minLength = Math.min(minLength, dl0);
+            minLength = Math.min(minLength, dl1);
+            minLength = Math.min(minLength, dl);
+        }
+        minLength = Math.sqrt(minLength);
+        return minLength*this.renderer.scale() < 3;
+    }
+};
+
+
 CanvasPolyLine.prototype.init = function(gob){
     var color = 'rgb(255,0,0)';
 
@@ -1353,6 +1394,32 @@ CanvasEllipse.prototype.calcBbox = function () {
 };
 
 
+CanvasEllipse.prototype.isInside  = function(point){
+    //find teh intersection of the ray and the ellipse
+    //test radius, return true if the ray is shorter than
+    //the interesection point
+    var p1 = [this.x(), this.y()];
+
+    var dp = [point.x - p1[0], point.y - p1[1]];
+
+    var tp = Math.atan2(dp[1], dp[0]);
+    var t = Math.PI*this.sprite.rotation()/180;
+    var dtheta = t - tp;
+
+    var r = this.sprite.radius();
+    var cos2 = r.y*Math.cos(dtheta);
+    cos2*= cos2;
+    var sin2 = r.x*Math.sin(dtheta);
+    sin2*= sin2;
+
+    var k = 1/Math.sqrt(cos2 + sin2);
+
+    var de = [k*r.x*r.y*Math.cos(t-tp), k*r.x*r.y*Math.sin(t-tp)];
+    var dE = Math.sqrt(de[0]*de[0] + de[1]*de[1]);
+    var dX = Math.sqrt(dp[0]*dp[0] + dp[1]*dp[1]);
+    return dX < dE;
+};
+
 CanvasEllipse.prototype.cacheOffset = function(){
     var me = this;
     //var bb = this.bbox;
@@ -1624,6 +1691,16 @@ CanvasCircle.prototype.calcBbox = function () {
             max: [px + r, py + r, maxz, maxt]};
 };
 
+CanvasCircle.prototype.isInside  = function(point){
+    //find teh intersection of the ray and the ellipse
+    //test radius, return true if the ray is shorter than
+    //the interesection point
+    var r = this.sprite.radius();
+    var p1 = [this.x(), this.y()];
+    var dp = [point.x - p1[0], point.y - p1[1]];
+    var dX = Math.sqrt(dp[0]*dp[0] + dp[1]*dp[1]);
+    return dX < r;
+};
 
 CanvasCircle.prototype.cacheOffset = function(){
     var me = this;

@@ -538,17 +538,17 @@ Ext.define('Bisque.Resource.Image.Page', {
                 hide_file_name_osd: true,
                 blockforsaves: false,
                 main: this,
-                gobjectCreated : Ext.bind(function(gob) {
-                    this.gobjectTagger.appendGObject(gob);
-
-                    var node = this.gobjectTagger.findNodeByGob(gob);
-                    this.gobjectTagger.tree.getSelectionModel().select(node);
-                }, this),
                 render_plugins: ['color', 'corners', 'bbox'],
                 //gobjectDeleted :
             },
             listeners : {
 
+                create: Ext.bind(function(scope,gob) {
+                    this.gobjectTagger.appendGObject(gob);
+                    //jrd: we don't need to select after creation
+                    //var node = this.gobjectTagger.findNodeByGob(gob);
+                    //this.gobjectTagger.tree.getSelectionModel().select(node);
+                }, this),
 
                 delete: Ext.bind(function(scope, gob) {
                     this.gobjectTagger.deleteGObject(gob);

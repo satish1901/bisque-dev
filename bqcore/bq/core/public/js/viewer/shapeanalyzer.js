@@ -208,6 +208,7 @@ ShapeAnalyzer.prototype.projectToRect = function(points, eigs, layer, scale){
     var cBin = [[],[],[],[]];
     var dm = [0,0,0,0];
     var im = [0,0,0,0];
+
     var dLine = function(p, x1, r){
         //distance from a line described by a point, p, and two points x1 and x2.
         var x2 = [x1[0] + r[0], x1[1] + r[1]];
@@ -217,6 +218,15 @@ ShapeAnalyzer.prototype.projectToRect = function(points, eigs, layer, scale){
         var den = (x2[0] - x1[0])*(x2[0] - x1[0]) + (x2[1] - x1[1])*(x2[1] - x1[1]);
         return num*num/den;
     };
+
+    /*
+    var dLine = function(p, x1, x2){
+        //distance from a line described by a point, p, and two points x1 and x2.
+        var num =
+            (x2[1] - x1[1])*p.x - (x2[0] - x1[0])*p.y + x2[0]*x1[1] - x2[1]*x1[0];
+        var den = (x2[0] - x1[0])*(x2[0] - x1[0]) + (x2[1] - x1[1])*(x2[1] - x1[1]);
+        return num*num/den;
+    };*/
 
     var dProj = function(p, x1, r){
         //project a point, p onto a ray x1 and r(unit).
@@ -350,3 +360,86 @@ ShapeAnalyzer.prototype.projectToEllipse = function(points, eigs, ellipse){
         ellipse.points(ppoints);
     return d/points.length;
 }
+
+
+// Copyright 2000 softSurfer, 2012 Dan Sunday
+// This code may be freely used, distributed and modified for any purpose
+// providing that this copyright notice is included with it.
+// SoftSurfer makes no warranty for this code, and cannot be held
+// liable for any real or imagined damage resulting from its use.
+// Users of this code must verify correctness for their application.
+
+
+// a Point is defined by its coordinates {int x, y;}
+//===================================================================
+
+
+// isLeft(): tests if a point is Left|On|Right of an infinite line.
+//    Input:  three points P0, P1, and P2
+//    Return: >0 for P2 left of the line through P0 and P1
+//            =0 for P2  on the line
+//            <0 for P2  right of the line
+//    See: Algorithm 1 "Area of Triangles and Polygons"
+ShapeAnalyzer.prototype.isLeft = function( P0, P1, P2 )
+{
+    return ( (P1.x - P0.x) * (P2.y - P0.y)
+             - (P2.x -  P0.x) * (P1.y - P0.y) );
+}
+//===================================================================
+
+
+// cn_PnPoly(): crossing number test for a point in a polygon
+//      Input:   P = a point,
+//               V[] = vertex points of a polygon V[n+1] with V[n]=V[0]
+//      Return:  0 = outside, 1 = inside
+// This code is patterned after [Franklin, 2000]
+
+ShapeAnalyzer.prototype.crossingNumberPointPoly = function ( P, V )
+{
+    var n = V.length;
+    var    cn = 0;    // the  crossing number counter
+
+    // loop through all edges of the polygon
+    for (var i=0; i<n; i++) {    // edge from V[i]  to V[i+1]
+        var ip1 = (i+1)%n;
+        if (((V[i].y <= P.y) && (V[ip1].y > P.y))     // an upward crossing
+            || ((V[i].y > P.y) && (V[ip1].y <=  P.y))) { // a downward crossing
+            // compute  the actual edge-ray intersect x-coordinate
+            var vt = (P.y  - V[i].y) / (V[ip1].y - V[i].y);
+            if (P.x <  V[i].x + vt * (V[ip1].x - V[i].x)) // P.x < intersect
+                ++cn;   // a valid crossing of y=P.y right of P.x
+        }
+    }
+    return (cn&1);    // 0 if even (out), and 1 if  odd (in)
+
+}
+//===================================================================
+
+
+// wn_PnPoly(): winding number test for a point in a polygon
+//      Input:   P = a point,
+//               V[] = vertex points of a polygon V[n+1] with V[n]=V[0]
+//      Return:  wn = the winding number (=0 only when P is outside)
+
+ShapeAnalyzer.prototype.windingNumberPointPoly = function( P, V )
+{
+    var n = V.length;
+    var wn = 0;    // the  winding number counter
+
+    // loop through all edges of the polygon
+    for (var i=0; i<n; i++) {   // edge from V[i] to  V[i+1]
+        var ip1 = (i+1)%n;
+        if (V[i].y <= P.y) {          // start y <= P.y
+            if (V[ip1].y  > P.y)      // an upward crossing
+                if (this.isLeft( V[i], V[ip1], P) > 0)  // P left of  edge
+                    --wn;            // have  a valid up intersect
+        }
+        else {                        // start y > P.y (no test needed)
+            if (V[ip1].y  <= P.y)     // a downward crossing
+                if (this.isLeft( V[i], V[ip1], P) < 0)  // P right of  edge
+                    ++wn;            // have  a valid down intersect
+        }
+    }
+    return wn;
+}
+//===================================================================
