@@ -430,21 +430,30 @@ ImgEdit.prototype.display_gob_info_group = function (gobs) {
     var perimeter_px = 0;
     var area_px = 0;
 
+    var perimeter_px_sz = 0;
+    var area_px_sz = 0;
+
     gobs.forEach(function(e){
         perimeter_px += e.gob.perimeter();
         area_px += e.gob.area();
+        if (perimeter_px>0 && phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
+            perimeter_px_sz += e.gob.perimeter({x: phys.pixel_size[0], y: phys.pixel_size[1]});
+        }
+        if (area_px>0 && phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
+            area_px_sz += e.gob.area({x: phys.pixel_size[0], y: phys.pixel_size[1]});
+        }
     });
 
     if (perimeter_px>0)
         text += ' Length: '+perimeter_px.toFixed(2)+'px';
     if (perimeter_px>0 && phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
-        text += ' '+gob.perimeter({x: phys.pixel_size[0], y: phys.pixel_size[1]}).toFixed(2)+phys.units;
+        text += ' ' + perimeter_px_sz.toFixed(2) + phys.units;
     }
 
     if (area_px>0)
         text += ' Area: '+area_px.toFixed(2)+'px²';
     if (area_px>0 && phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
-        text += ' '+gob.area({x: phys.pixel_size[0], y: phys.pixel_size[1]}).toFixed(2)+phys.units+'²';
+        text += ' ' + area_px_sz.toFixed(2) + phys.units + '²';
     }
 
     var ip = this.viewer.plugins_by_name['infobar'];
