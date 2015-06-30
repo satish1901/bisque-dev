@@ -1826,7 +1826,6 @@ CanvasRenderer.prototype.updatePlugins = function(){
     });
 
 };
-
 CanvasRenderer.prototype.drawEditLayer = function (){
     this.updatePlugins();
     this.editLayer.draw();
@@ -1843,6 +1842,7 @@ CanvasRenderer.prototype.enable_edit = function (enabled) {
 };
 
 CanvasRenderer.prototype.findNearestShape = function(x,y, z, t){
+    //not really find nearest, rather find overlapping
     var node = this.quadtree.nodes[0];
     var scale = this.stage.scale().x;
     var w = 4/scale;
@@ -1851,7 +1851,11 @@ CanvasRenderer.prototype.findNearestShape = function(x,y, z, t){
             {min: [x-w, y-w, z-0.5, t-0.5],
              max: [x+w, y+w, z+0.5, t+0.5]}, node);
 
-    return shapes[0];
+    for(var i=0; i < shapes.length; i++){
+        if(shapes[i].isInside({x:x, y:y}))
+            return shapes[i];
+    }
+    return null;
 },
 
 CanvasRenderer.prototype.getUserCoord = function (e ){
@@ -2493,10 +2497,10 @@ CanvasRenderer.prototype.select = function (gobs) {
         e.sprite.moveToBottom();
     });
 
-
-    this.plug_ins.forEach(function(e){
-        e.select(gobs);
-    });
+    if(this.mode != 'add')
+        this.plug_ins.forEach(function(e){
+            e.select(gobs);
+        });
 
     //this.showDrawer();
     this.currentLayer.draw();
@@ -2664,9 +2668,9 @@ CanvasRenderer.prototype.addSpriteEvents = function(shape){
     polys.forEach(function(poly){
         poly.on(me.mousedownname, function(evt) {
             //select(view, gob);
-            if(me.mode === 'delete'){
+            if(me.mode === 'delete' && shape.isDestroyed == false){
                 //me.quadtree.remove(gob.shape);
-                gob.isDestroyed = true;
+                shape.isDestroyed = true;
                 me.delete_fun(gob);
                 return;
             }
@@ -2815,6 +2819,7 @@ CanvasRenderer.prototype.hideShape = function (gob, view) {
 
 
     if (shape) {
+        this.removeSpriteEvents(shape);
         this.destroy(this.selectedSet);
         this.selectedSet = [];
         //shape.sprite.hide();
