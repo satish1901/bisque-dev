@@ -13,7 +13,7 @@ function SVGRenderer (viewer,name) {
     this.base = ViewerPlugin;
     this.base (viewer, name);
     this.events  = {};
-
+    
     //overlay Editor
     var me = this;
     if (this.viewer.toolbar) { //required toolbar to initialize and the user to be signed in
@@ -25,12 +25,12 @@ function SVGRenderer (viewer,name) {
                 xtype   : 'menuitem',
                 itemId  : 'menu_viewer_operation_overlayEditor',
                 text    : 'Overlay Editor',
-                //disabled: !BQApp.hasUser(),
+                disabled: !BQApp.hasUser(),
                 disabled: true,
                 handler: function() {
                     if (!me.overlayEditorWin) {
                         var image = this.viewer.image;
-                        var resource = image? image.uri : ''
+                        var resource = image? image.uri : '';
                         me.overlayEditorWin = Ext.create('BQ.overlayEditor.Window',{
                             title: 'Overlay Editor',
                             height: '80%',
@@ -38,17 +38,20 @@ function SVGRenderer (viewer,name) {
                             modal: true,
                             closeAction:'hide',
                             viewer: me.viewer,
-                            phys: me.viewer.imagephys,
+                            phys: me.viewer.imagephys,       
                             image_resource:resource,
                         });
                     }
                     me.overlayEditorWin.show();
                 },
-
+                
             });
             BQApp.on('gotuser', function() {
                 overlayEditor.setDisabled(false);
             }); //enable editor since user was found
+            if (BQApp.hasUser()) { //checks for user
+                overlayEditor.setDisabled(false);
+            }
         }
     }
 };
@@ -75,7 +78,7 @@ SVGRenderer.prototype.newImage = function () {
         var resource = image? image.uri : ''
         me.overlayEditorWin.miniViewer.resource = resource;
         // adds gobjects if the preferences already have overlay points
-
+        
         var pattern =/([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+)/;
         var points = this.overlayPref.position.match(pattern);
         var editor = me.overlayEditorWin.miniViewer.plugins_by_name.edit;
@@ -227,7 +230,7 @@ SVGRenderer.prototype.updateTransform = function() {
             0, 1, 0, 0,
             0, 0, 1, 0,
             0, 0, 0, 1,
-        ];
+        ];  
         if (this.overlayPref.position) {
             var pattern = /([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+);([A-Za-z0-9_.]+),([A-Za-z0-9_.]+)/;
             var points = this.overlayPref.position.match(pattern);
@@ -239,7 +242,7 @@ SVGRenderer.prototype.updateTransform = function() {
                     points[5]*(view.width/view.original_width),points[6]*(view.height/view.original_height),
                     points[7]*(view.width/view.original_width),points[8]*(view.height/view.original_height)
                 );
-
+                
                 t = [
                     h[0], h[3], 0, h[6],
                     h[1], h[4], 0, h[7],
@@ -258,12 +261,12 @@ SVGRenderer.prototype.updateTransform = function() {
 
 SVGRenderer.prototype.populate_overlay = function () {
     removeAllChildren (this.overlay);
-
+    
     var gobs = document.createElementNS(svgns, "g");
     this.overlay.appendChild(gobs);
     if (this.overlayPref.enable) {
         this.updateTransform();
-
+    
         if (this.overlayPref.shape === 'dots') {
             for (var x=9; x<=95; x+=9)
             for (var y=12; y<=95; y+=9) {
@@ -355,7 +358,7 @@ SVGRenderer.prototype.populate_overlay = function () {
                 circ.setAttributeNS(null, 'cy', ''+y+'%');
                 circ.setAttributeNS(null, 'r', '1%' );
                 gobs.appendChild(circ);
-            }
+            } 
         } else if (this.overlayPref.shape === 'grid') {
             for (var y=12; y<=95; y+=9) {
                 var circ = document.createElementNS( svgns, 'line');
@@ -394,7 +397,7 @@ Ext.define('BQ.overlayEditor.Window', {
     initComponent: function(config) {
         var config = config || {};
         var me = this;
-
+        
         this.miniViewer =  Ext.create('BQ.viewer.Image',{
             width:'100%',
             height: '75%',
@@ -409,12 +412,13 @@ Ext.define('BQ.overlayEditor.Window', {
             },
             listeners: {
                 'afterPhys': me.onAfterPhys.bind(me),
-                'changed': me.oncreate.bind(me),
-                'gobmove': me.onmoveend.bind(me),
-                'delete': me.onmoveend.bind(me),
-                'moveend': me.onmoveend.bind(me),
+                'changed': me.onChanged.bind(me),
+                'delete': me.onChanged.bind(me),
+                'moveend': me.onChanged.bind(me),
             },
         });
+        
+        
         var items = [{
             xtype: 'container',
             padding: '10px',
@@ -426,13 +430,13 @@ Ext.define('BQ.overlayEditor.Window', {
         },
             this.miniViewer,
         ];
-
-
+        
+        
         var fbar = [{
             scale: 'large',
             xtype: 'button',
             margin: '0 8 0 8',
-            text: 'Set',
+            text: 'Save',
             handler: function() {
                 var gobs = me.miniViewer.getGobjects();
                 var gobs = gobs.slice();
@@ -440,43 +444,47 @@ Ext.define('BQ.overlayEditor.Window', {
                     BQ.ui.notification('Four points are required to set the overlay');
                     return
                 }
-
+                
                 view = me.viewer.view();
-
+                
                 corners = [
                     {x:0,y:0},
                     {x:view.original_width,y:0},
                     {x:0, y:view.original_height},
                     {x:view.original_width, y:view.original_height}
                 ];
-
+                
                 //select and order the points
                 var points = gobs;
-
+                
                 var points = me.mapPoints(gobs);
-
+                
                 //create put to the preference
                 var overlayTag = document.createElement('tag');
                 overlayTag.setAttribute('name', 'Overlay');
-
+                
                 var enableTag = document.createElement('tag');
                 enableTag.setAttribute('name', 'enable');
                 enableTag.setAttribute('value', 'true');
                 overlayTag.appendChild(enableTag);
-
+                
                 var positionTag = document.createElement('tag');
                 positionTag.setAttribute('name', 'position');
                 positionTag.setAttribute('value', points.x1+','+points.y1+';'+points.x2+','+points.y2+';'+points.x3+','+points.y3+';'+points.x4+','+points.y4);
                 overlayTag.appendChild(positionTag);
-
+                
                 var shapeTag = document.createElement('tag');
                 shapeTag.setAttribute('name', 'shape');
                 shapeTag.setAttribute('value', 'dots_custom');
                 overlayTag.appendChild(shapeTag);
-
-
-                BQ.Preferences.set(me.miniViewer.resource.resource_uniq, 'Viewer/Overlay', overlayTag.outerHTML, function() {
+                
+                
+                BQ.Preferences.set(me.miniViewer.resource.resource_uniq, 'Viewer/Overlay', overlayTag.outerHTML, 
+                function() {
                     BQ.ui.notification('Successfully updated overlay');
+                },
+                function() {
+                    BQ.ui.notification('Failed to updated overlay');
                 });
                 //BQ.Preferences.updateResource(me.miniViewer.resource.resource_uniq, preferenceTag.outerHTML, function() {BQ.ui.notification('Successfully updated overlay');});
             },
@@ -490,7 +498,7 @@ Ext.define('BQ.overlayEditor.Window', {
                 enableTag.setAttribute('name', 'enable');
                 el.setText(me.viewer.plugins_by_name.overlay.overlayPref.enable ? 'Enable':'Disable');
                 enableTag.setAttribute('value', me.viewer.plugins_by_name.overlay.overlayPref.enable ? 'false':'true');
-
+                
                 BQ.Preferences.set(me.miniViewer.resource.resource_uniq, 'Viewer/Overlay/enable', enableTag.outerHTML, function() {
                     if (me.viewer.plugins_by_name.overlay.overlayPref.enable) me.onChanged(me.miniViewer);
                     BQ.ui.notification((me.viewer.plugins_by_name.overlay.overlayPref.enable?'Enabled':'Disabled')+' Overlay');
@@ -502,27 +510,27 @@ Ext.define('BQ.overlayEditor.Window', {
             xtype: 'button',
             text: 'User Default',
             handler: function () {
-                BQ.Preferences.set(me.miniViewer.resource.resource_uniq, 'Viewer/Overlay', undefined,
+                BQ.Preferences.set(me.miniViewer.resource.resource_uniq, 'Viewer/Overlay', undefined, 
                     function() {
                         me.removeAllGobjects(me.miniViewer);
                         BQ.ui.notification('Set overlay to user preference');
-                    },
+                    }, 
                     function() {
                         BQ.ui.notification('Already set to user default');
                     }
                 );
             },
         }];
-
+        
         Ext.apply(me, {
             items: items,
             fbar: fbar,
         });
         this.callParent([config]);
-
+        
     },
-
-    oncreate: function(el) {
+    
+    onChanged: function(el, gob) {
         var me = this;
         var gobs = el.getGobjects();
         var overlay = el.viewer.plugins_by_name.overlay;
@@ -530,28 +538,18 @@ Ext.define('BQ.overlayEditor.Window', {
             var editor   = el.viewer.plugins_by_name.edit;
             var renderer = el.viewer.plugins_by_name.renderer;
             editor.remove_gobject(gobs[0]);
-            renderer.updateVisible(100);
+            renderer.updateVisible();
         }
-    },
-
-    onmoveend: function(el) {
-        var me = this;
-        var gobs = el.getGobjects();
-        var overlay = el.viewer.plugins_by_name.overlay;
         if (gobs.length==4) {
             var points = me.mapPoints(gobs);
-            overlay.overlayPref.position =
-                points.x1+','+points.y1+';'+
-                points.x2+','+points.y2+';'+
-                points.x3+','+points.y3+';'+
-                points.x4+','+points.y4; //update preference for this view only
+            overlay.overlayPref.position = points.x1+','+points.y1+';'+points.x2+','+points.y2+';'+points.x3+','+points.y3+';'+points.x4+','+points.y4; //update preference for this view only
             overlay.populate_overlay();
         } else {
             overlay.overlayPref.position = '';
             overlay.populate_overlay();
         }
     },
-
+    
     removeAllGobjects: function(el) {
         var me = this;
         var gobs = el.getGobjects();
@@ -563,7 +561,7 @@ Ext.define('BQ.overlayEditor.Window', {
         }
         renderer.updateVisible();
     },
-
+    
     onAfterPhys: function(el) {
         var me = this;
         var gobs = el.getGobjects();
@@ -588,7 +586,7 @@ Ext.define('BQ.overlayEditor.Window', {
             }
         }
     },
-
+    
     mapPoints: function(gobsList) {
         var x1 = gobsList[0].vertices[0].x;
         var y1 = gobsList[0].vertices[0].y;
@@ -598,7 +596,7 @@ Ext.define('BQ.overlayEditor.Window', {
         var y4 = gobsList[2].vertices[0].y;
         var x3 = gobsList[3].vertices[0].x;
         var y3 = gobsList[3].vertices[0].y;
-
+        
         return {
             x1:x1, y1:y1,
             x2:x2, y2:y2,
@@ -606,5 +604,5 @@ Ext.define('BQ.overlayEditor.Window', {
             x4:x4, y4:y4,
         };
     },
-
+    
 });
