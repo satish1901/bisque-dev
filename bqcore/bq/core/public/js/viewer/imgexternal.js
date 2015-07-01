@@ -138,6 +138,9 @@ function ImgExternal (viewer,name){
         var calibrateResolution = me.viewer.toolbar.queryById('menu_viewer_calibrate_image');
         calibrateResolution.setDisabled(false);
     });
+    if (BQApp.hasUser()) { //checks for user
+        overlayEditor.setDisabled(false);
+    }
 };
 
 ImgExternal.prototype = new ViewerPlugin();
