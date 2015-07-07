@@ -383,8 +383,10 @@ Ext.define('BQ.Calibration.ChannelOrganizer', {
                 }
             }]
         });
-
-        for (var c=0; c<this.channelNum; c++) {
+        
+        var channelNum = this.channelNum>50? 50 : this.channelNum;
+        if (this.channelNum>50) BQ.ui.notification('Channel Editor limited at 50');
+        for (var c=0; c<channelNum; c++) {
             var channelPanel = Ext.create('BQ.Calibration.ChannelPanel', {
                 channel: c.toString(),
             });
