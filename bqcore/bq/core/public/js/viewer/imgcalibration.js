@@ -16,14 +16,17 @@ Ext.define('BQ.Calibration.StackCount', {
         this.callParent([config]);
     },
     setValues: function(xmlDoc) {
-        var value = BQ.util.xpath_number(xmlDoc, this.dimsXpath+'/@value');
+        var value = BQ.util.xpath_string(xmlDoc, this.dimsXpath+'/@value');
+        value = parseInt(value,10);
         this.originalMetaDoc = xmlDoc; //save document
         this.setValue(value||0);
     },
     fromXmlNode: function(imageMeta) {
         //check to see if tag exists
-        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.dimsXpath+'/@value');
-        var metaValue = BQ.util.xpath_number(imageMeta, this.dimsXpath+'/@value');
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.dimsXpath+'/@value');
+        oldValue = parseInt(oldValue,10);
+        var metaValue = BQ.util.xpath_string(imageMeta, this.dimsXpath+'/@value');
+        metaValue = parseInt(metaValue,10);
         if (metaValue || oldValue!=this.value) {
             if (this.value) { // if no value delete from metadata
                 var tag = document.createElement('tag');
@@ -35,7 +38,8 @@ Ext.define('BQ.Calibration.StackCount', {
     },
 
     changed: function() {
-        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.dimsXpath+'/@value')||0;
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.dimsXpath+'/@value')||0;
+        oldValue = parseInt(oldValue,10);
         return oldValue!=this.value
     },
 });
@@ -54,13 +58,16 @@ Ext.define('BQ.Calibration.ChannelOrder', {
     },
     setValues: function(xmlDoc) {
         var value = BQ.util.xpath_string(xmlDoc, this.dimsXpath+'/@value');
+        value = parseInt(value,10);
         this.originalMetaDoc = xmlDoc; //save document
         this.setValue(value||'');
     },
     fromXmlNode: function(imageMeta) {
         //check to see if tag exists
-        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.dimsXpath+'/@value');
-        var metaValue = BQ.util.xpath_number(imageMeta, this.dimsXpath+'/@value');
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.dimsXpath+'/@value');
+        oldValue = parseInt(oldValue,10);
+        var metaValue = BQ.util.xpath_string(imageMeta, this.dimsXpath+'/@value');
+        metaValue = parseInt(metaValue,10);
         if (metaValue || oldValue!=this.value) {
             if (this.value) { // if no value delete from metadata
                 var tag = document.createElement('tag');
@@ -72,7 +79,8 @@ Ext.define('BQ.Calibration.ChannelOrder', {
     },
 
     changed: function() {
-        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.dimsXpath+'/@value')||'';
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.dimsXpath+'/@value')||'';
+        oldValue = parseInt(oldValue,10);
         return oldValue!=this.value
     },
 })
@@ -117,7 +125,8 @@ Ext.define('BQ.Calibration.PixelResolution', {
     },
     setValues: function(xmlDoc) {
         this.originalMetaDoc = xmlDoc; //save document
-        var resolutionValue = BQ.util.xpath_number(xmlDoc, this.resolutionXpath+'/@value');
+        var resolutionValue = BQ.util.xpath_string(xmlDoc, this.resolutionXpath+'/@value');
+        resolutionValue = parseFloat(resolutionValue);
         var resolutionForm = this.getForm().findField('pixel_resolution_'+this.dimension.toLowerCase());
         resolutionForm.setValue(resolutionValue||'');
 
@@ -130,8 +139,10 @@ Ext.define('BQ.Calibration.PixelResolution', {
         var tagList = [];
         var unitForm = this.getForm().findField('pixel_resolution_'+this.dimension);
         var value = unitForm.getValue();
-        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.resolutionXpath+'/@value');
-        var metaValue = BQ.util.xpath_number(imageMeta, this.resolutionXpath+'/@value');
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.resolutionXpath+'/@value');
+        oldValue = parseFloat(oldValue);
+        var metaValue = BQ.util.xpath_string(imageMeta, this.resolutionXpath+'/@value');
+        metaValue = parseFloat(metaValue);
         if (metaValue || oldValue!=value) {
             if (value) {
                 var tag = document.createElement('tag');
@@ -144,7 +155,7 @@ Ext.define('BQ.Calibration.PixelResolution', {
         var unitForm = this.getForm().findField('pixel_resolution_unit_'+this.dimension);
         var value = unitForm.getValue();
         var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.unitsXpath+'/@value')
-        var metaValue = BQ.util.xpath_number(imageMeta, this.unitsXpath+'/@value');
+        var metaValue = BQ.util.xpath_string(imageMeta, this.unitsXpath+'/@value');
         if (metaValue || oldValue!=value) {
             if (value) {
                 var tag = document.createElement('tag');
@@ -159,7 +170,8 @@ Ext.define('BQ.Calibration.PixelResolution', {
     changed: function() {
         var unitForm = this.getForm().findField('pixel_resolution_'+this.dimension);
         var value = unitForm.getValue()||'';
-        var oldValue = BQ.util.xpath_number(this.originalMetaDoc, this.resolutionXpath+'/@value')||'';
+        var oldValue = BQ.util.xpath_string(this.originalMetaDoc, this.resolutionXpath+'/@value')||'';
+        oldValue = parseFloat(oldValue);
         var changedFlag = oldValue!=value;
 
         var unitForm = this.getForm().findField('pixel_resolution_unit_'+this.dimension);
