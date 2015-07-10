@@ -583,7 +583,9 @@ Ext.define('BQ.selectors.Resource', {
         var resource = this.resource;
         var template = resource.template || {};
 
-        if (!this.selected_resource || !this.selected_resource.uri) {
+        if (template.allow_blank && (!this.selected_resource || !this.selected_resource.uri)) {
+            return true;
+        } else if (!this.selected_resource || !this.selected_resource.uri) {
             //BQ.ui.attention('You need to select an input resource!');
             BQ.ui.tip(this.getId(), 'You need to select an input resource!', {anchor:'left',}); // dima: maybe i need to give dom object for this one, instead of this
             return false;

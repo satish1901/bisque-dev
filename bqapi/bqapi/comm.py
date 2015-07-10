@@ -450,6 +450,35 @@ class BQSession(object):
     def close(self):
         pass
 
+    def parameter(self, name):
+        if self.mex is None:
+            return None
+        return self.mex.xmltree.find('tag[@name="inputs"]/tag[@name="%s"]'%name)
+
+    def parameter_value(self, name=None, p=None):
+        if p is None:
+            p = self.parameter(name)
+        else:
+            name = p.get('name')
+        try:
+            v = p.get('value')
+            t = p.get('type', '').lower()
+            if t == 'boolean':
+                return v.lower() == 'true'
+            elif t == 'number':
+                return float(v)
+            return v
+        except AttributeError:
+            return None
+
+    def parameters(self):
+        p = {}
+        if self.mex is None:
+            return p
+        inputs = self.mex.xmltree.iterfind('tag[@name="inputs"]/tag')
+        for i in inputs:
+            p[i.get('name')] = self.parameter_value(p=i)
+        return p
 
     def fetchxml(self, url, path=None, **params):
         """
@@ -720,7 +749,7 @@ class BQSession(object):
             xml = self.fetchxml(url, **params)
             if xml.tag == "response":
                 xml = xml[0]
-            bqo  = self.factory.from_etree(xml)
+            bqo = self.factory.from_etree(xml)
             return bqo
         except BQCommError, ce:
             log.exception('communication issue while loading %s' % ce)
