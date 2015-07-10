@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<module name="AnnotationHistograms" type="runtime">
+
+    <tag name="inputs">
+        <tag name="mex_url"  type="system-input" />
+        <tag name="bisque_token"  type="system-input" />
+        <tag name="dataset_url" type="dataset">
+            <template>
+                <tag name="accepted_type" value="dataset" />
+                <tag name="label" value="Dataset to extract metadata (Leave empty to process all available datasets)" />
+                <tag name="prohibit_upload" value="true" type="boolean" />
+                <tag name="allow_blank" value="true" type="boolean" />
+            </template>
+        </tag>
+    </tag>
+
+    <tag name="outputs">
+         <tag name="histogram" type="file">
+            <template>
+                <tag name="label" value="Histogram CSV file:" />
+            </template>
+         </tag>
+    </tag>
+
+    <tag name="module_options" >
+        <tag name="version" value="1" />
+    </tag>
+
+    <tag name="display_options" >
+       <tag name="group" value="Marine" />
+       <tag name="group" value="Annotations" />
+    </tag>
+
+    <tag name="help" type="file" value="public/help.html" />
+    <tag name="thumbnail" type="file" value="public/thumbnail.png" />
+
+    <tag name="title" type="string" value="Histograms of graphical annotations" />
+    <tag name="authors" type="string" value="The Bisque team" />
+    <tag name="description" type="string" value="This module summarises graphical annotations." />
+</module>
