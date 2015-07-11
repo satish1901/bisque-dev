@@ -53,7 +53,7 @@ class AnnotationRename(object):
         for ds_url in datasets:
             dataset = bq.fetchxml (ds_url, view='deep')
             dataset_name = dataset.get('name')
-            bq.update_mex('Processing: %s'%dataset_name)
+            bq.update_mex('processing "%s"'%dataset_name)
 
             refs = dataset.xpath('value[@type="object"]')
             for r in refs:
