@@ -31,16 +31,25 @@
                 <tag name="select">
                     <value>type</value>
                     <value>name</value>
-                    <value>vlaue</value>
+                    <value>value</value>
                 </tag>
                 <tag name="editable" value="false" type="boolean" />
             </template>
         </tag>
 
-        <tag name="value_old" value="" type="string" >
+        <tag name="value_old" value="" type="annotation_attr" >
             <template>
                 <tag name="label" value="Text to rename" />
                 <tag name="allowBlank" value="false" type="boolean" />
+                <tag name="editable" value="true" type="boolean" />
+
+                <tag name="reference_dataset" value="dataset_url" />
+                <tag name="reference_type" value="annotation_type" />
+                <tag name="reference_attribute" value="annotation_attribute" />
+
+                <tag name="element" value="gobject" />
+                <tag name="attribute" value="type" />
+                <tag name="dataset" value="/data_service/" />
             </template>
         </tag>
 

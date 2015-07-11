@@ -36,7 +36,8 @@ BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String',
                             'boolean'          : 'BQ.selectors.Boolean',
                             'date'             : 'BQ.selectors.Date',
                             'image_channel'    : 'BQ.selectors.ImageChannel',
-                            'pixel_resolution' : 'BQ.selectors.PixelResolution'
+                            'pixel_resolution' : 'BQ.selectors.PixelResolution',
+                            'annotation_attr'  : 'BQ.selectors.AnnotationsAttributes',
                           };
 
 BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image',
@@ -1071,6 +1072,188 @@ Ext.define('BQ.selectors.PixelResolution', {
 
 
 /*******************************************************************************
+BQ.selectors.AnnotationsAttributes relies on BQ.selectors.Resource and altough
+it is instantiated directly it needs existing BQ.selectors.Resource to listen to
+and read data from!
+
+templated configs:
+
+<tag name="gob_types" value="" type="annotation_attr">
+    <tag name="template" type="template">
+        <tag name="label" value="Graphical types" />
+        <tag name="allowBlank" value="false" type="boolean" />
+
+        <tag name="reference_dataset" value="dataset_url" />
+        <tag name="reference_type" value="annotation_type" />
+        <tag name="reference_attribute" value="annotation_attribute" />
+
+        <tag name="element" value="gobject" />
+        <tag name="attribute" value="type" />
+        <tag name="dataset" value="/data_service/" />
+    </tag>
+</tag>
+*******************************************************************************/
+
+Ext.define('BQ.selectors.AnnotationsAttributes', {
+    alias: 'widget.selectorannotationattr',
+    extend: 'BQ.selectors.Selector',
+    requires: ['Ext.data.Store', 'Ext.form.field.ComboBox', 'Ext.tip.*'],
+
+    height: 30,
+    layout: 'hbox',
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+        this.element = template.element;
+        this.attribute = template.attribute;
+        this.dataset = template.dataset;
+
+        var reference_dataset = this.module.inputs_index[template.reference_dataset];
+        if (reference_dataset && reference_dataset.renderer) {
+            this.reference_dataset = reference_dataset.renderer;
+            this.reference_dataset.on( 'changed', this.onNewResource, this );
+        }
+
+        var reference_element = this.module.inputs_index[template.reference_type];
+        if (reference_element && reference_element.renderer) {
+            this.reference_element = reference_element.renderer;
+            this.reference_element.on( 'changed', this.onNewType, this );
+        }
+
+        var reference_attribute = this.module.inputs_index[template.reference_attribute];
+        if (reference_attribute && reference_attribute.renderer) {
+            this.reference_attribute = reference_attribute.renderer;
+            this.reference_attribute.on( 'changed', this.onNewAttribute, this );
+        }
+
+        this.items = [];
+
+        // create combo box selector
+        this.store = Ext.create('Ext.data.Store', {
+            fields: ['Value', 'Element'],
+        });
+
+        this.combo = Ext.create('Ext.form.field.ComboBox', {
+            itemId: 'combobox',
+            //flex: 1,
+            name: resource.name+'_combo',
+            labelWidth: 200,
+            labelAlign: 'right',
+            width: '100%',
+
+            fieldLabel: template.label,
+            //value: resource.value,
+            multiSelect: false,
+            store: this.store,
+            queryMode: 'local',
+            displayField: 'Value',
+            valueField: 'Value',
+
+            forceSelection : true,
+            editable : false,
+
+            listeners: {
+                scope: this,
+                select: function(field, value) {
+                    this.resource.value = field.getValue();
+                },
+                afterrender : function(o) {
+                    o.tip = Ext.create('Ext.tip.ToolTip', {
+                        target : o.getEl().getAttribute("id"),
+                        html : template.description,
+                    });
+                },
+            },
+
+        });
+        this.items.push(this.combo);
+
+        this.callParent();
+        this.reload();
+    },
+
+    onNewResource : function(el, res) {
+        if (res instanceof BQDataset)
+            this.dataset = res.uri + '/value';
+        else
+            this.dataset = res.uri;
+        this.reload();
+    },
+
+    onNewType : function(el, sel) {
+        this.element = sel;
+        this.reload();
+    },
+
+    onNewAttribute : function(el, sel) {
+        this.attribute = sel;
+        this.reload();
+    },
+
+    setValue : function(v) {
+        this.combo.setValue(v);
+    },
+
+    reload : function() {
+        this.setLoading('Fetching attributes...');
+        //  /data_service/00-ecpvN7bnv9cD5KtKkKwLpT/value?extract=tag[name],gobject[type]
+        var url = this.dataset + '?extract='+this.element+'['+this.attribute+']';
+        Ext.Ajax.request({
+            url: url,
+            callback: function(opts, succsess, response) {
+                if (response.status>=400)
+                    this.onError();
+                else
+                    this.onTypes(response.responseXML);
+            },
+            scope: this,
+            disableCaching: false,
+        });
+    },
+
+    onError : function() {
+        this.setLoading(false);
+        BQ.ui.error('Problem fetching attributes');
+    },
+
+    onTypes : function(xml) {
+        this.setLoading(false);
+        var types = [],
+            gobs = BQ.util.xpath_nodes(xml, '//'+this.element),
+            g=undefined;
+        for (var i=0; g=gobs[i]; ++i) {
+            types.push({
+                Element: g.tag,
+                Value : g.getAttribute(this.attribute),
+            });
+        } // for types
+
+        this.store.loadData(types);
+        this.setValue(undefined);
+        this.selected_value = undefined;
+    },
+
+    select: function(resource) {
+        var value = parseInt(resource.value);
+        this.selected_value = value;
+        this.setValue( value );
+    },
+
+    isValid: function() {
+        if (!this.resource.value) {
+            var template = resource.template || {};
+            var msg = template.fail_message || 'You need to select an option!';
+            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
+            return false;
+        }
+        return true;
+    },
+
+});
+
+
+/*******************************************************************************
 Resource templated configs:
 query
 *******************************************************************************/
@@ -1635,6 +1818,7 @@ Ext.define('BQ.selectors.Combo', {
                 select: function(field, value) {
                     this.resource.value = field.getValue();
                     this.value = this.resource.value;
+                    this.fireEvent( 'changed', this, this.value );
                 },
                 afterrender : function(o) {
                     o.tip = Ext.create('Ext.tip.ToolTip', {
