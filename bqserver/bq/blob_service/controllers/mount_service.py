@@ -576,7 +576,7 @@ class MountServer(TGController):
                 log.debug ("failed %s store on %s with %s", storepath, store_name, e )
                 storeurl = lpath = None
             except Exception:
-                log.exception ("failed %s store on %s with %s", storepath, store_name )
+                log.exception ("failed %s store on %s", storepath, store_name )
                 storeurl = lpath = None
         log.debug('store_blob: %s %s %s', storeurl, lpath, etree.tostring(resource))
         if storeurl is None:
@@ -639,7 +639,7 @@ class MountServer(TGController):
                 refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
             log.debug ("_save_storerefs refs: %s", str(refs))
 
-            rootpath = storepath
+            rootpath = os.path.dirname(storepath)
             # Determine a list of URL that need to be moved to a store (these were unpacked locally)
             # Assume the first URL is special and the others are related which can be used
             # to calculate storepath
@@ -659,10 +659,12 @@ class MountServer(TGController):
                     # Add a directory:
                     # dima: we should probably list and store all files but there might be overlaps with individual refs
                     movingrefs.extend ( (etree.SubElement(resource, 'value'), settext, (fpath, subpath), fpath[len(localpath):]) for fpath in blob_drivers.walk_deep(localpath))
+                    log.debug ("_save_storerefs if os.path.isdir(localpath): %s", movingrefs)
                 elif os.path.exists(localpath):
                     if storepath is None:
                         storepath = posixpath.join(rootpath, storeurl[len(rooturl):])
                     movingrefs.append ( (node, setter, (localpath, subpath), storepath) )
+                    log.debug ("_save_storerefs elif os.path.exists(localpath): %s", movingrefs)
                 else:
                     log.error ("_save_storerefs: Cannot access %s as %s of %s ", storeurl, localpath, etree.tostring(node))
 
