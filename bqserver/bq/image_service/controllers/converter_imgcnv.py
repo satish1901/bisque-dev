@@ -848,6 +848,18 @@ class ConverterImgcnv(ConverterBase):
                 return ''
             return t.value or default
 
+        def read_tag_float(ds, key, default=None):
+            t = ds.get(key)
+            if t is None:
+                return None
+            return float(t.value) or default
+
+        def read_tag_int(ds, key, default=None):
+            t = ds.get(key)
+            if t is None:
+                return None
+            return int(t.value) or default
+
         if not cls.installed:
             return False
         log.debug('Group %s files', len(files) )
@@ -871,11 +883,11 @@ class ConverterImgcnv(ConverterBase):
             series_uid   = read_tag(ds, ('0020', '000e'))
             series_num   = read_tag(ds, ('0020', '0012')) #
             acqui_num    = read_tag(ds, ('0020', '0011')) # A number identifying the single continuous gathering of data over a period of time that resulted in this image
-            instance_num = int(read_tag(ds, ('0020', '0013'), '0') or '0') # A number that identifies this image
-            slice_loc    = float(read_tag(ds, ('0020', '1041'), '0') or '0') # defined as the relative position of the image plane expressed in mm
+            instance_num = read_tag_int(ds, ('0020', '0013'), 0) # A number that identifies this image
+            slice_loc    = read_tag_float(ds, ('0020', '1041'), 0.0) # defined as the relative position of the image plane expressed in mm
 
-            num_temp_p   = int(read_tag(ds, ('0020', '0105'), '0') or '0') # Total number of temporal positions prescribed
-            num_frames   = int(read_tag(ds, ('0028', '0008'), '0') or '0') # Number of frames in a Multi-frame Image
+            num_temp_p   = read_tag_int(ds, ('0020', '0105'), 0) # Total number of temporal positions prescribed
+            num_frames   = read_tag_int(ds, ('0028', '0008'), 0) # Number of frames in a Multi-frame Image
 
             mr_acq_typ  = read_tag(ds, ('0018', '0023')) # MR Acquisition type
             force_time = False
@@ -887,13 +899,15 @@ class ConverterImgcnv(ConverterBase):
                 force_time = False
 
             key = '%s/%s/%s/%s/%s'%(modality, patient_id, study_uid, series_uid, acqui_num) # series_num seems to vary in DR Systems
-            data.append((key, slice_loc or instance_num, f, num_temp_p or num_frames or force_time ))
-            #log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s', key, series_num, instance_num, num_temp_p, num_frames )
+            d = (key, slice_loc or instance_num, f, num_temp_p or num_frames or force_time )
+            data.append(d)
+            log.debug('Key: %s, series_num: %s, instance_num: %s, num_temp_p: %s, num_frames: %s, slice_loc: %s', key, series_num, instance_num, num_temp_p, num_frames, slice_loc )
+            log.debug('Data: %s', d)
 
         # group based on a key
         data = sorted(data, key=lambda x: x[0])
         for k, g in groupby(data, lambda x: x[0]):
-            # sort based on an instance_num
+            # sort based on position
             groups.append( sorted(list(g), key=lambda x: x[1]) )
 
         # prepare groups of dicom filenames

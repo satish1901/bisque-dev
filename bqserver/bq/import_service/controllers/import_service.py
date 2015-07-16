@@ -624,6 +624,9 @@ class import_serviceController(ServiceController):
         base_name = uf.resource.get('name')
         base_path = '%s/'%unpack_dir
 
+        log.debug('base_name: %s', base_name)
+        log.debug('base_path: %s', base_path)
+
         # first insert blobs
         for b in blobs:
             name = posixpath.join(base_name, b.replace(base_path, '') )
@@ -638,15 +641,19 @@ class import_serviceController(ServiceController):
             im = images[i]
             g = geometry[i]
             updated_name = None
+            rooturl = blob_service.local2url('%s/'%unpack_dir)
 
             if len(im) == 1:
                 name = posixpath.join(base_name, im[0].replace(base_path, '') )
                 value = blob_service.local2url(im[0])
                 resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts, value=value )
             else:
-                #name = posixpath.join(base_name, im[0].replace(base_path, '') )
-                updated_name = os.path.basename(im[0])
-                name = base_name
+                name = posixpath.join(base_name, im[0].replace(base_path, '') )
+                #updated_name = os.path.basename(im[0])
+                rooturl = blob_service.local2url(os.path.dirname(im[0])+'/')
+                #rooturl = blob_service.local2url(im[0])
+
+                #name = base_name
                 resource = etree.Element ('image', name=name, resource_type='image', ts=uf.ts)
                 for v in im:
                     val = etree.SubElement(resource, 'value', type='string' )
@@ -661,16 +668,18 @@ class import_serviceController(ServiceController):
             resource.extend (copy.deepcopy (list (uf.resource)))
             ConverterImgcnv.meta_dicom_parsed(im[0], resource)
 
-            # store resource
-            resource = blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir))
+            log.debug('Resource to insert: %s', etree.tostring(resource))
 
-            # a bit of funky processing for the multi-value case, we want files to be stored in the same path as all th eother files
+            # store resource
+            resource = blob_service.store_blob(resource=resource, rooturl=rooturl)
+
+            # a bit of funky processing for the multi-value case, we want files to be stored in the same path as all the other files
             # but at the same time we would like to give individual names to individual groups
-            if updated_name:
-                log.debug('Updating resource name to: %s for: %s', updated_name, etree.tostring(resource))
-                resource.set('name', updated_name)
-                log.debug('Updating resource: %s', etree.tostring(resource))
-                data_service.update_resource(resource=resource, new_resource=resource, replace=False)
+            # if updated_name:
+            #     log.debug('Updating resource name to: %s for: %s', updated_name, etree.tostring(resource))
+            #     resource.set('name', updated_name)
+            #     log.debug('Updating resource: %s', etree.tostring(resource))
+            #     data_service.update_resource(resource=resource, new_resource=resource, replace=False)
 
             resources.append(resource)
 
