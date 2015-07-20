@@ -268,7 +268,6 @@ class AuthenticationServer(ServiceController):
 
             etree.SubElement (sess, 'tag', name='expires', value= expires.isoformat() )
             etree.SubElement (sess, 'tag', name='timeout', value= str(timeout) )
-
         return etree.tostring(sess)
 
 
@@ -312,7 +311,7 @@ class AuthenticationServer(ServiceController):
     def setbasicauth(self,  username, passwd, **kw):
         log.debug ("Set basic auth %s", kw)
         if not identity.is_admin() and username != identity.get_username() :
-            return "failed: not allowed to change password of others"
+            return "<error msg='failed: not allowed to change password of others' />"
         user = tg.request.identity.get('user')
         log.debug ("Got user %s", user)
         if user and user.user_name == username:  # sanity check
@@ -320,9 +319,9 @@ class AuthenticationServer(ServiceController):
             user.password = passwd
             log.info ("Setting new basicauth password for %s", username)
             #transaction.commit()
-            return
+            return "<success/>"
         log.error ("Could not set basicauth password for %s", username)
-        return "Failed to set password"
+        return "<error msg='Failed to set password'/>"
 
 
 
