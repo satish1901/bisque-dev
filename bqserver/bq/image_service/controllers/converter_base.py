@@ -192,11 +192,15 @@ class ConverterBase(object):
     #######################################
 
     @classmethod
+    def run_command(cls, command ):
+        return misc.run_command( command )
+
+    @classmethod
     def run_read(cls, ifnm, command ):
         with Locks(ifnm):
             command, tmp = misc.start_nounicode_win(ifnm, command)
             log.debug('run_read command: [%s]', misc.toascii(command))
-            out = misc.run_command( command )
+            out = cls.run_command( command )
             misc.end_nounicode_win(tmp)
         return out
 

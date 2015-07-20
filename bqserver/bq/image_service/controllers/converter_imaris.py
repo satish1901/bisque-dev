@@ -100,7 +100,7 @@ class ConverterImaris(ConverterBase):
     @classmethod
     def get_version (cls):
         '''returns the version of imaris'''
-        o = misc.run_command( [cls.CONVERTERCOMMAND, '-v'] )
+        o = cls.run_command( [cls.CONVERTERCOMMAND, '-v'] )
         if o is None:
             return None
 
@@ -132,7 +132,7 @@ class ConverterImaris(ConverterBase):
         if cls.installed_formats is not None:
             return
 
-        fs = misc.run_command( [cls.CONVERTERCOMMAND, '-h'] )
+        fs = cls.run_command( [cls.CONVERTERCOMMAND, '-h'] )
         if fs is None:
             return ''
 
