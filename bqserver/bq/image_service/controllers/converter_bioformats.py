@@ -104,7 +104,7 @@ class ConverterBioformats(ConverterBase):
     @classmethod
     def get_version (cls):
         '''returns the version of bioformats'''
-        o = misc.run_command( [cls.BFINFO, '-version', '-no-upgrade'] )
+        o = cls.run_command( [cls.BFINFO, '-version', '-no-upgrade'] )
         if o is None:
             return None
 
@@ -139,7 +139,7 @@ class ConverterBioformats(ConverterBase):
         if cls.installed_formats is None:
             cls.installed_formats = OrderedDict()
 
-            formats_xml = misc.run_command( [cls.BFORMATS, '-xml'] )
+            formats_xml = cls.run_command( [cls.BFORMATS, '-xml'] )
             if formats_xml is None:
                 return
             formats = etree.fromstring( formats_xml )

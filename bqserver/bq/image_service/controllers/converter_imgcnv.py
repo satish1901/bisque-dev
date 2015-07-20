@@ -222,7 +222,7 @@ class ConverterImgcnv(ConverterBase):
     @classmethod
     def get_version (cls):
         '''returns the version of command line utility'''
-        o = misc.run_command( [cls.CONVERTERCOMMAND, '-v'] )
+        o = cls.run_command( [cls.CONVERTERCOMMAND, '-v'] )
         try:
             d = [int(s) for s in o.split('.')]
         except ValueError:
@@ -245,7 +245,7 @@ class ConverterImgcnv(ConverterBase):
     def get_formats(cls):
         '''inits supported file formats'''
         if cls.installed_formats is None:
-            formats_xml = misc.run_command( [cls.CONVERTERCOMMAND, '-fmtxml'] )
+            formats_xml = cls.run_command( [cls.CONVERTERCOMMAND, '-fmtxml'] )
             formats = etree.fromstring( '<formats>%s</formats>'%formats_xml )
 
             cls.installed_formats = OrderedDict()
@@ -295,11 +295,19 @@ class ConverterImgcnv(ConverterBase):
     #######################################
 
     @classmethod
+    def run_command(cls, command ):
+        retcode, out = call_imgcnvlib( command )
+        if retcode == 100 or retcode == 101: # some error in libbioimage, retry once
+            log.error ('Libioimage retcode %s: retry once: %s', retcode, command)
+            retcode, out = call_imgcnvlib (command)
+        return out
+
+    @classmethod
     def run_read(cls, ifnm, command ):
         with Locks(ifnm):
             #command, tmp = misc.start_nounicode_win(ifnm, command)
             log.debug('run_read dylib command: %s', misc.tounicode(command))
-            #out = misc.run_command( command )
+            #out = cls.run_command( command )
             #misc.end_nounicode_win(tmp)
             retcode, out = call_imgcnvlib( command )
             if retcode == 100 or retcode == 101: # some error in libbioimage, retry once
