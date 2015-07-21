@@ -37,6 +37,7 @@ def upgrade():
     DBSession = SessionMaker()
     converted_numbers = 0
     converted_objs = 0
+    rows = 0
     for tv in DBSession.query(Taggable).filter(Taggable.resource_value != None):
         try:
             tv.resource_number  = float(tv.resource_value)
@@ -57,6 +58,9 @@ def upgrade():
                     converted_objs += 1
         except IndexError:
             pass
+        rows += 1
+	if rows  % 1000 == 0:
+            DBSession.flush()
 
     print "converted %s numbers and %s objects" % (converted_numbers, converted_objs)
     DBSession.commit()
