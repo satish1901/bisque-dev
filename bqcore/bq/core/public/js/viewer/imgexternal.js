@@ -139,7 +139,8 @@ function ImgExternal (viewer,name){
         calibrateResolution.setDisabled(false);
     });
     if (BQApp.hasUser()) { //checks for user
-        overlayEditor.setDisabled(false);
+        var calibrateResolution = this.viewer.toolbar.queryById('menu_viewer_calibrate_image');
+        calibrateResolution.setDisabled(false);
     }
 };
 
