@@ -28,7 +28,7 @@ def load_bisque_services():
 
     root = config.get ('bisque.root', '/')
     create_fake_env()
-    enabled = [ 'data_service' ]
+    enabled = [ 'blob_service', 'data_service' ]
     disabled= []
     RootController.mount_local_services(root, enabled, disabled)
 
