@@ -241,18 +241,19 @@ Ext.define('BQ.module.ModuleInputPreview', {
                 if (bq_module_inputs[i].type in BQ.selectors.resources) { //add to the resource selectors
                     var resourceSelector = Ext.create(BQ.selectors.resources[bq_module_inputs[i].type], {
                             resource: bq_module_inputs[i],
+                            module: bqmodule,
                     })
                     var inputRenderer = me.resourceSelectors.add(resourceSelector);
                     me.inputRenderers.push(inputRenderer);
                 } else if (bq_module_inputs[i].type in BQ.selectors.parameters) { //add to the parameter selectos
                     var parameterSelector = Ext.create(BQ.selectors.parameters[bq_module_inputs[i].type], {
                         resource: bq_module_inputs[i],
+                        module: bqmodule,
                     })
                     var inputRenderer = me.parameterSelector.add(parameterSelector);     
                     me.inputRenderers.push(inputRenderer);                    
                 } else { //custom element, do not know how to render
                 }
-                
             }
         }
         
