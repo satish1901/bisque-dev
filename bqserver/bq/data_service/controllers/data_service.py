@@ -69,7 +69,7 @@ import transaction
 
 from bq.core.service import ServiceController
 from bq.data_service.model  import dbtype_from_tag, dbtype_from_name, all_resources
-from bq.util.bisquik2db import bisquik2db, load_uri, db2tree, updateDB, parse_bisque_uri
+from bq.util.bisquik2db import bisquik2db, load_uri, db2tree,  parse_bisque_uri
 from bq.exceptions import BadValue
 from bq.core import identity
 from bq.util.paths import data_path

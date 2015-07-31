@@ -20,7 +20,8 @@ bisque.services_disabled = engine_service
 
 [uwsgi]
 #main options
-#lazy = true
+# Lazy-apps needed for threading to work
+lazy-apps = true
 
 #socket on which uwsgi listens
 socket =
