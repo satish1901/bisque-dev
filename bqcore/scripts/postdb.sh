@@ -16,7 +16,7 @@ if [ $# -lt 2 ] ; then
   usage
 fi
 USER="admin:testme"
-while getopts "vu:M:" options
+while getopts "vu:M:E:" options
 do 
   case $options in
   u) EXTRA="$EXTRA -u $OPTARG" ;;
@@ -24,6 +24,7 @@ do
 #  ?) usage; exit 2 ;;
   v) VERBOSE=1;;
   M) EXTRA="$EXTRA -H \"Authorization: Mex $OPTARG\"";;
+  E) EXTRA="$EXTRA -H 'If-Match: $OPTARG'";;
   esac
 done
 shift $(($OPTIND - 1))

@@ -790,7 +790,7 @@ def try_converters (value):
     # we should never get here
     raise ValueError
 
-def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory, replace=False):
+def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory, replace=False, ts=None):
     '''Update the database type resource with doc or tree'''
     try:
         evnodes = etree.iterwalk(root, events=('start','end'))
@@ -804,7 +804,6 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
     if parent:
         stack.append (parent)
     try:
-        ts = datetime.now()
         for ev, obj in evnodes:
             if isinstance(obj, etree._Comment) or isinstance(obj, etree._ProcessingInstruction):
                 continue
@@ -889,13 +888,16 @@ def bisquik2db_internal(inputs, parent, resource,  replace):
         parent = DBSession.merge(parent)
     if resource is not None:
         resource = DBSession.merge(resource)
+    ts = datetime.now()
     for el in inputs:
-        node = updateDB(root=el, parent = parent, resource=resource, replace=replace)
+        node = updateDB(root=el, parent = parent, resource=resource, replace=replace, ts=ts)
         log.debug ("returned %s " % str(node))
         log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
                    (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
         if node not in DBSession:
             DBSession.add(node)
+        log.debug ("node.document = %s", node.document)
+        node.document.ts = ts
         results.append(node)
 
     DBSession.flush()

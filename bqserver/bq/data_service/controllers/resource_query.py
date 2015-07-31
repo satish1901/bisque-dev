@@ -332,13 +332,13 @@ yacc.yacc(outputdir=data_path(), debug= 0)
 def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     # get system supplied user ID
     public_vals = { 'false': False, '0': False, 'private':False, 0:False,
-                    'true': True, '1': True, 'public': True, 1:True
-                    }
-    
-    
+                    'true': True, '1': True, 'public': True, 1:True }
+
+    document = Taggable
+
     if isinstance(with_public, list): # protects against lists, that are not hashable -chris
         with_public = with_public[-1]
-        
+
     with_public = public_vals.get(with_public, False)
     user_id = user_id or get_user_id()
 
@@ -349,16 +349,19 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
 
     # Check if logged in, else just check for public items.
     if user_id:
-        visibility = ( Taggable.owner_id == user_id )
+        visibility = ( document.owner_id == user_id )
         if with_public and action == RESOURCE_READ:
-            visibility = or_(visibility, Taggable.perm == PUBLIC)
+            visibility = or_(visibility, document.perm == PUBLIC)
         visibility = or_(visibility,
                          Taggable.acl.any(and_(TaggableAcl.user_id == user_id,
                                                TaggableAcl.action_code >= action)))
     else:
-        visibility = (Taggable.perm == PUBLIC)
+        visibility = (document.perm == PUBLIC)
 
-    return query.filter(visibility)
+    dv = DBSession.query(document).filter (visibility).with_labels().subquery()
+    dv = aliased (Taggable, dv)
+
+    return query.filter(Taggable.document_id == dv.id)
     #v = DBSession.query(Taggable).filter(visibility).subquery()
     #return query.filter(Taggable.document_id == v.c.id)
 
@@ -1155,6 +1158,8 @@ def resource_delete(resource, user_id=None):
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     q.delete()
 
+    ts = datetime.now()
+    resource.document.ts = ts
     # We can delete the resource .. check it has an associated blob
     if resource.resource_uniq is not None:
         from bq import blob_service

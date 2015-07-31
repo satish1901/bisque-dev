@@ -174,6 +174,12 @@ class BaseCache(object):
         return None
     def etag (self, url, user):
         return None
+    def modified_resource(self, resource):
+        return None
+    def etag_resource (self, resource):
+        return None
+
+
 
 class ResponseCache(object):
     known_headers = [ 'Content-Length', 'Content-Type' ]
@@ -270,6 +276,13 @@ class ResponseCache(object):
             return datetime.fromtimestamp(os.stat(cachename).st_mtime)
         return None
 
+    def modified_resource(self, resource):
+        #cachename = os.path.join(self.cachepath, self._cache_name(url, user))
+        log.debug ("modified %s", resource)
+        if hasattr(resource, 'ts'):
+            return resource.ts
+        return None
+
     def etag (self, url, user):
         mtime =  self.modified(url, user)
         if mtime:
@@ -279,6 +292,15 @@ class ResponseCache(object):
             # pylint: enable=E1103
         return None
 
+    def etag_resource(self, resource):
+        resource = self.force_load(resource)
+        mtime =  self.modified_resource(resource)
+        log.debug ('etag_resource %s', mtime)
+        if mtime:
+            # pylint: disable=E1103
+            return hashlib.md5 (str(mtime)).hexdigest()
+            # pylint: enable=E1103
+        return None
 
 
 class HierarchicalCache(ResponseCache):
@@ -353,25 +375,11 @@ class HierarchicalCache(ResponseCache):
         #     #    break
 
 
+    def force_load(self, resource):
+        "Force the loading the of resource from the database"
 
-    def invalidate_resource(self, resource, user):
-        """ Invalidate cached files and queries for a resource
-
-        A resource can sqlalchemy query, Taggable, or a resource_type tuple
-
-
-        # a simple resource invalidates:
-           1.  The resource document and any subdocuments
-                  USER,00-UNIQ....
-           2.  Any query associated with  resource_type
-                  USER, TYPE#....
-           3.  Queries accross multiple resource types
-                  USER,*#
-           if published then delete all public queries
-        """
         from sqlalchemy.orm import Query
         from bq.data_service.model import Taggable
-
         if isinstance(resource, tuple):
             parent = getattr(tg.request.bisque,'parent', None)
             #log.debug ("invalidate: tuple using %s", parent) #provokes logging error
@@ -388,6 +396,24 @@ class HierarchicalCache(ResponseCache):
             resource = resource.first()
         if isinstance(resource, Taggable):
             resource = resource.document
+        return resource
+
+    def invalidate_resource(self, resource, user):
+        """ Invalidate cached files and queries for a resource
+
+        A resource can sqlalchemy query, Taggable, or a resource_type tuple
+
+
+        # a simple resource invalidates:
+           1.  The resource document and any subdocuments
+                  USER,00-UNIQ....
+           2.  Any query associated with  resource_type
+                  USER, TYPE#....
+           3.  Queries accross multiple resource types
+                  USER,*#
+           if published then delete all public queries
+        """
+        resource = self.force_load(resource)
         if resource and not hasattr (resource, 'resource_uniq'):
             log.error ("invalidate: Cannot determine resource %s",  resource)
             return
@@ -414,6 +440,7 @@ class HierarchicalCache(ResponseCache):
         names.extend (query_names)
         # Delete user matches
         try:
+            log.debug ('cache delete for user')
             delete_matches ( files, names, user)
         except Exception:
             log.exception ("Problem while deleting files")
@@ -421,7 +448,8 @@ class HierarchicalCache(ResponseCache):
         # Split off user and remove global queries
         # NOTE: we may only need to do this when resource invalidated was "published"
         if True: # resource.permission == 'published':
-            names = [ qnames.split(',',1)[-1] for qnames in query_names]
+            log.debug ('cache delete for all')
+            names = [ qnames.split(',',1)[-1] for qnames in names]
             delete_matches ( files, names, None)
 
 
@@ -521,22 +549,28 @@ class Resource(ServiceController):
 
     def check_cache_header(self, resource):
         if not CACHING: return
-        etag_check = tg.request.headers.get('If-None-Match', None)
-        if etag_check:
-            etag = self.get_entity_tag(resource)
-            if etag:
-                if etag_check == etag:
-                    abort(304)
 
-        if not etag_check or not etag:
+        if 'If-None-Match' in tg.request.headers:
+            htag = tg.request.headers.get('If-None-Match')
+            etag = self.get_entity_tag(resource)
+            if etag is not None and etag == htag:
+                abort(304)
+
+        if 'If-Match' in tg.request.headers:
+            htag = tg.request.headers.get('If-Match')
+            etag = self.get_entity_tag(resource)
+            log.debug ("IFMATCH %s = %s", htag, etag)
+            if etag is not None and etag != htag:
+                abort(412)
+
+        if 'If-Modified-Since' in tg.request.headers:
             modified_check = tg.request.headers.get('If-Modified-Since', None)
             modified_check = parse_http_date(modified_check)
-            if modified_check is not None:
-                last_modified = self.get_last_modified_date(resource)
-                if last_modified is not None:
-                    if last_modified <= modified_check:
-                        log.error('Document has been modified before POST')
-                        abort(304)
+            last_modified = self.get_last_modified_date(resource)
+            if last_modified is not None:
+                if last_modified <= modified_check:
+                    log.error('Document has been modified before POST')
+                    abort(304)
 
     def add_cache_header(self, resource):
         if not CACHING: return
@@ -647,7 +681,6 @@ class Resource(ServiceController):
                 #call down into the child resource.
                 return child._default(*path, **kw)
 
-
 #        if http_method == 'get':
 #            #if this resource has children, make sure it has a '/'
 #            #on the end of the URL
@@ -655,8 +688,10 @@ class Resource(ServiceController):
 #                if request.path[-1:] != '/':
 #                    redirect(request.path + "/")
 
-        self.check_cache_header(resource)
 
+
+        #resource = self.server_cache.force_load(resource)
+        self.check_cache_header(resource)
         method = getattr(self, method_name)
         #pylons.response.headers['Content-Type'] = 'text/xml'
         log.debug ("Dispatch for %s", method_name)
@@ -709,18 +744,21 @@ class Resource(ServiceController):
         """
         returns the Etag for the collection (resource=None) or the resource
         """
-        log.debug ("ETAG: %s " %tg.request.url)
+        #log.debug ("ETAG: %s " %tg.request.url)
         if self.cache:
-            return self.server_cache.etag (tg.request.url, identity.get_user_id())
+            etag =  self.server_cache.etag_resource (resource)
+            #etag =  self.server_cache.etag (tg.request.url, identity.get_user_id())
+            return etag
         return None
     def get_last_modified_date(self, resource):
         """
         returns the last modified date of the resource.
         """
-        log.debug ("CHECK MODFIED: %s " %tg.request.url)
+        #log.debug ("CHECK MODFIED: %s " %tg.request.url)
 
         if self.cache:
             return self.server_cache.modified (tg.request.url, identity.get_user_id())
+            #return self.server_cache.modified_resource (resource)
         return None
 
     def dir(self, **kw):
