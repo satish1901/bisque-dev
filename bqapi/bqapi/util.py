@@ -3,11 +3,13 @@ import shutil
 import urllib
 import urlparse
 import time
+import logging
 
 #from lxml import etree as ET
 #from lxml import etree
 from xmldict import xml2d, d2xml
-import comm
+
+log = logging.getLogger('bqapi.util')
 
 #####################################################
 # misc: unicode
@@ -218,9 +220,14 @@ def fetch_image_planes(session, uri, dest=None, uselocalpath=False):
         if uselocalpath:
             #path = ET.XML(slize).xpath('/resource/@src')[0]
             resource = session.factory.string2etree(slize)
-            path = resource.get ('src')
+            path = resource.get ('value')
             # Strip file:/ from path
-            safecopy (path[5:], fname)
+            if path.startswith ('file:/'):
+                path = path[5:]
+            if os.path.exists(path):
+                safecopy (path, fname)
+            else:
+                log.error ("localpath did not return valid path: %s", path)
         else:
             f = open(fname, 'wb')
             f.write(slize)
@@ -263,12 +270,17 @@ def fetch_image_pixels(session, uri, dest, uselocalpath=False):
     if uselocalpath:
         #path = ET.XML(pixels).xpath('/resource/@src')[0]
         resource = session.factory.string2etree(pixels)
-        path = resource.get ('src')
+        path = resource.get ('value')
         #path = urllib.url2pathname(path[5:])
-        path = path[5:]
-        # Skip 'file:'
-        safecopy(path, dest)
-        return { uri : dest }
+        if path.startswith('file:/'):
+            path = path[5:]
+            # Skip 'file:'
+        if os.path.exists(path):
+            safecopy(path, dest)
+            return { uri : dest }
+        else:
+            log.error ("localpath did not return valid path: %s", path)
+
     f = open(dest, 'wb')
     f.write(pixels)
     f.close()
@@ -326,13 +338,17 @@ def fetchImage(session, uri, dest, uselocalpath=False):
     if uselocalpath:
         #path = ET.XML(pixels).xpath('/resource/@src')[0]
         resource = session.factory.string2etree(pixels)
-        path = resource.get ('src')
+        path = resource.get ('value')
         #path = urllib.url2pathname(path[5:])
-        path = path[5:]
+        if path.startswith ('file:/'):
+            # Skip 'file:'
+            path = path[5:]
+        if os.path.exists(path):
+            safecopy(path, dest)
+            return {uri: dest }
+        else:
+            log.error ("localpath did not return valid path: %s", path)
 
-        # Skip 'file:'
-        safecopy(path, dest)
-        return {uri: dest }
     f = open(dest, 'wb')
     f.write(pixels)
     f.close()
