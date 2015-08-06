@@ -39,6 +39,8 @@ mime_types = {
     'h265'      : 'video/mp4',
     'mpeg4'     : 'video/mp4',
     'ogg'       : 'video/ogg',
+    #'jxr'       : 'image/jxr',
+    #'webp'      : 'image/webp',
 }
 
 cache_info = {
