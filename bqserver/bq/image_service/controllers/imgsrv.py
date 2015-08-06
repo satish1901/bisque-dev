@@ -2292,17 +2292,15 @@ class ImageServer(object):
                         f.write(etree.tostring(image))
                     return info
 
-        if os.path.exists(infofile):
-            with Locks(infofile):
-                try:
-                    image = etree.parse(infofile).getroot()
-                    for k,v in image.attrib.iteritems():
-                        info[k] = safetypeparse(v)
-                    return info
-                except  etree.XMLSyntaxError:
-                    log.debug ("attempt to read empty file")
-                    # Empty file created by next Lock
-                    pass
+        # info file exists
+        with Locks(infofile):
+            try:
+                image = etree.parse(infofile).getroot()
+                for k,v in image.attrib.iteritems():
+                    info[k] = safetypeparse(v)
+                return info
+            except  etree.XMLSyntaxError:
+                log.debug ("attempt to read empty info file")
         return None
 
     def process_queue(self, token):

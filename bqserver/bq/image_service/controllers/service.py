@@ -276,8 +276,7 @@ class ImageServiceController(ServiceController):
 
         # if the image is multi-blob and blob is requested, use export service
         try:
-            values = resource.xpath('value')
-            if len(query)<1 and len(values)>1:
+            if len(query)<1 and len(resource.xpath('value') or [])>1:
                 return export_service.export(files=[resource.get('uri')], filename=resource.get('name'))
         except (AttributeError, IndexError):
             pass
