@@ -340,10 +340,12 @@ class ExporterGeo():
         """Add your first page here.. """
         resource = data_service.resource_load (uniq = uniq, view='deep')
         fname = '%s.%s' % (resource.get('name'), self.ext)
-             
+        #log.debug('Resource 1: %s', etree.tostring(resource))
+
         # if the resource is a dataset, fetch contents of documents linked in it
         if resource.tag == 'dataset':
             resource = data_service.get_resource('%s/value'%resource.get('uri'), view='deep')
+        #log.debug('Resource 2: %s', etree.tostring(resource))
 
         response.headers['Content-Type'] = self.mime_type
         try:
@@ -411,7 +413,7 @@ class ExporterGeo():
 #---------------------------------------------------------------------------------------
 
 class ExporterKML (ExporterGeo):
-    '''Supports exporting Bisque documents into KML''' 
+    '''Supports exporting Bisque documents into KML'''
 
     version = '1.0'
     ext = 'kml'
@@ -443,7 +445,7 @@ class ExporterKML (ExporterGeo):
                 # load metadata and create coordinate transformation function
                 cnvf = self.create_transform_function(node)
             folder = self.render_resouces(node, kml)
-            if len(node) > 1:
+            if len(node) > 0:
                 for n in node:
                     self.convert_node(n, folder, cnvf=cnvf)
 
@@ -458,7 +460,7 @@ class ExporterKML (ExporterGeo):
         else:
             name.text = node.get('type') or node.get('resource_type') or node.tag
             descr.text = node.get('name')
-        
+
         self.render_tags(node, folder)
         return folder
 
@@ -508,7 +510,7 @@ class ExporterKML (ExporterGeo):
         return pm
 
     def line(self, node, kml, vrtx, type=None, val=None):
-        return self.polyline(node, kml, vrtx, type, val)        
+        return self.polyline(node, kml, vrtx, type, val)
 
     def polygon(self, node, kml, vrtx, type=None, val=None):
         pm = etree.SubElement (kml, 'Placemark')
@@ -525,7 +527,7 @@ class ExporterKML (ExporterGeo):
         coord = etree.SubElement (g2, 'coordinates')
 
         coord.text = ' '.join( ['%s,%s'%(v[0], v[1]) for v in vrtx ] )
-        return pm        
+        return pm
 
     def polyline(self, node, kml, vrtx, type=None, val=None):
         pm = etree.SubElement (kml, 'Placemark')
@@ -540,7 +542,7 @@ class ExporterKML (ExporterGeo):
         coord = etree.SubElement (g, 'coordinates')
 
         coord.text = ' '.join( ['%s,%s'%(v[0], v[1]) for v in vrtx ] )
-        return pm        
+        return pm
 
     def label(self, node, kml, vrtx, type=None, val=None):
         pm = etree.SubElement (kml, 'Placemark')
@@ -558,7 +560,7 @@ class ExporterKML (ExporterGeo):
         x = vrtx[0][0]
         y = vrtx[0][1]
         coord.text = '%s,%s'%(x,y)
-        return pm        
+        return pm
 
     def circle(self, node, kml, vrtx, type=None, val=None):
         pm = etree.SubElement (kml, 'Placemark')
@@ -592,7 +594,7 @@ class ExporterKML (ExporterGeo):
 #---------------------------------------------------------------------------------------
 
 class ExporterGeoJson (ExporterGeo):
-    '''Supports exporting Bisque documents into GeoJson''' 
+    '''Supports exporting Bisque documents into GeoJson'''
 
     version = '1.0'
     ext = 'geojson'
@@ -604,7 +606,7 @@ class ExporterGeoJson (ExporterGeo):
 
     def bq2format(self, resource):
         """ converts BisqueXML into GeoJson """
-        geoj = { 
+        geoj = {
             "type": "FeatureCollection",
             "features": [],
         }
@@ -612,6 +614,7 @@ class ExporterGeoJson (ExporterGeo):
         return json.dumps(geoj)
 
     def convert_node(self, node, kml, cnvf=None):
+        #log.debug('convert_node: %s', etree.tostring(node))
         if node.tag in gobject_primitives or node.tag == 'gobject' and node.get('type') in gobject_primitives:
             self.render_gobjects(node, kml, node.tag, cnvf=cnvf)
         elif node.tag == 'gobject' and len(node)==1: # special case of a gobject wrapper of a primitive
@@ -624,13 +627,13 @@ class ExporterGeoJson (ExporterGeo):
                 # load metadata and create coordinate transformation function
                 cnvf = self.create_transform_function(node)
             # geojson does not have hierarchical elements, dum all as a flat list
-            #folder = self.render_resouces(node, kml) 
-            if len(node) > 1:
+            #folder = self.render_resouces(node, kml)
+            if len(node) > 0:
                 for n in node:
                     self.convert_node(n, kml, cnvf=cnvf)
 
     def render_resouces(self, node, features):
-        feature = { 
+        feature = {
             'type': 'GeometryCollection',
             'properties': {
                 'type': node.get('type') or node.get('resource_type') or node.tag,
@@ -651,7 +654,7 @@ class ExporterGeoJson (ExporterGeo):
         vrtx = node.xpath('vertex')
         f = getattr(self, node.tag, None)
         if len(vrtx)>0 and callable(f):
-            feature = { 
+            feature = {
                 'type': 'Feature',
                 'properties': {
                     'type': node.get('type') or node.get('resource_type') or node.tag,
@@ -685,7 +688,7 @@ class ExporterGeoJson (ExporterGeo):
         if val is not None:
             feature['properties']['description'] = val
 
-        geom = {  
+        geom = {
             'type': 'Point',
             'coordinates': [vrtx[0][0], vrtx[0][1]],
         }
@@ -702,7 +705,7 @@ class ExporterGeoJson (ExporterGeo):
 
         crds = [[v[0], v[1]] for v in vrtx]
         crds.append(crds[0])
-        geom = {  
+        geom = {
             'type': 'Polygon',
             'coordinates': [crds],
         }
@@ -714,7 +717,7 @@ class ExporterGeoJson (ExporterGeo):
         if val is not None:
             feature['properties']['description'] = val
 
-        geom = {  
+        geom = {
             'type': 'LineString',
             'coordinates': [[v[0], v[1]] for v in vrtx ],
         }
@@ -727,7 +730,7 @@ class ExporterGeoJson (ExporterGeo):
         if val is not None:
             feature['properties']['description'] = val
 
-        geom = {  
+        geom = {
             'type': 'Point',
             'coordinates': [vrtx[0][0], vrtx[0][1]],
         }
@@ -736,7 +739,7 @@ class ExporterGeoJson (ExporterGeo):
 
     # def circle(self, node, feature, vrtx, type=None, val=None):
     #     # there are no circles in GeoJsoon, skip
-    #     return None        
+    #     return None
 
     # def ellipse(self, node, feature, vrtx, type=None, val=None):
     #     return self.circle(node, feature, vrtx, type, val)
