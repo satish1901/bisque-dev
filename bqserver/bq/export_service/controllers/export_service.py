@@ -343,8 +343,8 @@ class ExporterGeo():
         #log.debug('Resource 1: %s', etree.tostring(resource))
 
         # if the resource is a dataset, fetch contents of documents linked in it
-        if resource.tag == 'dataset':
-            resource = data_service.get_resource('%s/value'%resource.get('uri'), view='deep')
+        #if resource.tag == 'dataset':
+        #    resource = data_service.get_resource('%s/value'%resource.get('uri'), view='deep')
         #log.debug('Resource 2: %s', etree.tostring(resource))
 
         response.headers['Content-Type'] = self.mime_type
@@ -440,6 +440,12 @@ class ExporterKML (ExporterGeo):
         elif node.tag == 'tag':
             # skip any tags, they were added beforehand
             pass
+        elif node.tag == 'dataset':
+            folder = self.render_resouces(node, kml)
+            vals = node.xpath('value')
+            for v in vals:
+                n = data_service.get_resource(v.text, view='deep')
+                self.convert_node(n, folder, cnvf=cnvf)
         elif node.tag not in ['vertex', 'value']: # any other node type is a folder
             if node.tag == 'image':
                 # load metadata and create coordinate transformation function
@@ -610,6 +616,7 @@ class ExporterGeoJson (ExporterGeo):
             "type": "FeatureCollection",
             "features": [],
         }
+
         self.convert_node(resource, geoj['features'])
         return json.dumps(geoj)
 
@@ -622,6 +629,13 @@ class ExporterGeoJson (ExporterGeo):
         elif node.tag == 'tag':
             # skip any tags, they were added beforehand
             pass
+        elif node.tag == 'dataset':
+            # geojson does not have hierarchical elements, dum all as a flat list
+            #folder = self.render_resouces(node, kml)
+            vals = node.xpath('value')
+            for v in vals:
+                n = data_service.get_resource(v.text, view='deep')
+                self.convert_node(n, kml, cnvf=cnvf)
         elif node.tag not in ['vertex', 'value']: # any other node type is a folder
             if node.tag == 'image':
                 # load metadata and create coordinate transformation function
