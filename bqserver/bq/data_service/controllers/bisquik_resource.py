@@ -332,7 +332,7 @@ class BisquikResource(Resource):
                           format=format, wpublic=wpublic)
         #params.update ( [(k, unicode(v).encode('utf8') ) for k,v in newparams.items() if v ])
         params.update ( newparams)
-        params = dict ( [(k, unicode(v).encode('utf8') ) for k,v in params.items() ])
+        params = dict ( [(k, unicode(v).encode('utf8') ) for k,v in params.items() if v  ])
 
         request_uri = "%s?%s" % ( request.path, urllib.urlencode (params))
 
@@ -500,8 +500,3 @@ class BisquikResource(Resource):
         resource = self.check_access(resource)
         log.info ("HEAD ==>%s" % resource)
         return ""
-
-
-
-
-
