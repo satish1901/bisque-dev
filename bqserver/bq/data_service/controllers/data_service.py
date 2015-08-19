@@ -247,10 +247,11 @@ class DataServerController(ServiceController):
                     log.exception( ' while reading cached resourced %s got %s', uri, response)
 
             service, clname, ida, rest = parse_bisque_uri(uri)
-            resource = load_uri (uri, query=True)
+            resource = load_uri (uri)
             if rest:  # Fetch resource is really a query
                 resource = self.query(resource_tag=rest[-1], parent=resource,**kw)
                 #self.cache_save (uri, response=etree.tostring(resource), **kw)
+                resource.set('uri', uri)
                 return resource
             resource = prepare_permissions(resource, user_id=None, with_public = True).first()
 
