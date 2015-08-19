@@ -249,8 +249,10 @@ class DataServerController(ServiceController):
             service, clname, ida, rest = parse_bisque_uri(uri)
             resource = load_uri (uri, query=True)
             if rest:  # Fetch resource is really a query
+                parent = parent.first()
                 resource = self.query(resource_tag=rest[-1], parent=resource,**kw)
                 #self.cache_save (uri, response=etree.tostring(resource), **kw)
+                resource.set('uri', uri)
                 return resource
             resource = prepare_permissions(resource, user_id=None, with_public = True).first()
 
