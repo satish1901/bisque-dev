@@ -5,11 +5,13 @@
 
 <head profile="http://www.w3.org/2005/10/profile">
     <link rel="icon" type="image/png" href="/images/bisque_icon.png" />
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
+    <meta name = "viewport" content="width=900, maximum-scale=1" />
+    <link href="//fonts.googleapis.com/css?family=Abel|Varela+Round|Roboto:400,300,100" rel="stylesheet" type="text/css" />
     <!--<link rel="stylesheet" type="text/css" href="/js/modules/bq_webapp.css" />-->
     <link rel="stylesheet" type="text/css" href="/extjs/resources/css/ext-all-gray.css"/>
     <link rel="stylesheet" type="text/css" href="/css/all_css.css" />
     <script type="text/javascript" src="/extjs/ext-all.js"> </script>
-    <script type="text/javascript" src="/js/all_js.js"> </script>
 
     <!-- Additional includes from the module -->
     <link py:if="'interface/css' in module_def" rel="stylesheet" type="text/css" href="${module_def['interface/css']}" />
@@ -23,8 +25,6 @@
 
 
 <script type="text/javascript" >
-    BQ.Server.title = 'Bisque WebApp';
-    BQ.Server.root = "${tg.url('/')}";
     Ext.onReady( function() {
         BQApp = Ext.create('BQ.Application');
 
@@ -42,6 +42,13 @@
             });
 
     });
+</script>
+
+<script type="text/javascript" src="/js/all_js.js"> </script>
+
+<script type="text/javascript" >
+    BQ.Server.title = 'Bisque WebApp';
+    BQ.Server.root = "${tg.url('/')}";
 </script>
 
 </head>
