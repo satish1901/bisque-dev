@@ -47,14 +47,17 @@ class AnnotationGeo(object):
 
         output = headers[fmt]
         for ds_url in datasets:
-            _,uniq = ds_url.rsplit('/', 1)
-            bq.update_mex('processing "%s"'%uniq)
-            url = '/export/%s?format=%s'%(uniq, fmt)
-            o = bq.c.fetch(url, headers = {'Content-Type':'text/plain', 'Accept':'text/plain'})
-            # strip header and footer from individual files
-            if len(o)>0 and o.startswith(headers[fmt]) and o.endswith(footers[fmt]):
-                o = o[len(headers[fmt]):-len(footers[fmt]))]
-            output = '%s%s'%(output, o)
+            try:
+                _,uniq = ds_url.rsplit('/', 1)
+                bq.update_mex('processing "%s"'%uniq)
+                url = '%s/export/%s?format=%s'%(bq.bisque_root, uniq, fmt)
+                o = bq.c.fetch(url, headers = {'Content-Type':'text/plain', 'Accept':'text/plain'})
+                # strip header and footer from individual files
+                if len(o)>0 and o.startswith(headers[fmt]) and o.endswith(footers[fmt]):
+                    o = o[len(headers[fmt]):-len(footers[fmt])]
+                output = '%s%s'%(output, o)
+            except Exception:
+                pass
         output = '%s%s'%(output, footers[fmt])
 
         #write into a file
