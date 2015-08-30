@@ -100,19 +100,19 @@ TagNameNode.__new__.__defaults__ = (OrderedDict(), {}, [])
 def mergeDocuments(current, new, attrib={}):
     """
         Merges two xml documents. Current document elements are replace with new document elements.
-        
-        
+
+
         @param: current - preference etree document
         @param: new - preference etree document
         @param: attrib - top level attribute for the new merged document
     """
     currentDict = to_dict(current)
     newDict = to_dict(new)
-    
+
     def merge(new, current):
         #merges the new docucument to the current one
         for k in new.sub_node_dict.keys():
-            if k in current.sub_node_dict: 
+            if k in current.sub_node_dict:
                 #deals with the cases when the current needs to be merged with the new document
                 #case 1: both current and new are parent nodes
                 if (type(current.sub_node_dict[k]) is TagNameNode) and (type(new.sub_node_dict[k]) is TagNameNode):
@@ -128,7 +128,7 @@ def mergeDocuments(current, new, attrib={}):
                     )
                     #merge the parents' children
                     merge(new.sub_node_dict[k], current.sub_node_dict[k])
-                    
+
                 #case 2: both are leaf nodes
                 elif (type(current.sub_node_dict[k]) is TagValueNode) and (type(new.sub_node_dict[k]) is TagValueNode):
                     #type and templates are added from the minor node and all other attributes are appended from the
@@ -141,7 +141,7 @@ def mergeDocuments(current, new, attrib={}):
                         node_attrib = node_attrib,
                         sub_node = current.sub_node_dict[k].sub_node
                     )
-                
+
                 #case 3: current node is a parent node and new node is a leaf
                 elif (type(current.sub_node_dict[k]) is TagNameNode) and (type(new.sub_node_dict[k]) is TagValueNode):
                     # replaces the parent node of the current node with the leaf node unless the value node has nothing
@@ -152,13 +152,13 @@ def mergeDocuments(current, new, attrib={}):
                         )
                     else: #value does not equal anything set it back to the tag name node
                         pass
-                    
+
                 #case 4: current node is a leaf node and new node is a parent
                 elif (type(current.sub_node_dict[k]) is TagNameNode) and (type(new.sub_node_dict[k]) is TagValueNode):
                     #nothing is changed in the current node and the new node is skipped
                     #keeps users from modifying existing structure of the preferences
                     pass
-                
+
             #deals with the case when the major document appends new nodes
             else:
                 #add the child node to the document
@@ -167,23 +167,23 @@ def mergeDocuments(current, new, attrib={}):
                         value = new.sub_node_dict[k].value,
                         node_attrib = new.sub_node_dict[k].node_attrib,
                     )
-                    
+
                 #adds the parent node to the document with all of its children
                 elif (type(new.sub_node_dict[k]) is TagNameNode):
                     current.sub_node_dict[k] = new.sub_node_dict[k]
-                    
-            #all nodes in the current are added to the document by default 
-             
+
+            #all nodes in the current are added to the document by default
+
         return current
-    
+
     m_dict = merge(newDict, currentDict)
-    
+
     return to_etree(m_dict, attrib=attrib)
 
 
 def to_dict(tree):
     """
-        @param: etree 
+        @param: etree
         @return: preference dictionary structure
     """
     def build(tree):
@@ -228,7 +228,7 @@ def to_etree(dictionary, attrib={}):
                 build(dict[k].sub_node_dict, subNode)
             node.append(subNode)
         return node
-    
+
     node = etree.Element('preference', **attrib)
     for e in dictionary.sub_none_tag_node:
         node.append(e)
@@ -246,7 +246,7 @@ def update_level(new_doc, current_doc, attrib={}):
             merges TagNameNode elements
         """
         for nk in new.sub_node_dict.keys():
-            if nk in current.sub_node_dict: #set current node 
+            if nk in current.sub_node_dict: #set current node
                 if type(new.sub_node_dict[nk]) is TagNameNode and type(current.sub_node_dict[nk]) is TagNameNode:
                     #both new and current are TagNameNodes
                     build(new.sub_node_dict[nk], current.sub_node_dict[nk])
@@ -276,11 +276,11 @@ def update_level(new_doc, current_doc, attrib={}):
                 elif type(new.sub_node_dict[nk]) is TagNameNode:
                     current.sub_node_dict[nk] = new.sub_node_dict[nk]
         return current
-    
+
     update_dict = build(new_dict, current_dict)
-        
-    
-    
+
+
+
     return to_etree(update_dict, attrib=attrib)
 
 
@@ -289,11 +289,11 @@ class PreferenceController(ServiceController):
         The preference controller is a central point for
         a special resource that cascades all the resource levels
         meant as guidence for the bique UI
-        (System -> User -> all other Resource) providing 
-        
-        
+        (System -> User -> all other Resource) providing
+
+
         General Format of <preference> resource
-        
+
         <preference>
             <tag name="UI Component"/>
                 <tag name="UI preference name 1" value="preference value"/>
@@ -308,7 +308,7 @@ class PreferenceController(ServiceController):
         </preference>
     """
     service_type = "preference"
-    
+
     @expose(content_type='text/xml')
     def _default(self, *arg, **kw):
         """
@@ -316,7 +316,7 @@ class PreferenceController(ServiceController):
         """
         admin_check = Any(in_group("admin"), in_group('admins')).is_met(request.environ)
         http_method = request.method.upper()
-        
+
         xpath = None
         if len(arg)>0:
             xpath = []
@@ -335,8 +335,8 @@ class PreferenceController(ServiceController):
         elif http_method == 'DELETE' and admin_check:
             return self.system_delete(xpath=xpath, **kw)
         abort(404)
-    
-    
+
+
     @expose(content_type='text/xml')
     def user(self, *arg, **kw):
         """
@@ -344,7 +344,7 @@ class PreferenceController(ServiceController):
         """
         not_annon = not_anonymous().is_met(request.environ)
         http_method = request.method.upper()
-        
+
         resource_uniq = None
         xpath = None
         arg = list(arg)
@@ -355,7 +355,7 @@ class PreferenceController(ServiceController):
             for a in arg:
                 xpath.append('tag[@name="%s"]'%a)
             xpath = '/'.join(xpath) or None #create xpath
-            
+
         if resource_uniq: #resource level
             if http_method == 'GET':
                 log.info('GET /preference/user/%s -> fetching resource level preference for %s', resource_uniq, resource_uniq)
@@ -383,14 +383,14 @@ class PreferenceController(ServiceController):
                 log.info('DELETE /preference/user -> removing user level preference')
                 return self.user_delete(xpath=xpath, **kw)
         abort(404)
-    
-    
+
+
     def get(self, resource_uniq=None, xpath=None, level=0, **kw):
         """
             Returns the virtual prefence document of the requested document for the
             specified level
-            
-            @param: resource_uniq - the resource_uniq of the resource document to be fetched. Not required if 
+
+            @param: resource_uniq - the resource_uniq of the resource document to be fetched. Not required if
             the level is 0-1. (default: None)
             @param: path -  (default: None)
             @param: level - the level to cascade the virtual document. (default: 0)
@@ -400,7 +400,8 @@ class PreferenceController(ServiceController):
             @param: kw - pass through query parameters to data_service
         """
         #check system preference
-        system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
+        #system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
+        system = data_service.query(resource_type= 'system', view='full', wpublic=1)
         system_preference_list = system.xpath('//system/preference')
         if len(system_preference_list) > 0:
             system_preference = data_service.get_resource(system_preference_list[0].attrib.get('uri'), wpublic=1, **kw)
@@ -411,11 +412,11 @@ class PreferenceController(ServiceController):
                 system_preference = system_preference.xpath('/preference/%s'%xpath)
                 if len(system_preference)>0:
                     return etree.tostring(system_preference[0])
-                else: 
+                else:
                     abort(404)
             else:
                 return etree.tostring(system_preference)
-        
+
         #check user preference
         user = self.get_current_user(view='full')
         user_preference_list = user.xpath('preference')
@@ -429,7 +430,7 @@ class PreferenceController(ServiceController):
             user_preference = mergeDocuments(system_preference, user_preference, attrib=attrib)
         else:
             user_preference  = system_preference
-        
+
         if level <= LEVEL['user']:
             if 'clean' not in kw.get('view', ''):
                 user_preference.attrib['uri'] = request.url.replace('&','&amp;')
@@ -438,16 +439,16 @@ class PreferenceController(ServiceController):
                 user_preference = user_preference.xpath('/preference/%s'%xpath)
                 if len(user_preference)>0:
                     return etree.tostring(user_preference[0])
-                else: 
+                else:
                     abort(404)
             else:
                 return etree.tostring(user_preference)
-        
+
         #check resource preference
         resource = data_service.get_resource('/data_service/%s'%resource_uniq, view='full')
         if resource is None:
             abort(404)
-        
+
         resource_preference_list = resource.xpath('preference')
         if len(resource_preference_list)>0:
             resource_preference = data_service.get_resource(resource_preference_list[0].attrib.get('uri'), **kw)
@@ -460,7 +461,7 @@ class PreferenceController(ServiceController):
             resource_preference = mergeDocuments(user_preference, resource_preference, attrib=attrib)
         else:
             resource_preference = user_preference
-        
+
         #check annotations preference
         annotation = self.get_current_user_annotation(resource_uniq, view='full')
         #annotation_resource = data_service.get_resource('/data_service/annotation/%s'%annotation_uniq, view='full')
@@ -474,7 +475,7 @@ class PreferenceController(ServiceController):
             annotation_preference = mergeDocuments(resource_preference, annotation_preference, attrib=attrib)
         else:
             annotation_preference = resource_preference
-            
+
         if level <= LEVEL['resource']:
             if 'clean' not in kw.get('view', ''):
                 annotation_preference.attrib['uri'] = request.url.replace('&','&amp;')
@@ -483,23 +484,23 @@ class PreferenceController(ServiceController):
                 annotation_preference = annotation_preference.xpath('/preference/%s'%xpath)
                 if len(annotation_preference)>0:
                     return etree.tostring(annotation_preference[0])
-                else: 
+                else:
                     abort(404)
             else:
                 return etree.tostring(annotation_preference)
         #raise exception level not known
-    
-    
+
+
     def get_current_user(self, **kw):
         """
             get_current_user
-            
+
             Looks up and fetches the current users document. If no user document is
             found and empty user document is turned.
-            
+
             @param: kw - pass through query parameters to data_service
             @return: etree element
-            
+
         """
         user = identity.get_username()
         #user =  request.identity.get('user')
@@ -509,18 +510,18 @@ class PreferenceController(ServiceController):
             if len(user_list)>0:
                 return data_service.get_resource('/data_service/%s'%u[0].attrib.get('resource_uniq'), **kw)
         return etree.Element('user') #return empty user
-    
-    
+
+
     def get_current_user_annotation(self, resource_uniq, **kw):
         """
             get_current_user_annotation
-            
+
             Get the annotation document for the provided resource_uniq under the current user. \
             If none found will return an empty annotation document
-            
-            @param: resource_uniq 
+
+            @param: resource_uniq
             @param: kw - pass through query parameters to data_service
-            
+
             @return: etree element
         """
         annotation_resource = data_service.get_resource('/data_service/annotation', view='short')
@@ -531,8 +532,8 @@ class PreferenceController(ServiceController):
         else:
             log.debug('No annotation document found for document (%s)'%resource_uniq)
             return etree.Element('annotation', value=resource_uniq)
-    
-    
+
+
     def strip_attributes(self, xml, save_attrib=['name','value', 'type']):
         """
         """
@@ -543,17 +544,17 @@ class PreferenceController(ServiceController):
             for n in node:
                 strip(n)
             return node
-                
+
         return strip(xml)
-    
-    
+
+
     def system_post(self, body, xpath=None, **kw):
         """
             Creates a new preferences or merges the existing one with
             the document provided
             Only admin can change the system level
             the user has to be logged in to make any changes
-            
+
             @param: path
             @param: body
         """
@@ -561,13 +562,14 @@ class PreferenceController(ServiceController):
             preference_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
             abort(400, 'XML parsing error')
-            
-        system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
+
+        #system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
+        system = data_service.query(resource_type='system', view='full', wpublic=1)
         system_preference_list = system.xpath('/resource/system/preference')
         if len(system_preference_list)>0:
             system_preference = data_service.get_resource(system_preference_list[0].attrib.get('uri'), wpublic=1, view='deep')
             if xpath:
-                tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]',xpath) #only alphanumeric tag names are allowed right now 
+                tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]',xpath) #only alphanumeric tag names are allowed right now
                 if len(tagNames)>0 and preference_doc.attrib.get('name')==tagNames[-1]:
                     #parse xpath and form the xml doc to merge
                     preference = etree.Element('preference')
@@ -576,7 +578,7 @@ class PreferenceController(ServiceController):
                         tagElement = etree.SubElement(tagElement, 'tag', name = t)
                     tagElement.append(preference_doc) #add path the preference doc
                     current_preference_etree = update_level(preference, system_preference)
-                    
+
                     data_service.update_resource(resource=system_preference, new_resource=current_preference_etree)
                     #data_service.del_resource(system_preference.attrib.get('uri'))
                     #data_service.new_resource(current_preference_etree, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'))
@@ -596,19 +598,19 @@ class PreferenceController(ServiceController):
                 if system_list>0:
                     resource = data_service.new_resource(preference_doc, parent='/data_service/%s' % system_list.attrib.get('resource_uniq'), **kw)
                 else: #system document is not there
-                    abort(400) 
+                    abort(400)
             else: #not correct format and no xpath
                 abort(400)
-                
+
         return etree.tostring(resource)
-    
-    
+
+
     def system_put(self, body, xpath=None, **kw):
         """
             Replaces all the preferences with the document
             Only admin can change the system level
             the user has to be logged in to make any changes
-            
+
             @param: xpath
             @param: body
         """
@@ -616,13 +618,14 @@ class PreferenceController(ServiceController):
             preference_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
             abort(400, 'XML parsing error')
-            
-        system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
+
+        #system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
+        system = data_service.query(resource_type='system', view='full', wpublic=1)
         system_preference_list = system.xpath('/resource/system/preference')
         if len(system_preference_list)>0:
             system_preference = data_service.get_resource(system_preference_list[0].attrib.get('uri'), wpublic=1, view='deep')
             if xpath:
-                tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]',xpath) #only alphanumeric tag names are allowed right now 
+                tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]',xpath) #only alphanumeric tag names are allowed right now
                 if len(tagNames)>0 and preference_doc.attrib.get('name')==tagNames[-1]:
                     #parse xpath and form the xml doc to merge
                     preference = etree.Element('preference')
@@ -631,7 +634,7 @@ class PreferenceController(ServiceController):
                         tagElement = etree.SubElement(tagElement, 'tag', name = t)
                     tagElement.append(preference_doc) #add path the preference doc
                     current_preference_etree = update_level(preference, system_preference)
-                    
+
                     data_service.update_resource(resource=system_preference, new_resource=current_preference_etree)
                     #data_service.del_resource(system_preference.attrib.get('uri'))
                     #data_service.new_resource(current_preference_etree, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'))
@@ -651,37 +654,38 @@ class PreferenceController(ServiceController):
                 if system_list>0:
                     resource = data_service.new_resource(preference_doc, parent='/data_service/%s' % system_list.attrib.get('resource_uniq'), **kw)
                 else: #system document is not there
-                    abort(400) 
+                    abort(400)
             else: #not correct format and no xpath
                 abort(400)
-                
+
         return etree.tostring(resource)
-    
-    
+
+
     def system_delete(self, xpath=None, **kw):
         """
             removes all or a part of the preferences
-            Only admin can change the system level and 
+            Only admin can change the system level and
             the user has to be logged in to make any changes
-            
+
             @param: resource_uniq
             @param: doc
         """
         #requires admin privileges
-        system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
+        #system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
+        system = data_service.query(resource_type='system', view='full', wpublic=1)
         system_preference_list = system.xpath('/resource/system/preference')
         if len(system_preference_list)<1:
             abort(400)
         preference_uri = system_preference_list[0].attrib.get('uri')
         self.delete(preference_uri, xpath=xpath)
-    
-    
+
+
     def user_post(self, body, xpath=None, **kw):
         """
             user_post
-            
+
             Merges preference document put to the preference on the user current sign in user document provided.
-            
+
             @param: body - an xml string of the element being posted back (default: None)
             @param: kw - pass through query parameters to data_service
         """
@@ -696,17 +700,17 @@ class PreferenceController(ServiceController):
             #raise error
             log.debug('User was not found')
             abort(404)
-        
+
         self.post(user, user_preference_list, preference_doc, xpath=xpath)
         return self.get(xpath=xpath, level=1, **kw) #return the correct resource
-    
-    
+
+
     def user_put(self, xpath=None, body=None, **kw):
         """
             user_put
-            
+
             Merges preference document put to the preference on the user current sign in user document provided.
-            
+
             @param: body - an xml string of the element being posted back (default: None)
             @param: kw - pass through query parameters to data_service
         """
@@ -721,18 +725,18 @@ class PreferenceController(ServiceController):
             #raise error
             log.debug('User was not found')
             abort(404)
-        
+
         self.post(user, user_preference_list, preference_doc, xpath=xpath)
         return self.get(xpath=xpath, level=1, **kw) #return the correct resource
-    
-    
+
+
     def user_delete(self, xpath=None, **kw):
         """
             user_delete
-            
-            Deletes the preference resource from the user current sign in user document or the element to the path 
+
+            Deletes the preference resource from the user current sign in user document or the element to the path
             provided in this document
-            
+
             @param: path - path after preferences to the document element to be deleted (default: None)
             @param: kw - pass through query parameters to data_service
         """
@@ -742,14 +746,14 @@ class PreferenceController(ServiceController):
             abort(404)
         preference_uri = user_preference_list[0].attrib.get('uri')
         self.delete(preference_uri, xpath=xpath)
-    
-    
+
+
     def resource_post(self, resource_uniq, body, xpath=None, **kw):
         """
             resource_post
-            
+
             Merges preference document put to the preference on the resource document provided.
-            
+
             @param: resource_uniq - the resource_uniq to document being addressed
             @param: body - an xml string of the element being posted back(default: None)
             @param: kw - pass through query parameters to data_service
@@ -776,17 +780,17 @@ class PreferenceController(ServiceController):
         else:
             abort(404)
         self.post(resource, resource_preference_list, preference_doc, xpath=xpath)
-                
+
         return self.get(resource_uniq, xpath=xpath, level=2, **kw) #return the correct resource
-    
-    
-    
+
+
+
     def resource_put(self, resource_uniq, path=None, body=None, **kw):
         """
             resource_put
-            
+
             Merges preference document put to the preference on the resource document provided.
-            
+
             @param: resource_uniq - the resource_uniq to document being addressed
             @param: body - an xml string of the element being posted back(default: None)
             @param: kw - pass through query parameters to data_service
@@ -813,16 +817,16 @@ class PreferenceController(ServiceController):
         else:
             abort(404)
         self.post(resource, resource_preference_list, preference_doc, xpath=xpath)
-                
+
         return self.get(resource_uniq, xpath=xpath, level=2, **kw) #return the correct resource
-    
-    
+
+
     def resource_delete(self, resource_uniq, xpath=None, **kw):
         """
-            Removes the tag on the level requested. If there is not 
+            Removes the tag on the level requested. If there is not
             tag nothing happens. Returns back the updated document.
             Allows the default value to be set for the level above.
-            
+
             @param: resource_uniq - the resource_uniq to document being addressed
             @param: path - path after preferences to the document element to be deleted
             @param: kw - pass through query parameters to data_service
@@ -850,17 +854,17 @@ class PreferenceController(ServiceController):
             abort(404)
         preference_uri = resource_preference_list[0].attrib.get('uri')
         self.delete(preference_uri, xpath=xpath)
-    
-    
+
+
     def post(self, resource, resource_preference_list, preference_doc, xpath=None):
         """
         """
         resource_preference = None
         if len(resource_preference_list)>0:
             resource_preference = data_service.get_resource(resource_preference_list[0].attrib.get('uri'), view='deep')
-            
+
         if xpath:
-            tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]', xpath) #only alphanumeric tag names are allowed right now 
+            tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]', xpath) #only alphanumeric tag names are allowed right now
             if len(tagNames)>0 and preference_doc.attrib.get('name')==tagNames[-1]:
                 #parse xpath and form the xml doc to merge
                 preference = etree.Element('preference')
@@ -871,26 +875,26 @@ class PreferenceController(ServiceController):
                 preference_doc = preference
             else:
                 abort(400)
-        
+
         if resource_preference:
             current_preference_etree = update_level(preference_doc, resource_preference)
         elif preference_doc.tag == 'preference':
             current_preference_etree = preference_doc
         else:
             abort(400)
-            
+
         if resource_preference: #replace element
             data_service.update_resource(resource=resource_preference, new_resource=current_preference_etree)
             #data_service.del_resource(resource_preference.attrib.get('uri'))
         else: #create new element
             data_service.new_resource(current_preference_etree, parent='/data_service/%s' % resource.attrib.get('resource_uniq'))
-    
-    
+
+
     def put(self):
         """
         """
         pass
-        
+
     def delete(self, preference_uri, xpath=None):
         """
         """
@@ -903,8 +907,8 @@ class PreferenceController(ServiceController):
                 abort(404)
             preference_uri = tag_uri[0]
         data_service.del_resource(preference_uri)
-    
-    
+
+
 def initialize(url):
     """ Initialize the top level server for this microapp"""
     log.debug ("initialize " + url)

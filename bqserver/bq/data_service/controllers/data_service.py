@@ -237,6 +237,7 @@ class DataServerController(ServiceController):
             kw = params
         #log.debug ("get_resource %s %s",  uri, str(kw))
         if uri is not None:
+            log.debug ("get_resource %s %s",  uri, str(kw))
             response =  self.cache_check(uri, **kw)
             if response:
                 log.debug ("get_resource:CACHE response")
@@ -249,7 +250,9 @@ class DataServerController(ServiceController):
             service, clname, ida, rest = parse_bisque_uri(uri)
             resource = load_uri (uri, query=True)
             if rest:  # Fetch resource is really a query
-                resource = resource.first()
+                log.debug ("get_resource:QUERY %s %s %s -> %s", service, ida, rest, str(resource))
+                if resource is not None:
+                    resource = resource.first()
                 resource = self.query(resource_tag=rest[-1], parent=resource,**kw)
                 #self.cache_save (uri, response=etree.tostring(resource), **kw)
                 #resource.set('uri', uri)
