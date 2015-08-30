@@ -149,7 +149,7 @@ def query(resource_type=None, server=None, **kw):
     '''Return query results as list of XML documents
     '''
     if server is None: server = service_registry.find_service ('data_service')
-    return server.query(resource_type, **kw)
+    return server.query(resource_tag=resource_type, **kw)
 
 def count(resource_type, server=None, **kw):
     '''Return query results as list of XML documents
