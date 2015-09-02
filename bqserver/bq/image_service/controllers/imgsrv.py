@@ -2361,8 +2361,9 @@ class ImageServer(object):
                 return r
 
         # if the conversion failed, convert input to OME-TIFF using other converts
+        # typically we should be strating from the original file here, if we failed somewhere in the middle, there's a bigger problem
         r = None
-        ometiff = '%s.ome.tif'%(token.data)
+        ometiff = '%s.ome.tif'%(token.initial_workpath or token.data)
         if os.path.exists(ometiff) and os.path.getsize(ometiff)>16:
             r = ometiff
         else:
@@ -2463,8 +2464,9 @@ class ImageServer(object):
             # start the processing
             b = self.ensureOriginalFile(ident, resource=resource)
             #log.debug('Original %s, %s, %s', b.path, b.sub, b.files)
-            token.setFile(self.ensureWorkPath(b.path, ident, user_name=kw.get('user_name', None)), series=(b.sub or 0))
-            token.init(resource_id=ident, ifnm=b.path, imagemeta=kw.get('imagemeta', None), files=b.files, timeout=kw.get('timeout', None), resource_name=resource.get('name'))
+            workpath = self.ensureWorkPath(b.path, ident, user_name=kw.get('user_name', None))
+            token.setFile(workpath, series=(b.sub or 0))
+            token.init(resource_id=ident, ifnm=b.path, imagemeta=kw.get('imagemeta', None), files=b.files, timeout=kw.get('timeout', None), resource_name=resource.get('name'), initial_workpath=workpath)
 
             if not os.path.exists(b.path):
                 abort(404, 'File not found...')
