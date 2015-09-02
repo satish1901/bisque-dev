@@ -244,8 +244,14 @@ class ResponseCache(object):
             #   =>  ,data_service/images,1#view=deep
             # ',' can be troublesome at ends so we remove them
             #     ,data_service/images,1#view=deep == ,data_service/images,1,#view=deep
-            cachename = cachename.split('#',1)[0].split(',',1)[1].strip(',')
-            for mn, cf in [ (fn.split('#',1)[0].split(',',1)[1].strip(','), fn) for fn in files ] :
+            try:
+                cachename = cachename.split('#',1)[0].split(',',1)[1].strip(',')
+                tfiles = [ (fn.split('#',1)[0].split(',',1)[1].strip(','), fn) for fn in files ]
+            except Exception:
+                log.execption ("while generating %s in with %s", cachename, files)
+                return
+
+            for mn, cf in tfiles:
                 #log.debug('exact %s <> %s' % (cachename, mn))
 
                 if mn == cachename:
@@ -259,16 +265,19 @@ class ResponseCache(object):
             return
         for cf in files[:]:
             #log.debug ("checking %s" % cf)
-            if cachename.startswith('*')\
-               and cf.split(',',1)[1].startswith(cachename.split(',',1)[1])\
-               or cf.startswith (cachename):
-                try:
-                    os.unlink (os.path.join(self.cachepath, cf))
-                except OSError:
-                    # File was removed by other process
-                    pass
-                files.remove (cf)
-                log.debug ('cache remove %s' % cf)
+            try:
+                #
+                if (cachename.startswith('*') and cf.split(',',1)[-1].startswith(cachename.split(',',1)[-1]))\
+                    or cf.startswith (cachename):
+                    try:
+                        os.unlink (os.path.join(self.cachepath, cf))
+                    except OSError:
+                        # File was removed by other process
+                        pass
+                    files.remove (cf)
+                    log.debug ('cache remove %s' % cf)
+            except Exception, e:
+                log.exception ("while removing %s from %s", cf, files)
 
     def modified(self, url, user):
         cachename = os.path.join(self.cachepath, self._cache_name(url, user))
@@ -815,5 +824,3 @@ class Resource(ServiceController):
         Check that you can read the object
         """
         abort(501)
-
-
