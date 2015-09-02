@@ -70,6 +70,7 @@ class ProcessToken(object):
         self.is_file     = False
         self.timeout     = None
         self.resource_name = None
+        self.initial_workpath = None
 
         #queue
         self.meta        = None
@@ -79,7 +80,7 @@ class ProcessToken(object):
         self.input       = ifnm # output is in .data
         self.queue       = []
 
-    def init(self, resource_id=None, ifnm=None, fmt=None, series=0, imagemeta=None, files=None, timeout=None, dims=None, resource_name=None):
+    def init(self, resource_id=None, ifnm=None, fmt=None, series=0, imagemeta=None, files=None, timeout=None, dims=None, resource_name=None, initial_workpath=None):
         self.resource_id = resource_id or self.resource_id
         self.resource_name = resource_name
         self.format      = fmt or self.format
@@ -88,6 +89,7 @@ class ProcessToken(object):
         self.meta        = imagemeta or self.meta
         self.dims        = dims or self.dims
         self.input       = ifnm or self.input
+        self.initial_workpath = initial_workpath or self.initial_workpath
         if files is not None and self.meta is not None:
             if len(files)>1 and len(set(['image_num_z','image_num_t','image_num_c']).intersection(self.meta.keys()))>0:
                 self.input = files

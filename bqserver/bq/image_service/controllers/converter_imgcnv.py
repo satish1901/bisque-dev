@@ -539,7 +539,8 @@ class ConverterImgcnv(ConverterBase):
         if fmt is not None and '-t' not in extra:
             command.extend (['-t', fmt])
             if cls.installed_formats[fmt].multipage is True:
-                extra.extend(['-multi'])
+                #extra.extend(['-multi'])
+                pass
             elif '-page' not in extra and nz*nt>1:
                 extra.extend(['-page', '1'])
         if extra is not None:
