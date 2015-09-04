@@ -69,14 +69,14 @@ gObjectBuffer.prototype.rescale = function (scale) {
 };
 
 gObjectBuffer.prototype.pushPosition = function (p, x, positions) {
-	var slice = this.volume.dims.slice;
-	var dims = this.volume.dims;
-    var min = Math.min(dims.pixel.x, Math.min(dims.pixel.y,dims.pixel.z));
-    var max = Math.max(dims.pixel.x, Math.max(dims.pixel.y,dims.pixel.z));
+    var slice = this.volume.phys; //var slice = this.volume.dims.slice;
+	//var dims = this.volume.dims;
+    //var min = Math.min(dims.pixel.x, Math.min(dims.pixel.y,dims.pixel.z));
+    //var max = Math.max(dims.pixel.x, Math.max(dims.pixel.y,dims.pixel.z));
 
-    positions[x * 3 + 0] = (p.x / slice.x/max - 0.5);
-	positions[x * 3 + 1] = (0.5 - p.y / slice.y/max);
-	positions[x * 3 + 2] = (0.5 - p.z / slice.z/max);
+    positions[x * 3 + 0] = (p.x / slice.x - 0.5); //positions[x * 3 + 0] = (p.x / slice.x/max - 0.5);
+	positions[x * 3 + 1] = (0.5 - p.y / slice.y); //positions[x * 3 + 1] = (0.5 - p.y / slice.y/max);
+	positions[x * 3 + 2] = (0.5 - p.z / slice.z); //positions[x * 3 + 2] = (0.5 - p.z / slice.z/max);
 };
 
 gObjectBuffer.prototype.push = function (poly) {}
