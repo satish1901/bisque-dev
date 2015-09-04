@@ -745,15 +745,21 @@ class FormatOperation(BaseOperation):
 
         if not os.path.exists(ofile):
             extra = token.drainQueue()
+            queue_size = len(extra)
             if len(args) > 0:
                 extra.extend( ['-options', (' ').join(args)])
             elif fmt in ['jpg', 'jpeg']:
                 extra.extend(['-options', 'quality 95 progressive yes'])
 
+            r = None
+            #if dims.get('converter', '') == ConverterImgcnv.name:
+
             # first try first converter that supports this output format
             c = self.server.writable_formats[fmt]
             first_name = c.name
-            r = c.convert(token, ofile, fmt, extra=extra)
+            # if there are any operations to be run on the output
+            if c.name == ConverterImgcnv.name or queue_size < 1:
+                r = c.convert(token, ofile, fmt, extra=extra)
 
             # try using other converters directly
             if r is None:
@@ -762,7 +768,8 @@ class FormatOperation(BaseOperation):
                 for n,c in self.server.converters.iteritems():
                     if n==first_name:
                         continue
-                    r = c.convert(token, ofile, fmt, extra=extra)
+                    if n == ConverterImgcnv.name or queue_size < 1:
+                        r = c.convert(token, ofile, fmt, extra=extra)
                     if r is not None and os.path.exists(ofile):
                         break
 
@@ -770,7 +777,7 @@ class FormatOperation(BaseOperation):
             if r is None:
                 log.debug('None of converters could connvert [%s] to [%s] format'%(ifile, fmt))
                 log.debug('Converting to OME-TIFF and then to desired output')
-                r = self.server.imageconvert(token, ifile, ofile, fmt=fmt, extra=[], try_imgcnv=False)
+                r = self.server.imageconvert(token, ifile, ofile, fmt=fmt, extra=extra, try_imgcnv=False)
 
             if r is None:
                 log.error('Format %s: %s could not convert with [%s] format [%s] -> [%s]', token.resource_id, c.CONVERTERCOMMAND, fmt, ifile, ofile)
@@ -1321,7 +1328,7 @@ class RemapOperation(BaseOperation):
 
         channels = 0
         if arg == 'display':
-            args = ['-display']
+            args = ['-fusemeta']
             channels = 3
         elif arg=='gray' or arg=='grey':
             args = ['-fusegrey']

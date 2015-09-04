@@ -340,7 +340,7 @@ class ConverterImaris(ConverterBase):
         #    return {}
         rd = cls.meta(token, **kw)
         core = [ 'image_num_series', 'image_num_x', 'image_num_y', 'image_num_z', 'image_num_c', 'image_num_t',
-                 'image_pixel_format', 'image_pixel_depth', 'image_series_index',
+                 'image_pixel_format', 'image_pixel_depth', 'image_series_index', 'format',
                  'pixel_resolution_x', 'pixel_resolution_y', 'pixel_resolution_z',
                  'pixel_resolution_unit_x', 'pixel_resolution_unit_y', 'pixel_resolution_unit_z' ]
 
@@ -387,6 +387,8 @@ class ConverterImaris(ConverterBase):
         ifnm = token.first_input_file()
         series = token.series
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
+        #if extra is not None:
+        #    return None
         if fmt in cls.format_map:
             fmt = cls.format_map[fmt]
         command = ['-i', ifnm]

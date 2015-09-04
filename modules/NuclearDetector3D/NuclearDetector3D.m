@@ -170,6 +170,8 @@ function np = detect(image, nuclear_channel, membrane_channel, slicecmd, szcmd, 
 
     % filter using membraine channel
     if membrane_channel>0,
+        session.update(sprintf('%s5%% - fetching membrane image', timetext));
+        fprintf('Fetching membrane image\n');
         if ~isempty(szcmd),                
             %imm = image.slice([],current_t).remap(membrane_channel).command('resize3d', szcmd).fetch();
             imm = image.command('slice', slicecmd).remap(membrane_channel).command('resize3d', szcmd).fetch();
@@ -191,6 +193,7 @@ function np = detect(image, nuclear_channel, membrane_channel, slicecmd, szcmd, 
     end
 
     fprintf('Detecting nuclei\n');
+    session.update(sprintf('%s10%% - detecting nuclei', timetext));
     sns = ns(1:3) ./ [scale(2) scale(1) scale(3)];
     pss = BONuclearDetector3D(imn, sns, t, session, timetext);
     clearvars imn;            
