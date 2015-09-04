@@ -431,6 +431,8 @@ class ConverterBioformats(ConverterBase):
         ifnm = token.first_input_file()
         series = token.series
         log.debug('convert: [%s] -> [%s] into %s for series %s with [%s]', ifnm, ofnm, fmt, series, extra)
+        #if extra is not None:
+        #    return None
         command = [ifnm, ofnm, '-no-upgrade', '-overwrite']
         tmp = None
         try:
