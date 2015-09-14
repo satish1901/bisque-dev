@@ -248,7 +248,7 @@ class ResponseCache(object):
                 cachename = cachename.split('#',1)[0].split(',',1)[1].strip(',')
                 tfiles = [ (fn.split('#',1)[0].split(',',1)[1].strip(','), fn) for fn in files ]
             except Exception:
-                log.execption ("while generating %s in with %s", cachename, files)
+                log.exception ("while generating %s in with %s", cachename, files)
                 return
 
             for mn, cf in tfiles:
