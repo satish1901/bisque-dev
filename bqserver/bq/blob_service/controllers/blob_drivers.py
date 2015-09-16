@@ -76,8 +76,14 @@ __all__ = [ 'make_storage_driver' ]
 
 supported_storage_schemes = [ '', 'file' ]
 
+# try:
+#     from bq.util import irods_icmd as irods
+#     supported_storage_schemes.append('irods')
+# except ImportError:
+#     pass
+
 try:
-    from bq.util import irods_handler
+    from bq.util import irods_client as irods
     supported_storage_schemes.append('irods')
 except ImportError:
     #log.warn ("Can't import irods: irods storage not supported")
@@ -382,11 +388,11 @@ class IrodsDriver(StorageDriver):
         uniq = uniq or make_uniq_code()
         try:
             for x in xrange(len(uniq)-7):
-                if not irods_handler.irods_isfile (storeurl, user=self.user, password = self.password):
+                if not irods.irods_isfile (storeurl, user=self.user, password = self.password):
                     break
                 storeurl = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
-            flocal = irods_handler.irods_push_file(fp, storeurl, user=self.user, password=self.password)
-        except irods_handler.IrodsError:
+            flocal = irods.irods_push_file(fp, storeurl, user=self.user, password=self.password)
+        except irods.IrodsError:
             log.exception ("During Irods Push")
             raise IllegalOperation ("irods push failed")
         return storeurl, flocal
@@ -398,10 +404,10 @@ class IrodsDriver(StorageDriver):
         try:
             # if irods will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
             irods_ident,sub = split_subpath(storeurl)
-            path = irods_handler.irods_fetch_file(storeurl, user=self.user, password=self.password)
+            path = irods.irods_fetch_file(storeurl, user=self.user, password=self.password)
             # dima: if path is a directory, list contents
             return Blobs(path=path, sub=sub, files=None)
-        except irods_handler.IrodsError:
+        except irods.IrodsError:
             log.exception ("Error fetching %s ", irods_ident)
         return None
 
@@ -410,8 +416,8 @@ class IrodsDriver(StorageDriver):
 
     def delete(self, irods_ident):
         try:
-            irods_handler.irods_delete_file(irods_ident, user=self.user, password=self.password)
-        except irods_handler.IrodsError, e:
+            irods.irods_delete_file(irods_ident, user=self.user, password=self.password)
+        except irods.IrodsError, e:
             log.exception ("Error deleteing %s :%s", irods_ident, e)
         return None
 
@@ -699,4 +705,3 @@ def make_storage_driver(mount_url, **kw):
         return store(mount_url=mount_url, **kw)
     log.error ('request storage scheme %s unavailable' , scheme)
     return None
-

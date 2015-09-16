@@ -1141,7 +1141,7 @@ def resource_delete(resource, user_id=None):
         q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
         q = q.filter (TaggableAcl.user_id == user_id)
         q.delete()
-        log.debug('deleting acls reource_owner(%s) delete(%s) %s' % (resource.owner_id, user_id, q))
+        log.info('deleting acls for %s reource_owner(%s)' % user_id, resource.owner_id)
         Resource.hier_cache.invalidate_resource (q, user = user_id)
         #Resource.hier_cache.invalidate ('/', user = user_id)
         return
@@ -1155,6 +1155,8 @@ def resource_delete(resource, user_id=None):
         resource.resource_hidden = True
         log.debug('hiding resource due to references')
         return
+
+    # Delete any ACLs refering to object
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
     q.delete()
 
@@ -1162,8 +1164,11 @@ def resource_delete(resource, user_id=None):
     resource.document.ts = ts
     # We can delete the resource .. check it has an associated blob
     if resource.resource_uniq is not None:
-        from bq import blob_service
-        blob_service.delete_blob (resource.resource_uniq)
+        try:
+            from bq import blob_service
+            blob_service.delete_blob (resource.resource_uniq)
+        except Exception:
+            log.exception ("While deleting blob %s", resource.resource_uniq)
 
     DBSession.delete(resource)
     DBSession.flush()
@@ -1207,5 +1212,3 @@ def resource_types(user_id=None, wpublic=False):
 #     if tag_query:
 #         query = prepare_tag_expr(query, tag_query)
 #     return query
-
-

@@ -750,6 +750,12 @@ class MountServer(TGController):
         'Delete elements  for a resource'
         log.debug ("delete_blob %s", resource.get ('resource_uniq'))
 
+        # Delete the reference in the store
+        links = data_service.query ('link', parent=False, value = resource.get ('resource_uniq'), cache=False)
+        for link in links:
+            log.debug ("delete_blob: delete link %s", link.get('uri'))
+            data_service.del_resource(link)
+
         store = self._find_store (resource)
         if  store is None:
             log.warn ('Not a valid store ref in  %s' , etree.tostring (resource))
@@ -780,13 +786,6 @@ class MountServer(TGController):
             if len(blobrefs) < 2:
                 for storeurl in bloburls:
                     driver.delete (storeurl)
-
-        # Delete the reference in the store
-        link = data_service.query ('link', parent=False, value = resource.get ('resource_uniq'), cache=False)
-        if len(link)==1:
-            log.debug ("delete_blob: delete link %s", link[0].get('uri'))
-            data_service.del_resource(link[0])
-
 
 
     def _find_store(self, resource):
@@ -954,10 +953,3 @@ class MountServer(TGController):
 
         log.error('StoreError: tried too many attempts %s.. not inserting %s', x, mount_path)
         return None
-
-
-
-
-
-
-
