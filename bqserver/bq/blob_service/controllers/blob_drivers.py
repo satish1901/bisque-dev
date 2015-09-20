@@ -480,7 +480,7 @@ class S3Driver(StorageDriver):
     def push(self, fp, storeurl, uniq=None):
         'write a file to s3'
         s3_ident,sub = split_subpath(storeurl)
-        s3_basekey,ext = os.path.splitext(s3_ident)
+        s3_base,ext = os.path.splitext(s3_ident)
         log.debug('s3.write: %s -> %s' , storeurl, s3_ident)
         uniq = uniq or make_uniq_code()
         for x in xrange(len(uniq)-7):
