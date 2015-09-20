@@ -433,6 +433,8 @@ class ExporterKML (ExporterGeo):
         return etree.tostring(kml)
 
     def convert_node(self, node, kml, cnvf=None):
+        if node is None:
+            return
         if node.tag in gobject_primitives or node.tag == 'gobject' and node.get('type') in gobject_primitives:
             self.render_gobjects(node, kml, node.tag, cnvf=cnvf)
         elif node.tag == 'gobject' and len(node)==1: # special case of a gobject wrapper of a primitive
@@ -622,6 +624,8 @@ class ExporterGeoJson (ExporterGeo):
 
     def convert_node(self, node, kml, cnvf=None):
         #log.debug('convert_node: %s', etree.tostring(node))
+        if node is None:
+            return
         if node.tag in gobject_primitives or node.tag == 'gobject' and node.get('type') in gobject_primitives:
             self.render_gobjects(node, kml, node.tag, cnvf=cnvf)
         elif node.tag == 'gobject' and len(node)==1: # special case of a gobject wrapper of a primitive
