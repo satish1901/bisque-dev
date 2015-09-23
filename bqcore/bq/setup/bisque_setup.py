@@ -18,6 +18,7 @@ import logging
 import time
 import pprint
 import six
+import uuid
 
 import pkg_resources
 from setuptools.command import easy_install
@@ -1258,6 +1259,8 @@ def setup_uwsgi(params, server_params):
         uwsgi_vars ['procname-prefix'] = "bisque_%s_" % server
         update_site_cfg(cfg=cfg, bisque_vars=svars)
         update_site_cfg(cfg=cfg, section='uwsgi',bisque_vars = uwsgi_vars )
+        update_site_cfg(cfg=cfg, section='sa_auth',
+                        bisque_vars = { 'cookie_secret' : uuid.uuid4()} )
     return params
 
 #######################################################
@@ -1305,6 +1308,8 @@ def setup_paster(params, server_params):
 
         update_site_cfg(cfg=cfg, bisque_vars=svars)
         update_site_cfg(cfg=cfg, section='server:main',bisque_vars = paster_vars )
+        update_site_cfg(cfg=cfg, section='sa_auth',
+                        bisque_vars = { 'cookie_secret' : uuid.uuid4()} )
 
 
     return params
@@ -2130,4 +2135,3 @@ def setup(options, args):
 #        if not cancelled:
 #            end_install = datetime.datetime.now()
 #            send_installation_report(params)
-
