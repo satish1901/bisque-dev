@@ -306,7 +306,7 @@ base_config.DBSession = bq.core.model.DBSession
 
 
 # YOU MUST CHANGE THIS VALUE IN PRODUCTION TO SECURE YOUR APP
-base_config.sa_auth.cookie_secret = "images"
+#base_config.sa_auth.cookie_secret = "images"
 #base_config.sa_auth.cookie_timeout = 60
 #base_config.sa_auth.cookie_reissue_time = 50
 
@@ -334,5 +334,3 @@ base_config.sa_auth.permission_class = model.Permission
 # on logout:
 #base_config.sa_auth.post_logout_url = '/auth_service/post_logout'
 #base_config.sa_auth.login_url = "/auth_service/login"
-
-

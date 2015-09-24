@@ -968,6 +968,7 @@ def install_server_defaults(params):
     if not os.path.exists(config_path('who.ini')):
         shutil.copy(config_path('who.ini.default'), config_path('who.ini'))
 
+
     if not os.path.exists(config_path('registration.cfg')):
         shutil.copyfile(config_path('registration.cfg.default'), config_path('registration.cfg'))
 
@@ -1213,6 +1214,22 @@ def install_public_static(params):
         if r!=0:
             print "Problem deploying static resources .. run bq-admin deploy public manually"
 
+    return params
+
+#######################################################
+
+def install_secrets(params):
+    "Ensure cookies are unique across sites"
+
+    secrets = os.getenv ("BISQUE_SECRET", None) or "secrets"
+    secrets = getanswer("Encrypt cookies with secret phrase", secrets,
+                        "Login informations if encoded with this secret")
+    who_cfg = config_path ("who.ini")
+
+    update_site_cfg(cfg=who_cfg, section='plugin:auth_tkt', bisque_vars= { 'secret' : secrets })
+    # Update the beaker session secret also
+    update_site_cfg(bisque_vars= { 'beaker.session.secret' : secrets }, append=False)
+    params ['beaker.session.secret'] = secrets
     return params
 
 
@@ -1914,7 +1931,7 @@ SETUP_COMMANDS = {
     'database' : [ install_database ],
     'mail' : [ install_mail ],
     'preferences' : [ install_preferences ],
-    'production' : [ install_public_static ],
+    'production' : [ install_public_static, install_secrets ],
     'upgrade' : [ kill_server, fetch_stable, fetch_external_binaries, install_dependencies, migrate, cleanup ],
     "configuration" : [ setup_server_cfg ],
     "createdb" : [ setup_database ],
