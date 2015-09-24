@@ -75,8 +75,13 @@ class MexAuthenticatePlugin(object):
         #    return None
         if mex:
             identity['bisque.mex'] = mex
-            owner = identity.get ('bisque.mex_user') or mex.owner.tguser.user_name
+            #owner = identity.get ('bisque.mex_user') or mex.owner.tguser.user_name
+            owner =  mex.owner.tguser.user_name
             identity ['bisque.mex_auth'] = '%s:%s' % (owner, mex_token)
+            request_owner = identity.get ('bisque.mex_user')
+            if request_owner is not None and owner != request_owner:
+                log.error ("Mex with bad owner reuqest %s != mex %s", request_owner, owner)
+                return None
 
             log.info ("MEX_IDENTITY %s->%s"  ,mex_token, owner)
             return owner

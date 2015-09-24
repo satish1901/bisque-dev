@@ -198,6 +198,7 @@ runtime.mode = command
 #beaker.cache.data_dir = %(here)s/data/cache
 #beaker.session.data_dir = %(here)s/data/sessions
 cache_dir = %(here)s/data
+beaker.session.type = cookie
 beaker.session.key = bq
 beaker.session.secret = somesecret
 
@@ -429,4 +430,3 @@ datefmt = %H:%M:%S
 
 #[formatter_syslog]
 #format = %(levelname)s [%(name)s] %(message)s
-
