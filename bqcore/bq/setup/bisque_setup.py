@@ -19,6 +19,7 @@ import time
 import pprint
 import six
 import uuid
+import posixpath
 
 import pkg_resources
 from setuptools.command import easy_install
@@ -551,8 +552,24 @@ Please check your db url to ensure that it is in the correct format.
 Also please ensure that the user specified can actually create/access a database.
 """
 
+def create_postgres_sa (dburl):
+    "Check existance of database base and create new if needed"
+    dbstr = str (dburl)
+    template1 = posixpath.join (posixpath.dirname (dbstr), "template1")
+    dbname    = posixpath.basename (dbstr)
 
-def create_postgres (dburl):
+    engine = sa.create_engine(template1)
+    conn   = engine.connect()
+    # End automatic Postgres  transaction with commit
+    conn.execute("commit")
+    # create new database
+    conn.execute("create database %s" % dbname)
+    conn.close()
+    log.info ("Created postgresql database %s", dbname)
+    return True
+
+
+def create_postgres_psql (dburl):
     "Check existance of database base and create new if needed"
 
     command = ["psql"]
@@ -585,7 +602,18 @@ def create_postgres (dburl):
 ###############
 #
 
-def create_mysql(dburl):
+def create_mysql_sa(dburl):
+    "Create a new mysql database "
+    dbstr = str(dburl)
+    connecturl = posixpath.dirname (dbstr)
+    dbname     = posixpath.basename (dbstr)
+
+    engine = sa.create_engine (connecturl)
+    engine.execute ("CREATE DATABASE %s" % dbname)
+    log.info ("Created mysql database %s", dbname)
+    return True
+
+def create_mysql_cmd(dburl):
     command = [ 'mysql' ]
     if dburl.query.has_key('unix_socket'):
         command.append ( '--socket=%s' % dburl.query['unix_socket'] )
@@ -613,9 +641,9 @@ def create_sqlite (dburl):
 
 known_db_types = {
     'sqlite'     : ('sqlite3', '',   create_sqlite ),
-    'postgres'   : ('psycopg2',  'psycopg2', create_postgres   ),
-    'postgresql' : ('psycopg2',  'psycopg2',  create_postgres  ),
-    'mysql'      : ('_mysql',    'mysql-python', create_mysql ),
+    'postgres'   : ('psycopg2',  'psycopg2', create_postgres_sa   ),
+    'postgresql' : ('psycopg2',  'psycopg2',  create_postgres_sa  ),
+    'mysql'      : ('_mysql',    'mysql-python', create_mysql_sa ),
     }
 
 def install_driver(DBURL):
@@ -696,7 +724,7 @@ def test_db_existance(DBURL):
         print 'Yes, it exists.'
         return True
     except Exception:
-        log.warn("Could not contact database")
+        log.warn("Could not contact database %s. It may not exist yet", str(DBURL))
         return False
 
 def get_dburi(params):
