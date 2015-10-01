@@ -63,6 +63,16 @@ def safeReadAndSet(config, section, option, d, key, defval=None):
     if v is not None:
         d[key] = v
 
+def safe_config_read(config, sp):
+    sp.seek(0)
+    sec = ''
+    for l in sp:
+        if l.startswith('['):
+            sec = l.strip('[]\r\n ')
+            continue
+        n,v = l.strip('\r\n ').split('=', 1)
+        config.set(sec, n.strip(' '), v.strip(' '))
+
 
 ################################################################################
 # ConverterImaris
@@ -284,7 +294,10 @@ class ConverterImaris(ConverterBase):
         # use index 0 since we fetch meta data with imageindex argument
         sp = StringIO.StringIO(params)
         config = ConfigParser.ConfigParser()
-        config.readfp(sp)
+        try:
+            config.readfp(sp)
+        except Exception:
+            safe_config_read(config, sp)
         sp.close()
 
         # channel names, colors and other info
