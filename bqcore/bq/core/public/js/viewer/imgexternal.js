@@ -16,7 +16,7 @@ function ImgExternal (viewer,name){
             defaults: {
                 scope: this,
             },
-			
+
             items: [{
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_export_view',
@@ -27,7 +27,7 @@ function ImgExternal (viewer,name){
                 handler: function() {
                     this.getCurrentView(0)
                 },
-                
+
                 menu   : {
                     //hidden: true,
                     handler: function() {return false;},
@@ -70,8 +70,8 @@ function ImgExternal (viewer,name){
                         group: 'scale',
                         tooltip: 'Download current view scaled at 400%',
                 }]},
-				
-                
+
+
             },{
                 xtype  : 'menuitem',
                 itemId : 'menu_viewer_external_bioView',
@@ -132,13 +132,14 @@ function ImgExternal (viewer,name){
             }*/]
         },
     }]);
-    
+
     //enables the calibrate image if user is found
     BQApp.on('gotuser', function() {
+        if (!me.viewer.toolbar) return;
         var calibrateResolution = me.viewer.toolbar.queryById('menu_viewer_calibrate_image');
         calibrateResolution.setDisabled(false);
     });
-    if (BQApp.hasUser()) { //checks for user
+    if (BQApp.hasUser() && this.viewer.toolbar) { //checks for user
         var calibrateResolution = this.viewer.toolbar.queryById('menu_viewer_calibrate_image');
         calibrateResolution.setDisabled(false);
     }
@@ -186,7 +187,7 @@ ImgExternal.prototype.newImage = function () {
 *
 *       Runs currentView plugin in imgExternal
 *
-*       @param: levelDiff - sets the currentView level 
+*       @param: levelDiff - sets the currentView level
 */
 ImgExternal.prototype.getCurrentView = function(levelDiff) {
 
@@ -201,9 +202,9 @@ ImgExternal.prototype.getCurrentView = function(levelDiff) {
             BQ.ui.notification('Screen capture is too large! Select a smaller size or reduce the viewer size.')
         }
     }
-    
+
     var canvas_view = this.imgCurrentView.returnCurrentView(callback);
-    
+
 };
 
 
@@ -224,7 +225,7 @@ ImgExternal.prototype.updateImage = function () {
 			currentView400.setDisabled(true);
 		}
 	}
-	
+
 };
 
 ImgExternal.prototype.launchBioView = function () {
