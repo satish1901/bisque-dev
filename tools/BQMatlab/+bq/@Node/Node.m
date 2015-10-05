@@ -118,7 +118,7 @@ classdef Node < matlab.mixin.Copyable
         end % toString          
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Access attributes
+        % Access attributes - generic
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         function value = getAttribute(self, name)
@@ -131,7 +131,22 @@ classdef Node < matlab.mixin.Copyable
         
         function v = hasAttribute(self, name)
             v = self.element.hasAttribute(name);
-        end % getAttribute             
+        end % getAttribute 
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Access attributes - specific
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function v = isType(self, type)
+            v = strcmp(type, self.getType());
+        end % isType
+        
+        function type = getType(self)
+            type = char(self.element.getTagName());
+            if strcmpi(type, 'resource') == 1,
+                type = self.getAttribute('resource_type');
+            end
+        end % getType        
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Access values

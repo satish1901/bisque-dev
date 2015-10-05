@@ -19,6 +19,7 @@ classdef Image < bq.File
     properties
         info = [];
         pixels_url = [];
+        meta = [];
     end % properties
     
     methods
@@ -44,11 +45,12 @@ classdef Image < bq.File
             
             uri = self.getAttribute('uri');   
             if ~isempty(self.user) && ~isempty(self.password),
-                self.info = bq.iminfo(uri, self.user, self.password);
+                [self.info, M] = bq.iminfo(uri, self.user, self.password);
             else
-                self.info = bq.iminfo(uri);                
+                [self.info, M] = bq.iminfo(uri);                
             end
-            self.pixels_url = bq.Url(self.info.pixles_url);            
+            self.meta = M;
+            self.pixels_url = bq.Url(self.info.pixles_url);  
         end % init   
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
