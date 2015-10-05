@@ -1275,6 +1275,14 @@ class RoiOperation(BaseOperation):
         ofile = '%s.roi_%d,%d,%d,%d'%(token.data, x1-1,y1-1,x2-1,y2-1)
         log.debug('ROI %s: %s to %s', token.resource_id, ifile, ofile)
 
+        if len(rois) == 1:
+            info = {
+                'image_num_x': x2-x1,
+                'image_num_y': y2-y1,
+            }
+            command = ['-roi', '%s,%s,%s,%s'%(x1-1,y1-1,x2-1,y2-1)]
+            return self.server.enqueue(token, 'roi', ofile, fmt=default_format, command=command, dims=info)
+
         # remove pre-computed ROIs
         rois = [(_x1,_y1,_x2,_y2) for _x1,_y1,_x2,_y2 in rois if not os.path.exists('%s.roi_%d,%d,%d,%d'%(otemp,_x1-1,_y1-1,_x2-1,_y2-1))]
 
