@@ -160,8 +160,8 @@ classdef Session < handle
             res = bq.Factory.fetch(url, [], self.user, self.password);
         end
         
-        function res = storeFile(self, filename)
-            res = bq.File.store(filename, self.bisque_root, self.user, self.password); 
+        function res = storeFile(self, filename, resource)
+            res = bq.File.store(filename, self.bisque_root, self.user, self.password, resource); 
         end        
         
         function res = storeImage(self, image, args)
