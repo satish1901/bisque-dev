@@ -76,6 +76,10 @@ classdef File < bq.Node
                 error('bq.File.store:UserCredentialsInvalid', 'Store requires user name and password');
             end        
             
+            if ~exist('resource', 'var') || isempty(resource),
+                resource = ['<file name="', filename ,'" />'];   
+            end
+            
             url = bq.Url(root_url); 
             url.setPath('import/transfer');
             [output, info] = bq.post_mpform(url.toString(), filename, user, password, resource);
