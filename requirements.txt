@@ -44,6 +44,7 @@ cuisine==0.6.5
 decorator==3.4.0
 ecdsa==0.11
 furl==0.3.7
+filechunkio==1.6
 gdata==2.0.18
 httplib2==0.7.1-1
 importlib==1.0.3

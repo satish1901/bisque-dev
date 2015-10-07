@@ -86,7 +86,7 @@ try:
     from bq.util import irods_client as irods
     supported_storage_schemes.append('irods')
 except ImportError:
-    #log.warn ("Can't import irods: irods storage not supported")
+    log.warn ("Can't import irods: irods storage not supported")
     pass
 
 try:
@@ -95,7 +95,7 @@ try:
     from boto.s3.connection import S3Connection, Location
     supported_storage_schemes.append('s3')
 except ImportError:
-    #log.warn ("Can't import boto:  S3  Storage not supported")
+    log.warn ("Can't import boto:  S3  Storage not supported")
     pass
 
 
@@ -318,7 +318,8 @@ class LocalDriver (StorageDriver):
 
     def list(self, storeurl):
         "list contents of store url"
-        raise NotImplementedError("list")
+        path, sub = self._local (storeurl)
+        return  [ posixpath.join (storeurl, f)  for f in  os.listdir (path) ]
 
     def delete(self, storeurl):
         #ident,_ = split_subpath(ident) # reference counting required?
@@ -336,6 +337,19 @@ class LocalDriver (StorageDriver):
                 os.remove (path)
             except OSError:
                 log.exception("Could not delete %s", path)
+
+
+    def _local(self, storeurl):
+        "Make local path (converting local relative to full path)"
+        path,sub = split_subpath(storeurl)
+        if not path.startswith('file:///'):
+            if path.startswith('file://'):
+                path = os.path.join(self.top, path.replace('file://', ''))
+            else:
+                path = os.path.join(self.top, path)
+
+        path = url2localpath(path.replace('\\', '/'))
+        return path, sub
 
     def __str__(self):
         return "localstore[%s, %s]" % (self.mount_url, self.top)
@@ -512,6 +526,9 @@ class S3Driver(StorageDriver):
         "return status of url: dir/file, readable, etc"
     def list(self, storeurl):
         "list contents of store url"
+        s3_key = posixpath.join(storeurl.replace("s3://",""), "")
+        for path in self.bucket.list(prefix=s3_key, delimiter='/'):
+            yield "s3://%s" % path.name
 
 
 ###############################################

@@ -13,7 +13,10 @@ import urllib
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 
-from irods.exception import (DataObjectDoesNotExist, CollectionDoesNotExist)
+from irods.exception import (DataObjectDoesNotExist,
+                             CollectionDoesNotExist,
+                             iRODSException)
+
 from irods.session import iRODSSession
 IRODS_CACHE = data_path('irods_cache')
 
@@ -139,12 +142,35 @@ def irods_fetch_file(url, **kw):
             with obj.open ('r') as f:
                 localname = irods_cache_save(f, ic.path)
         return localname
-    except IrodsError:
-        raise
     except Exception, e:
         log.exception ("fetch of %s", url)
         raise IrodsError("can't read irods url %s" % url)
 
+def irods_mkdirs (session, dirpath):
+    """irods_mkdir creates all directories on path
+
+    This version works backwords from the fullpath as the underlying
+    irods library always generates CollectionDoesNotExist even for access
+    errors therefore we cannot know if we are failing because we need
+    to create the directory or just skip over it.
+
+    @param session: The current session
+    @param dirpath: A string for the path to be created
+    @return : the collection requested
+    """
+    dirpath  = dirpath.split ('/')
+    newpath  = []
+    while dirpath:
+        try:
+            collection = session.collections.get ("/".join (dirpath))
+            break
+        except CollectionDoesNotExist:
+            pass
+        newpath.append (dirpath.pop())
+    while newpath:
+        dirpath.append (newpath.pop())
+        collection = session.collections.create ("/".join (dirpath))
+    return collection
 
 def irods_push_file(fileobj, url, savelocal=True, **kw):
     try:
@@ -154,23 +180,12 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
             # irods.mkCollR(conn, basedir, os.path.dirname(path))
             #retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path))
             #ic.makedirs (os.path.dirname (ic.path))
-            compdirs = posixpath.dirname(ic.path).split ('/')
-            for pos in range(3, len (compdirs)+1):
-                try:
-                    coll = ic.session.collections.get ("/".join(compdirs[:pos]))
-                except CollectionDoesNotExist:
-                    break
-            if pos < len(compdirs):
-                for  pos in range (pos,  len(compdirs)+1):
-                    coll = ic.session.collections.create ("/".join(compdirs[:pos]))
-
+            irods_mkdirs (ic.session, posixpath.dirname (ic.path))
             log.debug( "irods-path %s" %  ic.path)
             obj = ic.session.data_objects.create (ic.path)
             with obj.open('w') as f:
                 localname = irods_cache_save(fileobj, ic.path, f)
             return localname
-    except IrodsError:
-        raise
     except Exception, e:
         log.exception ("during push %s", url)
         raise IrodsError("can't write irods url %s" % url)
@@ -184,8 +199,6 @@ def irods_delete_file(url, **kw):
                 os.remove (localname)
             log.debug( "irods_delete %s -> %s" % (url, ic.path))
             ic.session.data_objects.unlink (ic.path)
-    except IrodsError:
-        raise
     except Exception, e:
         log.exception ("during delete %s", url)
         raise IrodsError("can't delete %s" % url)
@@ -198,8 +211,6 @@ def irods_isfile (url, **kw):
             return hasattr (obj, 'path')
     except DataObjectDoesNotExist:
         pass
-    except IrodsError:
-        raise
     except Exception:
         log.exception ("isfile %s", url)
     return False
@@ -211,8 +222,6 @@ def irods_isdir (url, **kw):
             return True
     except CollectionDoesNotExist:
         pass
-    except IrodsError:
-        raise
     except Exception:
         log.exception("isdir %s", url)
     return False
