@@ -1,7 +1,9 @@
 import os
 import logging
 import shutil
+import math
 from boto.s3.key import Key
+from filechunkio import FileChunkIO
 
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
@@ -37,9 +39,24 @@ def s3_cache_save(f, bucket, key):
         with open(cache_filename, 'wb') as fw:
             shutil.copyfileobj(f, fw)
 
-    k = Key(bucket)
-    k.key = key
-    k.set_contents_from_filename(cache_filename)
+    file_size = os.path.getsize(cache_filename)
+    if file_size < 60 * 1e6:
+        log.debug ("PUSH normal")
+        k = Key(bucket)
+        k.key = key
+        k.set_contents_from_filename(cache_filename)
+    else:
+        log.debug ("PUSH multi")
+        chunk_size = 52428800 #50MB
+        chunk_count = int(math.ceil(file_size / float(chunk_size)))
+        mp = bucket.initiate_multipart_upload(key)
+        for i in range(chunk_count):
+            offset = chunk_size * i
+            bytes = min(chunk_size, file_size - offset)
+            with FileChunkIO(cache_filename, 'r', offset=offset, bytes=bytes) as fp:
+                mp.upload_part_from_file(fp, part_num=i + 1)
+        mp.complete_upload()
+
     return cache_filename
 
 def s3_cache_delete(bucket, key):
@@ -65,3 +82,5 @@ def s3_push_file(fileobj, bucket , key):
 def s3_delete_file(bucket, key):
     s3_cache_delete(bucket, key)
 
+def s3_list(bucket, key):
+    return bucket.list(prefix=key, delimiter='/')
