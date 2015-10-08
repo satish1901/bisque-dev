@@ -941,9 +941,9 @@ class import_serviceController(ServiceController):
 
         # check if an image can be a series
         log.debug('process uf: %s', uf)
-        if mime == 'image/series' and uf.fileobj is not None:
+        if mime == 'image/series':
             filename = uf.localpath()
-            if filename is None:
+            if filename is None and uf.fileobj is not None:
                 log.debug('process, file object has no local path: [%s], move local', uf.fileobj)
                 filename = uf.ensurelocal( os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, shortuuid.uuid(), os.path.basename(uf.resource.get('name'))))
 
