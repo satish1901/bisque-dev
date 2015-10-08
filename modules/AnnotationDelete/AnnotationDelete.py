@@ -15,7 +15,7 @@ import logging
 logging.basicConfig(filename='AnnotationDelete.log', level=logging.DEBUG)
 log = logging.getLogger('AnnotationDelete')
 
-def delete(image, text_old, text_new, ann_type='gobject', ann_attr='type'):
+def delete(image, text_old, ann_type='gobject', ann_attr='type'):
     modified = []
     gobs = image.xpath('//%s[@%s="%s"]'%(ann_type, ann_attr, text_old))
     for g in gobs:
@@ -37,7 +37,6 @@ class AnnotationDelete(object):
         annotation_type      = pars['annotation_type']
         annotation_attribute = pars['annotation_attribute']
         value_old            = pars['value_old']
-        value_new            = pars['value_new']
 
         bq.update_mex('Starting')
         mex_id = mex_url.split('/')[-1]
@@ -60,7 +59,7 @@ class AnnotationDelete(object):
                 url = r.text
                 image = bq.fetchxml (url, view='deep')
                 uuid = image.get('resource_uniq')
-                modified = delete(image, value_old, value_new, ann_type=annotation_type, ann_attr=annotation_attribute)
+                modified = delete(image, value_old, ann_type=annotation_type, ann_attr=annotation_attribute)
                 if len(modified)>0:
                     bq.postxml(url, image, method='PUT')
                     total = total + len(modified)
