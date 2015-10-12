@@ -222,6 +222,7 @@ class LocalDriver (StorageDriver):
         :param readonly: set repo readonly
         """
         self.mount_url = posixpath.join(mount_url,'')
+        self.mount_path = posixpath.join (url2localpath (self.mount_url),'')
         datadir = data_url_path()
         for key, value in kw.items():
             setattr(self, key, string.Template(value).safe_substitute(datadir=datadir))
@@ -262,6 +263,11 @@ class LocalDriver (StorageDriver):
         localpath = url2localpath (storeurl)
         log.debug ("checking %s", tounicode(localpath))
         return os.path.exists(localpath) and localpath2url(localpath)
+
+    def relative(self, storeurl):
+        path = url2localpath (self.valid (storeurl))
+        log.debug ("MOUNT %s PATH %s",self.mount_path,  path)
+        return  path.replace (self.mount_path, '')
 
     # New interface
     def push(self, fp, storeurl, uniq=None):
@@ -316,10 +322,13 @@ class LocalDriver (StorageDriver):
         return Blobs(path=path, sub=sub, files=files)
 
 
-    def list(self, storeurl):
+    def list(self, storeurl, view=None, limit=None, offset=None):
         "list contents of store url"
         path, sub = self._local (storeurl)
-        return  [ posixpath.join (storeurl, f)  for f in  os.listdir (path) ]
+
+        return  [ "%s%s" % (posixpath.join (storeurl, f),
+                            '' if os.path.isfile (os.path.join(path, f)) else '/')
+                  for f in  os.listdir (path) ]
 
     def delete(self, storeurl):
         #ident,_ = split_subpath(ident) # reference counting required?

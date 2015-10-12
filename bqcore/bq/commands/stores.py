@@ -223,3 +223,21 @@ def _update_mounts(drivers):
 
     if update:
         return data_service.update(user_root, new_resource=user_root, replace=False, view='full')
+
+
+
+def move_stores(from_store, to_store, username = None):
+    """ Update stores to use current datadir specifications """
+    if username is not None:
+        users = [ username ]
+    else:
+        users  = [ x.get ('name') for x in data_service.query('user', wpublic=1) ]
+
+
+    from bq.core.service import service_registry
+    file_service = service_registry.find_service ("mnt")
+    drivers = load_default_drivers()
+    for user in users:
+        print ("MOVING %s -> %s for %s ", from_store, to_store, user)
+        with identity.as_user(user):
+            file_service.move (from_store, to_store)
