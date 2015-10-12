@@ -7,6 +7,7 @@ from filechunkio import FileChunkIO
 
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
+from bq.util.copylink import copy_link
 S3_CACHE = data_path('s3_cache')
 
 class S3Error(Exception):
@@ -33,8 +34,9 @@ def s3_cache_save(f, bucket, key):
     #patch for no copy file uploads - check for regular file or file like object
     abs_path_src = os.path.abspath(f.name)
     if os.path.isfile(abs_path_src):
-        f.close() #patch to make file move possible on windows
-        shutil.move(abs_path_src, cache_filename)
+        #f.close() #patch to make file move possible on windows
+        #shutil.move(abs_path_src, cache_filename)
+        copy_link (abs_path_src, cache_filename)
     else:
         with open(cache_filename, 'wb') as fw:
             shutil.copyfileobj(f, fw)
