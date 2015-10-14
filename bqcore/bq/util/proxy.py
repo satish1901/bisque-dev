@@ -152,7 +152,7 @@ class Proxy(object):
             return [ res.content ]
         except Exception:
             log.exception('Failed')
-            start_response(502, [])
+            start_response("502", [])
             return ['Bad Gateway']
 
         # conn.request(environ['REQUEST_METHOD'],
