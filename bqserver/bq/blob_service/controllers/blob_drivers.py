@@ -452,7 +452,7 @@ class S3Driver(StorageDriver):
     scheme = 's3'
 
     def __init__(self, mount_url=None, credentials = None,
-                 bucket_id=None, location=Location.USWest,
+                 bucket_id=None, location=None,
                  readonly = False, **kw):
         """Create a iRods storage driver:
 
@@ -469,7 +469,7 @@ class S3Driver(StorageDriver):
         else:
             log.error ('need credentials for S3 store')
 
-        self.location = location
+        self.location = location or Location.USWest
         self.bucket_id = bucket_id #config.get('bisque.blob_service.s3.bucket_id')
         self.bucket = None
         self.conn = None
