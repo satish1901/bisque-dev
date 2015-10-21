@@ -18,6 +18,12 @@ log = logging.getLogger('bq.blobs.storage.s3')
 if not os.path.exists(S3_CACHE):
     _mkdir (S3_CACHE)
 
+
+def s3_parse_url(url):
+    "Read an s3 url, return a bucket and key"
+
+
+
 def s3_cache_fetch(bucket, key):
     cache_filename = os.path.join(S3_CACHE, key)
     if not os.path.exists(cache_filename):
