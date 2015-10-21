@@ -65,6 +65,7 @@ class IrodsConnection():
             raise IrodsError("missing parameter %s", ",".join ( k for k,v in args.items() if v is None))
 
         self.session = iRODSSession(**args)
+        self.irods_url = urlparse.urlunparse(list(self.irods_url)[:2] + ['']*4)
 
     def open(self):
         pass
@@ -134,14 +135,14 @@ def irods_cache_save(f, path, *dest):
 
 def irods_fetch_file(url, **kw):
     try:
-        ic = IrodsConnection(url, **kw)
-        log.debug( "irods_fetching %s -> %s" , url, ic.path)
-        localname = irods_cache_fetch(ic.path)
-        if localname is None:
-            obj = ic.session.data_objects.get (ic.path)
-            with obj.open ('r') as f:
-                localname = irods_cache_save(f, ic.path)
-        return localname
+        with IrodsConnection(url, **kw) as ic:
+            log.debug( "irods_fetching %s -> %s" , url, ic.path)
+            localname = irods_cache_fetch(ic.path)
+            if localname is None:
+                obj = ic.session.data_objects.get (ic.path)
+                with obj.open ('r') as f:
+                    localname = irods_cache_save(f, ic.path)
+            return localname
     except Exception, e:
         log.exception ("fetch of %s", url)
         raise IrodsError("can't read irods url %s" % url)
@@ -231,12 +232,14 @@ def irods_fetch_dir(url, **kw):
     try:
         result = []
         with IrodsConnection(url, **kw) as ic:
-            coll = ic.session.collections.get (ic.path)
-            for nm in coll.subcollections:
-                result.append('/'.join([ic.base_url, ic.path[1:], nm, '']))
+            dirpath = ic.path.rstrip ('/')
+            log.debug ("listing %s", dirpath)
+            coll = ic.session.collections.get (dirpath)
+            for sc in coll.subcollections:
+                result.append('/'.join([ic.irods_url, ic.path[1:], sc.name, '']))
 
-            for nm, resource in  coll.data_objects:
-                result.append( '/'.join([ic.base_url, ic.path[1:], nm]))
+            for resource in  coll.data_objects:
+                result.append( '/'.join([ic.irods_url, ic.path[1:], resource.name]))
         return result
     except Exception:
         log.exception ('fetch_dir %s', url)
