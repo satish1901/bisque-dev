@@ -4,7 +4,7 @@
 #
 
 import os,sys
-from subprocess import call
+from subprocess import call, check_call
 import shutil
 import functools
 from bq.util.configfile import ConfigFile
@@ -121,6 +121,18 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
     ext_map = { 'nt' : '.exe' }
     if main_path.endswith (".m"):
         main_path = main_path [0:-2]
+
+    #try:
+    #    script_name='matlab_launcher'
+    #    template = Template(filename=os.path.abspath (os.path.join('..','..', 'config','templates','matlab_launcher.tmpl')))
+    #    with open(script_name, 'wb') as f:
+    #        f.write(template.render())
+    #        os.chmod (script_name, 0744)
+    #except Exception,e:
+    #    log.exception ("while createing matlab_launcher")
+    #    print ("Could not create matlab launcher script %s" % e)
+
+
     main_name = os.path.basename(main_path)
     if bisque_deps:
         files.extend (BISQUE_DEPS)
@@ -202,6 +214,22 @@ def require(expression, params, throws = True):
         raise SetupError("required expression failed %s" % expression)
 
     return valid
+
+
+def docker_setup (container, params):
+    print params
+    # Must be lowercase 
+    container = container.lower()
+    if 'runtime.docker_hub' in params and os.path.exists ('Dockerfile'):
+        hub = params.get ('runtime.docker_hub', None)
+        if hub is not None and hub not in container:
+            container = '%s/%s' % (hub, container)
+
+        print "Calling", " ".join (['docker', 'build', '-q', '-t', container , '.'])
+        check_call(['docker', 'build', '-q', '-t',  container, '.'])
+        if hub:
+            check_call(['docker', 'push', container])
+
 
 def read_config(filename):
     return ConfigFile(filename).get (None, asdict = True)

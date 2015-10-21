@@ -214,8 +214,8 @@
     </tag>
 
     <tag name="interface">
-        <tag name="javascript" type="file" value="webapp.js" />
-        <tag name="css" type="file" value="webapp.css" />
+        <tag name="javascript" type="file" value="public/webapp.js" />
+        <tag name="css" type="file" value="public/webapp.css" />
     </tag>
 
     <tag name="title" value="Detector of nuclei in 3D/4D" />

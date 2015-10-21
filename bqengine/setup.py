@@ -41,5 +41,6 @@ setup(
 
     [bq.commands]
     module = bq.engine.commands.module_admin:module_admin
+    engine = bq.engine.commands.engine_admin:engine_admin
     """,
 )

@@ -70,7 +70,7 @@ def local_xml_copy(root):
 
 class MexParser(object):
 
-    def prepare_inputs (self, module, mex):
+    def prepare_inputs (self, module, mex, token = None):
         '''Scan the module definition and the mex and match input
         formal parameters creating a list of actual parameters in the
         proper order (sorted by index)
@@ -79,7 +79,7 @@ class MexParser(object):
 
         # ? dima - client_server, look at any find_service('client_service') in any api file
         mex_specials = { 'mex_url'      : mex.get('uri'),
-                         'bisque_token' : identity.mex_authorization_token(),
+                         'bisque_token' : token or identity.mex_authorization_token(),
                          'module_url'   : module.get ('uri'),
                          #'bisque_root'  : '',
                          #'client_server': '',
