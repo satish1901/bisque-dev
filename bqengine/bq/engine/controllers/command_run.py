@@ -194,7 +194,7 @@ class BaseRunner(object):
             if env is not None:
                 envs.append (env(runner = self))
                 continue
-            log.debug ('Unknown environment: %s ignoring' % name)
+            log.warn ('Unknown environment: %s ignoring' % name)
         self.environments = envs
         log.info ('created environments %s' % envs)
 
@@ -268,7 +268,7 @@ class BaseRunner(object):
         # Pull out arguments from mex
         if self.mex_tree is not None and self.module_tree is not None:
             mexparser = MexParser()
-            mex_inputs  = mexparser.prepare_inputs(self.module_tree, self.mex_tree)
+            mex_inputs  = mexparser.prepare_inputs(self.module_tree, self.mex_tree, self.bisque_token)
             module_options = mexparser.prepare_options(self.module_tree, self.mex_tree)
 
             argument_style = module_options.get('argument_style', 'positional')

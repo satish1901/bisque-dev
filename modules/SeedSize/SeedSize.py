@@ -31,9 +31,9 @@ class SeedSize(object):
 
         self.bq.update_mex('initializing')
         if self.is_dataset:
-            results = fetch_dataset(self.bq, self.resource_url, self.images, True)
+            results = fetch_dataset(self.bq, self.resource_url, self.images)
         else:
-            results = fetch_image_pixels(self.bq, self.resource_url, self.images, True)
+            results = fetch_image_pixels(self.bq, self.resource_url, self.images)
 
         with open(self.image_map_name, 'wb') as f:
             pickle.dump(results, f)
