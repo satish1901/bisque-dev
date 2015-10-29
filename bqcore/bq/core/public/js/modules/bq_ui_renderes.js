@@ -1108,6 +1108,7 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
         this.element = template.element;
         this.attribute = template.attribute;
         this.dataset = template.dataset;
+        this.editable = template.editable || false;
 
         var reference_dataset = this.module.inputs_index[template.reference_dataset];
         if (reference_dataset && reference_dataset.renderer) {
@@ -1150,12 +1151,15 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
             displayField: 'Value',
             valueField: 'Value',
 
-            forceSelection : true,
-            editable : false,
+            forceSelection : !this.editable,
+            editable : this.editable,
 
             listeners: {
                 scope: this,
                 select: function(field, value) {
+                    this.resource.value = field.getValue();
+                },
+                change: function(field, value) {
                     this.resource.value = field.getValue();
                 },
                 afterrender : function(o) {
@@ -1230,20 +1234,20 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
         } // for types
 
         this.store.loadData(types);
-        this.setValue(undefined);
-        this.selected_value = undefined;
+        if (!this.editable) {
+            this.setValue(undefined);
+        }
     },
 
     select: function(resource) {
-        var value = parseInt(resource.value);
-        this.selected_value = value;
-        this.setValue( value );
+        this.setValue( resource.value );
     },
 
     isValid: function() {
         if (!this.resource.value) {
-            var template = resource.template || {};
-            var msg = template.fail_message || 'You need to select an option!';
+            var template = this.resource.template || {},
+                msg = template.fail_message || 'You need to select an option!';
+            if (template.allowBlank) return true;
             BQ.ui.tip(this.getId(), msg, {anchor:'left',});
             return false;
         }
