@@ -475,8 +475,7 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  qfilter=None, **kw)
 
 
     docnodes = DBSession.query(Taggable).filter(qfilter)
-    docnodes = resource_permission(docnodes)
-    #docnodes = docnodes.order_by(Taggable.id)
+    #docnodes = resource_permission(docnodes)
     #log.debug("reosurce2nodes: %s",  str(docnodes))
     #log.debug('resource2nodes: %s %s doc %s' , str(docnodes), dbo.id , doc_id)
     nodes = {}
@@ -622,11 +621,12 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
         #v = filter (lambda x: x != 'full', view)
         log.debug ('FULL %s', kw)
         q = dbo.childrenq
-        q = resource_permission (q)
+        #q = resource_permission (q)
         if kw.has_key('offset'):
             q = q.offset (int(kw.pop('offset')))
         if kw.has_key('limit'):
             q = q.limit (int(kw.pop('limit')))
+        log.debug ("FULL QUERY: %s" , q)
         tl = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in q ]
         #gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
 #    elif "deep" in view:
@@ -940,5 +940,3 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
 #    r = etree.Element ('resource')
 #    q = DBSession.query(Image)[0:10]
 #    return db2tree_iter (iter(q), r, view=[], baseuri = 'http://host' )
-
-

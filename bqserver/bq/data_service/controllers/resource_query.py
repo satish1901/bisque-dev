@@ -358,12 +358,10 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     else:
         visibility = (document.perm == PUBLIC)
 
-    dv = DBSession.query(document).filter (visibility).with_labels().subquery()
-    dv = aliased (Taggable, dv)
-
-    return query.filter(Taggable.document_id == dv.id)
-    #v = DBSession.query(Taggable).filter(visibility).subquery()
-    #return query.filter(Taggable.document_id == v.c.id)
+    return query.filter(visibility)
+    #dv = DBSession.query(document).filter (visibility).with_labels().subquery()
+    #dv = aliased (Taggable, dv)
+    #return query.filter(Taggable.document_id == dv.id)
 
 
 def prepare_tag_expr (query, tag_query=None):
@@ -519,6 +517,7 @@ class fobject(object):
         self.vertices = []
         self.resource_name  = None
         self.resource_value = None
+        self.type = None
         self.__dict__.update(**kw)
 
     @classmethod
@@ -585,7 +584,7 @@ def tags_special(dbtype, query, params):
             query = DBSession.query(func.count(columns[-1]).label('count'), *columns).filter (dbclass.document_id == sq1.c.taggable_document_id)
             query =query.filter (*filters)
             query =query.group_by(*columns).order_by(*columns)
-            #log.debug ("FILTER %s" % query)
+            log.debug ("FILTER %s" % query)
             q = [ fobject(resource_type=dbclass.xmltag, **(dict ((name_map[k], v) for k,v in attr._asdict().items()))) for  attr in query]
             #q = []
             results.extend (q)
@@ -804,6 +803,7 @@ def resource_query(resource_type,
 
     if  permcheck :
         query = prepare_permissions(query, user_id, with_public = wpublic, action=action)
+        #query = prepare_readable_docs(query, user_id, with_public = wpublic)
     else:
         log.warn ("skipping permissions")
 
@@ -1041,6 +1041,7 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
 
                 if user  and is_admin(user):
                     # admins should never be added to acl for now.. no reason.
+                    log.debug ("sharing with an admin: ignored as has no effect")
                     continue
 
                 if  user is None:
@@ -1179,9 +1180,20 @@ def resource_delete(resource, user_id=None):
 def resource_types(user_id=None, wpublic=False):
     'return all toplevel resource types available to user'
     #names = [ x[0] for x in DBDBSession.query(Taggable.resource_type).distinct().all() ]
-    query = DBSession.query(Taggable).filter_by(parent=None)
-    query = prepare_permissions(query, user_id=user_id, with_public=wpublic)
-    vsall = query.distinct(Taggable.resource_type).order_by(Taggable.resource_type).all()
+
+    query = DBSession.query(Taggable.resource_type).filter(Taggable.resource_parent_id == None)
+    query = prepare_permissions( query, user_id, wpublic)
+    vsall = query.distinct().all()
+
+    #vsall = DBSession.query (Taggable.resource_type).filter (and_(Taggable.resource_parent_id == None, Taggable.document_id == doc_query.c.id)).distinct().all()
+
+    #vsall = DBSession.query (Taggable.resource_type).filter (and_(Taggable.resource_parent_id==None, exists ([Taggable.id]).where (Taggable.document_id == doc_query.c.id))).all()
+
+    #query = DBSession.query(Taggable.resource_type).filter_by(resource_parent_id=None).all()
+    #query = prepare_permissions(query, user_id=user_id, with_public=wpublic)
+    #vsall = query.distinct(Taggable.resource_type).order_by(Taggable.resource_type).all()
+    #vsall = DBSession.query (Taggable.resource_type).filter_by (resource_parent_id=None).distinct().all()
+
     # for sqlite (no distinct on)
     try:
         vsall = unique(vsall, lambda x: x.resource_type)
@@ -1190,7 +1202,6 @@ def resource_types(user_id=None, wpublic=False):
     except (IndexError, StopIteration):
         return []
     return vsall
-
 
 # def prepare_query_expr (query, resource_type, user_id, wpublic, parent, tag_query, **kw):
 #     name, dbtype = resource_type

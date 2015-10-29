@@ -45,7 +45,7 @@ class IrodsConnection(object):
         env = PARSE_NET.match(irods_url.netloc).groupdict()
 
         self.env = dict(
-            irodsUserName = user or env['user'], #or irods_env.getRodsUserName()
+            irodsUserName = user or env['user'] or '', #or irods_env.getRodsUserName()
             irodsHost  = host or env['host'], #or irods_env.getRodsHost()
             irodsPort  = str (port or env['port'] or '1247'), #or irods_env.getRodsPort() or 1247
             irodsZone = zone or 'iplant',
@@ -60,18 +60,21 @@ class IrodsConnection(object):
             if len(path):
                 zone = path[1]
             path = '/'.join(path)
-        self.irods_url = irods_url
         self.path = path
         self.auth_file = irods_cache_name ('/auth/%s-%s-%s-%s' % (self.env['irodsHost'],
                                                                  self.env['irodsPort'],
                                                                  self.env['irodsZone'],
                                                                  self.env['irodsUserName']))
         self.env ['irodsAuthFileName'] = self.auth_file
+        self.irods_url = urlparse.urlunparse(list(irods_url)[:2] + ['']*4)
 
 
     def open(self):
         if  os.path.exists (self.auth_file):
+            log.debug ("re-using auth file %s", self.auth_file)
             return self
+
+        log.debug ("initializing auth file %s", self.auth_file)
         p = self.popen (['iinit'] ,  stdin=subprocess.PIPE)
         p.communicate (input = self.password)
         p.wait()
@@ -102,12 +105,23 @@ class IrodsConnection(object):
         retcode = subprocess.call(args=args, env=env, **kw)
         return retcode
 
+    def check_output(self, args, **kw):
+        env = dict (os.environ)
+        env.update (self.env)
+        if 'env'  in kw:
+            env.update (kw.pop('env'))
+        log.debug ("calling %s with %s", args, env)
+        return subprocess.check_output(args=args, env=env, **kw)
+
+
+
+
     def popen(self, args, **kw):
         env = dict (os.environ)
         env.update (self.env)
         if 'env'  in kw:
             env.update (kw.pop('env'))
-        log.debug ("Popen with %s and %s", args, env)
+        log.debug ("Popen with %s and %s %s", args, env, self.env)
         p = subprocess.Popen(args=args, env=env, **kw)
         return p
 
@@ -148,7 +162,7 @@ def irods_cache_save(f, path, *dest):
 
 def irods_fetch_file(url, **kw):
     with IrodsConnection(url, **kw) as ic:
-        log.debug( "irods_fetching %s -> %s" , url, ic.path)
+        log.debug( "irods_fetch iget %s -> %s" , url, ic.path)
         localname = irods_cache_fetch(ic.path)
         if localname is None:
             localname = irods_cache_name (ic.path)
@@ -157,16 +171,17 @@ def irods_fetch_file(url, **kw):
 
 def irods_push_file(fileobj, url, savelocal=True, **kw):
     with IrodsConnection(url, **kw) as ic:
+        log.debug( "irods_push iput %s -> %s" , url, ic.path)
         localname = irods_cache_save(fileobj, ic.path)
         ic.check_cmd (['iput', localname, ic.path])
 
 def irods_delete_file(url, **kw):
     with IrodsConnection(url, **kw) as ic:
-        log.debug( "delete irods-path %s" %  ic.path)
+        log.debug( "irods_delete irm  %s" ,  ic.path)
         localname = irods_cache_fetch(ic.path)
         if localname is not None:
             os.remove (localname)
-        log.debug( "irods_delete %s -> %s" % (url, ic.path))
+        log.debug( "irods_delete %s -> %s" ,url, ic.path)
         ic.check_cmd  (['irm', ic.path])
 
 def irods_isfile (url, **kw):
@@ -175,3 +190,27 @@ def irods_isfile (url, **kw):
         if r == 0:
             return True
     return False
+
+def irods_isdir (url, **kw):
+    with IrodsConnection(url, **kw) as ic:
+        r = ic.cmd (["icd", ic.path])
+        if r == 0:
+            return True
+    return False
+
+def irods_fetch_dir(url, **kw):
+    try:
+        results = []
+        with IrodsConnection(url, **kw) as ic:
+            output = ic.check_output (["ils", ic.path]).strip().split ("\n")
+
+            log.debug ("GOT : %s", output)
+            # Skip the first line as it's the directory
+            for line in output[1:]:
+                line = line.split()[-1]
+                results.append (  '/'.join([ic.irods_url, ic.path[1:], line.strip()]))
+        return results
+    except subprocess.CalledProcessError:
+        log.exception ("problem while listing %s", ic.path)
+        #raise IrodsError ("bad listing")
+        return results

@@ -436,10 +436,11 @@ class HierarchicalCache(ResponseCache):
         query_names = self._resource_query_names(resource, user, 'tag_values', 'tag_query', 'tag_names', 'gob_types')
         log.info ("CACHE invalidate %s for %s %s:%s" , resource and resource.resource_uniq , user, cache_names, query_names)
         # invalidate cached resource varients
-        def delete_matches (files, names, user):
+        def delete_matches (files, names, mangle = lambda x:x):
             for f in list(files):
-                cf = f.split(',',1)[-1] if user is None else f
-                if any ( cf.startswith(qn) for qn in names ):
+                #cf = f.split(',',1)[-1] if user is None else f
+                cf = mangle (f)
+                if any ( cf.startswith(mangle (qn)) for qn in names ):
                     try:
                         os.unlink (os.path.join(self.cachepath, f))
                     except OSError:
@@ -453,16 +454,17 @@ class HierarchicalCache(ResponseCache):
         # Delete user matches
         try:
             log.debug ('cache delete for user')
-            delete_matches ( files, names, user)
+            delete_matches ( files, names)
+
+            # Split off user and remove global queries
+            # NOTE: we may only need to do this when resource invalidated was "published"
+            # # value queries of shared datasets are a problem
+            if True: # resource.permission == 'published':
+                log.debug ('cache delete for all')
+                #names = [ qnames.split(',',1)[-1] for qnames in names]
+                delete_matches ( files, names, lambda x: x.split(',', 1)[-1])
         except Exception:
             log.exception ("Problem while deleting files")
-
-        # Split off user and remove global queries
-        # NOTE: we may only need to do this when resource invalidated was "published"
-        if True: # resource.permission == 'published':
-            log.debug ('cache delete for all')
-            names = [ qnames.split(',',1)[-1] for qnames in names]
-            delete_matches ( files, names, None)
 
 
 

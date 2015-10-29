@@ -397,7 +397,8 @@ class MountServer(TGController):
 
     def _load_root_mount(self):
         "fetch the root mount and submounts"
-        root = data_service.query('store', resource_unid='(root)', view='full', cache=False)
+        #root = data_service.query('store', resource_unid='(root)', view='full', cache=False)
+        root = data_service.query('store', resource_unid='(root)', view='full')
         #root = data_service.query('store', resource_unid='(root)', view='short', cache=False)
         if len(root) == 1:
             return self._create_default_mounts(root[0])
