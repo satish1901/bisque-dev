@@ -76,18 +76,17 @@ __all__ = [ 'make_storage_driver' ]
 
 supported_storage_schemes = [ '', 'file' ]
 
-# try:
-#     from bq.util import irods_icmd as irods
-#     supported_storage_schemes.append('irods')
-# except ImportError:
-#     pass
-
 try:
-    from bq.util import irods_client as irods
+    from bq.util import irods_icmd as irods
     supported_storage_schemes.append('irods')
 except ImportError:
-    log.warn ("Can't import irods: irods storage not supported")
-    pass
+    try:
+        from bq.util import irods_client as irods
+        supported_storage_schemes.append('irods')
+    except ImportError:
+        log.warn ("Can't import irods: irods storage not supported")
+        pass
+
 
 try:
     import boto
@@ -436,6 +435,7 @@ class IrodsDriver(StorageDriver):
 
     def list(self, storeurl):
         "list contents of store url"
+        return irods.irods_fetch_dir (storeurl, user=self.user, password=self.password)
 
     def delete(self, irods_ident):
         try:
