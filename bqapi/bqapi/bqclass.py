@@ -191,8 +191,40 @@ class BQResource (BQNode):
     add_gob = addGObject
 
 
-    def findall (xpath):
-        pass
+    def findall (self, name, limit=None):
+        "find all name that match, options limit search tag, gobject or a kid"
+        limit = limit or  ['tag', 'gobject', 'kid']
+        results =[]
+        if 'tag' in limit:
+            for tg in self.tags:
+                if tg.name == name:
+                    results.append( tg )
+        if 'gobject' in limit:
+            for tg in self.gobjects:
+                if tg.name == name:
+                    results.append(  tg )
+        if 'kid' in limit:
+            for tg in self.kids:
+                if tg.name == name:
+                    results.append ( tg )
+        return results
+
+    def find(self, name, limit=None):
+        "Find first element and return options limit search tag, gobject or a kid"
+        limit = limit or  ['tag', 'gobject', 'kid']
+        if 'tag' in limit:
+            for tg in self.tags:
+                if tg.name == name:
+                    return tg
+        if 'gobject' in limit:
+            for tg in self.gobjects:
+                if tg.name == name:
+                    return tg
+        if 'kid' in limit:
+            for tg in self.kids:
+                if tg.name == name:
+                    return tg
+
 
     # def tag(self, name):
     #     results = []

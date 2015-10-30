@@ -4,9 +4,10 @@
 #
 
 import os,sys
-from subprocess import call, check_call
 import shutil
 import functools
+import string
+from subprocess import call, check_call
 from bq.util.configfile import ConfigFile
 from bq.util.copylink import copy_link
 from bq.util.paths import config_path
@@ -216,21 +217,49 @@ def require(expression, params, throws = True):
     return valid
 
 
-def docker_setup (container, params):
-    print params
+DOCKERFILE="""FROM ${base}
+MAINTAINER ${maintainer}
+WORKDIR /module
+$copy
+CMD  [ "${command}" ]
+"""
+
+def docker_setup (image, command, base, params):
+    #print "PARAMS:", params
+
+    module_config = read_config('runtime-module.cfg', "command")
+    #print "MODULE", module_config
+
     # Must be lowercase 
-    container = container.lower()
-    if 'runtime.docker_hub' in params and os.path.exists ('Dockerfile'):
-        hub = params.get ('runtime.docker_hub', None)
-        if hub is not None and hub not in container:
-            container = '%s/%s' % (hub, container)
+    image = image.lower()
+    if params.get ('docker.enabled', '').lower() not in ['1', 'true', 't']:
+        return 
+    if not os.path.exists ('Dockerfile'):
+        files = module_config.get ('files','')
+        if files:
+            files = "COPY %s /module/" % " ".join ([ x.strip() for x in files.split (",") if os.path.exists(x.strip()) ])
 
-        print "Calling", " ".join (['docker', 'build', '-q', '-t', container , '.'])
-        check_call(['docker', 'build', '-q', '-t',  container, '.'])
-        if hub:
-            check_call(['docker', 'push', container])
+        with open('Dockerfile', 'w') as f:
+            maintainer = params.get ('docker.maintainer', 'nobody@example.com')
+            base = params.get ('docker.image.%s' % base, base)
+            f.write (string.Template (DOCKERFILE).safe_substitute(base=base, 
+                                                                  command=command, 
+                                                                  maintainer=maintainer,
+                                                                  copy = files))
+                     
+    print "Calling", " ".join (['docker', 'build', '-q', '-t', image , '.'])
+    check_call(['docker', 'build', '-q', '-t',  image, '.'])
+    hub = params.get ('docker.hub', None)
+    if hub:
+        hub_image = '%s/%s' % (hub, image)
+        check_call(['docker', 'tag', '-f', image, hub_image])
+        check_call(['docker', 'push', hub_image])
 
 
-def read_config(filename):
-    return ConfigFile(filename).get (None, asdict = True)
+def read_config(filename, section= None):
+    if not os.path.exists (filename):
+        filename = config_path(filename)
+
+    print "READING", filename
+    return ConfigFile(filename).get (section, asdict = True)
 

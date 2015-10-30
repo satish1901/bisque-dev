@@ -34,7 +34,7 @@ class RootTip(object):
         results = fetch_image_planes(self.bq, self.resource_url, '.')
 
         # extract gobject inputs
-        tips = self.bq.mex.tag('inputs').tag('image_url').gob('tips')
+        tips = self.bq.mex.find('inputs', 'tag').find('image_url', 'tag').find('tips', 'gobject')
         with open('inputtips.csv', 'w') as TIPS:
             for point in tips.gobjects:
                 print >>TIPS, "%(y)s, %(x)s" % dict(x=point.vertices[0].x,y=point.vertices[0].y)
@@ -124,20 +124,15 @@ class RootTip(object):
         if self.resource_url is None:
             parser.error('Need a resource_url')
 
-
         if not args :
-            args = ['setup', 'start', 'teardown']
+            commands = ['setup', 'start', 'teardown']
+        else:
+            commands = [ args ]
 
         try:
-            if 'setup' in args:
-                command = 'setup'
-                self.setup()
-            if 'start' in args:
-                command = 'start'
-                self.start()
-            if 'teardown' in args:
-                command = 'teardown'
-                self.teardown()
+            for command in commands:
+                command = getattr(self, command)
+                r = command()
         except Exception, e:
             logging.exception ("problem during %s" % command)
             self.bq.fail_mex(msg = "Exception during %s: %s" % (command,  e))

@@ -4,6 +4,7 @@ import os,sys
 import subprocess 
 import logging
 
+from bq.util.paths import config_path
 from bq.util.configfile import ConfigFile
 from module_env import ModuleEnvironmentError
 from command_run import CommandRunner
@@ -59,11 +60,19 @@ class ModuleRunner(object):
         log.debug('Module runners: %s'%runners)
         self.module_runners = [r.strip() for r in runners.split(',')]
 
-        if os.path.exists('runtime-bisque.cfg'):
-            cfg = ConfigFile('runtime-bisque.cfg')
+        runtime_bisque = 'runtime-bisque.cfg'
+        if not os.path.exists(runtime_bisque):
+            runtime_bisque = config_path (runtime_bisque)
+
+        if os.path.exists (runtime_bisque):
+            cfg = ConfigFile(runtime_bisque)
             runners = cfg.get(None, 'runtime.platforms')
             log.debug('System runners: %s'%runners)
             self.system_runners = [r.strip() for r in runners.split(',')]
+        else:
+            log.warn ("Could not file runtime-bisque.cfg") 
+            # Default to module runners ?  They may not be availble 
+            self.system_runners = self.module_runners
 
         # Determine best platform for module by comparing system platforms 
         # and module platforms.  The platforms are listed in order

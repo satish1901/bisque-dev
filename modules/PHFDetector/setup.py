@@ -1,9 +1,10 @@
 # Install script for PHFDetector
 import sys
-from bq.setup.module_setup import matlab_setup, read_config
+from bq.setup.module_setup import matlab_setup, read_config, docker_setup
 
 def setup(params, *args, **kw):
-    return matlab_setup('PHFDetector', params=params)
+    matlab_setup('PHFDetector', params=params)
+    docker_setup('phfdetector', 'PHFDetector', 'matlab_runtime', params=params)
     
 if __name__ =="__main__":
     params = read_config('runtime-bisque.cfg')

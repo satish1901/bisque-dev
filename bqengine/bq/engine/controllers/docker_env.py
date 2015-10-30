@@ -11,7 +11,7 @@ from module_env import BaseEnvironment, ModuleEnvironmentError
 
 DOCKER_RUN="""#!/bin/bash
 
-exec docker run -v $(pwd):/module ${DOCKER_IMAGE} $@
+exec docker run --rm  -v $(pwd):/module ${DOCKER_IMAGE} $@
 """
 
 class DockerEnvironment(BaseEnvironment):
@@ -38,7 +38,7 @@ class DockerEnvironment(BaseEnvironment):
     matlab_launcher = ""
 
     def process_config (self, runner, **kw):
-        self.docker_hub = runner.config['runtime.docker_hub']
+        self.docker_hub = runner.config['docker.hub']
         self.docker_image = runner.config.get ('docker.image', '')
         #self.matlab_launcher = runner.config.get('runtime.matlab_launcher', None)
         #if self.matlab_launcher is not None and not os.path.exists(self.matlab_launcher):

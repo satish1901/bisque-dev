@@ -25,7 +25,7 @@ for p = 1:NF
         % get the tip
         tip = getTip(B);
         TTT = [TTT; tip];
-        SAM = interp2(B,X1 + tip(2),X2 + tip(1));
+        SAM = interp2(im2double(B),X1 + tip(2),X2 + tip(1));
         fidx = find(SAM);
         [SIM U BV L COEFFS ERR] = PCA_FIT([X1(fidx) X2(fidx)],2);
         % trace the midline       
