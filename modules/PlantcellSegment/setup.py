@@ -3,7 +3,8 @@ import sys
 from bq.setup.module_setup import matlab_setup, read_config
 
 def setup(params, *args, **kw):
-    return matlab_setup('PlantcellSegment', params=params)
+    matlab_setup('PlantcellSegment', params=params)
+    matlab_setup('plantcellsegment', 'PlantcellSegment', 'matlab_runtime', params=params)
     
 if __name__ =="__main__":
     params = read_config('runtime-bisque.cfg')

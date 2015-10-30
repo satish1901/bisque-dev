@@ -96,19 +96,14 @@ class RootTip(object):
 
 
         if not args :
-            args = ['setup', 'start', 'teardown']
-
+            commands = ['setup', 'start', 'teardown']
+        else:
+            commands = [ args ]
 
         try:
-            if 'setup' in args:
-                command = 'setup'
-                self.setup()
-            if 'start' in args:
-                command = 'start'
-                self.start()
-            if 'teardown' in args:
-                command = 'teardown'
-                self.teardown()
+            for command in commands:
+                command = getattr(self, command)
+                r = command()
         except Exception, e:
             logging.exception ("problem during %s" % command)
             self.bq.fail_mex(msg = "Exception during %s: %s" % (command,  e))

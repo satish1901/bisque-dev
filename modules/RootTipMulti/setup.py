@@ -6,7 +6,7 @@ from bq.setup.module_setup import matlab_setup, python_setup, read_config, docke
 def setup(params, *args, **kw):
     python_setup("RootTipMulti.py", params)
     matlab_setup('matlab/maizeG.m', bisque_deps=False, params=params)
-    docker_setup('roottipmulti')
+    docker_setup('roottipmulti', 'RootTipMulti', 'matlab_runtime', params=params)
     
 if __name__ =="__main__":
     params = read_config('runtime-bisque.cfg')

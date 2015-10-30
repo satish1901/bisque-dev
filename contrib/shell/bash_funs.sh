@@ -3,16 +3,22 @@
 BISQUE=/home/bisque
 MATLAB_ROOT=/opt/matlab
 
+function realpath { echo $(cd $(dirname $1); pwd)/$(basename $1); } 
+
 bq-activate() {
   # Activate the bisque environment 
   # 
   local bq=${1:-$BISQUE}
   cd $bq
-  source bqenv/bin/activate
+  if [ "$VIRTUAL_ENV" == ""] ; then 
+      source bqenv/bin/activate
+  fi
+  export BISQUE_ROOT=$(realpath $bq)
 }
 
 bq-deactivate() {
   deactivate
+  unset BISQUE_ROOT
 }
 
 matlab-activate() {

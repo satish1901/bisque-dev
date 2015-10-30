@@ -4,7 +4,8 @@ from tg import config
 
 def bisque_root():
     root = os.getenv('BISQUE_ROOT')
-    return (root or config.get('bisque.paths.root') or '').replace('\\', '/')
+    return  (root or config.get('bisque.paths.root') or '').replace('\\', '/')
+
 
 def bisque_path(*names):
     'return a path constructed from the installation path'

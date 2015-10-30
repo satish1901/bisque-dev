@@ -955,13 +955,14 @@ def install_modules(params):
         print "No modules were found on the system. Please install sample modules from http://biodev.ece.ucsb.edu/binaries/depot/bisque-modules.tgz"
         return params
 
+    environ = dict(os.environ)
+    environ.pop ('DISPLAY', None) # Makes matlab hiccup
+    environ['BISQUE_ROOT'] = os.getcwd()
     for bm in os.listdir (bisque_path('modules')):
         modpath = bisque_path('modules', bm)
-        environ = dict(os.environ)
-        environ.pop ('DISPLAY', None) # Makes matlab hiccup
-        if os.path.isdir(modpath) and os.path.exists(os.path.join(modpath, "runtime-module.cfg")):
-            cfg_path = os.path.join(modpath, 'runtime-bisque.cfg')
-            copy_link(RUNTIME_CFG, cfg_path)
+        # if os.path.isdir(modpath) and os.path.exists(os.path.join(modpath, "runtime-module.cfg")):
+        #     cfg_path = os.path.join(modpath, 'runtime-bisque.cfg')
+        #     copy_link(RUNTIME_CFG, cfg_path)
         if os.path.exists(os.path.join(modpath, 'setup.py')):
             cwd = os.getcwd()
             os.chdir (modpath)
@@ -1174,11 +1175,11 @@ def install_runtime(params, cfg = RUNTIME_CFG):
 
     update_site_cfg(params, section=None, cfg=cfg)
 
-    for bm in os.listdir (bisque_path('modules')):
-        modpath = bisque_path('modules', bm)
-        if os.path.isdir(modpath) and os.path.exists(os.path.join(modpath, "runtime-module.cfg")):
-            cfg_path = os.path.join(modpath, 'runtime-bisque.cfg')
-            copy_link(RUNTIME_CFG, cfg_path)
+    # for bm in os.listdir (bisque_path('modules')):
+    #     modpath = bisque_path('modules', bm)
+    #     if os.path.isdir(modpath) and os.path.exists(os.path.join(modpath, "runtime-module.cfg")):
+    #         cfg_path = os.path.join(modpath, 'runtime-bisque.cfg')
+    #         copy_link(RUNTIME_CFG, cfg_path)
     try:
         if not os.path.exists(staging):
             os.makedirs(staging)

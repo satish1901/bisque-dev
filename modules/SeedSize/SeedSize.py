@@ -167,41 +167,49 @@ class SeedSize(object):
         parser  = optparse.OptionParser()
         parser.add_option('-d','--debug', action="store_true")
         parser.add_option('-n','--dryrun', action="store_true")
-        parser.add_option('--resource_url')
-        parser.add_option('--mex_url')
-        parser.add_option('--staging_path')
-        parser.add_option('--auth_token')
-        parser.add_option('--credentials')
+        #parser.add_option('--resource_url')
+        #parser.add_option('--mex_url')
+        #parser.add_option('--staging_path')
+        #parser.add_option('--bisque_token')
+        #parser.add_option('--credentials')
+
+        # Parse named arguments from list 
+
 
         (options, args) = parser.parse_args()
+        named_args =dict( [ y for y in [ x.split ('=') for x in args ] if len (y) == 2] )
+        args  =  [  x for x in args if '=' not in x  ] 
+
+        staging_path = '.'
+        self.auth_token = named_args.get ('bisque_token')
+        self.image_map_name = os.path.join(staging_path, IMAGE_MAP)
+        self.resource_url = named_args.get ('image_url')
+        self.mex_url = named_args.get ('mex_url') 
+        self.is_dataset = 'dataset' in self.resource_url
+        self.images = os.path.join(staging_path, 'images') + os.sep
 
 
-        if options.auth_token:
-            self.bq = BQSession().init_mex(options.mex_url, options.auth_token)
+        if self.auth_token:
+            self.bq = BQSession().init_mex(self.mex_url, self.auth_token)
         else:
             user,pwd = options.credentials.split(':')
             self.bq = BQSession().init_local(user,pwd)
 
-        if len(args) != 1 or options.resource_url is None:
-            parser.error('Need a command and resource_url')
+        if len(args) == 1:
+            commands = [ args.pop(0)]
+        else:
+            commands =['setup','start', 'teardown']
 
-        command = args.pop(0)
-
-        if command not in ('setup','teardown', 'start'):
-            parser.error('Command must be start, setup or teardown')
+        #if command not in ('setup','teardown', 'start'):
+        #    parser.error('Command must be start, setup or teardown')
 
 
         # maltab code requires trailing slash..
-        self.images = os.path.join(options.staging_path, 'images') + os.sep
-        self.image_map_name = os.path.join(options.staging_path, IMAGE_MAP)
-        self.resource_url = options.resource_url
-        self.config = options
-        self.mex_url = self.bq.mex.uri
-        self.is_dataset = 'dataset' in self.resource_url
 
         try:
-            command = getattr(self, command)
-            r = command()
+            for command in commands:
+                command = getattr(self, command)
+                r = command()
         except Exception, e:
             logging.exception ("problem during %s" % command)
             self.bq.fail_mex(msg = "Exception during %s: %s" % (command,  str(e)))

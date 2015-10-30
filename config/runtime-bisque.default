@@ -9,6 +9,13 @@ runtime.matlab_home =
 # will be replaced with the system version if unmodified
 runtime.matlab_launcher = config/templates/matlab_launcher_SYS.tmpl
 
+docker.enabled = false
+# A local hub where to psuh containers to
+docker.hub = gims.iplantcollaborative.org:5000
+# A matlab runtime base container for matlab modules
+docker.image.matlab_runtime = mcr_runtime_2015b
+
+
 [condor]
 condor.enabled = False
 condor.dag_template = config/templates/condor_dag.tmpl
