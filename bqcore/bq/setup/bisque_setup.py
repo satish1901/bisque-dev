@@ -386,6 +386,9 @@ linked_vars = {
     'registration.host' : '${bisque.server}',
     'registration.mail.smtp_server' : '${mail.smtp.server}',
     'registration.mail.admin_email' : '${bisque.admin_email}',
+    'beaker.session.sa.url' : '${sqlalchemy.url}',
+
+
 }
 
 
