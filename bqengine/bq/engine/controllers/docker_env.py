@@ -7,6 +7,7 @@ import os,sys
 import string
 from module_env import BaseEnvironment, ModuleEnvironmentError
 
+from bq.util.converters import asbool
 
 
 DOCKER_RUN="""#!/bin/bash
@@ -29,7 +30,7 @@ class DockerEnvironment(BaseEnvironment):
 
     The script will be generated based on internal template which can
     be overriden with (in runtime-module.cfg)::
-       matlab_launcher = mymatlab_launcher.txt 
+       matlab_launcher = mymatlab_launcher.txt
 
     '''
 
@@ -38,8 +39,9 @@ class DockerEnvironment(BaseEnvironment):
     matlab_launcher = ""
 
     def process_config (self, runner, **kw):
-        self.docker_hub = runner.config['docker.hub']
-        self.docker_image = runner.config.get ('docker.image', '')
+        self.enabled = asbool(runner.config.get ('docker.enabled', False))
+        self.docker_hub = runner.config.get('docker.hub', '')
+        self.docker_image = runner.config.get('docker.image', '')
         #self.matlab_launcher = runner.config.get('runtime.matlab_launcher', None)
         #if self.matlab_launcher is not None and not os.path.exists(self.matlab_launcher):
         #    raise ModuleEnvironmentError("Can't find matlab script %s" % self.matlab_launcher)
@@ -48,6 +50,8 @@ class DockerEnvironment(BaseEnvironment):
 
     def setup_environment(self, runner):
         # Construct a special environment script
+        if not self.enabled:
+            return
         for mex in runner.mexes:
             #if mex.executable:
             docker_image = "%s" % (self.docker_image)
@@ -72,5 +76,3 @@ class DockerEnvironment(BaseEnvironment):
             f.write (content)
         os.chmod (path, 0744)
         return path
-
-
