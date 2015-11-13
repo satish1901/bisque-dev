@@ -13,7 +13,7 @@
 /* ctyles for browser */
 
 .LightShadow.text {
-    background-image: url('text.svg');
+    background-image: url('/plugins/text/text.svg');
     background-position: center center;
     background-size: 150px;
     background-repeat: no-repeat;
@@ -24,7 +24,7 @@
 }
 
 .resicon.text {
-    background-image: url('text.svg');
+    background-image: url('/plugins/text/text.svg');
     background-position: center top;
     background-size: 100px;
 }
@@ -34,7 +34,7 @@
 }
 
 .resicon.gridIcon.text {
-    background-image: url('text.svg');
+    background-image: url('/plugins/text/text.svg');
     background-size: 29px;
     background-position: 6px 0px;
 }

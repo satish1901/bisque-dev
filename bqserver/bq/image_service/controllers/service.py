@@ -7,10 +7,10 @@ import pkg_resources
 import tg
 import urlparse
 import re
-
-from hashlib import md5
 from datetime import datetime
+from hashlib import md5
 from lxml import etree
+
 from pylons.controllers.util import etag_cache
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from tg import expose, flash, config, abort
@@ -247,11 +247,12 @@ class ImageServiceController(ServiceController):
         url = request.url
         resource_id, query = getOperations(url, self.srv.base_url)
         ident = resource_id or ident
-        log.info ('STARTING %s: %s', ident, url)
+        log.info ("STARTING (%s): %s", datetime.now().isoformat(), url)
 
         # dima: patch for incorrect /auth requests for image service
         if '/auth' in url:
             tg.response.headers['Content-Type'] = 'text/xml'
+            log.info ("FINISHED DEPRECATED (%s): %s", datetime.now().isoformat(), url)
             return '<resource />'
 
 
@@ -282,6 +283,7 @@ class ImageServiceController(ServiceController):
             pass
 
         # Run processing
+        log.info ("PROCESSING (%s): %s", datetime.now().isoformat(), url)
         token = self.srv.process(url, ident, timeout=timeout, imagemeta=meta, resource=resource, user_name=user_name, **kw)
         tg.response.headers['Content-Type']  = token.contentType
         #tg.response.content_type  = token.contentType
@@ -294,10 +296,12 @@ class ImageServiceController(ServiceController):
             tg.response.status_int = token.httpResponseCode
             tg.response.content_type = token.contentType
             tg.response.charset = 'utf8'
+            log.info ("FINISHED with ERROR (%s): %s", datetime.now().isoformat(), url)
             return token.data.encode('utf8')
 
         #second check if the output is TEXT/HTML/XML
         if token.isText() and not token.isFile():
+            log.info ("FINISHED (%s): %s", datetime.now().isoformat(), url)
             return token.data
 
         #third check if the output is actually a file
@@ -326,13 +330,14 @@ class ImageServiceController(ServiceController):
 
             # fix for the cherrypy error 10055 "No buffer space available" on windows
             # by streaming the contents of the files as opposite to sendall the whole thing
-            log.info ("%s: returning %s with mime %s"%(ident, token.data, token.contentType ))
+            log.info ("FINISHED (%s): %s", datetime.now().isoformat(), url)
+            #log.info ("%s: returning %s with mime %s"%(ident, token.data, token.contentType ))
             return forward(FileApp(token.data,
                                    content_type=token.contentType,
                                    content_disposition=disposition,
                                    ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
 
-        log.error ("%s: unknown image issue"%ident)
+        log.info ("FINISHED with ERROR (%s): %s", datetime.now().isoformat(), url)
         tg.response.status_int = 404
         return "File not found"
 

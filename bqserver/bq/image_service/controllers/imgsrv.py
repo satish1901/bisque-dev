@@ -1515,8 +1515,8 @@ class TileOperation(BaseOperation):
 
         # the new tile service does not change the number of z points in the image and if contains all z will perform the operation
         info = {
-            'image_num_x': tsz if width-x < tsz else width-x,
-            'image_num_y': tsz if height-y < tsz else height-y,
+            'image_num_x': tsz if width-x >= tsz else width-x,
+            'image_num_y': tsz if height-y >= tsz else height-y,
             #'image_num_z': 1,
             #'image_num_t': 1,
         }
@@ -1602,8 +1602,8 @@ class TileOperation(BaseOperation):
 
         # the new tile service does not change the number of z points in the image and if contains all z will perform the operation
         info = {
-            'image_num_x': tsz if width-x < tsz else width-x,
-            'image_num_y': tsz if height-y < tsz else height-y,
+            'image_num_x': tsz if width-x >= tsz else width-x,
+            'image_num_y': tsz if height-y >= tsz else height-y,
             #'image_num_z': 1,
             #'image_num_t': 1,
         }
