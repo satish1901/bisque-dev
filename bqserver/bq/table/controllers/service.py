@@ -152,7 +152,7 @@ import urllib
 import cStringIO as StringIO
 from urllib import quote
 from urllib import unquote
-
+import inspect
 from itertools import *
 from bqapi import *
 
@@ -177,6 +177,11 @@ try:
     import json
 except ImportError:
     log.info('Json was not found but needed for JSON output...')
+
+from .plugin_manager import PluginManager
+from .table_base import TableBase
+from .table_exporter import TableExporter
+from .table_operation import TableOperation
 
 ################################################################################
 # misc
@@ -210,20 +215,13 @@ class TableController(ServiceController):
     def __init__(self, server_url):
         super(TableController, self).__init__(server_url)
         self.baseuri = server_url
+        self.basepath = os.path.dirname(inspect.getfile(inspect.currentframe()))
 
-        self.importers = {}
-        self.importers['csv'] = CsvTable
-
-        self.exporters = {}
-        self.exporters['xml'] = ExporterXML()
-        self.exporters['csv'] = ExporterCSV()
-        if 'json' in sys.modules:
-            self.exporters['json'] = ExporterJSON()
-
-        self.operations = {}
-        self.operations['format'] = None # format is a virtual operation, exporters are used here
-        self.operations['info'] = None # virtual operation driving exporter function
-        #self.operations['info'] = ExporterXML()
+        self.importers = PluginManager('import', os.path.join(self.basepath, 'importers'), TableBase)
+        self.exporters = PluginManager('export', os.path.join(self.basepath, 'exporters'), TableExporter)
+        self.operations = PluginManager('operation', os.path.join(self.basepath, 'operations'), TableOperation)
+        self.operations.plugins['format'] = None # format is a virtual operation, exporters are used here
+        self.operations.plugins['info'] = None # virtual operation driving exporter function
 
         log.info('Table service started...')
 
@@ -263,7 +261,7 @@ class TableController(ServiceController):
 
         # load table
         table = None
-        for n, r in self.importers.iteritems():
+        for n, r in self.importers.plugins.iteritems():
             table = r(uniq, resource, path, url=request.url)
             if table.isloaded() == True:
                 break;
@@ -271,7 +269,7 @@ class TableController(ServiceController):
 
         # range read
         candidate = table.path[0].split(':')[0]
-        if candidate not in self.operations:
+        if candidate not in self.operations.plugins:
             try:
                 rng = table.path.pop(0)
                 rng = rng.split(',') # split for per-dimension ranges
@@ -289,9 +287,9 @@ class TableController(ServiceController):
         while a is not None:
             a = a.split(':',1)
             op,arg = a if len(a)>1 else a + [None]
-            if op in self.operations and self.operations[op] is not None:
+            if op in self.operations.plugins and self.operations.plugins[op] is not None:
                 table.path.pop(0)
-                self.operations[op].execute(table, arg)
+                self.operations.plugins[op]().execute(table, arg)
             else:
                 i += 1
             a = table.path[i] if len(table.path)>i else None
@@ -301,308 +299,16 @@ class TableController(ServiceController):
         out_format = get_arg(table, 'format:', defval='format:xml', **kw).replace('format:', '')
         out_info   = is_arg(table, 'info')
         log.debug('Format: %s, Info: %s', out_format, out_info)
-        if out_format in self.exporters:
+        if out_format in self.exporters.plugins:
             if out_info is True:
-                r = self.exporters[out_format].info(table)
+                r = self.exporters.plugins[out_format]().info(table)
             else:
-                r = self.exporters[out_format].export(table)
+                r = self.exporters.plugins[out_format]().export(table)
             log.info ("FINISHED (%s): %s", datetime.now().isoformat(), request.url)
             return r
 
         log.info ("FINISHED (%s): %s", datetime.now().isoformat(), request.url)
         abort(400, 'Requested export format (%s) is not supported'%out_format )
-
-
-#---------------------------------------------------------------------------------------
-# Table base
-#---------------------------------------------------------------------------------------
-
-class BQTable(object):
-    '''Formats tables into output format'''
-
-    version = '1.0'
-    ext = 'csv'
-    mime_type = 'text/csv'
-
-    t = None # represents a pointer to the actual element being operated on based on the driver
-    data = None # pandas DataFrame
-
-    url = None
-    resource = None
-    path = None
-    uniq = None
-
-    offset = 0
-
-    headers = None
-    types = None
-    sizes = None
-
-    # general functionality defined in the base class
-
-    def __str__(self):
-        r = self.resource #etree.tostring(self.resource) if self.resource is not None else 'None'
-        m = self.data.shape if self.data is not None else 'None'
-        return 'BQTable(m: %s, t: %s res: %s, path: %s)'%(m, self.t, r, self.path)
-
-    def isloaded(self):
-        """ Returns table information """
-        return self.t is not None
-
-
-    # functions to be defined in the individual drivers
-
-    def __init__(self, uniq, resource, path, **kw):
-        """ Returns table information """
-        self.path = path
-        self.resource = resource
-        self.uniq = uniq
-        self.url = kw['url'] if 'url' in kw else None
-
-    def info(self, **kw):
-        """ Returns table information """
-        # load headers and types if empty
-        return { 'headers': self.headers, 'types': self.types }
-
-    def read(self, **kw):
-        """ Read table cells and return """
-        if 'rng' in kw and kw.get('rng') is not None:
-            row_range = kw.get('rng')[0]
-            self.offset = row_range[0] if len(row_range)>0 else 0
-        else:
-            self.offset = 0
-        return self.data
-
-    def write(self, data, **kw):
-        """ Write cells into a table"""
-        pass
-
-    def delete(self, **kw):
-        """ Delete cells from a table"""
-        pass
-
-
-
-#---------------------------------------------------------------------------------------
-# Importers: CSV
-#---------------------------------------------------------------------------------------
-
-class CsvTable(BQTable):
-    '''Formats tables into output format'''
-
-    version = '1.0'
-    ext = 'csv'
-    mime_type = 'text/csv'
-
-    #has_header = False
-    #dialect = False
-    filename = None
-
-    def __init__(self, uniq, resource, path, **kw):
-        """ Returns table information """
-        super(CsvTable, self).__init__(uniq, resource, path, **kw)
-
-        # try to load the resource binary
-        b = blob_service.localpath(uniq, resource=resource) or abort (404, 'File not available from blob service')
-        self.filename = b.path
-        self.info()
-        self.t = True
-
-    def info(self, **kw):
-        """ Returns table information """
-        # load headers and types if empty
-        if self.headers is None or self.types is None:
-            data = pd.read_csv(self.filename, skiprows=0, nrows=10 )
-            self.headers = [x.replace('.', '_') for x in data.columns.values.tolist()] # extjs error loading strings with dots
-            self.types = data.dtypes.tolist() #data.dtypes.tolist()[0].name
-        log.debug('CSV types: %s, header: %s', str(self.types), str(self.headers))
-        return { 'headers': self.headers, 'types': self.types }
-
-    def read(self, **kw):
-        """ Read table cells and return """
-        super(CsvTable, self).read(**kw)
-        rng = kw.get('rng')
-        log.debug('rng %s', str(rng))
-
-        #nrows: Number of rows to read out of the file. Useful to only read a small portion of a large file
-        #usecols: a subset of columns to return, results in much faster parsing time and lower memory usage
-        #skiprows: A collection of numbers for rows in the file to skip. Can also be an integer to skip the first n rows
-        skiprows = 0
-        nrows = None
-        usecols = None
-        if rng is not None:
-            row_range = rng[0]
-            if len(row_range)>0:
-                skiprows = row_range[0] if len(row_range)>0 else 0
-                nrows    = row_range[1]-skiprows+1 if len(row_range)>1 else 1
-
-        log.debug('skiprows %s, nrows %s, usecols %s', skiprows, nrows, usecols)
-        self.data = pd.read_csv(self.filename, skiprows=skiprows, nrows=nrows, usecols=usecols )
-        log.debug('Data: %s', str(self.data.head()))
-        return self.data
-
-    def write(self, data, **kw):
-        """ Write cells into a table"""
-        abort(501, 'CSV write not implemented')
-
-    def delete(self, **kw):
-        """ Delete cells from a table"""
-        abort(501, 'CSV delete not implemented')
-
-#---------------------------------------------------------------------------------------
-# Importers: Excel
-#---------------------------------------------------------------------------------------
-
-#---------------------------------------------------------------------------------------
-# Importers: HDF5
-#---------------------------------------------------------------------------------------
-
-#---------------------------------------------------------------------------------------
-# Exporters: Table base
-#---------------------------------------------------------------------------------------
-
-class ExporterTable(object):
-    '''Formats tables into output format'''
-
-    version = '1.0'
-    ext = 'csv'
-    mime_type = 'text/csv'
-
-    def __init__(self):
-        pass
-
-    # needs implementation for particular format
-    def info(self, table):
-        response.headers['Content-Type'] = self.mime_type
-
-    def format(self, table):
-        pass
-
-    def export(self, table):
-        """Add your first page here.. """
-        fname = '%s.%s' % (table.resource.get('name'), self.ext)
-        # try:
-        #     fname.encode('ascii')
-        #     disposition = 'filename="%s"'%(fname)
-        # except UnicodeEncodeError:
-        #     disposition = 'filename="%s"; filename*="%s"'%(fname.encode('utf8'), fname.encode('utf8'))
-        # response.headers['Content-Disposition'] = disposition
-
-        response.headers['Content-Type'] = self.mime_type
-        return self.format(table)
-
-
-#---------------------------------------------------------------------------------------
-# exporters: XML
-#---------------------------------------------------------------------------------------
-
-class ExporterXML (ExporterTable):
-    '''Formats tables as XML'''
-
-    version = '1.0'
-    ext = 'xml'
-    mime_type = 'text/xml'
-
-    def __init__(self):
-        pass
-
-    def info(self, table):
-        super(ExporterXML, self).info(table)
-        xml = etree.Element ('resource', uri=table.url)
-        etree.SubElement (xml, 'tag', name='headers', value=','.join([str(i) for i in table.headers]))
-        etree.SubElement (xml, 'tag', name='types', value=','.join([t.name for t in table.types]))
-        if table.sizes is not None:
-            etree.SubElement (xml, 'tag', name='sizes', value=','.join([str(i) for i in table.sizes]))
-        return etree.tostring(xml)
-
-    def format(self, table):
-        """ converts table to XML """
-        m = table.data.as_matrix()
-        ndim = m.ndim
-        v = []
-        for i in range(m.shape[0]):
-            v.append( ','.join(m[i].astype('str').tolist()) )
-        xml = etree.Element ('resource', uri=table.url)
-        doc = etree.SubElement (xml, 'tag', name='table', value=';'.join(v))
-        return etree.tostring(xml)
-
-#---------------------------------------------------------------------------------------
-# exporters: Json
-#---------------------------------------------------------------------------------------
-
-class ExporterJSON (ExporterTable):
-    '''Formats tables as Json'''
-
-    version = '1.0'
-    ext = 'json'
-    mime_type = 'application/json'
-
-    def __init__(self):
-        pass
-
-    def info(self, table):
-        super(ExporterJSON, self).info(table)
-        v = {
-            "headers": table.headers,
-            "types": [t.name for t in table.types],
-            "sizes": table.sizes,
-        }
-        return json.dumps(v)
-
-    def format(self, table):
-        """ converts table to JSON """
-        #return table.data.to_json()
-        v = {
-            'offset': table.offset,
-            'table': table.data.as_matrix().tolist(),
-        }
-        return json.dumps(v)
-
-#---------------------------------------------------------------------------------------
-# exporters: Csv
-#---------------------------------------------------------------------------------------
-
-class ExporterCSV (ExporterTable):
-    '''Formats tables as CSV'''
-
-    version = '1.0'
-    ext = 'csv'
-    mime_type = 'text/csv'
-
-    def __init__(self):
-        pass
-
-    def info(self, table):
-        super(ExporterCSV, self).info(table)
-        v = [
-            "headers,%s"%','.join([str(i) for i in table.headers]),
-            "types,%s"%','.join([t.name for t in table.types]),
-        ]
-        if table.sizes is not None:
-            v.append("sizes,%s"%','.join([str(i) for i in table.sizes]))
-        return ';'.join(v)
-
-    def format(self, table):
-        """ converts table to CSV """
-        return table.data.to_csv()
-
-#---------------------------------------------------------------------------------------
-# Operations: Table base
-#---------------------------------------------------------------------------------------
-
-class OperationTable(object):
-    '''Processes tables'''
-
-    name = ''
-
-    def __init__(self):
-        pass
-
-    # needs implementation for particular format
-    def execute(self, table, args):
-        # table.data - process and modify
-        pass
-
 
 #---------------------------------------------------------------------------------------
 # bisque init stuff

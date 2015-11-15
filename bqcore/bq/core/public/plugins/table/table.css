@@ -22,7 +22,7 @@ Copyright: 2015 (C) Center for Bio-Image Informatics, University of California a
 /* ctyles for browser */
 
 .table {
-    background-image: url('icons.svg');
+    background-image: url('/plugins/table/icons.svg');
     background-position: center center;
     background-size: 220px;
     background-repeat: no-repeat;
@@ -33,7 +33,7 @@ Copyright: 2015 (C) Center for Bio-Image Informatics, University of California a
 }
 
 .resicon.table {
-    background-image: url('icons.svg');
+    background-image: url('/plugins/table/icons.svg');
     background-position: center top;
     background-size: 100px;
     background-repeat: no-repeat;
@@ -44,7 +44,7 @@ Copyright: 2015 (C) Center for Bio-Image Informatics, University of California a
 }
 
 .resicon.gridIcon.table {
-    background-image: url('icons.svg');
+    background-image: url('/plugins/table/icons.svg');
     background-size: 35px;
     background-position: 2px 3px;
 }
