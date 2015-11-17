@@ -93,6 +93,8 @@ class TableBase(object):
         self.uniq = uniq
         self.url = kw['url'] if 'url' in kw else None
 
+        self.subpath = None # list containing subpath to elements within the resource
+        self.tables = None # has paths for all available tables in the resource
         self.t = None # represents a pointer to the actual element being operated on based on the driver
         self.data = None # pandas DataFrame
         self.offset = 0

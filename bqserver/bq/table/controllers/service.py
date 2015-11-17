@@ -199,7 +199,7 @@ def is_arg(table, name):
 
 # simply accept two characters for range: ":" or ";" due to parsing error in turbogears for ":"
 def parse_subrange(rng):
-    rng = urllib.unquote(rng)
+    #rng = urllib.unquote(rng)
     v = rng.split(';', 1) if ';' in rng else rng.split(':', 1)
     return [int(i) for i in v]
 
@@ -247,7 +247,7 @@ class TableController(ServiceController):
         """find export plugin and run export"""
         log.info ("STARTING table (%s): %s", datetime.now().isoformat(), request.url)
         path = request.url.replace(self.baseuri, '').split('/')
-        path = [p for p in path if len(p)>0]
+        path = [urllib.unquote(p) for p in path if len(p)>0]
         log.debug("Path: %s", path)
 
         # /table/ID[/PATH1/PATH2/...][/RANGE][/COMMAND:PARS]
@@ -263,7 +263,7 @@ class TableController(ServiceController):
         table = None
         for n, r in self.importers.plugins.iteritems():
             table = r(uniq, resource, path, url=request.url)
-            if table.isloaded() == True:
+            if table is not None and table.isloaded() == True:
                 break;
         log.debug('Inited table: %s',str(table))
 
@@ -277,8 +277,8 @@ class TableController(ServiceController):
             except Exception:
                 abort(400, 'Malformed range request')
             table.read(rng=rng)
-        else:
-            table.read()
+        #else: # full read is not permitted anymore
+        #    table.read()
         log.debug('Loaded table: %s', str(table))
 
         # operations consuming the rest of the path

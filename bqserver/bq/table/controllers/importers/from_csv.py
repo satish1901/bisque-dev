@@ -105,15 +105,12 @@ class TableCSV(TableBase):
         """ Returns table information """
         super(TableCSV, self).__init__(uniq, resource, path, **kw)
 
-        has_header = True
-        #dialect = False
-        filename = None
-
         # try to load the resource binary
         b = blob_service.localpath(uniq, resource=resource) or abort (404, 'File not available from blob service')
         self.filename = b.path
+        self.t = None
+        self.has_header = True
         self.info()
-        self.t = True
 
     def info(self, **kw):
         """ Returns table information """
@@ -125,12 +122,16 @@ class TableCSV(TableBase):
                     self.has_header = csv.Sniffer().has_header(buf)
                 except csv.Error:
                     self.has_header = True
-            if self.has_header is True:
-                data = pd.read_csv(self.filename, skiprows=0, nrows=10 )
-            else:
-                data = pd.read_csv(self.filename, skiprows=0, nrows=10, header=None )
+            try:
+                if self.has_header is True:
+                    data = pd.read_csv(self.filename, skiprows=0, nrows=10 )
+                else:
+                    data = pd.read_csv(self.filename, skiprows=0, nrows=10, header=None )
+            except Exception:
+                return None
             self.headers = [extjs_safe_header(x) for x in data.columns.values.tolist()] # extjs errors loading strings with dots
             self.types = data.dtypes.tolist() #data.dtypes.tolist()[0].name
+            self.t = True
         log.debug('CSV types: %s, header: %s', str(self.types), str(self.headers))
         return { 'headers': self.headers, 'types': self.types }
 

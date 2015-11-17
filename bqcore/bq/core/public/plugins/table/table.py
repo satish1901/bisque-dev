@@ -65,23 +65,33 @@ class CsvTablePlugin (TablePlugin):
     ext = 'csv'
     mime_type = 'text/csv'
 
-# class HdfTablePlugin1 (TablePlugin):
-#     '''Supports HDF file'''
-#     ext = 'hdf'
-#     mime_type = 'application/x-hdf'
+class XlsXTablePlugin (TablePlugin):
+    '''Supports Excel file'''
+    ext = 'xlsx'
+    mime_type = 'application/vnd.ms-excel'
 
-# class HdfTablePlugin2 (TablePlugin):
-#     '''Supports HDF5 file'''
-#     ext = 'hdf5'
-#     mime_type = 'application/x-hdf'
+class XlsTablePlugin (TablePlugin):
+    '''Supports Excel file'''
+    ext = 'xls'
+    mime_type = 'application/vnd.ms-excel'
 
-# class HdfTablePlugin3 (TablePlugin):
-#     '''Supports HDF5 file'''
-#     ext = 'h5'
-#     mime_type = 'application/x-hdf'
+class HdfTablePlugin1 (TablePlugin):
+    '''Supports HDF file'''
+    ext = 'hdf'
+    mime_type = 'application/x-hdf'
 
-# class HdfTablePlugin4 (TablePlugin):
-#     '''Supports HDF5 file'''
-#     ext = 'he5'
-#     mime_type = 'application/x-hdf'
+class HdfTablePlugin2 (TablePlugin):
+    '''Supports HDF5 file'''
+    ext = 'hdf5'
+    mime_type = 'application/x-hdf'
+
+class HdfTablePlugin3 (TablePlugin):
+    '''Supports HDF5 file'''
+    ext = 'h5'
+    mime_type = 'application/x-hdf'
+
+class HdfTablePlugin4 (TablePlugin):
+    '''Supports HDF5 file'''
+    ext = 'he5'
+    mime_type = 'application/x-hdf'
 
