@@ -43,7 +43,7 @@
 ###############################################################################
 
 """
-CSV table exporter
+HDF table importer
 """
 
 __author__    = "Dmitry Fedorov <dima@dimin.net>"
@@ -53,59 +53,116 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 # default imports
 import os
 import logging
+import pkg_resources
+from pylons.controllers.util import abort
 
-__all__ = [ 'ExporterXML' ]
+from bq import blob_service
 
-log = logging.getLogger("bq.table.export.xml")
+__all__ = [ 'TableHDF' ]
 
-from lxml import etree
+log = logging.getLogger("bq.table.import.hdf")
+
 try:
     import numpy as np
 except ImportError:
     log.info('Numpy was not found but required for table service!')
 
 try:
+    import tables
+except ImportError:
+    log.info('Tables was not found but required for Excel tables!')
+
+try:
     import pandas as pd
 except ImportError:
     log.info('Pandas was not found but required for table service!')
 
+from bq.table.controllers.table_base import TableBase
 
-from bq.table.controllers.table_exporter import TableExporter
+################################################################################
+# misc
+################################################################################
+
+def extjs_safe_header(s):
+    if isinstance(s, basestring):
+        return s.replace('.', '_')
+    return s
 
 #---------------------------------------------------------------------------------------
-# exporters: XML
+# Importer: HDF
+# TODO: not reading ranges
+# TODO: proper parsing of sub paths
 #---------------------------------------------------------------------------------------
 
-class ExporterXML (TableExporter):
-    '''Formats tables as XML'''
+class TableHDF(TableBase):
+    '''Formats tables into output format'''
 
-    name = 'xml'
+    name = 'hdf'
     version = '1.0'
-    ext = 'xml'
-    mime_type = 'text/xml'
+    ext = ['h5', 'hdf5']
+    mime_type = 'application/x-hdf'
 
-    def __init__(self):
-        pass
+    def __init__(self, uniq, resource, path, **kw):
+        """ Returns table information """
+        super(TableHDF, self).__init__(uniq, resource, path, **kw)
 
-    def info(self, table):
-        super(ExporterXML, self).info(table)
-        xml = etree.Element ('resource', uri=table.url)
-        etree.SubElement (xml, 'tag', name='headers', value=','.join([str(i) for i in table.headers]))
-        etree.SubElement (xml, 'tag', name='types', value=','.join([t.name for t in table.types]))
-        if table.sizes is not None:
-            etree.SubElement (xml, 'tag', name='sizes', value=','.join([str(i) for i in table.sizes]))
-        if table.tables is not None:
-            etree.SubElement (xml, 'tag', name='tables', value=','.join([str(i) for i in table.tables]))
-        return etree.tostring(xml)
+        # try to load the resource binary
+        b = blob_service.localpath(uniq, resource=resource) or abort (404, 'File not available from blob service')
+        self.filename = b.path
+        self.t = None
+        self.info()
 
-    def format(self, table):
-        """ converts table to XML """
-        m = table.data.as_matrix()
-        ndim = m.ndim
-        v = []
-        for i in range(m.shape[0]):
-            v.append( ','.join(m[i].astype('str').tolist()) )
-        xml = etree.Element ('resource', uri=table.url)
-        doc = etree.SubElement (xml, 'tag', name='table', value=';'.join(v))
-        return etree.tostring(xml)
+    def info(self, **kw):
+        """ Returns table information """
+        # load headers and types if empty
+
+        if self.tables is None:
+            try:
+                self.t = pd.HDFStore(self.filename)
+            except Exception:
+                return None
+            self.tables = self.t.keys()
+
+        if len(self.tables)==1: # if only one sheet is present
+            self.subpath = self.tables[0]
+            if len(self.path)>0 and self.path[0] == self.subpath:
+                self.path.pop(0)
+        elif len(self.path)>0 and self.path[0] in self.tables: # if path is provided for a sheet
+            self.subpath = self.path.pop(0)
+        else: # if no path is provided, use first sheet
+            self.subpath = self.tables[0]
+
+        if self.headers is None or self.types is None:
+            data = pd.read_hdf(self.t, self.subpath, start=1, stop=10)
+            self.headers = [extjs_safe_header(x) for x in data.columns.values.tolist()] # extjs errors loading strings with dots
+            self.types = data.dtypes.tolist() #data.dtypes.tolist()[0].name
+        log.debug('HDF types: %s, header: %s', str(self.types), str(self.headers))
+        return { 'headers': self.headers, 'types': self.types }
+
+    def read(self, **kw):
+        """ Read table cells and return """
+        super(TableHDF, self).read(**kw)
+        rng = kw.get('rng')
+        log.debug('rng %s', str(rng))
+
+        skiprows = 0
+        nrows = None # not supported for Excel
+        usecols = None
+        if rng is not None:
+            row_range = rng[0]
+            if len(row_range)>0:
+                skiprows = row_range[0] if len(row_range)>0 else 0
+                nrows    = row_range[1]-skiprows+1 if len(row_range)>1 else 1
+        log.debug('skiprows %s, nrows %s, usecols %s', skiprows, nrows, usecols)
+        self.data = pd.read_hdf(self.t, self.subpath, start=skiprows+1, stop=skiprows+nrows, columns=usecols )
+        log.debug('Data: %s', str(self.data.head()))
+        return self.data
+
+    def write(self, data, **kw):
+        """ Write cells into a table"""
+        abort(501, 'HDF write not implemented')
+
+    def delete(self, **kw):
+        """ Delete cells from a table"""
+        abort(501, 'HDF delete not implemented')
 

@@ -96,6 +96,7 @@ class ExporterJSON (TableExporter):
             "headers": table.headers,
             "types": [t.name for t in table.types],
             "sizes": table.sizes,
+            "tables": table.tables,
         }
         return json.dumps(v)
 

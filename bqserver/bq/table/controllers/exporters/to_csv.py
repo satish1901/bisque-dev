@@ -95,6 +95,8 @@ class ExporterCSV (TableExporter):
         ]
         if table.sizes is not None:
             v.append("sizes,%s"%','.join([str(i) for i in table.sizes]))
+        if table.tables is not None:
+            v.append("tables,%s"%','.join([str(i) for i in table.tables]))
         return ';'.join(v)
 
     def format(self, table):
