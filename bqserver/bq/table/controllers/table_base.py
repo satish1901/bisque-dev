@@ -118,8 +118,8 @@ class TableBase(object):
 
     def write(self, data, **kw):
         """ Write cells into a table"""
-        pass
+        abort(501, 'Write not implemented')
 
     def delete(self, **kw):
         """ Delete cells from a table"""
-        pass
+        abort(501, 'Delete not implemented')

@@ -155,6 +155,8 @@ class TableExcel(TableBase):
                 nrows    = row_range[1]-skiprows+1 if len(row_range)>1 else 1
         log.debug('skiprows %s, nrows %s, usecols %s', skiprows, nrows, usecols)
         self.data = pd.read_excel(self.t, self.subpath, skiprows=skiprows, nrows=nrows, parse_cols=usecols )
+        # excel cannot read only a specified number of rows, select now
+        self.data = self.data[0:nrows]
         log.debug('Data: %s', str(self.data.head()))
         return self.data
 

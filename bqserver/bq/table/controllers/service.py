@@ -52,6 +52,15 @@ URL:
 
 /table/ID[/PATH1/PATH2/...][/RANGE][/COMMAND:PARS]
 
+PATH:
+    Path components must be URL encoded to be valid URL path elements:
+    For example for an HDF table stored in:
+        '/arrays/Vdata table: PerBlockMetadataCommon'
+    The URL should be:
+        /arrays/Vdata%20table%3A%20PerBlockMetadataCommon
+    The full info call would look like:
+        /table/XXXXX/arrays/Vdata%20table%3A%20PerBlockMetadataCommon/info/format:json
+
 RANGE:
     defines region of interest within an N-D matrix, only valid if the path points to a matrix element
     range specifies a comma separated list of ranges for N-D data
@@ -61,6 +70,10 @@ RANGE:
     i - each range item can be a simple integer defining one element in that dimension,
     i:j - colon separated elements define range
     i:-j - minus sign defines element positions from the end
+
+    Note:
+      In current v5.X implementation TurboGears URL parsing is breaking on parsing the ":" sign
+      which is currently augmented with ";" separator. Both characters are currently legal.
 
     ex:
     /table/00-XXXXX/mynode123/mytable123/12:15  - defines raws 12 through 15
