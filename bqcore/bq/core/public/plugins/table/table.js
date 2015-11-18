@@ -331,22 +331,6 @@ Ext.define('Bisque.Resource.Table.Page', {
     },
 
     onResourceRender : function() {
-        // temporary columns and store needed to init empty gridpanel without errors
-        this.columns = [
-            { text: '',  dataIndex: 'name' },
-        ];
-        this.store = Ext.create('Ext.data.Store', {
-            fields:['name'],
-            data:{ 'items': [{ 'name': '' }, ]},
-            proxy: {
-                type: 'memory',
-                reader: {
-                    type: 'json',
-                    root: 'items'
-                }
-            }
-        });
-
         // create view components: grid and tagger
         this.add({
             xtype : 'container',
