@@ -25,7 +25,7 @@ setup(
                       "tables",
                       "numexpr",
                       "cython",
-                      "pylibtiff==0.3.0-1"
+                      "libtiff==0.4.0"
                       ],
     setup_requires=["PasteScript>=1.6.3"],
     paster_plugins=['PasteScript', 'Pylons' ],

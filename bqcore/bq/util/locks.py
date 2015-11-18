@@ -32,7 +32,7 @@ class Locks (object):
     def debug(self, msg):
         """Log detailed info about the locking of threads and files"""
         if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug ("LOCKING: %s (%s,%s): %s" %
+            self.log.debug ("%s (%s,%s): %s" %
                             (threading.currentThread().getName(),
                              self.ifnm, self.ofnm, msg))
 
@@ -124,7 +124,7 @@ class Locks (object):
                 self.rf.unlock()
             except XFile.LockError:
                 pass
-            
+
             self.rf.close()
             self.rf = None
 
@@ -140,4 +140,3 @@ class Locks (object):
         return self
     def __exit__(self, type, value, traceback):
         self.release()
-
