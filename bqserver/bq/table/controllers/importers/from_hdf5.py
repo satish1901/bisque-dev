@@ -125,15 +125,33 @@ class TableHDF(TableBase):
 
         if len(self.tables)==1: # if only one sheet is present
             self.subpath = self.tables[0]
-            if len(self.path)>0 and self.path[0] == self.subpath:
-                self.path.pop(0)
-        elif len(self.path)>0 and self.path[0] in self.tables: # if path is provided for a sheet
-            self.subpath = self.path.pop(0)
+
+        # paths should be URL encoded when submitted vai the URL API
+        #['/arrays/Vdata table: PerBlockMetadataCommon']
+        #encoded: /arrays/Vdata%20table%3A%20PerBlockMetadataCommon
+
+        # iterate over the path and remove if matched
+        if len(self.path)>0: # if path is provided for a sheet
+            p = ['']
+            matched = None
+            for i in range(len(self.path)):
+                p.append(self.path[i])
+                pp = '/'.join(p)
+                log.debug('Testing presense: "%s" in %s', pp, str(self.tables))
+                if pp in self.tables:
+                    log.debug('Found: "%s" in %s', pp, str(self.tables))
+                    self.subpath = pp
+                    matched = i
+                    break
+            if matched is not None:
+                del self.path[0:matched+1]
         else: # if no path is provided, use first sheet
             self.subpath = self.tables[0]
+        log.debug('HDF subpath: %s, path: %s', self.subpath, str(self.path))
 
         if self.headers is None or self.types is None:
-            data = pd.read_hdf(self.t, self.subpath, start=1, stop=10)
+            #data = pd.read_hdf(self.t, self.subpath, start=1, stop=10) # start and stop don't seem to be working
+            data = pd.read_hdf(self.t, self.subpath)
             self.headers = [extjs_safe_header(x) for x in data.columns.values.tolist()] # extjs errors loading strings with dots
             self.types = data.dtypes.tolist() #data.dtypes.tolist()[0].name
         log.debug('HDF types: %s, header: %s', str(self.types), str(self.headers))
@@ -154,7 +172,10 @@ class TableHDF(TableBase):
                 skiprows = row_range[0] if len(row_range)>0 else 0
                 nrows    = row_range[1]-skiprows+1 if len(row_range)>1 else 1
         log.debug('skiprows %s, nrows %s, usecols %s', skiprows, nrows, usecols)
-        self.data = pd.read_hdf(self.t, self.subpath, start=skiprows+1, stop=skiprows+nrows, columns=usecols )
+        #self.data = pd.read_hdf(self.t, self.subpath, start=skiprows+1, stop=skiprows+nrows, columns=usecols )
+        self.data = pd.read_hdf(self.t, self.subpath, columns=usecols )
+        # start and stop don't seem to be working
+        self.data = self.data[skiprows:skiprows+nrows]
         log.debug('Data: %s', str(self.data.head()))
         return self.data
 
