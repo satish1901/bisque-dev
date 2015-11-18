@@ -98,6 +98,7 @@ from bq.util import http
 from bq.util.xmldict import d2xml
 from bq.util.thread_pool import WorkRequest, NoResultsPending
 from bq.util.bisquik2db import bisquik2db, load_uri
+from bq.util.hash import is_uniq_code
 from bq.core.identity import  set_admin_mode, set_current_user, get_username
 #from bq.core.permission import *
 from bq.core.service import ServiceController
@@ -120,6 +121,12 @@ def request_host():
         log.warn ("TYPEERROR on request")
         host_url = ''
     return host_url
+
+
+class MexDelagate1(controllers.TGController):
+
+    def __init__(self, url, runner):
+        pass
 
 
 class MexDelegate (Resource):
@@ -153,7 +160,18 @@ class MexDelegate (Resource):
 
     def load(self, token):
         log.debug ("load of %s " , tg.request.url)
-        return load_uri(tg.request.url)
+        self.mex_request_url = tg.request.url
+        try:
+            if is_uniq_code(token):
+                return data_service.resource_load ( uniq = token)
+            return data_service.resource_load(ident=int(token))
+        except ValueError, e:
+            abort (404)
+        except Exception:
+            log.exception ('While loading:')
+            abort(404)
+        return None
+        #return load_uri(tg.request.url)
 
     def create(self, **kw):
         return ""
@@ -203,7 +221,7 @@ class MexDelegate (Resource):
         Modify the mex in place.  Use to update status
         """
         #return self.delegate.modify (resource, xml, **kw)
-        log.info('MEX MODIFY')
+        log.info('MEX MODIFY %s', tg.request.url)
         mex = etree.XML (xml)
         mex = check_mex(mex)
         mex = data_service.update(mex, view=view)
@@ -212,11 +230,18 @@ class MexDelegate (Resource):
         return etree.tostring (mex)
 
     @expose()
+    @require(not_anonymous())
     def get(self, resource, view=None, **kw):
         """
         fetches the resource, and returns a representation of the resource.
         """
-        mex = data_service.get_resource(resource, view=view)
+        #mex = data_service.get_resource(resource, view=view)
+
+        parts = urlparse.urlparse (tg.request.url)
+        path = "/".join (parts.path.split ('/')[3:])
+        #remove the /module_servce/mex from the path
+        mex = data_service.load (path, astree=True, view=view, **kw)
+
         self.remap_uri (mex)
         tg.response.headers['Content-Type'] = 'text/xml'
         return etree.tostring (mex)
@@ -227,7 +252,7 @@ class MexDelegate (Resource):
         """
         Append a value to the mex
         """
-        log.info('MEX APPEND')
+        log.info('MEX APPEND %s', tg.request.url)
         mex = etree.XML(xml)
         mex = check_mex(mex)
         mex = data_service.update(mex, view=view)
@@ -778,7 +803,7 @@ class ModuleServer(ServiceController):
         else:
             log.info ("Engine Not found")
             abort(404, "Engine Not found")
-            
+
         #update service list
         self.service_list  = self.load_services(wpublic='1')
         #module_list = self.load_services(module_name)

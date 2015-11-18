@@ -391,7 +391,7 @@ class DataServerController(ServiceController):
         #log.debug ("DS: " + etree.tostring(response))
         return response
 
-    def load (self, resource_url, **kw):
+    def load (self, resource_url, astree=False, **kw):
         """Simulate a webfetch """
         log.debug ('parsing %s' , resource_url)
         #if resource_url.startswith(self.url):
@@ -404,9 +404,9 @@ class DataServerController(ServiceController):
         serverpath = urlparse.urlsplit(self.url)[2]
         commonurl = os.path.commonprefix ([serverpath, url[2]])
         requesturl =  url[2][len(commonurl):]
-        path = requesturl.split ('/')
+        path = requesturl.rstrip('/').split ('/')
         # remove initial /ds
-        log.debug ('path server(%s) req(%s) common( %s)' , serverpath,url[2],path )
+        log.debug ('path server(%s) req(%s) path( %s)' , serverpath,url[2],path )
         log.debug ('passing to self.default %s %s', path[2:] , kwargs )
 
         format = kwargs.pop('format', None)
@@ -414,35 +414,61 @@ class DataServerController(ServiceController):
 
         parent =None
         controller = None
-        while path:
-            resource_type = None
-            resource = None
+        def load_token(token):
+            if is_uniq_code (token):
+                return resource_load (uniq=token).first()
+            try:
+                token = int(token)
+                return resource_load (ident=token).first()
+            except ValueError:
+                pass
+            return None
 
-            token = path.pop(0)
-            if not token: continue
+        resource_type = None
+        resource = None
 
-            #resource_type = dbtype_from_tag (token)
-            resource_type = dbtype_from_name (token)
-
-            if path:
-                token = path.pop(0)
-                resource = resource_load (resource_type, ident=int(token))
+        # Determine First element (force path to be TYPE/[ID] Pairs
+        token = path.pop(0)
+        resource = load_token (token)
+        if resource:
             if path:
                 parent = resource
+                resource = None
+        else:
+            path.insert(0, token)
 
+        # process as  TYPE/[ID] pairs now
+        while path:
+            # Process type
+            token = path.pop(0)
+            resource_type = dbtype_from_name (token)
+            # Process ID
+            if path:
+                token = path.pop(0)
+                resource = load_token (token)
+            # More path to process.. move it into parent
+            if path:
+                parent = resource
+                resouce = None
+            log.debug ("path=%s resource_type=%s resource=%s, parent=%s", path, resource_type, resource, parent)
+
+        log.debug ("final path=%s resource_type=%s resource=%s, parent=%s", path, resource_type, resource, parent)
         response = etree.Element('response')
         if resource is None:
+            # We are dealing with query
             if view == "count":
                 count = resource_count(resource_type, parent=parent, **kwargs)
                 xtag = resource_type[0]
-                etree.SubElement(response, xtag, count = count)
+                etree.SubElement(response, xtag, count = str (count ))
             else:
-                resource = resource_query(resource_type,
-                                          parent=parent, **kwargs)
+                resource = resource_query(resource_type, parent=parent, **kwargs)
+                db2tree(resource, baseuri=self.url, view=view, parent=response, **kwargs)
+        else:
+            if view != "count":
+                response = db2tree(resource, baseuri=self.url, view=view, parent=None, **kwargs)
 
-        if view != "count":
-            tree = db2tree(resource, baseuri=self.url, view=view,
-                           parent=response, **kwargs)
+        if astree:
+            return response
 
         formatter, content_type  = find_formatter (format)
         return formatter(response)

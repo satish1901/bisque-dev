@@ -1675,7 +1675,7 @@ def install_libtiff():
     else:
         print """To enable the feature service to read OME-bigtiff for feature extraction install
         libtiff4
-        For Debian use the command apt-get libtiff4-dev
+        For Debian use the command apt-get install libtiff5-dev
         """
 
 def install_opencv():
