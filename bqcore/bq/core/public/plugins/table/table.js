@@ -132,7 +132,7 @@ Ext.define('BQ.table.View', {
             border: 0,
             viewConfig: {
                 stripeRows: true,
-                //forceFit: true
+                forceFit: true,
             },
             plugins: 'bufferedrenderer',
             store: this.store,
@@ -199,9 +199,10 @@ Ext.define('BQ.table.View', {
 
             this.columns.push({
                 text: h,
-                //flex: 1,
+                flex: 1,
                 dataIndex: i, // need to use numbers for reading from json array
                 //sortable: true,
+                autoSizeColumn : true,
             });
         }
 

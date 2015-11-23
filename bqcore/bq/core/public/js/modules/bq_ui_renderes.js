@@ -46,7 +46,8 @@ BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image',
                           //'gobject'          : 'BQ.renderers.Gobject',
                             'tag'              : 'BQ.renderers.Tag',
                             'mex'              : 'BQ.renderers.Mex',
-                            'browser'          : 'BQ.renderers.Browser'
+                            'browser'          : 'BQ.renderers.Browser',
+                            'table'            : 'BQ.renderers.Table',
                           };
 
 
@@ -2623,3 +2624,72 @@ Ext.define('BQ.renderers.Browser', {
     },
 
 });
+
+
+/*******************************************************************************
+Table templated configs:
+
+*******************************************************************************/
+
+Ext.define('BQ.renderers.Table', {
+    alias: 'widget.renderertable',
+    extend: 'BQ.renderers.Renderer',
+
+    height: 400,
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },
+    defaults: { border: null, },
+
+    initComponent : function() {
+        var definition = this.definition;
+        var template = definition.template || {};
+        var resource = this.resource;
+        if (!definition || !resource) return;
+        template.label = template.label || 'Table file';
+
+        if (resource.resource_type == 'tag' && resource.type == 'table') {
+            BQFactory.request( { uri: resource.value,
+                                 cb:  callback(this, 'onFile'), });
+        }
+
+        this.items = [];
+        this.items.push( {xtype: 'label', html: template.label, } );
+        this.callParent();
+    },
+
+    onFile : function(r) {
+        this.resource = r;
+        this.add({
+            xtype: 'toolbar',
+            height: 50,
+            border: 0,
+            items: [{
+                xtype: 'button',
+                text: 'Download "<b>'+this.resource.name+'</b>"',
+                iconCls: 'download',
+                scale: 'large',
+                //cls: 'x-btn-default-large',
+                //tooltip: 'Download',
+                handler: Ext.Function.bind( this.download, this ),
+            }],
+        }, {
+            xtype: 'tbspacer',
+            height: 10,
+        }, {
+            xtype: 'bq_table_panel',
+            flex: 2,
+            border: 0,
+            resource: this.resource,
+        });
+
+    },
+
+    download : function() {
+        window.open(this.resource.src);
+    },
+
+});
+
