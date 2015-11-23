@@ -644,7 +644,8 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
         for tag_name in v:
             tags = DBSession.query(Taggable).filter(Taggable.document_id == dbo.document_id,
                                                     Taggable.resource_type == 'tag',
-                                                    Taggable.resource_name == tag_name)
+                                                    Taggable.resource_name == tag_name,
+                                                    Taggable.resource_parent_id == dbo.id,)
             for tag in tags:
                 kid = xmlnode(tag, node, view=view, baseuri=baseuri)
                 tl = [ xmlnode(x, kid, view=view, baseuri=baseuri) for x in tag.childrenq ]
