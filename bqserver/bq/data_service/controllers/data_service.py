@@ -453,7 +453,7 @@ class DataServerController(ServiceController):
             log.debug ("path=%s resource_type=%s resource=%s, parent=%s", path, resource_type, resource, parent)
 
         log.debug ("final path=%s resource_type=%s resource=%s, parent=%s", path, resource_type, resource, parent)
-        response = etree.Element('response')
+        response = etree.Element('resource')
         if resource is None:
             # We are dealing with query
             if view == "count":
@@ -483,7 +483,7 @@ class DataServerController(ServiceController):
         resource_type = dbtype_from_tag(resource_tag)
         log.debug ('retrieving type %s' , resource_type)
         nodes =  resource_query(resource_type, tag_query, **kw)
-        response  = etree.Element ('response')
+        response  = etree.Element ('resource')
         db2tree (nodes, parent=response, view=view, baseuri = self.url)
         log.debug("tree converted: %s" , view)
         #log.debug("tree converrted: %s" % etree.tostring(response))

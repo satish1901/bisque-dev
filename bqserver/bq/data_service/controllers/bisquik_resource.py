@@ -279,7 +279,7 @@ class BisquikResource(Resource):
         #if response is None:
         log.debug ("resource_outtput %s", self.uri)
         if isinstance(resource , list):
-            response = etree.Element('response')
+            response = etree.Element('resource')
             db2tree (resource, view = view, parent = response,
                      baseuri=self.uri)
         else:
@@ -395,9 +395,10 @@ class BisquikResource(Resource):
         parent = self.check_access(parent, RESOURCE_EDIT)
         resource = bisquik2db(doc=xml, parent = parent)
         log.info ("NEW: => %s " % resource )
-        if resource is not None:
-            return self.resource_output(resource, view=view,format=format)
-        return "<response>FAIL</response>"
+        if resource is None:
+            resource = etree.Element ('resource')
+            resource.text = "FAIL"
+        return self.resource_output(resource, view=view,format=format)
 
     @expose(content_type='text/xml') #, accept_format="text/xml")
     #@identity.require(identity.not_anonymous())
@@ -405,19 +406,21 @@ class BisquikResource(Resource):
         '''PUT /ds/image/1/gobjects  --> Replace contents of gobjects with doc
         '''
         log.info ('REPLACE_ALL %s %s' % (request.url, xml))
-        resource = self.check_access(resource, RESOURCE_EDIT)
-        DBSession.autoflush = False
         parent = self.load_parent()
+        resource = None
         if parent:
+            resource = self.check_access(resource, RESOURCE_EDIT)
+            DBSession.autoflush = False
             log.info('REPLACE %s in %s' % (self.resource_name , parent))
             log.debug ("replace: %s => %s" %(xml, resource))
             # Here we clear the specific type (tag,gobject) etc. and
 
             parent.clear([ self.resource_name ])
             resource = bisquik2db(doc=xml, parent=parent)
-            if resource is not None:
-                return self.resource_output(resource, **kw)
-        return "<response>FAIL</response>"
+        if resource is None:
+            resource = etree.Element ('resource')
+            resource.text = "FAIL"
+        return self.resource_output(resource, **kw)
 
     @expose(content_type='text/xml') #, format='xml')
     #@identity.require(identity.not_anonymous())
@@ -427,12 +430,11 @@ class BisquikResource(Resource):
         """
         log.info ('DELETE_ALL %s' % (request.url))
         resource = self.check_access(resource, RESOURCE_EDIT)
-
         parent = self.load_parent()
         parent.clear([self.resource_name])
-        transaction.commit()
-        return "<response/>"
-
+        #transaction.commit()
+        resource = etree.Element ('resource')
+        return self.resource_output(resource, **kw)
 
     @expose()
     def get(self, resource, **kw):
@@ -486,8 +488,9 @@ class BisquikResource(Resource):
         log.info ('DELETE %s' % (request.url))
         resource = self.check_access(resource)
         response = resource_delete(resource, user_id = identity.get_user_id())
-        transaction.commit()
-        return "<resource/>"
+        #transaction.commit()
+        resource = etree.Element ('resource')
+        return self.resource_output(resource, **kw)
 
 
     @expose()
@@ -499,4 +502,5 @@ class BisquikResource(Resource):
         format = kw.pop('format', None)
         resource = self.check_access(resource)
         log.info ("HEAD ==>%s" % resource)
-        return ""
+        resource = etree.Element ('resource')
+        return self.resource_output(resource, **kw)
