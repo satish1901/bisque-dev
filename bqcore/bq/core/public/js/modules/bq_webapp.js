@@ -118,7 +118,8 @@ BQWebApp.prototype.init = function (ms) {
       BQFactory.request( { uri: this.args.mex,
                            cb: callback(this, 'load_from_mex'),
                            errorcb: callback(this, 'onerror'),
-                           uri_params: {view:'deep'}  });
+                           //uri_params: {view:'deep'}  });
+                           uri_params: {view:'full'}  });
       return;
   }
 
@@ -276,6 +277,15 @@ BQWebApp.prototype.load_from_resource = function (R) {
 };
 
 BQWebApp.prototype.inputs_from_mex = function (mex) {
+    if (mex.inputs_index && Object.keys(mex.inputs_index).length<1) {
+        this.showProgress(null, 'Fetching execution inputs');
+        BQFactory.request( { uri: mex.uri,
+                             cb: callback(this, 'inputs_from_mex'),
+                             errorcb: callback(this, 'onerror'),
+                             uri_params: {view:'inputs'} });
+        return;
+    }
+    this.hideProgress();
     var inputs = this.ms.module.inputs_index;
     var inputs_mex = mex.inputs_index;
 
@@ -377,13 +387,16 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers, me
         // special case if the output is a dataset, we expect sub-Mexs
         if (this.mex.iterables && n in this.mex.iterables) { //&& r.type=='dataset'
             this.mex.findMexsForIterable(n, 'outputs/');
-            if (Object.keys(this.mex.iterables[n]).length>1) {
+            if (Object.keys(this.mex.iterables[n]).length>0) {
                 conf.title = 'Select a thumbnail to see individual results:';
-                conf.listeners = { 'selected': function(resource) {
-                             var suburl = resource.uri;
-                             var submex = this.mex.iterables[n][suburl];
-                             this.showOutputs(submex, 'outputs-sub');
-                        }, scope: this };
+                conf.listeners = {
+                  scope: this,
+                  selected: function(resource) {
+                     var suburl = resource.uri;
+                     var submex = this.mex.iterables[n][suburl];
+                     this.showOutputs(submex, 'outputs-sub');
+                  },
+                };
             }
         }
 
@@ -391,13 +404,62 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers, me
     }
 };
 
-BQWebApp.prototype.setupUI_outputs = function (key, mex) {
+BQWebApp.prototype.setupUI_outputs = function (key, mex, iterables) {
     key = key || 'outputs';
 
     //if (key != 'outputs') {
     //    this.setupUI_outputs_sub(key, mex);
     //    return;
     //}
+
+    var execute_options = mex.find_tags('execute_options');
+    if (iterables) {
+      execute_options.tags = iterables.tags;
+      mex.dict = undefined;
+      mex.afterInitialized();
+    }
+
+    if (execute_options && !mex.iterables) {
+        BQFactory.request({
+            uri : execute_options.uri,
+            uri_params : { view: 'deep'},
+            cb : callback(this, function(doc) { this.setupUI_outputs(key, mex, doc); } ),
+            errorcb: callback(this, 'onerror'),
+            cache : false
+        });
+        return;
+    }
+
+    // inputs must be present in sub-mexs
+    if (mex.iterables && mex.children && !mex.children[0].inputs && !this.fetched_inputs) {
+        BQFactory.request({
+            uri : mex.uri+'/mex',
+            uri_params : { view: 'inputs'},
+            cb : callback(this, function(doc) {
+                this.fetched_inputs = true;
+                var sub = null,
+                    subsub = null;
+                // for every sub-mex
+                for (var i=0; (sub=mex.children[i]); ++i) {
+                    // update inputs
+                    for (var j=0; (subsub=doc.children[j]); ++j) {
+                        if (sub.uri == subsub.uri) {
+                            Array.prototype.push.apply(sub.tags, subsub.tags);
+                            sub.dict = null;
+                            sub.afterInitialized();
+                            break;
+                        }
+                    }
+                }
+                mex.dict = null;
+                mex.afterInitialized();
+                this.setupUI_outputs(key, mex);
+            }),
+            errorcb: callback(this, 'onerror'),
+            cache : false
+        });
+        return;
+    }
 
     this.renderers[key] = this.renderers[key] || {};
     var my_renderers = this.renderers[key];
@@ -430,13 +492,16 @@ BQWebApp.prototype.setupUI_output_sub = function (w, i, outputs_index, my_render
         // special case if the output is a dataset, we expect sub-Mexs
         if (this.mex.iterables && n in this.mex.iterables) { // && r.type=='dataset'
             this.mex.findMexsForIterable(n, 'outputs/');
-            if (Object.keys(this.mex.iterables[n]).length>1) {
+            if (Object.keys(this.mex.iterables[n]).length>0) {
                 conf.title = 'Select a thumbnail to see individual results:';
-                conf.listeners = { 'selected': function(resource) {
-                             var suburl = resource.uri;
-                             var submex = this.mex.iterables[n][suburl];
-                             this.showOutputs(submex, 'outputs-sub');
-                        }, scope: this };
+                conf.listeners = {
+                  scope: this,
+                  selected: function(resource) {
+                       var suburl = resource.uri;
+                       var submex = this.mex.iterables[n][suburl];
+                       this.showOutputs(submex, 'outputs-sub');
+                  },
+                };
             }
         }
 
@@ -562,25 +627,22 @@ BQWebApp.prototype.onprogress = function (mex) {
 
     // ok, we're doing a parallel run, let's show status for all sub-mexes
     this.status_panel.setVisible(true);
-    var index=0;
-    for (var iterable in mex.iterables) {
-        for (var i=0; (o=mex.children[i]); i++) {
-            if (o instanceof BQMex) {
-                var status = o.value || o.status || 'initializing';
-                var uri    = o.dict['inputs/'+iterable];
-                var name   = this.getResourceNameByUrl(uri) || uri;
+    var iterable = mex.iterables ? mex.iterables[0] : null;
+    for (var i=0; (o=mex.children[i]); i++) {
+        if (o instanceof BQMex) {
+            var status = o.value || o.status || 'initializing';
+            var uri    = o.dict['inputs/'+iterable] || o.uri;
+            var name   = this.getResourceNameByUrl(uri) || uri;
 
-                var r = this.status_store.findRecord( 'resource', uri );
-                if (r) {
-                    r.beginEdit();
-                    r.set( 'name', name );
-                    r.set( 'status', status );
-                    r.endEdit(true);
-                    r.commit();
-                } else {
-                    r = this.status_store.add( {resource: uri, name: name, status: status, } );
-                }
-                index++;
+            var r = this.status_store.findRecord( 'resource', uri );
+            if (r) {
+                r.beginEdit();
+                r.set( 'name', name );
+                r.set( 'status', status );
+                r.endEdit(true);
+                r.commit();
+            } else {
+                r = this.status_store.add( {resource: uri, name: name, status: status, } );
             }
         }
     }
@@ -618,6 +680,8 @@ BQWebApp.prototype.getRunTimeString = function (tags) {
 };
 
 BQWebApp.prototype.parseResults = function (mex) {
+    // dima: add here deep fetch of teh "outputs" tag
+    this.showOutputs(mex);
     // Update module run info
     if (mex.status == "FINISHED") {
         var result_label = document.getElementById("webapp_results_summary");
@@ -626,7 +690,6 @@ BQWebApp.prototype.parseResults = function (mex) {
         }
         if (!this.mex_mode) BQ.ui.notification('Analysis done! Verify results...');
     }
-    this.showOutputs(mex);
 };
 
 BQWebApp.prototype.showOutputs = function (mex, key) {
@@ -634,10 +697,45 @@ BQWebApp.prototype.showOutputs = function (mex, key) {
         BQ.ui.warning('No outputs to show');
         return;
     }
+    if (typeof mex === 'string' || mex instanceof String) {
+        //dima: fetch mex view=outputs and call showOutputs again
+        BQFactory.request({
+            uri : mex,
+            uri_params : { view: 'outputs,execute_options'},
+            cb : callback(this, function(doc) { this.showOutputs(doc, key); } ),
+            errorcb: callback(this, 'onerror'),
+            cache : false
+        });
+        return;
+    }
     this.clearUI_outputs(key);
 
     if (mex.status == "FINISHED") {
         var outputs = mex.find_tags('outputs');
+        if ((!outputs || (outputs && outputs.tags && outputs.tags.length<1)) && !mex.fetched_outputs) {
+            BQApp.setLoading('Fetching results...');
+            BQFactory.request({
+                uri : mex.uri,
+                uri_params : { view: 'deep'},
+                cb : callback(this, function(doc) {
+                    BQApp.setLoading(false);
+                    if (!outputs) {
+                        Array.prototype.push.apply(mex.tags, doc.tags);
+                    } else {
+                        var outs_from = doc.find_tags('outputs');
+                        outputs.tags = outs_from.tags;
+                    }
+                    mex.fetched_outputs = true;
+                    mex.dict = null;
+                    mex.afterInitialized();
+                    this.showOutputs(mex, key);
+                }),
+                errorcb: callback(this, 'onerror'),
+                cache : false
+            });
+            return;
+        }
+
         if (outputs && outputs.tags) {
             this.outputs = outputs.tags; // dima - this should be children in the future
             this.outputs_index  = outputs.create_flat_index();

@@ -2380,6 +2380,7 @@ BQMex.prototype.initializeXml = function (node) {
 };
 
 BQMex.prototype.hasIterables = function () {
+    if (this.children && this.children[0] instanceof BQMex) return true;
     if (!this.iterables) return false;
     return (Object.keys(this.iterables).length>0);
 };
@@ -2406,11 +2407,14 @@ BQMex.prototype.findMexsForIterable = function (name, root) {
 
 BQMex.prototype.afterInitialized = function () {
     //BQObject.prototype.afterInitialized.call ();
-
     this.dict = this.dict || this.toDict(true);
 
+    // finally execute afterInitialized
     var inputs  = this.find_tags('inputs');
-    if (inputs && inputs.tags) {
+    if (inputs instanceof Array) {
+        this.inputs = inputs[0].tags; // dima - this should be children in the future
+        this.inputs_index  = inputs[0].create_flat_index();
+    } else if (inputs && inputs.tags) {
         this.inputs = inputs.tags; // dima - this should be children in the future
         this.inputs_index  = inputs.create_flat_index();
     }
