@@ -1393,6 +1393,34 @@ else
         square   : 'square',
     };
 
+var bq_create_gradient = function (r1,g1,b1,a1,r2,g2,b2,a2) {
+    var ri = r1,
+        gi = g1,
+        bi = b1,
+        ai = a1,
+        rd = (r2-r1)/100.0,
+        gd = (g2-g1)/100.0,
+        bd = (b2-b1)/100.0,
+        ad = (a2-a1)/100.0;
+    for (var i=0; i<101; ++i) {
+        BQGObject.color_gradient[i] = {
+            r: Math.round(ri*2.55),
+            g: Math.round(gi*2.55),
+            b: Math.round(bi*2.55),
+            a: ai,
+        };
+        ri += rd;
+        gi += gd;
+        bi += bd;
+        ai += ad;
+    }
+}
+
+BQGObject.confidence_tag = 'confidence';
+BQGObject.confidence_cutoff = 0;
+BQGObject.color_gradient = [];
+bq_create_gradient(0,0,128,1.0, 255,255,255,1.0);
+
 BQGObject.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);
 
@@ -1412,6 +1440,10 @@ BQGObject.prototype.initializeXml = function (node) {
     var t = BQ.util.xpath_node(node, 'tag[@name="color"]');
     if (t)
         this.color_override = t.getAttribute('value').replace('#', '');
+
+    var t = BQ.util.xpath_node(node, 'tag[@name="'+BQGObject.confidence_tag+'"]');
+    if (t)
+        this.confidence = parseFloat(t.getAttribute('value'));
 };
 
 BQGObject.prototype.setParent = function (p) {
@@ -1422,6 +1454,26 @@ BQGObject.prototype.setParent = function (p) {
 
 BQGObject.prototype.isPrimitive = function () {
     return (this.resource_type in BQGObject.primitives || this.type in BQGObject.primitives);
+};
+
+BQGObject.prototype.getColor = function (r,g,b,a) {
+    if (this.color_override) {
+        return Kinetic.Util._hexToRgb('#' + this.color_override);
+    } if (this.confidence) {
+        if (this.confidence < BQGObject.confidence_cutoff)
+            return {r: 255, g: 255, b: 255, a: 0};
+        var cc = Math.max(0, Math.min(100, Math.round(this.confidence)));
+        return BQGObject.color_gradient[cc];
+    }
+    return {r: r, g: g, b: b, a: a};
+};
+
+BQGObject.prototype.getConfidence = function () {
+    //if (this.confidence) {
+    //    var cc = Math.max(0, Math.min(100, Math.round(this.confidence)));
+    //    return BQGObject.color_gradient[cc];
+    //}
+    return this.confidence;
 };
 
 BQGObject.prototype.perimeter = function (res) {

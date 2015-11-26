@@ -119,7 +119,7 @@ BQ.util.xpath_number = function(node, expression) {
     var result = BQ.util.do_xpath(node, expression, XPathResult.NUMBER_TYPE);
     if (result) {
         return result.numberValue;
-    }    
+    }
 }
 
 
@@ -183,6 +183,24 @@ BQ.util.formatFloat = function(n, c, d, sep) {
         s = Array(c-p+1).join(sep) + s;
     }
     return s;
+};
+
+/*******************************************************************************
+  WebGL
+*******************************************************************************/
+
+BQ.util.isWebGlAvailable = function() {
+    if (typeof(BQ.util.webGlAvailable) !== 'undefined')
+        return BQ.util.webGlAvailable;
+    try {
+        var canvas = document.createElement( 'canvas' );
+        BQ.util.webGlAvailable = ( window.WebGLRenderingContext &&
+                    ( canvas.getContext( 'webgl' ) ||
+                      canvas.getContext( 'experimental-webgl' ) ) );
+    } catch(e) {
+        BQ.util.webGlAvailable = false;
+    }
+    return BQ.util.webGlAvailable;
 };
 
 /*******************************************************************************

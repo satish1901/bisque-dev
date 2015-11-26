@@ -1023,16 +1023,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             BQApp.getToolbar().queryById('download_as_omebigtiff').setDisabled( true );
         }
 
-
-        var webGl = function (){
-            try { var canvas = document.createElement( 'canvas' );
-                  return !! ( window.WebGLRenderingContext &&
-                              ( canvas.getContext( 'webgl' ) ||
-                                canvas.getContext( 'experimental-webgl' ) ) ); }
-            catch( e ) { return false; }
-        }; //test if webgl is available to the client
-
-        if (!webGl()) {//if webgl isn't available then we'll disable the command.
+        if (!BQ.util.isWebGlAvailable()) {//if webgl isn't available then we'll disable the command.
             var button3D = this.toolbar.queryById('menu_view_3d');
             button3D.setText('3D (WebGl not available)');
             button3D.setTooltip('Enable WebGl to access viewer.');
@@ -1132,17 +1123,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
     show3D : function() {
         var me = this;
-
-        //we test for this and hide the object earlier but redundancy doesn't hurt
-        var webGl = function (){
-            try { var canvas = document.createElement( 'canvas' );
-                  return !! ( window.WebGLRenderingContext &&
-                              ( canvas.getContext( 'webgl' ) ||
-                                canvas.getContext( 'experimental-webgl' ) ) ); }
-            catch( e ) { return false; }
-        };
-
-        if(!webGl()) return;
+        if(!BQ.util.webGlAvailable()) return;
 
         //try{
             var btn = this.queryById('button_view');
