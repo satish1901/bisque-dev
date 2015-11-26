@@ -431,7 +431,7 @@ BQWebApp.prototype.setupUI_outputs = function (key, mex, iterables) {
     }
 
     // inputs must be present in sub-mexs
-    if (mex.iterables && mex.children && !mex.children[0].inputs && !this.fetched_inputs) {
+    if (mex.iterables && mex.children && (mex.children.length<1 || !mex.children[0].inputs) && !this.fetched_inputs) {
         BQFactory.request({
             uri : mex.uri+'/mex',
             uri_params : { view: 'inputs'},

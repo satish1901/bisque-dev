@@ -296,7 +296,7 @@ ol li {
 }
 
 .webapp .results .image_viewer_display {
-  height: 440px;
+  /*height: 440px;*/
 }
 
 .webapp .plotter {

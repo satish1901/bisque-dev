@@ -2286,7 +2286,7 @@ Ext.define('BQ.renderers.Image', {
     extend: 'BQ.renderers.RendererWithTools',
     requires: ['BQ.viewer.Image'],
 
-    height: 500,
+    height: 600,
     layout: {
         type: 'vbox',
         align : 'stretch',
@@ -2299,14 +2299,9 @@ Ext.define('BQ.renderers.Image', {
         var resource = this.resource;
         if (!definition || !resource) return;
 
+        // find image host root to use to form stats requests
+        this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');
         this.gobjects = resource.gobjects;
-        /*var parameters = { simpleview: '', gobjects: this.gobjects, };
-        this.viewer = Ext.create('BQ.viewer.Image', {
-            resource: resource.resource_type=='image'?resource:resource.value, // reference or resource
-            flex: 1,
-            parameters: parameters,
-            //listeners: { 'changed': this.onchanged, scope: this, },
-        });*/
 
         // create tools menus
         var tool_items = [];
@@ -2317,14 +2312,75 @@ Ext.define('BQ.renderers.Image', {
             this.template_for_tools = (gobs?gobs.template:{}) || {};
             tool_items = this.createTools();
         }
+        Array.prototype.push.apply(tool_items, [{
+            xtype: 'tbspacer',
+            width: '30%',
+        }, {
+            itemId: 'button_view',
+            xtype:'button',
+            text: 'View: 2D',
+            iconCls: 'view2d',
+            needsAuth: false,
+            tooltip: 'Change the view for the current image',
+            scope: this,
+            menu: {
+                defaults: {
+                    scope: this,
+                },
+                items: [{
+                    xtype  : 'menuitem',
+                    itemId : 'menu_view_2d',
+                    text   : '2D',
+                    iconCls: 'view2d',
+                    handler: this.show2D,
+                    tooltip: 'View current image in 2D tiled viewer',
+                },{
+                    xtype  : 'menuitem',
+                    itemId : 'menu_view_3d',
+                    text   : '3D',
+                    disabled: true,
+                    iconCls: 'view3d',
+                    tooltip: 'View current image in 3D volume renderer',
+                    handler: this.show3D,
+                }, {
+                    xtype  : 'menuitem',
+                    itemId : 'menu_view_movie',
+                    text   : 'movie',
+                    disabled: true,
+                    iconCls: 'movie',
+                    tooltip: 'View current image as a movie',
+                    handler: this.showMovie,
+                }]
+            },
+        }]);
 
-        this.items = [];
-        this.items.push( {xtype: 'label', html:(template.label?template.label:resource.name), } );
-        if (tool_items.length>0) this.items.push( {xtype: 'toolbar', items: tool_items, defaults: { scale: 'medium' }, } );
-        //this.items.push(this.viewer);
-
-        // find image host root to use to form stats requests
-        this.root = this.resource.uri.replace(/\/data_service\/.*$/i, '');
+        this.items = [{
+            xtype: 'label',
+            html: template.label ? template.label : resource.name,
+        }, {
+            xtype: 'toolbar',
+            itemId: 'bar_top',
+            items: tool_items,
+            hidden: tool_items.length==0,
+            defaults: {
+                scale: 'medium',
+            },
+        }, {
+            xtype: 'container',
+            itemId: 'main_container',
+            flex: 2,
+            layout: 'fit',
+        }, {
+            xtype: 'toolbar',
+            itemId: 'bar_bottom',
+            defaults: {
+                scale: 'medium',
+            },
+            //items: [{
+            //    xtype: 'button',
+            //}],
+            hidden: false,
+        }];
 
         this.callParent();
     },
@@ -2332,17 +2388,27 @@ Ext.define('BQ.renderers.Image', {
     afterRender : function() {
         this.callParent();
         var resource = this.resource;
-        this.viewer = Ext.create('BQ.viewer.Image', {
+        this.queryById('main_container').add({
+            xtype: 'imageviewer',
+            itemId: 'main_view_2d',
             resource: resource.resource_type==='image' ? resource : resource.value, // reference or resource
-            flex: 1,
-            height: '100%',
             parameters: {
                 simpleview: '',
                 gobjects: this.gobjects,
+                /*recolor: {
+                    tag: 'confidence',
+                    tag_bounds: [0, 100],
+                    gradient: ['#000066', '#FFFF00'],
+                },*/
             },
-            //listeners: { 'changed': this.onchanged, scope: this, },
+            listeners: {
+                scope: this,
+                loadedPhys: this.onPhysLoaded,
+            },
         });
-        this.add(this.viewer);
+
+        this.toolbar = this.queryById('bar_top');
+        this.viewerContainer = this.queryById('main_view_2d');
     },
 
     createMenuPreviewMovie : function(menu) {
@@ -2357,8 +2423,8 @@ Ext.define('BQ.renderers.Image', {
                 var player = Ext.create('BQ.viewer.Movie.Dialog', {
                     resource: resource_uri,
                     gobjects: this.gobjects[0].uri,
-                    //phys: this.viewer.imagephys,
-                    //preferences: this.viewer.preferences
+                    //phys: this.viewerContainer.viewer.imagephys,
+                    //preferences: this.viewerContainer.preferences
                 });
             },
         });
@@ -2379,10 +2445,139 @@ Ext.define('BQ.renderers.Image', {
                 if (template[name+'/filename'])
                     url += '&filename='+template[name+'/filename'];
                 else if (this.res_for_tools)
-                    url += '&filename='+this.viewer.viewer.image.name+'.csv';
+                    url += '&filename='+this.viewerContainer.viewer.image.name+'.csv';
                 window.open(url);
             },
         });
+    },
+
+    onPhysLoaded : function(viewer, phys, dims) {
+        this.viewerContainer.viewer.setGobTolerance({ z: 3.0, t: 1.0 });
+        if (dims.t>1 || dims.z>1)
+            this.queryById('menu_view_movie').setDisabled( false );
+        if (dims.t>1 || dims.z>1)
+            this.queryById('menu_view_3d').setDisabled( false );
+
+        if (!BQ.util.isWebGlAvailable()) {
+            var button3D = this.queryById('menu_view_3d');
+            button3D.setText('3D (WebGl not available)');
+            button3D.setTooltip('Enable WebGl to access viewer.');
+            button3D.setDisabled( true );
+        }
+    },
+
+    show2D : function() {
+        var btn = this.queryById('button_view');
+        btn.setText('View: 2D');
+        btn.setIconCls('view2d');
+
+        var image2d = this.queryById('main_view_2d');
+        if (image2d && image2d.isVisible()) return;
+
+        var movie = this.queryById('main_view_movie');
+        if (movie) {
+            movie.setVisible(false);
+            movie.destroy();
+        }
+
+        var image3d = this.queryById('main_view_3d');
+        if (image3d) {
+            image3d.setVisible(false);
+            image3d.destroy();
+        }
+
+        image2d.setVisible(true);
+    },
+
+    showMovie : function() {
+        var btn = this.queryById('button_view');
+        btn.setText('View: Movie');
+        btn.setIconCls('movie');
+
+        var movie = this.queryById('main_view_movie');
+        if (movie && movie.isVisible()) return;
+
+        var image2d = this.queryById('main_view_2d');
+        if (image2d) {
+            image2d.setVisible(false);
+            //image2d.destroy(); // do not destroy to really fast return
+        }
+
+        var image3d = this.queryById('main_view_3d');
+        if (image3d) {
+            image3d.setVisible(false);
+            image3d.destroy();
+        }
+
+        var cnt = this.queryById('main_container');
+        cnt.add({
+            xtype: 'bq_movie_viewer',
+            itemId: 'main_view_movie',
+            resource: this.viewerContainer.viewer.image, // reference or resource
+            toolbar: this.toolbar,
+            phys: this.viewerContainer.viewer.imagephys,
+            preferences: this.viewerContainer.viewer.preferences,
+        });
+
+    },
+
+    show3D : function() {
+        var me = this;
+        var btn = this.queryById('button_view');
+        btn.setText('View: 3D');
+        btn.setIconCls('view3d');
+
+        var image3d = this.queryById('main_view_3d');
+        if (image3d && image3d.isVisible()) return;
+
+        var image2d = this.queryById('main_view_2d');
+        if (image2d) {
+            image2d.setVisible(false);
+            //image2d.destroy(); // do not destroy to really fast return
+        }
+
+        var movie = this.queryById('main_view_movie');
+        if (movie) {
+            movie.setVisible(false);
+            movie.destroy();
+        }
+
+        this.queryById('main_container').add({
+            //region : 'center',
+            xtype: 'bq_volume_panel',
+            itemId: 'main_view_3d',
+            resource: this.viewerContainer.viewer.image,
+            toolbar: this.toolbar,
+            phys: this.viewerContainer.viewer.imagephys,
+            preferences: this.viewerContainer.viewer.preferences,
+            listeners: {
+                glcontextlost: function(event){
+                    var msgText = " ";
+                    var link = " mailto:me@example.com"
+                        + "?cc=myCCaddress@example.com"
+                        + "&subject=" + escape("This is my subject")
+                        + "&body=" + msgText + "";
+
+                    BQ.ui.error("Hmmm... WebGL seems to hit a snag: <BR/> " +
+                                "error: " + event.statusMessage +
+                                "<BR/>Do you want to report this problem?" +
+                                "<a href = " + link + "> send mail </a>");
+
+                    var image3d = me.queryById('main_view_3d');
+                    var toolMenu = image3d.toolMenu;
+                    toolMenu.destroy();
+                    image3d.destroy();
+                    //this should destroy the 3D viewer
+                    me.show2D();
+                },
+
+            }
+        });
+    },
+
+    reRenderGobs : function() {
+        //this.viewerContainer.viewer.showGObjects();
+        this.viewerContainer.viewer.setGobTolerance({ z: 3.0, t: 1.0 });
     },
 
 });

@@ -372,9 +372,7 @@ CanvasShape.prototype.getColorManipulator = function(){
         //renderer.colorMenu.setX(ip.x + 22);
         //renderer.colorMenu.setY(ip.y + 78);
         var picker = renderer.colorMenu.queryById('picker');
-        var c = {r: 255, g: 0, b: 0};
-        if(me.gob.color_override)
-            c = Kinetic.Util._hexToRgb('#' + me.gob.color_override);
+        var c = me.getColor();
         picker.setColorRgb(c.r/255, c.g/255, c.b/255, 1.0);
 
     });
@@ -790,28 +788,23 @@ CanvasShape.prototype.setColor = function (r,g,b) {
 
 CanvasShape.prototype.applyColor = function () {
     var color = this.getColor();
-    var colorStr = this.getColorString(color);
-    this.sprite.fill(this.getColorString(color,0.5));
-    this.sprite.stroke(this.getColorString(color,1.0));
+    this.sprite.fill(this.getColorString(color));
+    this.sprite.stroke(this.getColorString(color));
 };
 
 
 CanvasShape.prototype.getColorString = function (c, alpha) {
+    c = c || this.getColor();
     var color = 'rgba('+
             c.r+','+
             c.g+','+
             c.b+','+
-            alpha+')';
-
+            (alpha || c.a)+')';
     return color;
 };
 
 CanvasShape.prototype.getColor = function () {
-    var color = {r: 255, g: 0,b: 0};
-    if(this.gob.color_override){
-        color = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
-    }
-    return color;
+    return this.gob.getColor(255, 0, 0, 0.5);
 };
 
 
@@ -1459,24 +1452,9 @@ CanvasEllipse.prototype.updateLocal = function () {
     //var circ = gob.shape.svgNode;
 
     var scale = this.renderer.stage.scale();
-
-
-    var color = 'rgba(255,0,0,0.5)';
-    var strokeColor = 'rgba(255,0,0,1.0)';
-    if(this.gob.color_override){
-        var c = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
-        color = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            0.5+')';
-        strokeColor = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            1.0+')';
-        //color = ;
-    }
+    var c = this.getColor(),
+        color = this.getColorString(c),
+        strokeColor = color;
 
     this.sprite.fill(color);
     this.sprite.stroke(strokeColor);
@@ -1742,24 +1720,9 @@ CanvasCircle.prototype.updateLocal = function () {
 //var circ = gob.shape.svgNode;
 
     var scale = this.renderer.stage.scale();
-
-
-    var color = 'rgba(255,0,0,0.5)';
-    var strokeColor = 'rgba(255,0,0,1.0)';
-    if(this.gob.color_override){
-        var c = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
-        color = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            0.5+')';
-        strokeColor = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            1.0+')';
-        //color = ;
-    }
+    var c = this.getColor(),
+        color = this.getColorString(c),
+        strokeColor = color;
 
     this.sprite.fill(color);
     this.sprite.stroke(strokeColor);
@@ -1984,24 +1947,9 @@ CanvasPoint.prototype.updateLocal = function () {
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
     var r = this.pointSize/scale.x;
 
-    var color = 'rgba(255,0,0,1.0)';
-    var strokeColor = 'rgba(255,0,0,0.5)';
-
-
-    if(this.gob.color_override){
-        var c = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
-        color = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            1.0+')';
-        strokeColor = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            0.5+')';
-        //color = ;
-    }
+    var c = this.getColor(),
+        color = this.getColorString(c),
+        strokeColor = color;
 
     this.sprite.fill(color);
     this.sprite.stroke(strokeColor);
@@ -2150,24 +2098,9 @@ CanvasImagePoint.prototype.updateLocal = function () {
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
     var r = 3.0/scale.x;
 
-    var color = 'rgba(255,0,0,1.0)';
-    var strokeColor = 'rgba(255,0,0,0.5)';
-
-
-    if(this.gob.color_override){
-        var c = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
-        color = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            1.0+')';
-        strokeColor = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            0.5+')';
-        //color = ;
-    }
+    var c = this.getColor(),
+        color = this.getColorString(c),
+        strokeColor = color;
 
     //this.sprite.fill(color);
     //this.sprite.stroke(strokeColor);
@@ -2451,22 +2384,9 @@ CanvasLabel.prototype.updateLocal = function () {
 
     var r = 3.0/scale.x;
 
-    var color = 'rgba(255,0,0,1.0)';
-    var strokeColor = 'rgba(255,0,0,0.5)';
-    if(this.gob.color_override){
-        var c = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
-        color = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            1.0+')';
-        strokeColor = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            0.5+')';
-        //color = ;
-    }
+    var c = this.getColor(),
+        color = this.getColorString(c),
+        strokeColor = color;
 
     this.sprite.fill(color);
     this.sprite.stroke(strokeColor);
@@ -2697,23 +2617,9 @@ CanvasRectangle.prototype.updateLocal = function () {
     this.sprite.height(h);
 
     var scale = this.renderer.stage.scale();
-
-    var color = 'rgba(255,0,0,0.5)';
-    var strokeColor = 'rgba(255,0,0,1.0)';
-    if(this.gob.color_override){
-        var c = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
-        color = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            0.5+')';
-        strokeColor = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            1.0+')';
-        //color = ;
-    }
+    var c = this.getColor(),
+        color = this.getColorString(c),
+        strokeColor = color;
 
     this.sprite.fill(color);
     this.sprite.stroke(strokeColor);
@@ -2905,24 +2811,9 @@ CanvasSquare.prototype.updateLocal = function () {
     this.sprite.height(min);
 
     var scale = this.renderer.stage.scale();
-
-
-    var color = 'rgba(255,0,0,0.5)';
-    var strokeColor = 'rgba(255,0,0,1.0)';
-    if(this.gob.color_override){
-        var c = Kinetic.Util._hexToRgb('#' + this.gob.color_override);
-        color = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            0.5+')';
-        strokeColor = 'rgba('+
-            c.r+','+
-            c.g+','+
-            c.b+','+
-            1.0+')';
-        //color = ;
-    }
+    var c = this.getColor(),
+        color = this.getColorString(c),
+        strokeColor = color;
 
     this.sprite.fill(color);
     this.sprite.stroke(strokeColor);
