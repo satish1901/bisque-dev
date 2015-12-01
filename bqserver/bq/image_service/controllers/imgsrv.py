@@ -858,35 +858,35 @@ class ResizeOperation(BaseOperation):
     def __str__(self):
         return 'resize: returns an Image in requested dimensions, arg = w,h,method[,AR|,MX]'
 
-    def dryrun(self, token, arg):
-        ss = arg.split(',')
-        size = [0,0]
-        method = 'BL'
-        textAddition = ''
+    # def dryrun(self, token, arg):
+    #     ss = arg.split(',')
+    #     size = [0,0]
+    #     method = 'BL'
+    #     textAddition = ''
 
-        if len(ss)>0 and ss[0].isdigit():
-            size[0] = int(ss[0])
-        if len(ss)>1 and ss[1].isdigit():
-            size[1] = int(ss[1])
-        if len(ss)>2:
-            method = ss[2].upper()
-        if len(ss)>3:
-            textAddition = ss[3].upper()
+    #     if len(ss)>0 and ss[0].isdigit():
+    #         size[0] = int(ss[0])
+    #     if len(ss)>1 and ss[1].isdigit():
+    #         size[1] = int(ss[1])
+    #     if len(ss)>2:
+    #         method = ss[2].upper()
+    #     if len(ss)>3:
+    #         textAddition = ss[3].upper()
 
-        if size[0]<=0 and size[1]<=0:
-            abort(400, 'Resize: size is unsupported: [%s]'%arg )
+    #     if size[0]<=0 and size[1]<=0:
+    #         abort(400, 'Resize: size is unsupported: [%s]'%arg )
 
-        if method not in ['NN', 'BL', 'BC']:
-            abort(400, 'Resize: method is unsupported: [%s]'%arg )
+    #     if method not in ['NN', 'BL', 'BC']:
+    #         abort(400, 'Resize: method is unsupported: [%s]'%arg )
 
-        # if the image is smaller and MX is used, skip resize
-        dims = token.dims or {}
-        if maxBounding and dims.get('image_num_x',0)<=size[0] and dims.get('image_num_y',0)<=size[1]:
-            log.debug('Resize: Max bounding resize requested on a smaller image, skipping...')
-            return token
+    #     # if the image is smaller and MX is used, skip resize
+    #     dims = token.dims or {}
+    #     if maxBounding and dims.get('image_num_x',0)<=size[0] and dims.get('image_num_y',0)<=size[1]:
+    #         log.debug('Resize: Max bounding resize requested on a smaller image, skipping...')
+    #         return token
 
-        ofile = '%s.size_%d,%d,%s,%s' % (token.data, size[0], size[1], method, textAddition)
-        return token.setImage(ofile, fmt=default_format)
+    #     ofile = '%s.size_%d,%d,%s,%s' % (token.data, size[0], size[1], method, textAddition)
+    #     return token.setImage(ofile, fmt=default_format)
 
     def action(self, token, arg):
         log.debug('Resize %s: %s', token.resource_id, arg)
