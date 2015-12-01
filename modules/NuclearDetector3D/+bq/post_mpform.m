@@ -41,7 +41,7 @@
 %   0.1 - 2011-06-27 First implementation
 %
 
-function [output, info] = post_mpform(url, input, user, password)
+function [output, info] = post_mpform(url, input, user, password, resource)
     if ~exist('url', 'var') error(message('BQ.post_mpform:RequiresUrl')); end
     if ~exist('input', 'var') error(message('BQ.post_mpform:RequiresInput')); end
     
@@ -141,10 +141,17 @@ function [output, info] = post_mpform(url, input, user, password)
     
     
     initial = [eol];
-%     initial = [initial, '--', boundary, eol];
-%     initial = [initial, 'Content-Disposition: form-data; name="file_tags"', eol];
-%     initial = [initial, eol];
-%     initial = [initial, '<resource type="file" name="', filename,'" uri="', filename,'" />', eol];    
+    if exist('resource', 'var') && ~isempty(resource),
+        initial = [initial, '--', boundary, eol];
+        initial = [initial, 'Content-Disposition: form-data; name="file_resource"', eol];
+        initial = [initial, eol];
+        initial = [initial, resource, eol];
+    else
+        initial = [initial, '--', boundary, eol];
+        initial = [initial, 'Content-Disposition: form-data; name="file_resource"', eol];
+        initial = [initial, eol];
+        initial = [initial, '<resource name="', filename,'" />', eol];
+    end
     
     initial = [initial, '--', boundary, eol];
     initial = [initial, 'Content-Disposition: form-data; name="file"; filename="', filename,'"', eol];

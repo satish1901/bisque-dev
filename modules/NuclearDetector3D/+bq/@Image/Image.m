@@ -128,7 +128,7 @@ classdef Image < bq.File
         % args.dim - c z t (as bim.write_ome_tiff requires)
         % args.res - x y z t (as bim.write_ome_tiff requires)
         % node  - bq.Node object of the created resource
-        function node = store(image, args, root_url, user, password)
+        function node = store(image, args, root_url, user, password, resource)
             if ~exist('user', 'var') || isempty(user) || ~exist('password', 'var') || isempty(password),
                 error('bq.Image.store:UserCredentialsInvalid', 'Store requires user name and password');
             end        
@@ -140,13 +140,24 @@ classdef Image < bq.File
                 end                  
                 
                 if ~isfield(args, 'dim'), args.dim = []; end
-                if ~isfield(args, 'res'), args.res = []; end                
-                filename = [tempdir args.filename];
+                if ~isfield(args, 'res'), args.res = []; end  
+                
+                s = strsplit(args.filename, '/');
+                filename = s{1, size(s, 2)};
+                filename = [tempdir filename];
                 bim.write_ome_tiff( image, filename, args.dim, args.res);
-            else
-                filename = image;                
+                if ~exist('resource', 'var') || isempty(resource),
+                    resource = ['<image name="', args.filename ,'" />'];
+                end
+            elseif ~exist('resource', 'var') || isempty(resource),
+                filename = image;
+                if ~exist('args', 'var') || isempty(args),
+                    resource = [];
+                else
+                    resource = ['<image name="', args.filename ,'" />']; 
+                end        
             end            
-            node = bq.File.store(filename, root_url, user, password); 
+            node = bq.File.store(filename, root_url, user, password, resource); 
         end % store          
     end % static methods    
     

@@ -54,8 +54,31 @@ Ext.define('BQ.renderers.nd3d.Image', {
     },
 
     save : function() {
+        var me = this,
+            points = this.gobjects[0];
+        this.setLoading('Filtering...');
         // filter gobjects first
-        //this.gobjects.save();
+        points.gobjects = points.gobjects.filter(function(g){
+            try {
+                var confidence = g.gobjects[0].tags[0].value;
+                if (confidence<BQGObject.confidence_cutoff) return false;
+            } catch (e) {
+                return true;
+            }
+            return true;
+        });
+
+        this.setLoading('Saving...');
+        points.save_(
+            undefined,
+            function() {
+                me.setLoading(false);
+            },
+            function() {
+                me.setLoading(false);
+                BQ.ui.error('Problem saving filtered points');
+            }
+        );
     },
 
 });
