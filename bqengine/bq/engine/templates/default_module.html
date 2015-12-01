@@ -45,11 +45,19 @@
         // load help
         var h = BQApp.main.getHelpComponent();
         h.setVisible(true);
-        h.add({ xtype: 'container',
-                cls: 'help-container',
-                loader: { url: 'help', renderer: 'html', autoLoad: true },
-                autoScroll: true,
-            });
+        h.add({
+            xtype: 'container',
+            cls: 'help-container',
+            loader: {
+                url: 'help',
+                renderer: 'html',
+                autoLoad: true,
+                ajaxOptions: {
+                    disableCaching: false,
+                },
+            },
+            autoScroll: true,
+        });
     });
 </script>
 
