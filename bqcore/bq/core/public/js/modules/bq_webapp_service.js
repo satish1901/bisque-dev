@@ -66,35 +66,7 @@ ModuleService.prototype.setModule = function (module) {
 };
 
 ModuleService.prototype.run = function (parameters) {
-
-    // dima - needs rewriting according to the module inputs
-    /*
-    //if ('$gobjects' in parameters) {
-    if ('gobject' in this.module.inputs_types) {
-        var mex = new BQMex();
-        //mex.status = 'PENDING';
-        //mex.module = this.URI; //this.module.uri;
-        //mex.addtag ({name:'client_server', value:client_server});
-        for (var i in parameters) {
-
-            //if (i == '$gobjects')
-            if ('gobject' in this.module.inputs_index[i].type)
-                mex.addtag({name:i, gobjects:parameters[i]});
-            else
-                mex.addtag({name:i, value:parameters[i]});
-        }
-        mex.save_(ensureTrailingSlash(this.URI) + 'execute', callback(this, 'checkMexStatus'), callback(this, 'onerror'));
-    } else {
-        var a = [];
-        for (var i in parameters)
-            a.push( ''+i+'='+encodeURIComponent(parameters[i]) );
-        var uri = ensureTrailingSlash(this.URI) + 'execute?' + a.join("&");
-        BQFactory.request({uri: uri, cb: callback(this, 'checkMexStatus'), errorcb: callback(this, 'onerror'), cache: false});
-    }
-    */
-
     var mex = this.module.createMEX();
-    //var xml = mex.toXML();
     mex.save_(ensureTrailingSlash(this.URI) + 'execute', callback(this, 'onstarted'), callback(this, 'onerror'));
 };
 
@@ -104,21 +76,37 @@ ModuleService.prototype.onstarted = function (mex) {
 };
 
 ModuleService.prototype.checkMexStatus = function (mex) {
+    var me = this;
     if (mex.status=="FINISHED" || mex.status=="FAILED") {
-        if (this.conf.ondone) this.conf.ondone(mex);
+        if (this.conf.ondone) {
+            //this.conf.ondone(mex);
+            BQFactory.request ({
+                uri : mex_uri,
+                uri_params : { view: 'full' },
+                cb : function(doc) {
+                    me.conf.ondone(doc);
+                },
+                errorcb: callback(this, this.onerror),
+                cache : false,
+            });
+        }
     } else {
-        if (this.conf.onprogress) this.conf.onprogress(mex);
-        var me = this;
-        setTimeout (function () { me.requestMexStatus(mex.uri); }, 5000);
+        if (this.conf.onprogress)
+            this.conf.onprogress(mex);
+        setTimeout (function () {
+            me.requestMexStatus(mex.uri);
+        }, 5000);
     }
 };
 
 ModuleService.prototype.requestMexStatus = function(mex_uri) {
-    BQFactory.request ({uri : mex_uri,
-                        uri_params : { view: 'full'},
-                        cb : callback(this, 'checkMexStatus'),
-                        errorcb: callback(this, 'onerror'),
-                        cache : false});
+    BQFactory.request ({
+        uri : mex_uri,
+        //uri_params : { view: 'full' },
+        cb : callback(this, this.checkMexStatus),
+        errorcb: callback(this, this.onerror),
+        cache : false,
+    });
 };
 
 ModuleService.prototype.emit_error = function(message) {

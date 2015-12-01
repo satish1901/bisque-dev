@@ -115,11 +115,13 @@ BQWebApp.prototype.init = function (ms) {
   // process arguments
   if ('mex' in this.args) {
       this.showProgress(null, 'Fetching module execution document');
-      BQFactory.request( { uri: this.args.mex,
-                           cb: callback(this, 'load_from_mex'),
-                           errorcb: callback(this, 'onerror'),
-                           //uri_params: {view:'deep'}  });
-                           uri_params: {view:'full'}  });
+      BQFactory.request({
+          uri: this.args.mex,
+          cb: callback(this, 'load_from_mex'),
+          errorcb: callback(this, 'onerror'),
+          //uri_params: {view:'deep'}  });
+          uri_params: {view:'full'}
+      });
       return;
   }
 
@@ -404,26 +406,58 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers, me
     }
 };
 
-BQWebApp.prototype.setupUI_outputs = function (key, mex, iterables) {
+BQWebApp.prototype.setupUI_outputs = function (key, mex) {
     key = key || 'outputs';
 
-    //if (key != 'outputs') {
-    //    this.setupUI_outputs_sub(key, mex);
-    //    return;
-    //}
-
-    var execute_options = mex.find_tags('execute_options');
-    if (iterables) {
-      execute_options.tags = iterables.tags;
-      mex.dict = undefined;
-      mex.afterInitialized();
+    // outputs must be present
+    var outputs = mex.find_tags('outputs');
+    if ((!outputs || (outputs && outputs.tags && outputs.tags.length<1)) && !mex.fetched_outputs) {
+        BQApp.setLoading('Fetching results...');
+        if (outputs) {
+            // in case we have outputs URL
+            BQFactory.request({
+                uri : outputs.uri,
+                uri_params : { view: 'deep'},
+                cb : callback(this, function(doc) {
+                    BQApp.setLoading(false);
+                    outputs.tags = doc.tags;
+                    mex.fetched_outputs = true;
+                    mex.dict = null;
+                    mex.afterInitialized();
+                    this.setupUI_outputs(key, mex);
+                }),
+                errorcb: callback(this, 'onerror'),
+                cache : false
+            });
+        } else {
+            // we have nothing to start with, fetch the whole MEX deep
+            BQFactory.request({
+                uri : mex.uri,
+                uri_params : { view: 'deep'},
+                cb : callback(this, function(doc) {
+                    BQApp.setLoading(false);
+                    mex = doc;
+                    this.setupUI_outputs(key, mex);
+                }),
+                errorcb: callback(this, 'onerror'),
+                cache : false
+            });
+        }
+        return;
     }
 
+    // ensure we fetched names of iterable variables
+    var execute_options = mex.find_tags('execute_options');
     if (execute_options && !mex.iterables) {
         BQFactory.request({
             uri : execute_options.uri,
             uri_params : { view: 'deep'},
-            cb : callback(this, function(doc) { this.setupUI_outputs(key, mex, doc); } ),
+            cb : callback(this, function(doc) {
+                execute_options.tags = doc.tags;
+                mex.dict = undefined;
+                mex.afterInitialized();
+                this.setupUI_outputs(key, mex);
+            }),
             errorcb: callback(this, 'onerror'),
             cache : false
         });
@@ -461,6 +495,11 @@ BQWebApp.prototype.setupUI_outputs = function (key, mex, iterables) {
         return;
     }
 
+    // dima: some old stuff
+    this.outputs = mex.outputs;
+    this.outputs_index  = mex.outputs_index;
+
+    // setting up renderers
     this.renderers[key] = this.renderers[key] || {};
     var my_renderers = this.renderers[key];
 
@@ -619,7 +658,7 @@ BQWebApp.prototype.onprogress = function (mex) {
     var button_run = document.getElementById("webapp_run_button");
     //if (mex.status == "FINISHED" || mex.status == "FAILED") return;
 
-    if (!mex.hasIterables()) {
+    if (!mex.isMultiMex()) {
         button_run.childNodes[0].nodeValue = "Progress: " + mex.status;
         button_run.disabled = true;
         return;
@@ -701,7 +740,7 @@ BQWebApp.prototype.showOutputs = function (mex, key) {
         //dima: fetch mex view=outputs and call showOutputs again
         BQFactory.request({
             uri : mex,
-            uri_params : { view: 'outputs,execute_options'},
+            uri_params : { view: 'full'},
             cb : callback(this, function(doc) { this.showOutputs(doc, key); } ),
             errorcb: callback(this, 'onerror'),
             cache : false
@@ -711,35 +750,6 @@ BQWebApp.prototype.showOutputs = function (mex, key) {
     this.clearUI_outputs(key);
 
     if (mex.status == "FINISHED") {
-        var outputs = mex.find_tags('outputs');
-        if ((!outputs || (outputs && outputs.tags && outputs.tags.length<1)) && !mex.fetched_outputs) {
-            BQApp.setLoading('Fetching results...');
-            BQFactory.request({
-                uri : mex.uri,
-                uri_params : { view: 'deep'},
-                cb : callback(this, function(doc) {
-                    BQApp.setLoading(false);
-                    if (!outputs) {
-                        Array.prototype.push.apply(mex.tags, doc.tags);
-                    } else {
-                        var outs_from = doc.find_tags('outputs');
-                        outputs.tags = outs_from.tags;
-                    }
-                    mex.fetched_outputs = true;
-                    mex.dict = null;
-                    mex.afterInitialized();
-                    this.showOutputs(mex, key);
-                }),
-                errorcb: callback(this, 'onerror'),
-                cache : false
-            });
-            return;
-        }
-
-        if (outputs && outputs.tags) {
-            this.outputs = outputs.tags; // dima - this should be children in the future
-            this.outputs_index  = outputs.create_flat_index();
-        }
         // setup output renderers
         this.setupUI_outputs(key, mex);
     } else if (mex.status == "FAILED") {

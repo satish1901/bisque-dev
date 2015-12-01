@@ -2431,7 +2431,7 @@ BQMex.prototype.initializeXml = function (node) {
     this.status = this.value;
 };
 
-BQMex.prototype.hasIterables = function () {
+BQMex.prototype.isMultiMex = function () {
     if (this.children && this.children[0] instanceof BQMex) return true;
     if (!this.iterables) return false;
     return (Object.keys(this.iterables).length>0);
