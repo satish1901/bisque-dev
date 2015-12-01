@@ -106,7 +106,7 @@ gObjectBuffer.prototype.build = function(gObject, ftor){
     var g = ftor(gObject);
     g.gObject = gObject;
     gObject.shape3D = g;
-    g.color = this.getColor(gObject.color_override);
+    g.color = this.getColor(gObject.getColor()); //this.getColor(gObject.color_override);
     this.push(g);
 }
 

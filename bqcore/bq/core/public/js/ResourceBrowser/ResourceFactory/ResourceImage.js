@@ -1123,7 +1123,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
     show3D : function() {
         var me = this;
-        if(!BQ.util.webGlAvailable()) return;
+        if(!BQ.util.isWebGlAvailable()) return;
 
         //try{
             var btn = this.queryById('button_view');
