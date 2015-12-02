@@ -170,6 +170,17 @@ def merge_resources (*resources):
         log.debug ('updated : %s -> %s', etree.tostring(rsc), etree.tostring(final))
     return final
 
+def overwrite_xmlattr(parent, node, name, value, type=None):
+    xl = parent.xpath('%s[@name="%s"]'%(node, name))
+    if len(xl)>0:
+        t = xl[0]
+    else:
+        t = etree.SubElement(parent, 'tag', name=name )
+    t.set('value', value)
+    if type is not None:
+        t.set('type', type)
+
+
 #---------------------------------------------------------------------------------------
 # File object
 #---------------------------------------------------------------------------------------
@@ -446,25 +457,35 @@ class import_serviceController(ServiceController):
             val = etree.SubElement(resource, 'value' )
             val.text = blob_service.local2url(v)
 
-        image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta', resource_unid='image_meta' )
-        etree.SubElement(image_meta, 'tag', name='storage', value='multi_file_series' )
-        etree.SubElement(image_meta, 'tag', name='image_num_z', value='%s'%z, type='number' )
-        etree.SubElement(image_meta, 'tag', name='image_num_t', value='%s'%t, type='number' )
+        #find image meta in the input resource
+        image_meta = None
+        x = uf.resource.xpath('tag[@name="image_meta" and @type="image_meta"]')
+        if len(x)>0:
+            x = x[0]
+            resource.append(copy.deepcopy(x))
+            uf.resource.remove(x)
+            image_meta = resource.xpath('tag[@name="image_meta" and @type="image_meta"]')[0]
+        else:
+            image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta') #, resource_unid='image_meta' )
+
+        overwrite_xmlattr(image_meta, 'tag', name='storage', value='multi_file_series')
+        overwrite_xmlattr(image_meta, 'tag', name='image_num_z', value='%s'%z, type='number' )
+        overwrite_xmlattr(image_meta, 'tag', name='image_num_t', value='%s'%t, type='number' )
         if c>1:
-            etree.SubElement(image_meta, 'tag', name='image_num_c', value='%s'%c, type='number' )
-        etree.SubElement(image_meta, 'tag', name='dimensions', value='XYCZT' )
+            overwrite_xmlattr(image_meta, 'tag', name='image_num_c', value='%s'%c, type='number' )
+        overwrite_xmlattr(image_meta, 'tag', name='dimensions', value='XYCZT' )
         if float(kw.get('resolution_x', 0))>0:
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_x', value='%s'%kw['resolution_x'], type='number' )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_x', value='microns' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_x', value='%s'%kw['resolution_x'], type='number' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_unit_x', value='microns' )
         if float(kw.get('resolution_y', 0))>0:
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_y', value='%s'%kw['resolution_y'], type='number' )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_y', value='microns' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_y', value='%s'%kw['resolution_y'], type='number' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_unit_y', value='microns' )
         if float(kw.get('resolution_z', 0))>0:
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_z', value='%s'%kw['resolution_z'], type='number' )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_z', value='microns' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_z', value='%s'%kw['resolution_z'], type='number' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_unit_z', value='microns' )
         if float(kw.get('resolution_t', 0))>0:
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_t', value='%s'%kw['resolution_t'], type='number' )
-            etree.SubElement(image_meta, 'tag', name='pixel_resolution_unit_t', value='seconds' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_t', value='%s'%kw['resolution_t'], type='number' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_unit_t', value='seconds' )
 
         # append all other input annotations
         resource.extend (copy.deepcopy (list (uf.resource)))
