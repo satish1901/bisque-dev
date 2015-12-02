@@ -81,7 +81,7 @@ ModuleService.prototype.checkMexStatus = function (mex) {
         if (this.conf.ondone) {
             //this.conf.ondone(mex);
             BQFactory.request ({
-                uri : mex_uri,
+                uri : mex.uri,
                 uri_params : { view: 'full' },
                 cb : function(doc) {
                     me.conf.ondone(doc);

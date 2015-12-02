@@ -2576,8 +2576,12 @@ Ext.define('BQ.renderers.Image', {
     },
 
     reRenderGobs : function() {
-        //this.viewerContainer.viewer.showGObjects();
-        this.viewerContainer.viewer.setGobTolerance({ z: 3.0, t: 1.0 });
+        var image3d = this.queryById('main_view_3d');
+        if (image3d && image3d.isVisible()) {
+            image3d.updateGobs();
+        } else {
+            this.viewerContainer.rerender();
+        }
     },
 
 });

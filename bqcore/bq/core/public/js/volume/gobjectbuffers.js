@@ -102,11 +102,11 @@ gObjectBuffer.prototype.getColor = function (color) {
 };
 
 gObjectBuffer.prototype.build = function(gObject, ftor){
-
-    var g = ftor(gObject);
+    var g = ftor(gObject),
+        c = gObject.getColor();
     g.gObject = gObject;
     gObject.shape3D = g;
-    g.color = this.getColor(gObject.getColor()); //this.getColor(gObject.color_override);
+    g.color = {r: c.r/255.0, g: c.g/255.0, b: c.b/255.0, a: c.a}; //this.getColor(gObject.color_override);
     this.push(g);
 }
 
@@ -128,10 +128,10 @@ gObjectBuffer.prototype.buildBuffer = function () {
 		this.pushPosition(this.position[i], i, gpositions);
 	}
 
-	for (var i = 0; i < this.colors.length; i++) {
-		gcolor[3 * i + 0] = this.colors[i].r;
-		gcolor[3 * i + 1] = this.colors[i].g;
-		gcolor[3 * i + 2] = this.colors[i].b;
+	for (var i=0, j=0; i < this.colors.length; i++, j+=3) {
+		gcolor[j + 0] = this.colors[i].r;
+		gcolor[j + 1] = this.colors[i].g;
+		gcolor[j + 2] = this.colors[i].b;
 	}
 
 	this.mesh = this.allocateMesh(geometry, this.material);
@@ -312,11 +312,11 @@ pointBuffer.prototype.sortParticles = function (pos) {
         }
 	}
 
-	for (var i = 0; i < this.permutation.length; i++) {
+	for (var i = 0, j=0; i < this.permutation.length; i++, j+=3) {
 		this.permutation[i].i = i;
-		var d0 = pos.x - bpositions[3 * i + 0];
-		var d1 = pos.y - bpositions[3 * i + 1];
-		var d2 = pos.z - bpositions[3 * i + 2];
+		var d0 = pos.x - bpositions[j + 0];
+		var d1 = pos.y - bpositions[j + 1];
+		var d2 = pos.z - bpositions[j + 2];
 		this.permutation[i].dist = d0 * d0 + d1 * d1 + d2 * d2;
 	}
 	this.permutation.sort(function (a, b) {
@@ -1027,7 +1027,7 @@ gObjectTool.prototype.initControls = function(){
     /////////////////////////////////////////////////////////
 
 
-    var resourceMap = {
+    this.resourceMap = {
         //gobject  : this.PointBuffer,
         point    : 'points',
         rectangle: 'polygons',
@@ -1041,7 +1041,7 @@ gObjectTool.prototype.initControls = function(){
     };
 
     this.volume.color_gobjects = function(g, color){
-        var resource = me.currentSet[resourceMap[g.type]];
+        var resource = me.currentSet[me.resourceMap[g.type]];
         if(!g.shape3D || !resource) return;
         var id = g.shape3D.index3D;
         color = resource.getColor(color);
@@ -1052,7 +1052,7 @@ gObjectTool.prototype.initControls = function(){
     };
 
     this.volume.highlight_gobject = function(g){
-        var resource = me.currentSet[resourceMap[g.type]];
+        var resource = me.currentSet[me.resourceMap[g.type]];
         if(!g.shape3D || !resource) return;
         var id = g.shape3D.index3D;
         resource.highlight(id);
@@ -1062,7 +1062,7 @@ gObjectTool.prototype.initControls = function(){
 
 
     this.volume.unhighlight_gobject = function(g){
-        var resource = me.currentSet[resourceMap[g.type]];
+        var resource = me.currentSet[me.resourceMap[g.type]];
         if(!g.shape3D || !resource) return;
         var id = g.shape3D.index3D;
         resource.unhighlight(id);
@@ -1274,4 +1274,23 @@ gObjectTool.prototype.loadPreferences = function(prefs){
 //set toggled on start
 //////////////////////
     this.button.toggle(prefs.show);
+};
+
+gObjectTool.prototype.updateColor = function(){
+    var me = this;
+    visit_array(this.gobjects, function(g, args) {
+        if (g.shape3D) {
+            var c = g.getColor(),
+                resource = me.currentSet[me.resourceMap[g.type]];
+            g.shape3D.color = { r: c.r/255.0, g: c.g/255.0, b: c.b/255.0, a: c.a };
+            resource.setColor(g.shape3D.index3D, g.shape3D.color);
+        }
+    });
+    for (var i in this.currentSet) {
+        var r = this.currentSet[i];
+        r.mesh.geometry.dynamic = true;
+        r.mesh.geometry.attributes.color.needsUpdate = true;
+        r.mesh.geometry.needsUpdate = true;
+        r.update();
+    }
 };

@@ -1404,9 +1404,9 @@ var bq_create_gradient = function (r1,g1,b1,a1,r2,g2,b2,a2) {
         ad = (a2-a1)/100.0;
     for (var i=0; i<101; ++i) {
         BQGObject.color_gradient[i] = {
-            r: Math.round(ri*2.55),
-            g: Math.round(gi*2.55),
-            b: Math.round(bi*2.55),
+            r: Math.round(ri),
+            g: Math.round(gi),
+            b: Math.round(bi),
             a: ai,
         };
         ri += rd;
@@ -1419,7 +1419,7 @@ var bq_create_gradient = function (r1,g1,b1,a1,r2,g2,b2,a2) {
 BQGObject.confidence_tag = 'confidence';
 BQGObject.confidence_cutoff = 0;
 BQGObject.color_gradient = [];
-bq_create_gradient(0,0,128,1.0, 255,255,255,1.0);
+bq_create_gradient(0,0,255,1.0, 255,255,0,1.0);
 
 BQGObject.prototype.initializeXml = function (node) {
     BQObject.prototype.initializeXml.call(this, node);
@@ -1459,11 +1459,12 @@ BQGObject.prototype.isPrimitive = function () {
 BQGObject.prototype.getColor = function (r,g,b,a) {
     if (this.color_override) {
         return Kinetic.Util._hexToRgb('#' + this.color_override);
-    } if (this.confidence) {
+    } if (typeof(this.confidence) !== 'undefined') {
         if (this.confidence < BQGObject.confidence_cutoff)
-            return {r: 255, g: 255, b: 255, a: 0};
+            return {r: 255, g: 0, b: 0, a: 0};
         var cc = Math.max(0, Math.min(100, Math.round(this.confidence)));
-        return BQGObject.color_gradient[cc];
+        var c = BQGObject.color_gradient[cc];
+        return {r: c.r, g: c.g, b: c.b, a: c.a};
     }
     return {r: r, g: g, b: b, a: a};
 };
