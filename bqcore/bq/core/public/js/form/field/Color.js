@@ -1,6 +1,6 @@
 /*******************************************************************************
 
-  BQ.form.field.Color - Color form field provides color selection for any form 
+  BQ.form.field.Color - Color form field provides color selection for any form
         field, will work in all browsers and not limited to html5 color input.
 
   Author: Dima Fedorov <dimin@dimin.net> <http://www.dimin.net/>
@@ -8,10 +8,10 @@
   FreeBSD License
 
   Version: 1
-  
-  History: 
+
+  History:
     2012-11-07 16:18:49 - first version
-    
+
 @example
 Ext.create('BQ.form.field.Color', {
     renderTo: ELEMENT,
@@ -23,35 +23,35 @@ Ext.create('BQ.form.field.Color', {
         change: function(field, value) {
             alert('got color: #'+value);
         },
-    },            
-});  
-    
+    },
+});
+
 *******************************************************************************/
 
- 
+
 Ext.define('BQ.form.field.Color', {
     extend:'Ext.form.field.Base',
     alias: 'widget.colorfield',
     requires: ['Ext.picker.Color', 'Ext.draw.Color'],
     alternateClassName: ['BQ.form.ColorField', 'BQ.form.Color'],
 
-    inputType: 'color', 
-    cls : Ext.baseCSSPrefix + 'form-color',
+    inputType: 'color',
+    componentCls : Ext.baseCSSPrefix + 'form-color',
     matchFieldWidth: false,
 
     // got to use button instead of color due to limited browser support
     fieldSubTpl: [
         '<input id="{id}-checkbox" type="checkbox" value="" checked>',
-        '<input id="{id}" type="button" {inputAttrTpl}', 
-        ' size="1"', 
-        '<tpl if="name"> name="{name}"</tpl>', 
-        '<tpl if="value"> value="{[Ext.util.Format.htmlEncode(values.value)]}"</tpl>', 
-        '<tpl if="placeholder"> placeholder="{placeholder}"</tpl>', 
-        '{%if (values.maxLength !== undefined){%} maxlength="{maxLength}"{%}%}', 
-        '<tpl if="readOnly"> readonly="readonly"</tpl>', 
-        '<tpl if="disabled"> disabled="disabled"</tpl>', 
-        '<tpl if="tabIdx"> tabIndex="{tabIdx}"</tpl>', 
-        //'<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>', 
+        '<input id="{id}" type="button" {inputAttrTpl}',
+        ' size="1"',
+        '<tpl if="name"> name="{name}"</tpl>',
+        '<tpl if="value"> value="{[Ext.util.Format.htmlEncode(values.value)]}"</tpl>',
+        '<tpl if="placeholder"> placeholder="{placeholder}"</tpl>',
+        '{%if (values.maxLength !== undefined){%} maxlength="{maxLength}"{%}%}',
+        '<tpl if="readOnly"> readonly="readonly"</tpl>',
+        '<tpl if="disabled"> disabled="disabled"</tpl>',
+        '<tpl if="tabIdx"> tabIndex="{tabIdx}"</tpl>',
+        //'<tpl if="fieldStyle"> style="{fieldStyle}"</tpl>',
         ' class="{fieldCls} {typeCls} {editableCls}" autocomplete="off"/>',
         {disableFormats: true}
     ],
@@ -59,7 +59,7 @@ Ext.define('BQ.form.field.Color', {
     initComponent : function() {
         this.callParent();
     },
-   
+
     afterRender : function() {
         this.onColorSelected(undefined, this.value);
     },
@@ -74,9 +74,9 @@ Ext.define('BQ.form.field.Color', {
         var me = this;
         me.callParent();
         me.mon(me.inputEl, 'click', me.onBoxClick, me);
-        me.mon(me.checkbox, 'click', me.onCheckClick, me);        
+        me.mon(me.checkbox, 'click', me.onCheckClick, me);
     },
-           
+
     /**
     * @private Handle click on the checkbox button
     */
@@ -92,7 +92,7 @@ Ext.define('BQ.form.field.Color', {
             //maxWidth: w,
             //height:  h,
             minHeight: h,
-            
+
             layout: 'fit',
             autoHide: false,
             shadow: false,
@@ -101,10 +101,8 @@ Ext.define('BQ.form.field.Color', {
                 //width :  500,
                 //height:  100,
                 listeners: {
-                    select: function(picker, selColor) {
-                        this.onColorSelected(picker, selColor);
-                    },
                     scope: this,
+                    select: this.onColorSelected,
                 },
                 colors : [ '000000', // trasparent
                            'FF0000', '00FF00', '0000FF', // RGB
@@ -113,39 +111,40 @@ Ext.define('BQ.form.field.Color', {
                            'FF00FF', // MAGENTA
                            'FFFF00', // YELLOW
                            'FF6600'  // custom orange
-                ],                    
+                ],
                 titles : [ 'Hidden', // trasparent
                            'Red', 'Green', 'Blue', // RGB
                            'Gray', //GRAY
                            'Cyan', 'Magenta', 'Yellow', // YMC
                            'Custom' // custom orange
-                ],                    
+                ],
             }],
         }).show();
     },
-           
+
     onColorSelected: function(picker, color) {
-        this.setValue(color); //must be hex without #
         var c = Ext.draw.Color.fromString('#'+color);
-        this.inputEl.setStyle( 'background-color', c.toString());  
+        this.c = c;
+        this.setValue(color); //must be hex without #
+        this.inputEl.setStyle( 'background-color', c.toString());
         this.inputEl.set({value: 'R:'+c.getRed()+', G:'+c.getGreen()+', B:'+c.getBlue() }); //resets the element label and value, must be run after setValue
 
-        if (c.getHSL()[2]>0.45)                
+        if (c.getHSL()[2] > 0.35)
             this.inputEl.setStyle( 'color', '#000000');
         else
-            this.inputEl.setStyle( 'color', '#FFFFFF');            
-        
+            this.inputEl.setStyle( 'color', '#FFFFFF');
+
         if (color=='000000')
             this.checkbox.dom.checked = false;
         else
             this.checkbox.dom.checked = true;
-                    
+
         if (picker) picker.ownerCt.destroy();
     },
 
     onCheckClick: function(e) {
         if (this.checkbox.dom.checked) {
-            this.onColorSelected(undefined, this.color_stored? this.color_stored:'000000');            
+            this.onColorSelected(undefined, this.color_stored? this.color_stored:'000000');
         } else {
             this.color_stored = this.color? this.color:'000000'; //must be hex without #  (chris - use to assign from this.value)
             this.onColorSelected(undefined, '000000');
@@ -160,7 +159,7 @@ Ext.define('BQ.form.field.Color', {
         return rawValue;
     },
     */
-    
+
     setValue: function(value) {
         this.color = value;
         this.callParent(arguments);
@@ -169,6 +168,10 @@ Ext.define('BQ.form.field.Color', {
     getValue: function() {
         this.callParent(arguments);
         return this.color;
+    },
+
+    getColor: function() {
+        return this.c;
     },
 
     createPicker: function() {

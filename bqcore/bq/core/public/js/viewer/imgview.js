@@ -629,6 +629,10 @@ ImgViewer.prototype.hideGObjects = function(gobs) {
     this.renderer.rerender(gobs, [this.current_view, false]);
 };
 
+ImgViewer.prototype.rerender = function() {
+    this.renderer.rerender();
+};
+
 ImgViewer.prototype.setGobProjection = function(projection) {
     this.current_view.gob_projection = projection;
     this.renderer.rerender();

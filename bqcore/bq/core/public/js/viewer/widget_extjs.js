@@ -208,6 +208,11 @@ Ext.define('BQ.viewer.Image', {
         this.viewer.loadGObjects(g);
     },
 
+    rerender : function() {
+        if (!this.viewer) return;
+        this.viewer.rerender();
+    },
+
     onworking : function(msg) {
         if (this.parameters.blockforsaves) this.setLoading(msg);
         this.fireEvent( 'working', this, msg );

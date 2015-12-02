@@ -23,17 +23,43 @@ Ext.define('BQ.renderers.nd3d.Image', {
         this.callParent();
         this.queryById('bar_bottom').add({
             xtype: 'tbspacer',
-            width: '30%',
+            width: 15,
+        }, {
+            xtype: 'colorfield',
+            itemId: 'color1',
+            cls: 'simplepicker',
+            labelWidth: 0,
+            name: 'color1',
+            value: '0000ff',
+            listeners: {
+                scope: this,
+                change: this.onNewGradient,
+            },
+        }, {
+            xtype: 'colorfield',
+            itemId: 'color2',
+            cls: 'simplepicker',
+            labelWidth: 0,
+            name: 'color2',
+            value: 'ffff00',
+            listeners: {
+                scope: this,
+                change: this.onNewGradient,
+            },
+        }, {
+            xtype: 'tbspacer',
+            width: 15,
         }, {
             xtype: 'slider',
             width: 200,
             value: 0,
+            animate: false,
             increment: 1,
             minValue: 0,
             maxValue: 100,
             listeners: {
                 scope: this,
-                change: this.doFilter,
+                change: this.onFilter,
             },
         }, {
             xtype: 'tbspacer',
@@ -44,11 +70,20 @@ Ext.define('BQ.renderers.nd3d.Image', {
             tooltip: 'Save filtered results into the module execution document',
             scope: this,
             handler: this.save,
+        }, {
+            xtype: 'tbspacer',
+            flex: 1,
         });
     },
 
-    doFilter : function(slider, newvalue) {
+    onFilter : function(slider, newvalue) {
         BQGObject.confidence_cutoff = newvalue;
+        var me = this;
+        clearTimeout(this.updatetimer);
+        this.updatetimer = setTimeout(function(){ me.reRenderGobs(); }, 50);
+    },
+
+    doFilter : function() {
         // request re-rendering of gobjects
         this.reRenderGobs();
     },
@@ -80,6 +115,13 @@ Ext.define('BQ.renderers.nd3d.Image', {
             }
         );
     },
+
+    onNewGradient: function() {
+        var c1 = this.queryById('color1').getColor(),
+            c2 = this.queryById('color2').getColor();
+        bq_create_gradient(c1.r,c1.g,c1.b,1.0, c2.r,c2.g,c2.b,1.0);
+        this.reRenderGobs();
+    }
 
 });
 

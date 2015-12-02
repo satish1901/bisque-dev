@@ -2242,6 +2242,14 @@ Ext.define('BQ.viewer.Volume.Panel', {
             }
         }
     },
+
+    updateGobs: function () {
+        var gobtool = this.tools['gobjects'];
+        if (!gobtool) return;
+        gobtool.updateColor();
+        this.rerender();
+    },
+
 });
 
 //--------------------------------------------------------------------------------------
