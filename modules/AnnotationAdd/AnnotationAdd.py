@@ -15,14 +15,14 @@ import logging
 logging.basicConfig(filename='AnnotationAdd.log', level=logging.DEBUG)
 log = logging.getLogger('AnnotationAdd')
 
-def annotation_add(resource, ann='tag', ann_name=None, ann_value=None, ann_type=None):
+def annotation_add(resource, ann='tag', ann_name=None, ann_value=None, ann_type=None, add_if_exists=False):
     modified = []
     if ann_name is not None and ann_value is not None:
         xpath = '//%s[@name="%s" and @value="%s"]'%(ann, ann_name, ann_value)
         if ann_type is not None:
             xpath = xpath.replace(']', ' and @type="%s"]'%ann_type)
         anns = resource.xpath(xpath)
-        if len(anns) < 1:
+        if len(anns) < 1 or add_if_exists is True:
                 g = etree.SubElement(resource, ann, name=ann_name, value=ann_value)
                 if ann_type is not None:
                     g.set('type', ann_type)
@@ -43,6 +43,7 @@ class AnnotationAdd(object):
         ann_name             = pars['annotation_name']
         ann_value            = pars['annotation_value']
         ann_type             = pars['annotation_type'] if pars['annotation_type'] != '' else None
+        add_if_exists        = pars['add_if_exists']
 
         bq.update_mex('Starting')
         mex_id = mex_url.split('/')[-1]
@@ -65,8 +66,8 @@ class AnnotationAdd(object):
                 url = r.text
                 image = bq.fetchxml (url, view='deep')
                 uuid = image.get('resource_uniq')
-                modified = annotation_add(image, ann=annotation_type, ann_name=ann_name, ann_value=ann_value, ann_type=ann_type)
-                
+                modified = annotation_add(image, ann=annotation_type, ann_name=ann_name, ann_value=ann_value, ann_type=ann_type, add_if_exists=add_if_exists)
+
                 if len(modified)>0:
                     bq.postxml(url, image, method='PUT')
                     total = total + len(modified)
