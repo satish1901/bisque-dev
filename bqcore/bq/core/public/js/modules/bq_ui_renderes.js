@@ -1913,13 +1913,6 @@ Ext.define('BQ.selectors.Boolean', {
     },
 
     isValid: function() {
-        if (!this.resource.value) {
-            var template = resource.template || {};
-            var msg = template.fail_message || 'You need to make a selection!';
-            //BQ.ui.attention(msg);
-            BQ.ui.tip(this.getId(), msg, {anchor:'left',});
-            return false;
-        }
         return true;
     },
 

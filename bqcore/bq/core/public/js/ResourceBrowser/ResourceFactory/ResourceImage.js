@@ -649,8 +649,9 @@ Ext.define('Bisque.Resource.Image.Page', {
 
                     //console.log(panel.hoverMenu);
                 },
-                modechange: function(viewer, type){
-                    this.gobjectTagger.deselectAll();
+                modechange: function(viewer, type) {
+                    if (!type)
+                        this.gobjectTagger.deselectAll();
                 },
 
                 loadedPhys: this.onImagePhys,

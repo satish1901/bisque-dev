@@ -48,7 +48,14 @@
 
 .bq-gob-header {
     background-color: #d3e1f1;
+    margin: 0px !important;
+    padding: 0px !important;
     /*border-top: 1px solid #99bce8 !important;*/
+}
+
+.bq-gob-header h3 {
+    margin: 0px !important;
+    padding: 8px 10px 8px 10px !important;
 }
 
 .bq-gob-tagger h3 {
@@ -574,7 +581,7 @@
     background-size: 36px;
 }
 */
-.viewer .editmenu {
+.viewer .editmenu, .viewer .bq-editor-selector {
     position: absolute;
     z-index: 30;
     width: 31px;
@@ -588,7 +595,7 @@
     background-repeat: no-repeat;
     background-image: url('/images/viewer/icons_viewer.svg');
     background-size: 200px;
-    background-position: -135px -163px;
+    background-position: -134px -163px;
 }
 
 .viewer .editmenu.phone {
@@ -632,12 +639,12 @@
     background-repeat: no-repeat;
     background-image: url('/images/viewer/icons_viewer.svg');
     background-size: 200px;
-    background-position: -135px 0px;
+    background-position: -134px 0px;
 }
 
 .viewer .btn-navigate {
     right: 190px;
-    background-position: -135px -131px;
+    background-position: -134px -131px;
 }
 
 .viewer .btn-navigate.selected {
@@ -646,7 +653,7 @@
 
 .viewer .btn-select {
     right: 150px;
-    background-position: -135px -98px;
+    background-position: -134px -98px;
 }
 
 .viewer .btn-select.selected {
@@ -655,7 +662,7 @@
 
 .viewer .btn-delete {
     right: 110px;
-    background-position: -135px -65px;
+    background-position: -134px -65px;
 }
 
 .viewer .btn-delete.selected {
@@ -748,6 +755,234 @@ table.x-form-color {
     background-size: 72px;
     background-position: -47px -12px;
     width: 13px;
+}
+
+/*******************************************************************************
+ edit menu
+*******************************************************************************/
+
+.bq-editor-menu {
+    /*background-color: rgba(0, 0, 0, 0.7);
+    opacity: 0.8;
+    border-color: rgba(255,255,255,0.2);
+    border-radius: 5px;
+    padding: 0px 0px 5px 10px;
+    z-index: 2147483647 !important;*/
+    margin-top: 15px;
+}
+
+.bq-editor-menu .bq-gob-header {
+    font-size: 14px;
+    padding: 0px !important;
+    background-color: transparent;
+}
+
+.bq-editor-menu .x-toolbar {
+    background-color: transparent;
+    background-image: none;
+}
+
+.bq-editor-menu .x-btn .add {
+    height: 31px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+    background-position: -34px 0px;
+    border-color: transparent !important;
+}
+
+.bq-editor-menu .primitives .x-btn {
+    width: 31px;
+    height: 31px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+    background-position: -135px -163px;
+    border-color: transparent !important;
+}
+
+.bq-editor-menu .x-btn.point {
+    background-position: -135px -197px;
+}
+
+.bq-editor-menu .x-btn.line {
+    background-position: -135px -229px;
+}
+
+.bq-editor-menu .x-btn.polygon {
+    background-position: -135px -295px;
+}
+
+.bq-editor-menu .x-btn.polyline {
+    background-position: -135px -262px;
+}
+
+.bq-editor-menu .x-btn.freehand_line {
+    background-position: -135px -327px;
+}
+
+.bq-editor-menu .x-btn.freehand_shape {
+    background-position: -135px -361px;
+}
+
+.bq-editor-menu .x-btn.circle {
+    background-position: -135px -394px;
+}
+
+.bq-editor-menu .x-btn.ellipse {
+    background-position: -135px -426px;
+}
+
+.bq-editor-menu .x-btn.rectangle {
+    background-position: -135px -459px;
+}
+
+.bq-editor-menu .x-btn.square {
+    background-position: -135px -491px;
+}
+
+.bq-editor-menu .x-btn.label {
+    background-position: -135px -524px;
+}
+
+/* pressed */
+
+.bq-editor-menu .x-btn.point.x-pressed {
+    background-position: -168px -197px;
+}
+
+.bq-editor-menu .x-btn.line.x-pressed {
+    background-position: -168px -229px;
+}
+
+.bq-editor-menu .x-btn.polygon.x-pressed {
+    background-position: -168px -295px;
+}
+
+.bq-editor-menu .x-btn.polyline.x-pressed {
+    background-position: -168px -262px;
+}
+
+.bq-editor-menu .x-btn.freehand_line.x-pressed {
+    background-position: -168px -327px;
+}
+
+.bq-editor-menu .x-btn.freehand_shape.x-pressed {
+    background-position: -168px -361px;
+}
+
+.bq-editor-menu .x-btn.circle.x-pressed {
+    background-position: -168px -394px;
+}
+
+.bq-editor-menu .x-btn.ellipse.x-pressed {
+    background-position: -168px -426px;
+}
+
+.bq-editor-menu .x-btn.rectangle.x-pressed {
+    background-position: -168px -459px;
+}
+
+.bq-editor-menu .x-btn.square.x-pressed {
+    background-position: -168px -491px;
+}
+
+.bq-editor-menu .x-btn.label.x-pressed {
+    background-position: -168px -524px;
+}
+
+/* main button */
+
+.viewer .bq-editor-selector.point {
+    background-position: -134px -197px;
+}
+
+.viewer .bq-editor-selector.line {
+    background-position: -134px -229px;
+}
+
+.viewer .bq-editor-selector.polygon {
+    background-position: -134px -295px;
+}
+
+.viewer .bq-editor-selector.polyline {
+    background-position: -134px -262px;
+}
+
+.viewer .bq-editor-selector.freehand_line {
+    background-position: -134px -327px;
+}
+
+.viewer .bq-editor-selector.freehand_shape {
+    background-position: -134px -361px;
+}
+
+.viewer .bq-editor-selector.circle {
+    background-position: -134px -394px;
+}
+
+.viewer .bq-editor-selector.ellipse {
+    background-position: -134px -426px;
+}
+
+.viewer .bq-editor-selector.rectangle {
+    background-position: -134px -459px;
+}
+
+.viewer .bq-editor-selector.square {
+    background-position: -134px -491px;
+}
+
+.viewer .bq-editor-selector.label {
+    background-position: -134px -524px;
+}
+
+/* main button selected */
+
+.viewer .bq-editor-selector.point.selected {
+    background-position: -168px -197px;
+}
+
+.viewer .bq-editor-selector.line.selected {
+    background-position: -168px -229px;
+}
+
+.viewer .bq-editor-selector.polygon.selected {
+    background-position: -168px -295px;
+}
+
+.viewer .bq-editor-selector.polyline.selected {
+    background-position: -168px -262px;
+}
+
+.viewer .bq-editor-selector.freehand_line.selected {
+    background-position: -168px -327px;
+}
+
+.viewer .bq-editor-selector.freehand_shape.selected {
+    background-position: -168px -361px;
+}
+
+.viewer .bq-editor-selector.circle.selected {
+    background-position: -168px -394px;
+}
+
+.viewer .bq-editor-selector.ellipse.selected {
+    background-position: -168px -426px;
+}
+
+.viewer .bq-editor-selector.rectangle.selected {
+    background-position: -168px -459px;
+}
+
+.viewer .bq-editor-selector.square.selected {
+    background-position: -168px -491px;
+}
+
+.viewer .bq-editor-selector.label.selected {
+    background-position: -168px -524px;
 }
 
 /*******************************************************************************

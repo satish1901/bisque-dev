@@ -1380,17 +1380,17 @@ if(window.location.hash == "#experimental"){
 }
 else
     BQGObject.primitives = {
-        circle   : 'circle',
-        ellipse  : 'ellipse',
-        label    : 'label',
-        line     : 'line',
-        point    : 'point',
-        polygon  : 'polygon',
-        polyline : 'polyline',
-        freehand_line : 'freehand_line',
-        freehand_shape: 'freehand_shape',
-        rectangle: 'rectangle',
-        square   : 'square',
+        point    : 'Point',
+        line     : 'Line',
+        polygon  : 'Polygon',
+        polyline : 'Polyline',
+        freehand_line : 'Freehand line',
+        freehand_shape: 'Freehand shape',
+        circle   : 'Circle',
+        ellipse  : 'Ellipse',
+        rectangle: 'Rectangle',
+        square   : 'Square',
+        label    : 'Label',
     };
 
 var bq_create_gradient = function (r1,g1,b1,a1,r2,g2,b2,a2) {
