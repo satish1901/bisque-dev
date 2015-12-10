@@ -284,6 +284,7 @@ Ext.define('Bisque.ResourceTagger', {
                 }
             },
             listeners: {
+                scope: this,
                 select: function ( tree, record, index, eOpts) {
                     this.fireEvent('select', this, record, index, eOpts);
                 },
@@ -303,7 +304,6 @@ Ext.define('Bisque.ResourceTagger', {
                     if (this.onmenucontext) this.onmenucontext(me, record, item, index, e, eOpts);
                         //this.menu_context.showAt(e.getXY());
                 },
-                scope: this
             }
         });
 
@@ -324,7 +324,7 @@ Ext.define('Bisque.ResourceTagger', {
     },
 
     getTreeColumns: function () {
-        return [{
+        var clmn = [{
             xtype: 'treecolumn',
             dataIndex: 'name',
             text: this.colNameText || 'Name',
@@ -362,19 +362,23 @@ Ext.define('Bisque.ResourceTagger', {
                     scope: this,
                 },
             }
-        }, {
-            text: this.colValueText || 'Value',
-            itemId: 'colValue',
-            dataIndex: 'value',
-            flex: 1,
-            sortable: true,
-            editor: {
-                xtype : 'bqcombobox',
-                valueStore: this.store_values,
-                allowBlank: false,
-            },
-            renderer: Bisque.ResourceTagger.BaseRenderer,
         }];
+        if (!this.hide_value) {
+            clmn.push({
+                text: this.colValueText || 'Value',
+                itemId: 'colValue',
+                dataIndex: 'value',
+                flex: 1,
+                sortable: true,
+                editor: {
+                    xtype : 'bqcombobox',
+                    valueStore: this.store_values,
+                    allowBlank: false,
+                },
+                renderer: Bisque.ResourceTagger.BaseRenderer,
+            });
+        }
+        return clmn;
     },
 
     getTagStore: function (data) {
@@ -975,6 +979,7 @@ Ext.define('Bisque.GObjectTagger', {
 
     colNameText: 'Type:Name',
     //colValueText: 'Vertices',
+    hide_value: true,
 
     constructor: function (config) {
         config.rootProperty = 'gobjects';
@@ -986,13 +991,22 @@ Ext.define('Bisque.GObjectTagger', {
         this.callParent();
     },
 
+    afterRender : function() {
+        this.callParent();
+        this.showChildrenCount();
+        this.tree.on('itemappend', this.showChildrenCount, this );
+        this.tree.on('iteminsert', this.showChildrenCount, this );
+        this.tree.on('itemremove', this.showChildrenCount, this );
+        this.tree.on('selectionchange', this.showChildrenCount, this );
+    },
+
     loadResourceTags: function (data, template) {
         this.callParent(arguments);
         this.store.on('beforeexpand', this.onExpand, this );
     },
 
     onLoaded: function () {
-        this.tree.addDocked([{
+        this.tree.addDocked([/*{
             xtype: 'gobspanel',
             itemId: 'panelGobTypes',
             title: 'Graphical annotations',
@@ -1003,12 +1017,13 @@ Ext.define('Bisque.GObjectTagger', {
             //flex: 1,
             listeners: {
                 scope: this,
-                'select': this.fireGobEvent,
+                select: this.fireGobEvent,
             }
-        }, {
-            xtype: 'container',
+        }, */{
+            xtype: 'tbtext',
             cls: 'bq-gob-header',
-            html: '<h3>Tree of annotations</h3>',
+            itemId: 'GobsHeader',
+            text: '<h3>Tree of annotations</h3>',
             border: 0,
             dock: 'top',
         },{
@@ -1163,8 +1178,8 @@ Ext.define('Bisque.GObjectTagger', {
         this.viewMgr.state.btnImport = true;
         this.viewMgr.state.btnExport = true;
         var toolbar = this.callParent(arguments);
-
-        var buttons = [{
+        return [];
+        /*var buttons = [{
             itemId: 'btnCreate',
             text: 'Create custom',
             scale: 'medium',
@@ -1174,7 +1189,7 @@ Ext.define('Bisque.GObjectTagger', {
             tooltip: 'Create a new custom graphical annotation wrapping any primitive annotation',
         }];
 
-        return buttons.concat(toolbar);
+        return buttons.concat(toolbar);*/
     },
 
     toggleCheckTree: function (button) {
@@ -1226,11 +1241,11 @@ Ext.define('Bisque.GObjectTagger', {
 
     appendMex: function (mex) {
         if (!mex && mex.value !== 'FINISHED') return;
-        var parent = this.tree.getRootNode();
-        var dt = Ext.Date.parse(mex.ts, BQ.Date.patterns.BisqueTimestamp);
+        var parent = this.tree.getRootNode(),
+            dt = Ext.Date.parse(mex.ts, BQ.Date.patterns.BisqueTimestamp);
         parent.insertChild(0, {
-            name: mex.name,
-            value: Ext.Date.format(dt, BQ.Date.patterns.ISO8601Long),
+            name: mex.name + ' ('+Ext.Date.format(dt, BQ.Date.patterns.ISO8601Long)+')',
+            //value: Ext.Date.format(dt, BQ.Date.patterns.ISO8601Long),
             mex_uri: mex.uri,
             gobjects: [false],
             checked: false,
@@ -1598,6 +1613,26 @@ Ext.define('Bisque.GObjectTagger', {
         this.fireEvent('gob_tolerance', this);
     },
 
+    doChildrenCount: function() {
+        var sel = this.tree.getSelectionModel().getSelection(),
+            node = sel.length<1 ? this.tree.getRootNode() : sel[0];
+        if (node && node.raw && node.raw.gobjects) {
+            var l = node.raw.gobjects.length,
+                h = this.tree.queryById('GobsHeader');
+            if (h)
+                h.setText(Ext.String.format('<h3>Current children: {0}</h3>', l));
+        }
+    },
+
+    showChildrenCount: function() {
+        var me = this;
+        if (me.childrenCountTimer) clearTimeout(me.childrenCountTimer);
+        me.childrenCountTimer = setTimeout(function() {
+            me.doChildrenCount();
+        }, 50);
+
+    },
+
 });
 
 //-----------------------------------------------------------------------
@@ -1704,178 +1739,3 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
     }
 });
 
-//-----------------------------------------------------------------------
-// BQ.grid.GobsPanel
-//-----------------------------------------------------------------------
-
-function getType(v, record) {
-    var r = BQ.util.xpath_string(record.raw, '@type') || record.raw.nodeName;
-    return r;
-}
-
-Ext.define('BQ.grid.GobsPanel', {
-    alias: 'widget.gobspanel',
-    extend: 'Ext.panel.Panel',
-    requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip'],
-    layout: 'fit',
-
-    types_ignore: {},
-
-    initComponent : function() {
-        /*
-        Ext.define('Gobs', {
-            extend : 'Ext.data.Model',
-            fields : [
-                { name: 'Type', convert: getType },
-                //{ name: 'Name', mapping: '@name' },
-                { name: 'Custom', mapping: '@type' },
-            ],
-
-            proxy : {
-                limitParam : undefined,
-                pageParam: undefined,
-                startParam: undefined,
-                type: 'ajax',
-                url : '/data_service/image/?gob_types=true&wpublic=false',
-                reader : {
-                    type :  'xml',
-                    root :  '/',
-                    record: '/*:not(value or vertex or template)',
-                }
-            },
-
-        });
-        */
-        this.typesstore = Ext.create('Ext.data.Store', {
-            fields : [
-                { name: 'Type' },
-                { name: 'Custom' },
-            ],
-        });
-
-        this.items = [{
-            xtype: 'gridpanel',
-            itemId: 'gob_types_panel',
-            header: false,
-            /*store: {
-                model : 'Gobs',
-                autoLoad : true,
-                autoSync : false,
-            },*/
-            store: this.typesstore,
-            border: 0,
-            columns: [
-                { text: "Type",  flex: 1, dataIndex: 'Type',  sortable: true },
-                //{ text: "Name", flex: 2, dataIndex: 'Name', sortable: true},
-            ],
-            viewConfig: {
-                stripeRows: true,
-                forceFit: true,
-                getRowClass: function(record, rowIndex, rowParams, store){
-                    if (record.data.Custom != '')
-                        return 'bq-row-gob-custom';
-                },
-            },
-            listeners: {
-                scope: this,
-                'select': this.onselected,
-            }
-        }];
-
-        this.callParent();
-    },
-
-    afterRender : function() {
-        this.callParent();
-        this.setLoading('Fetching types of graphical annotations');
-        var me = this;
-        BQ.Preferences.on('update_user_pref', function(el, resourcePrefXML){
-            me.onPreferences(); //update preferences
-        });
-        this.onPreferences();
-    },
-
-    onPreferences: function() {
-        this.preferences = {};
-        this.preferences.hide_gobjects_creation = BQ.Preferences.get('user','Viewer/hide_gobjects_creation','');
-        this.preferences = Ext.apply(this.preferences, this.parameters || {});
-        if (this.preferences.hide_gobjects_creation) {
-            var l = this.preferences.hide_gobjects_creation.split(',');
-            var n=null;
-            for (var i=0; n=l[i]; ++i)
-                this.types_ignore[n] = n;
-        }
-
-        Ext.Ajax.request({
-            url: '/data_service/image/?gob_types=true&wpublic=false',
-            callback: function(opts, succsess, response) {
-                if (response.status>=400)
-                    this.onError();
-                else
-                    this.onTypes(response.responseXML);
-            },
-            scope: this,
-            disableCaching: false,
-        });
-    },
-
-    onError : function() {
-        this.setLoading(false);
-        BQ.ui.error('Problem fetching available gobject types');
-    },
-
-    onTypes : function(xml) {
-        this.setLoading(false);
-        this.types = [];
-        //this.types_index = {};
-
-        // add primitives
-        for (var g in BQGObject.primitives) {
-            if (!(g in this.types_ignore)){
-                var ix = this.types.push({
-                    Type   : g,
-                    Custom : '',
-                });
-            }
-            //this.formats_index[name] = this.formats[ix-1];
-        } // for primitives
-
-        var gobs = BQ.util.xpath_nodes(xml, '//gobject');
-        var g=undefined;
-        for (var i=0; g=gobs[i]; ++i) {
-            var t = g.getAttribute('type');
-            if (!(t in this.types_ignore)){
-                var ix = this.types.push({
-                    Type   : t,
-                    Custom : t,
-                });
-            }
-            //this.formats_index[name] = this.formats[ix-1];
-        } // for types
-
-        this.typesstore.loadData(this.types);
-    },
-
-    addType: function(newType) {
-        var ix = this.types.push({
-            Type   : newType,
-            Custom : newType,
-        });
-        //this.formats_index[name] = this.formats[ix-1];
-
-        this.typesstore.loadData(this.types);
-    },
-
-    onselected: function(model, record, index, eOpts) {
-        this.fireEvent('select', record.data.Type);
-    },
-
-    deselect: function() {
-        var p = this.queryById('gob_types_panel');
-        if (p) p.getSelectionModel().deselectAll();
-    },
-});
-
-//-----------------------------------------------------------------------
-// Form MessageBox
-//-----------------------------------------------------------------------

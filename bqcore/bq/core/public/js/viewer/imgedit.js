@@ -128,13 +128,17 @@ ImgEdit.prototype.createButton = function(surf, basecls, cls, cb, sel, ctrls, to
 
 ImgEdit.prototype.setButtonLoading = function(disabled){
     //set buttons to be transparent during loading and disable their callback
-    this.button_controls.forEach(function(btn){
-        var el = Ext.get(btn);
-        el.disabled = disabled;
-        if(disabled)
-            el.dom.style.opacity = 0.25;
-        else
-            el.dom.style.opacity = 1.0;
+    this.button_controls.forEach(function(btn) {
+        if (btn.setDisabled) {
+            btn.setDisabled(disabled);
+        } else {
+            var el = Ext.get(btn);
+            el.disabled = disabled;
+            if(disabled)
+                el.dom.style.opacity = 0.25;
+            else
+                el.dom.style.opacity = 1.0;
+        }
     });
 }
 
@@ -154,7 +158,22 @@ ImgEdit.prototype.createMenuButton = function(p) {
     };
 },
 
+ImgEdit.prototype.onSelectedType = function(primitive, semantic, selector) {
+    this.onCreateGob(primitive);
+    if (semantic)
+        this.onCreateGob(semantic);
+};
+
 ImgEdit.prototype.createEditMenu = function(surf) {
+    if (!this.editbutton)
+        this.editbutton = Ext.create('BQ.editor.GraphicalSelector', {
+            renderTo: surf,
+            listeners: {
+                scope: this,
+                selected: this.onSelectedType,
+            }
+        });
+/*
     if (!this.editbutton)
         this.editbutton = this.createButton(surf, 'editmenu', '');
     if (this.menu) return;
@@ -192,7 +211,7 @@ ImgEdit.prototype.createEditMenu = function(surf) {
         else
             m.show();
     });
-
+*/
 };
 
 ImgEdit.prototype.createEditControls = function(surf) {
@@ -204,6 +223,7 @@ ImgEdit.prototype.createEditControls = function(surf) {
             callback(this, this.select), false, this.button_controls, 'Select a graphical annotation on the screen' );
         this.button_controls[2] = this.createButton(surf, 'editcontrol', 'btn-delete',
             callback(this, this.remove), false, this.button_controls, 'Delete a graphical annotation by selecting it on the screen' );
+        this.button_controls.push(this.editbutton);
     }
 };
 
@@ -211,7 +231,7 @@ ImgEdit.prototype.updateView = function (view) {
     var v = this.viewer;
     var surf = v.viewer_controls_surface ? v.viewer_controls_surface : this.parent;
     if (surf) {
-        if (!v.parameters.hide_create_gobs_menu)
+        //if (!v.parameters.hide_create_gobs_menu)
             this.createEditMenu(surf);
         this.createEditControls(surf);
     }
@@ -564,6 +584,12 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
 ImgEdit.prototype.remove_gobject = function (gob) {
     // dima: a hack to stop writing into a MEX
 
+    if (!gob) {
+        // dima: there's some bug here
+        //BQ.ui.warning('Some problem removing annotation...');
+        return;
+    }
+
     this.renderer.quadtree.remove(gob.shape);
 
 
@@ -703,8 +729,10 @@ ImgEdit.prototype.setmode = function (type, mode_fun) {
         this.renderer.setMode('add');
 
     this.mode_type = type;
-    if (type)
+    if (type) {
         this.createButtonsDeselect();
+        this.editbutton.setSelected(true);
+    }
     this.viewer.parameters.onmodechange(type);
 };
 
@@ -1019,8 +1047,9 @@ ImgEdit.prototype.new_freehand_open = function (parent, e, x, y) {
 
 ImgEdit.prototype.new_line = function (parent, e, x, y) {
 
-    var v = this.viewer.current_view;
-    var g = this.current_gob;
+    var v = this.viewer.current_view,
+        g = this.current_gob,
+        me = this;
     parent = parent || this.global_parent;
     var finish=false;
     if (g == null) {
@@ -1053,7 +1082,7 @@ ImgEdit.prototype.new_line = function (parent, e, x, y) {
         this.renderer.select(this.renderer.selectedSet);
         this.renderer.setmousemove( function(e){
             g.shape.onDragCreate(e,[x,y]);
-            me.editor.display_gob_info(g);
+            me.display_gob_info(g);
         });
 
     }
