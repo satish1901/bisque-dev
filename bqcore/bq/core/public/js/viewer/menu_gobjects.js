@@ -92,12 +92,18 @@ Ext.define('BQ.editor.GraphicalSelector', {
     afterRender : function() {
         this.callParent();
         this.getEl().on('click', this.onMenuToggle, this );
-        // do stuff
+        this.createMenu();
+        this.onPreferences();
+        BQ.Preferences.on('update_user_pref', this.onPreferences, this);
     },
 
     createMenu: function() {
         if (this.menu) return;
-        var buttons = [];
+        var buttons = [],
+            el = this.getEl(),
+            offset = el.getY(),
+            h = 90;
+
         for (var p in BQGObject.primitives)
             buttons.push({
                 xtype: 'button',
@@ -121,54 +127,58 @@ Ext.define('BQ.editor.GraphicalSelector', {
             xtype: 'tbtext',
             cls: 'bq-gob-header',
             //itemId: 'GobsHeader',
-            text: 'Selected graphical annotation:',
+            text: 'Graphical annotations:',
         }, {
             xtype: 'toolbar',
             border: false,
             cls: 'primitives',
             items: buttons,
             scale: 'large',
-        }, {
-            xtype: 'tbspacer',
-            height: 15,
-        }, {
-            xtype: 'tbtext',
-            cls: 'bq-gob-header',
-            //itemId: 'GobsHeader',
-            text: 'Semantic annotation:',
-        }, {
-            xtype: 'toolbar',
-            border: false,
-            scale: 'large',
-            items: [{
-                itemId: 'btnCreate',
-                text: 'Add new semantic type',
-                scale: 'large',
-                iconCls: 'add',
-                handler: this.createComplexGobject,
-                scope: this,
-                tooltip: 'Create a new custom graphical annotation wrapping any primitive annotation',
-            }],
-        }, {
-            xtype: 'gobspanel',
-            itemId: 'semanticTypesPanel',
-            border: 0,
-            flex: 10,
-            listeners: {
-                scope: this,
-                select: this.onSemantic,
-            },
         }];
 
+        if (this.no_semantic_types !== true) {
+            items = items.concat([{
+                xtype: 'tbspacer',
+                height: 10,
+            }, {
+                xtype: 'toolbar',
+                border: false,
+                scale: 'large',
+                items: [{
+                    xtype: 'tbtext',
+                    cls: 'bq-gob-header',
+                    //itemId: 'GobsHeader',
+                    text: 'Semantic types:',
+                }, '->', {
+                    itemId: 'btnCreate',
+                    text: 'Add new semantic type',
+                    scale: 'large',
+                    iconCls: 'add',
+                    handler: this.createComplexGobject,
+                    scope: this,
+                    tooltip: 'Create a new custom graphical annotation wrapping any primitive annotation',
+                }],
+            }, {
+                xtype: 'gobspanel',
+                itemId: 'semanticTypesPanel',
+                border: 0,
+                flex: 10,
+                listeners: {
+                    scope: this,
+                    select: this.onSemantic,
+                },
+            }]);
+            h = Math.round(BQApp?BQApp.getCenterComponent().getHeight()-offset:document.height-offset);
+        }
+
         this.menu = Ext.create('Ext.tip.ToolTip', {
-            target: this.getEl(),
-            anchor: 'top',
+            target: el,
+            anchor: 'left',
             anchorToTarget: true,
+            anchorOffset: 4,
             cls: 'bq-editor-menu',
-            //minWidth: 460,
-            width: 460,
-            height: Math.round(BQApp?BQApp.getCenterComponent().getHeight()*0.98:document.height*0.98),
-            anchorOffset: -5,
+            width: 380,
+            height: h,
             autoHide: false,
             shadow: false,
             closable: true,
@@ -177,11 +187,11 @@ Ext.define('BQ.editor.GraphicalSelector', {
                 align: 'stretch',
                 pack: 'start',
             },
-            defaults: {
+            /*defaults: {
                 labelSeparator: '',
                 labelWidth: 200,
                 width: 100,
-            },
+            },*/
             items: items,
         });
 
@@ -220,7 +230,7 @@ Ext.define('BQ.editor.GraphicalSelector', {
     },
 
     onSelected: function () {
-        if (this.menu)
+        if (this.menu && this.auto_hide === true)
             this.menu.hide();
         this.fireEvent( 'selected', this.primitive, this.semantic, this );
     },
@@ -232,13 +242,9 @@ Ext.define('BQ.editor.GraphicalSelector', {
             this.removeCls('selected');
     },
 
-    /*setSelected: function(selected) {
-        el.disabled = disabled;
-        if(disabled)
-            el.dom.style.opacity = 0.25;
-        else
-            el.dom.style.opacity = 1.0;
-    },*/
+    onPreferences: function() {
+        this.auto_hide = BQ.Preferences.get('user','Viewer/gobjects_editor_auto_hide', true);
+    },
 
 });
 
@@ -336,24 +342,8 @@ Ext.define('BQ.grid.GobsPanel', {
     afterRender : function() {
         this.callParent();
         this.setLoading('Fetching types of graphical annotations');
-        var me = this;
-        BQ.Preferences.on('update_user_pref', function(el, resourcePrefXML){
-            me.onPreferences(); //update preferences
-        });
+        BQ.Preferences.on('update_user_pref', this.onPreferences, this);
         this.onPreferences();
-    },
-
-    onPreferences: function() {
-        this.preferences = {};
-        this.preferences.hide_gobjects_creation = BQ.Preferences.get('user','Viewer/hide_gobjects_creation','');
-        this.preferences = Ext.apply(this.preferences, this.parameters || {});
-        if (this.preferences.hide_gobjects_creation) {
-            var l = this.preferences.hide_gobjects_creation.split(',');
-            var n=null;
-            for (var i=0; n=l[i]; ++i)
-                this.types_ignore[n] = n;
-        }
-
         Ext.Ajax.request({
             url: '/data_service/image/?gob_types=true&wpublic=false',
             callback: function(opts, succsess, response) {
@@ -367,12 +357,28 @@ Ext.define('BQ.grid.GobsPanel', {
         });
     },
 
+    onPreferences: function() {
+        this.preferences = {};
+        this.preferences.hide_gobjects_creation = BQ.Preferences.get('user','Viewer/hide_gobjects_creation','');
+        this.preferences = Ext.apply(this.preferences, this.parameters || {});
+        if (this.preferences.hide_gobjects_creation) {
+            var l = this.preferences.hide_gobjects_creation.split(',');
+            var n=null;
+            for (var i=0; n=l[i]; ++i)
+                this.types_ignore[n] = n;
+        }
+        this.onTypes();
+    },
+
     onError : function() {
         this.setLoading(false);
         BQ.ui.error('Problem fetching available gobject types');
     },
 
     onTypes : function(xml) {
+        xml = xml || this.xml;
+        if (!xml) return;
+        this.xml = xml;
         this.setLoading(false);
         this.types = [];
         //this.types_index = {};

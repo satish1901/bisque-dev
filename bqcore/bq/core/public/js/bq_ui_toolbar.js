@@ -371,7 +371,7 @@ Ext.define('BQ.Application.Toolbar', {
                 hidden: true,
                 handler: this.settingModuleDeveloperPage,
             }, {
-                text: 'Preference',
+                text: 'Preferences',
                 itemId: 'menu_preference',
                 hidden: true,
                 handler: this.settingPreferencePage,
