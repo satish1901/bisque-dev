@@ -36,6 +36,7 @@ function ImgEdit (viewer,name){
   if ('editprimitives' in this.viewer.parameters && this.viewer.parameters.editprimitives)
     primitives = this.viewer.parameters.editprimitives.toLowerCase().split(',');
   this.editprimitives = {};
+  this.no_semantic_types = this.viewer.parameters.no_semantic_types;
   for (var i=0; i < primitives.length; i++)
     this.editprimitives[ primitives[i] ] = '';
 }
@@ -168,6 +169,8 @@ ImgEdit.prototype.createEditMenu = function(surf) {
     if (!this.editbutton)
         this.editbutton = Ext.create('BQ.editor.GraphicalSelector', {
             renderTo: surf,
+            editprimitives: this.editprimitives,
+            no_semantic_types: this.no_semantic_types,
             listeners: {
                 scope: this,
                 selected: this.onSelectedType,

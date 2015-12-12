@@ -268,6 +268,7 @@ Ext.define('Bisque.ResourceTagger', {
             draggable: false,
             enableColumnMove: false,
             allowDeselect: true,
+            hideHeaders: this.hide_headers === true,
 
             store: this.getTagStore(data),
             multiSelect: true,
@@ -980,6 +981,7 @@ Ext.define('Bisque.GObjectTagger', {
     colNameText: 'Type:Name',
     //colValueText: 'Vertices',
     hide_value: true,
+    hide_headers: true,
 
     constructor: function (config) {
         config.rootProperty = 'gobjects';

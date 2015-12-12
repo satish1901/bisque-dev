@@ -654,7 +654,14 @@ Ext.define('BQ.selectors.Gobject', {
         var resource = this.resource;
         var template = resource.template || {};
         var editprimitives = (template.gobject instanceof Array)? template.gobject.join(','):template.gobject;
-        var parameters = { nogobjects:'', nosave:'', alwaysedit:'', onlyedit:'', editprimitives: editprimitives, };
+        var parameters = {
+            nogobjects: '',
+            nosave: '',
+            alwaysedit: '',
+            onlyedit: '',
+            editprimitives: editprimitives,
+            no_semantic_types: true,
+        };
         if (this.selected_resource && this.selected_resource.gobjects) parameters.gobjects = this.selected_resource.gobjects;
         this.viewer = Ext.create('BQ.viewer.Image', {
             resource: this.selected_resource || resource.parent.value,
