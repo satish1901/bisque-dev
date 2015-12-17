@@ -8,65 +8,66 @@
 <xi:include py:if="tg.config.get('bisque.js_environment', None) != 'production'" href="master.html" />
 
 <head profile="http://www.w3.org/2005/10/profile">
+    <title>${module_name}</title>
+
     <link rel="icon" type="image/png" href="/images/bisque_icon.png" />
     <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
     <meta name = "viewport" content="width=900, maximum-scale=1" />
     <link href="//fonts.googleapis.com/css?family=Abel|Varela+Round|Roboto:400,300,100" rel="stylesheet" type="text/css" />
-    <!--<link rel="stylesheet" type="text/css" href="/js/modules/bq_webapp.css" />-->
+
     <link py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" rel="stylesheet" type="text/css" href="/extjs/resources/css/ext-all-gray.css"/>
-    <!--<link py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" rel="stylesheet" type="text/css" href="/css/all_css.css" /> -->
     <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="/extjs/ext-all.js"> </script>
+
+    <!-- BisQue styles -->
+    <link py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" rel="stylesheet" type="text/css" href="/css/all_css.css" />
+
+    <script type="text/javascript" >
+        var module_definition_xml = '${Markup(module_xml.replace('\'', '\\\'').replace('\n', ''))}';
+    </script>
+
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" >
+        Ext.onReady( function() {
+            BQApp = Ext.create('BQ.Application');
+        });
+    </script>
+
+    <script type="text/javascript" >
+        Ext.onReady( function() {
+            //BQApp = Ext.create('BQ.Application');
+
+            webapp = new WebApp();
+            Ext.util.Observable.observe(BQ.Application);
+            BQ.Application.on( 'nouser', webapp.onnouser );
+
+            // load help
+            var h = BQApp.main.getHelpComponent();
+            h.setVisible(true);
+            h.add({
+                xtype: 'container',
+                cls: 'help-container',
+                loader: {
+                    url: 'help',
+                    renderer: 'html',
+                    autoLoad: true,
+                    ajaxOptions: {
+                        disableCaching: false,
+                    },
+                },
+                autoScroll: true,
+            });
+        });
+    </script>
+
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="/js/all_js.js"> </script>
+
+    <script type="text/javascript" >
+        BQ.Server.title = 'Bisque WebApp';
+        BQ.Server.root = "${tg.url('/')}";
+    </script>
 
     <!-- Additional includes from the module -->
     <link py:if="'interface/css' in module_def" rel="stylesheet" type="text/css" href="${module_def['interface/css']}" />
     <script py:if="'interface/javascript' in module_def" type="text/javascript" src="${module_def['interface/javascript']}"></script>
-
-    <title>${module_name}</title>
-
-<script type="text/javascript" >
-    var module_definition_xml = '${Markup(module_xml.replace('\'', '\\\'').replace('\n', ''))}';
-</script>
-
-
-<script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" >
-    Ext.onReady( function() {
-        BQApp = Ext.create('BQ.Application');
-    });
-</script>
-
-<script type="text/javascript" >
-    Ext.onReady( function() {
-        //BQApp = Ext.create('BQ.Application');
-
-        webapp = new WebApp();
-        Ext.util.Observable.observe(BQ.Application);
-        BQ.Application.on( 'nouser', webapp.onnouser );
-
-        // load help
-        var h = BQApp.main.getHelpComponent();
-        h.setVisible(true);
-        h.add({
-            xtype: 'container',
-            cls: 'help-container',
-            loader: {
-                url: 'help',
-                renderer: 'html',
-                autoLoad: true,
-                ajaxOptions: {
-                    disableCaching: false,
-                },
-            },
-            autoScroll: true,
-        });
-    });
-</script>
-
-<script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="/js/all_js.js"> </script>
-
-<script type="text/javascript" >
-    BQ.Server.title = 'Bisque WebApp';
-    BQ.Server.root = "${tg.url('/')}";
-</script>
 
 </head>
 <body id="webapp" class="webapp">
