@@ -376,7 +376,6 @@ ImgSlicer.prototype.changed = function () {
 
 ImgSlicer.prototype.createMenu = function () {
     if (this.menu) return;
-    //var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.parent;
     this.menu = this.viewer.createViewMenu();
 
     this.loadPreferences(this.viewer.preferences);

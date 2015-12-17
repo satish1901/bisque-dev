@@ -118,6 +118,7 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.blockforsaves = 'blockforsaves' in this.parameters ? this.parameters.blockforsaves : true;
         if (this.toolbar)
             this.parameters.toolbar = this.toolbar;
+        this.parameters.widget = this;
 
         this.parameters.gobjectCreated  = callback(this, 'oncreate')
         this.parameters.gobjectschanged = callback(this, 'onchanged');
