@@ -5,14 +5,17 @@
   Author: Dima Fedorov
 
   Version: 1
-  
-  History: 
+
+  History:
     2011-09-29 13:57:30 - first creation
-    
+
 *******************************************************************************/
 
 // overwrite standard renderer with our own
-BQ.renderers.resources.mex = 'BQ.renderers.roottip.Mex';
+Ext.onReady( function() {
+    BQ.renderers.resources.mex = 'BQ.renderers.roottip.Mex';
+});
+
 
 // provide our renderer
 Ext.define('BQ.renderers.roottip.Mex', {
@@ -25,10 +28,10 @@ Ext.define('BQ.renderers.roottip.Mex', {
         // little hack to get already parsed MEX
         this.mex = (this.resource && this.resource.doc)? this.resource.doc : undefined;
         if (!this.mex /*|| this.mex.uri != this.res_uri_for_tools*/) {
-            BQFactory.request( { uri: this.res_uri_for_tools, 
-                                 cb: callback(this, 'initMex'), 
-                                 errorcb: callback(this, 'onerror'), 
-                               });         
+            BQFactory.request( { uri: this.res_uri_for_tools,
+                                 cb: callback(this, 'initMex'),
+                                 errorcb: callback(this, 'onerror'),
+                               });
         }
     },
 
@@ -37,16 +40,16 @@ Ext.define('BQ.renderers.roottip.Mex', {
     },
 
     onerror: function(message) {
-        BQ.ui.error('Error fethnig resource:<br>' + message); 
-    },    
-    
+        BQ.ui.error('Error fethnig resource:<br>' + message);
+    },
+
     createPlot : function(menu, name, template) {
         if (!this.res_uri_for_tools) return;
         menu.add({
             text: template[name+'/label']?template[name+'/label']:'Plot',
             scope: this,
             handler: this.doPlot,
-        });          
+        });
     },
 
     doPlot : function() {
@@ -54,7 +57,7 @@ Ext.define('BQ.renderers.roottip.Mex', {
             BQ.ui.notification('The data is being initialized, please try again a bit later...');
             return;
         }
-        var template = this.template_for_tools || {};        
+        var template = this.template_for_tools || {};
         var xmap    = "tag-value-number";
         var xreduce = "vector";
         var xpath   = [];
@@ -81,7 +84,7 @@ Ext.define('BQ.renderers.roottip.Mex', {
             opts    : opts,
             root    : this.root,
         });
- 
+
     },
 
 });
