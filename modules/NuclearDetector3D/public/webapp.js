@@ -13,7 +13,9 @@
 
 
 // overwrite standard renderer with our own
-BQ.renderers.resources.image = 'BQ.renderers.nd3d.Image';
+Ext.onReady( function() {
+    BQ.renderers.resources.image = 'BQ.renderers.nd3d.Image';
+});
 
 // provide our renderer
 Ext.define('BQ.renderers.nd3d.Image', {

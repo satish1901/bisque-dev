@@ -5,15 +5,17 @@
   Author: Dima Fedorov
 
   Version: 1
-  
-  History: 
+
+  History:
     2011-09-29 13:57:30 - first creation
-    
+
 *******************************************************************************/
 
 
 // overwrite standard renderer with our own
-BQ.renderers.resources.image = 'BQ.renderers.multiroot.Image';
+Ext.onReady( function() {
+    BQ.renderers.resources.image = 'BQ.renderers.multiroot.Image';
+});
 
 // provide our renderer
 Ext.define('BQ.renderers.multiroot.Image', {
@@ -21,8 +23,8 @@ Ext.define('BQ.renderers.multiroot.Image', {
 
     onerror: function (e) {
         this.setLoading(false);
-        BQ.ui.error(e.message);  
-    }, 
+        BQ.ui.error(e.message);
+    },
 
     fetchRoots : function(f) {
         this.setLoading('Analysing outputs');
@@ -31,13 +33,13 @@ Ext.define('BQ.renderers.multiroot.Image', {
         var xpath = '/gobject/gobject[@name]|/*/gobject/gobject[@name]';
         var xmap = 'gobject-name';
         var xreduce = 'vector';
-    
-        this.accessor = new BQStatisticsAccessor( url, xpath, xmap, xreduce, 
-                                                  { 'ondone': callback(this, f), 
-                                                    'onerror': callback(this, "onerror"), 
+
+        this.accessor = new BQStatisticsAccessor( url, xpath, xmap, xreduce,
+                                                  { 'ondone': callback(this, f),
+                                                    'onerror': callback(this, "onerror"),
                                                     root: this.root, } );
     },
-    
+
     doPlot : function(results) {
         this.setLoading(false);
         if (!results || results.length<1) {
@@ -46,7 +48,7 @@ Ext.define('BQ.renderers.multiroot.Image', {
             return;
         }
         var xpath = [];
-        var titles = [];  
+        var titles = [];
         for (var i=0; i<results[0].vector.length; i++) {
             if (!results[0].vector[i] || results[0].vector[i]=='') continue;
             if (!results[0].vector[i].indexOf("tip-")==0) continue;
@@ -55,14 +57,14 @@ Ext.define('BQ.renderers.multiroot.Image', {
         }
         if (xpath.length<=0) {
             BQ.ui.error('Hm, no root tip objects found...');
-            return;  
+            return;
         }
-        
+
         var url     = this.gobjects[0].uri;
         var xmap    = 'tag-value-number';
         var xreduce = 'vector';
         var title   = 'Tip angles';
-        
+
         //var opts = { title: 'Tip angle (t)', height:500, titles: titles };
         this.plotter = Ext.create('BQ.stats.Dialog', {
             url     : url,
@@ -72,11 +74,11 @@ Ext.define('BQ.renderers.multiroot.Image', {
             title   : title,
             root    : this.root,
             opts    : { titles: titles, },
-        });          
-    },    
+        });
+    },
 
     getPlot : function() {
-        if (this.accessor) 
+        if (this.accessor)
             this.doPlot(this.accessor.results);
         else
             this.fetchRoots('doPlot');
@@ -87,16 +89,16 @@ Ext.define('BQ.renderers.multiroot.Image', {
             text: 'Plot tip angles',
             scope: this,
             handler: this.getPlot,
-        }); 
-    }, 
-    
+        });
+    },
+
     doCSV : function(results) {
         this.setLoading(false);
         if (!results || results.length<1) {
             BQ.ui.warning('Statistics service did not return any results');
             this.accessor = undefined;
             return;
-        }                
+        }
         var xpath = [];
         for (var i=0; i<results[0].vector.length; i++) {
             if (!results[0].vector[i] || results[0].vector[i]=='') continue;
@@ -105,21 +107,21 @@ Ext.define('BQ.renderers.multiroot.Image', {
         }
         if (xpath.length<=0) {
             BQ.ui.error('Hm, no root tip objects found...');
-            return;  
+            return;
         }
-        
+
         var xmap    = 'tag-value-number';
         var xreduce = 'vector';
         var url = '/stats/csv?url=' + this.gobjects[0].uri;
-        if (this.root) url = this.root + url;        
+        if (this.root) url = this.root + url;
         url += createArgs('xpath', xpath);
         url += createArgs('xmap', xmap);
-        url += createArgs('xreduce', xreduce);                                        
-        window.open(url);                
-    },    
+        url += createArgs('xreduce', xreduce);
+        window.open(url);
+    },
 
     getCSV : function() {
-        if (this.accessor) 
+        if (this.accessor)
             this.doCSV(this.accessor.results);
         else
             this.fetchRoots('doCSV');
@@ -130,8 +132,8 @@ Ext.define('BQ.renderers.multiroot.Image', {
             text: 'Tip angles as CSV',
             scope: this,
             handler: this.getCSV,
-        }); 
-    }, 
+        });
+    },
 
 });
 
