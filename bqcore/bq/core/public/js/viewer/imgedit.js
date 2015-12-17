@@ -143,78 +143,24 @@ ImgEdit.prototype.setButtonLoading = function(disabled){
     });
 }
 
-
-
-ImgEdit.prototype.createMenuButton = function(p) {
-    return {
-        xtype: 'button',
-        itemId: 'btn_'+p,
-        hidden: !(p in this.editprimitives),
-        text: p,
-        scale: 'small',
-        handler: function() {
-            this.setmode(p, callback(this,'new_'+p, null));
-        },
-        scope: this,
-    };
-},
+ImgEdit.prototype.createEditMenu = function(surf) {
+    if (this.editbutton) return;
+    this.editbutton = Ext.create('BQ.editor.GraphicalMenu', {
+        renderTo: surf,
+        widget: this.viewer.widget,
+        editprimitives: this.editprimitives,
+        no_semantic_types: this.no_semantic_types,
+        listeners: {
+            scope: this,
+            selected: this.onSelectedType,
+        }
+    });
+};
 
 ImgEdit.prototype.onSelectedType = function(primitive, semantic, selector) {
     this.onCreateGob(primitive);
     if (semantic)
         this.onCreateGob(semantic);
-};
-
-ImgEdit.prototype.createEditMenu = function(surf) {
-    if (!this.editbutton)
-        this.editbutton = Ext.create('BQ.editor.GraphicalSelector', {
-            renderTo: surf,
-            editprimitives: this.editprimitives,
-            no_semantic_types: this.no_semantic_types,
-            listeners: {
-                scope: this,
-                selected: this.onSelectedType,
-            }
-        });
-/*
-    if (!this.editbutton)
-        this.editbutton = this.createButton(surf, 'editmenu', '');
-    if (this.menu) return;
-
-    var items = [];
-    for (var p in BQGObject.primitives)
-        items.push(this.createMenuButton(p));
-    this.menu = Ext.create('Ext.tip.ToolTip', {
-        target: this.editbutton,
-        anchor: 'top',
-        anchorToTarget: true,
-        cls: 'bq-viewer-menu',
-        maxWidth: 460,
-        anchorOffset: -5,
-        autoHide: false,
-        shadow: false,
-        closable: true,
-        layout: {
-            type: 'vbox',
-            //align: 'stretch',
-        },
-        defaults: {
-            labelSeparator: '',
-            labelWidth: 200,
-            width: 100,
-        },
-        items: items,
-    });
-
-    var el = Ext.get(this.editbutton);
-    var m = this.menu;
-    el.on('click', function(){
-        if (m.isVisible())
-            m.hide();
-        else
-            m.show();
-    });
-*/
 };
 
 ImgEdit.prototype.createEditControls = function(surf) {

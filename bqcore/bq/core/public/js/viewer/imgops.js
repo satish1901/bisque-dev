@@ -84,10 +84,8 @@ ImgOperations.prototype.changed = function () {
 
 ImgOperations.prototype.createMenu = function () {
     if (this.menu) return;
-
     this.menu = this.viewer.createViewMenu();
-    var surf = this.viewer.viewer_controls_surface ? this.viewer.viewer_controls_surface : this.parent;
-    surf.appendChild(this.viewer.menubutton);
+
 
     var dim = this.viewer.imagedim;
 
@@ -95,7 +93,6 @@ ImgOperations.prototype.createMenu = function () {
 
     var phys = this.viewer.imagephys;
     var enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.default_enhancement_8bit : this.default_enhancement;
-
     var fusion = phys && parseInt(phys.ch)>3 ? this.default_fusion_4plus : this.default_fusion;
 
     this.menu.add({
@@ -138,7 +135,7 @@ ImgOperations.prototype.createMenu = function () {
             change: this.changed,
         },
     });
-    
+
     this.combo_fusion = this.viewer.createCombo( 'Fusion', [
         {"value":"a", "text":"Average"},
         {"value":"m", "text":"Maximum"},
@@ -153,7 +150,7 @@ ImgOperations.prototype.createMenu = function () {
 
     var enhancement_options = phys.getEnhancementOptions();
     enhancement = enhancement_options.prefferred || enhancement;
-    this.combo_enhancement = this.viewer.createCombo( 'Enhancement', enhancement_options, enhancement, this, 
+    this.combo_enhancement = this.viewer.createCombo( 'Enhancement', enhancement_options, enhancement, this,
     function() {
         var enhancementVer = phys && parseInt(phys.pixel_depth)===8 ? 'enhancement-8bit' : 'enhancement';
         var enhancementTag = document.createElement('tag');
@@ -167,7 +164,7 @@ ImgOperations.prototype.createMenu = function () {
     this.combo_negative = this.viewer.createCombo( 'Negative', [
         {"value":"negative", "text":"Yes"},
         {"value":"", "text":"No"},
-    ], this.default_negative, this, 
+    ], this.default_negative, this,
     function() {
         var negativeTag = document.createElement('tag');
         negativeTag.setAttribute('name', 'negative');
@@ -217,3 +214,49 @@ ImgOperations.prototype.onPreferences = function () {
     this.default_enhancement_8bit = BQ.Preferences.get(resource_uniq, 'Viewer/enhancement-8bit', this.default_enhancement_8bit);
     this.default_fusion_4plus     = BQ.Preferences.get(resource_uniq, 'Viewer/fusion_4plus',     this.default_fusion_4plus);
 };
+
+//-----------------------------------------------------------------------
+// BQ.editor.GraphicalSelector - Graphical annotations menu
+//-----------------------------------------------------------------------
+
+Ext.define('BQ.viewer.ViewMenu', {
+    extend: 'BQ.viewer.MenuButton',
+    alias: 'widget.viewer_menu_view',
+    componentCls: 'viewoptions',
+
+    createMenu: function() {
+        if (this.menu) return;
+        var buttons = [],
+            el = this.getEl(),
+            offset = el.getY(),
+            h = 90;
+
+        this.menu = Ext.create('Ext.tip.ToolTip', {
+            target: el,
+            anchor: 'top',
+            anchorToTarget: true,
+            anchorOffset: -5,
+            cls: 'bq-viewer-menu',
+            width: 460,
+            //height: h,
+            autoHide: false,
+            shadow: false,
+            closable: true,
+            layout: {
+                type: 'vbox',
+                //align: 'stretch',
+                //pack: 'start',
+            },
+            defaults: {
+                labelSeparator: '',
+                labelWidth: 200,
+            },
+            //items: items,
+        });
+    },
+
+    onPreferences: function() {
+        //this.auto_hide = BQ.Preferences.get('user','Viewer/gobjects_editor_auto_hide', true);
+    },
+
+});

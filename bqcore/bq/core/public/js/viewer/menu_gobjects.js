@@ -1,76 +1,28 @@
 /*******************************************************************************
-  ExtJS wrapper for the Bisque image viewer
+  BQ.viewer.MenuButton - base class for button-based viewer menus
+  BQ.editor.GraphicalSelector - Graphical annotations menu
+
   Author: Dima Fedorov <dima@dimin.net>
 
   Configurations:
-      resource   - url string or bqimage
-      user       - url string
-      parameters - viewer configuration object describied later
+    widget : main extjs component holding the component
+             needed in order to implement proper hiding
+    editprimitives: primitives config from the viewer, constraints visibility
+    no_semantic_types: if true hides the gobject types list
 
   Events:
-      loaded     - event fired when the viewer is loaded
-      changed    - event fired when the gobjects in the viewer have changed
-      loadedPhys - event fired when image physics is loaded
-      working
-      done
-      error
-      delete     - event fired when gobject(s) is(are) deleted
-      moveend    - event fired when mouse up on selected gobject
-      afterPhys  - event fired after phys is loaded
-
-  Parameters:
-    simpleviewer   - sets a minimal set of plug-ins and also read-only view for gobjects
-    onlyedit       - only sets plug-in needed for editing of gobjects
-
-    nogobects      - disable loading gobjects by default
-    gobjects       - load gobjects from the givel URL, 'gobjects':'http://gobejcts_url' or a BQGobject or a vector of BQGObject
-
-    noedit         - read-only view for gobjects
-      alwaysedit     - instantiates editor right away and disables hiding it
-      nosave         - disables saving gobjects
-      editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
-                       can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
-    gobjectDeleted
-    gobjectCreated
-
-    gobjectMove      - returns shape object when manipulating a gobject, shape object has pointer to gob
-    gobjectMoveStart - returns shape object when beginning a gobject manipulation, shape object has pointer to gob
-    gobjectMoveEnd   - returns shape object when ending a gobject manipulation, shape object has pointer to gob
-
-    blockforsaves  - set to true to show saving of gobjects, def: true
-    showmanipulators - turns off advanced manipulators in the canvas renderer
-       jrd: this should really be more advanced and allow you to customize what options you want to show on
-            the renderer ie: toggle shape corners, manipulators, bounding boxes, debugging tree, etc
-
-  Example:
-    var myviewer = Ext.create('BQ.viewer.Image', {
-        resource: 'http://image_url',
-        user: 'user_name',
-        parameters: {
-            'gobjects': 'http://gobejcts_url',
-            'noedit': '',
-        },
-    });
-
-
-        var buttons = [{
-            itemId: 'btnCreate',
-            text: 'Create custom',
-            scale: 'medium',
-            iconCls: 'icon-add',
-            handler: this.createComplexGobject,
-            scope: this,
-            tooltip: 'Create a new custom graphical annotation wrapping any primitive annotation',
-        }];
-
+    this.fireEvent( 'selected', this.primitive, this.semantic, this );
 
 *******************************************************************************/
 
-Ext.define('BQ.editor.GraphicalSelector', {
-    alias: 'widget.graphicalselector',
+//-----------------------------------------------------------------------
+// BQ.viewer.MenuButton - base class for button-based viewer menus
+//-----------------------------------------------------------------------
+
+Ext.define('BQ.viewer.MenuButton', {
+    alias: 'widget.viewer_menubutton',
     extend: 'Ext.Component',
-    componentCls: 'bq-editor-selector',
-    //componentCls: 'editmenu',
+    componentCls: 'bq-viewer-button',
 
     border: false,
     layout: 'fit',
@@ -78,23 +30,78 @@ Ext.define('BQ.editor.GraphicalSelector', {
         tag: 'div',
     },
 
-    initComponent : function() {
-        //init
-        this.callParent();
-        this.editprimitives = this.editprimitives || BQGObject.primitives;
-    },
-
-    onDestroy : function(){
-        // clenup
-        this.callParent();
-    },
-
     afterRender : function() {
         this.callParent();
-        this.getEl().on('click', this.onMenuToggle, this );
-        this.createMenu();
         this.onPreferences();
+        this.createMenu();
         BQ.Preferences.on('update_user_pref', this.onPreferences, this);
+        this.getEl().on('click', this.onMenuToggle, this );
+        if (this.widget)
+            this.widget.on('hide', this.onHide, this );
+        else
+            this.on('hide', this.onHide, this );
+    },
+
+    onHide : function() {
+        if (this.menu)
+            this.menu.hide();
+    },
+
+    onMenuToggle: function(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        this.createMenu();
+        var m = this.menu;
+        if (m.isVisible())
+            m.hide();
+        else
+            m.show();
+    },
+
+    // methods to override
+
+    onPreferences: function() {
+        //this.auto_hide = BQ.Preferences.get('user','Viewer/gobjects_editor_auto_hide', true);
+    },
+
+    createMenu: function() {
+        /*if (this.menu) return;
+        this.menu = Ext.create('Ext.tip.ToolTip', {
+            target: this.getEl(),
+            anchor: 'left',
+            anchorToTarget: true,
+            anchorOffset: 4,
+            cls: 'bq-editor-menu',
+            width: 380,
+            height: 400,
+            autoHide: false,
+            shadow: false,
+            closable: true,
+            layout: {
+                type: 'vbox',
+                align: 'stretch',
+                pack: 'start',
+            },
+            items: {},
+        });*/
+    },
+
+});
+
+//-----------------------------------------------------------------------
+// BQ.editor.GraphicalSelector - Graphical annotations menu
+//-----------------------------------------------------------------------
+
+Ext.define('BQ.editor.GraphicalMenu', {
+    extend: 'BQ.viewer.MenuButton',
+    alias: 'widget.viewer_menu_graphical',
+    componentCls: 'bq-editor-selector',
+
+    initComponent : function() {
+        this.callParent();
+        this.editprimitives = this.editprimitives || BQGObject.primitives;
     },
 
     createMenu: function() {
@@ -197,15 +204,6 @@ Ext.define('BQ.editor.GraphicalSelector', {
 
     },
 
-    onMenuToggle : function() {
-        this.createMenu();
-        var m = this.menu;
-        if (m.isVisible())
-            m.hide();
-        else
-            m.show();
-    },
-
     createComplexGobject: function () {
         Ext.MessageBox.prompt('Create new graphical type', 'Please enter a new graphical type:', this.onNewType, this);
     },
@@ -249,7 +247,7 @@ Ext.define('BQ.editor.GraphicalSelector', {
 });
 
 //-----------------------------------------------------------------------
-// BQ.grid.GobsPanel
+// BQ.grid.GobsPanel - list view of available gobjects types
 //-----------------------------------------------------------------------
 
 function getType(v, record) {

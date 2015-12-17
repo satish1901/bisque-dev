@@ -549,7 +549,7 @@
     text-align: left;
 }
 
-.viewer .viewoptions {
+.bq-image-viewer .viewoptions {
     position: absolute;
     z-index: 30;
     width: 32px;
@@ -584,8 +584,8 @@
 .viewer .editmenu, .viewer .bq-editor-selector {
     position: absolute;
     z-index: 30;
-    width: 31px;
-    height: 31px;
+    width: 31px !important;
+    height: 31px !important;
     right: 60px;
     top: 10px;
     bottom: none;

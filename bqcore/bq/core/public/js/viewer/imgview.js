@@ -362,6 +362,8 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     */
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
+    this.widget = this.parameters.widget;
+
 
     var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,scalebar,progressbar,infobar,overlay,edit,renderer";
     if ('onlyedit' in this.parameters)
@@ -836,6 +838,16 @@ ImgViewer.prototype.createCombo = function (label, items, def, scope, cb, min_wi
 };
 
 ImgViewer.prototype.createViewMenu = function() {
+    if (this.menu_view)
+        return this.menu_view;
+    var m = Ext.create('BQ.viewer.ViewMenu', {
+        renderTo: this.viewer_controls_surface || this.imagediv,
+        widget: this.widget,
+    });
+    this.menu_view = m.menu;
+    return this.menu_view;
+
+    /*
     if (!this.menubutton) {
         this.menubutton = document.createElement('span');
 
@@ -872,8 +884,10 @@ ImgViewer.prototype.createViewMenu = function() {
         el.on('click', this.onMenuClick, this);
     }
     return this.menu_view;
+    */
 };
 
+/*
 ImgViewer.prototype.onMenuClick = function (e, btn) {
     e.preventDefault();
     e.stopPropagation();
@@ -882,6 +896,7 @@ ImgViewer.prototype.onMenuClick = function (e, btn) {
     else
         this.menu_view.show();
 };
+*/
 
 ////////////////////////////////////////////////
 // Simple  renderer for testing
