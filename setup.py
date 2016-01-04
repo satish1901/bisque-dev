@@ -18,7 +18,7 @@ class PureDistribution(Distribution):
     def is_pure(self):
         return True
 
-VERSION = '0.5.7'
+VERSION = '0.5.9'
 
 
 def generate_data_files (toplevel, filters=None):

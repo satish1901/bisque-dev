@@ -1,5 +1,5 @@
 <system name="system"  >
-    <tag name="version" value="0.5.8" />
+    <tag name="version" value="0.5.9" />
     <preference>
         <tag name="titles">
             <tag name="organization" value="" />
