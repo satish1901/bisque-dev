@@ -34,7 +34,7 @@
                           combined= '/js/all_js.js',
                           combined_path = h.file_root() + '/bqcore/bq/core/public/js/all_js.js',
                           checkts = False,
-                          #minify= 'minify', # D3 breaks with minify
+                          minify= 'minify', # D3 breaks with minify
                           version=bq.release.__VERSION_HASH__)
           css_kw = dict (fs_root=h.file_public(),
                          combined='/css/all_css.css',
@@ -125,6 +125,14 @@
     </script>
     -->
 
+    <!-- Third party libs -->
+    <script type="text/javascript" src="${tg.url('/d3/d3.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/threejs/three.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/async/async.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/jquery/jquery.min.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/proj4js/proj4.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/raphael/raphael.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/js/viewer/kinetic-v5.1.0.js')}"></script>
 
     <!-- GMaps API -->
     <!--<script type="text/javascript" src="//maps.googleapis.com/maps/api/js?sensor=false"></script>-->
@@ -141,18 +149,20 @@
     ${h.javascript_link(
 
     # Pre-required libraries
-    '/d3/d3.js',
-    '/threejs/three.js',
+    #'/d3/d3.js',
+    #'/threejs/three.js',
     '/threejs/TypedArrayUtils.js',
     '/threejs/math/ColorConverter.js',
     #-- Async.js --
-    '/async/async.js',
+    #'/async/async.js',
     #-- jquery --
-    '/jquery/jquery.min.js',
+    #'/jquery/jquery.min.js',
     #-- proj4 --
-    '/proj4js/proj4.js',
+    #'/proj4js/proj4.js',
     #-- Raphael --
-    '/raphael/raphael.js',
+    #'/raphael/raphael.js',
+    #-- kinetic --
+    #'/js/viewer/kinetic-v5.1.0.js',
 
     #'/js/bq_ui_extjs_fix.js',
     # --Bisque JsApi - this needs cleaning and updating--
@@ -253,8 +263,6 @@
 
     '/js/picker/Color.js',
     '/js/form/field/Color.js',
-
-    '/js/viewer/kinetic-v5.1.0.js',
 
     '/js/viewer/menu_gobjects.js',
     '/js/viewer/scalebar.js',
