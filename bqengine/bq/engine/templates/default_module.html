@@ -18,6 +18,15 @@
     <link py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" rel="stylesheet" type="text/css" href="/extjs/resources/css/ext-all-gray.css"/>
     <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="/extjs/ext-all.js"> </script>
 
+    <!-- Third party libs -->
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="${tg.url('/d3/d3.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="${tg.url('/threejs/three.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="${tg.url('/async/async.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="${tg.url('/jquery/jquery.min.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="${tg.url('/proj4js/proj4.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="${tg.url('/raphael/raphael.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="${tg.url('/js/viewer/kinetic-v5.1.0.js')}"></script>
+
     <!-- BisQue styles -->
     <link py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" rel="stylesheet" type="text/css" href="/css/all_css.css" />
 
