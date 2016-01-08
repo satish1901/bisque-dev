@@ -8,8 +8,8 @@ __all__ = [
     ]
 
 __PACKAGE_NAME__ = "Bisque"
-__VERSION__ = "0.5.9"
-__VERSION_STRING__ =  ".5.9"
+__VERSION__ = "0.5.8"
+__VERSION_STRING__ =  ".5.8"
 __VERSION_HASH__ = "20160104"
 __DB_VERSION__ = 6
 __AUTHOR__ = "Center for Bioimage Informatics (CBI)"
