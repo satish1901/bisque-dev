@@ -1348,6 +1348,15 @@ BQTag.prototype.setParent = function (p) {
     this.parent = p;
 };
 
+Ext.namespace('BQ.annotations');
+BQ.annotations.name = 'annotation_status';
+BQ.annotations.type = 'AnnotationStatus';
+BQ.annotations.status = {
+    started: 'started',
+    finished: 'finished',
+    validated: 'validated',
+};
+
 //-----------------------------------------------------------------------------
 // BQGObject
 //-----------------------------------------------------------------------------

@@ -70,7 +70,7 @@ Ext.define('Bisque.ResourceFactoryWrapper', {
                 height : layoutCls.layoutEl.height
             });
             resource.addCls(layoutCls.layoutCSS || '');
-            
+
             preferencesLoaded(BQ.Preferences.get('user','ResourceBrowser',{}), resource, layoutCls);
             /*
             BQ.Preferences.get({
@@ -423,7 +423,7 @@ Ext.define('Bisque.Resource', {
 
 
 Ext.define('Bisque.Resource.Compact', {
-    extend : 'Bisque.Resource'
+    extend : 'Bisque.Resource',
 });
 
 Ext.define('Bisque.Resource.Card', {
@@ -443,7 +443,7 @@ Ext.define('Bisque.Resource.Card', {
         if (!this.getData('fetched')) {
             this.setData('fetched', -1);
             //Loading
-            BQFactory.load(this.resource.uri + '/tag', Ext.bind(this.loadResource, this));
+            BQFactory.load(this.resource.uri + '/tag?limit=10', Ext.bind(this.loadResource, this));
         }
     },
 
@@ -526,7 +526,7 @@ Ext.define('Bisque.Resource.Full', {
         if (!this.getData('fetched')) {
             this.setData('fetched', -1);
             //Loading
-            BQFactory.load(this.resource.uri + '/tag?view=deep', Ext.bind(this.loadResource, this));
+            BQFactory.load(this.resource.uri + '/tag?view=full&limit=100', Ext.bind(this.loadResource, this));
         }
     },
 

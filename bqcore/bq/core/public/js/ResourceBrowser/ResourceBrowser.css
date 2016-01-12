@@ -70,6 +70,7 @@
     width: 160px;
     height: 160px;
     border: solid 0px #F00 !important;	/* FBFBFB */
+    position: relative;
 }
 
 .ImageCard {
@@ -544,6 +545,32 @@
 .resicon .lblHeading2 {
     visibility: hidden;
     height: 0px;
+}
+
+.ImageCompact .status_icon {
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+    background-position: 30px 30px;
+}
+
+.ImageCompact .status_icon.started {
+    background-position: -100px -163px;
+}
+
+.ImageCompact .status_icon.finished {
+    background-position: -134px -163px;
+}
+
+.ImageCompact .status_icon.validated {
+    background-position: -165px -163px;
 }
 
 /* store */
