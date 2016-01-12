@@ -220,7 +220,8 @@ Ext.define('Bisque.Resource.Image.Compact', {
                 height : this.layoutMgr.layoutEl.stdImageHeight,
             });
 
-            BQFactory.load(this.resource.uri + '?view='+BQ.annotations.name, callback(this, this.loadResource, 'anno_status'));
+            if (BQ.Preferences.get('user', 'ResourceBrowser/Images/enable_annotation_status', false) === true)
+                BQFactory.load(this.resource.uri + '?view='+BQ.annotations.name, callback(this, this.loadResource, 'anno_status'));
         }
     },
 
@@ -969,10 +970,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                     handler: this.showMovie,
                 }]
             },
-        }, '-', {
-            xtype: 'bqannotationstatus',
-            resource : this.resource,
-        }]);
+        }, '-']);
 
         this.toolbar.doLayout();
 
