@@ -329,3 +329,42 @@ Ext.define('BQ.TagRenderer.Email', {
     }*/
 });
 
+Ext.define('BQ.TagRenderer.AnnotationStatus', {
+    extend : 'BQ.TagRenderer.Base',
+    alias : 'widget.bqfieldannotationstatus',
+    inheritableStatics : {
+        componentName : BQ.annotations.type,
+        template : {
+            Type : BQ.annotations.type,
+            //select : '',
+            //passedValues : ''
+        }
+    },
+
+    getRenderer : function(config) {
+        var store = Ext.create('Ext.data.Store', {
+            fields : ['name', 'value'],
+            data : [{
+                name : 'None',
+                value : '',
+            }, {
+                name : BQ.annotations.status.started,
+                value : BQ.annotations.status.started,
+            }, {
+                name : BQ.annotations.status.finished,
+                value : BQ.annotations.status.finished,
+            }, {
+                name : BQ.annotations.status.validated,
+                value : BQ.annotations.status.validated,
+            }]
+        });
+
+        return {
+            xtype : 'combobox',
+            store : store,
+            displayField : 'name',
+            valueField : 'value',
+            editable : false,
+        };
+    }
+});

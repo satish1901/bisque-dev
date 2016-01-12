@@ -212,13 +212,15 @@ Ext.define('Bisque.Resource.Image.Compact', {
             //Loading
 
             var prefetchImg = new Image();
+            prefetchImg.onload = Ext.bind(this.loadResource, this, ['image'], true);
+            prefetchImg.onerror = Ext.bind(this.resourceError, this);
+            prefetchImg.onabort = Ext.bind(this.resourceError, this);
             prefetchImg.src = this.getThumbnailSrc({
                 width : this.layoutMgr.layoutEl.stdImageWidth,
                 height : this.layoutMgr.layoutEl.stdImageHeight,
             });
-            prefetchImg.onload = Ext.bind(this.loadResource, this, ['image'], true);
-            prefetchImg.onerror = Ext.bind(this.resourceError, this);
-            prefetchImg.onabort = Ext.bind(this.resourceError, this);
+
+            BQFactory.load(this.resource.uri + '?view='+BQ.annotations.name, callback(this, this.loadResource, 'anno_status'));
         }
     },
 
@@ -239,7 +241,19 @@ Ext.define('Bisque.Resource.Image.Compact', {
     },
 
     loadResource : function(data, type) {
-        if (type == 'image') {
+        if (data === 'anno_status' && type && type.tags && type.tags.length>0) {
+            this.annotation_status = type.tags[0].value;
+            this.add({
+                xtype: 'component',
+                cls: 'status_icon '+this.annotation_status,
+                autoEl: {
+                    tag: 'div',
+                },
+            });
+            return;
+        }
+
+        if (type === 'image') {
             this.setData('image', this.GetImageThumbnailRel({
                 width : this.layoutMgr.layoutEl.stdImageWidth,
                 height : this.layoutMgr.layoutEl.stdImageHeight,
@@ -937,7 +951,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                     iconCls: 'view2d',
                     handler: this.show2D,
                     tooltip: 'View current image in 2D tiled viewer',
-                },{
+                }, {
                     xtype  : 'menuitem',
                     itemId : 'menu_view_3d',
                     text   : '3D',
@@ -955,7 +969,11 @@ Ext.define('Bisque.Resource.Image.Page', {
                     handler: this.showMovie,
                 }]
             },
-        }, '-']);
+        }, '-', {
+            xtype: 'bqannotationstatus',
+            resource : this.resource,
+        }]);
+
         this.toolbar.doLayout();
 
         this.setLoading(false);
