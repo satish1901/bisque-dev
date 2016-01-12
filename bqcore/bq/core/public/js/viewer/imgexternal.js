@@ -96,7 +96,7 @@ function ImgExternal (viewer,name){
         },
     }]);
 
-    this.viewer.addMenu([{
+    this.menu_operations = this.viewer.addMenu([{
         itemId: 'menu_viewer_operations',
         xtype:'button',
         text: 'Operations',
@@ -179,7 +179,6 @@ ImgExternal.prototype.newImage = function () {
             },
         }]);
     };
-
 };
 
 /*
@@ -295,5 +294,18 @@ ImgExternal.prototype.calibrateResolution = function () {
         image_resource: image.uri, //accepts a data_service uri
     })
     imageMetaEditor.show();
+};
+
+ImgExternal.prototype.onPreferences = function () {
+    var resource_uniq = this.viewer.image.resource_uniq;
+    //if (BQ.Preferences.get('user', 'ResourceBrowser/Images/enable_annotation_status', false) === true) {
+    if (!this.annotation_status &&
+        BQ.Preferences.get(resource_uniq, 'ResourceBrowser/Images/enable_annotation_status', false) === true) {
+        this.annotation_status = this.viewer.addMenu({
+            xtype: 'bqannotationstatus',
+            itemId: 'annotation_status',
+            resource : this.viewer.image,
+        });
+    }
 };
 
