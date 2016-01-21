@@ -121,6 +121,10 @@ classdef Url < matlab.mixin.Copyable
             r = self.purl.scheme;
         end        
         
+        function setScheme(self, scheme)
+            self.purl.scheme = scheme;
+        end   
+        
         % credentials
 
         function r = hasCredentials(self)

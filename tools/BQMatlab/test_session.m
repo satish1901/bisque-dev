@@ -26,6 +26,7 @@ image = s.fetch('http://bisque.ece.ucsb.edu/data_service/00-7oisD8Jqm3YerdDMxfdQ
 
 %share an image with another user
 image.share('dima1', 'read');
+image.share('dima1', 'edit');
 
 % remove the share with another user
 image.share('dima1');
@@ -38,7 +39,7 @@ image.share('dima1');
 
 
 % initing session
-s = bq.Session('http://vidi.ece.ucsb.edu:9090/data_service/mex/981', '981');
+s = bq.Session('http://vidi.ece.ucsb.edu:9090/data_service/mex/981', 'XXXXXX');
 
 % while running
 s.update('RUNNING');

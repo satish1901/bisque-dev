@@ -85,6 +85,9 @@ classdef Node < matlab.mixin.Copyable
             if ~isempty(output) && info.status<300 && isempty(regexpi(output, '(<html)', 'tokenExtents')),
                 doc = bq.str2xml(output);
                 node = bq.Factory.fetch(doc, [], self.user, self.password);
+                if isempty(node),
+                    error('bq.Node.save: Could not be stored');
+                end
                 self.setAttribute('uri', node.getAttribute('uri'));
             else
                 error = info.error;
@@ -137,20 +140,26 @@ classdef Node < matlab.mixin.Copyable
         % user - has to be an exact match of either:
         %     user name
         %     user email
-        %     user id (url)
+        %     user url
         % mode - 
         %     read: allow only read access (default)
-        %     write: allow read and write access
+        %     edit: allow read and write access
         %     ~: empty (none value) remove share for that user 
             
             changed = [];
         
             % find user
-            uri = self.getAttribute('uri');
-            url = bq.Url(uri);
-            bisque_root = url.getRoot();
-            user_query = ['"' user '"'];
-            user_res = bq.Factory.find(bisque_root, 'user', user_query, 'short', 'true', self.user, self.password);
+            if length(user)>8 && ...
+               (strcmpi(user(1:7), 'http://') || strcmpi(user(1:8), 'https://')),
+                user_res = user;
+            else
+                uri = self.getAttribute('uri');
+                url = bq.Url(uri);
+                bisque_root = url.getRoot();
+                user_query = ['"' user '": or "' user '"'];
+                user_res = bq.Factory.find(bisque_root, 'user', user_query, 'short', 'true', self.user, self.password);
+            end
+            
             if isempty(user_res),
                 error('bq.Node.share: User not found');
             end
@@ -163,13 +172,13 @@ classdef Node < matlab.mixin.Copyable
             end            
             
             % delete share
-            if ~exist('mode', 'var') || isempty(mode) || strcmp(mode, 'delete') == 1,
+            if ~exist('mode', 'var') || isempty(mode) || strcmpi(mode, 'delete') == 1,
                 sh = shares.findNode(['auth[@user="' user_uri '"]']);
                 if isempty(sh),
                     return;
                 end
                 shares.element.removeChild(sh.element);
-            elseif strcmp(mode, 'read') == 1 || strcmp(mode, 'write') == 1,
+            elseif strcmpi(mode, 'read') == 1 || strcmpi(mode, 'edit') == 1,
                 sh = shares.findNode(['auth[@user="' user_uri '"]']);
                 if isempty(sh),
                     % append share
@@ -191,8 +200,8 @@ classdef Node < matlab.mixin.Copyable
             [output, info] = bq.put([uri '/auth'], shares, self.user, self.password);
             if info.status>=300,
                 error('bq.Node.share: Auth record could not be saved');
-            end               
-            changed = 1;             
+            end      
+            changed = 1;
         end % share          
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -264,7 +273,7 @@ classdef Node < matlab.mixin.Copyable
                 values{1} = char(self.element.getAttribute('value'));
             end
             
-            % find all <value> sub nodes            
+            % find all <value> sub nodes
             import javax.xml.xpath.*;
             factory = XPathFactory.newInstance;
             xpath = factory.newXPath;    
@@ -284,9 +293,31 @@ classdef Node < matlab.mixin.Copyable
             end
         end % getValues            
         
-        function value = setValues(self, values)
-            % not yet implemented
-            %value = char(self.element.getAttribute(name));
+        function setValues(self, values)
+            
+            % find and delete all <value> sub nodes
+            import javax.xml.xpath.*;
+            factory = XPathFactory.newInstance;
+            xpath = factory.newXPath;    
+            xnodes = xpath.evaluate('value', self.element, XPathConstants.NODESET);
+            if ~isempty(xnodes) && xnodes.getLength()>0,
+                for i=xnodes.getLength():-1:1,
+                    n = xnodes.item(i-1);
+                    self.element.removeChild(n);
+                end
+            end
+
+            % set type
+            if isnumeric(values{1}),
+                self.element.setAttribute('type', 'number'); 
+            end
+            
+            % write new values
+            for i=1:length(values),
+                v = self.doc.createElement('value');
+                v.setTextContent(num2str(values{i}));
+                self.element.appendChild(v);    
+            end            
         end % setValues                  
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
