@@ -124,6 +124,36 @@ if ~isempty(image),
     image.save();
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% registering a multi-file image from files accessible by the bisque system
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+host = 'http://vidi.ece.ucsb.edu:9090';
+user = 'XXX';
+pass = 'XXX';
+
+files = {
+    'G:\_tests\_test_z_stack\Z0_T000.tif', ...
+    'G:\_tests\_test_z_stack\Z1_T000.tif', ...
+    'G:\_tests\_test_z_stack\Z2_T000.tif', ...
+    'G:\_tests\_test_z_stack\Z3_T000.tif', ...
+    'G:\_tests\_test_z_stack\Z4_T000.tif' ...
+};
+
+% encode file paths to the url spec, using "file://" for local files
+% under windows file:/// because of drive letters
+for i=1:length(files),
+    files{i} = bq.path2url(files{i});
+end
+
+image = bq.Factory.new('image', '_test_z_stack');
+image.setValues(files);
+image.set_image_meta(length(files), 1, []);
+
+image.addTag('about', 'this is an image upload from Matlab API');
+image.addGobject('polyline', 'poly-in-z', [10,20,1;40,50,2;70,80,4] );
+
+s = bq.Session(user, pass, host);
+image = s.store(image);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % lower level API
