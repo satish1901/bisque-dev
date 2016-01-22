@@ -1425,6 +1425,20 @@ var bq_create_gradient = function (r1,g1,b1,a1,r2,g2,b2,a2) {
     }
 }
 
+BQGObject.default_color = {
+    r: 255,
+    g: 0,
+    b: 0,
+    a: 0.5
+};
+
+BQGObject.default_color_stroke = {
+    r: 255,
+    g: 0,
+    b: 0,
+    a: 1.0
+};
+
 BQGObject.confidence_tag = 'confidence';
 BQGObject.confidence_cutoff = 0;
 BQGObject.color_gradient = [];
@@ -1448,7 +1462,7 @@ BQGObject.prototype.initializeXml = function (node) {
 
     var t = BQ.util.xpath_node(node, 'tag[@name="color"]');
     if (t)
-        this.color_override = t.getAttribute('value').replace('#', '');
+        this.color = t.getAttribute('value').replace('#', '');
 
     var t = BQ.util.xpath_node(node, 'tag[@name="'+BQGObject.confidence_tag+'"]');
     if (t)
@@ -1468,12 +1482,14 @@ BQGObject.prototype.isPrimitive = function () {
 BQGObject.prototype.getColor = function (r,g,b,a) {
     if (this.color_override) {
         return Kinetic.Util._hexToRgb('#' + this.color_override);
-    } if (typeof(this.confidence) !== 'undefined') {
+    } else if (typeof(this.confidence) !== 'undefined') {
         if (this.confidence < BQGObject.confidence_cutoff)
             return {r: 255, g: 0, b: 0, a: 0};
         var cc = Math.max(0, Math.min(100, Math.round(this.confidence)));
         var c = BQGObject.color_gradient[cc];
         return {r: c.r, g: c.g, b: c.b, a: c.a};
+    } else if (this.color) {
+        return Kinetic.Util._hexToRgb('#' + this.color);
     }
     return {r: r, g: g, b: b, a: a};
 };
