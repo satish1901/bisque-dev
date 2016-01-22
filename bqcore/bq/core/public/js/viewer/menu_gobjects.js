@@ -296,7 +296,7 @@ Ext.define('BQ.grid.GobsPanel', {
             sorters: [{
                 property: 'Type',
                 direction: 'ASC',
-                transform: function(v) { return v.toLowerCase(); },
+                transform: function(v) { return v ? v.toLowerCase() : v; },
             }]
         });
 

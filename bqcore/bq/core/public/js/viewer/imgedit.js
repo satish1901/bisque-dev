@@ -614,6 +614,8 @@ ImgEdit.prototype.color_gobject = function(gob, color) {
         return;
     }
 
+    /*
+    // dima: not sure what this is, but saving color into objects may not be exactly what we want
     var xml = gob.xmlNode();
     var tagColor = BQ.util.xpath_nodes(xml,'tag[@name="color"]');
     var uri = null;
@@ -623,6 +625,7 @@ ImgEdit.prototype.color_gobject = function(gob, color) {
 
     var t = gob.addtag(new BQTag(uri, 'color', color, 'color'));
     t.save_reload(gob.uri);
+    */
 
     this.renderer.rerender([gob], [this.current_view, true]);
     console.log(gob.uri + '?view=deep');

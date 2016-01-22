@@ -769,20 +769,20 @@ CanvasShape.prototype.setColor = function (r,g,b) {
             r+','+
             g+','+
             b+','+
-            0.5+')';
+            BQGObject.default_color.a+')';
     var  strokeColor = 'rgba('+
             r+','+
             g+','+
             b+','+
-            1.0+')';
+            BQGObject.default_color_stroke.a+')';
+
+    this.sprite.fill(color);
+    this.sprite.stroke(strokeColor);
 
     if(this.colorTimeout) clearTimeout(this.colorTimeout);
     this.colorTimeout = setTimeout( function(){
         me.renderer.viewer.editor.color_gobject(me.gob, h);
     }, 100);
-
-    this.sprite.fill(color);
-    this.sprite.stroke(strokeColor);
 };
 
 
@@ -795,11 +795,17 @@ CanvasShape.prototype.applyColor = function () {
 
 CanvasShape.prototype.getColorString = function (c, alpha) {
     c = c || this.getColor();
+    if (typeof alpha === 'undefined' || alpha === null) {
+        alpha = c.a;
+    }
+    if (typeof alpha === 'undefined' || alpha === null) {
+        alpha = BQGObject.default_color.a;
+    }
     var color = 'rgba('+
             c.r+','+
             c.g+','+
             c.b+','+
-            (alpha || c.a)+')';
+            alpha+')';
     return color;
 };
 

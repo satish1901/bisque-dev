@@ -91,6 +91,7 @@ Ext.define('BQ.button.AnnotationStatus', {
     },
 
     setStatus: function() {
+        if (!this.status) return;
         var btn = this.menu.queryById('menu_status_'+this.status.value);
         if (btn)
             btn.setChecked(true);
