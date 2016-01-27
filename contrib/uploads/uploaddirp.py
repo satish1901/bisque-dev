@@ -17,9 +17,9 @@ def sendimage_helper (arg_tuple):
     "Expand tuple args"
     sendimage_to_bisque (*arg_tuple)
 
-root = 'https://loup.ece.ucsb.edu/'
-user='kgk'
-passwd = 'testme'
+root = 'http://bisque_host/'
+user='USER'
+passwd = 'SECRET'
 
 def main(argv):
     direct = argv[1]
