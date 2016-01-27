@@ -173,7 +173,7 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
     with IrodsConnection(url, **kw) as ic:
         log.debug( "irods_push iput %s -> %s" , url, ic.path)
         localname = irods_cache_save(fileobj, ic.path)
-        ic.check_cmd (['imkdir', '-p', os.path.basename (ic.path)])
+        ic.check_cmd (['imkdir', '-p', os.path.dirname (ic.path)])
         ic.check_cmd (['iput', localname, ic.path])
 
 def irods_delete_file(url, **kw):
