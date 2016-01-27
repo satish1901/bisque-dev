@@ -786,7 +786,10 @@ class import_serviceController(ServiceController):
     def cleanup_packaging(self, unpack_dir):
         "cleanup and packaging details "
         if os.path.isdir(unpack_dir):
-            shutil.rmtree (unpack_dir)
+            try:
+                shutil.rmtree (unpack_dir, ignore_errors=True)
+            except OSError:
+                log.warning('Problem removing upload directory: %s', unpack_dir)
 
 
 #---------------------------------------------------------------------------------------
