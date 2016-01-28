@@ -24,6 +24,7 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
             tooltip : 'Delete this resource',
             handler : this.deleteResource,
             scope : this,
+            hidden: !BQApp.user,
         }];
         if (this.updateItems)
             this.updateItems(this.items, this);
@@ -99,7 +100,8 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
             text : 'Share',
             iconCls : 'icon-group',
             handler : this.btnMenu,
-            scope : this
+            scope : this,
+            hidden: !BQApp.user,
         }];
 
         // Handle resource permission
@@ -108,33 +110,38 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
                 text : 'Set all published',
                 iconCls : 'icon-eye',
                 handler : this.btnMenu,
-                scope : this
+                scope : this,
+                hidden: !BQApp.user,
             }, {
                 text : 'Set all private',
                 iconCls : 'icon-eye-close',
                 handler : this.btnMenu,
-                scope : this
+                scope : this,
+                hidden: !BQApp.user,
             });
         } else if (this.resourceCt.resource.permission == 'published')
             items.push({
                 text : 'Published',
                 iconCls : 'icon-eye',
                 handler : this.btnMenu,
-                scope : this
+                scope : this,
+                hidden: !BQApp.user,
             });
         else
             items.push({
                 text : 'Private',
                 iconCls : 'icon-eye-close',
                 handler : this.btnMenu,
-                scope : this
+                scope : this,
+                hidden: !BQApp.user,
             });
 
         items.push('-', {
             text : 'Add to dataset',
             iconCls : 'icon-add',
             handler : this.btnMenu,
-            scope : this
+            scope : this,
+            hidden: !BQApp.user,
         });
 
         return Ext.create('Ext.menu.Menu', {

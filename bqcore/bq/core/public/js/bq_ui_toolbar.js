@@ -31,28 +31,34 @@ var iframeAction = function( url, title ) {
 };
 
 var htmlAction = function( url, title ) {
-   var w = Ext.create('Ext.window.Window', {
-       title: (title && typeof title == 'string') ? title : undefined,
-       modal: true,
-       width: BQApp?BQApp.getCenterComponent().getWidth()/1.6:document.width/1.6,
-       height: BQApp?BQApp.getCenterComponent().getHeight()/1.1:document.height/1.1,
+    var w = Ext.create('Ext.window.Window', {
+        title: (title && typeof title == 'string') ? title : undefined,
+        width: BQApp?BQApp.getCenterComponent().getWidth()/1.6:document.width/1.6,
+        height: BQApp?BQApp.getCenterComponent().getHeight()/1.1:document.height/1.1,
 
-       buttonAlign: 'center',
-       autoScroll: true,
-       loader: {
-           url: url,
-           renderer: 'html',
-           autoLoad: true,
-           ajaxOptions: {
-               disableCaching: false,
-           }
-       },
-       buttons: [{
-           text: 'Ok',
-           handler: function () { w.close(); }
-       }],
-   });
-   w.show();
+        modal: true,
+        buttonAlign: 'center',
+        plain : true,
+        layout: 'fit',
+        border: 0,
+
+        items: [{
+            xtype: 'component',
+            layout: 'fit',
+            border: 0,
+            autoEl: {
+                tag: 'iframe',
+                src: url,
+                frameborder: "0",
+            },
+        }],
+
+        buttons: [{
+            text: 'Ok',
+            handler: function () { w.close(); }
+        }],
+    });
+    w.show();
 };
 
 function analysisAction(o, e) {
@@ -419,26 +425,32 @@ Ext.define('BQ.Application.Toolbar', {
                 video: '//www.youtube.com/embed/_tq62SJ8SCw?list=PLAaP7tKanFcyR5cjJsPTCa0CDmWp9unds', // set default bisque overview help video
                 indent: true,
             }, '-', {
-                text: 'About Bisque',
-                //handler: Ext.Function.pass(htmlAction, [BQ.Server.url('/client_service/public/about/about.html'), 'About Bisque'] ),
-                handler: Ext.Function.pass(htmlAction, [BQ.Server.url('/client_service/about'), 'About Bisque'] ),
+                text: 'About',
+                itemId: 'menu_help_about',
+                handler: Ext.Function.pass(htmlAction, [BQ.Server.url('/client_service/about'), 'About'] ),
             }, {
                 text: 'Privacy policy',
+                itemId: 'menu_help_privacy_policy',
                 handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/public/about/privacypolicy.html')),
             }, {
                 text: 'Terms of use',
+                itemId: 'menu_help_terms_of_use',
                 handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/public/about/termsofuse.html') ),
             }, {
                 text: 'License',
+                itemId: 'menu_help_license',
                 handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/public/about/license.html') ),
             }, '-', {
                 text: 'Usage statistics',
+                itemId: 'menu_help_usage_statistics',
                 handler: Ext.Function.pass(pageAction, BQ.Server.url('/usage/') ),
             }, '-', {
                 text: 'Online Help',
+                itemId: 'menu_help_help',
                 handler: Ext.Function.pass(urlAction, BQ.Server.url('/client_service/help')),
             }, {
-                text: 'Bisque project website',
+                text: 'Project website',
+                itemId: 'menu_help_project_website',
                 handler: Ext.Function.pass(urlAction, 'http://bioimage.ucsb.edu/bisque'),
             }, '-', {
                 xtype:'tbtext', text: 'Problems with Bisque?',
@@ -446,12 +458,15 @@ Ext.define('BQ.Application.Toolbar', {
                 cls: 'menu-heading',
             }, {
                 text: 'Developers website',
+                itemId: 'menu_help_developers_website',
                 handler: Ext.Function.pass(urlAction, 'http://biodev.ece.ucsb.edu/projects/bisquik'),
             }, {
                 text: 'Submit a bug or suggestion',
+                itemId: 'menu_help_submit_bug',
                 handler: Ext.Function.pass(urlAction, 'http://biodev.ece.ucsb.edu/projects/bisquik/newticket'),
             }, {
                 text: 'Send us e-mail',
+                itemId: 'menu_help_email',
                 handler: Ext.Function.pass(urlAction, 'mailto:bisque-bioimage@googlegroups.com'),
             }],
         };
@@ -1094,38 +1109,42 @@ Ext.define('BQ.Application.Toolbar', {
         );
     },
 
-    setMenuHandler: function(menuitem, url, _def) {
+    setMenuHandler: function(menuitem, f, url, _def) {
+        f = f || pageAction;
         if (!(url || _def)) {
             menuitem.setVisible(false);
         } else {
-            menuitem.setHandler( Ext.Function.pass(pageAction, BQ.Server.url(url || _def)), this );
+            menuitem.setHandler( Ext.Function.pass(f, url || _def), this );
         }
     },
+
     onPreferences: function() {
-        this.toolbarDefault = {
-            registration      : '/auth_service/login',
-            password_recovery : '/auth_service/login',
-            user_profile      : '/registration/edit_user',
-        };
-        this.titlesDefault = {
-            organization      : '',
-            title             : '',
-        };
-        this.preferences.registration      = BQ.Preferences.get('user', 'Toolbar/registration',      this.toolbarDefault.registration);
-        this.preferences.password_recovery = BQ.Preferences.get('user', 'Toolbar/password_recovery', this.toolbarDefault.password_recovery);
-        this.preferences.user_profile      = BQ.Preferences.get('user', 'Toolbar/user_profile',      this.toolbarDefault.user_profile);
-
-        this.preferences.organization      = BQ.Preferences.get('user', 'titles/organization', this.titlesDefault.organization);
-        //this.preferences.title             = BQ.Preferences.get('user', 'titles/title',        this.titlesDefault.title);
-
-        this.setMenuHandler( this.queryById('menu_user_profile'), this.preferences.user_profile, undefined );
-        this.setMenuHandler( this.queryById('menu_user_register'), this.preferences.registration, undefined );
-        this.setMenuHandler( this.queryById('menu_user_recover'), this.preferences.password_recovery, undefined );
-
-        if (this.preferences.registration === 'disabled') {
+        var registration = BQ.Preferences.get('user', 'Toolbar/registration', '/auth_service/login');
+        if (registration === 'disabled') {
             this.queryById('menu_user_register').setVisible(false);
             this.queryById('menu_user_profile').setVisible(false);
             this.queryById('menu_user_recover').setVisible(false);
+        } else {
+            this.setMenuHandler( this.queryById('menu_user_profile'), pageAction, BQ.Preferences.get('user', 'Toolbar/user_profile', '/registration/edit_user') );
+            this.setMenuHandler( this.queryById('menu_user_register'), pageAction, registration );
+            this.setMenuHandler( this.queryById('menu_user_recover'), pageAction, BQ.Preferences.get('user', 'Toolbar/password_recovery', '/auth_service/login') );
+        }
+
+        var h = [
+            { f: htmlAction, n: 'about', d: '/client_service/about' },
+            { f: htmlAction, n: 'privacy_policy', d: '/client_service/about' },
+            { f: htmlAction, n: 'terms_of_use', d: '/client_service/public/about/termsofuse.html' },
+            { f: htmlAction, n: 'license', d: '/client_service/public/about/license.html' },
+            { f: pageAction, n: 'usage_statistics', d: '/usage/' },
+            { f: urlAction,  n: 'help', d: '/client_service/help' },
+            { f: urlAction,  n: 'project_website', d: 'http://bioimage.ucsb.edu/bisque' },
+            { f: urlAction,  n: 'developers_website', d: 'http://biodev.ece.ucsb.edu/projects/bisquik' },
+            { f: urlAction,  n: 'submit_bug', d: 'http://biodev.ece.ucsb.edu/projects/bisquik/newticket' },
+            { f: urlAction,  n: 'email', d: 'mailto:bisque-bioimage@googlegroups.com' },
+        ];
+        var e = null;
+        for (var i=0; (e=h[i]); ++i) {
+            this.setMenuHandler( this.queryById('menu_help_'+e.n), e.f, BQ.Preferences.get('user', 'Toolbar/'+e.n, e.d) );
         }
 
         //if (this.preferences.title)
