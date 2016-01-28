@@ -1,5 +1,5 @@
 <system name="system"  >
-    <tag name="version" value="0.5.9" />
+    <tag name="version" value="0.5.8" />
     <preference>
         <tag name="titles">
             <tag name="organization" value="" />
@@ -14,6 +14,17 @@
             <tag name="registration" value="/auth_service/login" /> <!-- /registration -->
             <tag name="password_recovery" value="/auth_service/login" /> <!-- /registration/lost_password -->
             <tag name="user_profile" value="/registration/edit_user" />
+                        
+            <tag name="about" value="/client_service/about" />
+            <tag name="privacy_policy" value="/client_service/public/about/privacypolicy.html" />
+            <tag name="terms_of_use" value="/client_service/public/about/termsofuse.html" />
+            <tag name="license" value="/client_service/public/about/license.html" />
+            <tag name="usage_statistics" value="/usage/" />
+            <tag name="help" value="/client_service/help" />
+            <tag name="project_website" value="http://bioimage.ucsb.edu/bisque" />
+            <tag name="developers_website" value="http://biodev.ece.ucsb.edu/projects/bisquik" />
+            <tag name="submit_bug" value="http://biodev.ece.ucsb.edu/projects/bisquik/newticket" />
+            <tag name="email" value="mailto:bisque-bioimage@googlegroups.com" />
         </tag>
         <tag name="ResourceBrowser">
             <tag name="Browser">
