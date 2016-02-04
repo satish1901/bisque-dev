@@ -147,13 +147,13 @@ classdef Node < matlab.mixin.Copyable
         %     ~: empty (none value) remove share for that user 
             
             changed = [];
+            uri = self.getAttribute('uri');
         
             % find user
             if length(user)>8 && ...
                (strcmpi(user(1:7), 'http://') || strcmpi(user(1:8), 'https://')),
                 user_res = user;
             else
-                uri = self.getAttribute('uri');
                 url = bq.Url(uri);
                 bisque_root = url.getRoot();
                 user_query = ['"' user '": or "' user '"'];

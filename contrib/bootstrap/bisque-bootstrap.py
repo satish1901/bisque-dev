@@ -5,20 +5,62 @@ import subprocess
 import argparse
 import glob
 import shutil
+import urllib
 
+PIP_LIST=[
+    ('pip', None), 
+    ('setuptools', None)
+]
+if os.name == 'nt':
+    PIP_LIST=[
+        ('numpy-1.10.4+mkl-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/numpy-1.10.4+mkl-cp27-none-win_amd64.whl'), 
+    ]
 
-PIP_LIST=["pip==1.5.4", "setuptools==2.2"]
+shell = False
+if os.name == 'nt':
+    shell = True
+
+# installs pip wheels from a URL or pypy
+def install_package(filename, URL, command):
+    print 'Installing %s\n'%filename
+    if URL is not None:
+        urllib.urlretrieve (URL, filename)
+    subprocess.call (command, shell=shell)
+    if URL is not None:
+        try:
+            os.remove(filename)
+        except OSError:
+            print 'Warning: could not remove %s\n'%filename
+
+# installs package using python setup file
+def install_setup(filename, URL=None):
+    return install_package(filename, URL, ['python', filename])
+
+# installs package using easy_install
+def install_easy(filename, URL=None):
+    return install_package(filename, URL, ['easy_install', filename])
+
+# installs package using pip wheels from a URL or pypy
+def install_pip(filename, URL=None):
+    return install_package(filename, URL, ["pip", "install", "-U", filename])
+
 
 def main():
     parser = argparse.ArgumentParser(description='Boostrap bisque')
     parser.add_argument("--repo", default="http://biodev.ece.ucsb.edu/hg/bisque-stable")
     parser.add_argument("bqenv", nargs="?", default="bqenv")
     parser.add_argument('install', nargs="?", default='server', choices=['server', 'engine'])
-
     args = parser.parse_args()
+    
+    
+    # check python version
+    if not sys.version_info[:2] == (2, 7):
+        print "BisQue requires python 2.7.X but found %s"%(sys.version)
+        return 1
 
-    shell = False
-    print 'Creating virtual environment for BisQue installation\n'
+    print "\n----------------------------------------------------------"
+    print 'Creating virtual environment for BisQue installation'
+    print "----------------------------------------------------------\n"
     if os.name != 'nt':
         r = subprocess.call(["virtualenv", args.bqenv])
         activate = os.path.join(args.bqenv, 'bin', 'activate_this.py')
@@ -28,9 +70,6 @@ def main():
         # install them into the virtualenv
         r = subprocess.call(["virtualenv", args.bqenv, '--no-setuptools'])
         activate = os.path.join(args.bqenv, 'Scripts', 'activate_this.py')
-        shell = True
-
-
 
     print 'Activating virtual environment using: %s\n'%activate
     execfile (activate, dict(__file__=activate))
@@ -39,34 +78,26 @@ def main():
 
     # install pip and setuptools if under windows, due to a bug
     if os.name == 'nt':
-        print 'Installing pip and setuptools to fix virtualenv error under windows\n'
-        import urllib
-        urllib.urlretrieve ("http://raw.github.com/pypa/pip/master/contrib/get-pip.py", "get-pip.py")
-        subprocess.call (['python', 'get-pip.py'], shell=shell)
-        print 'Installing pywin32\n'
-        #subprocess.call (['pip', 'install', 'pywin'], shell=shell)
-        urllib.urlretrieve ("http://downloads.sourceforge.net/project/pywin32/pywin32/Build%20219/pywin32-219.win-amd64-py2.7.exe?r=&ts=1411061394&use_mirror=iweb", "pywin32-219.win-amd64-py2.7.exe")
-        subprocess.call (['easy_install', 'pywin32-219.win-amd64-py2.7.exe'], shell=shell)
-        try:
-            os.remove('get-pip.py')
-        except OSError:
-            pass
-        try:
-            os.remove('pywin32-219.win-amd64-py2.7.exe')
-        except OSError:
-            pass
-
-    # dima, maybe we don't need this given previous lines?
-    for install in PIP_LIST:
-        subprocess.call (["pip", "install", "-U", install], shell=shell)
-
+        print "\n----------------------------------------------------------"
+        print 'Re-Installing pip and setuptools to fix virtualenv error under windows'
+        print "----------------------------------------------------------\n"
+        install_setup("get-pip.py", "https://bootstrap.pypa.io/get-pip.py")
+        install_easy('pywin32-220.win-amd64-py2.7.exe', "http://downloads.sourceforge.net/project/pywin32/pywin32/Build%20220/pywin32-220.win-amd64-py2.7.exe?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fpywin32%2Ffiles%2Fpywin32%2FBuild%2520220%2F&ts=1454466819&use_mirror=iweb")
+        
+    print "\n----------------------------------------------------------"
+    print 'Installing additional packages'
+    print "----------------------------------------------------------\n"
+    for pkg,URL in PIP_LIST:
+        install_pip(pkg, URL)
+    
+    # ensure mercurial is available  
     try:
        r = subprocess.call(['hg', '--version'], shell=shell)
     except OSError:
-        subprocess.call (["pip", "install", "-U", 'mercurial'], shell=shell)
+        install_pip('mercurial')
 
     print "********************************"
-    print "**     Fetching bisque        **"
+    print "**     Fetching BisQue        **"
     print "********************************"
     print "Cloning: ", args.repo
     print
@@ -76,7 +107,7 @@ def main():
             shutil.move (df, os.path.basename(df))
 
     print "********************************"
-    print "**Dowload and layout completed**"
+    print "**  Installing requirements   **"
     print "********************************"
     print
     print
