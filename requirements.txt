@@ -62,7 +62,7 @@ pkginfo==1.2b1
 ply==3.4
 poster==0.8.1
 py==1.4.20
-git+git://github.com/iPlantCollaborativeOpenSource/pycommands.git
+#git+git://github.com/iPlantCollaborativeOpenSource/pycommands.git
 pycrypto==2.6.1
 pytest==2.5.2
 python-dateutil==1.5
