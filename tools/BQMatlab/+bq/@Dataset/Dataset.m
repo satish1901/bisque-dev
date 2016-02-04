@@ -70,9 +70,13 @@ classdef Dataset < bq.Node
             % dataset share does normal share on the dataset resource and
             % then calls /dataset_service/share to propagate the share to
             % all the dataset members
-        
-            changed = share@bq.Node(self, user, mode);
-            if ~isempty(changed),
+            if ~exist('mode', 'var')
+                changed = share@bq.Node(self, user);
+            else
+                changed = share@bq.Node(self, user, mode);
+            end
+            
+            if changed == 1,
                 uri = self.getAttribute('uri');
                 url = bq.Url(uri);
                 bisque_root = url.getRoot();

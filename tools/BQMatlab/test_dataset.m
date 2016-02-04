@@ -1,19 +1,36 @@
-url = 'http://BISQUE_HOST:9090';
+bisque_root = 'http://BISQUE_HOST:9090';
 user = 'username';
 pass = 'password';
 
+s = bq.Session(user, pass, bisque_root);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% creating a new dataset using higher level API
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-dataset = bq.Factory.new('dataset', 'my-dataset-2');
+members = {
+    'http://bisque.ece.ucsb.edu/data_service/00-wSNHBdiTN2fdcSSehpfDZc', ...
+    'http://bisque.ece.ucsb.edu/data_service/00-CfZ5UrFh5teejLCyyYR3aV', ...
+    'http://bisque.ece.ucsb.edu/data_service/00-A3cQsLxCBupcbuDNPxCNLP'
+};
 
-%add values
-dataset.setValues(files);
+dataset = bq.Factory.new('dataset', 'my dataset 2016');
+dataset.setValues(members);
+dataset = s.store(dataset);
 
-dataset.save([url '/data_service/dataset'], user, pass);
+%share an image with another user
+dataset.share('dima1', 'read');
+dataset.share('dima1', 'edit');
+
+% remove the share with another user
+dataset.share('dima1');
+
+% remove dataset and all of its members from the database
+dataset.remove(1);
+
+% remove dataset but keep all of its members
+dataset.remove();
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,7 +38,8 @@ dataset.save([url '/data_service/dataset'], user, pass);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 url = 'http://host/data_service/dataset/635?view=deep';
-dataset = bq.Factory.fetch(url, [], user, pass);
+%dataset = bq.Factory.fetch(url, [], user, pass);
+dataset = s.fetch(url);
 images = dataset.getValues('object');
 
 for i=1:size(images,2),
