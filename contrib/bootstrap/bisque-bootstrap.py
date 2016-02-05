@@ -11,8 +11,9 @@ import urllib
 PIP_LIST=[('pip', None), ('setuptools', None)]
 if os.name == 'nt':
     PIP_LIST=[
-        ('numpy-1.10.4+mkl-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/numpy-1.10.4+mkl-cp27-none-win_amd64.whl'), 
-        ('tables-3.2.2-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/tables-3.2.2-cp27-none-win_amd64.whl'),         
+        ('numpy-1.10.4+mkl-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/numpy-1.10.4+mkl-cp27-none-win_amd64.whl'),
+        ('numexpr-2.4.6-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/numexpr-2.4.6-cp27-none-win_amd64.whl'),
+        ('tables-3.2.2-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/tables-3.2.2-cp27-none-win_amd64.whl'),
     ]
 
 shell = False
@@ -50,21 +51,22 @@ def main():
     parser.add_argument("bqenv", nargs="?", default="bqenv")
     parser.add_argument('install', nargs="?", default='server', choices=['server', 'engine'])
     args = parser.parse_args()
-    
-    
+
+
     # check python version
     if not sys.version_info[:2] == (2, 7):
         print "BisQue requires python 2.7.X but found %s, aborting install..."%(sys.version)
         return 1
-    
+
     # check 64bit python
     if sys.maxsize <= 2**32:
         print "BisQue requires 64bit python, aborting install..."
-        return 1        
+        return 1
 
     print "\n----------------------------------------------------------"
     print 'Creating virtual environment for BisQue installation'
     print "----------------------------------------------------------\n"
+
     if os.name != 'nt':
         r = subprocess.call(["virtualenv", args.bqenv])
         activate = os.path.join(args.bqenv, 'bin', 'activate_this.py')
@@ -76,7 +78,11 @@ def main():
         activate = os.path.join(args.bqenv, 'Scripts', 'activate_this.py')
 
     print 'Activating virtual environment using: %s\n'%activate
-    execfile (activate, dict(__file__=activate))
+    try:
+        execfile (activate, dict(__file__=activate))
+    except Exception:
+        print "Could not activate Virtual Environment, it needs to be pre-installed with your python version..."
+        return 1
 
     os.environ['VIRTUAL_ENV'] = os.path.abspath(args.bqenv)
 
@@ -86,19 +92,25 @@ def main():
         print 'Re-Installing pip and setuptools to fix virtualenv error under windows'
         print "----------------------------------------------------------\n"
         install_setup("get-pip.py", "https://bootstrap.pypa.io/get-pip.py")
-        install_easy('pywin32-220.win-amd64-py2.7.exe', "http://downloads.sourceforge.net/project/pywin32/pywin32/Build%20220/pywin32-220.win-amd64-py2.7.exe?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fpywin32%2Ffiles%2Fpywin32%2FBuild%2520220%2F&ts=1454466819&use_mirror=iweb")
-        
+        install_easy('pywin32-219.win-amd64-py2.7.exe', "http://flour.ece.ucsb.edu:8080/~bisque/wheels/pywin32-219.win-amd64-py2.7.exe")
+
+
+    print "\n----------------------------------------------------------"
+    print 'Ensure Mercurial installation'
+    print "----------------------------------------------------------\n"
+    try:
+       r = subprocess.call(['hg', '--version'], shell=shell)
+    except OSError:
+        if os.name == 'nt':
+            install_pip('mercurial-3.7.1-cp27-none-win_amd64.whl', "http://flour.ece.ucsb.edu:8080/~bisque/wheels/mercurial-3.7.1-cp27-none-win_amd64.whl")
+        else:
+            install_pip('mercurial')
+
     print "\n----------------------------------------------------------"
     print 'Installing additional packages'
     print "----------------------------------------------------------\n"
     for pkg,URL in PIP_LIST:
         install_pip(pkg, URL)
-    
-    # ensure mercurial is available  
-    try:
-       r = subprocess.call(['hg', '--version'], shell=shell)
-    except OSError:
-        install_pip('mercurial')
 
     print "********************************"
     print "**     Fetching BisQue        **"
