@@ -1,13 +1,15 @@
-FROM debian:wheezy
+FROM debian:jessie
 MAINTAINER Kris Kvilekval<kris@cs.ucsb.edu>
 RUN apt-get update && apt-get install -yq python  unzip wget libxext6 libxt6
+
+ENV MCR_URL  http://www.mathworks.com/supportfiles/downloads/R2015b/deployment_files/R2015b/installers/glnxa64/MCR_R2015b_glnxa64_installer.zip
 
 ADD input.txt /mcr-install/input.txt
 # Fetch locally
 #COPY MCR_R2015b_glnxa64_installer.zip /mcr-install/
 
 RUN cd /mcr-install && \
-    wget -nv http://www.mathworks.com/supportfiles/MCR_Runtime/R2015b/MCR_R2015b_glnxa64_installer.zip && \
+    wget -nv $MCR_URL && \
     unzip MCR_R2015b_glnxa64_installer.zip && \
     mkdir /opt/mcr && \
     ./install -inputFile input.txt && \
