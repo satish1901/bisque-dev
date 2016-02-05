@@ -6,7 +6,7 @@ from bq.core.model import DeclarativeBase, metadata, DBSession
 
 from tag_model import *
 log = None
-from store import *
+#from store import *
 #from xmlstore import *
 #from dbxmlstore import *
 
@@ -24,5 +24,3 @@ def init_model(engine):
 
 # Import your model modules here.
 #from bq.data_service.model.data_service_module import *
-
-

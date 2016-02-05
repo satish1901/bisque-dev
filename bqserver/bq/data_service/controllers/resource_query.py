@@ -1142,7 +1142,7 @@ def resource_delete(resource, user_id=None):
         q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
         q = q.filter (TaggableAcl.user_id == user_id)
         q.delete()
-        log.info('deleting acls for %s reource_owner(%s)' % user_id, resource.owner_id)
+        log.info('deleting acls for %s reource_owner(%s)' , user_id, resource.owner_id)
         Resource.hier_cache.invalidate_resource (q, user = user_id)
         #Resource.hier_cache.invalidate ('/', user = user_id)
         return

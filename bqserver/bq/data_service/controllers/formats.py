@@ -75,23 +75,23 @@ def format_csv (tree):
           </gobject
           <rectange name="yy">
              <vertex ...>
-             <vertex 
-             
-          
+             <vertex
+
+
         </response>
         ===>>
 
-        type    name    x1 y1 z1 t ch  
+        type    name    x1 y1 z1 t ch
         ============================================
         mytpe   myx
         point
         vertwx          1  1  1
-        
+
         rectangle
         vertex          x  x  x
         vertex          x  x  x
         '''
-    
+
     buffer = StringIO()
     writer = csv.writer(buffer)
     stack = []
@@ -101,7 +101,7 @@ def format_csv (tree):
                 stack.append ( (sub, None) )
     else:
         stack = [ (tree, None) ]
-        
+
     writer.writerow (['type', 'name', 'value', 'x', 'y', 'z', 't', 'ch'])
 
     while len(stack) :
@@ -128,11 +128,16 @@ def format_csv (tree):
             for sub in element:
                 stack.append ( (sub, element) )
     return buffer.getvalue()
-                         
-    
+
+
+def format_tree(tree):
+    "For internal use.. just return the tree"
+    return tree
+
 
 formatters = { 'xml' : (format_xml, 'text/xml' ),
                'csv' : (format_csv, 'text/csv'), #text/csv application/vnd.ms-excel or text/plain
+               'tree': (format_tree, 'application'),
              }
 
 def find_formatter (format, **kw):

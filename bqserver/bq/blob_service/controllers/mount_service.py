@@ -764,6 +764,9 @@ class MountServer(TGController):
 
         with self._get_driver(store) as driver:
 
+            if driver.readonly:
+                raise IllegalOperation ("readonly store")
+
             uniq     = resource.get('resource_uniq')
             bloburls = resource.get('value')
             if bloburls is None:
