@@ -7,7 +7,7 @@ def setup(params, *args, **kw):
     #mex_compile(['vrl_gc.cpp'], where='vrl_tools/maxflow_kolmogorov')
     matlab_setup(['GraphcutSegmentation'], params=params)
     docker_setup('graphcut', 'GraphcutSegmentation', 'matlab_runtime', params=params)
-    
+
 if __name__ =="__main__":
     params = read_config('runtime-bisque.cfg')
     if len(sys.argv)>1:
