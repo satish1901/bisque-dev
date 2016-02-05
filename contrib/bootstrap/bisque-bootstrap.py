@@ -56,6 +56,8 @@ def main():
     # check python version
     if not sys.version_info[:2] == (2, 7):
         print "BisQue requires python 2.7.X but found %s, aborting install..."%(sys.version)
+        if os.name == 'nt':
+            print "We suggest installing ActivePython 2.7 from http://www.activestate.com/"
         return 1
 
     # check 64bit python
@@ -76,6 +78,9 @@ def main():
         # install them into the virtualenv
         r = subprocess.call(["virtualenv", args.bqenv, '--no-setuptools'])
         activate = os.path.join(args.bqenv, 'Scripts', 'activate_this.py')
+    if r != 0:
+        print 'virtualenv is missing, it needs to be pre-installed with your python version, aborting...'
+        return
 
     print 'Activating virtual environment using: %s\n'%activate
     try:
@@ -100,7 +105,9 @@ def main():
     print "----------------------------------------------------------\n"
     try:
        r = subprocess.call(['hg', '--version'], shell=shell)
-    except OSError:
+    except Exception:
+       r = 1
+    if r != 0:
         if os.name == 'nt':
             install_pip('mercurial-3.7.1-cp27-none-win_amd64.whl', "http://flour.ece.ucsb.edu:8080/~bisque/wheels/mercurial-3.7.1-cp27-none-win_amd64.whl")
         else:
