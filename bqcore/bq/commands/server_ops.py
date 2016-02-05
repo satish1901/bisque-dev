@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import os, sys, time
-from subprocess import Popen, call
+from subprocess import Popen, call, PIPE, STDOUT
 from urlparse import urlparse
 from ConfigParser import SafeConfigParser
 import shlex
@@ -164,7 +164,11 @@ def paster_command(command, options, cfgopt, processes, cfg_file = None, *args):
     server_cmd.extend (args)
     verbose ('Executing: %s' % ' '.join(server_cmd))
     if not options.dryrun:
-        processes.append(Popen(server_cmd))
+        if os.name != 'nt':
+            processes.append(Popen(server_cmd))
+        else:
+            with open(os.devnull, 'wb') as DEVNULL:
+                processes.append(Popen(server_cmd, stdout=DEVNULL, stderr=DEVNULL))
     return processes
 
 def uwsgi_command(command, options, cfgopt, processes,  cfg_file = None, *args):
@@ -308,20 +312,21 @@ def operation(command, options, *args):
                 return
 
             if command in ('stop', 'restart'):
-                backend_command ('stop', options, cfgopt, processes, cfg_file)
                 error = None
+
+                backend_command ('stop', options, cfgopt, processes, cfg_file)
                 for proc in processes:
                     try:
                         proc.wait()
                     except KeyboardInterrupt:
                         error = True
 
-                if error is not None and backend != 'uwsgi':
-                    print 'Paste windows error while stopping process, re-running'
+                if error is not None and backend == 'paster':
+                    #print 'Paste windows error while stopping process, re-running'
                     processes = paster_command('stop', options, cfgopt, processes, args)
                     for proc in processes:
                         proc.wait()
-                    print 'Recovered after error and successfully stopped daemon'
+                    print 'Recovered Paste windows error and successfully stopped daemon'
 
                 processes = []
 

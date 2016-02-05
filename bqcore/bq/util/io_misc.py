@@ -128,6 +128,12 @@ def isascii(s):
         return False
     return True
 
+def remove_safe(f):
+    try:
+        os.remove(f)
+    except OSError:
+        log.warning ('Command not remove "%s"', f)
+
 # dima: We have to do some ugly stuff to get all unicode filenames to work correctly
 # under windows, although imgcnv and ImarisConvert support unicode filenames
 # bioformats and openslide do not, moreover in python <3 subprocess package
@@ -146,6 +152,13 @@ if os.name != 'nt':
         pass
 
 else:
+    def symlinkdir(source, link_name):
+        source = unicode(os.path.normpath(source))
+        link_name = unicode(os.path.normpath(link_name))
+        csl = ctypes.windll.kernel32.CreateSymbolicLinkW
+        if csl(link_name, source, 1) == 0:
+            raise ctypes.WinError()
+
     def hardlink(source, link_name):
         source = unicode(os.path.normpath(source))
         link_name = unicode(os.path.normpath(link_name))
