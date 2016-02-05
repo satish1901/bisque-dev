@@ -299,8 +299,10 @@ class deploy(object):
 
         generate_css_files(root=rootdir, public=publicdir)
         generate_js_files(root=rootdir, public=publicdir)
-        copy_symlink (all_css, all_css_public)
-        copy_symlink (all_js, all_js_public)
+        if not os.path.exists (all_css_public):
+            copy_symlink (all_css, all_css_public)
+        if not os.path.exists (all_js_public):
+            copy_symlink (all_js, all_js_public)
 
 
 class preferences (object):
