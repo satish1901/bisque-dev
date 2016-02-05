@@ -5,7 +5,8 @@
 from webhelpers import date, feedgenerator, html, number, misc, text
 from paste.deploy.converters import asbool
 from bq.util.paths import bisque_path
-from minimatic  import *
+#from minimatic  import *
+from .js_includes import generate_css_files, generate_js_files
 
 import bq
 

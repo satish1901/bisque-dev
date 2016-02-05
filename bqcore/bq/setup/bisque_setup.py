@@ -377,18 +377,17 @@ initial_vars = {
     'condor.submit_template': '',
     'condor.dag_template' : '',
     'condor.dag_config_template': '',
-    }
+}
 
 linked_vars = {
     'h1.url' : '${bisque.server}',
+    'bisque.root' : '${bisque.server}',
     'smtp_server' : '${mail.smtp.server}',
     'registration.site_name' : '${bisque.title} (${bisque.server})',
     'registration.host' : '${bisque.server}',
     'registration.mail.smtp_server' : '${mail.smtp.server}',
     'registration.mail.admin_email' : '${bisque.admin_email}',
     'beaker.session.sa.url' : '${sqlalchemy.url}',
-
-
 }
 
 
@@ -1221,7 +1220,7 @@ def install_mail(params):
 #######################################################
 
 def install_preferences(params):
-    if params['new_database']: #already initialized
+    if params.get('new_database'): #already initialized
         return params
     if getanswer ("Initialize Preferences ","N",
                   """Initialize system preferences.. new systems will
@@ -1246,7 +1245,7 @@ def install_public_static(params):
         cmd = ['bq-admin', 'deploy', 'public' ]
         r  = subprocess.call (cmd, stderr = None)
         if r!=0:
-            print "Problem deploying static resources .. run bq-admin deploy public manually"
+            print 'Problem deploying static resources... run "bq-admin deploy public" manually'
 
     return params
 

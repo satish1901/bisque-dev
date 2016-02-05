@@ -7,13 +7,12 @@ import glob
 import shutil
 import urllib
 
-PIP_LIST=[
-    ('pip', None), 
-    ('setuptools', None)
-]
+#PIP_LIST=[('pip==1.5.4', None), ('setuptools==2.2', None)]
+PIP_LIST=[('pip', None), ('setuptools', None)]
 if os.name == 'nt':
     PIP_LIST=[
         ('numpy-1.10.4+mkl-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/numpy-1.10.4+mkl-cp27-none-win_amd64.whl'), 
+        ('tables-3.2.2-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/tables-3.2.2-cp27-none-win_amd64.whl'),         
     ]
 
 shell = False
@@ -55,8 +54,13 @@ def main():
     
     # check python version
     if not sys.version_info[:2] == (2, 7):
-        print "BisQue requires python 2.7.X but found %s"%(sys.version)
+        print "BisQue requires python 2.7.X but found %s, aborting install..."%(sys.version)
         return 1
+    
+    # check 64bit python
+    if sys.maxsize <= 2**32:
+        print "BisQue requires 64bit python, aborting install..."
+        return 1        
 
     print "\n----------------------------------------------------------"
     print 'Creating virtual environment for BisQue installation'
@@ -113,7 +117,7 @@ def main():
     print
     #subprocess.call(['pip', 'install', '--trusted-host', 'biodev.ece.ucsb.edu', '-i', 'http://biodev.ece.ucsb.edu/py/bisque/dev/+simple', 'Paste==1.7.5.1+bisque2'], shell=shell)
     #subprocess.call(['pip', 'install', '--trusted-host', 'biodev.ece.ucsb.edu', '-r', 'requirements.txt'], shell=shell)
-    subprocess.call(['pip', 'install',  '-r', 'requirements.txt'], shell=shell)
+    subprocess.call(['pip', 'install',  '-r', 'requirements.txt', '--trusted-host=biodev.ece.ucsb.edu'], shell=shell)
 
     print "**************************************************************"
     print "To finish installation, please, execute the following commands"

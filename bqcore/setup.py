@@ -33,7 +33,7 @@ setup(
         "zope.sqlalchemy >= 0.4",
         "repoze.tm2 >= 1.0a5",
         "SQLAlchemy",
-        "sqlalchemy-migrate",
+        #"sqlalchemy-migrate",
         "Alembic",
         "repoze.what-quickstart",
         "repoze.what >= 1.0.8",

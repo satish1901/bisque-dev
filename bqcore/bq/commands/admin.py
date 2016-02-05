@@ -9,6 +9,7 @@ import errno
 import logging
 
 from bq.release import __VERSION__
+from bq.util.io_misc import remove_safe
 
 
 logging.basicConfig(level=logging.INFO)
@@ -201,7 +202,7 @@ class deploy(object):
 
     def deploy_public(self):
         ''
-        from bq.util.copylink import copy_symlink
+        from bq.util.copylink import copy_symlink, copy_link
         import pkg_resources
         import shutil
 
@@ -222,9 +223,9 @@ class deploy(object):
         rootdir = os.getcwd()
         coredir = os.path.join(rootdir, 'bqcore/bq/core/public/').replace('/', os.sep)
 
+        # update public
         os.chdir(self.public_dir)
         currdir = os.getcwd()
-
 
         for x in pkg_resources.iter_entry_points ("bisque.services"):
             try:
@@ -274,14 +275,32 @@ class deploy(object):
             #print "%s -> %s " % (relpath, dest)
             copy_symlink (relpath, dest)
 
-        # ensure b.js exists and will be picked up by the paster static file server
-        #src = os.path.join(rootdir, 'bqcore/bq/core/public/js/bq_api.js')
-        dst = os.path.join(rootdir, 'bqcore/bq/core/public/js/b.js')
-        with open(dst, 'a'):
-            pass
-
         # finish
         os.chdir (rootdir)
+
+        # regenerate all_js and all_css
+        print '\nGenerating packaged JS and CSS files\n'
+        from bq.core.lib.js_includes import generate_css_files, generate_js_files
+        rootdir = os.path.join(rootdir, '').replace(os.sep, '/')
+        publicdir = os.path.join(rootdir, 'public/').replace(os.sep, '/')
+
+        all_css = os.path.join(rootdir, 'bqcore/bq/core/public/css/all_css.css')
+        all_css_public = os.path.join(publicdir, 'css/all_css.css')
+        all_js = os.path.join(rootdir, 'bqcore/bq/core/public/js/all_js.js')
+        all_js_public = os.path.join(publicdir, 'js/all_js.js')
+
+        remove_safe(all_css)
+        remove_safe(all_css_public)
+        remove_safe(all_js)
+        remove_safe(all_js_public)
+
+        import pylons
+        pylons.config["cache_enabled"] = "False"
+
+        generate_css_files(root=rootdir, public=publicdir)
+        generate_js_files(root=rootdir, public=publicdir)
+        copy_symlink (all_css, all_css_public)
+        copy_symlink (all_js, all_js_public)
 
 
 class preferences (object):
