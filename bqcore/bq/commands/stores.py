@@ -179,7 +179,7 @@ def _update_mounts(drivers):
         log.warn ("No store found")
     elif len(user_root) == 1:
         user_root =  user_root[0]
-    elif len(root) > 1:
+    elif len(user_root) > 1:
         log.error("Root store created more than once: %s please check DB", etree.tostring(root))
         return None
 
