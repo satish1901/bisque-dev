@@ -185,7 +185,6 @@ class SeedSize(object):
         self.image_map_name = os.path.join(staging_path, IMAGE_MAP)
         self.resource_url = named_args.get ('image_url')
         self.mex_url = named_args.get ('mex_url') 
-        self.is_dataset = 'dataset' in self.resource_url
         self.images = os.path.join(staging_path, 'images') + os.sep
 
 
@@ -194,6 +193,9 @@ class SeedSize(object):
         else:
             user,pwd = options.credentials.split(':')
             self.bq = BQSession().init_local(user,pwd)
+
+        resource_xml = self.bq.fetchxml (self.resource_url, view='short')
+        self.is_dataset = resource_xml.tag == 'dataset' 
 
         if len(args) == 1:
             commands = [ args.pop(0)]
