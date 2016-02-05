@@ -335,11 +335,11 @@ def initialize(uri):
     #directory.register_service ('table', service)
     return service
 
-def get_static_dirs():
-    """Return the static directories for this server"""
-    package = pkg_resources.Requirement.parse ("bqserver")
-    package_path = pkg_resources.resource_filename(package,'bq')
-    return [(package_path, os.path.join(package_path, 'table', 'public'))]
+#def get_static_dirs():
+#    """Return the static directories for this server"""
+#    package = pkg_resources.Requirement.parse ("bqserver")
+#    package_path = pkg_resources.resource_filename(package,'bq')
+#    return [(package_path, os.path.join(package_path, 'table', 'public'))]
 
 #def get_model():
 #    from bq.table import model
