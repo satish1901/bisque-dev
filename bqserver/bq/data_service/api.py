@@ -173,7 +173,10 @@ def resource_controller(token, server = None, **kw):
     if server is None: server = service_registry.find_service ('data_service')
     return server.get_child_resource(token, **kw)
 
-
 def cache_invalidate(url, user_id = None, server = None):
     if server is None: server = service_registry.find_service ('data_service')
     return server.cache_invalidate(url, user_id)
+
+def default (*path, **kw):
+    server = service_registry.find_service ('data_service')
+    return server._default(*path, **kw)
