@@ -33,7 +33,7 @@ Ext.define('BQ.renderers.roottip.Mex', {
                 uri: this.res_uri_for_tools,
                 cb: callback(this, 'initMex'),
                 errorcb: callback(this, 'onerror'),
-                uri_params: { view: 'deep' },
+                uri_params: { view: 'full' },
             });
         }
     },
@@ -56,7 +56,7 @@ Ext.define('BQ.renderers.roottip.Mex', {
     },
 
     doPlot : function() {
-        if (!this.res_uri_for_tools || !this.mex || !this.mex.children) {
+        if (!this.res_uri_for_tools || !this.mex) {
             BQ.ui.notification('The data is being initialized, please try again a bit later...');
             return;
         }
@@ -65,14 +65,19 @@ Ext.define('BQ.renderers.roottip.Mex', {
         var xreduce = "vector";
         var xpath   = [];
         var titles  = [];
-        for (var i=0; (p=this.mex.children[i]); i++) {
-            if (!(p instanceof BQMex)) continue;
-            var s = '//mex[@uri="'+p.uri+'"]'+'//gobject[@type="tipangle"]/tag[@name="angle"]';
-            xpath.push(s);
-            titles.push('angles '+i);
-            //s = '//mex[@uri="'+p.uri+'"]'+'//gobject[@type="tipangle"]/tag[@name="growth"]';
-            //xpath.push(s);
-            //titles.push('growth '+i);
+        if (!this.mex.children || this.mex.children.length<1) {
+            xpath.push('//gobject[@type="tipangle"]/tag[@name="angle"]');
+            titles.push('angles');
+        } else {
+            for (var i=0; (p=this.mex.children[i]); i++) {
+                if (!(p instanceof BQMex)) continue;
+                var s = '//mex[@uri="'+p.uri+'"]'+'//gobject[@type="tipangle"]/tag[@name="angle"]';
+                xpath.push(s);
+                titles.push('angles '+i);
+                //s = '//mex[@uri="'+p.uri+'"]'+'//gobject[@type="tipangle"]/tag[@name="growth"]';
+                //xpath.push(s);
+                //titles.push('growth '+i);
+            }
         }
 
         var title = template[name+'/title'];
