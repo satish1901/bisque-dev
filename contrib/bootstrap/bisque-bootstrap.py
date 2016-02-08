@@ -6,9 +6,12 @@ import argparse
 import glob
 import shutil
 import urllib
+import tarfile
 
 #PIP_LIST=[('pip==1.5.4', None), ('setuptools==2.2', None)]
 PIP_LIST=[('pip', None), ('setuptools', None)]
+VENV_SOURCE="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-14.0.6.tar.gz"
+
 if os.name == 'nt':
     PIP_LIST=[
         ('numpy-1.10.4+mkl-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/numpy-1.10.4+mkl-cp27-none-win_amd64.whl'),
@@ -21,7 +24,7 @@ if os.name == 'nt':
     shell = True
 
 # installs pip wheels from a URL or pypy
-def install_package(filename, URL, command):
+def install_package(filename, URL, command=None):
     print 'Installing %s\n'%filename
     if URL is not None:
         urllib.urlretrieve (URL, filename)
@@ -45,7 +48,7 @@ def install_pip(filename, URL=None):
     return install_package(filename, URL, ["pip", "install", "-U", filename])
 
 
-def main():
+def run_bootstrap():
     parser = argparse.ArgumentParser(description='Boostrap bisque')
     parser.add_argument("--repo", default="http://biodev.ece.ucsb.edu/hg/bisque-stable")
     parser.add_argument("bqenv", nargs="?", default="bqenv")
@@ -65,18 +68,31 @@ def main():
         print "BisQue requires 64bit python, aborting install..."
         return 1
 
+
+    print "\n----------------------------------------------------------"
+    print 'Fetch virtual environment for BisQue installation'
+    print "----------------------------------------------------------\n"
+    venv = os.path.basename (VENV_SOURCE)
+    urllib.urlretrieve (VENV_SOURCE, venv)
+    tar = tarfile.open (venv)
+    names = tar.getnames()
+    tar.extractall()
+    tar.close()
+    vdir = names[0]
+    print "Extracted to",  vdir
+
     print "\n----------------------------------------------------------"
     print 'Creating virtual environment for BisQue installation'
     print "----------------------------------------------------------\n"
 
     if os.name != 'nt':
-        r = subprocess.call(["virtualenv", args.bqenv])
+        r = subprocess.call(["python", "%s/virtualenv.py" %vdir, args.bqenv])
         activate = os.path.join(args.bqenv, 'bin', 'activate_this.py')
     else:
         # due to a bug in the windows python (~2.7.8) virtual env can't install pip and setuptools
         # so we have to first create a virtualenv without setuptools and pip and then
         # install them into the virtualenv
-        r = subprocess.call(["virtualenv", args.bqenv, '--no-setuptools'])
+        r = subprocess.call(["python", "%s/virtualenv.py" %vdir, args.bqenv, '--no-setuptools'])
         activate = os.path.join(args.bqenv, 'Scripts', 'activate_this.py')
     if r != 0:
         print 'virtualenv is missing, it needs to be pre-installed with your python version, aborting...'
@@ -163,4 +179,4 @@ def main():
 
 
 if __name__=="__main__":
-    main()
+    run_bootstrap()
