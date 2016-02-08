@@ -27,11 +27,14 @@ Ext.define('BQ.renderers.roottip.Mex', {
         this.root = this.res_uri_for_tools.replace(/\/\w+_service\/.*$/i, '');
         // little hack to get already parsed MEX
         this.mex = (this.resource && this.resource.doc)? this.resource.doc : undefined;
-        if (!this.mex /*|| this.mex.uri != this.res_uri_for_tools*/) {
-            BQFactory.request( { uri: this.res_uri_for_tools,
-                                 cb: callback(this, 'initMex'),
-                                 errorcb: callback(this, 'onerror'),
-                               });
+        if (!this.mex || !this.mex.children || this.mex.children.length<1) {
+            this.mex = null;
+            BQFactory.request({
+                uri: this.res_uri_for_tools,
+                cb: callback(this, 'initMex'),
+                errorcb: callback(this, 'onerror'),
+                uri_params: { view: 'deep' },
+            });
         }
     },
 
