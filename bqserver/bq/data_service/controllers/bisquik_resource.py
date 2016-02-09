@@ -280,11 +280,9 @@ class BisquikResource(Resource):
         log.debug ("resource_outtput %s", self.uri)
         if isinstance(resource , list):
             response = etree.Element('resource')
-            db2tree (resource, view = view, parent = response,
-                     baseuri=self.uri)
-        else:
-            response = db2tree (resource, view = view, parent = response,
-                                baseuri=self.uri, **kw)
+            db2tree (resource, view = view, parent = response, baseuri=self.uri)
+        elif resource is not None:
+            response = db2tree (resource, view = view, parent = response, baseuri=self.uri, **kw)
         transaction.commit()
         formatter, content_type  = find_formatter (format)
         tg.response.headers['Content-Type'] = content_type
@@ -489,8 +487,8 @@ class BisquikResource(Resource):
         resource = self.check_access(resource)
         response = resource_delete(resource, user_id = identity.get_user_id())
         #transaction.commit()
-        resource = etree.Element ('resource')
-        return self.resource_output(resource, **kw)
+        response = etree.Element ('resource')
+        return self.resource_output(resource=None, response=response, **kw)
 
 
     @expose()
