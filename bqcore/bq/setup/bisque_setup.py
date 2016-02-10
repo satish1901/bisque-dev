@@ -784,7 +784,7 @@ def install_database(params):
 Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         return params
 
-    if getanswer("Create and initialize database", "N", "Create, initialize or upgrade database") == "Y":
+    if getanswer("Create and initialize database", "Y", "Create, initialize or upgrade database") == "Y":
         params = setup_database (params)
     return params
 
