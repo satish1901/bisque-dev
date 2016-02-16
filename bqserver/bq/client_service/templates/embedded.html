@@ -38,7 +38,7 @@
                 region : 'center',
                 itemId: 'main_view_2d',
                 height: '100%',
-                resource : resource,
+                resource : resource + '?view=deep',
                 parameters : q,
             });
         } else if (view == '3d') {
@@ -46,7 +46,7 @@
                 region : 'center',
                 xtype: 'bq_volume_panel',
                 itemId: 'main_view_3d',
-                resource: resource,
+                resource: resource + '?view=deep',
                 parameters : q,
             });
         } else if (view == 'movie') {
