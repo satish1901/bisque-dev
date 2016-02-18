@@ -16,6 +16,29 @@ from bq.util.hash import is_uniq_code
 
 
 log = logging.getLogger("bq.graph")
+
+
+def _add_mex_inputs_outputs(xnode, edges, checked, unchecked):
+    node = xnode.get ('resource_uniq')
+    points_to_list = [ x.rsplit('/',1)[1] for x in xnode.xpath('//tag[@name="outputs"]//@value') if x.startswith("http") ]
+    points_from_list = [ x.rsplit('/',1)[1] for x in xnode.xpath('//tag[@name="inputs"]//@value') if x.startswith("http") ]
+    log.debug ("points_to_list %s", points_to_list)
+    log.debug ("points_from_list %s", points_from_list)
+    for xlink in points_to_list:
+        if is_uniq_code (xlink):            
+            if (node, xlink) not in edges:
+                log.debug ("ADDING OUT EDGE : %s" % str( (node, xlink) ))
+                edges.add( (node, xlink) )
+            if xlink not in checked:
+                unchecked.add (xlink)
+    for xlink in points_from_list:
+        if is_uniq_code (xlink):            
+            if (xlink, node) not in edges:
+                log.debug ("ADDING IN EDGE : %s" % str( (xlink, node) ))
+                edges.add( (xlink, node) )
+            if xlink not in checked:
+                unchecked.add (xlink)
+
 class graphController(ServiceController):
     #Uncomment this line if your controller requires an authenticated user
     #allow_only = predicates.not_anonymous()
@@ -41,7 +64,8 @@ class graphController(ServiceController):
         while unchecked:
             log.debug ( "graph unchecked %s", unchecked)
             node = unchecked.pop()
-            # Find everybody this node points to:
+            
+            # Find everybody this node references:
             xnode = data_service.resource_load (uniq=node,view='deep')
             if xnode is None:
                 log.error ('could not load %s', node)
@@ -51,27 +75,14 @@ class graphController(ServiceController):
                 node_type = xnode.get ('resource_type') or xnode.tag
             nodes.add( (node, node_type) )
             checked.add (node)
-            points_to_list = [ x.rsplit('/',1)[1] for x in xnode.xpath('//@value') if x.startswith("http") ]
-            log.debug ("points_to_list %s", points_to_list)
-            for xlink in points_to_list:
-                if is_uniq_code (xlink):
-                    log.debug ("ADDING OUT EDGE : %s" % str( (node, xlink) ))
-                    edges.add( (node, xlink) )
-                    if xlink not in checked:
-                        unchecked.add (xlink)
-
-
-            # Find nodes that point to me
-            siblings = data_service.query (None,tag_query='"*/%s"' % node)
-
-
-            for snode in siblings:
-                log.debug ("sibling %s", etree.tostring (snode))
-                sibling_uniq = snode.get ('resource_uniq')
-                log.debug ("ADDING IN EDGE : %s" % str ((sibling_uniq, node)))
-                edges.add ( (sibling_uniq, node) )
-                if sibling_uniq not in checked:
-                    unchecked.add(sibling_uniq)
+            if node_type == 'mex':
+                # Mex => find inputs/outputs
+                _add_mex_inputs_outputs(xnode, edges, checked, unchecked)
+            else:
+                # Non-mex => Find mexes that reference me
+                siblings = data_service.query ('mex',tag_query='"*/%s"' % node)   #TODO: this will be very slow on large DBs                
+                for snode in siblings:
+                    unchecked.add(snode.get('resource_uniq'))
             log.debug ( "Nodes : %s, Edges : %s" % (nodes, edges) )
 
         for node in nodes:
