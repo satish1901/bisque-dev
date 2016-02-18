@@ -52,6 +52,7 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 
 # default imports
 import os
+import sys
 import logging
 import pkg_resources
 
@@ -72,12 +73,6 @@ try:
 except ImportError:
     log.info('Pandas was not found but required for table service!')
 
-try:
-    import json
-except ImportError:
-    log.info('Json was not found but needed for JSON output...')
-
-
 from bq.table.controllers.table_base import TableBase
 
 ################################################################################
@@ -88,6 +83,11 @@ def extjs_safe_header(s):
     if isinstance(s, basestring):
         return s.replace('.', '_')
     return s
+
+def _get_headers_types(data, startcol=None, endcol=None):
+    headers = [extjs_safe_header(x) for x in data.columns.values.tolist()[slice(startcol, endcol, None)]] # extjs errors loading strings with dots
+    types = [t.name for t in data.dtypes.tolist()[slice(startcol, endcol, None)]] #data.dtypes.tolist()[0].name
+    return (headers, types)
 
 #---------------------------------------------------------------------------------------
 # Importer: CSV
@@ -112,52 +112,67 @@ class TableCSV(TableBase):
         self.has_header = True
         self.info()
 
+    def close(self):
+        """Close table"""
+        self.t = None
+
     def info(self, **kw):
         """ Returns table information """
         # load headers and types if empty
-        if self.headers is None or self.types is None:
-            with open(self.filename, 'rb') as f:
-                buf = f.read(1024)
-                try:
-                    self.has_header = csv.Sniffer().has_header(buf)
-                except csv.Error:
-                    self.has_header = True
+        with open(self.filename, 'rb') as f:
+            buf = f.read(1024)
             try:
-                if self.has_header is True:
-                    data = pd.read_csv(self.filename, skiprows=0, nrows=10 )
-                else:
-                    data = pd.read_csv(self.filename, skiprows=0, nrows=10, header=None )
-            except Exception:
-                return None
-            self.headers = [extjs_safe_header(x) for x in data.columns.values.tolist()] # extjs errors loading strings with dots
-            self.types = data.dtypes.tolist() #data.dtypes.tolist()[0].name
-            self.t = True
-        log.debug('CSV types: %s, header: %s', str(self.types), str(self.headers))
-        return { 'headers': self.headers, 'types': self.types }
+                self.has_header = csv.Sniffer().has_header(buf)
+            except csv.Error:
+                self.has_header = True
+        try:
+            if self.has_header is True:
+                data = pd.read_csv(self.filename, skiprows=0, nrows=10 )
+            else:
+                data = pd.read_csv(self.filename, skiprows=0, nrows=10, header=None )
+        except Exception:
+            return None
+        if self.has_header:
+            self.headers, self.types = _get_headers_types(data)
+        self.sizes = [sys.maxint, data.shape[1]]   # TODO: rows set to maxint for now
+        self.t = True
+        log.debug('CSV types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
+        return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }
 
     def read(self, **kw):
         """ Read table cells and return """
         super(TableCSV, self).read(**kw)
         rng = kw.get('rng')
         log.debug('rng %s', str(rng))
-
-        #nrows: Number of rows to read out of the file. Useful to only read a small portion of a large file
-        #usecols: a subset of columns to return, results in much faster parsing time and lower memory usage
-        #skiprows: A collection of numbers for rows in the file to skip. Can also be an integer to skip the first n rows
-        skiprows = 0
-        nrows = None
-        usecols = None
+        data = pd.read_csv(self.filename, nrows=1)   # to get the shape later
+        sizes = [sys.maxint, data.shape[1]]   # TODO: rows set to maxint for now
+        startrows = [0]*2
+        endrows   = [1]*2
         if rng is not None:
-            row_range = rng[0]
-            if len(row_range)>0:
-                skiprows = row_range[0] if len(row_range)>0 else 0
-                nrows    = row_range[1]-skiprows+1 if len(row_range)>1 else 1
-        log.debug('skiprows %s, nrows %s, usecols %s', skiprows, nrows, usecols)
-        if self.has_header is True:
-            self.data = pd.read_csv(self.filename, skiprows=skiprows, nrows=nrows, usecols=usecols )
+            for i in range(min(2, len(rng))):
+                row_range = rng[i]
+                if len(row_range)>0:
+                    startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
+                    endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else sizes[i]
+                    startrows[i] = min(sizes[i], max(0, startrows[i]))
+                    endrows[i]   = min(sizes[i], max(0, endrows[i]))
+                    if startrows[i] > endrows[i]:
+                        endrows[i] = startrows[i]
+        log.debug('startrows %s, endrows %s', startrows, endrows)
+        
+        usecols = range(startrows[1], endrows[1])
+        if endrows[0] > startrows[0] and endrows[1] > startrows[1]:     
+            if self.has_header is True:
+                self.data = pd.read_csv(self.filename, skiprows=startrows[0], nrows=endrows[0]-startrows[0], usecols=usecols )
+            else:
+                self.data = pd.read_csv(self.filename, skiprows=startrows[0], nrows=endrows[0]-startrows[0], usecols=usecols, header=None )
+            self.sizes = [self.data.shape[0], endrows[1]-startrows[1]]
         else:
-            self.data = pd.read_csv(self.filename, skiprows=skiprows, nrows=nrows, usecols=usecols, header=None )
-        log.debug('Data: %s', str(self.data.head()))
+            self.data = pd.DataFrame()   # empty table
+            self.sizes = [0 for i in range(self.data.ndim)]
+        log.debug('Data: %s', str(self.data.head()) if self.data.ndim > 0 else str(self.data))
+        if self.has_header:
+            self.headers, self.types = _get_headers_types(data, startrows[1], endrows[1])
         return self.data
 
     def write(self, data, **kw):

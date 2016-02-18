@@ -58,6 +58,17 @@ import pkg_resources
 
 log = logging.getLogger("bq.table.base")
 
+try:
+    import numpy as np
+except ImportError:
+    log.info('Numpy was not found but required for table service!')
+
+try:
+    import pandas as pd
+except ImportError:
+    log.info('Pandas was not found but required for table service!')
+
+
 __all__ = [ 'TableBase' ]
 
 #---------------------------------------------------------------------------------------
@@ -77,7 +88,9 @@ class TableBase(object):
     def __str__(self):
         r = self.resource #etree.tostring(self.resource) if self.resource is not None else 'None'
         m = self.data.shape if self.data is not None else 'None'
-        return 'TableBase(m: %s, t: %s res: %s, path: %s)'%(m, self.t, r, self.path)
+        t = type(self.t)
+        return 'TableBase(m: %s, t: %s res: %s, path: %s)'%(m, t, r, self.path)
+
 
     def isloaded(self):
         """ Returns table information """
@@ -94,13 +107,32 @@ class TableBase(object):
         self.url = kw['url'] if 'url' in kw else None
 
         self.subpath = None # list containing subpath to elements within the resource
-        self.tables = None # has paths for all available tables in the resource
+        self.tables = None # {'path':.., 'type':..} for all available tables in the resource
         self.t = None # represents a pointer to the actual element being operated on based on the driver
-        self.data = None # pandas DataFrame
+        self.data = None # Numpy array or pandas dataframe 
         self.offset = 0
         self.headers = None
         self.types = None
         self.sizes = None
+
+    def close(self):
+        """Close table"""
+        abort(501, 'Import driver must implement Close method')
+
+    def as_array(self):
+        if isinstance(self.data, pd.core.frame.DataFrame):
+            return self.data.as_matrix()   # convert to numpy array
+        else:
+            return self.data
+
+    def as_table(self):
+        if isinstance(self.data, pd.core.frame.DataFrame):
+            return self.data
+        else:
+            if self.data.ndim == 1:
+                return pd.DataFrame(self.data)
+            else:
+                raise RuntimeError("cannot convert multi-dim array into dataframe")
 
     def info(self, **kw):
         """ Returns table information """
@@ -111,7 +143,7 @@ class TableBase(object):
         """ Read table cells and return """
         if 'rng' in kw and kw.get('rng') is not None:
             row_range = kw.get('rng')[0]
-            self.offset = row_range[0] if len(row_range)>0 else 0
+            self.offset = row_range[0] or 0 if len(row_range)>0 else 0
         else:
             self.offset = 0
         return self.data
