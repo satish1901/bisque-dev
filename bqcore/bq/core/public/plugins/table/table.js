@@ -812,7 +812,26 @@ Ext.define('Bisque.Resource.Table.Page', {
                     xtype: 'bq-tagger',
                     resource : this.resource,
                     title : 'Annotations',
-                }]
+                }, {
+		            xtype : 'bq_graphviewer_panel',
+		            itemId: 'graph',
+		            title : 'Provenance',
+		            resource: this.resource,
+		            listeners:{
+		                'context' : function(res, div, graph) {
+		                    var node = graph.g.node(res);
+		                    if(node.card.cardType=='mex'){
+		                        window.open(BQ.Server.url('/module_service/MetaData' + '/?mex=/data_service/' + res));
+
+		                    }
+		                    if(node.card.cardType=='image' || node.card.cardType=='table'){
+		                        window.open(BQ.Server.url('/client_service/view?resource=/data_service/' + res));
+
+		                    }
+		                },
+		            },
+		            resource : this.resource,
+		        }]
             }, {
                 xtype: 'bq_table_panel',
                 flex: 2,
