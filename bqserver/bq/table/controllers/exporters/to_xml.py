@@ -58,6 +58,8 @@ __all__ = [ 'ExporterXML' ]
 
 log = logging.getLogger("bq.table.export.xml")
 
+import collections
+
 from lxml import etree
 try:
     import numpy as np
@@ -72,6 +74,17 @@ except ImportError:
 
 from bq.table.controllers.table_exporter import TableExporter
 
+
+def _nested_list_to_str(l):    
+    # flatten nested list in l via depth first traversal
+    if hasattr(l, '__iter__'):
+        try:
+            return ','.join([_nested_list_to_str(cell) for cell in l])
+        except TypeError:
+            pass   # not iterable => just return string   
+    return str(l)    
+
+
 #---------------------------------------------------------------------------------------
 # exporters: XML
 #---------------------------------------------------------------------------------------
@@ -84,28 +97,39 @@ class ExporterXML (TableExporter):
     ext = 'xml'
     mime_type = 'text/xml'
 
-    def __init__(self):
-        pass
-
     def info(self, table):
         super(ExporterXML, self).info(table)
         xml = etree.Element ('resource', uri=table.url)
-        etree.SubElement (xml, 'tag', name='headers', value=','.join([str(i) for i in table.headers]))
-        etree.SubElement (xml, 'tag', name='types', value=','.join([t.name for t in table.types]))
-        if table.sizes is not None:
-            etree.SubElement (xml, 'tag', name='sizes', value=','.join([str(i) for i in table.sizes]))
-        if table.tables is not None:
-            etree.SubElement (xml, 'tag', name='tables', value=','.join([str(i) for i in table.tables]))
+        if table.headers:
+            # has headers => this is a leaf object (table or matrix)
+            el = etree.SubElement (xml, 'tag', name='headers', value=','.join([str(i) for i in table.headers]))
+            el = etree.SubElement (xml, 'tag', name='types', value=','.join([str(t) for t in table.types]))
+            if table.sizes is not None:
+                el = etree.SubElement (xml, 'tag', name='sizes', value=','.join([str(i) for i in table.sizes]))
+        else:
+            # no headers => this is a group/subfolder
+            el = etree.SubElement (xml, 'tag', name='group')
+            for tab in table.tables:
+                etree.SubElement (el, 'tag', name=tab['path'], type=tab['type'])
         return etree.tostring(xml)
 
     def format(self, table):
         """ converts table to XML """
-        m = table.data.as_matrix()
+        m = table.as_array()
         ndim = m.ndim
-        v = []
-        for i in range(m.shape[0]):
-            v.append( ','.join(m[i].astype('str').tolist()) )
+        if ndim > 0:
+            v = []        
+            for i in range(m.shape[0]):
+                v.append( _nested_list_to_str(m[i]) )
+        else:
+            # 0-dimensional array => single value
+            v = [str(m)]
         xml = etree.Element ('resource', uri=table.url)
         doc = etree.SubElement (xml, 'tag', name='table', value=';'.join(v))
+        el = etree.SubElement (doc, 'tag', name='offset', value=str(table.offset))
+        el = etree.SubElement (doc, 'tag', name='headers', value=','.join([str(i) for i in table.headers]))
+        el = etree.SubElement (doc, 'tag', name='types', value=','.join([str(t) for t in table.types]))
+        if table.sizes is not None:
+            el = etree.SubElement (doc, 'tag', name='sizes', value=','.join([str(i) for i in table.sizes]))
         return etree.tostring(xml)
 

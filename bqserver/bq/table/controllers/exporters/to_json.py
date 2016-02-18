@@ -87,24 +87,34 @@ class ExporterJSON (TableExporter):
     ext = 'json'
     mime_type = 'application/json'
 
-    def __init__(self):
-        pass
-
     def info(self, table):
         super(ExporterJSON, self).info(table)
-        v = {
-            "headers": table.headers,
-            "types": [t.name for t in table.types],
-            "sizes": table.sizes,
-            "tables": table.tables,
-        }
+        v = {}
+        if table.headers:
+            # has headers => this is a leaf object (table or matrix)
+            v["headers"] = table.headers
+            v["types"] = table.types
+            if table.sizes is not None:
+                v["sizes"] = table.sizes
+        if table.tables is not None:
+            v["group"] = table.tables
         return json.dumps(v)
 
     def format(self, table):
         """ converts table to JSON """
         #return table.data.to_json()
+        data = table.as_array().tolist()
+        if hasattr(data, "strip") or   \
+           (not hasattr(data, "__getitem__") and   \
+            not hasattr(data, "__iter__")):
+            # data is not a list/tuple => wrap it 
+            data = [ data ]
         v = {
             'offset': table.offset,
-            'table': table.data.as_matrix().tolist(),
+            'data': data,
+            'headers': table.headers,
+            'types': table.types,
         }
+        if table.sizes is not None:
+            v["sizes"] = table.sizes
         return json.dumps(v)
