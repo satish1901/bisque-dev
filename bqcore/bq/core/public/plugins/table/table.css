@@ -69,13 +69,6 @@ Copyright: 2015 (C) Center for Bio-Image Informatics, University of California a
 }
 
 /*
-JsMol styles
-*/
-.jmolPopupMenu .ui-menu-item {
-    list-style: none;
-}
-
-/*
 menu styles
 */
 
@@ -109,4 +102,34 @@ menu styles
     background-size: 200px;
 
     background-position: -34px -162px;
+}
+
+/*
+tree styles
+
+    //group:    'icon-group', use default icons
+    table:    'icon-table',
+    matrix:   'icon-matrix',
+    vector:   'icon-vector',
+    image:    'icon-image', // not sure how we will identify this
+*/
+
+.tableio .table_main {
+    background-color: white;
+}
+
+.bq_table_panel {
+    background-color: transparent;
+}
+
+.bq_table_panel .icon-group .x-tree-icon {
+    background-image: url('/plugins/table/icons_tree.svg');
+    background-repeat: no-repeat;
+    background-size: 70px;
+    background-position: -18px 2px;
+}
+
+
+.bq_table_panel .table_tree {
+    margin: 5px;
 }

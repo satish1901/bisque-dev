@@ -55,8 +55,7 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 import os
 import logging
 import pkg_resources
-
-log = logging.getLogger("bq.table.base")
+from pylons.controllers.util import abort
 
 try:
     import numpy as np
@@ -68,6 +67,7 @@ try:
 except ImportError:
     log.info('Pandas was not found but required for table service!')
 
+log = logging.getLogger("bq.table.base")
 
 __all__ = [ 'TableBase' ]
 
@@ -90,7 +90,6 @@ class TableBase(object):
         m = self.data.shape if self.data is not None else 'None'
         t = type(self.t)
         return 'TableBase(m: %s, t: %s res: %s, path: %s)'%(m, t, r, self.path)
-
 
     def isloaded(self):
         """ Returns table information """
