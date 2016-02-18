@@ -88,6 +88,11 @@ def extjs_safe_header(s):
         return s.replace('.', '_')
     return s
 
+def _get_headers_types(data, startcol=None, endcol=None):
+    headers = [extjs_safe_header(x) for x in data.columns.values.tolist()[slice(startcol, endcol, None)]] # extjs errors loading strings with dots
+    types = [t.name for t in data.dtypes.tolist()[slice(startcol, endcol, None)]] #data.dtypes.tolist()[0].name
+    return (headers, types)
+            
 #---------------------------------------------------------------------------------------
 # Importer: Excel
 # TODO: identify if header is present
@@ -112,6 +117,11 @@ class TableExcel(TableBase):
         self.t = None
         self.info()
 
+    def close(self):
+        """Close table"""
+        if self.t:
+            self.t.close()
+
     def info(self, **kw):
         """ Returns table information """
         # load headers and types if empty
@@ -121,23 +131,22 @@ class TableExcel(TableBase):
                 self.t = pd.ExcelFile(self.filename)
             except Exception:
                 return None
-            self.tables = self.t.sheet_names
+            self.tables = [ { 'path':name, 'type':'sheet' } for name in self.t.sheet_names ]
 
         if len(self.tables)==1: # if only one sheet is present
-            self.subpath = self.tables[0]
+            self.subpath = self.tables[0]['path']
             if len(self.path)>0 and self.path[0] == self.subpath:
                 self.path.pop(0)
-        elif len(self.path)>0 and self.path[0] in self.tables: # if path is provided for a sheet
+        elif len(self.path)>0 and self.path[0] in [tab['path'] for tab in self.tables]: # if path is provided for a sheet
             self.subpath = self.path.pop(0)
         else: # if no path is provided, use first sheet
-            self.subpath = self.tables[0]
+            self.subpath = self.tables[0]['path']
 
-        if self.headers is None or self.types is None:
-            data = pd.read_excel(self.t, self.subpath, nrows=10)
-            self.headers = [extjs_safe_header(x) for x in data.columns.values.tolist()] # extjs errors loading strings with dots
-            self.types = data.dtypes.tolist() #data.dtypes.tolist()[0].name
-        log.debug('Excel types: %s, header: %s', str(self.types), str(self.headers))
-        return { 'headers': self.headers, 'types': self.types }
+        data = pd.read_excel(self.t, self.subpath, nrows=1)
+        self.headers, self.types = _get_headers_types(data)
+        self.sizes = data.shape
+        log.debug('Excel types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
+        return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }
 
     def read(self, **kw):
         """ Read table cells and return """
@@ -145,19 +154,31 @@ class TableExcel(TableBase):
         rng = kw.get('rng')
         log.debug('rng %s', str(rng))
 
-        skiprows = 0
-        nrows = None # not supported for Excel
-        usecols = None
+        data = pd.read_excel(self.t, self.subpath, nrows=1)   # to get the shape later
+        startrows = [0]*2
+        endrows   = [1]*2
         if rng is not None:
-            row_range = rng[0]
-            if len(row_range)>0:
-                skiprows = row_range[0] if len(row_range)>0 else 0
-                nrows    = row_range[1]-skiprows+1 if len(row_range)>1 else 1
-        log.debug('skiprows %s, nrows %s, usecols %s', skiprows, nrows, usecols)
-        self.data = pd.read_excel(self.t, self.subpath, skiprows=skiprows, nrows=nrows, parse_cols=usecols )
+            for i in range(min(2, len(rng))):
+                row_range = rng[i]
+                if len(row_range)>0:
+                    startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
+                    endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else data.shape[i]
+                    startrows[i] = min(data.shape[i], max(0, startrows[i]))
+                    endrows[i]   = min(data.shape[i], max(0, endrows[i]))
+                    if startrows[i] > endrows[i]:
+                        endrows[i] = startrows[i]        
+        log.debug('startrows %s, endrows %s', startrows, endrows)
+        
+        usecols = range(startrows[1], endrows[1])
+        if endrows[0] > startrows[0] and endrows[1] > startrows[1]:
+            self.data = pd.read_excel(self.t, self.subpath, skiprows=startrows[0], nrows=endrows[0]-startrows[0], parse_cols=usecols)
+        else:
+            self.data = pd.DataFrame()   # empty table
         # excel cannot read only a specified number of rows, select now
-        self.data = self.data[0:nrows]
-        log.debug('Data: %s', str(self.data.head()))
+        self.data = self.data[0:endrows[0]-startrows[0]]
+        self.sizes = [endrows[i]-startrows[i] for i in range(self.data.ndim)]
+        log.debug('Data: %s', str(self.data.head()) if self.data.ndim > 0 else str(self.data))
+        self.headers, self.types = _get_headers_types(data, startrows[1], endrows[1])
         return self.data
 
     def write(self, data, **kw):
