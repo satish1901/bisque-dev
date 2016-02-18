@@ -90,6 +90,34 @@ ImageCard.prototype.populateFields = function (xnode) {
 };
 
 
+function TableCard(node, resource) {
+    this.resource = resource;
+    this.cardType = 'table'
+	this.node = node;
+    ResourceCard.call(this,node, resource);
+};
+
+TableCard.prototype = new ResourceCard();
+
+TableCard.prototype.populateFields = function (xnode) {
+    this.addField('name', xnode.getAttribute('name'), 'name');
+};
+
+
+function PipelineCard(node, resource) {
+    this.resource = resource;
+    this.cardType = 'dream3d_pipeline'
+	this.node = node;
+    ResourceCard.call(this,node, resource);
+};
+
+PipelineCard.prototype = new ResourceCard();
+
+PipelineCard.prototype.populateFields = function (xnode) {
+    this.addField('name', xnode.getAttribute('name'), 'name');
+};
+
+
 function BQFactoryGraph(){
 };
 
@@ -98,6 +126,8 @@ BQFactoryGraph.make = function(node, resource){
         mex      : MexCard,
         dataset  : DataSetCard,
         image    : ImageCard,
+        table    : TableCard,
+        dream3d_pipeline : PipelineCard,
     }
     return new this.buffermap[node.label](node,resource);
 };
@@ -737,7 +767,7 @@ Ext.define('BQ.graphviewer', {
 
         edges.forEach(function(e,i,a){
             var val = e.getAttribute('value').split(':');
-            g.setEdge(val[1], val[0],{
+            g.setEdge(val[0], val[1],{
                 lineInterpolate: 'basis'
             });
         });
