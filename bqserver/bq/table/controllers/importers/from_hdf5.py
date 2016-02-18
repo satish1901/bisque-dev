@@ -88,6 +88,33 @@ def extjs_safe_header(s):
         return s.replace('.', '_')
     return s
 
+def _get_type(n):
+    if isinstance(n, tables.group.Group):
+        return 'group'
+    elif isinstance(n, tables.table.Table):
+        return 'table'
+    elif isinstance(n, tables.array.Array):
+        return 'matrix'
+    else:
+        log.debug("UNKNOWN TABLE TYPE: %s", type(n))
+        return '(unknown)'
+
+def _get_headers_types(node, startcol=None, endcol=None):                
+    if isinstance(node, tables.table.Table):
+        coltypes = { h:node.coltypes[h] for h in colnames[slice(startcol, endcol, None)] }
+    elif isinstance(node, tables.array.Array):
+        if node.ndim > 1:
+            coltypes = {i:node.dtype.name for i in range(startcol or 0, endcol or node.shape[1])}
+        elif node.ndim > 0:
+            coltypes = {i:node.dtype.name for i in range(startcol or 0, endcol or 1)}
+        else:
+            coltypes = {'':node.dtype.name}
+    else:
+        # group node
+        coltypes = {}
+    return ( coltypes.keys(), coltypes.values() )
+
+
 #---------------------------------------------------------------------------------------
 # Importer: HDF
 # TODO: not reading ranges
@@ -110,52 +137,62 @@ class TableHDF(TableBase):
         b = blob_service.localpath(uniq, resource=resource) or abort (404, 'File not available from blob service')
         self.filename = b.path
         self.t = None
-        self.info()
+        try:
+            self.info()
+        except Exception:
+            # close any open table
+            if self.t is not None:
+                self.t.close()
+            self.t = None
+            #raise
+
+    def _collect_arrays(self, path='/'):
+        try:
+            node = self.t.getNode(path)
+        except tables.exceptions.NoSuchNodeError:
+            return []
+        if not isinstance(node, tables.group.Group):
+            return [ { 'path':path, 'type':_get_type(node) } ]
+        return [ { 'path':path.rstrip('/') + '/' + n._v_name, 'type':_get_type(n) } for n in self.t.iterNodes(path) ]
+
+    def close(self):
+        """Close table"""
+        if self.t:
+            self.t.close()
 
     def info(self, **kw):
         """ Returns table information """
         # load headers and types if empty
+        log.debug("HDF TABLES: %s", str(self.tables))   #!!!
+
+        # TODO: have to find a better way to split path in HDF from operations... this is a hack for now
+        end = len(self.path)
+        for i in range(len(self.path)):
+            if ':' in self.path[i] or ';' in self.path[i] or self.path[i] == 'info':
+                end = i
+                break
+        self.subpath = '/' + '/'.join(self.path[0:end])
+        self.path = self.path[end:]
 
         if self.tables is None:
             try:
-                self.t = pd.HDFStore(self.filename)
+                log.debug("HDF FILENAME: %s", self.filename)   #!!!
+                self.t = tables.openFile(self.filename)    # TODO: could lead to problems when multiple workers open same file???
             except Exception:
-                return None
-            self.tables = self.t.keys()
+                raise
+            self.tables = self._collect_arrays(self.subpath)
 
-        if len(self.tables)==1: # if only one sheet is present
-            self.subpath = self.tables[0]
+        if len(self.tables) == 0:
+            # subpath not found
+            abort(404, "Object '%s' not found" % self.subpath)
 
-        # paths should be URL encoded when submitted vai the URL API
-        #['/arrays/Vdata table: PerBlockMetadataCommon']
-        #encoded: /arrays/Vdata%20table%3A%20PerBlockMetadataCommon
-
-        # iterate over the path and remove if matched
-        if len(self.path)>0: # if path is provided for a sheet
-            p = ['']
-            matched = None
-            for i in range(len(self.path)):
-                p.append(self.path[i])
-                pp = '/'.join(p)
-                log.debug('Testing presense: "%s" in %s', pp, str(self.tables))
-                if pp in self.tables:
-                    log.debug('Found: "%s" in %s', pp, str(self.tables))
-                    self.subpath = pp
-                    matched = i
-                    break
-            if matched is not None:
-                del self.path[0:matched+1]
-        else: # if no path is provided, use first sheet
-            self.subpath = self.tables[0]
         log.debug('HDF subpath: %s, path: %s', self.subpath, str(self.path))
 
-        if self.headers is None or self.types is None:
-            #data = pd.read_hdf(self.t, self.subpath, start=1, stop=10) # start and stop don't seem to be working
-            data = pd.read_hdf(self.t, self.subpath)
-            self.headers = [extjs_safe_header(x) for x in data.columns.values.tolist()] # extjs errors loading strings with dots
-            self.types = data.dtypes.tolist() #data.dtypes.tolist()[0].name
-        log.debug('HDF types: %s, header: %s', str(self.types), str(self.headers))
-        return { 'headers': self.headers, 'types': self.types }
+        node = self.t.getNode(self.subpath or '/')
+        self.headers, self.types = _get_headers_types(node)
+        self.sizes = node.shape if isinstance(node, tables.array.Array) else None
+        log.debug('HDF types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
+        return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }   
 
     def read(self, **kw):
         """ Read table cells and return """
@@ -163,20 +200,37 @@ class TableHDF(TableBase):
         rng = kw.get('rng')
         log.debug('rng %s', str(rng))
 
-        skiprows = 0
-        nrows = None # not supported for Excel
-        usecols = None
+        node = self.t.getNode(self.subpath or '/')
+        startrows = [0]*node.ndim
+        endrows   = [1]*node.ndim
         if rng is not None:
-            row_range = rng[0]
-            if len(row_range)>0:
-                skiprows = row_range[0] if len(row_range)>0 else 0
-                nrows    = row_range[1]-skiprows+1 if len(row_range)>1 else 1
-        log.debug('skiprows %s, nrows %s, usecols %s', skiprows, nrows, usecols)
-        #self.data = pd.read_hdf(self.t, self.subpath, start=skiprows+1, stop=skiprows+nrows, columns=usecols )
-        self.data = pd.read_hdf(self.t, self.subpath, columns=usecols )
-        # start and stop don't seem to be working
-        self.data = self.data[skiprows:skiprows+nrows]
-        log.debug('Data: %s', str(self.data.head()))
+            for i in range(min(node.ndim, len(rng))):
+                row_range = rng[i]
+                if len(row_range)>0:
+                    startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
+                    endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else node.shape[i]
+                    startrows[i] = min(node.shape[i], max(0, startrows[i]))
+                    endrows[i]   = min(node.shape[i], max(0, endrows[i]))
+                    if startrows[i] > endrows[i]:
+                        endrows[i] = startrows[i]
+        log.debug('startrows %s, endrows %s', startrows, endrows)
+        
+        if isinstance(node, tables.table.Table):
+            self.data = node.read(startrows[0], endrows[0])   # ignore higher dims
+            self.sizes = [endrows[0]-startrows[0], 1]
+        elif isinstance(node, tables.array.Array):
+            if node.ndim >= 1:
+                slice_ranges = tuple([slice(startrows[i], endrows[i], None) for i in range(node.ndim)])
+                self.sizes = [endrows[i]-startrows[i] for i in range(node.ndim)]
+            else:
+                slice_ranges = None
+                self.sizes = []         
+            self.data = node.__getitem__(slice_ranges) if slice_ranges else node.read()
+        else:
+            self.data = np.empty((), dtype=unicode)   # empty array
+            self.sizes = [0 for i in range(node.ndim)]
+        log.debug('Data: %s', str(self.data[0]) if self.data.shape[0] > 0 else str(self.data))
+        self.headers, self.types = _get_headers_types(node, startrows[1] if node.ndim > 1 else None, endrows[1] if node.ndim > 1 else None)
         return self.data
 
     def write(self, data, **kw):

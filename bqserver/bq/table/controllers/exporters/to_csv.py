@@ -84,21 +84,27 @@ class ExporterCSV (TableExporter):
     ext = 'csv'
     mime_type = 'text/csv'
 
-    def __init__(self):
-        pass
-
     def info(self, table):
         super(ExporterCSV, self).info(table)
-        v = [
-            "headers,%s"%','.join([str(i) for i in table.headers]),
-            "types,%s"%','.join([t.name for t in table.types]),
-        ]
-        if table.sizes is not None:
-            v.append("sizes,%s"%','.join([str(i) for i in table.sizes]))
-        if table.tables is not None:
-            v.append("tables,%s"%','.join([str(i) for i in table.tables]))
+        if table.headers:
+            # has headers => this is a leaf object (table or matrix)
+            v = [
+                "headers,%s"%','.join([str(i) for i in table.headers]),
+                "types,%s"%','.join([str(t) for t in table.types]),
+            ]
+            if table.sizes is not None:
+                v.append("sizes,%s"%','.join([str(i) for i in table.sizes]))
+        else:
+            # no headers => this is a group/subfolder
+            v = [ "group,%s"%','.join(["%s;%s"%(tab['path'],tab['type']) for tab in table.tables]), ]
+
         return ';'.join(v)
 
     def format(self, table):
         """ converts table to CSV """
-        return table.data.to_csv()
+        headers = ','.join([str(i) for i in table.headers])
+        if isinstance(table.data, pd.DataFrame):
+            t = table.data
+        else:
+            t = table.as_table()
+        return '\n'.join([headers, t.to_csv(header=False, sep=',', line_terminator='\n', index=False)])

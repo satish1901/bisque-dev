@@ -95,3 +95,7 @@ class HdfTablePlugin4 (TablePlugin):
     ext = 'he5'
     mime_type = 'application/x-hdf'
 
+class HdfTablePlugin5 (TablePlugin):
+    '''Supports HDF5 file'''
+    ext = 'h5ebsd'
+    mime_type = 'application/x-hdf'

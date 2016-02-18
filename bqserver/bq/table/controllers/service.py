@@ -68,8 +68,11 @@ RANGE:
     elements start at 0
     empty element means full range
     i - each range item can be a simple integer defining one element in that dimension,
-    i:j - colon separated elements define range
-    i:-j - minus sign defines element positions from the end
+    i:j - colon separated elements define range               [i...j[
+    i:-j - minus sign defines element positions from the end  [i...length-j[
+    i:  - elements from i to end                              [i...length-1]
+    :j  - elements from beginning to j                        [0...j[
+
 
     Note:
       In current v5.X implementation TurboGears URL parsing is breaking on parsing the ":" sign
@@ -214,7 +217,7 @@ def is_arg(table, name):
 def parse_subrange(rng):
     #rng = urllib.unquote(rng)
     v = rng.split(';', 1) if ';' in rng else rng.split(':', 1)
-    return [int(i) for i in v]
+    return [int(i) if i.strip() else None for i in v]
 
 ################################################################################
 # TableController
@@ -274,54 +277,58 @@ class TableController(ServiceController):
 
         # load table
         table = None
-        for n, r in self.importers.plugins.iteritems():
-            table = r(uniq, resource, path, url=request.url)
-            if table is not None and table.isloaded() == True:
-                break;
-        log.debug('Inited table: %s',str(table))
-
-        # range read
-        candidate = table.path[0].split(':')[0]
-        if candidate not in self.operations.plugins:
-            try:
-                rng = table.path.pop(0)
-                rng = rng.split(',') # split for per-dimension ranges
-                rng = [parse_subrange(i) for i in rng] # split for within dimension ranges
-            except Exception:
-                abort(400, 'Malformed range request')
-            table.read(rng=rng)
-        #else: # full read is not permitted anymore
-        #    table.read()
-        log.debug('Loaded table: %s', str(table))
-
-        # operations consuming the rest of the path
-        i = 0
-        a = table.path[i] if len(table.path)>i else None
-        while a is not None:
-            a = a.split(':',1)
-            op,arg = a if len(a)>1 else a + [None]
-            if op in self.operations.plugins and self.operations.plugins[op] is not None:
-                table.path.pop(0)
-                self.operations.plugins[op]().execute(table, arg)
-            else:
-                i += 1
+        try:
+            for n, r in self.importers.plugins.iteritems():
+                table = r(uniq, resource, path, url=request.url)
+                if table is not None and table.isloaded() == True:
+                    break;
+            log.debug('Inited table: %s',str(table))
+    
+            # range read
+            candidate = table.path[0].split(':')[0]
+            if candidate not in self.operations.plugins:
+                try:
+                    rng = table.path.pop(0)
+                    rng = rng.split(',') # split for per-dimension ranges
+                    rng = [parse_subrange(i) for i in rng] # split for within dimension ranges
+                except Exception:
+                    abort(400, 'Malformed range request')
+                table.read(rng=rng)
+            #else: # full read is not permitted anymore
+            #    table.read()
+            log.debug('Loaded table: %s', str(table))
+    
+            # operations consuming the rest of the path
+            i = 0
             a = table.path[i] if len(table.path)>i else None
-        log.debug('Processed table: %s', str(table))
-
-        # export
-        out_format = get_arg(table, 'format:', defval='format:xml', **kw).replace('format:', '')
-        out_info   = is_arg(table, 'info')
-        log.debug('Format: %s, Info: %s', out_format, out_info)
-        if out_format in self.exporters.plugins:
-            if out_info is True:
-                r = self.exporters.plugins[out_format]().info(table)
-            else:
-                r = self.exporters.plugins[out_format]().export(table)
+            while a is not None:
+                a = a.split(':',1)
+                op,arg = a if len(a)>1 else a + [None]
+                if op in self.operations.plugins and self.operations.plugins[op] is not None:
+                    table.path.pop(0)
+                    self.operations.plugins[op]().execute(table, arg)
+                else:
+                    i += 1
+                a = table.path[i] if len(table.path)>i else None
+            log.debug('Processed table: %s', str(table))
+    
+            # export
+            out_format = get_arg(table, 'format:', defval='format:xml', **kw).replace('format:', '')
+            out_info   = is_arg(table, 'info')
+            log.debug('Format: %s, Info: %s', out_format, out_info)
+            if out_format in self.exporters.plugins:
+                if out_info is True:
+                    r = self.exporters.plugins[out_format]().info(table)
+                else:
+                    r = self.exporters.plugins[out_format]().export(table)
+                return r    
+            abort(400, 'Requested export format (%s) is not supported'%out_format )
+        finally:
+            # close any open table
+            if table is not None:
+                table.close()
             log.info ("FINISHED (%s): %s", datetime.now().isoformat(), request.url)
-            return r
 
-        log.info ("FINISHED (%s): %s", datetime.now().isoformat(), request.url)
-        abort(400, 'Requested export format (%s) is not supported'%out_format )
 
 #---------------------------------------------------------------------------------------
 # bisque init stuff
