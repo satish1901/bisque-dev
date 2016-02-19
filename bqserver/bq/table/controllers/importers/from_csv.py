@@ -124,14 +124,14 @@ class TableCSV(TableBase):
             try:
                 self.has_header = csv.Sniffer().has_header(buf)
             except csv.Error:
-                self.has_header = True
+                raise RuntimeError("CSV file cannot be read")
         try:
             if self.has_header is True:
                 data = pd.read_csv(self.filename, skiprows=0, nrows=10 )
             else:
                 data = pd.read_csv(self.filename, skiprows=0, nrows=10, header=None )
         except Exception:
-            return None
+            raise RuntimeError("CSV file cannot be read")
         if self.has_header:
             self.headers, self.types = _get_headers_types(data)
         self.sizes = [sys.maxint, data.shape[1]]   # TODO: rows set to maxint for now
@@ -147,7 +147,7 @@ class TableCSV(TableBase):
         data = pd.read_csv(self.filename, nrows=1)   # to get the shape later
         sizes = [sys.maxint, data.shape[1]]   # TODO: rows set to maxint for now
         startrows = [0]*2
-        endrows   = [1]*2
+        endrows   = [50]*2
         if rng is not None:
             for i in range(min(2, len(rng))):
                 row_range = rng[i]

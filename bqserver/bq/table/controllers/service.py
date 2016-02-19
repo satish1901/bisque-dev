@@ -279,9 +279,17 @@ class TableController(ServiceController):
         table = None
         try:
             for n, r in self.importers.plugins.iteritems():
-                table = r(uniq, resource, path, url=request.url)
+                try:
+                    log.debug("trying format %s", str(n))
+                    table = r(uniq, resource, path, url=request.url)
+                except Exception as ex:
+                    log.debug("failed with error %s", str(ex))
+                    table = None
+                    pass # continue with next format
                 if table is not None and table.isloaded() == True:
                     break;
+            if table is None:
+                abort(500, 'Table cannot be read')
             log.debug('Inited table: %s',str(table))
     
             # range read

@@ -101,7 +101,7 @@ def _get_type(n):
 
 def _get_headers_types(node, startcol=None, endcol=None):                
     if isinstance(node, tables.table.Table):
-        coltypes = { h:node.coltypes[h] for h in colnames[slice(startcol, endcol, None)] }
+        coltypes = { h:node.coltypes[h] for h in node.colnames[slice(startcol, endcol, None)] }
     elif isinstance(node, tables.array.Array):
         if node.ndim > 1:
             coltypes = {i:node.dtype.name for i in range(startcol or 0, endcol or node.shape[1])}
@@ -143,8 +143,7 @@ class TableHDF(TableBase):
             # close any open table
             if self.t is not None:
                 self.t.close()
-            self.t = None
-            #raise
+            raise
 
     def _collect_arrays(self, path='/'):
         try:
@@ -179,7 +178,7 @@ class TableHDF(TableBase):
                 log.debug("HDF FILENAME: %s", self.filename)   #!!!
                 self.t = tables.openFile(self.filename)    # TODO: could lead to problems when multiple workers open same file???
             except Exception:
-                raise
+                raise RuntimeError("HDF file cannot be read")
             self.tables = self._collect_arrays(self.subpath)
 
         if len(self.tables) == 0:
@@ -202,7 +201,7 @@ class TableHDF(TableBase):
 
         node = self.t.getNode(self.subpath or '/')
         startrows = [0]*node.ndim
-        endrows   = [1]*node.ndim
+        endrows   = [50]*node.ndim
         if rng is not None:
             for i in range(min(node.ndim, len(rng))):
                 row_range = rng[i]
@@ -229,7 +228,7 @@ class TableHDF(TableBase):
         else:
             self.data = np.empty((), dtype=unicode)   # empty array
             self.sizes = [0 for i in range(node.ndim)]
-        log.debug('Data: %s', str(self.data[0]) if self.data.shape[0] > 0 else str(self.data))
+        log.debug('Data: %s', str(self.data[0]) if len(self.data.shape) > 0 and self.data.shape[0] > 0 else str(self.data))
         self.headers, self.types = _get_headers_types(node, startrows[1] if node.ndim > 1 else None, endrows[1] if node.ndim > 1 else None)
         return self.data
 
