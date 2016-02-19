@@ -3,11 +3,13 @@ import csv
 from operator import itemgetter
 import itertools
 from datetime import datetime
+import traceback
 
-try:
-    from lxml import etree as etree
-except ImportError:
-    import xml.etree.ElementTree as etree
+from lxml import etree as etree # need .getparent()
+#try:
+#    from lxml import etree as etree
+#except ImportError:
+#    import xml.etree.ElementTree as etree
 
 from bqapi import BQSession, BQTag, BQCommError
 
@@ -20,8 +22,12 @@ def delete(image, text_old, ann_type='gobject', ann_attr='type'):
     gobs = image.xpath('//%s[@%s="%s"]'%(ann_type, ann_attr, text_old))
     for g in gobs:
         if g.get(ann_attr) == text_old:
-            image.remove(g)
-            modified.append({'g': g})
+            try:
+               p = g.getparent() or image
+               p.remove(g)
+               modified.append({'g': g})
+            except Exception:
+               pass
     return modified
 
 class AnnotationDelete(object):
@@ -79,8 +85,6 @@ class AnnotationDelete(object):
                 'tag' : changes,
             }]
         }])
-        sys.exit(0)
-        #bq.close()
 
 
 if __name__ == "__main__":
@@ -97,16 +101,20 @@ if __name__ == "__main__":
     M = AnnotationDelete()
     if options.credentials is None:
         mex_url, auth_token, image_url = args[:3]
-        M.main(mex_url, auth_token, image_url)
+        bq = BQSession().init_mex(mex_url, auth_token)
     else:
+        mex_url = ''
         image_url = args.pop(0)
-
         if not options.credentials:
             parser.error('need credentials')
         user,pwd = options.credentials.split(':')
-
         bq = BQSession().init_local(user, pwd)
-        M.main(image_url, bq=bq)
+
+    try:
+        M.main(mex_url=mex_url, image_url=image_url, bq=bq )
+    except Exception, e:
+        bq.fail_mex(traceback.format_exc())
+    sys.exit(0)
 
 
 
