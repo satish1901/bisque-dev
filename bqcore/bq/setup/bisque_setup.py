@@ -832,7 +832,7 @@ def create_database(DBURL):
         print( """
         Database was NOT prepared -- either server has no database '%s'
         or user "%s" has no rights to access this database.
-        Please fix the problem(s) and re-run 'bisque-setup --database'
+        Please fix the problem(s) and re-run 'bq-admin setup createdb'
         """ % (DBURL.database,DBURL.username) )
         return False
     return True
