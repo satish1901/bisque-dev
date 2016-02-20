@@ -54,6 +54,7 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 import os
 import logging
 import pkg_resources
+import re
 from pylons.controllers.util import abort
 
 from bq import blob_service
@@ -101,18 +102,23 @@ def _get_type(n):
 
 def _get_headers_types(node, startcol=None, endcol=None):                
     if isinstance(node, tables.table.Table):
-        coltypes = { h:node.coltypes[h] for h in node.colnames[slice(startcol, endcol, None)] }
+        headers = node.colnames[slice(startcol, endcol, None)]
+        types = [node.coltypes[h] if h in node.coltypes else '(compound)' for h in node.colnames[slice(startcol, endcol, None)]]
     elif isinstance(node, tables.array.Array):
         if node.ndim > 1:
-            coltypes = {i:node.dtype.name for i in range(startcol or 0, endcol or node.shape[1])}
+            headers = [str(i) for i in range(startcol or 0, endcol or node.shape[1])]
+            types = [node.dtype.name for i in range(startcol or 0, endcol or node.shape[1])]
         elif node.ndim > 0:
-            coltypes = {i:node.dtype.name for i in range(startcol or 0, endcol or 1)}
+            headers = [str(i) for i in range(startcol or 0, endcol or 1)]
+            types = [node.dtype.name for i in range(startcol or 0, endcol or 1)]
         else:
-            coltypes = {'':node.dtype.name}
+            headers = ['']
+            types = [node.dtype.name]
     else:
         # group node
-        coltypes = {}
-    return ( coltypes.keys(), coltypes.values() )
+        headers = []
+        types = []
+    return ( headers, types )
 
 
 #---------------------------------------------------------------------------------------
@@ -126,7 +132,7 @@ class TableHDF(TableBase):
 
     name = 'hdf'
     version = '1.0'
-    ext = ['h5', 'hdf5']
+    ext = ['h5', 'hdf5', 'h5ebsd']
     mime_type = 'application/x-hdf'
 
     def __init__(self, uniq, resource, path, **kw):
@@ -167,10 +173,10 @@ class TableHDF(TableBase):
         # TODO: have to find a better way to split path in HDF from operations... this is a hack for now
         end = len(self.path)
         for i in range(len(self.path)):
-            if ':' in self.path[i] or ';' in self.path[i] or self.path[i] == 'info':
+            if self.path[i] == 'info' or re.match(r"^-?[0-9]*[:;]-?[0-9]*(?:,-?[0-9]*[:;]-?[0-9]*)*$", self.path[i]):
                 end = i
                 break
-        self.subpath = '/' + '/'.join(self.path[0:end])
+        self.subpath = '/' + '/'.join([p.strip('"') for p in self.path[0:end]])  # allow quoted path segments to escape slicing, e.g. /bla/"0:100"/bla
         self.path = self.path[end:]
 
         if self.tables is None:
@@ -201,7 +207,7 @@ class TableHDF(TableBase):
 
         node = self.t.getNode(self.subpath or '/')
         startrows = [0]*node.ndim
-        endrows   = [50]*node.ndim
+        endrows   = [min(50, node.shape[i]) for i in range(node.ndim)]
         if rng is not None:
             for i in range(min(node.ndim, len(rng))):
                 row_range = rng[i]

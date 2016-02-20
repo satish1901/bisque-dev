@@ -84,8 +84,11 @@ def extjs_safe_header(s):
         return s.replace('.', '_')
     return s
 
-def _get_headers_types(data, startcol=None, endcol=None):
-    headers = [extjs_safe_header(x) for x in data.columns.values.tolist()[slice(startcol, endcol, None)]] # extjs errors loading strings with dots
+def _get_headers_types(data, startcol=None, endcol=None, has_header=False):
+    if has_header:
+        headers = [extjs_safe_header(x) for x in data.columns.values.tolist()[slice(startcol, endcol, None)]] # extjs errors loading strings with dots
+    else:
+        headers = [str(i) for i in range(startcol or 0, endcol or data.shape[1])]
     types = [t.name for t in data.dtypes.tolist()[slice(startcol, endcol, None)]] #data.dtypes.tolist()[0].name
     return (headers, types)
 
@@ -124,16 +127,12 @@ class TableCSV(TableBase):
             try:
                 self.has_header = csv.Sniffer().has_header(buf)
             except csv.Error:
-                raise RuntimeError("CSV file cannot be read")
-        try:
-            if self.has_header is True:
-                data = pd.read_csv(self.filename, skiprows=0, nrows=10 )
-            else:
-                data = pd.read_csv(self.filename, skiprows=0, nrows=10, header=None )
-        except Exception:
-            raise RuntimeError("CSV file cannot be read")
-        if self.has_header:
-            self.headers, self.types = _get_headers_types(data)
+                self.has_header = True
+        if self.has_header is True:
+            data = pd.read_csv(self.filename, skiprows=0, nrows=10 )
+        else:
+            data = pd.read_csv(self.filename, skiprows=0, nrows=10, header=None )
+        self.headers, self.types = _get_headers_types(data, has_header=self.has_header)
         self.sizes = [sys.maxint, data.shape[1]]   # TODO: rows set to maxint for now
         self.t = True
         log.debug('CSV types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
@@ -147,7 +146,7 @@ class TableCSV(TableBase):
         data = pd.read_csv(self.filename, nrows=1)   # to get the shape later
         sizes = [sys.maxint, data.shape[1]]   # TODO: rows set to maxint for now
         startrows = [0]*2
-        endrows   = [50]*2
+        endrows   = [min(50, sizes[i]) for i in range(2)]
         if rng is not None:
             for i in range(min(2, len(rng))):
                 row_range = rng[i]
@@ -171,8 +170,7 @@ class TableCSV(TableBase):
             self.data = pd.DataFrame()   # empty table
             self.sizes = [0 for i in range(self.data.ndim)]
         log.debug('Data: %s', str(self.data.head()) if self.data.ndim > 0 else str(self.data))
-        if self.has_header:
-            self.headers, self.types = _get_headers_types(data, startrows[1], endrows[1])
+        self.headers, self.types = _get_headers_types(data, startrows[1], endrows[1], has_header=self.has_header)
         return self.data
 
     def write(self, data, **kw):

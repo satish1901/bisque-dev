@@ -279,6 +279,11 @@ class TableController(ServiceController):
         table = None
         try:
             for n, r in self.importers.plugins.iteritems():
+                if '.' in resource.get('value', '') and resource.get('value').split('.')[-1].lower() not in r.ext:
+                    # resource has filename with extension and extension does not match plugins supported extensions
+                    # (this is to prevent trying to read some binary format with CSV for example)
+                    # TODO: better try CSV at the end for this reason
+                    continue
                 try:
                     log.debug("trying format %s", str(n))
                     table = r(uniq, resource, path, url=request.url)
