@@ -51,7 +51,7 @@ function np = BONuclearDetector3D(imn, ns, t, session, timetext)
     fprintf('Seed search\n');    
     t = sort(t);
     np = BOSeedSearch3D(imlog, ns, t);
-    clearvars imlog; 
+    clearvars imlog;
     
     %% removing unchanging point sets towards low thresholds
     dnp = zeros(size(np,1),1);
@@ -69,6 +69,17 @@ function np = BONuclearDetector3D(imn, ns, t, session, timetext)
         idx = min(idx+1, size(np,1));
     end
     np = np(idx:end);
+    
+    %% Removing zero sized point sets
+    for i=size(np,1):-1:1,
+        if size(np{i},1) < 1
+            np(i,:) = [];
+        end
+    end    
+    if size(np,1)<1,
+        fprintf('Error: No candidate locations were detected, check pixel resolution...\n');
+        error('No candidate locations were detected, check pixel resolution...');
+    end    
         
     %% Filtering
     if exist('session', 'var'), session.update([timetext '70% - Filtering']); end
