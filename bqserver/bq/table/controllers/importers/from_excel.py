@@ -156,7 +156,7 @@ class TableExcel(TableBase):
 
         data = pd.read_excel(self.t, self.subpath, nrows=1)   # to get the shape later
         startrows = [0]*2
-        endrows   = [50]*2
+        endrows   = [min(50, data.shape[i]) for i in range(2)]
         if rng is not None:
             for i in range(min(2, len(rng))):
                 row_range = rng[i]

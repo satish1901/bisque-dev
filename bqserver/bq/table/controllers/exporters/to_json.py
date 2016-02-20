@@ -117,4 +117,4 @@ class ExporterJSON (TableExporter):
         }
         if table.sizes is not None:
             v["sizes"] = table.sizes
-        return json.dumps(v)
+        return json.dumps(v)            
