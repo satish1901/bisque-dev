@@ -69,7 +69,7 @@ try:
 except ImportError:
     log.info('Pandas was not found but required for table service!')
 
-
+from pylons.controllers.util import abort
 from bq.table.controllers.table_exporter import TableExporter
 
 #---------------------------------------------------------------------------------------
@@ -102,9 +102,12 @@ class ExporterCSV (TableExporter):
 
     def format(self, table):
         """ converts table to CSV """
-        headers = ','.join([str(i) for i in table.headers])
-        if isinstance(table.data, pd.DataFrame):
-            t = table.data
-        else:
-            t = table.as_table()
-        return '\n'.join([headers, t.to_csv(header=False, sep=',', line_terminator='\n', index=False)])
+        try:
+            headers = ','.join([str(i) for i in table.headers])
+            if isinstance(table.data, pd.DataFrame):
+                t = table.data
+            else:
+                t = table.as_table()
+            return '\n'.join([headers, t.to_csv(header=False, sep=',', line_terminator='\n', index=False)])
+        except Exception:
+            abort(400, 'Data cannot be converted to CSV')
