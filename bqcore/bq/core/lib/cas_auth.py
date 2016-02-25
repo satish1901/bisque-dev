@@ -1,5 +1,5 @@
 from urllib import quote_plus, urlencode
-import httplib2
+import requests
 import logging
 
 from webob import Request, Response
@@ -53,7 +53,8 @@ class CASPlugin(object):
         # (ala a cookie plugin or a session plugin)
         self.rememberer_name = rememberer_name
         self.auto_register = auto_register
-        self.http = httplib2.Http(disable_ssl_certificate_validation=True)
+        self.http = requests.Session()
+        self.http.verify = False
 
 
     # IChallenger
@@ -175,9 +176,10 @@ class CASPlugin(object):
                 self.cas_validate_url,
                 service_url,
                 identity['repoze.who.plugins.cas.ticket'])
-            headers, response = self.http.request(validate_url)
-            if headers.status == 200:
-                okayed, username = response.split("\n")[:2]
+            #headers, response = self.http.request(validate_url)
+            response = self.http.get (validate_url)
+            if response.status_code == requests.codes.ok:
+                okayed, username = response.content.split("\n")[:2]
                 log.debug ('validate got %s %s' % (okayed, username))
                 if okayed == 'yes':
                     return username
@@ -198,11 +200,12 @@ class CASPlugin(object):
                         'connection': 'keep-alive',
                         'cache-control': 'no-cache',
                         'soapaction' :'http://www.oasis-open.org/committees/security'}
-            log.debug ("SENDING %s %s %s" % (url, headers, body))
-            headers, content = self.http.request(url, method="POST", headers=headers, body=body)
-            log.debug ("RECEIVED %s %s" % (headers, content))
-            found = parse_soap_saml(content)
-            if headers['status'].startswith('200') and found:
+            log.debug ("SENDING %s %s %s" , url, headers, body)
+            #headers, content = self.http.request(url, method="POST", headers=headers, body=body)
+            response = self.http.post (url, headers=headers, data=body)
+            log.debug ("RECEIVED %s %s" , response.headers, response.content)
+            found = parse_soap_saml(response.content)
+            if response.status_code == requests.codes.ok and found:
                 for k,v in found.items():
                     identity['repoze.who.plugins.cas.%s' % k] = v
                 return found['user_id']
@@ -254,5 +257,3 @@ class CASPlugin(object):
         else:
             log.debug('%s not found in %s. Ensure autoreg is enabled' % (self.auto_register, environ['repoze.who.plugins']))
         return user_id
-
-

@@ -81,6 +81,7 @@ setup(
                    'coverage',
                    'wsgiref',
                    'repoze.who-testutil',
+                   'pylint',
                    ],
     #package_data={'bq': ['core/i18n/*/LC_MESSAGES/*.mo',
     #                             'core/templates/*/*',
