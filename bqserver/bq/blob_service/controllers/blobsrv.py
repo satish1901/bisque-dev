@@ -48,12 +48,14 @@ DESCRIPTION
 Micro webservice to store and retrieve blobs(untyped binary storage) on a variety
 of storage platforms: local, irods, s3
 """
+# pylint: disable=import-error,no-self-use
+
 import os
 import logging
 
-from lxml import etree
 from datetime import datetime
 from datetime import timedelta
+from lxml import etree
 
 #import smokesignal
 
@@ -63,35 +65,32 @@ from tg.controllers import RestController, TGController
 #from paste.fileapp import FileApp
 from bq.util.fileapp import BQFileApp
 from pylons.controllers.util import forward
-from paste.deploy.converters import asbool
+#from paste.deploy.converters import asbool
 from repoze.what import predicates
 
-from sqlalchemy.exc import IntegrityError
+#from sqlalchemy.exc import IntegrityError
 
 from bq.core import  identity
 #from bq.core.identity import set_admin_mode
 from bq.core.service import ServiceMixin
-from bq.core.service import ServiceController
-from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
+#from bq.core.service import ServiceController
+from bq.exceptions import IllegalOperation
 from bq.util.timer import Timer
 from bq.util.sizeoffmt import sizeof_fmt
 from bq.util.hash import is_uniq_code
-
-
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
 #from bq import image_service
 from bq import export_service
 
+#from . import blob_drivers
+from . import mount_service
+from .blob_drivers import split_subpath
+from .blob_plugins import ResourcePluginManager
+
 SIG_NEWBLOB  = "new_blob"
 
-from . import blob_drivers
-from . import mount_service
-
 log = logging.getLogger('bq.blobs')
-
-from .blob_drivers import split_subpath, join_subpath
-from .blob_plugins import ResourcePluginManager
 
 #########################################################
 # Utility functions
@@ -113,6 +112,7 @@ def transfer_msg(flocal, transfer_t):
         speed = sizeof_fmt(fsize/transfer_t))
 
 
+#pylint: disable=too-few-public-methods
 class TransferTimer(Timer):
     def __init__(self, path=''):
         super(TransferTimer, self).__init__()
@@ -127,84 +127,6 @@ class TransferTimer(Timer):
 ######################################################
 # Store manageer
 
-''' COMMENTED
-class DriverManager(object):
-    'Manage multiple stores'
-
-    def __init__(self):
-        self.drivers = blob_drivers.load_storage_drivers()
-        log.info ('configured stores %s' ,  ','.join( str(x) for x in self.drivers.keys()))
-
-    def valid_blob(self, blob_id):
-        "Determin if uripath is supported by configured blob_storage (without fetching)"
-        for driver in self.drivers.values():
-            if driver.valid(blob_id):
-                return True
-        return False
-
-    def fetch_blob(self, blob_id):
-        """Find a blob matching the prefix of blob_id
-
-        @return pathtuple (path,subpath) or None
-        """
-        for driver in self.drivers.values():
-            if driver.valid(blob_id):
-                with TransferTimer() as t:
-                    b = driver.localpath(blob_id)
-                    t.path = b.path
-                if b.path is not None:
-                    # if sub path could not be serviced by the storage system and the file is a package (zip, tar, ...)
-                    # extract the sub element here and return the extracted path with sub as None
-                    return b
-        log.warn ("Failed to fetch blob: %s", blob_id)
-        return blob_storage.Blobs(path=None, sub=None, files=None)
-
-    def save_blob(self, fileobj, filename, user_name, uniq):
-        #filename_safe = filename.encode('ascii', 'xmlcharrefreplace')
-        filename_safe = filename
-        if filename_safe[0]=='/':
-            return self.save_2store(fileobj, filename_safe, user_name, uniq)
-        else:
-            return self.save_relative(fileobj, filename_safe, user_name, uniq)
-
-    def save_2store (self, fileobj, filename, user_name, uniq):
-        empty, store_name, path = filename.split('/', 2)
-        driver = self.drivers[store_name]
-        try:
-            if driver.readonly:
-                raise IllegalOperation("Write to readonly store")
-            driveruri, localpath =  driver.write(fileobj, path, user_name = user_name, uniq=uniq)
-            return driveruri, localpath
-        except DuplicateFile, e:
-            raise e
-        except Exception, e:
-            log.exception('storing blob failed')
-        return (None,None)
-
-
-    def save_relative(self, fileobj, filename, user_name, uniq):
-        for driver_id, driver in self.drivers.items():
-            try:
-                # blob storage part
-                if driver.readonly:
-                    log.debug("skipping %s: is readonly" , driver_id)
-                    continue
-                driveruri, localpath =  driver.write(fileobj, filename, user_name = user_name, uniq=uniq)
-                return driveruri, localpath
-            except DuplicateFile, e:
-                raise e
-            except Exception, e:
-                log.exception('storing blob failed')
-        return (None,None)
-
-    def __str__(self):
-        return "drivers%s" % [ "(%s, %s)" % (k,v) for k,v in self.drivers.items() ]
-
-
-
-'''
-
-
 ###########################################################################
 # BlobServer
 ###########################################################################
@@ -217,15 +139,21 @@ class PathService (TGController):
     def __init__(self, blobsrv):
         super (PathService, self).__init__()
         self.blobsrv = blobsrv
+        self.mounts  = None
 
     @expose(content_type='text/xml')
     def index(self):
         "Path service initial page"
-        return "<resource resource_type='Path service'/>"
+        resource = etree.Element ('resource')
+        etree.SubElement (resource,'method', name='list?path=store_url', value="List resources at the path")
+        etree.SubElement (resource,'method', name='insert?path=store_url', value="Insert resources at the path")
+        etree.SubElement (resource,'method', name='move?path=store_url&destination=store_url', value="Move a resources at the path to a new path")
+        etree.SubElement (resource,'method', name='delete?path=store_url', value="Delete resources at the path")
+        return etree.tostring (resource)
 
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())
-    def list_path(self, path, *args,  **kwargs):
+    def list(self, path, *args,  **kwargs):
         'Find a resource identified by a path'
         log.info("move() called %s" ,  path)
         resource = data_service.query('image|file', resource_value = path, wpublic='1', cache=False)
@@ -233,33 +161,85 @@ class PathService (TGController):
 
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())
-    def insert_path(self, path, resource_type = 'file', *args,  **kwargs):
-        ' Move a resource identified by path  '
-        log.info("insert_path() called %s %s" , path, args)
-        resource = etree.Element(resource_type, value = path)
+    def insert(self, path=None, user=None, **kwargs):
+        """ Move a resource identified by path
+        """
+        log.info("insert_path() %s %s %s" , tg.request.method, path, kwargs)
+        if user is not None and identity.is_admin():
+            identity.current.set_current_user( user )
+
+        resource = self._check_post_body()
+
+        if  resource is None:
+            resource = etree.Element('resource', value = path)
+        else:
+            path = resource.get('value')
+        store,driver = self.mounts.valid_store_ref (resource)
+        if store is None:
+            abort (400, "%s is not a valid store " % path)
+
+        if resource.get ('name') is None:
+            resource.set ('name',  path.replace(driver.mount_url, ''))
         resource = self.blobsrv.store_blob(resource)
         return etree.tostring(resource)
 
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())
-    def move_path(self, path, dst, *args,  **kwargs):
+    def move(self, path, destination, user=None,  **kw):
         ' Move a resource identified by path  '
-        log.info("move() called %s" , args)
+        log.info("move(%s,%s) %s %s" , path, destination, tg.request.method, kw )
+        if user is not None and identity.is_admin():
+            identity.current.set_current_user( user )
+
+        # sanity check
+        resource = etree.Element('resource', value = destination)
+        store,driver = self.mounts.valid_store_ref (resource)
+        if store is None:
+            abort (400, "%s is not a valid store " % destination)
+
         resource = data_service.query("file|image", resource_value = path, wpublic='1', cache=False)
         for child in resource:
-            child.set('resource_value',  dst)
+            old_store,old_driver = self.mounts.valid_store_ref (child)
+            if old_store is None:
+                abort (400, "%s is not a valid store " % destination)
+            # Remove links in directory hierarchy
+            self.mounts.delete_links (child)
+            # Change the location
+            child.set('value',  destination)
             resource = data_service.update(child)
+            # update the links
+            partial_path = destination.replace(driver.mount_url,'')
+            self.mounts.insert_mount_path(store, partial_path, resource)
+
         return etree.tostring(resource)
 
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())
-    def delete_path(self, path,  **kwargs):
+    def remove(self, path,  delete_blob=True, user=None, **kwargs):
         ' Delete a resource identified by path  '
         log.info("delete() called %s" , path)
+        if user is not None and identity.is_admin():
+            identity.current.set_current_user( user )
+
         resource = data_service.query("file|image", resource_value = path, wpublic='1', cache=False)
         for child in resource:
-            data_service.del_resource(child)
-        return ""
+            data_service.del_resource (child)
+        return etree.tostring(resource)
+
+
+    def _check_post_body (self):
+        "read a resource from post body if avaibable"
+        request = tg.request
+        if request.method.lower() in ("post", "put"):
+            try:
+                clen = int(request.headers.get('Content-Length', 0))
+                content = request.headers.get('Content-Type')
+                if content.startswith('text/xml') or  content.startswith('application/xml'):
+                    data = request.body_file.read(clen)
+                    resource = etree.XML (data)
+                    return resource
+            except etree.XMLSyntaxError:
+                log.exception ("Bad XML syntax in %s", data [:100])
 
 
 
@@ -279,9 +259,11 @@ class BlobServer(RestController, ServiceMixin):
         ServiceMixin.__init__(self, url)
         #self.drive_man = DriverManager()
         #self.__class__.store = store_resource.StoreServer(self.drive_man.drivers)
-        self.__class__.paths  = PathService(self)
-        self.__class__.mounts = mount_service.MountServer(url)
-        self.__class__.store = self.__class__.mounts
+        paths = self.__class__.paths  = PathService(self)
+        mounts = self.__class__.mounts = mount_service.MountServer(url)
+        self.__class__.store = mounts
+        paths.mounts = mounts
+
 
         path_root = config.get('bisque.paths.root', '')
         path_plugins = os.path.join(path_root, 'bqcore/bq/core/public/plugins')
@@ -344,11 +326,11 @@ class BlobServer(RestController, ServiceMixin):
 
             resource = data_service.resource_load(uniq=ident)
             filename,_ = split_subpath(resource.get('name', str(ident)))
-            b = self.localpath(ident)
-            if b.files and len(b.files) > 1:
+            blb = self.localpath(ident)
+            if blb.files and len(blb.files) > 1:
                 return export_service.export(files=[resource.get('uri')], filename=filename)
 
-            localpath = os.path.normpath(b.path)
+            localpath = os.path.normpath(blb.path)
             if 'localpath' in kw:
                 tg.response.headers['Content-Type']  = 'text/xml'
                 resource = etree.Element ('resource', name=filename, value=localpath)
@@ -363,8 +345,7 @@ class BlobServer(RestController, ServiceMixin):
             content_type = self.guess_mime(filename)
             return forward(BQFileApp(localpath,
                                      content_type=content_type,
-                                     content_disposition=disposition,
-                                     ).cache_control (max_age=60*60*24*7*6)) # 6 weeks
+                                     content_disposition=disposition,).cache_control(max_age=60*60*24*7*6)) # 6 weeks
         except IllegalOperation:
             abort(404)
 
@@ -372,7 +353,7 @@ class BlobServer(RestController, ServiceMixin):
     @require(predicates.not_anonymous())
     def post(self, **transfers):
         "Create a blob based on unique ID"
-        log.info("post() called %s" , kwargs)
+        log.info("post() called %s" , transfers)
         #log.info("post() body %s" % tg.request.body_file.read())
 
         def find_upload_resource(transfers, pname):
@@ -563,4 +544,3 @@ def initialize(uri):
 #    return model
 
 __controller__ =  BlobServer
-

@@ -288,7 +288,7 @@ class LocalDriver (StorageDriver):
                     ident = ident[1:]
                 #ident = "file://%s" % localpath
                 ident = localpath2url(ident)
-                log.debug('local.blob_id: %s -> %s',  tounicode(ident), tounicode(localpath))
+                log.info('local push  blob_id: %s -> %s',  tounicode(ident), tounicode(localpath))
                 return ident, localpath
             localpath = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
             #localpath = "%s-%04d%s" % (fpath , x , ext)
@@ -339,7 +339,7 @@ class LocalDriver (StorageDriver):
                 path = os.path.join(self.top, path)
 
         path = url2localpath(path.replace('\\', '/'))
-        log.debug("deleting %s", path)
+        log.info("local deleting %s", path)
         if os.path.isfile (path):
             try:
                 os.remove (path)
@@ -405,7 +405,7 @@ class IrodsDriver(StorageDriver):
     # New interface
     def push(self, fp, storeurl, uniq = None):
         "Push a local file (file pointer)  to the store"
-        log.debug('irods.push: %s' , storeurl)
+        log.info('irods.push: %s' , storeurl)
         fpath,ext = os.path.splitext(storeurl)
         uniq = uniq or make_uniq_code()
         try:
@@ -422,7 +422,7 @@ class IrodsDriver(StorageDriver):
     def pull (self, storeurl, localpath=None):
         "Pull a store file to a local location"
         # dima: path can be a directory, needs listing and fetching all enclosed files
-        log.debug('irods.pull: %s' , storeurl)
+        log.info('irods.pull: %s' , storeurl)
         try:
             # if irods will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
             irods_ident,sub = split_subpath(storeurl)
@@ -438,6 +438,7 @@ class IrodsDriver(StorageDriver):
         return irods.irods_fetch_dir (storeurl, user=self.user, password=self.password)
 
     def delete(self, irods_ident):
+        log.info('irods.delete: %s' , irods_ident)
         try:
             irods.irods_delete_file(irods_ident, user=self.user, password=self.password)
         except irods.IrodsError, e:
@@ -480,6 +481,9 @@ class S3Driver(StorageDriver):
 
 
     def mount(self):
+        if self.conn is not None:
+            return
+
         if self.access_key is None or self.secret_key is None or self.bucket_id is None:
             raise ConfigurationError('bisque.blob_service.s3 incomplete config')
 
@@ -495,7 +499,9 @@ class S3Driver(StorageDriver):
         log.info("mounted S3 store %s (%s)" , self.mount_url, self.top)
 
     def unmount (self):
-        self.conn.close()
+        if self.conn:
+            self.conn.close()
+            self.conn = None
 
     def valid(self, storeurl):
         return storeurl.startswith(self.mount_url) and storeurl
@@ -504,7 +510,7 @@ class S3Driver(StorageDriver):
         'write a file to s3'
         s3_ident,sub = split_subpath(storeurl)
         s3_base,ext = os.path.splitext(s3_ident)
-        log.debug('s3.write: %s -> %s' , storeurl, s3_ident)
+        log.info('s3.write: %s -> %s' , storeurl, s3_ident)
         uniq = uniq or make_uniq_code()
         for x in xrange(len(uniq)-7):
             s3_key = s3_ident.replace("s3://","")
@@ -520,6 +526,7 @@ class S3Driver(StorageDriver):
         # dima: path can be a directory, needs listing and fetching all enclosed files
 
         # if s3 will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
+        log.info('s3.pull: %s ' , storeurl)
         storeurl,sub = split_subpath(storeurl)
         s3_key = storeurl.replace("s3://","")
         path = s3_handler.s3_fetch_file(self.bucket, s3_key)
@@ -527,6 +534,7 @@ class S3Driver(StorageDriver):
         return Blobs(path=path, sub=sub, files=None)
 
     def delete(self, storeurl):
+        log.info('s3.delete: %s ' , storeurl)
         s3_key = storeurl.replace("s3://","")
         s3_handler.s3_delete_file(self.bucket, s3_key)
     def isdir (self, storeurl):
@@ -619,6 +627,9 @@ class SMBNetDriver(StorageDriver):
         """
 
         # I don't this this is the SMB hostname but am not sure
+        if self.conn is not None:
+            return
+
         self.conn = SMBConnection (self.user, self.password, self.localhost, self.serverhost)
         if not self.conn.connect(self.server_ip, 139):
             self.conn = None
@@ -634,7 +645,7 @@ class SMBNetDriver(StorageDriver):
         """Unmount the driver """
         if self.conn:
             self.conn.close()
-        self.conn=None
+            self.conn=None
 
     def mount_status(self):
         """return the status of the mount: mounted, error, unmounted
