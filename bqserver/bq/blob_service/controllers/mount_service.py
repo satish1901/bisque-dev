@@ -450,7 +450,7 @@ class MountServer(TGController):
             store = store_name
         return self._create_full_path(store, path, resource_uniq, resource_name, **kw)
 
-    def delete_mount_path (self, store_name, path, **kw):
+    def delete_mount_path (self, store_name, path, delete_resource=True, **kw):
         """ Delete an store element and all below it
 
         :param path: A string (url) of the path
@@ -470,7 +470,7 @@ class MountServer(TGController):
         #if  q.tag != 'link':
         #    return False
         data_service.del_resource(q)
-        if value is not None:
+        if delete_resource and value is not None:
             data_service.del_resource(q.get ('value'))
         return True
 
@@ -515,7 +515,7 @@ class MountServer(TGController):
 
         if len(storeurls) < 1:
             log.warn ("No value in resource trying name")
-            return None
+            return None,None
 
         for store_name, store in stores.items():
             prefix = store.get ('value')
@@ -532,8 +532,8 @@ class MountServer(TGController):
                     if not driver.valid (storeurl):
                         raise IllegalOperation('resource %s spread across different stores %s', resource.get('resource_uniq'), storeurls)
                 log.debug ("matched %s %s", store_name, driver.mount_url)
-                return store
-        return None
+                return store, driver
+        return None, None
 
     def store_blob(self, resource, fileobj = None, rooturl=None):
         """store a blob to a mount
@@ -563,7 +563,7 @@ class MountServer(TGController):
         else:
             # A relative name.. could be a reference store only
             if fileobj is None:
-                store = self.valid_store_ref (resource)
+                store, _ = self.valid_store_ref (resource)
                 if store is not None:
                     stores = { store.get ('name') :  store}
 
@@ -711,12 +711,12 @@ class MountServer(TGController):
         'return a (set) path(s) for a resource'
         log.debug ("fetch_blob %s", resource.get ('resource_uniq'))
 
-        store = self._find_store (resource)
+        store,driver = self._find_store (resource)
         if  store is None:
             log.error ('Not a valid store ref in  %s' , etree.tostring (resource))
             return None
 
-        with self._get_driver(store) as driver:
+        with driver as driver:
             uniq     = resource.get('resource_uniq')
             bloburls = resource.get('value')
             if bloburls is not None:
@@ -746,27 +746,32 @@ class MountServer(TGController):
             return blob_drivers.Blobs(files[0], sub, files)
 
 
-
-    def delete_blob(self, resource):
-        'Delete elements  for a resource'
-        log.debug ("delete_blob %s", resource.get ('resource_uniq'))
-
+    def delete_links(self, resource):
+        'Delete link nodes   for a resource'
+        log.debug ("delete_links %s", resource.get ('resource_uniq'))
         # Delete the reference in the store
         links = data_service.query ('link', parent=False, value = resource.get ('resource_uniq'), cache=False)
         for link in links:
             log.debug ("delete_blob: delete link %s", link.get('uri'))
             data_service.del_resource(link)
 
-        store = self._find_store (resource)
+
+    def delete_blob(self, resource):
+        'Delete elements  for a resource'
+        log.debug ("delete_blob %s", resource.get ('resource_uniq'))
+
+        self.delete_links(resource)
+
+        store, driver = self._find_store (resource)
         if  store is None:
             log.warn ('Not a valid store ref in  %s' , etree.tostring (resource))
             return None
 
-        with self._get_driver(store) as driver:
+        if driver.readonly:
+            log.warn ("Delete blob on readonly store.. skipping")
+            return None
 
-            if driver.readonly:
-                raise IllegalOperation ("readonly store")
-
+        with driver as driver:
             uniq     = resource.get('resource_uniq')
             bloburls = resource.get('value')
             if bloburls is None:
@@ -812,8 +817,8 @@ class MountServer(TGController):
 
         # Is this enough context? Should the whole operation be carried out as the user or just the store lookup?
         with identity.as_user(owner):
-            store = self.valid_store_ref (resource)
-        return store
+            store, driver = self.valid_store_ref (resource)
+        return store, driver
 
     def _get_stores(self):
         "Return an OrderedDict of store resources in the users ordering"
@@ -880,6 +885,8 @@ class MountServer(TGController):
         @param resource_name: options name of resource
         """
 
+        if isinstance (path, basestring):
+            path = path.split ('/')
         path = list (path)
         root = None
         log.debug ("CREATE_PATH %s %s", store, path)
