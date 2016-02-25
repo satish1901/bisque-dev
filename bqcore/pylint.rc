@@ -95,7 +95,7 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 bad-functions=map,filter,input
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=f,g,i,j,k,ex,Run,_,ts
+good-names=f,g,i,j,k,m,n,q,r,x,y,ex,Run,_,ts,el
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata

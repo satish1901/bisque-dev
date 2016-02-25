@@ -49,14 +49,13 @@ Store resource all special clients to simulate a filesystem view of resources.
 """
 
 
-
+#pylint: disable=import-error
 
 #import sys
 import os
 import logging
 import string
 import urllib
-import shutil
 import posixpath
 
 from lxml import etree
@@ -65,19 +64,19 @@ from paste.deploy.converters import asbool
 from contextlib import contextmanager
 
 import tg
-from tg import expose, config, require, abort
+from tg import expose, config,  abort
 from tg.controllers import TGController
-from repoze.what import predicates
+#from repoze.what import predicates
 
 from bq.core import  identity
 from bq.core.model import DBSession
 #from bq.core.service import ServiceMixin
 #from bq.core.service import ServiceController
-from bq.exceptions import IllegalOperation, DuplicateFile, ServiceError
-from bq.util.paths import data_path
+from bq.exceptions import IllegalOperation
+#from bq.util.paths import data_path
 from bq.util.compat import OrderedDict
 from bq.util.bisquik2db import  load_uri  # needed for identity stuff
-from bq.util.urlpaths import *
+from bq.util.urlpaths import url2unicode,data_url_path,config2url,url2localpath
 from bq.util.io_misc import   tounicode
 
 from bq import data_service
@@ -375,7 +374,7 @@ class MountServer(TGController):
         #  should be user specific (this is done using the site.cfg
         #  currently)
         if store is None:
-            log.warn ("attempting modify non-existent store %s.. please add new store templates to site.cfg", store_name)
+            log.warn ("attempting modify non-existent store %s.. please add new store templates to site.cfg", storename)
             return None
         # 2. User can edit substores but may not change any attributes (only tags)
         if storeel.tag != 'tag' or storeel.get('name') != 'credentials':  # could be posting a tag
@@ -475,24 +474,23 @@ class MountServer(TGController):
         return True
 
 
-    def _walk_path (self, root):
-        """Emulate OS walk on a store
-
-        usage : for dird, sibdird, links in mount_service.walk_path ('/store/dir')
-                   print ("in dir ",  dird)
-                   for fname in links:
-                      pass
-        """
-        value = None
-        if len(path) and path[-1] == 'value':
-            value = path.pop()
-        if len(path)==0:
-            return False
-        q = self._load_mount_path (store_name, path)
-        if q is None:
-            log.debug ("Cannot find %s in %s", path, store_name)
-            return False
-        log.debug ("delete from %s of %s = %s", store_name, path, etree.tostring(q))
+    # def _walk_path (self, root):
+    #     """Emulate OS walk on a store
+    #     usage : for dird, sibdird, links in mount_service.walk_path ('/store/dir')
+    #                print ("in dir ",  dird)
+    #                for fname in links:
+    #                   pass
+    #     """
+    #     value = None
+    #     if len(path) and path[-1] == 'value':
+    #         value = path.pop()
+    #     if len(path)==0:
+    #         return False
+    #     q = self._load_mount_path (store_name, path)
+    #     if q is None:
+    #         log.debug ("Cannot find %s in %s", path, store_name)
+    #         return False
+    #     log.debug ("delete from %s of %s = %s", store_name, path, etree.tostring(q))
 
 
 
@@ -624,7 +622,7 @@ class MountServer(TGController):
         @param resource: a resource with storeurls
         @param rooturl: the root of the storeurls
         """
-        log.debug ("_save_storerefs: %s, %s, %s, %s" % ( store, storepath, etree.tostring(resource), rooturl))
+        log.debug("_save_storerefs: %s, %s,  %s" , store, storepath,  rooturl)
 
         def setval(n, v):
             n.set('value', v)
@@ -864,7 +862,7 @@ class MountServer(TGController):
         driver_opts['mount_url' ] = mount_path
 
         if mount_path is None:
-            return IllegalOperation ("BAD STORE FOUND %s %s" % ( store_name, driver_opts))
+            raise IllegalOperation ("BAD STORE FOUND %s %s" % ( store_name, driver_opts))
 
 
         # get a driver to use
@@ -952,6 +950,7 @@ class MountServer(TGController):
         repeats = 2
         if self.subtransactions:
             repeats = 8
+            #pylint: disable=no-member
             subtrans = DBSession.begin_nested
         for x in range(1, repeats+1):
             try:

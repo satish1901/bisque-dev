@@ -490,7 +490,7 @@ class S3Driver(StorageDriver):
         self.conn = S3Connection(self.access_key, self.secret_key)
         try:
             self.bucket = self.conn.get_bucket(self.bucket_id)
-        except boto.exception:
+        except boto.exception.S3ResponseError:
             try:
                 self.bucket = self.conn.create_bucket(self.bucket_id, location=self.location)
             except boto.exception.S3CreateError:
