@@ -448,11 +448,12 @@ BQWebApp.prototype.setupUI_outputs = function (key, mex) {
 
     // ensure we fetched names of iterable variables
     var execute_options = mex.find_tags('execute_options');
-    if (execute_options && !mex.iterables) {
+    if (execute_options && !mex.iterables && !mex.fetched_execute_options ) {
         BQFactory.request({
             uri : execute_options.uri,
             uri_params : { view: 'deep'},
             cb : callback(this, function(doc) {
+                mex.fetched_execute_options = true;
                 execute_options.tags = doc.tags;
                 mex.dict = undefined;
                 mex.afterInitialized();
