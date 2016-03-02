@@ -134,6 +134,14 @@ def walk_deep(path):
             yield os.path.join(root, f).replace('\\', '/')
 
 
+if os.name == 'nt':
+    def store_compare(store_url, mount_url):
+        return store_url.lower().startswith (mount_url.lower())
+else:
+    def store_compare(store_url, mount_url):
+        return store_url.startswith (mount_url)
+
+
 ##############################################
 #  Load store parameters
 def load_storage_drivers():
@@ -234,12 +242,12 @@ class LocalDriver (StorageDriver):
 
 
     def valid(self, storeurl):
-        # dima: there's only one local storage in the system, file:// should all be redirected to it
-
         #log.debug('valid ident %s top %s', ident, self.top)
         #log.debug('valid local ident %s local top %s', url2localpath(ident), url2localpath(self.top))
-        if storeurl.startswith (self.mount_url):
+
+        if store_compare(storeurl, self.mount_url):
             return storeurl
+
         # It might be a shorted
         storeurl,_ = split_subpath(storeurl)
         scheme = urlparse.urlparse(storeurl).scheme
