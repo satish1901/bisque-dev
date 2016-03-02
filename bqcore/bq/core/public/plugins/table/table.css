@@ -3,22 +3,6 @@ Author: Dmitry Fedorov
 Copyright: 2015 (C) Center for Bio-Image Informatics, University of California at Santa Barbara
 *******************************************************************************/
 
-.tableio .editor {
-    font-family: monospace;
-    white-space: pre;
-    border: 0px;
-    padding: 15px;
-}
-
-.tableio .bq_table_panel {
-    margin-top: 5px;
-}
-
-.tableio .view_3d > canvas {
-    width: 100% !important;
-    height: 100% !important;
-}
-
 /* ctyles for browser */
 
 .table {
@@ -114,22 +98,25 @@ tree styles
     image:    'icon-image', // not sure how we will identify this
 */
 
-.tableio .table_main {
+.tableio .table_main .tabs .x-tab-bar {
+    margin-top: 5px;
+}
+
+.tableio .bq_table_panel {
     background-color: white;
 }
 
-.bq_table_panel {
-    background-color: transparent;
+.tableio .bq_table_panel .tabs {
+    margin-top: 5px;
 }
 
-.bq_table_panel .icon-group .x-tree-icon {
+.tableio .bq_table_panel .icon-group .x-tree-icon {
     background-image: url('/plugins/table/icons_tree.svg');
     background-repeat: no-repeat;
     background-size: 70px;
     background-position: -18px 2px;
 }
 
-
-.bq_table_panel .table_tree {
+.tableio .bq_table_panel .table_tree {
     margin: 5px;
 }
