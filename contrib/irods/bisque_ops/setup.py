@@ -17,4 +17,3 @@ setup(name='bisque_ops',
         }
 
       )
-
