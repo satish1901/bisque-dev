@@ -659,6 +659,7 @@ Ext.define('BQ.table.Panel', {
         if (this.groups && this.groups.length>1) {
             this.tabs = this.add({
                 xtype: 'tabpanel',
+                cls: 'tabs',
                 itemId: 'tabs',
                 flex: 2,
                 region : 'center',
@@ -680,7 +681,7 @@ Ext.define('BQ.table.Panel', {
                 region : 'west',
                 split : true,
                 collapsible : true,
-                width : 400,
+                width : 300,
                 border: 0,
 
                 resource: this.resource,
@@ -797,6 +798,7 @@ Ext.define('Bisque.Resource.Table.Page', {
             layout : 'border',
             items : [{
                 xtype: 'tabpanel',
+                cls: 'tabs',
                 itemId: 'tabs',
                 title : 'Metadata',
                 deferredRender: true,

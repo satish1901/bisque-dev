@@ -94,10 +94,11 @@ class ExporterJSON (TableExporter):
             # has headers => this is a leaf object (table or matrix)
             v["headers"] = table.headers
             v["types"] = table.types
-            if table.sizes is not None:
-                v["sizes"] = table.sizes
+            #if table.sizes is not None:
+            #    v["sizes"] = table.sizes
         if table.tables is not None:
             v["group"] = table.tables
+        #log.debug(v)
         return json.dumps(v)
 
     def format(self, table):
@@ -107,7 +108,7 @@ class ExporterJSON (TableExporter):
         if hasattr(data, "strip") or   \
            (not hasattr(data, "__getitem__") and   \
             not hasattr(data, "__iter__")):
-            # data is not a list/tuple => wrap it 
+            # data is not a list/tuple => wrap it
             data = [ data ]
         v = {
             'offset': table.offset,
@@ -115,6 +116,6 @@ class ExporterJSON (TableExporter):
             'headers': table.headers,
             'types': table.types,
         }
-        if table.sizes is not None:
-            v["sizes"] = table.sizes
-        return json.dumps(v)            
+        #if table.sizes is not None:
+        #    v["sizes"] = table.sizes
+        return json.dumps(v)
