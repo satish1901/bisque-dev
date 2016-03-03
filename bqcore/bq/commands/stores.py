@@ -10,7 +10,7 @@ from lxml import etree
 from bq.util.paths import data_path
 from bq.util.compat import OrderedDict
 
-__all__  = [ "list_stores", "init_stores", "fill_stores" ]
+__all__  = [ "list_stores", "init_stores", "fill_stores", "delete_stores" ]
 
 
 log = logging.getLogger('bq.commands.store')
@@ -146,18 +146,33 @@ def _create_default_mounts(drivers, root=None):
 
 
 def list_stores(username = None):
-    print ("List values in store")
     if username is not None:
         users = [ username ]
     else:
         users  = [ x.get ('name') for x in data_service.query('user', wpublic=1) ]
-    print (users)
+
+    drivers = load_default_drivers()
+    print ("\n\nDrivers:\n")
+    for n,d in drivers.iteritems():
+        print ("%s: %s"%(n, d))
+
+    # print ("\nStores:")
+    # for user in users:
+    #     with identity.as_user(user):
+    #         user_root = data_service.query('store', resource_unid='(root)', view='full')
+    #         user_stores = dict ((x.get ('name'), x)  for x in user_root.xpath('store'))
+    #         print ("%s: %s"%(user, user_stores))
 
 def fill_stores(username = None):
     "Clean unreferenced images/files from bisque storage"
 
     raise NotImplementedError ("fill stores not yet implemented")
 
+
+def delete_stores(username = None):
+    "Delete stores"
+
+    raise NotImplementedError ("delete stores not yet implemented")
 
 def update_stores(username = None):
     """ Update stores to use current datadir specifications """
@@ -210,6 +225,7 @@ def _update_mounts(drivers):
         mounturl = string.Template(mounturl).safe_substitute(datadir = data_url_path(), user = user_name)
         # ensure no $ are left
         mounturl = mounturl.split('$', 1)[0]
+        mounturl = config2url(mounturl)
 
         store_value =  store.get ('value')
 
