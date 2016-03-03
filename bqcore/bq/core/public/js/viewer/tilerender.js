@@ -86,7 +86,7 @@ TilesRenderer.prototype.resize = function () {
 };
 
 TilesRenderer.prototype.ensureVisible = function (gob) {
-    if (!this.tiled_viewer || !gob.vertices || gob.vertices.length<1) return;
+    if (!this.tiled_viewer || !gob || !gob.vertices || gob.vertices.length<1) return;
     var x = gob.vertices[0].x;
     var y = gob.vertices[0].y;
     var v=undefined;

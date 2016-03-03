@@ -664,7 +664,7 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
 
         this.editor.display_gob_info(gob);
     }
-    if(!gob.vertices[0]) return;
+    if (!gob || !gob.vertices[0]) return;
     if(this.tiles.cur_z != gob.vertices[0].z)
         this.doUpdateImage();
 

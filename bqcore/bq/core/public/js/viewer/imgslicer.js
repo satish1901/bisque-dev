@@ -250,7 +250,7 @@ ImgSlicer.prototype.setPosition = function (z, t) {
 };
 
 ImgSlicer.prototype.ensureVisible = function (gob) {
-    if (!gob.vertices || gob.vertices.length<1) return;
+    if (!gob || !gob.vertices || gob.vertices.length<1) return;
     var z = gob.vertices[0].z,
         t = gob.vertices[0].t;
     /*var v=undefined;

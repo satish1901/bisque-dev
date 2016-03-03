@@ -351,7 +351,7 @@ Ext.define('BQ.Calibration.ChannelOrganizer', {
         while(i = this.items.first()){ //clear old panel
             this.remove(i, true);
         }
-        
+
         this.add({ //title
             width: '100%',
             xtype: 'container',
@@ -383,7 +383,7 @@ Ext.define('BQ.Calibration.ChannelOrganizer', {
                 }
             }]
         });
-        
+
         var channelNum = this.channelNum>50? 50 : this.channelNum;
         if (this.channelNum>50) BQ.ui.notification('Channel Editor limited at 50');
         for (var c=0; c<channelNum; c++) {
@@ -563,7 +563,7 @@ Ext.define('BQ.viewer.Calibration', {
         this.imageCalibForm.formComponents['reference_length'] = Ext.createWidget('numberfield',{
             fieldLabel: 'Reference Length',
             //xtype: 'numberfield',
-            
+
             decimalPrecision : 6,
             margin: '10px',
             minValue: 0,
@@ -613,7 +613,8 @@ Ext.define('BQ.viewer.Calibration', {
                 parameters: {
                     onlyedit: true,
                     nosave: true,
-                    editprimitives: 'Line',
+                    editprimitives: 'line',
+                    no_semantic_types: true,
                 },
 
                 listeners: {
@@ -714,8 +715,8 @@ Ext.define('BQ.viewer.Calibration', {
                 me.imageMetaForm.formComponents['channels'].setChannelNum(value, imMetaXML)
             }, 250);
         });
-        
-        
+
+
         //populate values
         this.setFormValues(imMetaXML);
     },
@@ -724,7 +725,7 @@ Ext.define('BQ.viewer.Calibration', {
         var me = this;
         var gobjects = this.imageCalibForm.formComponents['imgViewer'].getGobjects();
         var estimated = this.imageCalibForm.formComponents['reference_length'].getValue();
-        
+
         var xform = me.imageMetaForm.formComponents['pixel_resolution_x'].getForm().findField('pixel_resolution_x');
         var yform = me.imageMetaForm.formComponents['pixel_resolution_y'].getForm().findField('pixel_resolution_y');
         if (estimated && gobjects.length>0) {
@@ -748,7 +749,7 @@ Ext.define('BQ.viewer.Calibration', {
             xform.setValue(estimated/avg_lengths);
             yform.setValue(estimated/avg_lengths);
         } else {
-            if (!estimated) { //if no reference length is added but a gobject is selected 
+            if (!estimated) { //if no reference length is added but a gobject is selected
                 var referenceLength = this.imageCalibForm.formComponents['reference_length'];
                 BQ.ui.tip(referenceLength.getId(), 'You need to set a reference length!', {
                     anchor:'left',

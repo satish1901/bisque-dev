@@ -33,10 +33,10 @@ function SVGRenderer (viewer,name) {
                         var resource = image? image.uri : '';
                         me.overlayEditorWin = Ext.create('BQ.overlayEditor.Window',{
                             title: 'Overlay Editor',
-                            height: '80%',
-                            width: '80%',
+                            height: '90%',
+                            width: '90%',
                             modal: true,
-                            closeAction:'hide',
+                            closeAction: 'hide',
                             viewer: me.viewer,
                             phys: me.viewer.imagephys,
                             image_resource:resource,
@@ -363,8 +363,12 @@ SVGRenderer.prototype.populate_overlay = function () {
 
 Ext.define('BQ.overlayEditor.Window', {
     extend: 'Ext.window.Window',
+    title: 'Layout Editor',
     image_resource: '',
-    layout: 'vbox',
+    layout: {
+        type: 'vbox',
+        align: 'stretch',
+    },
     viewer: undefined,
     buttonAlign: 'center',
     bodyStyle: 'background-color:#FFFFFF', //set background to white
@@ -372,17 +376,24 @@ Ext.define('BQ.overlayEditor.Window', {
         var config = config || {};
         var me = this;
 
-        this.miniViewer =  Ext.create('BQ.viewer.Image',{
-            width:'100%',
-            height: '75%',
+        var items = [{
+            xtype: 'container',
+            //padding: '10px',
+            html: '<p>Place 4 points on the viewer and click Save to place the overlay over the image.</p>',
+            //flex: 1,
+        }, {
+            xtype:'imageviewer',
+            itemId: 'miniViewer',
             flex: 6,
             resource: me.image_resource,
             parameters: {
                 nosave: true,
                 onlyedit: true,
-                editprimitives: 'Point',
+                editprimitives: 'point',
                 showmanipulators: false,
                 intialMode: 'point',
+                no_semantic_types: true,
+                widget: this,
             },
             listeners: {
                 'afterPhys': me.onAfterPhys.bind(me),
@@ -390,20 +401,7 @@ Ext.define('BQ.overlayEditor.Window', {
                 'delete': me.onChanged.bind(me),
                 'moveend': me.onChanged.bind(me),
             },
-        });
-
-
-        var items = [{
-            xtype: 'container',
-            padding: '10px',
-            html: [
-                '<h1>Layout Editor</h1>',
-                '<p>Place 4 points on the viewer and click Set to place the overlay over the image.</p>',
-            ],
-            flex: 1,
-        },
-            this.miniViewer,
-        ];
+        }];
 
 
         var fbar = [{
@@ -501,6 +499,7 @@ Ext.define('BQ.overlayEditor.Window', {
             fbar: fbar,
         });
         this.callParent([config]);
+        this.miniViewer = this.queryById('miniViewer');
 
     },
 
