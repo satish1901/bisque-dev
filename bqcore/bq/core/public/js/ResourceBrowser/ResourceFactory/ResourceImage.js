@@ -862,14 +862,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             listeners:{
                 'context' : function(res, div, graph) {
                     var node = graph.g.node(res);
-                    if(node.card.cardType=='mex'){
-                        window.open(BQ.Server.url('/module_service/MetaData' + '/?mex=/data_service/' + res));
-
-                    }
-                    if(node.card.cardType=='image'){
-                        window.open(BQ.Server.url('/client_service/view?resource=/data_service/' + res));
-
-                    }
+                    window.open(BQ.Server.url(node.card.getUrl(res)));
                 },
             },
             resource : this.resource,
@@ -888,7 +881,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             split : true,
             width : 400,
             plain : true,
-            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, graph, map]
+            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, /*graph,*/ map]
         };
 
         this.add({
