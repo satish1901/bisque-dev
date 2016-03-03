@@ -197,10 +197,19 @@ runtime.mode = command
 # here:
 #beaker.cache.data_dir = %(here)s/data/cache
 #beaker.session.data_dir = %(here)s/data/sessions
-cache_dir = %(here)s/data
-#beaker.session.type = cookie
+#cache_dir = %(here)s/data
+beaker.session.type = cookie
 beaker.session.key = bq
 beaker.session.secret = somesecret
+#beaker.session.type = ext:database
+#beaker.session.sa.url = postgresql://localhost:5432/bq058
+# Beaker Cache
+beaker.cache.type = file
+beaker.cache.data_dir = data/beakercache
+beaker.cache.lock_dir = data/beakerlock
+#beaker.cache.type=ext:memcached
+#beaker.cache.url = 127.0.0.1:11211
+#
 
 # Paster  Config
 error_email_from=bisque@localhost

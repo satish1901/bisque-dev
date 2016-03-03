@@ -5,7 +5,7 @@ import os
 import logging
 import pkg_resources
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
-from tg import expose, flash
+from tg import expose, flash, cache
 from repoze.what import predicates
 from bq.core.service import ServiceController
 
@@ -39,24 +39,34 @@ class usageController(ServiceController):
         log.info('stats %s'%kw)
         wpublic = kw.pop('wpublic',  0)
         anonymous =  identity.anonymous()
-        #images2d = aggregate_service.count("image", wpublic=wpublic, images2d=True)
-        #all_count = aggregate_service.count("image", wpublic=wpublic, welcome=True)
-        #image_count = aggregate_service.count("image", wpublic=wpublic)
-        #tag_count = aggregate_service.count("tag", wpublic=wpublic, welcome=True )
-        all_count = data_service.count("image", wpublic=wpublic, images2d=True, parent=False)
-        image_count = data_service.count("image", wpublic=wpublic, permcheck = not anonymous )
-        #images2d = data_service.count("image", wpublic=wpublic, images2d=True)
-        tag_count = data_service.count ("tag", wpublic=wpublic, permcheck=not anonymous, parent=False)
-        gob_count = data_service.count ("gobject", wpublic=wpublic, permcheck=not anonymous, parent=False)
 
-        resource = etree.Element('resource', uri='/usage/stats')
-        etree.SubElement(resource, 'tag', name='number_images', value=str(all_count))
-        etree.SubElement(resource, 'tag', name='number_images_user', value=str(image_count))
-        #etree.SubElement(resource, 'tag', name='number_images_planes', value=str(images2d))
-        etree.SubElement(resource, 'tag', name='number_tags', value=str(tag_count))
-        etree.SubElement(resource, 'tag', name='number_gobs', value=str(gob_count))
+        def usage_resource ():
+            log.info ("CALL EXPENSIVE")
+            #images2d = aggregate_service.count("image", wpublic=wpublic, images2d=True)
+            #all_count = aggregate_service.count("image", wpublic=wpublic, welcome=True)
+            #image_count = aggregate_service.count("image", wpublic=wpublic)
+            #tag_count = aggregate_service.count("tag", wpublic=wpublic, welcome=True )
+            all_count = data_service.count("image", wpublic=wpublic, images2d=True, parent=False)
+            image_count = data_service.count("image", wpublic=wpublic, permcheck = not anonymous )
+            #images2d = data_service.count("image", wpublic=wpublic, images2d=True)
+            tag_count = data_service.count ("tag", wpublic=wpublic, permcheck=not anonymous, parent=False)
+            gob_count = data_service.count ("gobject", wpublic=wpublic, permcheck=not anonymous, parent=False)
 
-        return etree.tostring(resource)
+            resource = etree.Element('resource', uri='/usage/stats')
+            etree.SubElement(resource, 'tag', name='number_images', value=str(all_count))
+            etree.SubElement(resource, 'tag', name='number_images_user', value=str(image_count))
+            #etree.SubElement(resource, 'tag', name='number_images_planes', value=str(images2d))
+            etree.SubElement(resource, 'tag', name='number_tags', value=str(tag_count))
+            etree.SubElement(resource, 'tag', name='number_gobs', value=str(gob_count))
+
+            return etree.tostring(resource)
+
+        usage_cache = cache.get_cache ("usage")
+        resource = usage_cache.get_value (
+            key = identity.get_username(),
+            createfunc = usage_resource,
+            expiretime = 3600)
+        return resource
 
 
     #http://loup.ece.ucsb.edu:9090/data_service/images?ts=%3E2010-06-01T12:00:00&ts=%3C2011-06-01T12:00:00&view=count
@@ -116,7 +126,14 @@ class usageController(ServiceController):
     @expose(content_type="text/xml")
     def uploads(self, **kw):
         log.info('uploads %s'%kw)
-        counts, days = self.get_counts('image', 31)
+        def fetch_counts():
+            return  self.get_counts('image', 31)
+        usage_cache = cache.get_cache ("uploads")
+        counts, days = usage_cache.get_value (
+            key = identity.get_username(),
+            createfunc = fetch_counts,
+            expiretime = 600)
+
         resource = etree.Element('resource', uri='/usage/uploads')
         etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
         etree.SubElement(resource, 'tag', name='days', value=','.join(days))
@@ -125,7 +142,15 @@ class usageController(ServiceController):
     @expose(content_type="text/xml")
     def uploads_monthly(self, **kw):
         log.info('uploads %s'%kw)
-        counts, days = self.get_counts_month('image', 13)
+
+        def fetch_counts():
+            return  self.get_counts_month('image', 13)
+        usage_cache = cache.get_cache ("uploads_monthly")
+        counts, days = usage_cache.get_value (
+            key = identity.get_username(),
+            createfunc = fetch_counts,
+            expiretime = 3600)
+
         resource = etree.Element('resource', uri='/usage/uploads_monthly')
         etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
         etree.SubElement(resource, 'tag', name='days', value=','.join(days))
@@ -134,7 +159,14 @@ class usageController(ServiceController):
     @expose(content_type="text/xml")
     def analysis(self, **kw):
         log.info('uploads %s'%kw)
-        counts, days = self.get_counts('mex', 31)
+        def fetch_counts():
+            return  self.get_counts('mex', 31)
+        usage_cache = cache.get_cache ("analysis")
+        counts, days = usage_cache.get_value (
+            key = identity.get_username(),
+            createfunc = fetch_counts,
+            expiretime = 600)
+        #counts, days = self.get_counts('mex', 31)
         resource = etree.Element('resource', uri='/usage/analysis')
         etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
         etree.SubElement(resource, 'tag', name='days', value=','.join(days))
@@ -143,7 +175,14 @@ class usageController(ServiceController):
     @expose(content_type="text/xml")
     def analysis_monthly(self, **kw):
         log.info('uploads %s'%kw)
-        counts, days = self.get_counts_month('mex', 13)
+        def fetch_counts():
+            return  self.get_counts_month('mex', 13)
+        usage_cache = cache.get_cache ("analysis_monthly")
+        counts, days = usage_cache.get_value (
+            key = identity.get_username(),
+            createfunc = fetch_counts,
+            expiretime = 3600)
+        #counts, days = self.get_counts_month('mex', 13)
         resource = etree.Element('resource', uri='/usage/analysis_monthly')
         etree.SubElement(resource, 'tag', name='counts', value=','.join(counts))
         etree.SubElement(resource, 'tag', name='days', value=','.join(days))
