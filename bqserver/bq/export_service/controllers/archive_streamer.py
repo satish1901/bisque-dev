@@ -50,7 +50,7 @@ DESCRIPTION
 import os
 import sys
 import logging
-import httplib2
+import requests
 import urlparse
 import datetime
 from bq.release import __VERSION__
@@ -265,7 +265,8 @@ class ArchiveStreamer():
                 return file
 
         def urlInfo(url, index=0):
-            httpReader = httplib2.Http( disable_ssl_certificate_validation=True)
+            #httpReader = httplib2.Http( disable_ssl_certificate_validation=True)
+            #httpReader = requests
             # This hack gets around bisque internal authentication mechanisms
             # please refer to http://biodev.ece.ucsb.edu/projects/bisquik/ticket/597
             headers  = dict ( (name, request.headers.get(name)) for name in ['Authorization', 'Mex', 'Cookie' ]
@@ -276,15 +277,15 @@ class ArchiveStreamer():
                 url = urlparse.urljoin(config.get('bisque.root'), url)
 
             log.debug ('ArchiveStreamer: Sending %s with %s'  % (url, headers))
-            header, content = httpReader.request(url, headers=headers)
+            response = requests.get(url, headers=headers)
 
-            if not header['status'].startswith('200'):
-                log.error("URL request returned %s" % header['status'])
+            if not response.status_code == requests.codes.ok:
+                log.error("URL request returned %s" , response.status_code)
                 return None
-            items = (header.get('content-disposition') or header.get('Content-Disposition') or '').split(';')
+            items = response.headers.get('content-disposition').split(';')
             fileName = str(index) + '.'
 
-            log.debug('Respose headers: %s'%header)
+            log.debug('Respose headers: %s', response.headers)
             log.debug('items: %s'%items)
 
             for item in items:
@@ -298,7 +299,7 @@ class ArchiveStreamer():
                         pass
 
             return  dict(name      = fileName,
-                         content   = content,
+                         content   = response.content,
                          outpath   = fileName)
 
 

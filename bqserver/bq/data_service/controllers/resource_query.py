@@ -1154,7 +1154,7 @@ def resource_delete(resource, user_id=None):
     value_count = DBSession.query(Value).filter_by(valobj = resource.id).count()
     if value_count:
         resource.resource_hidden = True
-        log.debug('hiding resource due to references')
+        log.info('hiding resource due to references')
         return
 
     # Delete any ACLs refering to object
@@ -1164,17 +1164,18 @@ def resource_delete(resource, user_id=None):
     ts = datetime.now()
     resource.document.ts = ts
     # We can delete the resource .. check it has an associated blob
-    if resource.resource_uniq is not None:
+    resource_uniq  = resource.resource_uniq
+    if resource_uniq is not None:
         try:
             from bq import blob_service
-            blob_service.delete_blob (resource.resource_uniq)
+            blob_service.delete_blob (resource_uniq)
         except Exception:
-            log.exception ("While deleting blob %s", resource.resource_uniq)
+            log.exception ("While deleting blob %s", resource_uniq)
 
     DBSession.delete(resource)
-    DBSession.flush()
+    #DBSession.flush()
 
-    log.debug('resource_delete %s:end' % resource)
+    log.info('resource_delete %s:end' % resource)
 
 
 def resource_types(user_id=None, wpublic=False):

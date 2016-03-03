@@ -4,13 +4,10 @@
 """
 __author__    = "Center for Bioimage Informatics"
 __version__   = "1.0"
-__revision__  = "$Rev$"
-__date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
 import os
 import sys
-import urlparse
 import logging
 import ConfigParser
 import xml.etree.ElementTree as ET
@@ -21,54 +18,86 @@ import six
 
 ############################
 # Config for local installation
+# These values can be stored in a file ~/.bisque or /etc/bisque/bisque_config
+# i.e
+#  [bqpath]
+#  bisque_admin_pass = gobblygook
+
 DEFAULTS  = dict(
     logfile    = '/tmp/bisque_insert.log',
     bisque_host='https://loup.ece.ucsb.edu',
     bisque_admin_user='admin',
     bisque_admin_pass='admin',
-    irods_host='irods://irods.ece.ucsb.edu',
+    irods_host='irods://mokie.iplantcollaborative.org',
     )
 # End Config
 ############################
 
-log = logging.getLogger('bqpath')
 
 def bisque_delete(session, args):
     """delete a file based on the irods path"""
-    url = urlparse.urljoin(args.host, "/blob_service/paths/delete_path?path=%s" % args.srcpath)
-    r = session.get (url)
+    session.log.info ("delete %s", args)
+    url = args.host +  "/blob_service/paths/remove"
+    params = dict(path = args.srcpath)
+    if args.alias:
+        params['user'] =  args.alias
+    r = session.get (url, params =params)
+    if r.status_code == requests.codes.ok:
+        six.print_ (  r.text )
     r.raise_for_status()
 
 def bisque_link(session, args):
     """insert  a file based on the irods path"""
-    #url = urlparse.urljoin(args.host, "/blob_service/paths/insert_path?path=%s" % args.srcpath)
-    url = urlparse.urljoin(args.host, "/import_service/insert_inplace")
+    session.log.info ("link %s", args)
+
+    url = args.host +  "/blob_service/paths/insert"
     payload = None
-    params = None
+    params = {}
 
     if args.srcpath:
-        resource = "<resource name='%s' value='%s' />" % (os.path.basename(args.srcpath), args.srcpath )
-        payload = { 'path_resource': resource }
+        resource = ET.Element ('resource', value=args.srcpath[0], permission=args.permission)
+        if args.resource_file:
+            # Load file into resource
+            resource_tags = ET.parse (args.resource_file)
+            resource.extend (resource_tags)
+        payload = ET.tostring (resource)
     if args.alias:
-        params = { 'user': args.alias }
+        params['user'] =  args.alias
     r  =  session.post (url, data=payload, params=params)
     if r.status_code == requests.codes.ok:
-        six.print_(r.text)
+        if args.compatible:
+            response = ET.fromstring(r.text)
+            uniq = response.get('resource_uniq')
+            uri  = response.get('uri')
+            six.print_ (uniq, uri)
+        else:
+            six.print_(r.text)
+
     r.raise_for_status()
 
-def bisque_insert(session, args):
-    """insert  a file based on the irods path"""
+def bisque_copy(session, args):
+    """COPY  a file based on the irods path"""
+    session.log.info ("insert %s", args)
+
+
     #url = urlparse.urljoin(args.host, "/blob_service/paths/insert_path?path=%s" % args.srcpath)
-    url = urlparse.urljoin(args.host, "/import_service/transfer")
+    url = args.host +  "/import_service/transfer"
     payload = None
-    params = None
+    params = {}
 
     if args.srcpath:
-        resource = "<resource name='%s' value='%s' />" % (os.path.basename(args.srcpath), args.srcpath )
-        files  = { 'file': ( os.path.basename(args.srcpath), open(args.srcpath, 'rb')),
-                   'file_resource' : ( None, xml, 'text/xml'),}
+        resource = ET.Element ('resource', value=args.srcpath[0], permission=args.permission)
+        #resource = "<resource  value='%s' />" % (os.path.basename(args.srcpath[0]), args.srcpath[0])
+        if args.resource_file:
+            # Load file into resource
+            resource_tags = ET.parse (args.resource_file)
+            resource.extend (resource_tags)
+
+        files  = { 'file': ( os.path.basename(args.srcpath[0]), open(args.srcpath[0], 'rb')),
+                   'file_resource' : ( None, ET.tostring (resource), 'text/xml')
+        }
     if args.alias:
-        params = { 'user': args.alias }
+        params['user'] =  args.alias
     r  =  session.post (url, files=files, params=params)
     if r.status_code == requests.codes.ok:
         six.print_(r.text)
@@ -77,25 +106,48 @@ def bisque_insert(session, args):
 
 def bisque_rename(session, args):
     """rename based on paths"""
-    url = urlparse.urljoin(args.host, "/blob_service/paths/move_path?path=%s&dst=%s" % (args.srcpath, args.dstpath))
-    r = session.get (url)
+    session.log.info ("rename %s", args)
+
+    url = args.host +  "/blob_service/paths/move"
+    params={'path': args.srcpath[0], 'destination': args.dstpath}
+    if args.alias:
+        params['user'] =  args.alias
+
+    r = session.get (url,params=params)
     if r.status_code == requests.codes.ok:
         six.print_ (  r.text )
-        return r
+    r.raise_for_status()
+
 
 def bisque_list(session, args):
     """delete a file based on the irods path"""
 
-    url = urlparse.urljoin(args.host, "/blob_service/paths/list_path?path=%s" % args.srcpath)
-    r = session.get (url)
+    session.log.info ("list %s", args)
+
+    url = args.host +  "/blob_service/paths/list"
+    params = { 'path' : args.srcpath }
+    if args.alias:
+        params['user'] =  args.alias
+    r = session.get(url,params=params)
     #six.print_( r.request.headers )
     if r.status_code == requests.codes.ok:
+        if args.compatible:
+            for resource  in ET.fromstring (r.text):
+                six.print_( resource.get ('resource_uniq') )
+        else:
+            six.print_(r.text)
         #six.print_( r.text )
-        for resource  in ET.fromstring (r.text):
-            six.print_( resource.get ('resource_uniq') )
     r.raise_for_status()
 
 
+
+OPERATIONS = {
+    'ls' : bisque_list,
+    'ln' : bisque_link,
+    'cp' : bisque_copy,
+    'mv' : bisque_rename,
+    'rm' : bisque_delete,
+}
 
 def main():
 
@@ -104,37 +156,46 @@ def main():
     for k,v in DEFAULTS.items():
         config.set('bqpath', k,v)
 
-    config.read (['.bqconfig', os.path.expanduser('~/.bqconfig'), '/etc/bisque/bqconfig'])
+    config.read (['.bisque', os.path.expanduser('~/.bisque'), '/etc/bisque/bisque_config'])
     defaults =  dict(config.items('bqpath'))
 
     parser = argparse.ArgumentParser(description='interface with irods and bisque')
-    parser.add_argument('command', help="one of ls, cp, mv, rm, ln" )
-    parser.add_argument('srcpath', default = '/', nargs='?')
-    parser.add_argument('dstpath', nargs='?')
     parser.add_argument('--alias', help="do action on behalf of user specified")
     parser.add_argument('-d', '--debug', action="store_true", default=False, help="log debugging")
     parser.add_argument('-H', '--host', default=defaults['bisque_host'], help="bisque host")
     parser.add_argument('-c', '--credentials', default="%s:%s" % (defaults['bisque_admin_user'], defaults["bisque_admin_pass"]), help="user credentials")
     parser.add_argument('-r', '--resource', default = None)
     parser.add_argument('-f', '--resource_file', default = None, help="tag document for insert")
+    parser.add_argument('-C', '--compatible',  action="store_true", help="Make compatible with old script")
+    parser.add_argument('-P', '--permission',   default="private", help="Set resource permission (compatibility)")
+    parser.add_argument('command', help="one of ls, cp, mv, rm, ln" )
+    parser.add_argument('srcpath', action="append", nargs='?')
+    parser.add_argument('dstpath', nargs='?')
 
+    logging.basicConfig(filename=config.get ('bqpath', 'logfile'),
+                        level=logging.INFO,
+                        format = "%(asctime)s %(levelname)-5.5s [%(name)s] %(message)s")
 
-    log.debug( "IrodsBisque recevied %s" % (sys.argv) )
+    log = logging.getLogger('rods2bq')
 
     args = parser.parse_args ()
     if args.debug:
-        logging.basicConfig(filename=config.get ('bqpath', 'logfile'), level=logging.INFO)
-
-    OPERATIONS = {
-        'ls' : bisque_list,
-        'ln' : bisque_link,
-        'cp' : bisque_insert,
-        'mv' : bisque_rename,
-        'rm' : bisque_delete,
-        }
+        logging.getLogger().setLevel (logging.DEBUG)
 
     if args.command not in OPERATIONS:
-        parser.error("command must be one of 'ls', 'cp', 'mv', 'rm'")
+        parser.error("command %s must be one of 'ln', 'ls', 'cp', 'mv', 'rm'" % args.command)
+
+    if args.compatible:
+        paths =[]
+        irods_host = defaults.get ('irods_host')
+        for el in args.srcpath:
+            if not el.startswith ('irods://'):
+                paths.append (irods_host + el)
+            else:
+                paths.append (el)
+        args.srcpath = paths
+        if args.dstpath and not args.dstpath.startswith('irods://'):
+            args.dstpath = irods_host + args.dstpath
 
     if args.debug:
         six.print_(args, file=sys.stderr)
@@ -142,13 +203,15 @@ def main():
     try:
         session = requests.Session()
         requests.packages.urllib3.disable_warnings()
+        session.log = logging.getLogger('rods2bq')
 
         session.verify = False
         session.auth = tuple (args.credentials.split(':'))
         session.headers.update ( {'content-type': 'application/xml'} )
         OPERATIONS[args.command] (session, args)
     except requests.exceptions.HTTPError,e:
-        log.exception( "exception occurred %s" % e )
+        log.exception( "exception occurred %s : %s", e, e.response.text )
+        six.print_("ERROR:",  e.response and e.response.status_code)
 
     sys.exit(0)
 
