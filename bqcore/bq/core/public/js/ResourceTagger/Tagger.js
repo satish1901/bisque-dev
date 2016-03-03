@@ -244,9 +244,9 @@ Ext.define('Bisque.ResourceTagger', {
         });
 
         var plugins = [];
-        plugins.push({
+        /*plugins.push({
             ptype: 'bufferedrenderer',
-        });
+        });*/
 
         if (this.viewMgr.state.editable)
             plugins.push(this.rowEditor);
@@ -264,11 +264,11 @@ Ext.define('Bisque.ResourceTagger', {
             //animate: this.animate,
             animate: false,
             header: false,
-            deferRowRender: true,
+            //deferRowRender: true,
             draggable: false,
             enableColumnMove: false,
             allowDeselect: true,
-            hideHeaders: this.hide_headers === true,
+            //hideHeaders: this.hide_headers === true,
 
             store: this.getTagStore(data),
             multiSelect: true,
@@ -278,12 +278,12 @@ Ext.define('Bisque.ResourceTagger', {
             selModel: this.getSelModel(),
             plugins: plugins,
 
-            viewConfig: {
+            /*viewConfig: {
                 plugins: {
                     ptype: 'treeviewdragdrop',
                     allowParentInserts: true,
                 }
-            },
+            },*/
             listeners: {
                 scope: this,
                 select: function ( tree, record, index, eOpts) {
@@ -1388,7 +1388,7 @@ Ext.define('Bisque.GObjectTagger', {
         node.set('checked', true);
         node.set('loading', false);
 
-        if (!mex.outputs && mex.outputs.length<=0) return;
+        if (!mex.outputs || mex.outputs.length<=0) return;
         var o=undefined;
         for (var i=0; (o=mex.outputs[i]); i++) {
             if (o.gobjects.length>0 && o.value === this.resource.uri) {

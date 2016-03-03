@@ -362,7 +362,7 @@ ImgEdit.prototype.mousemove = function (e) {
 };*/
 
 ImgEdit.prototype.display_gob_info = function (gob) {
-
+    if (!gob) return;
     var view = this.viewer.current_view;
     var phys = this.viewer.imagephys;
 

@@ -38,8 +38,13 @@ Ext.define('BQ.viewer.MenuButton', {
         this.getEl().on('click', this.onMenuToggle, this );
         if (this.widget)
             this.widget.on('hide', this.onHide, this );
-        else
-            this.on('hide', this.onHide, this );
+        this.on('hide', this.onHide, this );
+    },
+
+    beforeDestroy : function() {
+        if (this.menu)
+            this.menu.destroy();
+        this.callParent(arguments);
     },
 
     onHide : function() {
@@ -52,7 +57,8 @@ Ext.define('BQ.viewer.MenuButton', {
             e.preventDefault();
             e.stopPropagation();
         }
-        this.createMenu();
+        if (!this.menu)
+            this.createMenu();
         var m = this.menu;
         if (m.isVisible())
             m.hide();
@@ -104,14 +110,22 @@ Ext.define('BQ.editor.GraphicalMenu', {
         this.editprimitives = this.editprimitives || BQGObject.primitives;
     },
 
+    onMenuToggle: function(e) {
+        if (this.selected)
+            this.callParent(arguments);
+        this.setPrimitive (this.primitive);
+        this.fireEvent( 'selected', this.primitive, this.semantic, this );
+    },
+
     createMenu: function() {
         if (this.menu) return;
         var buttons = [],
             el = this.getEl(),
             offset = el.getY(),
-            h = 90;
+            h = 90,
+            btn = null;
 
-        for (var p in BQGObject.primitives)
+        for (var p in BQGObject.primitives) {
             buttons.push({
                 xtype: 'button',
                 itemId: 'btn_'+p,
@@ -126,9 +140,13 @@ Ext.define('BQ.editor.GraphicalMenu', {
                 toggleGroup: 'Primitives',
                 allowDepress: false,
             });
-
-        buttons[0].pressed = true;
-        this.primitive = buttons[0].primitive;
+            if (!btn && (p in this.editprimitives))
+                btn = buttons.slice(-1).pop();
+        }
+        if (btn) {
+            btn.pressed = true;
+            this.primitive = btn.primitive;
+        }
 
         var items = [{
             xtype: 'tbtext',
@@ -189,6 +207,7 @@ Ext.define('BQ.editor.GraphicalMenu', {
             autoHide: false,
             shadow: false,
             closable: true,
+            closeAction: 'hide',
             layout: {
                 type: 'vbox',
                 align: 'stretch',
@@ -216,10 +235,14 @@ Ext.define('BQ.editor.GraphicalMenu', {
     },
 
     onPrimitive: function (btn) {
-        this.removeCls(this.primitive);
-        this.addCls(btn.primitive);
-        this.primitive = btn.primitive;
+        this.setPrimitive (btn.primitive);
         this.onSelected();
+    },
+
+    setPrimitive: function (primitive) {
+        this.removeCls(this.primitive);
+        this.addCls(primitive);
+        this.primitive = primitive;
     },
 
     onSemantic: function (type) {
@@ -234,6 +257,7 @@ Ext.define('BQ.editor.GraphicalMenu', {
     },
 
     setSelected: function(selected) {
+        this.selected = selected;
         if (selected)
             this.addCls('selected');
         else

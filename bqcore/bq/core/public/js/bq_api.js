@@ -2489,15 +2489,16 @@ BQMex.prototype.afterInitialized = function () {
 
     // finally execute afterInitialized
     var inputs  = this.find_tags('inputs');
-    if (inputs instanceof Array) {
-        this.inputs = inputs[0].tags; // dima - this should be children in the future
-        this.inputs_index  = inputs[0].create_flat_index();
-    } else if (inputs && inputs.tags) {
+    if (inputs instanceof Array)
+        inputs = inputs[0];
+    if (inputs && inputs.tags) {
         this.inputs = inputs.tags; // dima - this should be children in the future
         this.inputs_index  = inputs.create_flat_index();
     }
 
     var outputs = this.find_tags('outputs');
+    if (outputs instanceof Array)
+        outputs = outputs[0];
     if (outputs && outputs.tags) {
         this.outputs = outputs.tags; // dima - this should be children in the future
         this.outputs_index  = outputs.create_flat_index();
