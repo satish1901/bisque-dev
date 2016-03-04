@@ -161,7 +161,7 @@ class ArchiveStreamer():
             path = None
             files = None
             if uniq is not None:
-                del xml.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml
+                #del xml.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml
                 b = blob_service.localpath(uniq)
                 if b:
                     files = b.files
@@ -329,7 +329,7 @@ class ArchiveStreamer():
                 name = dataset.xpath('/dataset/@name')[0]
                 members = dataset.xpath('/dataset/value')
                 uniq = dataset.get('resource_uniq', '')
-                del dataset.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml
+                #del dataset.attrib['resource_uniq'] # dima: strip resource_uniq from exported xml
 
                 for index, member in enumerate(members):
                     finfo = fileInfo(name, member.text, index)
