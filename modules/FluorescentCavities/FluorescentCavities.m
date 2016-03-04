@@ -6,10 +6,10 @@ function FluorescentCavities(mex_url, access_token, varargin)
         images = dataset.getValues('object');
         stats = cell(length(images), 5);
         totalStart = tic;
-        for i=1:size(images,2),        
+        for i=1:size(images,2),
             fprintf('Processing image: %s\n', images{i});
             image = session.fetch(images{i});
-            I = image.command('intensityprojection', 'max').fetch();            
+            I = image.command('intensityprojection', 'max').fetch();
             [area, area_avg, area_std] = cavity_segmentation(I);
             stats{i,1} = image.getAttribute('uri');
             stats{i,2} = image.getAttribute('name');
@@ -17,12 +17,17 @@ function FluorescentCavities(mex_url, access_token, varargin)
             stats{i,4} = area_avg;
             stats{i,5} = area_std;
         end
-        disp(stats); % debugging        
-        csv_fname = 'areas.csv';
+        disp(stats); % debugging
+
+        mex_name = session.mex.getAttribute('name');
+        mex_id = strsplit(mex_url, '/'); mex_id = mex_id{end};
+        dt = datestr(now,'yyyymmddTHHMMss');
+        csv_fname = sprintf('areas_%s_%s.csv', dt, mex_id);
+
         ds = cell2dataset(stats, 'VarNames', {'URI', 'Filename', 'MedianArea', 'AreaAverage', 'AreaStd'});
         export(ds, 'file', csv_fname, 'delimiter', ',');
         fprintf('Total processing time: %.4f seconds\n', toc(totalStart));
-            
+
         %% Store results
         totalStart = tic;
         fprintf('Storing results\n');
@@ -33,11 +38,8 @@ function FluorescentCavities(mex_url, access_token, varargin)
         summary.addTag('Average of areas', mean(ds.MedianArea));
         summary.addTag('Standard deviation of areas', std(ds.MedianArea));
         summary.addTag('Number of empty', length(ds.MedianArea(ds.MedianArea==0)));
-        
-        mex_name = session.mex.getAttribute('name');
-        mex_id = strsplit(mex_url, '/'); mex_id = mex_id{end};
-        dt = datestr(now,'yyyymmddTHHMMss');
-        file = sprintf('<resource name="ModuleExecutions/%s_%s_%s/%s" type="table" />', mex_name, dt, mex_id, csv_fname);
+
+        file = sprintf('<resource name="ModuleExecutions/%s/%s_%s/%s" type="table" />', mex_name, dt, mex_id, csv_fname);
         fim = session.storeFile(csv_fname, file);
         outputs.addTag('MedianAreas', fim.getAttribute('uri'), 'table');
 

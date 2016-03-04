@@ -66,10 +66,10 @@ class AnnotationGeo(object):
             f.write(output)
 
         # need to save the CSV file and write its reference
-        resource = etree.Element('file', name='ModuleExecutions/%s_%s/%s'%(dt, mex_id, out_filename) )
+        resource = etree.Element('file', name='ModuleExecutions/AnnotationExportGeo/%s'%(out_filename) )
         blob = etree.XML(bq.postblob(out_filename, xml=resource))
         #print etree.tostring(blob)
-        blob = blob.find('file')
+        blob = blob.find('./')
         if blob is None or blob.get('uri') is None:
             bq.fail_mex('Could not store the Geo file into the system')
         else:
@@ -77,9 +77,6 @@ class AnnotationGeo(object):
                                     'tag' : [{ 'name': 'export',
                                                'value': blob.get('uri'),
                                                'type' : 'file' }]}])
-        sys.exit(0)
-        #bq.close()
-
 
 if __name__ == "__main__":
     import optparse
@@ -94,17 +91,20 @@ if __name__ == "__main__":
 
     M = AnnotationGeo()
     if options.credentials is None:
-        mex_url, auth_token = args[:2]
-        M.main(mex_url, auth_token)
+        mex_url, auth_token, image_url = args[:3]
+        bq = BQSession().init_mex(mex_url, auth_token)
     else:
+        mex_url = ''
         image_url = args.pop(0)
-
         if not options.credentials:
             parser.error('need credentials')
         user,pwd = options.credentials.split(':')
-
         bq = BQSession().init_local(user, pwd)
-        M.main(image_url=image_url, bq=bq)
 
+    try:
+        M.main(mex_url=mex_url, image_url=image_url, bq=bq )
+    except Exception, e:
+        bq.fail_mex(traceback.format_exc())
+    sys.exit(0)
 
 

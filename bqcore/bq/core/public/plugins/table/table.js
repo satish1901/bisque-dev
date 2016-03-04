@@ -69,6 +69,7 @@ Ext.define('BQ.data.proxy.Table', {
         } else if (operation.limit==1) {
             url += '/'+operation.start;
         }
+        url += ',;'; // request all the columns
         url += '/format:json';
         request.url = url;
         return me.callParent(arguments);
@@ -732,7 +733,7 @@ Ext.define('BQ.table.Panel', {
                 region : 'center',
 
                 resource: this.resource,
-                path: p,
+                //path: p,
                 info: json,
             });
         }

@@ -12,7 +12,8 @@ except ImportError:
 from bqapi import BQSession, BQTag, BQCommError
 
 import logging
-logging.basicConfig(filename='AnnotationHistograms.log',level=logging.DEBUG)
+logging.basicConfig(filename='AnnotationHistograms.log', level=logging.DEBUG)
+log = logging.getLogger('AnnotationHistograms')
 
 
 ignore_tags = set(['filename', 'upload_datetime'])
@@ -56,7 +57,7 @@ def fetch_unique_gob_types(session):
     # get unique gob types
     gobs = q.xpath('gobject')
     for g in gobs:
-        c = g.get('type').replace('Primary - ', '').replace('Secondary - ', '')
+        c = g.get('type', '').replace('Primary - ', '').replace('Secondary - ', '')
         unique_gobs.add(c)
     return unique_gobs
 
@@ -170,8 +171,10 @@ class AnnotationHistograms(object):
         if image_url is None:
             image_url = bq.parameter_value(name='dataset_url')
 
+        use_full_path = bq.parameter_value(name='use_full_path')
+
         mex_id = mex_url.split('/')[-1]
-        dt = datetime.now().strftime('%Y%m%d%H%M%S')
+        dt = datetime.now().strftime('%Y%m%dT%H%M%S')
         if image_url is None or len(image_url)<2:
             datasets = bq.fetchxml ('/data_service/dataset')
             datasets = [d.get('uri') for d in datasets.xpath('dataset')]
@@ -211,20 +214,18 @@ class AnnotationHistograms(object):
                     w.writerow(row)
 
         # need to save the CSV file and write its reference
-        resource = etree.Element('file', name='ModuleExecutions/%s_%s/%s'%(dt, mex_id, csv_filename) )
+        resource = etree.Element('resource', type='table', name='ModuleExecutions/AnnotationHistograms/%s'%(csv_filename) )
         blob = etree.XML(bq.postblob(csv_filename, xml=resource))
-        #print etree.tostring(blob)
-        blob = blob.find('file')
+        print etree.tostring(blob)
+        blob = blob.find('./')
+        print blob
         if blob is None or blob.get('uri') is None:
-            bq.fail_mex('Could not insert the HIstogram file into the system')
+            bq.fail_mex('Could not insert the Histogram file into the system')
         else:
             bq.finish_mex(tags = [{ 'name': 'outputs',
                                     'tag' : [{ 'name': 'histogram',
                                                'value': blob.get('uri'),
-                                               'type' : 'file' }]}])
-        sys.exit(0)
-        #bq.close()
-
+                                               'type' : 'table' }]}])
 
 if __name__ == "__main__":
     import optparse
@@ -239,17 +240,18 @@ if __name__ == "__main__":
 
     M = AnnotationHistograms()
     if options.credentials is None:
-        mex_url, auth_token = args[:2]
-        M.main(mex_url, auth_token)
+        mex_url, auth_token, image_url = args[:3]
+        bq = BQSession().init_mex(mex_url, auth_token)
     else:
+        mex_url = ''
         image_url = args.pop(0)
-
         if not options.credentials:
             parser.error('need credentials')
         user,pwd = options.credentials.split(':')
-
         bq = BQSession().init_local(user, pwd)
-        M.main(image_url=image_url, bq=bq)
 
-
-
+    try:
+        M.main(mex_url=mex_url, image_url=image_url, bq=bq )
+    except Exception, e:
+        bq.fail_mex(traceback.format_exc())
+    sys.exit(0)
