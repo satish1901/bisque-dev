@@ -98,18 +98,18 @@ text {
 .edgePath path {
   stroke: #B2B2B2;
   fill: #
-  stroke-width: 1.5px;
+  stroke-width: 2.0px;
 }
 
 .edgePathHighlighted path {
   stroke: #997A5C;
   fill: #997A5C;
-  stroke-width: 1.5px;
+  stroke-width: 2.0px;
 }
 
 .edgePathSelectedOut path {
   stroke: #FF0000;
-   fill: #FF0000;
+  fill: #FF0000;
   stroke-width: 2.0px;
 }
 

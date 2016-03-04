@@ -623,7 +623,57 @@ Ext.define('Bisque.Resource.Page',
             split       :   true,
         });
 
-        this.add(resourceTagger);
+        var graph = {
+            xtype : 'bq_graphviewer_panel',
+            itemId: 'graph',
+            title : 'Provenance',
+            resource: this.resource,
+            listeners:{
+                'context' : function(res, div, graph) {
+                    var node = graph.g.node(res);
+                    window.open(BQ.Server.url(node.card.getUrl(res)));
+                },
+            },
+            resource : this.resource,
+        };
+
+		// PLEASE REVIEW:
+		// default resource viewer has tagger and provenance (every resource has at least those?)
+        var resTab = {
+            xtype: 'tabpanel',
+            itemId: 'tabs',
+            title : 'Metadata',
+            deferredRender: true,
+            region : 'east',
+            activeTab : 0,
+            border : false,
+            bodyBorder : 0,
+            collapsible : true,
+            split : true,
+            width : 400,
+            plain : true,
+            items : [resourceTagger, graph]
+        };
+
+		// PLEASE REVIEW:
+		// default resource viewer: show msg "No viewer associated..."
+        this.add({
+            xtype : 'container',
+            itemId: 'viewer_container',
+            layout : 'border',
+            items : [resTab, {
+                xtype: 'container',
+                itemId: 'main_container',
+                region : 'center',
+                layout: 'fit',
+                items : [{
+                	xtype     : 'label',
+        			text      : 'No viewer is associated with this resource.'
+                }]
+            }]
+        });
+
+        //this.add(resourceTagger);
         this.setLoading(false);
     },
 
