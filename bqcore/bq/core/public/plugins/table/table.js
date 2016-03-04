@@ -815,7 +815,7 @@ Ext.define('Bisque.Resource.Table.Page', {
                     xtype: 'bq-tagger',
                     resource : this.resource,
                     title : 'Annotations',
-                } /*, {
+                } , {
 		            xtype : 'bq_graphviewer_panel',
 		            itemId: 'graph',
 		            title : 'Provenance',
@@ -827,7 +827,7 @@ Ext.define('Bisque.Resource.Table.Page', {
 		                },
 		            },
 		            resource : this.resource,
-		        } */ ]
+		        }]
             }, {
                 xtype: 'bq_table_panel',
                 flex: 2,

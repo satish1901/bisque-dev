@@ -45,10 +45,14 @@ ResourceCard.prototype.buildHtml = function () {
     this.node.label = html;
 };
 
+ResourceCard.prototype.getUrl = function (resource_uniq) {
+	return '/client_service/view?resource=/data_service/' + resource_uniq;
+};
+
 
 function MexCard(node, resource) {
     this.resource = resource;
-    this.cardType = 'mex'
+    this.cardType = 'mex';
 	this.node = node;
 
     ResourceCard.call(this,node, resource);
@@ -62,9 +66,13 @@ MexCard.prototype.populateFields = function (xnode) {
     this.addField('finished', xnode.getAttribute('ts').split('T')[0], 'date');
 };
 
+MexCard.prototype.getUrl = function (resource_uniq) {
+	return '/module_service/' + this.fields['module']['attribute'] + '/?mex=/data_service/' + resource_uniq;
+};
+
 function DataSetCard(node, resource) {
     this.resource = resource;
-    this.cardType = 'dataset'
+    this.cardType = 'dataset';
 	this.node = node;
     ResourceCard.call(this,node, resource);
 };
@@ -78,7 +86,7 @@ DataSetCard.prototype.populateFields = function (xnode) {
 
 function ImageCard(node, resource) {
     this.resource = resource;
-    this.cardType = 'image'
+    this.cardType = 'image';
 	this.node = node;
     ResourceCard.call(this,node, resource);
 };
@@ -92,7 +100,7 @@ ImageCard.prototype.populateFields = function (xnode) {
 
 function TableCard(node, resource) {
     this.resource = resource;
-    this.cardType = 'table'
+    this.cardType = 'table';
 	this.node = node;
     ResourceCard.call(this,node, resource);
 };
@@ -106,7 +114,7 @@ TableCard.prototype.populateFields = function (xnode) {
 
 function PipelineCard(node, resource) {
     this.resource = resource;
-    this.cardType = 'dream3d_pipeline'
+    this.cardType = 'dream3d_pipeline';
 	this.node = node;
     ResourceCard.call(this,node, resource);
 };
@@ -128,7 +136,7 @@ BQFactoryGraph.make = function(node, resource){
         image    : ImageCard,
         table    : TableCard,
         dream3d_pipeline : PipelineCard,
-    }
+    };
     return new this.buffermap[node.label](node,resource);
 };
 
@@ -636,11 +644,11 @@ Ext.define('BQ.graphviewer', {
         var me = this;
         var force = function(){
             var el = me.getEl().dom;
-            el.style.cssText += ';-webkit-transform:rotateZ(0deg)'
-            el.offsetHeight
-            el.style.cssText += ';-webkit-transform:none'
+            el.style.cssText += ';-webkit-transform:rotateZ(0deg)';
+            el.offsetHeight;
+            el.style.cssText += ';-webkit-transform:none';
 
-        }
+        };
 
         if(timeOutDuration === 0){
             force();
@@ -738,7 +746,7 @@ Ext.define('BQ.graphviewer', {
 
     },
 
-    buildGraph : function(nodes, edges){
+    buildGraph : function(nodes, edges, members){
         var me = this;
         var data1 = this.data;
 
@@ -769,6 +777,14 @@ Ext.define('BQ.graphviewer', {
             var val = e.getAttribute('value').split(':');
             g.setEdge(val[0], val[1],{
                 lineInterpolate: 'basis'
+            });
+        });
+
+        members.forEach(function(e,i,a){
+            var val = e.getAttribute('value').split(':');
+            g.setEdge(val[0], val[1],{
+            	style: "stroke-dasharray: 5, 5; fill: none;",
+            	arrowhead: "undirected"
             });
         });
 
@@ -1021,7 +1037,8 @@ Ext.define('BQ.viewer.Graph.Panel', {
 
                     var nodes = BQ.util.xpath_nodes(xmlDoc, "graph/node");
                     var edges = BQ.util.xpath_nodes(xmlDoc, "graph/edge");
-                    this.graphView.buildGraph(nodes, edges)
+                    var members = BQ.util.xpath_nodes(xmlDoc, "graph/member");
+                    this.graphView.buildGraph(nodes, edges, members);
                     this.graphView.fetchNodeInfo();
                     /*
                     for(var prop in graph.childNodes){

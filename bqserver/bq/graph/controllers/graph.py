@@ -20,22 +20,24 @@ log = logging.getLogger("bq.graph")
 
 def _add_mex_inputs_outputs(xnode, edges, checked, unchecked):
     node = xnode.get ('resource_uniq')
-    points_to_list = [ x.rsplit('/',1)[1] for x in xnode.xpath('//tag[@name="outputs"]//@value') if x.startswith("http") ]
-    points_from_list = [ x.rsplit('/',1)[1] for x in xnode.xpath('//tag[@name="inputs"]//@value') if x.startswith("http") ]
+    points_to_list = [ x.rsplit('/',1)[1] for x in xnode.xpath('./tag[@name="outputs"]/tag/@value') if x.startswith("http") ]
+    points_from_list = [ x.rsplit('/',1)[1] for x in xnode.xpath('./tag[@name="inputs"]/tag/@value') if x.startswith("http") ]
     log.debug ("points_to_list %s", points_to_list)
     log.debug ("points_from_list %s", points_from_list)
-    for xlink in points_to_list:
-        if is_uniq_code (xlink):            
-            if (node, xlink) not in edges:
-                log.debug ("ADDING OUT EDGE : %s" % str( (node, xlink) ))
-                edges.add( (node, xlink) )
-            if xlink not in checked:
-                unchecked.add (xlink)
     for xlink in points_from_list:
-        if is_uniq_code (xlink):            
-            if (xlink, node) not in edges:
+        if is_uniq_code (xlink):
+            # add edge unless it points to mex recursively
+            if (xlink, node) not in edges and xlink != node:
                 log.debug ("ADDING IN EDGE : %s" % str( (xlink, node) ))
                 edges.add( (xlink, node) )
+            if xlink not in checked:
+                unchecked.add (xlink)
+    for xlink in points_to_list:
+        if is_uniq_code (xlink):
+            # add edge unless it points to mex recursively or back to an input 
+            if (node, xlink) not in edges and xlink != node and xlink not in points_from_list:
+                log.debug ("ADDING OUT EDGE : %s" % str( (node, xlink) ))
+                edges.add( (node, xlink) )
             if xlink not in checked:
                 unchecked.add (xlink)
 
@@ -57,6 +59,8 @@ class graphController(ServiceController):
 
         nodes = set()
         edges = set()
+        members = set()
+        resources = set()
         checked = set()
         unchecked = set()
         unchecked.add (query)
@@ -79,7 +83,15 @@ class graphController(ServiceController):
                 # Mex => find inputs/outputs
                 _add_mex_inputs_outputs(xnode, edges, checked, unchecked)
             else:
-                # Non-mex => Find mexes that reference me
+                # Non-mex => Find mexes that reference me (directly or indirectly via a dataset)
+                if node_type == 'dataset':
+                    # see if any resource is member of this dataset => add membership link
+                    regexpNS = 'http://exslt.org/regular-expressions'
+                    for resource in resources:
+                        if xnode.xpath("./value[re:test(./text(),'%s$')]" % resource, namespaces={'re':regexpNS}):
+                            members.add( (resource, node) )
+                else:
+                    resources.add(node)
                 siblings = data_service.query ('mex',tag_query='"*/%s"' % node)   #TODO: this will be very slow on large DBs                
                 for snode in siblings:
                     unchecked.add(snode.get('resource_uniq'))
@@ -91,6 +103,11 @@ class graphController(ServiceController):
         for edge in edges:
             if edge[0] in node_uniqs  and edge[1] in node_uniqs:
                 etree.SubElement (response, 'edge', value = "%s:%s" % edge)
+            else:
+                log.error ("Skipping edge %s due to missing nodes", edge)
+        for edge in members:
+            if edge[0] in node_uniqs  and edge[1] in node_uniqs:
+                etree.SubElement (response, 'member', value = "%s:%s" % edge)
             else:
                 log.error ("Skipping edge %s due to missing nodes", edge)
         return etree.tostring (response)
