@@ -164,13 +164,12 @@ def main():
     parser.add_argument('-d', '--debug', action="store_true", default=False, help="log debugging")
     parser.add_argument('-H', '--host', default=defaults['bisque_host'], help="bisque host")
     parser.add_argument('-c', '--credentials', default="%s:%s" % (defaults['bisque_admin_user'], defaults["bisque_admin_pass"]), help="user credentials")
-    parser.add_argument('-r', '--resource', default = None)
-    parser.add_argument('-f', '--resource_file', default = None, help="tag document for insert")
+    parser.add_argument('-T', '--tag_file', default = None, help="tag document for insert")
     parser.add_argument('-C', '--compatible',  action="store_true", help="Make compatible with old script")
     parser.add_argument('-P', '--permission',   default="private", help="Set resource permission (compatibility)")
     parser.add_argument('command', help="one of ls, cp, mv, rm, ln" )
-    parser.add_argument('srcpath', action="append", nargs='?')
-    parser.add_argument('dstpath', nargs='?')
+    parser.add_argument('paths',  nargs='+')
+
 
     logging.basicConfig(filename=config.get ('bqpath', 'logfile'),
                         level=logging.INFO,
@@ -184,6 +183,10 @@ def main():
 
     if args.command not in OPERATIONS:
         parser.error("command %s must be one of 'ln', 'ls', 'cp', 'mv', 'rm'" % args.command)
+
+    if len(args.paths) > 1:
+        args.dstpath = args.paths.pop()
+        args.srcpath = args.paths
 
     if args.compatible:
         paths =[]
