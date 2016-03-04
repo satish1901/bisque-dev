@@ -12,12 +12,19 @@
                 <tag name="allow_blank" value="true" type="boolean" />
             </template>
         </tag>
+
+        <tag name="use_full_path" value="true" type="boolean" >
+            <template>
+                <tag name="label" value="Use full annotation path" />
+                <tag name="description" value="If selected, the annotation 'Anemone' located in 'Secondary' will be named: 'Secondary/Anemone'" />
+            </template>
+        </tag>
     </tag>
 
     <tag name="outputs">
-         <tag name="histogram" type="file">
+         <tag name="histogram" type="table">
             <template>
-                <tag name="label" value="Histogram CSV file:" />
+                <tag name="label" value="Histogram of annotations" />
             </template>
          </tag>
     </tag>

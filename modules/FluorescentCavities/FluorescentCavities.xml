@@ -25,6 +25,7 @@
                 <tag name="label" value="Median areas of cavities" />
             </template>
         </tag>
+
     </tag>
 
     <tag name="execute_options">
