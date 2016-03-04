@@ -125,7 +125,7 @@ def bisque_list(session, args):
     session.log.info ("list %s", args)
 
     url = args.host +  "/blob_service/paths/list"
-    params = { 'path' : args.srcpath }
+    params = { 'path' : args.srcpath[0] }
     if args.alias:
         params['user'] =  args.alias
     r = session.get(url,params=params)
@@ -187,6 +187,8 @@ def main():
     if len(args.paths) > 1:
         args.dstpath = args.paths.pop()
         args.srcpath = args.paths
+    else:
+        args.srcpath = args.paths
 
     if args.compatible:
         paths =[]
@@ -207,8 +209,7 @@ def main():
         session = requests.Session()
         requests.packages.urllib3.disable_warnings()
         session.log = logging.getLogger('rods2bq')
-
-        session.verify = False
+        #session.verify = False
         session.auth = tuple (args.credentials.split(':'))
         session.headers.update ( {'content-type': 'application/xml'} )
         OPERATIONS[args.command] (session, args)
