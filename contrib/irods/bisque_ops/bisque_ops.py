@@ -56,9 +56,9 @@ def bisque_link(session, args):
 
     if args.srcpath:
         resource = ET.Element ('resource', value=args.srcpath[0], permission=args.permission)
-        if args.resource_file:
+        if args.tag_file:
             # Load file into resource
-            resource_tags = ET.parse (args.resource_file)
+            resource_tags = ET.parse (args.tag_file)
             resource.extend (resource_tags)
         payload = ET.tostring (resource)
     if args.alias:
@@ -88,9 +88,9 @@ def bisque_copy(session, args):
     if args.srcpath:
         resource = ET.Element ('resource', value=args.srcpath[0], permission=args.permission)
         #resource = "<resource  value='%s' />" % (os.path.basename(args.srcpath[0]), args.srcpath[0])
-        if args.resource_file:
+        if args.tag_file:
             # Load file into resource
-            resource_tags = ET.parse (args.resource_file)
+            resource_tags = ET.parse (args.tag_file)
             resource.extend (resource_tags)
 
         files  = { 'file': ( os.path.basename(args.srcpath[0]), open(args.srcpath[0], 'rb')),
