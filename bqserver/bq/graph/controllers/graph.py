@@ -59,8 +59,8 @@ class graphController(ServiceController):
 
         nodes = set()
         edges = set()
-        members = set()
         resources = set()
+        datasets = {}   # dataset uniq -> [ member id, member id, ... ]
         checked = set()
         unchecked = set()
         unchecked.add (query)
@@ -85,17 +85,20 @@ class graphController(ServiceController):
             else:
                 # Non-mex => Find mexes that reference me (directly or indirectly via a dataset)
                 if node_type == 'dataset':
-                    # see if any resource is member of this dataset => add membership link
-                    regexpNS = 'http://exslt.org/regular-expressions'
-                    for resource in resources:
-                        if xnode.xpath("./value[re:test(./text(),'%s$')]" % resource, namespaces={'re':regexpNS}):
-                            members.add( (resource, node) )
+                    datasets[node] = [ x.rsplit('/',1)[1] for x in xnode.xpath("./value/text()") ]
                 else:
                     resources.add(node)
                 siblings = data_service.query ('mex',tag_query='"*/%s"' % node)   #TODO: this will be very slow on large DBs                
                 for snode in siblings:
                     unchecked.add(snode.get('resource_uniq'))
             log.debug ( "Nodes : %s, Edges : %s" % (nodes, edges) )
+
+        # check if any resource is member of a dataset => add membership link
+        members = set()
+        for node in resources:
+            for dataset in datasets:
+                if node in datasets[dataset]:
+                    members.add( (node, dataset) )
 
         for node in nodes:
             etree.SubElement (response, 'node', value = node[0], type=node[1])
