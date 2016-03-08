@@ -129,7 +129,7 @@ taggable = Table('taggable', metadata,
                  Column('ts', DateTime(timezone=False)),
                  Column('perm', Integer), #ForeignKey('permission_sets.set_id')
                  Column('owner_id', Integer, ForeignKey('taggable.id', name="owner_fk", ondelete="CASCADE"), index=True),
-                 Column('resource_uniq', String(40), index=True),
+                 Column('resource_uniq', String(40), index=True, unique=True),
                  Column('resource_index', Integer),
                  Column('resource_hidden', Boolean),
                  Column('resource_type', Unicode(255), index=True ),  # will be same as tb_id UniqueName
@@ -1104,6 +1104,3 @@ def all_resources ():
     names = [ x[0] for x in DBSession.query(Taggable.resource_type).distinct().all() ]
 
     return names
-
-
-

@@ -164,7 +164,6 @@ class PathService (TGController):
     def insert(self, path=None, user=None, **kwargs):
         """ Move a resource identified by path
         """
-        log.info("insert_path() %s %s %s" , tg.request.method, path, kwargs)
         if user is not None and identity.is_admin():
             identity.current.set_current_user( user )
 
@@ -174,12 +173,17 @@ class PathService (TGController):
             resource = etree.Element('resource', value = path)
         else:
             path = resource.get('value')
+
+        log.info("insert_path() %s %s %s" , tg.request.method, path, kwargs)
+
         store,driver = self.mounts.valid_store_ref (resource)
         if store is None:
             abort (400, "%s is not a valid store " % path)
 
         if resource.get ('name') is None:
             resource.set ('name',  path.replace(driver.mount_url, ''))
+        log.debug ("insert %s %s %s", path, driver.mount_url, etree.tostring (resource))
+
         resource = self.blobsrv.store_blob(resource)
         return etree.tostring(resource)
 
@@ -206,6 +210,7 @@ class PathService (TGController):
             self.mounts.delete_links (child)
             # Change the location
             child.set('value',  destination)
+            child.set('name', os.path.basename (destination))
             resource = data_service.update(child)
             # update the links
             partial_path = destination.replace(driver.mount_url,'')
@@ -237,9 +242,11 @@ class PathService (TGController):
                 if content.startswith('text/xml') or  content.startswith('application/xml'):
                     data = request.body_file.read(clen)
                     resource = etree.XML (data)
+                    log.debug ("POST BODY %s", etree.tostring (resource))
                     return resource
             except etree.XMLSyntaxError:
                 log.exception ("Bad XML syntax in %s", data [:100])
+                abort (400, "Bad XML syntax in POST: %s" % data)
 
 
 
