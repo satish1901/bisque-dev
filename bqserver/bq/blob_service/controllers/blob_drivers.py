@@ -387,7 +387,7 @@ class IrodsDriver(StorageDriver):
         :param  password: the irods password
         :param readonly: set repo readonly
         """
-        self.mount_url = mount_url
+        self.mount_url = posixpath.join (mount_url, '')
         datadir = data_url_path()
         for key, value in kw.items():
             setattr(self, key, string.Template(value).safe_substitute(datadir=datadir))
@@ -472,7 +472,7 @@ class S3Driver(StorageDriver):
         :param readonly: set repo readonly
         """
 
-        self.mount_url = mount_url
+        self.mount_url = posixpath.join (mount_url, '')
         if credentials:
             self.access_key,  self.secret_key = credentials.split(':')
         else:
@@ -570,7 +570,7 @@ class HttpDriver(StorageDriver):
         :param  password: the irods password
         :param readonly: set repo readonly
         """
-        self.mount_url = mount_url
+        self.mount_url = posixpath.join (mount_url, '')
         # DECODE Credential string
         if credentials:
             self.auth_scheme = credentials.split(':', 1)
@@ -614,7 +614,7 @@ class SMBNetDriver(StorageDriver):
         @param mount_url: optional full storeurl to mount
         """
         self.conn = None
-        self.mount_url = mount_url
+        self.mount_url = posixpath.join(mount_url, '')
         self.readonly = readonly
         if credentials is None:
             log.warn ("SMBMount Cannot proceed without credentials")
