@@ -1,4 +1,5 @@
 FROM debian:jessie
+#FROM phusion/baseimage
 MAINTAINER Kris Kvilekval<kris@cs.ucsb.edu>
 RUN apt-get update && apt-get install -yq python  unzip wget libxext6 libxt6
 
@@ -25,6 +26,8 @@ $MATLAB_HOME/sys/java/jre/glnxa64/jre/lib/amd64/server:\
 $MATLAB_HOME/sys/java/jre/glnxa64/jre/lib/amd64:
 ENV XAPPLRESDIR=$MATLAB_HOME/X11/app-defaults
 ENV PATH /module:$PATH
+COPY cacerts /opt/mcr/v90/sys/java/jre/glnxa64/jre/lib/security/cacerts
 VOLUME /module
 WORKDIR /module
+#CMD ["/sbin/my_init"]
 CMD [ "bash" ]

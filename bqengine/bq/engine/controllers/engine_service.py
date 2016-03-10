@@ -130,28 +130,37 @@ def read_xml_body():
         return etree.XML(tg.request.body_file.read(clen))
     return None
 
-def load_module(module_path, engines = None):
+def load_module(module_dir, engines = None):
     """load a module XML file if enabled and available
 
     :param module_path: path to module.xml
     :param engines: A dict of engine adapters i.e.
     """
-    module_name = os.path.basename (module_path)
-    module_dir = os.path.dirname (module_path)
+    #module_name = os.path.basename (module_path)
+    #module_dir = os.path.dirname (module_path)
     cfg = os.path.join(module_dir, 'runtime-module.cfg')
     if not os.path.exists(cfg):
-        log.debug ("Skipping %s (%s) : no runtime-module.cfg" % (module_name, cfg))
+        log.debug ("Skipping %s (%s) : no runtime-module.cfg" % (module_dir, cfg))
         return None
     cfg = ConfigFile (cfg)
     mod_vars = cfg.get (None, asdict = True)
-    enabled = mod_vars.get('module_enabled', 'true').lower() == "true"
-    status = (enabled and 'enabled') or 'disabled'
-    if not enabled :
-        log.debug ("Skipping %s : disabled" % module_name)
-        return None
+    log.debug ("module config = %s", mod_vars)
+    enabled = mod_vars.get('module_enabled', 'true').lower() in [ "true", '1', 'yes', 'enabled' ]
     ### Check that there is a valid Module descriptor
-    if not os.path.exists(module_path):
+    if not enabled:
+        log.debug ("Skipping %s : disabled" % module_dir)
         return None
+
+    definition = mod_vars.get ('definition', None)
+    if definition is None:
+        module_path = os.path.join (module_dir, os.path.basename(module_dir) + '.xml')
+    else:
+        module_path = os.path.join(module_dir, definition)
+
+    if not os.path.exists(module_path):
+        log.debug ("Skipping %s : missing definition " % module_path)
+        return None
+
     log.debug ("found module at %s" % module_path)
     try:
         with open(module_path) as xml:
@@ -161,26 +170,26 @@ def load_module(module_path, engines = None):
         return None
     bisque_cfg = os.path.join(module_dir,'runtime-bisque.cfg')
 
-    #if  os.path.exists(bisque_cfg):
-    #    os.unlink (bisque_cfg)
-    #os.link (config_path('runtime-bisque.cfg'), bisque_cfg)
-    copy_link (config_path('runtime-bisque.cfg'), bisque_cfg)
+    # KGK Add during module run if needed
+    #copy_link (config_path('runtime-bisque.cfg'), bisque_cfg)
 
     ts = os.stat(module_path)
     # for elem in module_root:
     if module_root.tag == "module":
         module_name = module_root.get('name')
-        module_path = module_root.get('path')
         module_type = module_root.get('type')
         module_root.set('ts', datetime.fromtimestamp(ts.st_mtime).isoformat())
         engine = engines and engines.get(module_type, None)
-        if engine and not engine.check (module_root):
-            return None
+        #if engine and not engine.check (module_root):
+        #    return None
         #module_root.set('value', engine_root + '/'+module_name)
         module_root.set('value', engine_root + '/'+module_name)
+        module_root.set('path', module_dir)
+
         #module_root.set('status', status)
         #for x in module_root.iter(tag=etree.Element):
         #    x.set('permission', 'published')
+        log.info ("Loaded module %s from %s", module_name, module_dir)
         return module_root
     return None
 
@@ -196,14 +205,18 @@ def initialize_available_modules(engines):
     log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
     log.debug ('examining %s ' % MODULE_PATH)
     log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
-    for g in os.listdir(MODULE_PATH):
-        module_path = os.path.join(MODULE_PATH, g, g + '.xml')
-        module_root = load_module(module_path, engines)
-        if module_root is not None:
-            available.append(module_root)
-        else:
-            unavailable.append ( g )
-            log.debug("Skipping %s : engine_check failed" % g)
+    #for g in os.listdir(MODULE_PATH):
+
+    for root, dirs, files in os.walk(MODULE_PATH):
+        for module_file in files:
+            if module_file == 'runtime-module.cfg':
+                module_directory = os.path.dirname (os.path.join (root,module_file))
+                module_root = load_module(module_directory, engines)
+                if module_root is not None:
+                    available.append(module_root)
+                else:
+                    unavailable.append ( module_directory )
+                    log.debug("Skipping %s : module load failed" % module_directory)
 
     return available, unavailable
 
@@ -247,7 +260,7 @@ class EngineServer(ServiceController):
                          #'lam' : LamAdapter(),
                          }
         modules, unavailable = initialize_available_modules(self.engines)
-        log.debug ('found modules= %s' % str(modules))
+        log.debug ('found modules= %s' % m.get ('name') for m in modules)
         self.unavailable = unavailable
         self.modules = modules
         for module in modules:
@@ -296,7 +309,7 @@ class EngineModuleResource(BaseController):
                  }
 
     def filepath(self,*path):
-        return os.path.join (MODULE_PATH, self.name, *path)
+        return os.path.join (self.path, *path)
 
 
     def __init__(self, module_xml, mpool):
@@ -304,10 +317,11 @@ class EngineModuleResource(BaseController):
         self.module_xml = module_xml
         self.module_uri = module_xml.get('uri')
         self.name       = module_xml.get('name')
+        self.path       = module_xml.get('path')
         self.mpool = mpool
         self.define_io() # this should produce lists on required inputs and outputs
 
-        static_path = os.path.join (MODULE_PATH, self.name, 'public')
+        static_path = os.path.join ( self.path, 'public')
         if os.path.exists(static_path):
             log.info ("adding static path %s" % static_path)
             public_file_filter.add_path(static_path,
@@ -393,7 +407,7 @@ class EngineModuleResource(BaseController):
 
     def define_io(self):
 
-        def define_tempalte(xs):
+        def define_template(xs):
             l = []
             for i in xs:
                 r = i.tag
@@ -418,8 +432,8 @@ class EngineModuleResource(BaseController):
                 l.append(x)
             return l
 
-        self.inputs  = define_tempalte( self.module_xml.xpath('//tag[@name="inputs"]/*') )
-        self.outputs = define_tempalte( self.module_xml.xpath('//tag[@name="outputs"]/*') )
+        self.inputs  = define_template( self.module_xml.xpath('//tag[@name="inputs"]/*') )
+        self.outputs = define_template( self.module_xml.xpath('//tag[@name="outputs"]/*') )
         log.debug("Inputs : %s", self.inputs)
         log.debug("Outputs: %s", self.outputs)
 
@@ -497,7 +511,7 @@ class EngineModuleResource(BaseController):
         """Deliver static content for the Module"""
         log.debug ("in Static %s %s" % (str(path), str(kw)))
 
-        static_path = os.path.join (MODULE_PATH, self.name, 'public', *path)
+        static_path = os.path.join (self.path, 'public', *path)
         if os.path.exists(static_path):
             cont = open(static_path)
             return cont.read()
