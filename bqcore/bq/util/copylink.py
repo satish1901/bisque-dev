@@ -16,22 +16,22 @@ def copy_link (*largs):
 
     for f in largs:
         if not os.path.exists(f):
-            log.error("can't copy %s to %s: missing file" % (f, d))
+            log.error("can't copy %s to %s: missing file", f, d)
             continue
         try:
             dest = d
             if os.path.isdir (d):
                 dest = os.path.join (d, os.path.basename(f))
-            log.info ("linking %s to %s"%(f,dest))
+            log.debug ("linking %s to %s", f,dest)
             if os.path.exists(dest):
-                log.info ("Found existing file %s: removing .." % dest)
+                log.debug ("Found existing file %s: removing .." , dest)
                 os.unlink (dest)
 
             #os.link(f, dest)
             dolink(f, dest)
 
         except (OSError, AttributeError), e:
-            log.info ("Problem in link %s... trying copy" % e)
+            log.debug ("Problem in link %s... trying copy" , e)
             if os.path.isdir(f):
                 shutil.copytree(f, dest)
             else:
@@ -43,7 +43,7 @@ if os.name != 'nt':
         try:
             os.symlink(source, dest)
         except (OSError, AttributeError), e:
-            log.info ("Problem in link %s... trying copy" % e)
+            log.debug ("Problem in link %s... trying copy" , e)
             if os.path.isdir(source):
                 shutil.copytree(source, dest)
             else:
@@ -55,7 +55,7 @@ else:
 
         "Copy or make a symlink"
         if not os.path.exists(source):
-            log.info('copy_symlink: source path does not exist "%s", skipping...'%(source))
+            log.debug('copy_symlink: source path does not exist "%s", skipping...', source)
             return
 
         #log.info('copy_symlink: "%s" -> "%s"'%(source, dest))
@@ -71,6 +71,5 @@ else:
             try:
                 dolink(source, dest)
             except (OSError, AttributeError), e:
-                log.info ("Problem in link %s... trying copy" % e)
+                log.debug ("Problem in link %s... trying copy" , e)
                 shutil.copy2(source, dest)
-

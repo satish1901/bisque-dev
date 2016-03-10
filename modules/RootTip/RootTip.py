@@ -10,7 +10,6 @@ import itertools
 from bqapi import BQSession
 from bqapi.util import fetch_image_planes, AttrDict
 
-
 logging.basicConfig(level=logging.DEBUG)
 
 EXEC = "./araGT"
@@ -26,7 +25,7 @@ class RootTip(object):
     def setup(self):
         #if not os.path.exists(self.images):
         #    os.makedirs(self.images)
-
+        self.status = 0
         self.bq.update_mex('initializing')
         results = fetch_image_planes(self.bq, self.resource_url, '.')
 
@@ -34,16 +33,21 @@ class RootTip(object):
     def start(self):
         self.bq.update_mex('executing')
         # Matlab requires trailing slash
-        subprocess.call([EXEC, './'])
+        self.status = subprocess.call([EXEC, './'])
 
 
     def teardown(self):
         # Post all submex for files and return xml list of results
+        self.bq.update_mex('checking results')
+        if self.status != 0:
+            self.bq.fail_mex ("Bad result code form analysis: %d" % self.status)
+            return
         gobjects = self._read_results()
         tags = [{ 'name': 'outputs',
                   'tag' : [{'name': 'roots', 'type':'image', 'value':self.resource_url,
                             'gobject' : [{ 'name': 'root_tips', 'type': 'root_tips', 'gobject' : gobjects }] }]
                   }]
+        self.bq.update_mex('saving results')
         self.bq.finish_mex(tags = tags)
 
     def _read_results(self, ):
@@ -114,4 +118,3 @@ class RootTip(object):
 
 if __name__ == "__main__":
     RootTip().run()
-

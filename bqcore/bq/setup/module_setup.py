@@ -145,7 +145,11 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
     if mcc(main_path + '.m', '-d', dependency_dir, '-m', '-C', '-R', '-nodisplay', '-R', '-nosplash', *rest):
         main = main_name + ext_map.get(os.name, '')
         ctf  = main_name + '.ctf'
+        if os.path.exists (main):
+            os.unlink (main)
         shutil.copyfile(os.path.join(dependency_dir, main), main)
+        if os.path.exists (ctf):
+            os.unlink (ctf)
         shutil.copyfile(os.path.join(dependency_dir, ctf), ctf)
         shutil.rmtree (dependency_dir)
         os.chmod (main, 0744)
