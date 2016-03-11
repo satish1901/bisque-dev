@@ -195,7 +195,7 @@ class TableHDF(TableBase):
 
         node = self.t.getNode(self.subpath or '/')
         self.headers, self.types = _get_headers_types(node)
-        self.sizes = node.shape if isinstance(node, tables.array.Array) else None
+        self.sizes = list(node.shape) if isinstance(node, tables.array.Array) else None
         log.debug('HDF types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
         return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }   
 

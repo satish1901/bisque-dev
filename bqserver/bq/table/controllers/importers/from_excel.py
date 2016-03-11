@@ -144,7 +144,7 @@ class TableExcel(TableBase):
 
         data = pd.read_excel(self.t, self.subpath, nrows=1)
         self.headers, self.types = _get_headers_types(data)
-        self.sizes = data.shape
+        self.sizes = list(data.shape)
         log.debug('Excel types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
         return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }
 
