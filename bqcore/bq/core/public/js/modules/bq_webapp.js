@@ -411,6 +411,8 @@ BQWebApp.prototype.setupUI_outputs = function (key, mex) {
 
     // outputs must be present
     var outputs = mex.find_tags('outputs');
+    if (outputs instanceof Array)
+        outputs = outputs[0];
     if ((!outputs || (outputs && outputs.tags && outputs.tags.length<1)) && !mex.fetched_outputs) {
         BQApp.setLoading('Fetching results...');
         if (outputs) {
