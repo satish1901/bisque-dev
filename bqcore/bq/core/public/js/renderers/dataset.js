@@ -100,7 +100,8 @@ Ext.define('BQ.renderers.dataset', {
             //collapsed: true,
 
             //items : [this.tagger, mexs, this.operations, map]
-            items : [this.tagger, mexs, graph, map]
+            //items : [this.tagger, mexs, graph, map]
+            items : [this.tagger, mexs, map]
         };
 
         this.preview = Ext.create('Bisque.ResourceBrowser.Browser', {
