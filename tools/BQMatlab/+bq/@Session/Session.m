@@ -198,19 +198,22 @@ classdef Session < handle
         % filename - path to the file
         % resource - bq.Node resource describing the file created with:  
         %    resource = bq.Factory.new('resource', 'dir/dir2/filename.csv');
-        
+            
+            if ~exist('resource', 'var'), resource=[]; end
             res = bq.File.store(filename, self.bisque_root, self.user, self.password, resource); 
         end
         
-        function res = storeImage(self, image, args)
+        function res = storeImage(self, image, args, resource)
         % store a new image (matlab matrix) with geometry described by args
         % image: matlab matrix
         % args: struct describing the image
         %     args.filename
         %     args.dim - c z t (as bim.write_ome_tiff requires)
-        %     args.res - x y z t (as bim.write_ome_tiff requires)            
-            res = bq.Image.store(image, args, self.bisque_root, self.user, self.password); 
-        end   
+        %     args.res - x y z t (as bim.write_ome_tiff requires)
+        
+            if ~exist('resource', 'var'), resource=[]; end       
+            res = bq.Image.store(image, args, self.bisque_root, self.user, self.password, resource); 
+        end
         
         function nodes = query(self, resource_type, tag_query, tag_order, view, offset, limit, wpublic)
         % exposes query RESTful API: http://biodev.ece.ucsb.edu/projects/bisquik/wiki/Developer/DataServer
