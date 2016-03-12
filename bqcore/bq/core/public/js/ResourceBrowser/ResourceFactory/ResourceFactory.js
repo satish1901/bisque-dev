@@ -652,7 +652,8 @@ Ext.define('Bisque.Resource.Page',
             split : true,
             width : 400,
             plain : true,
-            items : [resourceTagger, graph]
+            //items : [resourceTagger, graph]
+            items : [resourceTagger]
         };
 
 		// PLEASE REVIEW:
