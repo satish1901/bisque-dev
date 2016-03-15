@@ -58,11 +58,11 @@ import copy
 import io
 import posixpath
 
-from lxml import etree
 from datetime import datetime
+from lxml import etree
 import sqlalchemy
 from sqlalchemy.orm import object_mapper
-from sqlalchemy.sql import and_, or_
+#from sqlalchemy.sql import and_, or_
 
 from tg import config
 
@@ -156,6 +156,7 @@ class XMLNode(list):
         self.gobjects = []
         self.children = []
         self.document = None
+        self.kids = []
     def __iter__(self):
         return itertools.chain(self.tags, self.gobjects, self.children)
     def __len__(self):
@@ -220,7 +221,7 @@ class ResourceFactory(object):
             if tag == 'user':
                 node.user = node
 
-        log.debug  ('factory.new %s -> %s document(%s)' % (xmlname, node, node.document))
+        log.debug  ('factory.new %s -> %s document(%s)' , xmlname, node, str(node.document))
         return node
 
     @classmethod
@@ -256,7 +257,7 @@ class ResourceFactory(object):
             objarr =  getattr(parent, array)
             # If values have been 'cleared', then arrary will be empty
             # this will get the
-            log.debug ("CURRENTLEN = %s " % (len(objarr)))
+            log.debug ("CURRENTLEN = %s " , len(objarr))
             objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
             for x in range(len(objarr), indx+1):
                 objarr[indx].indx = x
@@ -264,7 +265,7 @@ class ResourceFactory(object):
 
 
             v = DBSession.query(klass).get( (parent.id, indx) )
-            log.debug('indx %s fetched %s ' % (indx, v))
+            log.debug('indx %s fetched %s ' , indx, str(v))
             #objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
             if v is not None:
                 objarr[indx] = v
@@ -522,14 +523,14 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  qfilter=None, **kw)
     return nodes, doc_id
 
 
-def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = None, qfilter=None, **kw):
+def resource2tree(dbo, parent=None, view=None, baseuri=None, nodes= {}, doc_id = None, qfilter=None, **kw):
     'load an entire document tree for a particular node'
 
     try:
         if doc_id != dbo.document_id:
             nodes, doc_id = resource2nodes(dbo, parent, view, baseuri, qfilter, **kw)
         if parent is not None:
-            log.debug ("parent %s + %s" % (parent, nodes[dbo.id]))
+            log.debug ("parent %s + %s" , str(parent), str(nodes[dbo.id]))
             parent.append ( nodes[dbo.id])
         # Make a copy of the document from the request position to e
         if dbo.document_id != dbo.id:
@@ -537,12 +538,12 @@ def resource2tree(dbo, parent=None, view=[], baseuri=None, nodes= {}, doc_id = N
         else:
             return nodes[dbo.id], nodes, doc_id
     except KeyError:
-        log.exception ("Problem loading tree for document %s: nodes %s" % (doc_id, nodes))
+        log.exception ("Problem loading tree for document %s: nodes %s" , doc_id, str(nodes))
 
     return xmlnode(dbo, parent=parent, baseuri=baseuri, view=view), nodes, doc_id
 
 
-def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
+def db2tree(dbo, parent=None, view=None, baseuri=None, progressive=False, **kw):
     "Convert a Database Object into ElementTree representation"
     if isinstance(view, basestring):
         # pylint:disable=E1103
@@ -569,7 +570,7 @@ def db2tree(dbo, parent=None, view=[], baseuri=None, progressive=False, **kw):
         etree.SubElement(parent, 'resource',
                          type="bisque+extension",
                          uri = "%s/%s?offset=%d"%(baseuri, dbo.xml_tag,offset))
-    log.debug ("converted %d" % len (r))
+    log.debug ("converted %d" , len (r))
     return r
 
 
@@ -596,9 +597,9 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None, **kw)
 
 def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
     from bq.data_service.controllers.resource_query import resource_permission
-    log.debug ("db2node dbo=%s view=%s" % ( dbo, view))
+    log.debug ("db2node dbo=%s view=%s" , str(dbo), view)
     if dbo is None:
-        log.error ("None pass to as DB object parent = %s", parent)
+        log.error ("None pass to as DB object parent = %s", str(parent))
         return None, nodes, doc_id
     if 'deep' in view:
         n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
@@ -626,7 +627,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
             q = q.offset (int(kw.pop('offset')))
         if kw.has_key('limit'):
             q = q.limit (int(kw.pop('limit')))
-        log.debug ("FULL QUERY: %s" , q)
+        log.debug ("FULL QUERY: %s" , str(q))
         tl = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in q ]
         #gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
 #    elif "deep" in view:
@@ -797,7 +798,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
         evnodes = etree.iterwalk(root, events=('start','end'))
         log.debug ("updateDB: walking " + str(root))
     except TypeError, e:
-        log.exception ("bad parse of tree: %s" % [ root, resource ] )
+        log.exception ("bad parse of tree: root-> %s %s" , str(root), str(resource ))
         raise e
 
     last_resource = None
@@ -835,13 +836,13 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 elif uri:
                     resource = factory.load_uri (uri, parent)
                     if resource is None:
-                        log.debug ("load failed %s: creating" % uri)
+                        log.debug ("load failed %s: creating" , uri)
                         resource = factory.new (obj, parent, uri=uri)
                         resource.created = ts
                     elif replace:
                         cleared = resource.clear()
                 elif indx is not None:
-                    log.debug('index of %s[%s] on parent %s'%(obj.tag, indx, parent))
+                    log.debug('index of %s[%s] on parent %s', obj.tag, indx, str(parent))
                     resource = factory.index (obj, parent, int(indx), cleared)
                 else:
                     # TODO if tag == resource, then type should be used
@@ -849,7 +850,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                     resource.created = ts
 
                     #log.debug("update: created %s:%s of %s" % (obj.tag, resource, resource.document))
-                    log.debug("update: created %s:%s" % (obj.tag, resource))
+                    log.debug("update: created %s:%s" , obj.tag, str(resource))
                 # Assign attributes
                 resource.ts = ts
                 for k,v in attrib.items():
@@ -873,7 +874,7 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                 last_resource = stack.pop()
                 #log.debug ("last_resource, resource %s, %s "  %(last_resource, resource))
             else:
-                log.debug ("other node %s" % obj.tag)
+                log.debug ("other node %s" , obj.tag)
 
     except Exception, e:
         log.exception("during parse of %s " % (etree.tostring(root, pretty_print=True)))
@@ -892,21 +893,21 @@ def bisquik2db_internal(inputs, parent, resource,  replace):
     ts = datetime.now()
     for el in inputs:
         node = updateDB(root=el, parent = parent, resource=resource, replace=replace, ts=ts)
-        log.debug ("returned %s " % str(node))
-        log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
-                   (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
+        log.debug ("returned %s " , str(node))
+        log.debug ('modified : new (%d), dirty (%d), deleted(%d)' ,
+                   len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted))
         if node not in DBSession:
             DBSession.add(node)
-        log.debug ("node.document = %s", node.document)
+        log.debug ("node.document = %s", str(node.document))
         node.document.ts = ts
         results.append(node)
 
     DBSession.flush()
     for node in results:
         DBSession.refresh(node)
-    log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' %
-               (len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted)))
-    log.debug("Bisquik2db last_node %s of document %s " % ( node, node.document ))
+    log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' ,
+               len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted))
+    log.debug("Bisquik2db last_node %s of document %s " , str(node) , str(node.document))
     if len(results) == 1:
         return node
     return results
@@ -921,7 +922,7 @@ def bisquik2db(doc= None, parent=None, resource = None, xmlschema=None, replace=
     if isinstance(doc, basestring):
         doc = etree.parse(io.BytesIO(doc))
 
-    log.debug ("Bisquik2db parent:" + str (parent))
+    log.debug ("Bisquik2db parent: %s" , str (parent))
     if isinstance(doc , etree._ElementTree):
         inputs = [ doc.getroot() ]
         if doc.getroot().tag in ( 'request', 'response' ):

@@ -297,7 +297,7 @@ class DataServerController(ServiceController):
         """
 
         uri = None
-        log.debug ('resource  = %s' ,  resource)
+        log.debug ('resource  = %s' ,  str(resource))
         if isinstance (resource, etree._Element):
             uri = resource.get ('uri')
         elif isinstance(resource, basestring):
@@ -306,7 +306,7 @@ class DataServerController(ServiceController):
                 raise BadValue('update_resource uri %s needs new_value to update  ' % uri )
         if uri is not None:
             resource = load_uri (uri)
-        log.debug ('resource %s = %s' , uri, resource)
+        log.debug ('resource %s = %s' , uri, str(resource))
         node = bisquik2db(doc=new_resource, resource=resource, replace=replace)
         #response  = etree.Element ('response')
         r =  db2tree (node, baseuri = self.url, **kw)
@@ -450,9 +450,9 @@ class DataServerController(ServiceController):
             if path:
                 parent = resource
                 resouce = None
-            log.debug ("path=%s resource_type=%s resource=%s, parent=%s", path, resource_type, resource, parent)
+            log.debug ("path=%s resource_type=%s resource=%s, parent=%s", path, resource_type, str(resource), str(parent))
 
-        log.debug ("final path=%s resource_type=%s resource=%s, parent=%s", path, resource_type, resource, parent)
+        log.debug ("final path=%s resource_type=%s resource=%s, parent=%s", path, resource_type, str(resource), str(parent))
         response = etree.Element('resource')
         if resource is None:
             # We are dealing with query
