@@ -1095,12 +1095,14 @@ def dbtype_from_tag(tag):
             return (tag, mapper_.class_)
     return (tag, Taggable)
 
+
+FILTERED=['user', 'system', 'store']
+
 #@memoized
 def all_resources ():
     ''' Return the setof unique names that are taggable objects
     '''
     #names = DBSession.query(UniqueName).filter(UniqueName.id == Taggable.tb_id).all()
     #log.debug ('all_resources' + str(names))
-    names = [ x[0] for x in DBSession.query(Taggable.resource_type).distinct().all() ]
-
+    names = [ x[0] for x in DBSession.query(Taggable.resource_type).filter_by (resource_parent_id=None).distinct().all() if x[0] not in FILTERED ]
     return names
