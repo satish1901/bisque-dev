@@ -58,6 +58,7 @@ import logging
 import posixpath
 import pkg_resources
 
+from collections import OrderedDict
 from urllib import urlencode
 import urlparse
 from tg import config, expose, request
@@ -80,7 +81,7 @@ class ServiceDirectory(object):
 
     def __init__(self):
         # Services is a hash of service_type : Entry
-        self.services = {}
+        self.services = OrderedDict()
 
     def __iter__(self):
         for e in self.services:
@@ -275,4 +276,3 @@ class ServiceMixin(object):
 class ServiceController(BaseController, ServiceMixin):
     def __init__(self, uri):
         ServiceMixin.__init__(self, uri)
-
