@@ -58,6 +58,7 @@ import logging
 import posixpath
 import pkg_resources
 
+from collections import OrderedDict
 from urllib import urlencode
 import urlparse
 from tg import config, expose, request
@@ -80,7 +81,8 @@ class ServiceDirectory(object):
 
     def __init__(self):
         # Services is a hash of service_type : Entry
-        self.services = {}
+        self.services = OrderedDict()
+        self.root = None
 
     def __iter__(self):
         for e in self.services:
@@ -124,9 +126,14 @@ class ServiceDirectory(object):
     def find_service (self, service_type):
         """Return the service instance of service type"""
         entry = self.services.get (service_type, None)
-        if entry and len(entry.instances) > 0:
-            return entry.instances[0]
-        return None
+        if not entry:
+            log.error ("Could not find registered service %s", service_type)
+            return None
+        if len(entry.instances) == 0:
+            service_url = urlparse.urljoin (self.root , entry.name)
+            service = entry.module.initialize(service_url)
+            service_registry.register_instance (service)
+        return entry.instances[0]
 
     def get_services (self, service_type=None):
         """Return all services"""
@@ -157,6 +164,7 @@ def load_services ( wanted = None):
 def mount_services (root, enabled = None, disabled = None):
     mounted = []
     pairs   = []
+    service_registry.root = root
     for ty, entry in service_registry.get_services().items():
         if (not enabled or  ty in enabled) and ty not in disabled:
             if  hasattr(entry.module, "initialize"):
@@ -275,4 +283,3 @@ class ServiceMixin(object):
 class ServiceController(BaseController, ServiceMixin):
     def __init__(self, uri):
         ServiceMixin.__init__(self, uri)
-
