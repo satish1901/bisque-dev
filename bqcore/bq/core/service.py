@@ -82,6 +82,7 @@ class ServiceDirectory(object):
     def __init__(self):
         # Services is a hash of service_type : Entry
         self.services = OrderedDict()
+        self.root = None
 
     def __iter__(self):
         for e in self.services:
@@ -129,6 +130,7 @@ class ServiceDirectory(object):
             log.error ("Could not find registered service %s", service_type)
             return None
         if len(entry.instances) == 0:
+            service_url = urlparse.urljoin (self.root , entry.name)
             service = entry.module.initialize(service_url)
             service_registry.register_instance (service)
         return entry.instances[0]
@@ -162,6 +164,7 @@ def load_services ( wanted = None):
 def mount_services (root, enabled = None, disabled = None):
     mounted = []
     pairs   = []
+    service_registry.root = root
     for ty, entry in service_registry.get_services().items():
         if (not enabled or  ty in enabled) and ty not in disabled:
             if  hasattr(entry.module, "initialize"):
