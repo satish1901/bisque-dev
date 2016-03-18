@@ -125,9 +125,13 @@ class ServiceDirectory(object):
     def find_service (self, service_type):
         """Return the service instance of service type"""
         entry = self.services.get (service_type, None)
-        if entry and len(entry.instances) > 0:
-            return entry.instances[0]
-        return None
+        if not entry:
+            log.error ("Could not find registered service %s", service_type)
+            return None
+        if len(entry.instances) == 0:
+            service = entry.module.initialize(service_url)
+            service_registry.register_instance (service)
+        return entry.instances[0]
 
     def get_services (self, service_type=None):
         """Return all services"""
