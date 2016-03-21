@@ -1178,6 +1178,8 @@ def resource_delete(resource, user_id=None):
     log.info('resource_delete %s:end' % resource)
 
 
+#FILTERED_TYPES=['user', 'system', 'store']
+FILTERED_TYPES=[]
 def resource_types(user_id=None, wpublic=False):
     'return all toplevel resource types available to user'
     #names = [ x[0] for x in DBDBSession.query(Taggable.resource_type).distinct().all() ]
@@ -1199,7 +1201,7 @@ def resource_types(user_id=None, wpublic=False):
     try:
         vsall = unique(vsall, lambda x: x.resource_type)
         #log.debug ("tag_names query = %s" % sq1)
-        return [ x.resource_type for x in vsall ]
+        return [ x.resource_type for x in vsall if x.resource_type not in FILTERED_TYPES ]
     except (IndexError, StopIteration):
         return []
     return vsall

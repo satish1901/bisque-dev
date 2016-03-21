@@ -290,7 +290,7 @@ class ResponseCache(object):
 
     def modified_resource(self, resource):
         #cachename = os.path.join(self.cachepath, self._cache_name(url, user))
-        log.debug ("modified %s", resource)
+        log.debug ("modified %s" % resource)
         if hasattr(resource, 'ts'):
             return resource.ts
         return None
