@@ -230,7 +230,6 @@ class TableController(ServiceController):
 
     def __init__(self, server_url):
         super(TableController, self).__init__(server_url)
-        self.baseuri = server_url
         self.basepath = os.path.dirname(inspect.getfile(inspect.currentframe()))
 
         self.importers = PluginManager('import', os.path.join(self.basepath, 'importers'), TableBase)
@@ -262,7 +261,7 @@ class TableController(ServiceController):
     def _default(self, *args, **kw):
         """find export plugin and run export"""
         log.info ("STARTING table (%s): %s", datetime.now().isoformat(), request.url)
-        path = request.url.replace(self.baseuri, '').split('/')
+        path = request.path_qs.replace(self.baseuri, '').split('/')
         path = [urllib.unquote(p) for p in path if len(p)>0]
         log.debug("Path: %s", path)
 
@@ -296,7 +295,7 @@ class TableController(ServiceController):
             if table is None:
                 abort(500, 'Table cannot be read')
             log.debug('Inited table: %s',str(table))
-    
+
             # range read
             candidate = table.path[0].split(':')[0]
             if candidate not in self.operations.plugins:
@@ -310,7 +309,7 @@ class TableController(ServiceController):
             #else: # full read is not permitted anymore
             #    table.read()
             log.debug('Loaded table: %s', str(table))
-    
+
             # operations consuming the rest of the path
             i = 0
             a = table.path[i] if len(table.path)>i else None
@@ -324,7 +323,7 @@ class TableController(ServiceController):
                     i += 1
                 a = table.path[i] if len(table.path)>i else None
             log.debug('Processed table: %s', str(table))
-    
+
             # export
             out_format = get_arg(table, 'format:', defval='format:xml', **kw).replace('format:', '')
             out_info   = is_arg(table, 'info')
@@ -334,7 +333,7 @@ class TableController(ServiceController):
                     r = self.exporters.plugins[out_format]().info(table)
                 else:
                     r = self.exporters.plugins[out_format]().export(table)
-                return r    
+                return r
             abort(400, 'Requested export format (%s) is not supported'%out_format )
         finally:
             # close any open table
