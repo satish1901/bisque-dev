@@ -68,7 +68,7 @@ def local_xml_copy(root):
     f.close()
     return path
 
-class MexParser(object):
+class MexParser(object):    
 
     def prepare_inputs (self, module, mex, token = None):
         '''Scan the module definition and the mex and match input
@@ -113,8 +113,11 @@ class MexParser(object):
             else:
                 found = actual_inputs.xpath ('./tag[@name="%s"]'%param_name)
                 if len(found ):
-                    log.debug ("PARAM %s=%s" % (param_name, found[0]))
-                    input_nodes.append (  copy.deepcopy(found[0]) )
+                    # found parameter but it may be a subtree (tree of parameters)
+                    # => traverse the tree and collect all parameters at the leaves
+                    addtl_input = [ copy.deepcopy(kid) for kid in found[0].iter() if not len(kid) ]     # WHY DEEPCOPY?????!!!!! NEVER USED?
+                    log.debug ("PARAM %s=%s" % (param_name, str(addtl_input)))
+                    input_nodes.extend(addtl_input)
                 else:
                     log.warn ('missing input for parameter %s' % mi.get('value'))
 
@@ -189,8 +192,7 @@ class MexParser(object):
 
         #log.debug ('iteraable module = %s' % etree.tostring(module))
         iterables = []
-        mod_iterables = module.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
-        mex_inputs    = mex.xpath('./tag[@name="inputs"]')[0]
+        mod_iterables = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
 
         iters = {}
         for itr in mod_iterables:
@@ -202,7 +204,7 @@ class MexParser(object):
         for iter_tag, iter_d in iters.items():
             for iter_type in iter_d.keys():
                 log.debug ("checking name=%s type=%s" % (iter_tag, iter_type))
-                resource_tag = mex_inputs.xpath('./tag[@name="%s" and @type="%s"]' % (iter_tag, iter_type))
+                resource_tag = mex.xpath('./tag[@name="inputs"]//tag[@name="%s" and @type="%s" and @value]' % (iter_tag, iter_type))
                 if len(resource_tag):
                     # Hmm assert len(resource_tag) == 1
                     iterables.append( (iter_tag, resource_tag[0].get('value'), resource_tag[0].get('type') ))

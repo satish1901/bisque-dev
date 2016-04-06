@@ -453,7 +453,7 @@ class BQSession(object):
     def parameter(self, name):
         if self.mex is None:
             return None
-        return self.mex.xmltree.find('tag[@name="inputs"]/tag[@name="%s"]'%name)
+        return self.mex.xmltree.find('tag[@name="inputs"]//tag[@name="%s" and @value]'%name)
 
     def parameter_value(self, name=None, p=None):
         if p is None:
@@ -475,7 +475,7 @@ class BQSession(object):
         p = {}
         if self.mex is None:
             return p
-        inputs = self.mex.xmltree.iterfind('tag[@name="inputs"]/tag')
+        inputs = self.mex.xmltree.iterfind('tag[@name="inputs"]//tag[@value]')
         for i in inputs:
             p[i.get('name')] = self.parameter_value(p=i)
         return p
@@ -643,7 +643,7 @@ class BQSession(object):
     ##############################
     # Mex
     ##############################
-    def update_mex(self, status, tags = [], gobjects = [], children=[], reload=False):
+    def update_mex(self, status, tags = [], gobjects = [], children=[], reload=False, merge=False):
         """save an updated mex with the addition
 
         @param status:  The current status of the mex
@@ -651,10 +651,14 @@ class BQSession(object):
         @param gobjects: same as etree.Element|BQGobject|dict objects of form { 'name': 'x', 'value':'z' }
         @param children: list of tuple (type, obj array) i.e ('mex', dict.. )
         @param reload:
-
+        @param merge: merge "outputs"/"inputs" section if needed
         @return
         """
-        mex = etree.Element('mex', value = status, uri = self.mex.uri)
+        if merge:
+            mex = self.fetchxml(self.mex.uri, view='deep')  # get old version of MEX, so it can be merged if needed
+            mex.set('value', status)
+        else:    
+            mex = etree.Element('mex', value = status, uri = self.mex.uri)
         #self.mex.value = status
         def append_mex (mex, type_tup):
             type_, elems = type_tup
@@ -667,7 +671,16 @@ class BQSession(object):
                     pass
                 else:
                     raise BQApiError('bad values in tag/gobject list %s' % tg)
-                mex.append(tg)
+                was_merged = False
+                if merge and tg.tag == 'tag' and tg.get('name', '') in ['inputs', 'outputs']:
+                    hits = mex.xpath('./tag[@name="%s"]' % tg.get('name', ''))
+                    if hits:
+                        assert len(hits) == 1
+                        hits[0].extend(list(tg))
+                        was_merged = True
+                        log.debug("merged '%s' section in MEX", tg.get('name', ''))
+                if not was_merged:
+                    mex.append(tg)
 
         append_mex(mex, ('tag', tags))
         append_mex(mex, ('gobject', gobjects))
@@ -698,7 +711,7 @@ class BQSession(object):
         if msg is not None:
             tags.append( { 'name':'message', 'value': msg })
         try:
-            return self.update_mex(status, tags=tags, gobjects=gobjects, children=children, reload=False)
+            return self.update_mex(status, tags=tags, gobjects=gobjects, children=children, reload=False, merge=True)
         except BQCommError, ce:
             log.error ("Problem during finish mex %s" % ce.headers)
             try:
@@ -719,6 +732,26 @@ class BQSession(object):
         pass
 
 
+
+    ##############################
+    # Module control
+    ##############################
+    def run_modules(self, module_list, pre_run=None, post_run=None, callback_fct=None):
+        """Run one or more modules in parallel.
+        
+        :param module_list: List of modules to run 
+        :type  module_list: [ { moduleuri: ..., inputs: { param1:val1, param2:val2, ...}, parent_mex: ... }, {...}, ... ]
+        :param pre_run: module entrypoint to call before run (or None if no prerun)
+        :type pre_run: str
+        :param post_run: module entrypoint to call after run (or None if no postrun)
+        :type post_run: str
+        :param callback_fct: function to call on completion (None: block until completion)
+        :type  callback_fct: fct(mex_list=list(str))
+        :returns: list of mex URIs, one for each module
+        :rtype: list(str)
+        """
+        # TODO: create MEX according to params and POST it to module_service
+        pass
 
     ##############################
     # Resources
