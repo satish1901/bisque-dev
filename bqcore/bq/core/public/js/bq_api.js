@@ -2368,7 +2368,7 @@ BQModule.prototype.afterInitialized = function () {
 
     // create sorted iterable resource names
     if ('execute_options/iterable' in dict) {
-        this.iterables = [ dict['execute_options/iterable'] ];
+        this.iterables = [].concat( dict['execute_options/iterable'] );
         // make sure dataset renderer is there
         var name = this.iterables[0];
         if (!(name in this.outputs_index)) {
@@ -2434,7 +2434,33 @@ BQModule.prototype.createMEX = function( ) {
         for (var p=0; (iterable_name=this.iterables[p]); p++) {
             var i = this.inputs_index[iterable_name];
             if (!i) continue;
-            tag_execute.addtag({ name:'iterable', value:i.name,  });
+            // determine the type of the iterable:
+            // if i.name is in execute_options/iterable (i.e., pre-defined iterable), use the type listed there
+            // if not (i.e., a dynamically added iterable), use i.type
+            var iterable_type = i.type;
+            var iterable_kids = [];
+            var exec_options = [].concat(this.find_tags("execute_options"));
+            if (exec_options.length >= 1) {
+                var static_iters = [].concat(exec_options[0].find_tags("iterable"));
+                for (var idx=0; (static_iter=static_iters[idx]); idx++) {
+                    if (static_iter.value == i.name) {
+                        if (static_iter.type == i.type) {
+                            iterable_type = static_iter.type;
+                            iterable_kids = static_iter.tags;
+                        }
+                        else {
+                            iterable_type = undefined;   // nothing iterable
+                        }
+                        break;
+                    }
+                }
+            }
+            if (iterable_type) {
+                iter_tag = tag_execute.addtag({ name:'iterable', value:i.name, type:iterable_type, });
+                for (var kid_idx=0; kid_idx < iterable_kids.length; kid_idx++) {
+                    iter_tag.addtag(iterable_kids[kid_idx]);
+                }
+            }
         }
     }
 

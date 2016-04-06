@@ -81,6 +81,8 @@ import transaction
 import tg
 import urlparse
 import urllib
+import itertools
+import csv
 from bqapi import BQServer
 from lxml import etree
 from datetime import datetime
@@ -310,24 +312,27 @@ def create_mex(module, name, mex = None, **kw):
     log.debug('mex original %s' , etree.tostring(mex))
     # Check that we might have an iterable resource in mex/tag[name='inputs']
     #
-    # <moudule> <tag name="execute_options">
+    # <mex> <tag name="execute_options">
     #   <tag name="iterable" value="resource_url" type="dataset">
     #        <tag name="xpath" value="./value/@text'/>
-    # </tag></tag> </module>
-    iterables = module.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
+    #   </tag>
+    #   <tag name="iterable" value="RefFrameZDir" type="list" />     PROPOSED NEW ITERABLE
+    #   <tag name="iterable" value="RefFrameZDir" type="range" />    PROPOSED NEW ITERABLE
+    # </tag> </mex>
+    iterables = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
     if len(iterables)==0:
         return mex
-    # Build dict of iterable input names ->   dict of iterable types -> xpath expressions
+    # Build dict of iterable input names ->   dict of iterable types -> iter expressions
     iters = {}
     for itr in iterables:
         resource_tag = itr.get('value')
-        resource_type = itr.get('type')
-        resource_xpath = './value/text()'
+        resource_type = itr.get('type')        
+        resource_iterexpr = './value/text()' if resource_type not in ['list', 'range'] else '@'+resource_type
         if len(itr):
             # Children of iterable allow overide of extraction expression
             if itr[0].get('name') == 'xpath':
-                resource_xpath = itr[0].get('value')
-        iters.setdefault(resource_tag, {})[resource_type] =  resource_xpath
+                resource_iterexpr = itr[0].get('value')
+        iters.setdefault(resource_tag, {})[resource_type] =  resource_iterexpr
     log.debug ('iterables in module %s' , iters)
 
     # Find an iterable tags (that match name and type) in the mex inputs, add them mex_tags
@@ -336,33 +341,51 @@ def create_mex(module, name, mex = None, **kw):
     for iter_tag, iter_d in iters.items():
         for iter_type in iter_d.keys():
             log.debug ("checking name=%s type=%s" , iter_tag, iter_type)
-            resource_tag = mex_inputs.xpath('./tag[@name="%s" and @type="%s"]' % (iter_tag, iter_type))
+            resource_tag = mex_inputs.xpath('.//tag[@name="%s" and @type="%s" and @value]' % (iter_tag, iter_type))
             if len(resource_tag):
                 # Hmm assert len(resource_tag) == 1
                 mex_tags[iter_tag] = resource_tag[0]
     log.debug ('iterable tags found in mex %s' , mex_tags)
 
+    # all_iterables is list of all iter lists: 
+    # [ [(tag1, val1), (tag1, val2), ...], [(tag2, valx), (tag2, valy), ...], ... ]
+    all_iterables = []
     # for each iterable found in the mex inputs, check the resource type
     for iter_tag, iterable in mex_tags.items():
         resource_value = iterable.get('value')
         resource_type = iterable.get('type')
-        resource_xpath  = iters[iter_tag][resource_type]
+        resource_iterexpr  = iters[iter_tag][resource_type]
+        if resource_type == 'list':
+            # list type: value is comma-separated list itself
+            members = csv.reader([resource_value], skipinitialspace=True).next()
+        else:
+            # must be dataset, assume resource_iterexpr is xpath 
+            resource = data_service.get_resource(resource_value, view='deep')
+            # if the fetched resource doesn't match the expected type, then skip to next iterable
+            if not (resource_type == resource.tag or resource_type == resource.get('type')):
+                continue
+            members = resource.xpath(resource_iterexpr)
+            log.debug ('iterated xpath %s members %s' , resource_iterexpr, members)
+        all_iterables.append([(iter_tag, value) for value in members])
 
-        resource = data_service.get_resource(resource_value, view='deep')
-        # if the fetched resource doesn't match the expected type, then skip to next iterable
-        if not (resource_type == resource.tag or resource_type == resource.get('type')):
-            continue
-        members = resource.xpath(resource_xpath)
-        log.debug ('iterated xpath %s members %s' , resource_xpath, members)
-        for value in members:
-            # Create SubMex section with original parameters replaced with iterated members
-            subinputs = copy.deepcopy(mex_inputs)
-            resource_tag = subinputs.xpath('./tag[@name="%s"]' % iter_tag)[0]
-            subinputs.remove (resource_tag)
-            etree.SubElement(subinputs, 'tag', name=iter_tag, value=value)
-            submex = etree.Element('mex', name=name, type=module.get ('uri'))
-            submex.append(subinputs)
-            mex.append(submex)
+    log.debug("all iterable values: %s", str(all_iterables))
+
+    # Generate a "matrix" of iterable values:
+    # tag1:val1, tag2:valx, tag3:vala
+    # tag1:val2, tag2:valx, tag3:vala
+    # ...
+    # tag1:val1, tag2:valy, tag3:vala
+    # ...
+    for iter_combo in itertools.product(*all_iterables):
+        # Create SubMex section with original parameters replaced with iterated members
+        subinputs = copy.deepcopy(mex_inputs)        
+        for iter_tag, value in iter_combo:
+            resource_tag = subinputs.xpath('.//tag[@name="%s"]' % iter_tag)[0]
+            etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=value)
+            resource_tag.getparent().remove (resource_tag)            
+        submex = etree.Element('mex', name=name, type=module.get ('uri'))
+        submex.append(subinputs)
+        mex.append(submex)
     log.debug('mex rewritten-> %s' , etree.tostring(mex))
     return mex
 

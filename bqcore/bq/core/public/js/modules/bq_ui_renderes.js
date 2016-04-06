@@ -31,6 +31,7 @@ BQ.selectors.resources  = { 'image'            : 'BQ.selectors.Resource',
 
 BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String',
                             'string'           : 'BQ.selectors.String',
+                            'list'             : 'BQ.selectors.String',
                             'number'           : 'BQ.selectors.Number',
                             'combo'            : 'BQ.selectors.Combo',
                             'boolean'          : 'BQ.selectors.Boolean',
@@ -38,6 +39,7 @@ BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String',
                             'image_channel'    : 'BQ.selectors.ImageChannel',
                             'pixel_resolution' : 'BQ.selectors.PixelResolution',
                             'annotation_attr'  : 'BQ.selectors.AnnotationsAttributes',
+                            'dream3d_pipelineparams' : 'BQ.selectors.Dream3DPipelineParams',
                           };
 
 BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image',
@@ -1076,6 +1078,196 @@ Ext.define('BQ.selectors.PixelResolution', {
         return true;
     },
 
+});
+
+
+/*******************************************************************************
+BQ.selectors.Dream3DPipelineParams relies on BQ.selectors.Resource and altough
+it is instantiated directly it needs existing BQ.selectors.Resource to listen to
+and read data from!
+
+Creates sub-selectors for each pipeline parameter.
+*******************************************************************************/
+
+Ext.define('BQ.selectors.Dream3DPipelineParams', {
+    alias: 'widget.selectorpipelineparams',
+    extend: 'BQ.selectors.Selector',
+    requires: ['Ext.form.field.Number'],
+
+    height: 30,
+    layout: 'hbox',
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+        var reference = this.module.inputs_index[template.reference];
+        if (reference && reference.renderer) {
+            this.reference = reference.renderer;
+            this.reference.on( 'changed', function(sel, res) { this.onNewResource(sel, res); }, this );
+            //this.reference.on( 'gotPhys', function(sel, phys) { this.onPhys(sel, phys); }, this );
+        }
+
+        Ext.tip.QuickTipManager.init();
+
+        this.callParent();
+    },
+
+    onNewResource : function(sel, res) {
+        Ext.Ajax.request({
+            url: '/blob_service/' + res.resource_uniq,
+            callback: function(opts, succsess, response) {
+                if (response.status>=400 || !succsess)
+                    BQ.ui.error(response.responseText);
+                else
+                    this.onFileContents(response.responseText);
+            },
+            scope: this,
+            disableCaching: false,
+            listeners: {
+                scope: this,
+                beforerequest   : function() { this.setLoading('Loading data...'); },
+                requestcomplete : function() { this.setLoading(false); },
+                requestexception: function() { this.setLoading(false); },
+            },
+        });
+    },
+
+    onFileContents: function(txt) {
+        var resource = this.resource,
+            json = Ext.JSON.decode(txt);
+
+        // parse pipeline resource and extract user def parameters
+        var params = this.extractParameters(json);
+
+        this.suspendLayout = true;
+
+        // remove all previous tags
+        this.removeAll();
+        for (var i=0; i<resource.tags.length; i++) {
+            resource.tags[i].dispose();
+        }
+        resource.tags.length = 0;
+
+        for (var i = 0; i < params.length; i++) {
+            var param = params[i];
+            var name = param["name"];
+            var value = param["value"];
+            var type = param["type"];
+            var xtype = param["xtype"];
+            var tag = new BQTag(undefined, name, value, type);
+            var new_tag = resource.addtag( tag );
+            new_tag.template = {'label': name, 'prohibit_upload': true, 'accepted_type': type};
+            this.add({
+                xtype: xtype,
+                resource: tag,
+            });
+            //resource.values[i] = tag;
+        }
+
+        this.suspendLayout = false;
+        this.updateLayout();
+
+        this.reference = res;
+    },
+
+    // extract parameters from a dream3d pipeline JSON document
+    // and return them as list of {"name":..., "type":..., "value":..., "xtype":...} elements.
+    extractParameters: function(node) {
+        var fields = [];
+        for (var key in node) {
+            if (typeof(node[key]) == "string" && node[key].startsWith("@") && node[key] != "@INPUT" && node[key] != "@OUTPUT") {
+                var toks = node[key].split("@");
+                var val = (toks.length > 2 ? toks[2] : "");
+                var type = (toks[1] == "NUMPARAM" ? "number" : "string");
+                var xtype = "selectorstring";    // TODO: this should be a list type here (list of numbers/strings)
+                fields.push({"name": key, "type": type, "value": val, "xtype": xtype});
+            }
+            if (node[key] != null && typeof(node[key]) == "object") {
+                var moreFields = this.extractParameters(node[key]);
+                fields = fields.concat(moreFields);
+            }
+        }
+        return fields;
+    },
+
+    onPhys : function(sel, phys) {
+        var resource = this.resource;
+        var template = resource.template || {};
+
+        if (this.selected_value)
+            this.selected_value = undefined;
+        else
+        for (var i=0; i<4; i++) {
+            this.field_res[i].setValue( phys.pixel_size[i] );
+            this.queryById('units'+i).setText(phys.pixel_units[i]);
+        }
+
+        if (phys.t>1) {
+            this.field_res[3].setVisible(true);
+            this.queryById('units3').setVisible(true);
+        } else {
+            this.field_res[3].setVisible(false);
+            this.queryById('units3').setVisible(false);
+            resource.values[3] = new BQValue ('number', 1.0, 3);
+        }
+    },
+
+    select: function(resource) {
+        //var value = resource.value==undefined?resource.values:resource.value;
+        //this.selected_value = value;
+        //if (value instanceof Array)
+        //    for (var i=0; i<value.length; i++)
+        //        this.field_res[i].setValue( value[i].value );
+        //else
+        //    this.field_res[0].setValue( value );
+    },
+
+    isValid: function() {
+        var resource = this.resource;
+        var reference = this.reference;
+
+        // check if parameters are of correct types
+        for (var i = 0; i < resource.tags.length; i++) {
+            var tag = resource.tags[i];
+            var vals = this.CSVtoArray(tag.value);
+            for (var validx = 0; validx < vals.length; validx++) {
+                if (tag.type == "number" && isNaN(vals[validx])) {
+                    var template = resource.template || {};
+                    var msg = template.fail_message || 'List for numeric parameter contains non-numeric value!';
+                    BQ.ui.tip(this.getId(), msg, {anchor:'left',});
+                    return false;
+                }
+            }
+            if (vals.length > 1) {
+                // this is a CSV list (multi parameter) => add "list" to execute_options
+                tag.type = "list";
+                this.module.iterables.push(tag.name);
+                this.module.inputs_index[tag.name] = tag;
+            }
+        }
+        return true;
+    },
+
+    CSVtoArray: function(text) {
+        // regular expressions to validate+parse valid CSV string
+        var re_valid = /^\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*(?:,\s*(?:'[^'\\]*(?:\\[\S\s][^'\\]*)*'|"[^"\\]*(?:\\[\S\s][^"\\]*)*"|[^,'"\s\\]*(?:\s+[^,'"\s\\]+)*)\s*)*$/;
+        var re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
+        // Return NULL if input string is not well formed CSV string.
+        if (!re_valid.test(text)) return null;
+        var a = [];                     // Initialize array to receive values.
+        text.replace(re_value, // "Walk" the string using replace with callback.
+            function(m0, m1, m2, m3) {
+                // Remove backslash from \' in single quoted values.
+                if      (m1 !== undefined) a.push(m1.replace(/\\'/g, "'"));
+                // Remove backslash from \" in double quoted values.
+                else if (m2 !== undefined) a.push(m2.replace(/\\"/g, '"'));
+                else if (m3 !== undefined) a.push(m3);
+                return ''; // Return empty string.
+            });
+        // Handle special case of empty last value.
+        if (/,\s*$/.test(text)) a.push('');
+        return a;
+    },
 });
 
 

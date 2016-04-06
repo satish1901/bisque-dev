@@ -136,6 +136,8 @@ class BaseRunner(object):
     environments = []
     launcher   = None  # Use Default launcher
     mexhandled = "true"
+    prerun = None      # entrypoint for prerun
+    postrun = None     # entrypoint for postrun
 
     def __init__(self, **kw):
         self.parser =  optparse.OptionParser()
@@ -252,7 +254,9 @@ class BaseRunner(object):
 #                           arguments = [],
                            mex_url = self.mex_tree is not None and self.mex_tree.get('uri') or None,
                            bisque_token = self.bisque_token,
-                           rundir = self.rundir))
+                           rundir = self.rundir,
+                           prerun=None,
+                           postrun=None))
         self.mexes.append(topmex)
 
         # Pull out command line arguments
@@ -270,12 +274,18 @@ class BaseRunner(object):
             mexparser = MexParser()
             mex_inputs  = mexparser.prepare_inputs(self.module_tree, self.mex_tree, self.bisque_token)
             module_options = mexparser.prepare_options(self.module_tree, self.mex_tree)
-
-            argument_style = module_options.get('argument_style', 'positional')
+            
+            argument_style = module_options.get('argument_style', 'positional')            
+            # see if we have pre/postrun option            
+            self.prerun = module_options.get('prerun_entrypoint', None)
+            self.postrun = module_options.get('postrun_entrypoint', None)
+            
             topmex.named_args.update ( mexparser.prepare_mex_params( mex_inputs ) )
             topmex.executable.extend(mexparser.prepare_mex_params (mex_inputs, argument_style))
             topmex.rundir = self.rundir
             #topmex.options = module_options
+            # remember topmex executable for pre/post runs
+            self.executable = topmex.executable
 
             # Create a nested list of  arguments  (in case of submex)
             submexes = self.mex_tree.xpath('/mex/mex')
@@ -319,10 +329,22 @@ class BaseRunner(object):
 
         log.info("starting %d mexes -> %s" % (len(self.mexes), self.mexes))
 
+        # add empty "outputs" section in topmex
+        if self.session is None:
+            self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
+        self.session.update_mex(status='starting', tags=[{'name':'outputs'}])
+
         if self.mexes[0].iterables:
             if self.session is None:
                 self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
             self.session.update_mex('running parallel')
+            
+        # if there is a prerun, run it now
+        if self.prerun:
+            log.info("prerun starting")
+            self.command_single_entrypoint(self.prerun, **kw)
+            log.info("prerun completed")
+            
         return self.command_execute
 
     def command_execute(self, **kw):
@@ -336,7 +358,13 @@ class BaseRunner(object):
         with open('%s/mexes.bq' % self.mexes[0].get('staging_path', tempfile.gettempdir()),'rb') as f:
             self.mexes = pickle.load(f)
 
-        log.info("finishing %d mexes -> %s" % (len(self.mexes), self.mexes))
+        log.info("finishing %d mexes -> %s" % (len(self.mexes), self.mexes))        
+
+        # if there is a postrun (aka "reduce phase"), run it now
+        if self.postrun:
+            log.info("postrun starting")
+            self.command_single_entrypoint(self.postrun, **kw)
+            log.info("postrun completed")
 
         self.teardown_environments()
 
@@ -356,6 +384,9 @@ class BaseRunner(object):
 
 
             self.session.finish_mex(tags = tags)
+        return None
+
+    def command_single_entrypoint(self, entrypoint, **kw):
         return None
 
     def command_kill(self, **kw):
@@ -430,8 +461,30 @@ class CommandRunner(BaseRunner):
         super(CommandRunner, self).process_config(**kw)
         for mex in self.mexes:
             if not mex.executable:
-                continue
-            mex.log_name = os.path.join(mex.rundir, "%s.log" % mex.executable[0])
+                mex.log_name = os.path.join(mex.rundir, "topmex.log")
+            else:
+                mex.log_name = os.path.join(mex.rundir, "%s.log" % mex.executable[0])
+
+    def command_single_entrypoint(self, entrypoint, **kw):
+        "Execute specific entrypoint"
+        mex = self.mexes[0]   # topmex
+        command_line = list(self.executable)
+        # add entrypoint to command_line
+        command_line += [ '--entrypoint', entrypoint ]
+        # enclose options that start with '-' in quotes to handle numbers properly (e.g., '-3.3')
+        command_line = [ tok if tok.startswith('--') or not tok.startswith('-') else '"%s"'%tok for tok in command_line ]
+        rundir = mex.get('rundir')
+        if self.options.dryrun:
+            self.log( "DryRunning '%s' in %s" % (' '.join(command_line), rundir))
+        else:
+            self.log( "running '%s' in %s" % (' '.join(command_line), rundir))            
+            proc = dict(command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex)
+            
+            from bq.engine.controllers.execone import execone            
+            retcode = execone (proc)
+            if retcode:
+                self.command_failed(proc, retcode)
+        return None
 
     def command_execute(self, **kw):
         "Execute the commands locally specified the mex list"
@@ -443,6 +496,8 @@ class CommandRunner(BaseRunner):
                 continue
             command_line = list(mex.executable)
             #command_line.extend (mex.arguments)
+            # enclose options that start with '-' in quotes to handle numbers properly (e.g., '-3.3')
+            command_line = [ tok if tok.startswith('--') or not tok.startswith('-') else '"%s"'%tok for tok in command_line ]
             rundir = mex.get('rundir')
             if  self.options.dryrun:
                 self.log( "DryRunning '%s' in %s" % (' '.join(command_line), rundir))
