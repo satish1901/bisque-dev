@@ -243,9 +243,9 @@ BQWebApp.prototype.getResourceNameByUrl = function (uri) {
         return this.uri_name_map[uri];
 
     this.uri_name_map[uri] = uri;
-    BQFactory.request( { uri:     uri,
+    /*BQFactory.request( { uri:     uri,
                          cb:      callback(this, 'map_name'),
-                         errorcb: function(){}, });
+                         errorcb: function(){}, });*/
 };
 
 BQWebApp.prototype.map_name = function (r) {
@@ -674,7 +674,7 @@ BQWebApp.prototype.onprogress = function (mex) {
         if (o instanceof BQMex) {
             var status = o.value || o.status || 'initializing';
             var uri    = o.dict['inputs/'+iterable] || o.uri;
-            var name   = this.getResourceNameByUrl(uri) || uri;
+            var name   = uri; //this.getResourceNameByUrl(uri) || uri;
 
             var r = this.status_store.findRecord( 'resource', uri );
             if (r) {
