@@ -10,7 +10,7 @@ import string
 from subprocess import call, check_call
 from bq.util.configfile import ConfigFile
 from bq.util.copylink import copy_link
-from bq.util.paths import config_path
+from bq.util.paths import find_config_path
 from bq.util.converters import asbool
 from mako.template import Template
 import bbfreeze
@@ -263,7 +263,7 @@ def docker_setup (image, command, base, params):
 
 def read_config(filename, section= None):
     if not os.path.exists (filename):
-        filename = config_path(filename)
+        filename = find_config_path(filename)
 
     print "READING", filename
     return ConfigFile(filename).get (section, asdict = True)

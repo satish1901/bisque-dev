@@ -18,6 +18,14 @@ if os.name == 'nt':
         ('numexpr-2.4.6-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/numexpr-2.4.6-cp27-none-win_amd64.whl'),
         ('tables-3.2.2-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/tables-3.2.2-cp27-none-win_amd64.whl'),
     ]
+    PIP_INSTALL = [ 'pip', 'install', '-U' ]
+else:
+    PIP_LIST = [
+        ('numpy', None),
+        ('numexpr', None),
+        ('tables', None),
+    ]
+    PIP_INSTALL = [ 'pip', 'install', '-U',  '-i', 'https://biodev.ece.ucsb.edu/py/bisque/dev/+simple' ]
 
 shell = False
 if os.name == 'nt':
@@ -28,6 +36,7 @@ def install_package(filename, URL, command=None):
     print 'Installing %s\n'%filename
     if URL is not None:
         urllib.urlretrieve (URL, filename)
+    print command
     subprocess.call (command, shell=shell)
     if URL is not None:
         try:
@@ -45,7 +54,7 @@ def install_easy(filename, URL=None):
 
 # installs package using pip wheels from a URL or pypy
 def install_pip(filename, URL=None):
-    return install_package(filename, URL, ["pip", "install", "-U", filename])
+    return install_package(filename, URL, PIP_INSTALL + [ filename ])
 
 def install_source(filename, URL, command=None):
     if URL is not None:
