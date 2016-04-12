@@ -281,9 +281,13 @@ def update_remote_proxies (proxy):
 
 
 def startup():
-    root = config.get ('bisque.root', '/')
-    if not root:
-        raise ConfigurationError ('bisque.root not set')
+    #root = config.get ('bisque.root')
+    #if root:
+    #  #raise ConfigurationError ('bisque.root not set')
+    #  log.warn ("bisque.root setting is not supported")
+    #  config.set ('bisque.root', '/')
+    root = '/'
+
     #proxy = config.get('bisque.site', None)
     enabled = os.getenv('BISQUE_SERVICES_ENABLED') or config.get('bisque.services_enabled', None)
     disabled = os.getenv('BISQUE_SERVICES_DISABLED') or config.get('bisque.services_disabled', None)
@@ -349,4 +353,3 @@ def startup():
 
 #if  server_type == 'root' and ProxyRewriteURL.active_proxy:
 #    cherrypy.filters.input_filters.append(ProxyRewriteURL)
-
