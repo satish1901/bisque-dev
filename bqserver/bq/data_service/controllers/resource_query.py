@@ -124,7 +124,7 @@ def is_number(s):
         return False
 
 # Lexer
-tokens = ('TAGVAL',  'SEP', 'TYSEP', 'AND', 'OR', 'LP', 'RP', 'QUOTED', 'REL')
+tokens = ('TAGVAL',  'SEP', 'TYSEP', 'AND', 'OR', 'LP', 'RP', 'NOT', 'QUOTED', 'REL')
 reserved = { 'and':'AND', 'AND':'AND', 'or':'OR', 'OR':'OR', }
 
 #t_TAGVAL   = r'\w+\*?'
@@ -135,6 +135,7 @@ t_OR    = r'\|'
 t_LP    = r'\('
 t_RP    = r'\)'
 t_REL   = r'<|>|<=|>=|==|!='
+t_NOT   = r'~'
 #t_VALEXP= r'\w+\*'
 
 t_ignore = r' '
@@ -145,7 +146,7 @@ def t_QUOTED(t):
     t.value = t.value[1:-1]
     return t
 def t_TAGVAL(t):
-    r'[^:=<>\t\n\r\f\v()" ]+'
+    r'[^:=!<>~\t\n\r\f\v()" ]+'
     t.type = reserved.get(t.value, 'TAGVAL')
     if t.type != 'TAGVAL':
         t.value = t.value.upper()
@@ -190,13 +191,19 @@ def p_expr_default(p):
 #                 Taggable.id.in_ (select([Taggable.id], p[2]).correlate(None)))
 
 def p_expr_paren(p):
-    '''term : LP expr RP'''
+    '''expr : LP expr RP'''
     p[0] = p[2]
+
 
 def p_expr_term(p):
     '''expr : term'''
     #p[0] = Taggable.id.in_ (select([Taggable.id], p[1]).correlate(None))
     p[0] = p[1]
+
+
+def p_term_not(p):
+    '''term : NOT term'''
+    p[0] = ~p[2]
 
 
 def p_term_tagvaltype(p):
@@ -209,7 +216,7 @@ def p_term_tagvaltype(p):
 
 
     tagfilter =None
-    if name:
+    if name is not None:
         # attributes
         if name[0] == '@' and val:
             name = name[1:]
@@ -227,7 +234,7 @@ def p_term_tagvaltype(p):
             namexpr = tag.c.resource_name == name
         tagfilter = namexpr
 
-    if val:
+    if val is not None:
         v = val.lower()
         valexpr = None
         if val.count('*'):
@@ -249,7 +256,7 @@ def p_term_tagvaltype(p):
         else:
             tagfilter = valexpr
 
-    if type_:
+    if type_ is not None:
         ty = type_.lower()
         tyexpr = (func.lower(tag.c.resource_user_type) == ty)
         if tagfilter is not None:
@@ -313,7 +320,7 @@ def p_tagval(p):
 
 def p_empty(p):
     'empty :'
-    p[0] = ''
+    p[0] = None
 
 
 def p_error(p):
@@ -328,24 +335,24 @@ yacc.yacc(outputdir=data_path(), debug= 0)
 
 # End Parser
 #############################################################
+PUBLIC_VALS = { 'false': False, '0': False, 'private':False, 0:False,
+                'true': True, '1': True, 'public': True, 1:True }
 
-def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
+
+def base_permissions (user_id, with_public, action = RESOURCE_READ):
     # get system supplied user ID
-    public_vals = { 'false': False, '0': False, 'private':False, 0:False,
-                    'true': True, '1': True, 'public': True, 1:True }
-
     document = Taggable
 
     if isinstance(with_public, list): # protects against lists, that are not hashable -chris
         with_public = with_public[-1]
 
-    with_public = public_vals.get(with_public, False)
+    with_public = PUBLIC_VALS.get(with_public, False)
     user_id = user_id or get_user_id()
 
     if is_admin():
         if with_public:
             log.info('user (%s) is admin wpublic %s. Skipping protection filters' , user_id, with_public)
-            return query
+            return None
 
     # Check if logged in, else just check for public items.
     if user_id:
@@ -358,10 +365,22 @@ def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     else:
         visibility = (document.perm == PUBLIC)
 
-    return query.filter(visibility)
-    #dv = DBSession.query(document).filter (visibility).with_labels().subquery()
-    #dv = aliased (Taggable, dv)
-    #return query.filter(Taggable.document_id == dv.id)
+    return visibility
+
+def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
+    visibility = base_permissions(user_id, with_public, action = action)
+    if  visibility is not None:
+        return query.filter(visibility)
+    return query
+
+def document_permission(query, action=RESOURCE_READ, user_id=None, with_public = True):
+    visibility = base_permissions(user_id, with_public, action = action)
+    if visibility is not None:
+        dv = DBSession.query(Taggable).filter (visibility).with_labels().subquery()
+        dv = aliased (Taggable, dv)
+        return query.filter(Taggable.document_id == dv.id)
+    return query
+
 
 
 def prepare_tag_expr (query, tag_query=None):
@@ -374,7 +393,7 @@ def prepare_tag_expr (query, tag_query=None):
         parser = yacc.yacc(outputdir = data_path(), debug = 0)
         log.debug ("parsing '%s'  " % (tag_query))
         #expr = parser.parse (tag_query, lexer=lexer, debug=log)
-        expr = parser.parse (tag_query, lexer=lexer)
+        expr = parser.parse (tag_query, lexer=lexer, debug = 0)
         log.debug ("parsed '%s' -> %s " % (tag_query, expr))
         query = query.filter(expr)
     return query
@@ -1137,7 +1156,9 @@ def resource_delete(resource, user_id=None):
     log.info('resource_delete %s: start' % resource)
     if  user_id is None:
         user_id = get_user_id()
-    if resource.owner_id != user_id and not is_admin(): # user_id != get_admin_id():
+    if  resource.owner_id != user_id  \
+        and resource.resource_parent_id is None \
+        and not is_admin(): # user_id != get_admin_id():
         # Remove the ACL only
         q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
         q = q.filter (TaggableAcl.user_id == user_id)
