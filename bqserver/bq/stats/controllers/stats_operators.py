@@ -108,6 +108,18 @@ def mapflat(f, l):
     return reduce(operator.add, map(f, l))
 
 ################################################################################
+# Resource Operator implementations
+################################################################################
+
+class StatOperatorResourceUri (StatOperator):
+    '''maps resource into a vector of their uri as strings'''
+    name = 'resource-uri'
+    version = '1.1'
+    def do_map(self, v_in, **kw):
+        def nameSafe(t): return t.get('uri', '')
+        return map(nameSafe, v_in)
+
+################################################################################
 # Tag Operator implementations
 ################################################################################
 
