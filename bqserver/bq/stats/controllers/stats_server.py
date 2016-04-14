@@ -103,7 +103,8 @@ from pylons.controllers.util import abort
 from lxml import etree
 import sys
 import inspect
-
+import json
+    
 import cStringIO
 from urllib import quote
 from urllib import unquote
@@ -264,6 +265,51 @@ class statsController(ServiceController):
         response.headers['Content-Type'] = 'text/xml'
         response.headers['Content-Disposition'] = disposition       
         return etree.tostring(stream)
+    
+    #-------------------------------------------------------------
+    # Formatters - JSON
+    # MIME types: 
+    #   application/json
+    # Returns
+    #   { fields: ['col1', 'col2', ... ],
+    #     data: [ {col1: val1, col2: val2, ...}, 
+    #             {col1: val1, col2: val2, ...}, 
+    #             ... 
+    #           ]
+    #   }
+    #-------------------------------------------------------------    
+    @expose(content_type='application/json')
+    def json (self, **kw):
+
+        d = self.compute_stats(**kw)
+        mytitles = []
+        myiters = []
+        for i in d:
+            xpath   = i.pop('xpath')
+            xmap    = i.pop('xmap')
+            xreduce = i.pop('xreduce')
+            title   = i.pop('title')            
+            for k in i:     
+                if not hasattr(i[k], '__iter__'): 
+                    myiters.append([i[k]])
+                else:
+                    myiters.append(i[k])
+                if k != xreduce:
+                    mytitles.append( ('%s (%s)'%( title, k )).replace(',', ';') )
+                else:
+                    mytitles.append( title.replace(',', ';') )
+        
+        it = izip_longest(fillvalue='', *myiters)
+        ts = (t for t in it)
+        rows = []
+        for t in ts:
+            row = {}
+            for i in range(0, len(mytitles)):
+                row[mytitles[i]] = t[i]
+            rows.append(row)
+            
+        res = { 'fields': mytitles, 'data': rows }
+        return json.dumps(res)
        
     #-------------------------------------------------------------
     # Formatters - CSV 
