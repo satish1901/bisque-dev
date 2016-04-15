@@ -686,14 +686,14 @@ class BQSession(object):
         append_mex(mex, ('gobject', gobjects))
         for elem in children:
             append_mex(mex, elem)
-
+            
         #mex = { 'mex' : { 'uri' : self.mex.uri,
         #                  'status' : status,
         #                  'tag' : tags,
         #                  'gobject': gobjects }}
         content = self.postxml(self.mex.uri, mex, view='deep' if reload else 'short')
         if reload and content is not None:
-            self.mex = self.factory.from_string(content)
+            self.mex = self.factory.from_string(content)            
             return self.mex
         return None
 

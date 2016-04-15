@@ -14,7 +14,7 @@ try:
 except Exception:
     from xml.etree import ElementTree as et
 from bq.util.configfile import ConfigFile
-from bqapi import BQSession
+from bqapi import BQSession, BQTag
 
 from module_env import MODULE_ENVS, ModuleEnvironmentError
 from mexparser import MexParser
@@ -241,6 +241,7 @@ class BaseRunner(object):
         # list of dict representing each mex : variables and arguments
         self.mexes = []
         self.rundir = os.getcwd()
+        self.outputs = []
 
         # Add remaining arguments to the executable line
         # Ensure the loaded executable is a list
@@ -274,6 +275,7 @@ class BaseRunner(object):
             mexparser = MexParser()
             mex_inputs  = mexparser.prepare_inputs(self.module_tree, self.mex_tree, self.bisque_token)
             module_options = mexparser.prepare_options(self.module_tree, self.mex_tree)
+            self.outputs = mexparser.prepare_outputs(self.module_tree, self.mex_tree)
             
             argument_style = module_options.get('argument_style', 'positional')            
             # see if we have pre/postrun option            
@@ -372,18 +374,48 @@ class BaseRunner(object):
             if self.session is None:
                 self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
             # outputs
-            #   mex_rul
-            #   dataset_url
-            tags = None
-            itrs = []
+            #   mex_url
+            #   dataset_url  (if present and no list/range iterable)
+            #   multiparam   (if at least one list/range iterable)
+            need_multiparam = False
             for iter_name, iter_val, iter_type in self.mexes[0].iterables:
-                itrs.append( { 'name': iter_name, 'value': iter_val, 'type': iter_type } )
-            itrs.append ( { 'name': 'mex_url', 'value': self.mexes[0].mex_url, 'type' : 'mex' })
-            tags = [ { 'name' : 'outputs',
-                       'tag' : itrs } ]
+                if iter_type in ['list', 'range']:
+                    need_multiparam = True
+                    break
+            outtag = et.Element('tag', name='outputs')
+            if need_multiparam:
+                # some list/range params => add single multiparam element if allowed by module def
+                multiparam_name = None
+                for output in self.outputs:
+                    if output.get('type','') == 'multiparam':
+                        multiparam_name = output.get('name')
+                        break
+                if multiparam_name:
+                    xmltree = self.session.fetchxml(self.mexes[0].mex_url, view='deep')  # get latest MEX doc
+                    multitag = et.SubElement(outtag, 'tag', name=multiparam_name, type='multiparam')
+                    colnames = et.SubElement(multitag, 'tag', name='title')
+                    coltypes = et.SubElement(multitag, 'tag', name='xmap')
+                    colxpaths = et.SubElement(multitag, 'tag', name='xpath')
+                    et.SubElement(multitag, 'tag', name='xreduce', value='vector')
+                    for iter_name, iter_val, iter_type in self.mexes[0].iterables:
+                        actual_type = xmltree.xpath('./mex//tag[@name="%s" and @type]/@type') # read actual types from any submex
+                        actual_type = actual_type[0] if actual_type else 'string' 
+                        et.SubElement(colnames, 'value', value=iter_name)
+                        et.SubElement(coltypes, 'value', value="tag-value-%s" % actual_type)
+                        et.SubElement(colxpaths, 'value', value='./mex//tag[@name="%s"]' % iter_name)
+                    # last column is the submex URI
+                    et.SubElement(colnames, 'value', value="submex_uri")
+                    et.SubElement(coltypes, 'value', value="resource-uri")
+                    et.SubElement(colxpaths, 'value', value='./mex')
+                else:
+                    log.warn("List or range parameters in Mex but no multiparam output tag in Module")
+            else:
+                # no list/range params => add iterables as always
+                for iter_name, iter_val, iter_type in self.mexes[0].iterables:
+                    et.SubElement(outtag, 'tag', name=iter_name, value=iter_val, type=iter_type)
+            et.SubElement(outtag, 'tag', name='mex_url', value=self.mexes[0].mex_url, type='mex')
 
-
-            self.session.finish_mex(tags = tags)
+            self.session.finish_mex(tags = [outtag])
         return None
 
     def command_single_entrypoint(self, entrypoint, **kw):
