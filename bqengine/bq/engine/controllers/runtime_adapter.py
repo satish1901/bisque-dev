@@ -59,7 +59,9 @@ from StringIO import StringIO
 from subprocess import call, PIPE, Popen, STDOUT
 
 from bq.exceptions import EngineError
-from bq.util.paths import bisque_path
+from bq.util.paths import bisque_path, config_path
+from bq.util.copylink import copy_link
+
 
 from base_adapter import BaseAdapter
 
@@ -87,7 +89,7 @@ class RuntimeAdapter(BaseAdapter):
 
         current_dir = os.getcwd()
         try:
-            module_dir = os.path.join(MODULE_BASE, module_name)
+            module_dir = module.get ('path')
             log.info ("Currently in %s" % current_dir)
             log.info ("Checking %s in %s" % (module_name,  module_dir))
 
@@ -131,11 +133,12 @@ class RuntimeAdapter(BaseAdapter):
         command_line.append('-d')
         command_line.extend (params)
         
-        module_dir = os.path.join(MODULE_BASE, module_name)
+        module_dir = module_path
         current_dir = os.getcwd()
         try:
             log.info ("Currently in %s" % os.getcwd())
             log.info ("Exec of %s '%s' in %s " % (module_name, ' '.join(command_line), module_dir))
+            copy_link ( config_path('runtime-bisque.cfg'), module_dir)
 
             os.chdir(module_dir)
             m = ModuleRunner()
