@@ -453,7 +453,7 @@ class BQSession(object):
     def parameter(self, name):
         if self.mex is None:
             return None
-        return self.mex.xmltree.find('tag[@name="inputs"]//tag[@name="%s" and @value]'%name)
+        return self.mex.xmltree.find('tag[@name="inputs"]//tag[@name="%s"]'%name)
 
     def parameter_value(self, name=None, p=None):
         if p is None:
@@ -657,7 +657,7 @@ class BQSession(object):
         if merge:
             mex = self.fetchxml(self.mex.uri, view='deep')  # get old version of MEX, so it can be merged if needed
             mex.set('value', status)
-        else:    
+        else:
             mex = etree.Element('mex', value = status, uri = self.mex.uri)
         #self.mex.value = status
         def append_mex (mex, type_tup):
@@ -686,14 +686,14 @@ class BQSession(object):
         append_mex(mex, ('gobject', gobjects))
         for elem in children:
             append_mex(mex, elem)
-            
+
         #mex = { 'mex' : { 'uri' : self.mex.uri,
         #                  'status' : status,
         #                  'tag' : tags,
         #                  'gobject': gobjects }}
         content = self.postxml(self.mex.uri, mex, view='deep' if reload else 'short')
         if reload and content is not None:
-            self.mex = self.factory.from_string(content)            
+            self.mex = self.factory.from_string(content)
             return self.mex
         return None
 
@@ -738,8 +738,8 @@ class BQSession(object):
     ##############################
     def run_modules(self, module_list, pre_run=None, post_run=None, callback_fct=None):
         """Run one or more modules in parallel.
-        
-        :param module_list: List of modules to run 
+
+        :param module_list: List of modules to run
         :type  module_list: [ { moduleuri: ..., inputs: { param1:val1, param2:val2, ...}, parent_mex: ... }, {...}, ... ]
         :param pre_run: module entrypoint to call before run (or None if no prerun)
         :type pre_run: str
@@ -838,5 +838,3 @@ class BQSession(object):
         except BQCommError, ce:
             log.exception('communication issue while saving %s' , filename)
             return None
-
-
