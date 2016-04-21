@@ -1,4 +1,5 @@
 import sys
+import traceback
 import csv
 from operator import itemgetter
 import itertools
