@@ -90,6 +90,7 @@ class MatlabEnvironment(BaseEnvironment):
 
     def setup_environment(self, runner):
         # Construct a special environment script
+        runner.log ("matlab_env setup")
         for mex in runner.mexes:
             #if mex.executable:
             condor_matlab = self.create_matlab_launcher(mex.rundir)

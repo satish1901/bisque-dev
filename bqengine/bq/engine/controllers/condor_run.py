@@ -39,6 +39,9 @@ class CondorRunner (CommandRunner):
     def process_config(self, **kw):
         super(CondorRunner, self).process_config(**kw)
 
+    def command_start(self, **kw):
+        super(CondorRunner, self).command_start(**kw)
+
         # any listed file will be a transfer
         for mex in self.mexes:
             mex.files = mex.get('files', [])
@@ -47,10 +50,6 @@ class CondorRunner (CommandRunner):
             mex.files.append('runtime-bisque.cfg')
             if mex.executable:
                 mex.log_name = os.path.join(mex.rundir, "%s.log" % mex.executable[0])
-
-
-    def command_start(self, **kw):
-        super(CondorRunner, self).command_start(**kw)
 
         self.helper = CondorTemplates(self.sections['condor'])
         # Condor requires a real Launcher (executable) in order
