@@ -1,7 +1,7 @@
 import os
 import logging
 from paste.fileapp import FileApp
-from paste.httpheaders import ETAG
+from paste.httpheaders import ETAG #pylint: disable=no-name-in-module
 from paste.httpexceptions import HTTPNotFound
 
 
@@ -61,4 +61,3 @@ class BQStaticURLParser (object):
 
 
         #return StaticURLParser.__call__(self, environ, start_response)
-

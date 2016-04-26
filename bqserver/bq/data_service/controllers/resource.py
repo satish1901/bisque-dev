@@ -429,6 +429,7 @@ class HierarchicalCache(ResponseCache):
         if resource and not hasattr (resource, 'resource_uniq'):
             log.error ("invalidate: Cannot determine resource %s",  resource)
             return
+        #pylint: disable=no-member
         log.debug ("CACHE invalidate: resource %s user %s", resource and resource.resource_uniq, user)
 
         files = os.listdir(self.cachepath)
