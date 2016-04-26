@@ -36,15 +36,16 @@ class IdemOp(DatasetOp):
         log.debug ('idem action %s' % member.text)
         return member
 
-class ModuleOp(DatasetOp):
-    'Run a module on each member'
-    def action(self, member, module, **kw):
-        log.debug ('module action %s' % member)
-        member = member.text
-        mex = module_service.execute (module_uri = module,
-                                image_url = member,
-                                **kw)
-        return mex
+# Not the correct way to run a module on dataset.
+#class ModuleOp(DatasetOp):
+#    'Run a module on each member'
+#    def action(self, member, module, **kw):
+#        log.debug ('module action %s' % member)
+#        member = member.text
+#        mex = module_service.execute (module_uri = module,
+#                                image_url = member,
+#                                **kw)
+#        return mex
 
 class PermissionOp(DatasetOp):
     'change permission on member'
@@ -133,7 +134,7 @@ class DatasetServer(ServiceController):
 
     operations = {
         'idem' : IdemOp,
-        'module' : ModuleOp,
+#        'module' : ModuleOp,
         'permission' : PermissionOp,
         'delete' : DeleteOp,
         'tagedit' : TagEditOp,
@@ -277,4 +278,3 @@ def get_static_dirs():
     return [(package_path, os.path.join(package_path, 'dataset_service', 'public'))]
 
 __controller__ =  DatasetServer
-

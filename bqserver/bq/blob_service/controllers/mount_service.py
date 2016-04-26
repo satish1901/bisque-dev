@@ -284,6 +284,14 @@ class MountServer(TGController):
             return "<response/>"
 
 
+    def _refresh (self, path, **kw):
+        "Refresh the store from a given path"
+        if len(path)==0:
+            return self.index()
+        store_name = path.pop(0)
+
+
+
     ######################
     # Core
     def _create_root_mount(self):
@@ -596,6 +604,8 @@ class MountServer(TGController):
                 log.debug('_save_store: %s from %s %s', storeurl, driver.mount_url, storepath)
                 storeurl, localpath = driver.push (fileobj, storeurl, resource.get('resource_uniq'))
 
+                # Store URL may be changed during driver push by disambiguation code.
+                # revert change from changeset:2297 to always use storeurl
                 name = os.path.basename(resource_name) or tounicode(url2localpath(os.path.basename(storeurl)))
                 resource.set('name', join_subpath(name, sub))
                 resource.set('value', join_subpath(storeurl, sub))
@@ -920,6 +930,7 @@ class MountServer(TGController):
         # The last element might be dir or a link
         if len(path)==1:
             nm = resource_name or path.pop(0)
+            #nm = path.pop(0)
             if root is None:
                 resource = root = etree.Element ('link' if resource_uniq else 'dir', name=nm, resource_unid = nm)
             else:

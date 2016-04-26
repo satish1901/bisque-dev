@@ -336,6 +336,10 @@ class ExporterGeo():
     def __init__(self):
         pass
 
+    def bq2format(self, resource):
+        "Stub defined in subclasses"
+        return None
+
     def export(self, uniq):
         """Add your first page here.. """
         resource = data_service.resource_load (uniq = uniq, view='deep')

@@ -327,8 +327,8 @@ class DNServer(ServiceController):
         return "Found: "+found_html
 
 dn_server = None
-def uri():
-    return client_server.baseuri
+#def uri():
+#    return client_server.baseuri
 
 def savefile (upload, **kw):
     ''' Use preferred dn server '''
@@ -368,4 +368,3 @@ def initialize(uri):
 __controller__ = DNServer
 __staticdir__ = None
 __model__ = None
-

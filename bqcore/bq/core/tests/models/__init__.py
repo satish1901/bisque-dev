@@ -30,7 +30,7 @@ class ModelTest(object):
             new_attrs = {}
             new_attrs.update(self.attrs)
             new_attrs.update(self.do_get_dependencies())
-            self.obj = self.klass(**new_attrs)
+            self.obj = self.klass(**new_attrs) #pylint: disable=not-callable
             DBSession.add(self.obj)
             DBSession.flush()
             return self.obj
