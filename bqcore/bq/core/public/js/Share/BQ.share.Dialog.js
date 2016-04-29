@@ -45,7 +45,7 @@ Ext.define('BQ.share.Dialog', {
                 text: 'Done',
                 scale: 'large',
                 scope: this,
-                handler: this.onFinish
+                handler: this.close
             }],
             items  : [{
                 xtype: 'bqsharepanel',
@@ -59,11 +59,34 @@ Ext.define('BQ.share.Dialog', {
         this.show();
     },
 
-    onFinish: function() {
+    afterRender : function() {
+        this.callParent();
+
+        this.on('beforeclose', this.onBeforeClose, this);
+
+        // this is used for capturing window closing and promting the user if upload is in progress
+        Ext.EventManager.addListener(window, 'beforeunload', this.onPageClose, this, {
+            normalized:false //we need this for firefox
+        });
+    },
+
+    onBeforeClose: function(el) {
         if (this.queryById('sharepanel').isChanged())
             this.fireEvent( 'changedShare' );
-        this.close();
+        Ext.EventManager.removeListener(window, 'beforeunload', this.onPageClose, this);
+        return true; // enable closing
     },
+
+    onPageClose : function(e) {
+        if (this.queryById('sharepanel').isChanged()) {
+            var message = 'Some shares have not yet been saved, by closing the page you will discard all changes!';
+            if (e) e.returnValue = message;
+            if (window.event) window.event.returnValue = message;
+            return message;
+        }
+    },
+
+
 });
 
 //--------------------------------------------------------------------------------------

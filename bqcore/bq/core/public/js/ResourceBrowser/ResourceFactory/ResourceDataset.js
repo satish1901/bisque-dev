@@ -18,6 +18,7 @@ Ext.define('Bisque.Resource.Dataset', {
 
 Ext.define('Bisque.Resource.Dataset.Compact', {
     extend : 'Bisque.Resource.Dataset',
+    alias: 'widget.bq.resource.dataset.compact',
 
     constructor : function() {
         Ext.apply(this, {
@@ -147,6 +148,7 @@ Ext.define('Bisque.Resource.Dataset.Card', {
 
 Ext.define('Bisque.Resource.Dataset.Full', {
     extend : 'Bisque.Resource.Dataset.Compact',
+    alias: 'widget.bq.resource.dataset.full',
 
     constructor : function() {
         this.callParent(arguments);
