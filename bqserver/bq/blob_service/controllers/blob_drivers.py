@@ -537,9 +537,13 @@ class S3Driver(StorageDriver):
         log.info('s3.pull: %s ' , storeurl)
         storeurl,sub = split_subpath(storeurl)
         s3_key = storeurl.replace("s3://","")
-        path = s3_handler.s3_fetch_file(self.bucket, s3_key)
-        # dima: if path is a directory, list contents
-        return Blobs(path=path, sub=sub, files=None)
+        try:
+            path = s3_handler.s3_fetch_file(self.bucket, s3_key)
+            # dima: if path is a directory, list contents
+            return Blobs(path=path, sub=sub, files=None)
+        except boto.exception.S3ResponseError:
+            log.exception ("During s3 pull")
+            return None
 
     def delete(self, storeurl):
         log.info('s3.delete: %s ' , storeurl)

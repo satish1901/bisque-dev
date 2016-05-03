@@ -141,16 +141,11 @@ def save_blob(session,  localfile=None, resource=None):
     """
     content = session.postblob(localfile, xml=resource)
 
-    try:
-        #content = ET.XML(content)
-        content = session.factory.string2etree(content)
-        if len(content)<1: #when would this happen
-            return None
-        return content[0]
-    except ET.ParseError, e:
-        pass
-
-    return None
+    #content = ET.XML(content)
+    content = session.factory.string2etree(content)
+    if len(content)<1: #when would this happen
+        return None
+    return content[0]
 
 
 def fetch_blob(session, uri, dest=None, uselocalpath=False):
@@ -435,4 +430,3 @@ def as_flat_dicts_node(xmltree):
         return d
 
     return _xml2d(xmltree, {})
-

@@ -66,7 +66,7 @@ from bq.core.lib.base import BaseController
 
 log = logging.getLogger ("bq.service")
 
-__all__=["ServiceController", "find_service", "load_services", "get_all_services" ]
+__all__=["ServiceController",  "load_services" ]
 
 class ServiceDirectory(object):
     """Specialized dict of service_type -> to bq.service"""

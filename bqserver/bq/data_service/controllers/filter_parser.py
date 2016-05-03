@@ -10,8 +10,12 @@ try:
     import ply.yacc as yacc
     import ply.lex as lex
 except Exception:
+    # pylint: disable=import-error
     import yacc as yacc
     import lex as lex
+
+
+# pylint: disable=invalid-name
 
 tokens = ('NAME', 'QUOTED', 'TAGVAL')
 literals = [ '[',']', '=' , ',' ]
@@ -147,9 +151,3 @@ if __name__ == "__main__":
 
     for query in qs:
         print query
-
-
-
-
-
-

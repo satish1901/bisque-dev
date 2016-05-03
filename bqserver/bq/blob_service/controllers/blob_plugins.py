@@ -77,7 +77,7 @@ import logging
 
 log = logging.getLogger('bq.blobs.plugins')
 
-#__all__ = [ 'ResourcePlugin', 'ResourcePluginManager' ] 
+#__all__ = [ 'ResourcePlugin', 'ResourcePluginManager' ]
 
 ################################################################################
 # Base class for resource plugins
@@ -86,16 +86,16 @@ log = logging.getLogger('bq.blobs.plugins')
 #from bq.blob_service.controllers.blob_plugins import ResourcePlugin
 
 class ResourcePlugin (object):
-    '''Maps vector of objects into a vector of numbers or strings''' 
-    name = "ResourcePlugin"  
+    '''Maps vector of objects into a vector of numbers or strings'''
+    name = "ResourcePlugin"
     version = '1.0'
     ext = ''
     resource_type = 'resource'
     mime_type = 'application/octet-stream'
-        
+
     def __init__(self):
         pass
-    
+
     def __str__(self):
         return '(%s, %s)'%(self.resource_type, self.ext)
 
@@ -113,22 +113,22 @@ class ResourcePlugin (object):
         if self.is_supported(filename):
             return self.mime_type
         return None
-    
+
     def to_xml(self, filename):
         return None
-    
+
     # special import processing,
     # inputs:
     #   f - import_service.UploadedResource object
-    #   
+    #
     # outputs:
     #   list of ingested resources
     #def process_on_import(self, f, intags):
     #    # do import processing here
     #    return resources
-    
-    
-    
+
+
+
 ################################################################################
 # Plugin manager
 ################################################################################
@@ -144,7 +144,7 @@ def walk_deep(path, ext='py'):
     return files
 
 class ResourcePluginManager(object):
-    
+
     def __init__(self, path_plugins):
         self.plugins = []
         self.path_plugins = path_plugins
@@ -156,7 +156,7 @@ class ResourcePluginManager(object):
             for n,item in inspect.getmembers(o):
                 if inspect.isclass(item) and issubclass(item, ResourcePlugin):
                     if item.name != 'ResourcePlugin':
-                        log.debug('Adding plugin: %s'%item.name)   
+                        log.debug('Adding plugin: %s'%item.name)
                         self.plugins.append(item())
         log.info('Resource plugins: %s', [str(p) for p in self.plugins])
 
@@ -173,7 +173,7 @@ class ResourcePluginManager(object):
             if rt is not None:
                 return rt
         return None
-    
+
     # this will return a list of plugins with an import process function
     def get_import_plugins(self):
         ps = []
@@ -181,5 +181,3 @@ class ResourcePluginManager(object):
             if hasattr(p, "process_on_import"):
                 ps.append(p)
         return ps
-    
-    
