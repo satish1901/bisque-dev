@@ -219,11 +219,11 @@ class ConverterDict(OrderedDict):
         return fs
 
 ################################################################################
-# Operations baseclass
+# Resource and Blob caching
 ################################################################################
 
 class ResourceCache(object):
-    '''Provide operations base'''
+    '''Provide resource and blob caching'''
 
     def __init__(self):
         self.d = {}
@@ -268,7 +268,6 @@ class ResourceCache(object):
         if blobs is not None:
             r['blobs'] = blobs
         return blobs
-
 
 ################################################################################
 # Operations baseclass
