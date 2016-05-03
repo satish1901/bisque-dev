@@ -475,7 +475,7 @@ class BQSession(object):
         p = {}
         if self.mex is None:
             return p
-        inputs = self.mex.xmltree.iterfind('tag[@name="inputs"]//tag[@value]')
+        inputs = self.mex.xmltree.iterfind('tag[@name="inputs"]//tag')
         for i in inputs:
             p[i.get('name')] = self.parameter_value(p=i)
         return p

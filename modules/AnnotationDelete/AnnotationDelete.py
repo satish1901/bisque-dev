@@ -40,10 +40,10 @@ class AnnotationDelete(object):
         if bq is None:
             bq = BQSession().init_mex(mex_url, bisque_token)
         pars = bq.parameters()
-        image_url            = pars['dataset_url']
-        annotation_type      = pars['annotation_type']
-        annotation_attribute = pars['annotation_attribute']
-        value_old            = pars['value_old']
+        image_url            = pars.get('dataset_url', None)
+        annotation_type      = pars.get('annotation_type', None)
+        annotation_attribute = pars.get('annotation_attribute', None)
+        value_old            = pars.get('value_old', None)
 
         bq.update_mex('Starting')
         mex_id = mex_url.split('/')[-1]
