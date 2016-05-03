@@ -39,12 +39,12 @@ class AnnotationAdd(object):
         if bq is None:
             bq = BQSession().init_mex(mex_url, bisque_token)
         pars = bq.parameters()
-        image_url            = pars['dataset_url']
-        annotation_type      = pars['annotation']
-        ann_name             = pars['annotation_name']
-        ann_value            = pars['annotation_value']
-        ann_type             = pars['annotation_type'] if pars['annotation_type'] != '' else None
-        add_if_exists        = pars['add_if_exists']
+        image_url            = pars.get('dataset_url', None)
+        annotation_type      = pars.get('annotation', None)
+        ann_name             = pars.get('annotation_name', None)
+        ann_value            = pars.get('annotation_value', None)
+        ann_type             = pars.get('annotation_type', None) if pars.get('annotation_type', None) != '' else None
+        add_if_exists        = pars.get('add_if_exists', None)
 
         bq.update_mex('Starting')
         mex_id = mex_url.split('/')[-1]
