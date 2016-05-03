@@ -30,6 +30,8 @@ def generate_css_files(root=None, public=None):
         '/js/ResourceTagger/Tagger.css',
         '/js/DatasetBrowser/DatasetBrowser.css',
         '/js/Share/BQ.share.Dialog.css',
+        '/js/settings/BQ.settings.Panel.css',
+        '/js/admin/BQ.user.Manager.css',
         '/js/picker/Path.css',
         '/js/tree/files.css',
         '/js/tree/organizer.css',
@@ -151,13 +153,13 @@ def generate_js_files(root=None, public=None):
         '/js/Preferences/PreferenceTagger.js',
 
         # -- Settings Page --
-        '/js/settings/BQ.settingPage.js',
+        '/js/settings/BQ.settings.Panel.js',
         '/js/settings/BQ.ModuleManager.js',
         '/js/settings/BQ.ModuleDeveloper.js',
         '/js/settings/BQ.PreferenceManager.js',
 
         # -- Admin --
-        '/js/admin/BQ.UserManager.js',
+        '/js/admin/BQ.user.Manager.js',
 
         # -- Modules --
         '/js/modules/bq_webapp.js',
