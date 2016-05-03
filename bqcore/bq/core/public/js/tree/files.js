@@ -96,7 +96,7 @@ Ext.define('BQ.data.writer.Files', {
             record = request.records[0];
         // selected url does not contain leaf link nodes, add if needed
         //if (record.data && record.data.type === 'link') {
-        if (record.data && record.data.name) {
+        if (record.data && record.data.type !== 'dir' && record.data.name) {
             url += '/' + encodeURIComponent(record.data.name);
         }
         request.url = url;
