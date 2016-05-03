@@ -1,19 +1,54 @@
-Ext.define('BQ.setting.MainPage', {
-    extend : 'Ext.tab.Panel',
-    layout : 'fit',
-    height : '85%',
-    width : '85%',
+
+Ext.define('BQ.setting.Dialog', {
+    extend : 'Ext.window.Window',
+    alias: 'widget.bqsettingsdialog',
+    border: 0,
+    title: 'Settings',
+    layout: 'fit',
     modal : true,
+    width : '85%',
+    height : '85%',
+    buttonAlign: 'center',
+    bodyCls: 'bq_settings_dialog',
+
+    constructor : function(config) {
+        config = config || {};
+        Ext.apply(this, {
+            items  : [{
+                xtype: 'bq_settings_panel',
+                itemId: 'bq_settings_panel',
+                border: 0,
+                activeTab: config.activeTab,
+            }]
+        }, config);
+
+        this.callParent(arguments);
+        this.show();
+    },
+});
+
+Ext.define('BQ.setting.Panel', {
+    extend : 'Ext.tab.Panel',
+    alias: 'widget.bq_settings_panel',
+    //layout : 'fit',
+    //height : '85%',
+    //width : '85%',
+    //modal : true,
     border: false,
+    plain: true,
+    componentCls: 'bq_settings_panel',
 
     tools_none:  [], //a none user has no settings
     tools_user:  ['settings_module_manager', 'settings_module_developer', 'setting_preference'],
     tools_admin: ['settings_user_manager', 'settings_cache_manager', 'settings_system', 'settings_log_viewer'],
 
-    initComponent: function(config) {
-        var config = config || {};
+    defaults: {
+        border: false,
+    },
+
+    initComponent: function() {
         var me = this;
-        var items = [{
+        this.items = [{
             title: 'User Manager',
             layout: 'fit',
             items: [Ext.create('BQ.admin.UserManager')],
@@ -89,13 +124,8 @@ Ext.define('BQ.setting.MainPage', {
             disabled: true,
         }];
 
-        this.on('beforerender', this.setVisibility)
-
-        Ext.apply(me, {
-            items: items,
-        });
-        this.callParent([config]);
-
+        this.on('beforerender', this.setVisibility);
+        this.callParent();
     },
 
     setVisibility : function() {
