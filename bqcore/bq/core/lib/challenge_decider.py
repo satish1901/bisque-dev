@@ -4,10 +4,10 @@ import zope
 
 from webob import Request, Response
 
-from paste.httpheaders import REQUEST_METHOD
-from paste.httpheaders import CONTENT_TYPE
-from paste.httpheaders import USER_AGENT
-from paste.httpheaders import WWW_AUTHENTICATE
+from paste.httpheaders import REQUEST_METHOD #pylint: disable=no-name-in-module
+from paste.httpheaders import CONTENT_TYPE   #pylint: disable=no-name-in-module
+from paste.httpheaders import USER_AGENT     #pylint: disable=no-name-in-module
+from paste.httpheaders import WWW_AUTHENTICATE #pylint: disable=no-name-in-module
 
 from zope.interface import implements
 from repoze.who.interfaces import IChallenger, IIdentifier, IAuthenticator

@@ -583,7 +583,7 @@ class BQSession(object):
             fields = {'file_resource': (None, xml, "text/xml")}
             return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
         else:
-            raise BQCommError("improper parameters for postblob")
+            raise BQApiError("improper parameters for postblob")
 
 
     def service_url(self, service_type, path = "" , query=None):
@@ -620,7 +620,7 @@ class BQSession(object):
         elem = etree.Element(ty, **attrib)
 
 
-    def append(self, elem, tags=[], gobjects=[], children=[]):
+    def append(self, mex, tags=[], gobjects=[], children=[]):
         def append_mex (mex, type_tup):
             type_, elems = type_tup
             for  tg in elems:

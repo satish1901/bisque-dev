@@ -2,10 +2,10 @@
 #from turbogears import identity
 #from turbogears.util import request_available
 
-#pylint:disable=E0611
+from contextlib import contextmanager
+
 from tg import request, session
 from repoze.what.predicates import in_group
-from contextlib import contextmanager
 
 import logging
 from bq.exceptions import BQException
@@ -68,7 +68,7 @@ class BisqueIdentity(object):
             return None
         bquser = request.identity.get ('bisque.bquser')
         if bquser:
-            if bquser not in DBSession:
+            if bquser not in DBSession: #pylint: disable=unsupported-membership-test
                 bquser = DBSession.merge (bquser)
                 request.identity['bisque.bquser'] = bquser
             return bquser
@@ -143,7 +143,7 @@ def is_admin (bquser=None):
 
 def get_user_id():
     bquser = current._get_bquser()
-    return bquser and bquser.id
+    return bquser and bquser.id #pylint: disable=no-member
 
 def get_username():
     return current.get_username()
@@ -153,7 +153,7 @@ def get_user():
     return current._get_bquser()
 
 def get_current_user():
-   return current._get_bquser()
+    return current._get_bquser()
 
 def set_current_user(username):
     """set the current user by name
@@ -229,5 +229,3 @@ def set_admin_mode (groups=None):
 def mex_authorization_token():
     mex_auth = request.identity.get ('bisque.mex_auth') or session.get('mex_auth')
     return mex_auth
-
-

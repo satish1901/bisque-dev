@@ -19,8 +19,10 @@ def copy_link (*largs):
             log.error("can't copy %s to %s: missing file", f, d)
             continue
         try:
+            if os.path.isdir (f):
+                f = f.rstrip ('/')
             dest = d
-            if os.path.isdir (d):
+            if os.path.isdir (dest):
                 dest = os.path.join (d, os.path.basename(f))
             log.debug ("linking %s to %s", f,dest)
             if os.path.exists(dest):

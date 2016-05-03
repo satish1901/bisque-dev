@@ -35,7 +35,7 @@ server_subdirs=['bqapi', 'bqcore', 'bqserver', 'bqengine' ]
 engine_subdirs=['bqapi', 'bqcore', 'bqengine' ]
 
 PREINSTALLS = {'features' : ['numpy==1.9.1',
-                             '-r bqfeature/requirements.txt', 
+                             '-r bqfeature/requirements.txt',
                              'tables==3.1.1']
                }
 
@@ -221,9 +221,9 @@ def pylint(options):
     if options.args:
         args = " ".join(options.args)
     if os.name != 'nt':
-        sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc' % args)
+        sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc --load-plugins=bqcore/pylint_errors' % args)
     else:
-        sh('set PYTHONPATH=bqcore\\bq;bqserver\\bq;bqengine\\bq;bqfeature\\bq & pylint %s --rcfile=bqcore\\pylint.rc' % args)
+        sh('set PYTHONPATH=bqcore\\bq;bqserver\\bq;bqengine\\bq;bqfeature\\bq & pylint %s --rcfile=bqcore\\pylint.rc --load-plugins=bqcore\\pylint_errors' % args)
 
 
 
