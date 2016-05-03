@@ -191,34 +191,35 @@ Ext.define('BQ.ResourceTagger.User', {
 Ext.define('BQ.admin.UserTable', {
     extend : 'Ext.grid.Panel',
     xtype: 'BQAdminUserTable',
-    title: 'User List',
+    //title: 'Users',
     userInfoPanel: null,
     border: false,
+    componentCls: 'bq_users_manager',
 
     viewConfig: {
         markDirty: false,
     },
     selModel: {  allowDeselect: true },
     columns: {
-        items: [{
+        items: [/*{
             dataIndex:'profile_picture',
             width: 45,
             renderer: function(value, meta, record){
                 if (value) {
                     var image_url = '/'+value+'/pixels?thumbnail';
-                    return '<img  src="'+image_url+'" alt=="No Image Found!" height="32" width="32"/>';
+                    return '<img  src="'+image_url+'" height="32" width="32"/>';
                 } else {
-                    return '<img  src="/images/toolbar/user.png" alt=="No Image Found!" height="32" width="32"/>';
+                    return '<div class="icon_user" />';
                 }
             },
-        },{
+        }, {
             text: 'ID', dataIndex: 'resource_uniq', sortable: true, flex:1,
-        },{
-            text: 'User Name', dataIndex: 'name', sortable: true, flex:1,
-        },{
-            text: 'Email', dataIndex: 'email', sortable: true, flex:1,
-        },{
-            text: 'Display Name', dataIndex: 'display_name', sortable: true, flex:1,
+        }, */{
+            text: 'User name', dataIndex: 'name', sortable: true, flex:2,
+        }, {
+            text: 'E-mail', dataIndex: 'email', sortable: true, flex:2,
+        }, {
+            text: 'Display name', dataIndex: 'display_name', sortable: true, flex:2,
         }],
         defaults: {
             renderer : function (value, meta, record) {
@@ -241,54 +242,9 @@ Ext.define('BQ.admin.UserTable', {
         var tbar = new Ext.Toolbar({
             margin: false,
             border: false,
-            items:[{
-                xtype: 'button',
-                text: 'Add',
-                height: '50px',
-                scale: 'large',
-                tooltip: 'Add new user',
-                handler: this.addUserWin,
-                disabled: false,
-                scope: this,
-                listeners: {}, //remove default listeners
-            }, {
-                xtype: 'button',
-                text: 'Delete',
-                height: '50px',
-                scale: 'large',
-                tooltip: 'Delete existing user',
-                handler: this.deleteUserWin,
-
-                scope: this,
-            },{
-                xtype: 'button',
-                text: 'Remove<br>All User<br>Data',
-                scale: 'large',
-                height: '50px',
-                tooltip: 'Removes all data from selected user',
-                handler: this.deleteUserImagesMessage,
-                scope: this,
-            },{
-                xtype: 'button',
-                text: 'Login<br>As',
-                scale: 'large',
-                height: '50px',
-                tooltip: 'Login as selected user',
-                handler: this.loginUserMessage,
-                scope: this,
-            }, {
-                xtype: 'button',
-                text: 'Refresh',
-                height: '50px',
-                scale: 'large',
-                tooltip: 'Refresh information in the list',
-                handler: this.reload,
-                disabled: false,
-                scope: this,
-                listeners: {}, //remove default listeners
-            }],
             defaults: {
                 disabled: true,
+                scale: 'large',
                 listeners: { //disable buttons when deselected
                     afterrender: function(el) {
                         var buttonEl = el;
@@ -308,6 +264,99 @@ Ext.define('BQ.admin.UserTable', {
                     }
                 }
             },
+            items:[{
+                xtype: 'button',
+                text: 'Add',
+                iconCls : 'icon add',
+                tooltip: 'Add new user',
+                handler: this.addUserWin,
+                disabled: false,
+                scope: this,
+                listeners: {}, //remove default listeners
+            }, {
+                xtype: 'button',
+                text: 'Delete',
+                iconCls : 'icon remove',
+                tooltip: 'Delete existing user',
+                handler: this.deleteUserWin,
+
+                scope: this,
+            },{
+                xtype: 'button',
+                text: 'Clear user data',
+                iconCls : 'icon clear',
+                tooltip: 'Removes all data from selected user',
+                handler: this.deleteUserImagesMessage,
+                scope: this,
+            },{
+                xtype: 'button',
+                text: 'Login as',
+                iconCls : 'icon login',
+                tooltip: 'Login as selected user',
+                handler: this.loginUserMessage,
+                scope: this,
+            }, '->', {
+                xtype:'textfield',
+                itemId: 'search',
+                cls: 'search_field',
+                disabled: false,
+
+                flex: 2,
+                name: 'search',
+
+                default_string: 'Filter users',
+                value: 'Filter users',
+
+                //minWidth: 100,
+                tooltip: 'Query for images using Bisque expressions',
+                enableKeyEvents: true,
+                listeners: {
+                    scope: this,
+                    afterrender: function() {},
+                    focus: function(c) {
+                        //c.flex = 2;
+                        //this.doLayout();
+                        if (c.value === c.default_string) {
+                            c.setValue('');
+                        }
+                    },
+                    // specialkey: function(f, e) {
+                    //     if (e.getKey()==e.ENTER && f.value!='' && f.value != c.default_string) {
+                    //         document.location = BQ.Server.url('/client_service/browser?tag_query='+escape(f.value));
+                    //     }
+                    // },
+                    blur: function(c) {
+                        //c.flex = 0;
+                        //this.doLayout();
+                    },
+                    change: function ( c, newValue, oldValue ) {
+                        if (newValue !== '' && newValue !== c.default_string) {
+                            this.store.clearFilter(true);
+                            var re = new RegExp(newValue, 'i');
+                            this.store.filter(new Ext.util.Filter({
+                                filterFn: function (object) {
+                                    var match = false;
+                                    Ext.Object.each(object.data, function (property, value) {
+                                        match = match || re.test(String(value));
+                                    });
+                                    return match;
+                                  }
+                            }));
+                        } else {
+                            this.store.clearFilter();
+                        }
+                    },
+                }
+            }, '', {
+                xtype: 'button',
+                //text: 'Refresh',
+                iconCls : 'icon refresh',
+                tooltip: 'Refresh information in the list',
+                handler: this.reload,
+                disabled: false,
+                scope: this,
+                listeners: {}, //remove default listeners
+            }],
         });
         if (BQApp.user && BQApp.user.is_admin()) { //the way to check for admin needs to be changed
             this.initTable();
@@ -363,6 +412,15 @@ Ext.define('BQ.admin.UserTable', {
                     record: 'user',
                 },
             },
+            sorters: [{
+                property:   'name',
+                direction:  'ASC',
+                transform:  function (v) { return v.toLowerCase(); }
+            }, {
+                property:   'display_name',
+                direction:  'ASC',
+                transform:  function (v) { return v.toLowerCase(); }
+            }]
         });
         this.store.load();
         //this.store.reload();
@@ -619,7 +677,7 @@ Ext.define('BQ.admin.UserTable', {
 
 Ext.define('BQ.admin.UserInfo', {
     extend: 'Ext.panel.Panel',
-    title: 'User View',
+    title: 'User info',
     //layout : 'fit',
     layout: 'card',
     border: false,
@@ -690,6 +748,7 @@ Ext.define('BQ.admin.UserManager', {
         this.userInfo = Ext.create('BQ.admin.UserInfo',{
             width: '35%',
             plain : true,
+            border: false,
             hidden : false,
             collapsible : true,
             region: 'east',
@@ -703,6 +762,7 @@ Ext.define('BQ.admin.UserManager', {
             region: 'center',
             autoScroll: true,
             plain : true,
+            border: false,
             userInfoPanel: this.userInfo,
         });
 

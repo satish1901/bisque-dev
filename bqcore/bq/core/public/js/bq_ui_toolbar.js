@@ -362,7 +362,7 @@ Ext.define('BQ.Application.Toolbar', {
                 itemId: 'menu_user_admin_separator',
                 hidden: true,
             }, {
-                text: 'User',
+                text: 'Users',
                 itemId: 'menu_user_manager',
                 hidden: true,
                 handler: this.settingUserPage,
@@ -739,62 +739,30 @@ Ext.define('BQ.Application.Toolbar', {
 
     //only admin
     settingUserPage: function() {
-        var settingWindow = Ext.create('Ext.window.Window', {
-            title: 'Settings',
-            height : '85%',
-            width : '85%',
-            layout: 'fit',
-            modal : true,
-            items: Ext.create('BQ.setting.MainPage',{
-                activeTab: 0,
-            }),
+        var settings = Ext.create('BQ.setting.Dialog', {
+            activeTab: 0,
         });
-        settingWindow.show();
     },
 
     //always visible
     settingModuleManagerPage: function() {
-        var settingWindow = Ext.create('Ext.window.Window', {
-            title: 'Settings',
-            height : '85%',
-            width : '85%',
-            layout: 'fit',
-            modal : true,
-            items: Ext.create('BQ.setting.MainPage',{
-                activeTab: 2,
-            }),
+        var settings = Ext.create('BQ.setting.Dialog', {
+            activeTab: 2,
         });
-        settingWindow.show();
     },
 
     //always visible
     settingModuleDeveloperPage: function() {
-        var settingWindow = Ext.create('Ext.window.Window', {
-            title: 'Settings',
-            height : '85%',
-            width : '85%',
-            layout: 'fit',
-            modal : true,
-            items: Ext.create('BQ.setting.MainPage',{
-                activeTab: 3,
-            }),
+        var settings = Ext.create('BQ.setting.Dialog', {
+            activeTab: 3,
         });
-        settingWindow.show();
     },
 
     //should go to the highest level
     settingPreferencePage: function() {
-        var settingWindow = Ext.create('Ext.window.Window', {
-            title: 'Settings',
-            height : '85%',
-            width : '85%',
-            layout: 'fit',
-            modal : true,
-            items: Ext.create('BQ.setting.MainPage',{
-                activeTab: 4,
-            }),
+        var settings = Ext.create('BQ.setting.Dialog', {
+            activeTab: 4,
         });
-        settingWindow.show();
     },
 
     fetchResourceTypes : function() {
