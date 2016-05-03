@@ -62,6 +62,9 @@ class ImageServiceTestsTiles(ImageServiceTestBase):
         self.resources_pyr.append( self.ensure_bisque_file(image_pyramid) )
         self.resources_pyr.append( self.ensure_bisque_file(image_pyramid) )
 
+        self.resources_valid_plane = [self.ensure_bisque_file(image_planar)]
+        self.resources_valid_pyr = [self.ensure_bisque_file(image_pyramid)]
+
         self.coordinates = [(0,0), (1,3), (2,3), (7,1), (2,2), (5,2), (7,2), (1,1), (6,3), (7,3)]
 
     @classmethod
@@ -74,6 +77,7 @@ class ImageServiceTestsTiles(ImageServiceTestBase):
         self.cleanup_tests_dir()
 
     def validate_tile(self, resource=None, coord=None):
+        'Validation ensures fetched tiles are correct but due to local validation gives inflated speed measurements'
         filename = '%s.tile.%s,%s.jpg'%(resource.get('resource_uniq'), coord[0], coord[1])
         commands = [('slice', ',,1,1'), ('tile', '0,%s,%s,512'%(coord[0], coord[1])), ('depth', '8,f,u'), ('fuse', '255,0,0;0,255,0;0,0,255;:m'), ('format', 'jpeg')]
         meta_required = { 'format': 'JPEG',
@@ -86,28 +90,47 @@ class ImageServiceTestsTiles(ImageServiceTestBase):
             'image_pixel_format': 'unsigned integer' }
         self.validate_image_variant(resource, filename, commands, meta_required)
 
-    def forresources(self, resources):
+    def fetch_tile(self, resource=None, coord=None):
+        'Fetching tile does not run the validation and thus gives better speed estimate'
+        filename = '%s.tile.%s,%s.jpg'%(resource.get('resource_uniq'), coord[0], coord[1])
+        commands = [('slice', ',,1,1'), ('tile', '0,%s,%s,512'%(coord[0], coord[1])), ('depth', '8,f,u'), ('fuse', '255,0,0;0,255,0;0,0,255;:m'), ('format', 'jpeg')]
+        self.validate_image_variant(resource, filename, commands)
+
+    def forresources(self, resources, op):
         times = []
         for r in resources:
             for c in self.coordinates:
                 t1 = time.time()
-                self.validate_tile(resource=r, coord=c)
+                op(resource=r, coord=c)
                 t2 = time.time()
                 times.append(t2-t1)
         #print 'Times: %s'%times
         print '\nTile retreival in seconds, avg: %s max: %s min: %s, std: %s'%(numpy.array(times).mean(), max(times), min(times), numpy.array(times).std())
 
-    def test_planar_tiles_1_uncached(self):
-        self.forresources(self.resources_plane)
+    def test_speed_planar_tiles_1_uncached(self):
+        self.forresources(self.resources_plane, self.fetch_tile)
 
-    def test_planar_tiles_2_cached(self):
-        self.forresources(self.resources_plane)
+    def test_speed_planar_tiles_2_cached(self):
+        self.forresources(self.resources_plane, self.fetch_tile)
 
-    def test_pyramidal_tiles_1_uncached(self):
-       self.forresources(self.resources_pyr)
+    def test_speed_pyramidal_tiles_1_uncached(self):
+       self.forresources(self.resources_pyr, self.fetch_tile)
 
-    def test_pyramidal_tiles_2_cached(self):
-       self.forresources(self.resources_pyr)
+    def test_speed_pyramidal_tiles_2_cached(self):
+       self.forresources(self.resources_pyr, self.fetch_tile)
+
+    def test_valid_planar_tiles_1_uncached(self):
+        self.forresources(self.resources_valid_plane, self.validate_tile)
+
+    def test_valid_planar_tiles_2_cached(self):
+        self.forresources(self.resources_valid_plane, self.validate_tile)
+
+    def test_valid_pyramidal_tiles_1_uncached(self):
+       self.forresources(self.resources_valid_pyr, self.validate_tile)
+
+    def test_valid_pyramidal_tiles_2_cached(self):
+       self.forresources(self.resources_valid_pyr, self.validate_tile)
+
 
 #def suite():
 #    tests = ['test_thumbnail']
