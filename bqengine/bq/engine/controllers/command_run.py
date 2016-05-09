@@ -21,7 +21,7 @@ from mexparser import MexParser
 
 ENV_MAP = dict ([ (env.name, env) for env in MODULE_ENVS ])
 logging.basicConfig(level=logging.DEBUG, filename='module.log')
-log = logging.getLogger('bq.engine_service.runtime')
+log = logging.getLogger('bq.engine_service.command_run')
 
 ####################
 # Helpers
@@ -148,6 +148,7 @@ class BaseRunner(object):
         self.parser.add_option('-d', '--debug', action="store_true",
                                default=False)
         self.session = None
+        self.process_environment = dict (os.environ)
 
     def log (self, msg, level = logging.INFO):
         #if self.options.verbose:
@@ -215,9 +216,14 @@ class BaseRunner(object):
             env.process_config (self)
 
     def setup_environments(self, **kw):
-        'Call setup_environment during "start" processing'
+        """Call setup_environment during "start" processing
+           Prepares environment and returns defined environment variable to be passed to jobs
+        """
+        log.debug ("setup_environments: %s", kw)
+        process_env = self.process_environment.copy ()
         for env in self.environments:
             env.setup_environment (self, **kw)
+        self.process_environment= process_env
 
     # Run during finish
     def teardown_environments(self, **kw):
@@ -325,7 +331,8 @@ class BaseRunner(object):
     # Derived classes should overload these functions
 
     def command_start(self, **kw):
-        self.setup_environments()
+        env = self.setup_environments()
+        #self.setup_environments(**kw)
         with open('%s/mexes.bq' % self.mexes[0].get('staging_path', tempfile.gettempdir()),'wb') as f:
             pickle.dump(self.mexes, f)
 
@@ -538,7 +545,7 @@ class CommandRunner(BaseRunner):
             self.log( "running '%s' in %s" % (' '.join(command_line), rundir))
             log.info ('mex %s ' % mex)
 
-            self.processes.append(dict( command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex))
+            self.processes.append(dict( command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex, env=self.process_environment))
 
         # ****NOTE***
         # execone must be in engine_service as otherwise multiprocessing is unable to find it

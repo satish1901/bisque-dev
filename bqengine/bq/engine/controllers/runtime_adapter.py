@@ -90,14 +90,14 @@ class RuntimeAdapter(BaseAdapter):
         current_dir = os.getcwd()
         try:
             module_dir = module.get ('path')
-            log.info ("Currently in %s" % current_dir)
-            log.info ("Checking %s in %s" % (module_name,  module_dir))
+            #log.debug ("Currently in %s" % current_dir)
+            log.debug ("Checking %s in %s" % (module_name,  module_dir))
 
             os.chdir(module_dir)
             m = ModuleRunner()
             if not m.check (module_tree = module):
                 return False
-        
+
             async =  module.xpath('//tag[@name="asynchronous"]')
             if len(async):
                 async[0].set('value', 'True')
@@ -132,7 +132,7 @@ class RuntimeAdapter(BaseAdapter):
         command_line = []
         command_line.append('-d')
         command_line.extend (params)
-        
+
         module_dir = module_path
         current_dir = os.getcwd()
         try:
@@ -142,9 +142,9 @@ class RuntimeAdapter(BaseAdapter):
 
             os.chdir(module_dir)
             m = ModuleRunner()
-            m.main(arguments=command_line, 
-                   mex_tree=mex, 
-                   module_tree=module, 
+            m.main(arguments=command_line,
+                   mex_tree=mex,
+                   module_tree=module,
                    bisque_token = identity.mex_authorization_token(),
                    pool = pool)
             os.chdir(current_dir)
@@ -152,7 +152,7 @@ class RuntimeAdapter(BaseAdapter):
             #stdout,stderr = process.communicate()
             #log.debug ("Process ID: %s " %(process.pid))
             #if process.returncode != 0:
-            #    raise EngineError("Non-zero exit code", 
+            #    raise EngineError("Non-zero exit code",
             #                      stdout = stdout,
             #                      stderr = stderr)
             #return process.pid
@@ -167,9 +167,7 @@ class RuntimeAdapter(BaseAdapter):
             if isinstance(e, EngineError):
                 raise
             else:
-                raise EngineError('Exception in module: %s' % command_line, 
+                raise EngineError('Exception in module: %s' % command_line,
                                   #stdout = stdout,
                                   #stderr = stderr,
                                   exc = e)
-        
-        
