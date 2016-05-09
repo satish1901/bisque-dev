@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 #
 import os,sys
-import subprocess 
+import subprocess
 import logging
 
 from bq.util.paths import config_path
 from bq.util.configfile import ConfigFile
+
 from module_env import ModuleEnvironmentError
 from command_run import CommandRunner
 from condor_run import CondorRunner
@@ -29,7 +30,7 @@ class ModuleRunner(object):
         engine_runner = command
     """
     system_runners = ["command"]
-    
+
     def __init__(self, **kw):
         self.module_runners = []
 
@@ -50,10 +51,10 @@ class ModuleRunner(object):
                 return None
         else:
             log.error( "Missing runtime-module.cfg" )
-            return None            
-            
-        log.debug('Path: %s'%os.getcwd())         
-            
+            return None
+
+        log.debug('Path: %s'%os.getcwd())
+
         runners = cfg.get(None, 'runtime.platforms')
         if runners is None:
             raise ModuleEnvironmentError("Must define legal platforms:  runtime.platforms in module config")
@@ -70,16 +71,16 @@ class ModuleRunner(object):
             log.debug('System runners: %s'%runners)
             self.system_runners = [r.strip() for r in runners.split(',')]
         else:
-            log.warn ("Could not file runtime-bisque.cfg") 
-            # Default to module runners ?  They may not be availble 
+            log.warn ("Could not file runtime-bisque.cfg")
+            # Default to module runners ?  They may not be availble
             self.system_runners = self.module_runners
 
-        # Determine best platform for module by comparing system platforms 
+        # Determine best platform for module by comparing system platforms
         # and module platforms.  The platforms are listed in order
         # of preference based on the system preferences
         for run_platform in self.system_runners:
             if run_platform in self.module_runners:
-                log.info( "Choosing Runtime Platform: %s" % run_platform)
+                log.debug( "Choosing Runtime Platform: %s" % run_platform)
                 return RUNNER_MAP[run_platform]
         return None
 

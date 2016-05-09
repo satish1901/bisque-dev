@@ -32,7 +32,8 @@ def execone(params):
     #print "Exec", params
     command_line = params['command_line']
     rundir = params['rundir']
-    
+    env    = params['env']
+
     current_dir = os.getcwd()
     os.chdir(rundir)
     if os.name=='nt':
@@ -41,7 +42,7 @@ def execone(params):
         exe = exe or which(command_line[0] + '.bat')
         if exe is None:
             logger.debug('command_line: %s'%command_line)
-            #raise RunnerException ("Executable was not found: %s" % command_line[0])                
+            #raise RunnerException ("Executable was not found: %s" % command_line[0])
             return -1
         command_line[0] = exe
     logger.debug( 'CALLing %s in %s' % (command_line,  rundir))
@@ -52,6 +53,7 @@ def execone(params):
                                stderr = subprocess.STDOUT,
                                shell  = (os.name == "nt"),
                                cwd    = rundir,
+                               env    = env,
                                )
     except Exception, e:
         return 1
