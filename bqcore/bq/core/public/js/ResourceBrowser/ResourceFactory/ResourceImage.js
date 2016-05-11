@@ -608,7 +608,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                         map.positionMarker(pt);
                     }
                 },
-                hover: function(panel, gob, e){
+                /*hover: function(panel, gob, e){
 
                     var panel = this.queryById('main_view_2d');
 
@@ -644,12 +644,6 @@ Ext.define('Bisque.Resource.Image.Page', {
 			            maxWidth : 200,
                         header : false,
                         html: tagData(gob),
-
-			           /*
-                        layout : {
-				            type : 'fit',
-                            //align: 'stretch',
-			            },*/
 		            });
                     //hoverMenu.setHeight(40*size);
                     hoverMenu.show();
@@ -664,6 +658,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
                     //console.log(panel.hoverMenu);
                 },
+                */
                 modechange: function(viewer, type) {
                     if (!type)
                         this.gobjectTagger.deselectAll();
