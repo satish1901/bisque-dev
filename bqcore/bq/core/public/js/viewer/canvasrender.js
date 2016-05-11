@@ -1055,37 +1055,31 @@ CanvasControl.prototype.viewerZoomed = function(e) {
 
 
 CanvasControl.prototype.cursorMoved = function(e) {
-    //this.viewer.stage.content.style.left = e.x + 'px';
-    //this.viewer.stage.content.style.top = e.y + 'px';
-    //console.log(e);
-    var
-    z = this.viewer.viewer.tiles.cur_z,
-    t = this.viewer.viewer.tiles.cur_t;
-
-    var pt = e;
-    if(!this.pastPoint)
+    if (this.pastPoint === e) return;
+    if (this.viewer.mode !== 'navigate') return;
+    if (!this.pastPoint)
         this.pastPoint = e;
 
-    var tpt = this.pastPoint;
-    var dpt = {x: pt.x - tpt.x, y: pt.y - tpt.y};
-    var scale = this.viewer.stage.scale();
-    var dl = (dpt.x*dpt.x + dpt.y*dpt.y)*scale.x*scale.x;
-    var viewer = this.viewer.viewer;
-    var renderer = this.viewer;
+    var renderer = this.viewer,
+        viewer = renderer.viewer,
+        tiles = viewer.tiles,
+        z = tiles.cur_z,
+        t = tiles.cur_t,
+        tpt = this.pastPoint;
 
-    if(this.hoverTimeout) clearTimeout(this.hoverTimeout);
-    if(dl < 10 && renderer.mode === 'navigate'){
-        this.hoverTimeout = setTimeout(function(){
-            var shape = renderer.findNearestShape(tpt.x, tpt.y, z, t);
-            if(shape){
-                viewer.parameters.onhover(shape.gob, e.event);
-                //console.log(shape);
-            }
+    if (this.hoverTimeout)
+        clearTimeout(this.hoverTimeout);
+    //if (e.event.target !== tiles.tiled_viewer.surface)
+    //    return;
 
-            //me.onhover(e);
-        },750);
-    }
-
+    this.hoverTimeout = setTimeout(function() {
+        var shape = renderer.findNearestShape(tpt.x, tpt.y, z, t);
+        if (shape) {
+            viewer.parameters.onhover(shape.gob, e.event);
+        } else {
+            viewer.parameters.onhover(undefined, e.event);
+        }
+    }, 150);
     this.pastPoint = e;
 };
 
@@ -1845,9 +1839,8 @@ CanvasRenderer.prototype.findNearestShape = function(x,y, z, t){
     //not really find nearest, rather find overlapping
     var node = this.quadtree.nodes[0];
     var scale = this.stage.scale().x;
-    var w = 4/scale;
-    var shapes =
-        this.quadtree.collectObjectsInRegion(
+    var w = 10/scale;
+    var shapes = this.quadtree.collectObjectsInRegion(
             {min: [x-w, y-w, z-0.5, t-0.5],
              max: [x+w, y+w, z+0.5, t+0.5]}, node);
 
@@ -2075,19 +2068,17 @@ CanvasRenderer.prototype.updateVisiblet = function(afterUpdate){
 };*/
 
 CanvasRenderer.prototype.startWait = function(fcn, delay){
-    var me = this;
-    var el = document.getElementById("viewer_controls_surface");
+    var me = this,
+        el = this.viewer.viewer_controls_surface;
 
-    if(el){
+    if (el) {
         this.waiting = true;
         var waitCursor = function(){
-            //var el = document.getElementById("viewer_controls_surface");
-            if(el) el.style.cursor = "wait";
-            if(me.waiting){
+            if (el) el.style.cursor = "wait";
+            if (me.waiting){
                 if(el) el.style.cursor = "wait";
                 setTimeout(waitCursor, 100);
-            }
-            else{
+            } else{
                 var pointer = PanoJS.GRAB_MOUSE_CURSOR;
                 var move = PanoJS.GRABBING_MOUSE_CURSOR;
                 var panojs = me.viewer.tiles.tiled_viewer;

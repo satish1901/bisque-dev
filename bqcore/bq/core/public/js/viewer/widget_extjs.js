@@ -235,8 +235,58 @@ Ext.define('BQ.viewer.Image', {
     },
 
     onhover : function(gob, e) {
-        //console.log(gob,e);
-        this.fireEvent( 'hover', this, gob, e );
+        //this.fireEvent( 'hover', this, gob, e );
+        if (!gob) {
+            if (this.hoverMenu)
+                this.hoverMenu.hide();
+            return;
+        }
+
+        tagData  = function(gob) {
+            var val = gob.value ? 'value: ' + gob.value : '';
+            var tagArr = [], tags = {
+            }, found = '';
+            while(gob.parent){
+                if(!gob.type)
+                    tagArr.push(gob.name);
+                else
+                tagArr.push(gob.type);
+                gob = gob.parent;
+            }
+            var spaces = '';
+            for(var i = 0; i < tagArr.length; i++){
+                found += (spaces + '-' + tagArr[tagArr.length - 1 -i] + '<br>');
+                spaces += '&nbsp &nbsp'
+            }
+
+            return found + val;
+        }
+
+        if (!this.hoverMenu) {
+            this.hoverMenu = Ext.create('Ext.tip.ToolTip', {
+                anchor : 'left',
+                anchorToTarget : true,
+                autoHide: true,
+                autoShow: false,
+                showDelay: 0,
+                hideDelay: 0,
+                dismissDelay: 10000,
+                trackMouse: false,
+
+                //maxWidth : 200,
+                layout: 'fit',
+                items: [{
+                    xtype:'tbtext',
+                    itemId: 'text',
+                    text: tagData(gob),
+                }],
+            });
+            this.hover_text = this.hoverMenu.queryById('text');
+        } else {
+            this.hover_text.setText(tagData(gob));
+        }
+        //console.log(e.clientX, e.clientY);
+        this.hoverMenu.showAt([e.clientX+15, e.clientY-10]);
     },
 
 
