@@ -21,7 +21,10 @@ BISQUE_DEPS = map (functools.partial(os.path.join, '../../external'), [ "bisque.
 class SetupError(Exception):
     pass
 
-
+def verbose_call (*args, **kw):
+    if kw.pop('verbose',None):
+        print args
+    return check_call (*args, **kw)
 
 def ensure_matlab(params):
     'make sure matlab is enabled and in the path'
@@ -156,7 +159,7 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
         return 0
     return 1
 
-def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', params = {} ):
+def python_setup_bbfreeze(scripts,  package_scripts =True, dependency_dir = 'pydist', params = {} ):
     """compile python dependencies into a package
 
     if package_script is true then a runner scripts will be generated
@@ -186,6 +189,40 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
                 return 0
         except Exception,e:
             print ("Could not create python launcher script %s" % e)
+
+
+def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', params = {} ):
+    """compile python dependencies into a package
+
+    if package_script is true then a runner scripts will be generated
+    for each script
+    """
+    cmd = [ 'pyinstaller', '--clean', '--noconfirm', '--distpath', dependency_dir ]
+    #fr = bbfreeze.Freezer(dependency_dir)
+    #fr.include_py = False
+    if not isinstance(scripts, list):
+        scripts = [ scripts ]
+    for script in scripts:
+        cmd.append (script)
+    if os.path.exists (dependency_dir):
+        shutil.rmtree (dependency_dir)
+    check_call (cmd)
+    data = dict(params)
+
+    for script in scripts:
+        script_name = os.path.splitext(script)[0]
+        data['script'] = os.path.join('.', dependency_dir, script_name, script_name)
+        # THIS os.path.join needs to be replaced by pkg_resources or pkg_util
+        # when the toplevel is packaged
+        try:
+            template = Template(filename=os.path.abspath (os.path.join('..','..', 'config','templates','python_launcher.tmpl')))
+            with open(script_name, 'wb') as f:
+                f.write(template.render(script = data['script']))
+                os.chmod (script_name, 0744)
+                return 0
+        except Exception,e:
+            print ("Could not create python launcher script %s" % e)
+
 
 
 def ensure_binary(exe):
@@ -240,9 +277,14 @@ def docker_setup (image, command, base, params):
     if not asbool(params.get('docker.enabled', False)):
         return
     if not os.path.exists ('Dockerfile'):
-        files = module_config.get ('files','')
+        files = [ x.strip() for x in module_config.get ('files','').split (",") ]
+        dirs =    [ x for x in files if os.path.isdir(x)]
+        files =   [ x for x in files if os.path.isfile(x)]
+        copies = []
         if files:
-            files = "COPY %s /module/" % " ".join ([ x.strip() for x in files.split (",") if os.path.exists(x.strip()) ])
+            copies.append ( "COPY %s /module/" % " ".join (files) )
+        for dr in dirs:
+            copies.append ( "COPY %s /module/%s/ " % (dr, dr) )
 
         with open('Dockerfile', 'w') as f:
             maintainer = params.get ('docker.maintainer', 'nobody@example.com')
@@ -250,7 +292,7 @@ def docker_setup (image, command, base, params):
             f.write (string.Template (DOCKERFILE).safe_substitute(base=base,
                                                                   command=command,
                                                                   maintainer=maintainer,
-                                                                  copy = files))
+                                                                  copy = "\n".join (copies) ))
 
     print "Calling", " ".join (['docker', 'build', '-q', '-t', image , '.'])
     check_call(['docker', 'build', '-q', '-t',  image, '.'])

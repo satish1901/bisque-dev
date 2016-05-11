@@ -50,6 +50,7 @@ BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image',
                             'mex'              : 'BQ.renderers.Mex',
                             'browser'          : 'BQ.renderers.Browser',
                             'table'            : 'BQ.renderers.Table',
+                            'multiparam'       : 'BQ.renderers.MultiParam',
                           };
 
 
@@ -1094,8 +1095,8 @@ Ext.define('BQ.selectors.Dream3DPipelineParams', {
     extend: 'BQ.selectors.Selector',
     requires: ['Ext.form.field.Number'],
 
-    height: 30,
-    layout: 'hbox',
+    height: 14,
+    layout: 'vbox',
 
     initComponent : function() {
         var resource = this.resource;
@@ -1104,8 +1105,12 @@ Ext.define('BQ.selectors.Dream3DPipelineParams', {
         if (reference && reference.renderer) {
             this.reference = reference.renderer;
             this.reference.on( 'changed', function(sel, res) { this.onNewResource(sel, res); }, this );
-            //this.reference.on( 'gotPhys', function(sel, phys) { this.onPhys(sel, phys); }, this );
         }
+
+        if (!resource.tags)
+            resource.tags = [];
+
+        this.field_res = [];
 
         Ext.tip.QuickTipManager.init();
 
@@ -1133,6 +1138,27 @@ Ext.define('BQ.selectors.Dream3DPipelineParams', {
     },
 
     onFileContents: function(txt) {
+        var me = this;
+        if (this.mex_resource && this.mex_resource.tags && this.mex_resource.tags.length <1) {
+            // have the module def but not the mex yet => get it now
+            BQFactory.request({
+                 uri: this.mex_resource.uri,
+                 cb: function(resource) {
+                     me.mex_resource = resource;
+                     me.onFileContents(txt);
+                 },
+                 errorcb: function(error) {
+                      var str = error;
+                      if (typeof(error)=="object") str = error.message;
+                      BQ.ui.error(str);
+                 },
+                 uri_params: {view:'deep'}
+            });
+            return;
+        }
+        // have the module and the full mex OR only module and no mex
+        // => fill the UI elements with defaults OR values from previous run
+
         var resource = this.resource,
             json = Ext.JSON.decode(txt);
 
@@ -1148,6 +1174,8 @@ Ext.define('BQ.selectors.Dream3DPipelineParams', {
         }
         resource.tags.length = 0;
 
+        var total_height = 0;
+        this.field_res.length = 0;
         for (var i = 0; i < params.length; i++) {
             var param = params[i];
             var name = param["name"];
@@ -1157,17 +1185,29 @@ Ext.define('BQ.selectors.Dream3DPipelineParams', {
             var tag = new BQTag(undefined, name, value, type);
             var new_tag = resource.addtag( tag );
             new_tag.template = {'label': name, 'prohibit_upload': true, 'accepted_type': type};
-            this.add({
-                xtype: xtype,
-                resource: tag,
-            });
-            //resource.values[i] = tag;
+            this.field_res[i] = this.add({
+                    xtype: xtype,
+                    itemId: name,
+                    resource: tag,
+                  });
+            total_height += this.field_res[i].getHeight();
+            resource.tags[i] = new_tag;
         }
+        this.setHeight(this.getHeight()+total_height);
 
         this.suspendLayout = false;
         this.updateLayout();
 
         this.reference = res;
+
+        if (this.mex_resource && this.mex_resource.tags && this.mex_resource.tags.length>0) {
+            // have full mex => set values of sub elements from a previously run mex
+            var t = null;
+            for (var i=0; (t=this.mex_resource.tags[i]); ++i) {
+                this.queryById(t.name).select(t);
+            }
+        }
+
     },
 
     // extract parameters from a dream3d pipeline JSON document
@@ -1190,36 +1230,9 @@ Ext.define('BQ.selectors.Dream3DPipelineParams', {
         return fields;
     },
 
-    onPhys : function(sel, phys) {
-        var resource = this.resource;
-        var template = resource.template || {};
-
-        if (this.selected_value)
-            this.selected_value = undefined;
-        else
-        for (var i=0; i<4; i++) {
-            this.field_res[i].setValue( phys.pixel_size[i] );
-            this.queryById('units'+i).setText(phys.pixel_units[i]);
-        }
-
-        if (phys.t>1) {
-            this.field_res[3].setVisible(true);
-            this.queryById('units3').setVisible(true);
-        } else {
-            this.field_res[3].setVisible(false);
-            this.queryById('units3').setVisible(false);
-            resource.values[3] = new BQValue ('number', 1.0, 3);
-        }
-    },
-
     select: function(resource) {
-        //var value = resource.value==undefined?resource.values:resource.value;
-        //this.selected_value = value;
-        //if (value instanceof Array)
-        //    for (var i=0; i<value.length; i++)
-        //        this.field_res[i].setValue( value[i].value );
-        //else
-        //    this.field_res[0].setValue( value );
+        // set mex resource so we can fill previous run data during onFileContents
+        this.mex_resource = resource;
     },
 
     isValid: function() {
@@ -3081,6 +3094,119 @@ Ext.define('BQ.renderers.Table', {
 
     download : function() {
         window.open(this.resource.src);
+    },
+
+});
+
+/*******************************************************************************
+Multi-parameter renderer showing table of parameter combinations;
+clicking a row shows the corresponding output(s).
+*******************************************************************************/
+
+Ext.define('BQ.renderers.MultiParam', {
+    alias: 'widget.renderermultiparam',
+    extend: 'BQ.renderers.Renderer',
+
+    height: 400,
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },
+    defaults: { border: null, },
+
+    initComponent : function() {
+        var definition = this.definition;
+        var template = definition.template || {};
+        if (!definition) return;
+        template.label = template.label || 'Parameter combinations';
+
+        // temporary columns and store needed to init empty gridpanel without errors
+        this.store = Ext.create('Ext.data.Store', {
+            fields:['name'],
+            data:{ 'items': [{ 'name': '' }, ]},
+            proxy: {
+                type: 'memory',
+                reader: {
+                    type: 'json',
+                    root: 'items'
+                }
+            }
+        });
+
+        this.items = [{
+            xtype: 'label',
+            html: template.label,
+        }, {
+            xtype: 'gridpanel',
+            itemId: 'multiparam_table',
+            //title: 'MultiParam',
+            store: this.store,
+            columns: [
+                { text: '',  dataIndex: 'name' },
+            ],
+            listeners: {
+              scope: this,
+              itemclick: function(grid, record, item, index, e) {
+                  row = this.store.getAt(index);
+                  var submex = row['data']['submex_uri'];
+                  this.fireEvent('selected_submex', submex);
+              },
+            },
+        }];
+
+        this.callParent();
+    },
+
+    afterRender : function() {
+        this.callParent();
+
+        var resource = this.resource;
+        if (!resource) return;
+
+        // pull xpath, xreduce etc out of resource; run stat service to get json table back
+
+        var multiparam_tags = resource.toDict(true, undefined, resource.name+'/');
+        var url = BQ.Server.url('/stats/json?url=' + this.mex.uri);
+        if (this.root) url = this.root + url;
+        url += createStatsArgs('xpath', multiparam_tags, resource.name);
+        url += createStatsArgs('xmap', multiparam_tags, resource.name);
+        url += createStatsArgs('xreduce', multiparam_tags, resource.name);
+        url += createStatsArgs('title', multiparam_tags, resource.name);
+
+        Ext.Ajax.request({
+            url: url,
+            callback: function(opts, succsess, response) {
+                if (response.status>=400)
+                    this.onStats({fields: [], data: []});
+                else
+                    this.onStats(Ext.JSON.decode(response.responseText));
+            },
+            scope: this,
+            disableCaching: false,
+        });
+    },
+
+    onStats : function(stats) {
+        var cols = [];
+        var titles = stats['fields'];
+        for (var i=0; i < titles.length-1; i++) {  // don't include last (output) column in table
+            cols.push({text: titles[i], dataIndex: titles[i], autoSizeColumn: true, flex: 1});
+        }
+
+        this.store = Ext.create('Ext.data.Store', {
+            fields:titles,
+            data:stats['data'],
+            proxy: {
+                type: 'memory',
+                reader: {
+                    type: 'json',
+                    root: 'items'
+                }
+            }
+        });
+        var table = this.queryById('multiparam_table');
+        table.reconfigure(this.store, cols);
     },
 
 });

@@ -14,14 +14,14 @@ try:
 except Exception:
     from xml.etree import ElementTree as et
 from bq.util.configfile import ConfigFile
-from bqapi import BQSession
+from bqapi import BQSession, BQTag
 
 from module_env import MODULE_ENVS, ModuleEnvironmentError
 from mexparser import MexParser
 
 ENV_MAP = dict ([ (env.name, env) for env in MODULE_ENVS ])
 logging.basicConfig(level=logging.DEBUG, filename='module.log')
-log = logging.getLogger('bq.engine_service.runtime')
+log = logging.getLogger('bq.engine_service.command_run')
 
 ####################
 # Helpers
@@ -148,6 +148,7 @@ class BaseRunner(object):
         self.parser.add_option('-d', '--debug', action="store_true",
                                default=False)
         self.session = None
+        self.process_environment = dict (os.environ)
 
     def log (self, msg, level = logging.INFO):
         #if self.options.verbose:
@@ -215,9 +216,14 @@ class BaseRunner(object):
             env.process_config (self)
 
     def setup_environments(self, **kw):
-        'Call setup_environment during "start" processing'
+        """Call setup_environment during "start" processing
+           Prepares environment and returns defined environment variable to be passed to jobs
+        """
+        log.debug ("setup_environments: %s", kw)
+        process_env = self.process_environment.copy ()
         for env in self.environments:
             env.setup_environment (self, **kw)
+        self.process_environment= process_env
 
     # Run during finish
     def teardown_environments(self, **kw):
@@ -241,6 +247,7 @@ class BaseRunner(object):
         # list of dict representing each mex : variables and arguments
         self.mexes = []
         self.rundir = os.getcwd()
+        self.outputs = []
 
         # Add remaining arguments to the executable line
         # Ensure the loaded executable is a list
@@ -274,6 +281,7 @@ class BaseRunner(object):
             mexparser = MexParser()
             mex_inputs  = mexparser.prepare_inputs(self.module_tree, self.mex_tree, self.bisque_token)
             module_options = mexparser.prepare_options(self.module_tree, self.mex_tree)
+            self.outputs = mexparser.prepare_outputs(self.module_tree, self.mex_tree)
             
             argument_style = module_options.get('argument_style', 'positional')            
             # see if we have pre/postrun option            
@@ -323,7 +331,8 @@ class BaseRunner(object):
     # Derived classes should overload these functions
 
     def command_start(self, **kw):
-        self.setup_environments()
+        env = self.setup_environments()
+        #self.setup_environments(**kw)
         with open('%s/mexes.bq' % self.mexes[0].get('staging_path', tempfile.gettempdir()),'wb') as f:
             pickle.dump(self.mexes, f)
 
@@ -372,18 +381,48 @@ class BaseRunner(object):
             if self.session is None:
                 self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
             # outputs
-            #   mex_rul
-            #   dataset_url
-            tags = None
-            itrs = []
+            #   mex_url
+            #   dataset_url  (if present and no list/range iterable)
+            #   multiparam   (if at least one list/range iterable)
+            need_multiparam = False
             for iter_name, iter_val, iter_type in self.mexes[0].iterables:
-                itrs.append( { 'name': iter_name, 'value': iter_val, 'type': iter_type } )
-            itrs.append ( { 'name': 'mex_url', 'value': self.mexes[0].mex_url, 'type' : 'mex' })
-            tags = [ { 'name' : 'outputs',
-                       'tag' : itrs } ]
+                if iter_type in ['list', 'range']:
+                    need_multiparam = True
+                    break
+            outtag = et.Element('tag', name='outputs')
+            if need_multiparam:
+                # some list/range params => add single multiparam element if allowed by module def
+                multiparam_name = None
+                for output in self.outputs:
+                    if output.get('type','') == 'multiparam':
+                        multiparam_name = output.get('name')
+                        break
+                if multiparam_name:
+                    xmltree = self.session.fetchxml(self.mexes[0].mex_url, view='deep')  # get latest MEX doc
+                    multitag = et.SubElement(outtag, 'tag', name=multiparam_name, type='multiparam')
+                    colnames = et.SubElement(multitag, 'tag', name='title')
+                    coltypes = et.SubElement(multitag, 'tag', name='xmap')
+                    colxpaths = et.SubElement(multitag, 'tag', name='xpath')
+                    et.SubElement(multitag, 'tag', name='xreduce', value='vector')
+                    for iter_name, iter_val, iter_type in self.mexes[0].iterables:
+                        actual_type = xmltree.xpath('./mex//tag[@name="%s" and @type]/@type') # read actual types from any submex
+                        actual_type = actual_type[0] if actual_type else 'string' 
+                        et.SubElement(colnames, 'value', value=iter_name)
+                        et.SubElement(coltypes, 'value', value="tag-value-%s" % actual_type)
+                        et.SubElement(colxpaths, 'value', value='./mex//tag[@name="%s"]' % iter_name)
+                    # last column is the submex URI
+                    et.SubElement(colnames, 'value', value="submex_uri")
+                    et.SubElement(coltypes, 'value', value="resource-uri")
+                    et.SubElement(colxpaths, 'value', value='./mex')
+                else:
+                    log.warn("List or range parameters in Mex but no multiparam output tag in Module")
+            else:
+                # no list/range params => add iterables as always
+                for iter_name, iter_val, iter_type in self.mexes[0].iterables:
+                    et.SubElement(outtag, 'tag', name=iter_name, value=iter_val, type=iter_type)
+            et.SubElement(outtag, 'tag', name='mex_url', value=self.mexes[0].mex_url, type='mex')
 
-
-            self.session.finish_mex(tags = tags)
+            self.session.finish_mex(tags = [outtag])
         return None
 
     def command_single_entrypoint(self, entrypoint, **kw):
@@ -506,7 +545,7 @@ class CommandRunner(BaseRunner):
             self.log( "running '%s' in %s" % (' '.join(command_line), rundir))
             log.info ('mex %s ' % mex)
 
-            self.processes.append(dict( command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex))
+            self.processes.append(dict( command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex, env=self.process_environment))
 
         # ****NOTE***
         # execone must be in engine_service as otherwise multiprocessing is unable to find it

@@ -79,7 +79,7 @@ from bq.util.hash import make_uniq_code, is_uniq_code
 
 
 from .resource import Resource
-from .resource_query import resource_query, resource_load, resource_count, resource_auth, resource_permission, resource_delete
+from .resource_query import resource_query, resource_load, resource_count, resource_auth, resource_permission, resource_delete, document_permission
 from .resource_query import RESOURCE_READ, RESOURCE_EDIT
 from .formats import find_formatter
 
@@ -135,6 +135,7 @@ class PixelHandler (object):
         log.debug ('REDIRECT %s ' % url.url)
         redirect (base_url=url.url)
 
+
 class ResourceAuth(Resource):
     'Handle resource authorization records'
 
@@ -143,6 +144,7 @@ class ResourceAuth(Resource):
 
     def create(self, **kw):
         return int
+
 
     def dir(self, **kw):
         'Read the list of authorization records associated with the parent resource'
@@ -254,14 +256,14 @@ class BisquikResource(Resource):
         if query is None:
             return None
         if  isinstance(query, Query):
-            query = resource_permission(query, action=action)
-            #log.debug ("PERMISSION:query %s" % query)
+            query = document_permission(query, action=action)
+            log.debug ("PERMISSION:query %s" % query)
         else:
             #   Previously loaded resource .. recreate query but with
             #   permission check
-            #log.debug ("PERMISSION: loaded object %s %s" % ((query.xmltag, query.__class__), query.id))
+            log.debug ("PERMISSION: loaded object %s %s" % ((query.xmltag, query.__class__), query.id))
             query = resource_load ((query.xmltag, query.__class__), ident=query.id)
-            query = resource_permission (query, action=action)
+            query = document_permission (query, action=action)
 
         resource = self.force_dbload(query)
         if resource is None:
@@ -484,11 +486,11 @@ class BisquikResource(Resource):
         """DELETE /ds/images/1/tags/2 : delete a specific resource
         """
         log.info ('DELETE %s' % (request.url))
-        resource = self.check_access(resource)
-        response = resource_delete(resource, user_id = identity.get_user_id())
+        resource = self.check_access(resource, RESOURCE_EDIT)
+        resource_delete(resource, user_id = identity.get_user_id())
         #transaction.commit()
         response = etree.Element ('resource')
-        return self.resource_output(resource=None, response=response, **kw)
+        return self.resource_output(resource=None, response=None, **kw)
 
 
     @expose()
