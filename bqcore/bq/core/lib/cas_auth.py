@@ -178,7 +178,7 @@ class CASPlugin(object):
                 identity['repoze.who.plugins.cas.ticket'])
             #headers, response = self.http.request(validate_url)
             response = self.http.get (validate_url)
-            if response.status_code == requests.codes.ok:
+            if response.status_code == requests.codes.ok: #pylint: disable=no-member
                 okayed, username = response.content.split("\n")[:2]
                 log.debug ('validate got %s %s' % (okayed, username))
                 if okayed == 'yes':
@@ -205,7 +205,7 @@ class CASPlugin(object):
             response = self.http.post (url, headers=headers, data=body)
             log.debug ("RECEIVED %s %s" , response.headers, response.content)
             found = parse_soap_saml(response.content)
-            if response.status_code == requests.codes.ok and found:
+            if response.status_code == requests.codes.ok and found:  #pylint: disable=no-member
                 for k,v in found.items():
                     identity['repoze.who.plugins.cas.%s' % k] = v
                 return found['user_id']

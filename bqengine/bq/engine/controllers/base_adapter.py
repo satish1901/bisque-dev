@@ -53,6 +53,7 @@ DESCRIPTION
  
 """
 import logging
+import copy
 from lxml import etree
 from bq.core import identity
 
@@ -142,27 +143,12 @@ class BaseAdapter(object):
     
 
     def prepare_outputs (self, module, mex):
-        '''Scan the module definition and the mex and match output parameters
-        creating a list in the proper order
+        '''Scan the module definition and the mex and match output
+        parameters creating a list in the proper order
         '''
-
-        # Pass through module definition looking for inputs
-        # for each input find the corresponding tag in the mex
-        # Warn about missing inputs
-        output_nodes = []
         outputs = module.xpath ('./tag[@name="outputs"]')
-        ouptuts = outputs and outputs[0]
-        for mi in outputs:
-            if mi.get('name') == 'outputs': continue
-            # pull type off and markers off
-            param_name = mi.get('value').split(':')[0].strip('$')
-            output_nodes.append ( param_name )
-            #found = mex.xpath ('./tag[@name="%s"]'%param_name)
-            #if not found:
-            #    log.warn ('missing input for parameter %s' % mi.get('value'))
-            #output_nodes += found
-
-        return output_nodes
+        outputs = outputs and outputs[0]
+        return [ copy.deepcopy(kid) for kid in outputs ]
 
 
     def prepare_options (self, module, mex):

@@ -230,6 +230,7 @@ class TableController(ServiceController):
 
     def __init__(self, server_url):
         super(TableController, self).__init__(server_url)
+        #self.baseuri = server_url
         self.basepath = os.path.dirname(inspect.getfile(inspect.currentframe()))
 
         self.importers = PluginManager('import', os.path.join(self.basepath, 'importers'), TableBase)

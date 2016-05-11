@@ -18,7 +18,6 @@ from repoze.what import predicates
 from bq.core.service import ServiceController
 from paste.fileapp import FileApp
 from pylons.controllers.util import forward
-from bq import data_service
 
 from bq.core import permission, identity
 from bq.util.paths import data_path
@@ -206,17 +205,9 @@ class ImageServiceController(ServiceController):
         cache_control( token.cacheInfo )
         return token.data
 
-    # @expose()
-    # #@identity.require(identity.not_anonymous())
-    # def remote(self, **kw):
-    #     return self.images(-1, **kw)
-
-    # @expose()
-    # def blobs(self):
-    #     pass
-
     def check_access(self, ident, view=None):
-        resource = data_service.resource_load (uniq = ident, view=view)
+        #resource = data_service.resource_load (uniq = ident, view=view)
+        resource = self.srv.cache.get_resource(ident)
         if resource is None:
             if identity.not_anonymous():
                 abort(403)

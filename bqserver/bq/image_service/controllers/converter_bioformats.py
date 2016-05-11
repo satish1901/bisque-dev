@@ -364,61 +364,15 @@ class ConverterBioformats(ConverterBase):
         if not os.path.exists(ifnm):
             return {}
         log.debug('Info for: %s', ifnm )
-        o = cls.run_read(ifnm, [cls.BFINFO, '-nopix', '-nometa', '-no-upgrade', '-series', '%s'%series, ifnm] )
-        if o is None:
-            return {}
 
-        bfmap = { 'Image count': 'image_num_p',
-                  'Width': 'image_num_x',
-                  'Height': 'image_num_y',
-                  'SizeZ': 'image_num_z',
-                  'SizeT': 'image_num_t',
-                  'SizeC': 'image_num_c',
-                  'Dimension order': 'dimensions' }
+        rd = cls.meta(token, **kw)
+        core = [ 'image_num_series', 'image_num_x', 'image_num_y', 'image_num_z', 'image_num_c', 'image_num_t',
+                 'image_pixel_format', 'image_pixel_depth', 'image_series_index', 'format',
+                 'pixel_resolution_x', 'pixel_resolution_y', 'pixel_resolution_z',
+                 'pixel_resolution_unit_x', 'pixel_resolution_unit_y', 'pixel_resolution_unit_z' ]
 
-        rd = { 'image_num_z': 1,
-               'image_num_t': 1,
-               'image_num_p': 1 }
-
-        in_series = False
-        for line in o.splitlines():
-            if not line: continue
-            line = line.strip()
-
-            if line.startswith('Checking file format ['):
-                rd['format'] = line.replace('Checking file format [', '').replace(']', '')
-                continue
-
-            if line.startswith('Series count = '):
-                val = line.replace('Series count = ', '')
-                rd['image_num_series'] = misc.safetypeparse(val)
-                continue
-
-            if line.startswith('Series #%s'%series):
-                rd['image_series_index'] = series
-                in_series = True
-                continue
-
-            if line.startswith('Series #%s'%(int(series)+1)):
-                break
-
-            if not in_series:
-                continue
-
-            try:
-                tag, val = [ l.strip(' \n') for l in line.split('=',1) ]
-            except Exception:
-                break
-            if not tag in bfmap:
-                continue
-            rd[bfmap[tag]] = misc.safetypeparse(val)
-
-        if len(rd)<4:
-            return {}
-        if rd['image_num_p']>1 and rd['image_num_z']<=1 and rd['image_num_t']<=1:
-            rd['image_num_t'] = rd['image_num_p']
-
-        return rd
+        #return {k:v for k,v in rd.iteritems() if k in core}
+        return dict( (k,v)  for k,v in rd.iteritems() if k in core )
 
 
     #######################################

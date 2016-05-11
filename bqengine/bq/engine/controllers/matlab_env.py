@@ -19,14 +19,14 @@ MATLAB_LAUNCHER="""#!/bin/sh
 #
 matlabroot=${MATLAB_HOME}
 
-# 
+#
 LD_LIBRARY_PATH=$matlabroot/runtime/glnxa64:\
 $matlabroot/bin/glnxa64:\
 $matlabroot/sys/os/glnxa64:\
 $matlabroot/sys/java/jre/glnxa64/jre/lib/amd64/native_threads:\
 $matlabroot/sys/java/jre/glnxa64/jre/lib/amd64/server:\
 $matlabroot/sys/java/jre/glnxa64/jre/lib/amd64:
-XAPPLRESDIR=$matlabroot/X11/app-defaults 
+XAPPLRESDIR=$matlabroot/X11/app-defaults
 
 PATH=$PATH:$matlabroot/bin:.
 HOME=.
@@ -44,7 +44,7 @@ hostname
 
 echo "+++LOCAL DIR"
 pwd
-ls -l 
+ls -l
 
 echo "+++ENVIRONMENT"
 printenv
@@ -72,7 +72,7 @@ class MatlabEnvironment(BaseEnvironment):
 
     The script will be generated based on internal template which can
     be overriden with (in runtime-module.cfg)::
-       matlab_launcher = mymatlab_launcher.txt 
+       matlab_launcher = mymatlab_launcher.txt
 
     '''
 
@@ -90,6 +90,7 @@ class MatlabEnvironment(BaseEnvironment):
 
     def setup_environment(self, runner):
         # Construct a special environment script
+        runner.log ("matlab_env setup")
         for mex in runner.mexes:
             #if mex.executable:
             condor_matlab = self.create_matlab_launcher(mex.rundir)
@@ -123,8 +124,7 @@ class MatlabDebugEnvironment(MatlabEnvironment):
             condor_matlab = self.create_matlab_launcher(mex.rundir)
             condor_matlab = os.path.join('.', os.path.basename(condor_matlab))
 
-            if mex.executable:            
+            if mex.executable:
                 function = mex.executable.pop(0)
                 function = '%s(%s); exit;'%(function, ','.join("'%s'"%x for x in mex.executable))
-                mex.executable = [condor_matlab, 'matlab', '-r', function]        
-
+                mex.executable = [condor_matlab, 'matlab', '-r', function]

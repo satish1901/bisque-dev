@@ -81,7 +81,8 @@ tests
 ----------------------------------------
 
 
-entire pipeline:
+entire pipeline
+=====================
 
 planar:
 Tile retreival in seconds, avg: 0.554599995613 max: 2.98400020599 min: 0.25, std: 0.802151292881
@@ -91,7 +92,8 @@ pyramidal:
 Tile retreival in seconds, avg: 0.306220002174 max: 0.621999979019 min: 0.264999866486, std: 0.0799598142316
 Tile retreival in seconds, avg: 0.145499997139 max: 0.25 min: 0.12900018692, std: 0.0162040125661
 
-DYLIB entire pipeline:
+DYLIB entire pipeline
+=========================
 
 planar:
 Tile retreival in seconds, avg: 0.452859997749 max: 2.71099996567 min: 0.18700003624, std: 0.719729603196
@@ -101,9 +103,20 @@ pyramidal:
 Tile retreival in seconds, avg: 0.218559999466 max: 0.313000202179 min: 0.186999797821, std: 0.0320831421614
 Tile retreival in seconds, avg: 0.111480002403 max: 0.128999948502 min: 0.0939998626709, std: 0.00668203185509
 
-DYLIB entire pipeline -blob_service:
+DYLIB entire pipeline -blob_service
+======================================
+
 Tile retreival in seconds, avg: 0.426180000305 max: 2.75 min: 0.161999940872, std: 0.71543630587
 Tile retreival in seconds, avg: 0.113559999466 max: 0.25 min: 0.105999946594, std: 0.0198878461193
 
 Tile retreival in seconds, avg: 0.195900001526 max: 0.287999868393 min: 0.171000003815, std: 0.0298095543748
 Tile retreival in seconds, avg: 0.112179999352 max: 0.125 min: 0.108999967575, std: 0.00602226016397
+
+Cached resources
+====================
+
+Tile retreival in seconds, avg: 0.455360002518 max: 4.20700001717 min: 0.172000169754, std: 0.828245764226
+Tile retreival in seconds, avg: 0.115720000267 max: 0.167000055313 min: 0.106999874115, std: 0.0126839156253
+
+Tile retreival in seconds, avg: 0.199719996452 max: 0.344000101089 min: 0.174999952316, std: 0.0371806802742
+Tile retreival in seconds, avg: 0.110039997101 max: 0.115000009537 min: 0.106999874115, std: 0.0021996332496

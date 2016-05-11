@@ -193,6 +193,7 @@ class AdminController(ServiceController):
                     return self.loginasuser(arg[0])
             elif arg[1]=='image':
                 if http_method == 'DELETE':
+                    uniq = arg[0]
                     bquser = data_service.resource_load(uniq=uniq)
                     #bquser = DBSession.query(BQUser).filter(BQUser.resource_uniq == uniq).first()
                     if bquser:
