@@ -317,6 +317,8 @@ class BisquikResource(Resource):
             parent = False
         user_id = identity.get_user_id()
         if parent is None and view!='count':
+            if not isinstance (view, basestring):
+                abort (400, "Illegal view parameter %s" % view)
             viewmap = { None: 1000000, 'short':1000000, 'full' : 10000, 'deep' : 1000 }
             maxlimit = viewmap.get (view, 10000)
             limit = kw.pop ('limit', None) or maxlimit
@@ -487,10 +489,12 @@ class BisquikResource(Resource):
         """
         log.info ('DELETE %s' % (request.url))
         resource = self.check_access(resource, RESOURCE_EDIT)
-        resource_delete(resource, user_id = identity.get_user_id())
-        #transaction.commit()
         response = etree.Element ('resource')
-        return self.resource_output(resource=None, response=None, **kw)
+        if resource is not None:
+            resource_uniq = resource.resource_uniq
+            resource_delete(resource, user_id = identity.get_user_id())
+            response.set ('resource_uniq', resource_uniq)
+        return self.resource_output(resource=None, response=response, **kw)
 
 
     @expose()
