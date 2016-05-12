@@ -56,6 +56,7 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 from lxml import etree
+from sqlalchemy.exc import IntegrityError
 
 #import smokesignal
 
@@ -65,6 +66,7 @@ from tg.controllers import RestController, TGController
 #from paste.fileapp import FileApp
 from bq.util.fileapp import BQFileApp
 from pylons.controllers.util import forward
+from paste.deploy.converters import asbool
 #from paste.deploy.converters import asbool
 from repoze.what import predicates
 
@@ -78,6 +80,7 @@ from bq.exceptions import IllegalOperation
 from bq.util.timer import Timer
 from bq.util.sizeoffmt import sizeof_fmt
 from bq.util.hash import is_uniq_code
+from bq.util.contextfuns import optional_cm
 from bq import data_service
 from bq.data_service.model import Taggable, DBSession
 #from bq import image_service
@@ -271,6 +274,7 @@ class BlobServer(RestController, ServiceMixin):
         self.__class__.store = mounts
         paths.mounts = mounts
 
+        self.subtransactions = asbool(config.get ('bisque.blob_service.subtransaction', True))
 
         path_root = config.get('bisque.paths.root', '')
         path_plugins = os.path.join(path_root, 'bqcore/bq/core/public/plugins')
@@ -332,6 +336,8 @@ class BlobServer(RestController, ServiceMixin):
                 abort (404, "Must be resource unique code")
 
             resource = data_service.resource_load(uniq=ident)
+            if resource is None:
+                abort (403, "resource does not exist or permission denied")
             filename,_ = split_subpath(resource.get('name', str(ident)))
             blb = self.localpath(ident)
             if blb.files and len(blb.files) > 1:
@@ -354,7 +360,7 @@ class BlobServer(RestController, ServiceMixin):
                                      content_type=content_type,
                                      content_disposition=disposition,).cache_control(max_age=60*60*24*7*6)) # 6 weeks
         except IllegalOperation:
-            abort(404)
+            abort(404, "Error occurent fetching blob")
 
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())
@@ -409,7 +415,7 @@ class BlobServer(RestController, ServiceMixin):
 ########################################
 # API functions
 #######################################
-    def create_resource(self, resource ):
+    def _create_resource(self, resource ):
         'create a resource from a blob and return new resource'
         # hashed filename + stuff
 
@@ -419,6 +425,8 @@ class BlobServer(RestController, ServiceMixin):
             resource.set('resource_type', resource.get('resource_type') or self.guess_type(filename))
         if resource.get('resource_uniq') is None:
             resource.set('resource_uniq', data_service.resource_uniq() )
+        else:
+            pass
         ts = resource.get('ts') or datetime.now().isoformat(' ')
 
         # KGK
@@ -431,9 +439,11 @@ class BlobServer(RestController, ServiceMixin):
                                          type='datetime',
                                          permission=perm,))
 
-        log.info ("NEW RESOURCE <= %s" , etree.tostring(resource))
-        resource = data_service.new_resource(resource = resource)
-
+        if resource.get('resource_uniq') is None:
+            resource.set('resource_uniq', data_service.resource_uniq() )
+        log.info ("INSERTING NEW RESOURCE <= %s" , etree.tostring(resource))
+        new_resource = data_service.new_resource(resource = resource, flush=False)
+        return new_resource
         #if asbool(config.get ('bisque.blob_service.store_paths', True)):
             # dima: insert_blob_path should probably be renamed to insert_blob
             # it should probably receive a resource and make decisions on what and how to store in the file tree
@@ -444,7 +454,25 @@ class BlobServer(RestController, ServiceMixin):
             #except IntegrityError:
             #    # dima: we get this here if the path already exists in the sqlite
             #    log.error('store_multi_blob: could not store path into the tree store')
-        return resource
+    def create_resource(self, resource ):
+        if resource.get('resource_uniq') is None:
+            resource.set('resource_uniq', data_service.resource_uniq() )
+
+        subtrans = None
+        if self.subtransactions:
+            #pylint: disable=no-member
+            subtrans = DBSession.begin_nested
+            log.debug ("USING NESTED transaction")
+        for x in range (3):
+            try:
+                new_resource = None
+                with optional_cm (subtrans):
+                    new_resource = self._create_resource(resource)
+                break
+            except IntegrityError:
+                log.exception ("Issue creating resource")
+                resource.set ('resource_uniq', data_service.resource_uniq() )
+        return new_resource
 
 
     def store_blob(self, resource, fileobj = None, rooturl = None):
@@ -454,17 +482,26 @@ class BlobServer(RestController, ServiceMixin):
         @param rooturl: a multi-blob resource will have urls as values rooted at rooturl
         @return: a resource
         """
-        log.debug('store_blob: %s, %s', fileobj, rooturl)
-        log.debug('store_blob: %s', etree.tostring(resource))
-        if resource.get('resource_uniq') is None:
-            resource.set('resource_uniq', data_service.resource_uniq() )
+        if log.isEnabledFor (logging.DEBUG):
+            log.debug(' => store_blob: %s, %s -> %s', fileobj, rooturl, etree.tostring(resource))
 
-        store_url, lpath = self.mounts.store_blob(resource, rooturl=rooturl, fileobj=fileobj)
-        log.debug("store_blob stored: %s %s", store_url, lpath)
-        log.debug('store_blob stored: %s', etree.tostring(resource))
-        if store_url is None:
+        store_url, store, lpath = self.mounts.store_blob(resource, rooturl=rooturl, fileobj=fileobj)
+        if store_url is  None:
+            log.error ("Could not store FILEOBJ of resource")
+            # TODO: Clean up created resource
             return None
-        return self.create_resource(resource)
+
+        resource = self.create_resource (resource)
+        if resource is None:
+            log.error("Resource creation failed=> %s", etree.tostring (resource))
+            return None
+
+        self.mounts.insert_mount_path (store, lpath, resource)
+
+        if log.isEnabledFor (logging.DEBUG):
+            log.debug("store_blob stored: %s %s -> %s", store_url, lpath, etree.tostring (resource))
+        return resource
+
 
     def localpath (self, uniq_ident, resource=None):
         "Find  local path for the identified blob, using workdir for local copy if needed"

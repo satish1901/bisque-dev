@@ -61,7 +61,6 @@ import posixpath
 from lxml import etree
 from sqlalchemy.exc import IntegrityError
 from paste.deploy.converters import asbool
-from contextlib import contextmanager
 
 import tg
 from tg import expose, config,  abort
@@ -78,6 +77,7 @@ from bq.util.compat import OrderedDict
 from bq.util.bisquik2db import  load_uri  # needed for identity stuff
 from bq.util.urlpaths import url2unicode,data_url_path,config2url,url2localpath
 from bq.util.io_misc import   tounicode
+from bq.util.contextfuns import optional_cm
 
 from bq import data_service
 
@@ -90,28 +90,6 @@ log = logging.getLogger('bq.blobs.mounts')
 #################################################
 #  Define helper functions for NT vs Unix/Mac
 #
-
-@contextmanager
-def optional_cm(cm, *args, **kw):
-    """Create a special contect manager to not duplicate code
-    See http://bugs.python.org/issue10049
-    """
-    if cm is None:
-        yield None
-    else:
-        with cm(*args, **kw) as v:
-            yield v
-
-
-@contextmanager
-def opener_cm (path):
-    "open a filename or return the already opened file"
-    if hasattr(path, 'read'):
-        yield path
-    else:
-        with open(path, 'rb') as f:
-            yield f
-
 
 def get_tag(elem, tag_name):
     els = elem.xpath ('./tag[@name="%s"]' % tag_name)
@@ -168,7 +146,7 @@ class MountServer(TGController):
         super(MountServer, self).__init__()
         self.drivers = load_default_drivers()
         log.info ("Loaded drivers %s", self.drivers)
-        self.subtransactions = asbool(config.get ('bisque.blob_service.store_paths.subtransaction', True))
+        self.subtransactions = asbool(config.get ('bisque.blob_service.subtransaction', True))
         # Sanity check
         if config.get('sqlalchemy.url').startswith ('sqlite://'):
             self.subtransactions = False
@@ -581,7 +559,7 @@ class MountServer(TGController):
             _, store_name, storepath = storepath.split ('/', 2)
             if store_name not in stores:
                 raise IllegalOperation("Illegal store name %s", store_name)
-            stores = dict( [ (store_name, stores[store_name]) ] )
+            stores = dict([ (store_name, stores[store_name]) ])
         else:
             # A relative name.. could be a reference store only
             if fileobj is None:
@@ -605,7 +583,7 @@ class MountServer(TGController):
         if storeurl is None:
             log.error ('storing %s failed (%s)', storepath, storeurl)
 
-        return storeurl, lpath
+        return storeurl, store, lpath
 
     def _save_store(self, store, storepath, resource, fileobj=None, rooturl=None):
         'store the file to the named store'
@@ -632,11 +610,11 @@ class MountServer(TGController):
             name = os.path.basename(resource_name) or tounicode(url2localpath(os.path.basename(storeurl)))
             resource.set('name', join_subpath(name, sub))
 
-        if self.store_paths:
+        #if self.store_paths:
             # Update the store path reference to similar to the storeurl
             storepath = storepath.split ('/')
             storepath[-1] = os.path.basename(storeurl)
-            self.insert_mount_path (store, storepath, resource)
+        #    self.insert_mount_path (store, storepath, resource)
         log.debug('_save_store: %s %s %s', storeurl, localpath, etree.tostring(resource))
         return storeurl, localpath
 
