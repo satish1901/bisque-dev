@@ -70,6 +70,9 @@ TilesRenderer.prototype.updateImage = function (){
       // this listener will update viewer if scale has changed in the tiled viewer
       this.myCursorListner = new CursorListner(this.tiled_viewer, this.viewer);
 
+      // this listener will update viewer size
+      this.myResizeListner = new TiledResizeListner(this.tiled_viewer, this);
+
       //Ext.EventManager.addListener( window, 'resize', callback(this.tiled_viewer, this.tiled_viewer.resize) );
       this.tiled_viewer.init();
       this.viewer.viewer_controls_surface = this.div;
@@ -130,6 +133,15 @@ CursorListner.prototype.cursorMoved = function(e) {
     this.parent.print_coordinate(e, true, true);
 };
 
+// Resize Listner
+function TiledResizeListner(viewer, parent) {
+    this.viewer = viewer;
+    this.parent = parent;
+    this.viewer.addViewerResizedListener(this);
+}
 
+TiledResizeListner.prototype.viewerResized = function(e) {
+    this.parent.resize();
+};
 
 
