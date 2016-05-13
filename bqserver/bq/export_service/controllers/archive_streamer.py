@@ -279,6 +279,7 @@ class ArchiveStreamer():
             log.debug ('ArchiveStreamer: Sending %s with %s'  % (url, headers))
             response = requests.get(url, headers=headers)
 
+            #pylint: disable=no-member
             if not response.status_code == requests.codes.ok:
                 log.error("URL request returned %s" , response.status_code)
                 return None

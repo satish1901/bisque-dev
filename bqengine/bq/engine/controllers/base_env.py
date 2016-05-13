@@ -16,7 +16,7 @@ class ModuleEnvironment(object):
 
     def __init__(self, runner):
         pass
-    
+
     def setup_environment(self, runner):
         """Prepare the module enviroment before the actual run
         """
@@ -25,7 +25,7 @@ class ModuleEnvironment(object):
         """Cleanup the module environentm
         """
 
-        
+
 def strtobool(x):
     return {"true": True, "false": False}.get(x.lower())
 def strtolist(x, sep=','):
@@ -33,16 +33,16 @@ def strtolist(x, sep=','):
 
 class BaseEnvironment (ModuleEnvironment):
     """A BaseEnvironment is a helper script for running bisque modules.
-    
+
     An enviroment provide a framework for constructing a runtime
-    environment for a module that will work several platforms, 
+    environment for a module that will work several platforms,
 
     Base class for creating module environment which can process MEX
     amd MODULE arguments.
     """
     name   ="Base"
     config = {}   # Element of this environment found in the configuration file
-    
+
     def __init__(self, runner):
         super(BaseEnvironment, self).__init__(runner)
 
@@ -67,7 +67,7 @@ class BaseEnvironment (ModuleEnvironment):
             return strtobool(value)
         if value_type==list:
             return strtolist(value)
-        
+
         raise ModuleEnvironmentError("Illegal conversion of %s to type %s" % (value, typ))
 
     def parse_mex_inputs (self, module, mex):
@@ -94,16 +94,11 @@ class BaseEnvironment (ModuleEnvironment):
         input_nodes.sort (lambda n1,n2: cmp(int(n1.get('index')), int(n2.get('index'))))
         return input_nodes
 
-        
-    def setup_environment(self, runner, ):
+
+    def setup_environment(self, runner):
         """Prepare the module enviroment before the actual run
         """
 
     def teardown_environment(self, runner):
         """Cleanup the module environentm
         """
-
-
-
-
-
