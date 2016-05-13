@@ -21,9 +21,11 @@ ImgSlicer.prototype = new ViewerPlugin();
 
 ImgSlicer.prototype.create = function (parent) {
     this.parent = parent;
-    this.div  = document.createElementNS(xhtmlns, "div");
-    this.div.id =  'imgviewer_slicer';
-    this.div.className = "image_viewer_slicer";
+
+    //this.div  = document.createElementNS(xhtmlns, "div");
+    //this.div.id =  'imgviewer_slicer';
+    //this.div.className = "image_viewer_slicer";
+    this.div  = parent;
     this.tslider = null;
     this.zslider = null;
     this.t = -1;
@@ -38,7 +40,7 @@ ImgSlicer.prototype.create = function (parent) {
     //this.cacher_z = new Worker('/js/viewer/cacher.js');
     //this.cacher_t = new Worker('/js/viewer/cacher.js');
 
-    parent.appendChild(this.div);
+    //parent.appendChild(this.div);
     return this.div;
 };
 

@@ -1578,6 +1578,10 @@ CanvasRenderer.prototype.create = function (parent) {
 
     // dima: kineticjs removes all other elements in the given container, create a wrapper for its sad sole existence
     this.wrapper = document.createElement("div");
+    //this.wrapper.id =  'canvas_renderer_wrapper';
+    this.wrapper.className = 'canvas_renderer_wrapper';
+    this.wrapper.style.width = '100%';
+    this.wrapper.style.height = '100%';
     parent.appendChild(this.wrapper);
 
     this.stage = new Kinetic.Stage({
@@ -1952,8 +1956,8 @@ CanvasRenderer.prototype.setkeyhandler = function (cb, doadd ){
 };
 
 CanvasRenderer.prototype.newImage = function () {
-    var w = this.viewer.imagediv.offsetWidth;
-    var h = this.viewer.imagediv.offsetHeight;
+    //var w = this.viewer.imagediv.offsetWidth;
+    //var h = this.viewer.imagediv.offsetHeight;
 
     this.rendered_gobjects = [];
     if(!this.viewFrustum) this.initFrustum();
@@ -1976,10 +1980,12 @@ CanvasRenderer.prototype.appendSvg = function (gob){
 
 CanvasRenderer.prototype.initFrustum = function(){
 
-    if(!this.viewFrustum){
+    if (!this.viewFrustum) {
         var scale = this.stage.scale().x;
-        var x = this.viewer.tiles.div.clientWidth/scale;
-        var y = this.viewer.tiles.div.clientHeight/scale;
+        var w = this.viewer.tiles.tiled_viewer ? this.viewer.tiles.tiled_viewer.width : this.viewer.tiles.div.clientWidth;
+        var h = this.viewer.tiles.tiled_viewer ? this.viewer.tiles.tiled_viewer.height : this.viewer.tiles.div.clientHeight;
+        var x = w/scale;
+        var y = h/scale;
         var z = 1;
         var t = 1;
 
@@ -2159,8 +2165,10 @@ CanvasRenderer.prototype.calcFrustum = function(x,y, scale){
     t = this.viewer.tiles.cur_t,
     sz = dim.z,
     st = dim.t,
-    cw = this.viewer.imagediv.clientWidth/scale,
-    ch = this.viewer.imagediv.clientHeight/scale,
+    w = this.viewer.tiles.tiled_viewer ? this.viewer.tiles.tiled_viewer.width : this.viewer.imagediv.clientWidth,
+    h = this.viewer.tiles.tiled_viewer ? this.viewer.tiles.tiled_viewer.height : this.viewer.imagediv.clientHeight,
+    cw = w/scale,
+    ch = h/scale,
     xp = x < 0 ? -x/scale : 0,
     yp = y < 0 ? -y/scale : 0,
     w = x < 0 ? dim.x + x/scale : cw - x/scale,
@@ -2232,10 +2240,11 @@ CanvasRenderer.prototype.updateImageDelay = function (e, fcn) {
     var me = this;
     var viewstate = this.viewer.current_view;
     //var url = this.viewer.image_url();
-    var scale = this.viewer.current_view.scale;
+    var scale = this.viewer.current_view.scale,
+        tiled_viewer = this.viewer.tiles.tiled_viewer;
 
-    var x = this.viewer.tiles.tiled_viewer.x;
-    var y = this.viewer.tiles.tiled_viewer.y;
+    var x = tiled_viewer.x;
+    var y = tiled_viewer.y;
     var z = this.viewer.tiles.cur_z;
     var t = this.viewer.tiles.cur_t;
 
@@ -2258,14 +2267,13 @@ CanvasRenderer.prototype.updateImageDelay = function (e, fcn) {
 
     //this.stage.content.style.left = x + 'px';
     //this.stage.content.style.top = y + 'px';
-
-    var width = window.innerWidth;
-    var height = window.innerHeight;
+    //var width = window.innerWidth;
+    //var height = window.innerHeight;
     var frust = this.calcFrustum(x,y,scale);
     this.stage.x(x);
     this.stage.y(y);
-    this.stage.setWidth(this.viewer.imagediv.clientWidth);
-    this.stage.setHeight(this.viewer.imagediv.clientHeight);
+    this.stage.setWidth(tiled_viewer.width);
+    this.stage.setHeight(tiled_viewer.height);
 
     this.selectRect.width(this.viewer.tiles.pyramid.width);
     this.selectRect.height(this.viewer.tiles.pyramid.height);
