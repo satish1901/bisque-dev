@@ -71,7 +71,7 @@ class OpenIDAuth(object):
         """Add our stored metadata to given identity if available"""
         key = identity.get('repoze.who.plugins.openid.userid')
         if key:
-            values = self.mapping.get( key )
+            values = self.key_map.get( key )
             if values:
                 identity = self.as_user_values( values, identity )
         return identity

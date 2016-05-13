@@ -16,7 +16,7 @@ class ScriptEnvironment(BaseEnvironment):
     """
     name       = "Script"
     config    = {'script':""}
-    
+
     def __init__(self, runner, **kw):
         super(ScriptEnvironment, self).__init__(runner, **kw)
 
@@ -25,28 +25,28 @@ class ScriptEnvironment(BaseEnvironment):
             if not hasattr(mex, 'script'):
                 raise ModuleEnvironmentError('Missing script tag in configuration')
 
-        
+
     def create_script(self, mex):
         """Runs before the normal command but after read the config"""
-        
+
         _find_unsafe = re.compile(r'[^\w@%+=:,./-]').search
-        
+
         def quote(s):
             if not s:
                 return "''"
             if _find_unsafe(s) is None:
                 return s
-            return "'" + s.replace("'", "'\"'\"'") + "'"                
+            return "'" + s.replace("'", "'\"'\"'") + "'"
 
         quoted = dict ([(k, quote(v)) for (k, v) in mex.named_args.items()])
         quoted.update (dict ((k, quote(v)) for (k, v) in mex.items() if isinstance(v, basestring)))
         script = string.Template(mex.script).safe_substitute(quoted)
-        
+
         script = shlex.split(script)
         mex.executable=list(script) + ['start']
 
         return script
-        
+
     def setup_environment(self, runner):
         for mex in runner.mexes:
             if mex.executable:
@@ -54,13 +54,13 @@ class ScriptEnvironment(BaseEnvironment):
                 rundir = mex.get('rundir')
                 runner.log ("Execute setup '%s' in %s" % (" ".join (script + ['setup']), rundir))
                 runner.log ("logging to  %s " % mex.log_name)
-                r =  subprocess.call(script + ['setup'], 
+                r =  subprocess.call(script + ['setup'],
                                      stdout=open(mex.log_name, 'a'),
                                      stderr = subprocess.STDOUT,
                                      cwd = rundir)
                 if r != 0:
                     raise ModuleEnvironmentError("setup returned %s"  % r)
-        
+
     def teardown_environment(self, runner):
         for mex in runner.mexes:
             if mex.executable:
@@ -73,4 +73,3 @@ class ScriptEnvironment(BaseEnvironment):
                                     cwd = rundir)
                 if r != 0:
                     raise ModuleEnvironmentError("teardown returned %s"  % r)
-            

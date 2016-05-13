@@ -61,7 +61,6 @@ import posixpath
 from lxml import etree
 from sqlalchemy.exc import IntegrityError
 from paste.deploy.converters import asbool
-from contextlib import contextmanager
 
 import tg
 from tg import expose, config,  abort
@@ -78,6 +77,7 @@ from bq.util.compat import OrderedDict
 from bq.util.bisquik2db import  load_uri  # needed for identity stuff
 from bq.util.urlpaths import url2unicode,data_url_path,config2url,url2localpath
 from bq.util.io_misc import   tounicode
+from bq.util.contextfuns import optional_cm
 
 from bq import data_service
 
@@ -90,28 +90,6 @@ log = logging.getLogger('bq.blobs.mounts')
 #################################################
 #  Define helper functions for NT vs Unix/Mac
 #
-
-@contextmanager
-def optional_cm(cm, *args, **kw):
-    """Create a special contect manager to not duplicate code
-    See http://bugs.python.org/issue10049
-    """
-    if cm is None:
-        yield None
-    else:
-        with cm(*args, **kw) as v:
-            yield v
-
-
-@contextmanager
-def opener_cm (path):
-    "open a filename or return the already opened file"
-    if hasattr(path, 'read'):
-        yield path
-    else:
-        with open(path, 'rb') as f:
-            yield f
-
 
 def get_tag(elem, tag_name):
     els = elem.xpath ('./tag[@name="%s"]' % tag_name)
@@ -168,7 +146,7 @@ class MountServer(TGController):
         super(MountServer, self).__init__()
         self.drivers = load_default_drivers()
         log.info ("Loaded drivers %s", self.drivers)
-        self.subtransactions = asbool(config.get ('bisque.blob_service.store_paths.subtransaction', True))
+        self.subtransactions = asbool(config.get ('bisque.blob_service.subtransaction', True))
         # Sanity check
         if config.get('sqlalchemy.url').startswith ('sqlite://'):
             self.subtransactions = False
@@ -260,6 +238,10 @@ class MountServer(TGController):
             #resp.sort (key = lambda x: x.get ('name'))
             q = resp
 
+        fullpath = ['', 'blob_service', 'store', store_name]
+        fullpath.extend (path)
+        self.mapuris (q, top="/".join (fullpath))
+
         return etree.tostring(q)
 
     def _post(self, path, **kw):
@@ -284,6 +266,14 @@ class MountServer(TGController):
             return "<response/>"
 
 
+    def _refresh (self, path, **kw):
+        "Refresh the store from a given path"
+        if len(path)==0:
+            return self.index()
+        store_name = path.pop(0)
+
+
+
     ######################
     # Core
     def _create_root_mount(self):
@@ -292,14 +282,26 @@ class MountServer(TGController):
         root = data_service.query('store', resource_unid='(root)', view='full')
         #root = data_service.query('store', resource_unid='(root)', view='short')
         if len(root) == 0:
-            return  self._create_default_mounts()
+            found_root=  self._create_default_mounts()
         if len(root) == 1:
-            return self._create_default_mounts(root[0])
+            found_root =  self._create_default_mounts(root[0])
         elif len(root) > 1:
             log.error("Root store created more than once: %s ", etree.tostring(root))
             return None
 
-        return root[0]
+        self.mapuris(found_root)
+        return found_root
+
+    def mapuris (self, store_resource, top="/blob_service/store"):
+        log.debug ("STORE RESOURCE -> %s", etree.tostring (store_resource))
+        store_resource.set ('uri', top)
+        resource_iter  = store_resource.iter()
+        next (resource_iter)
+        for el in resource_iter:
+            if el.tag in ('link', 'dir'):
+                el.set ('uri', (el.getparent() and el.getparent().get('uri', 'ROOT') or '') + '/' + el.get ('resource_unid', 'UNID'))
+
+
 
     def _create_default_mounts(self, root=None):
         'translate system stores into mount (store) resources'
@@ -557,7 +559,7 @@ class MountServer(TGController):
             _, store_name, storepath = storepath.split ('/', 2)
             if store_name not in stores:
                 raise IllegalOperation("Illegal store name %s", store_name)
-            stores = dict( [ (store_name, stores[store_name]) ] )
+            stores = dict([ (store_name, stores[store_name]) ])
         else:
             # A relative name.. could be a reference store only
             if fileobj is None:
@@ -581,7 +583,7 @@ class MountServer(TGController):
         if storeurl is None:
             log.error ('storing %s failed (%s)', storepath, storeurl)
 
-        return storeurl, lpath
+        return storeurl, store, lpath
 
     def _save_store(self, store, storepath, resource, fileobj=None, rooturl=None):
         'store the file to the named store'
@@ -596,7 +598,10 @@ class MountServer(TGController):
                 log.debug('_save_store: %s from %s %s', storeurl, driver.mount_url, storepath)
                 storeurl, localpath = driver.push (fileobj, storeurl, resource.get('resource_uniq'))
 
-                name = os.path.basename(resource_name) or tounicode(url2localpath(os.path.basename(storeurl)))
+                # Store URL may be changed during driver push by disambiguation code.
+                # revert change from changeset:2297 to always use storeurl
+                #name = os.path.basename(resource_name) or tounicode(url2localpath(os.path.basename(storeurl)))
+                name = tounicode(url2localpath(os.path.basename(storeurl)))
                 resource.set('name', join_subpath(name, sub))
                 resource.set('value', join_subpath(storeurl, sub))
                 log.debug('_save_store: %s', etree.tostring(resource))
@@ -605,11 +610,11 @@ class MountServer(TGController):
             name = os.path.basename(resource_name) or tounicode(url2localpath(os.path.basename(storeurl)))
             resource.set('name', join_subpath(name, sub))
 
-        if self.store_paths:
+        #if self.store_paths:
             # Update the store path reference to similar to the storeurl
             storepath = storepath.split ('/')
             storepath[-1] = os.path.basename(storeurl)
-            self.insert_mount_path (store, storepath, resource)
+        #    self.insert_mount_path (store, storepath, resource)
         log.debug('_save_store: %s %s %s', storeurl, localpath, etree.tostring(resource))
         return storeurl, localpath
 
@@ -920,6 +925,7 @@ class MountServer(TGController):
         # The last element might be dir or a link
         if len(path)==1:
             nm = resource_name or path.pop(0)
+            #nm = path.pop(0)
             if root is None:
                 resource = root = etree.Element ('link' if resource_uniq else 'dir', name=nm, resource_unid = nm)
             else:

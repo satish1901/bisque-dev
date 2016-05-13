@@ -55,12 +55,21 @@ import logging
 import string
 import textwrap
 
-from tg import config, url, session, request
 from datetime import datetime
-from sqlalchemy import Integer, String, DateTime, Unicode, Float, Boolean
+#from sqlalchemy import Integer, String, DateTime, Unicode, Float, Boolean
 from sqlalchemy.sql import select, func, exists, and_, or_, not_, asc, desc, operators, cast
 from sqlalchemy.orm import Query, aliased
-from pylons.controllers.util import abort
+#from pylons.controllers.util import abort
+from tg import config, url, request
+
+
+try:
+    import ply.yacc as yacc
+    import ply.lex as lex
+except ImportError:
+    # pylint: disable=import-error
+    import yacc as yacc
+    import lex as lex
 
 #from datetime import strptime
 
@@ -72,16 +81,18 @@ from bq.data_service.model import TaggableAcl, BQUser
 from bq.data_service.model import Tag, GObject
 from bq.data_service.model import Value, values
 from bq.data_service.model import dbtype_from_tag
+from bq.exceptions import IllegalOperation
 from bq.client_service.controllers import notify_service
 
 from bq.core.identity import get_user_id, is_admin, get_user
 from bq.core.model import User
-from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 from bq.util.converters import asbool
 
 from .resource import Resource
 from .filter_parser import filter_parse
+
+# pylint: disable=invalid-name
 
 log = logging.getLogger('bq.data_service.query')
 
@@ -96,25 +107,17 @@ RESOURCE_SHARE=2
 # tag_query parser
 report_errors = True
 
-try:
-    import ply.yacc as yacc
-    import ply.lex as lex
-except Exception:
-    import yacc as yacc
-    import lex as lex
-
-
 
 _OPERATIONS = {
-        '==': operators.eq,
-        '!=': operators.ne,
-        '<': operators.lt,
-        '<=': operators.le,
-        '>': operators.gt,
-        '>=': operators.ge,
+    '==': operators.eq,
+    '!=': operators.ne,
+    '<': operators.lt,
+    '<=': operators.le,
+    '>': operators.gt,
+    '>=': operators.ge,
 #        'IN': operators.contains,
 #        'NOT IN': lambda a, b: not operators.contains(b, a)
-        }
+}
 
 def is_number(s):
     try:
@@ -162,8 +165,8 @@ def t_TAGVAL(t):
 #     return t
 
 def t_error(t):
-    global report_errors
-    if (report_errors):
+    #global report_errors
+    if report_errors:
         print "Illegal character '%s'" % t.value[0]
     t.lexer.skip(1)
 
@@ -418,7 +421,9 @@ def prepare_type (resource_type):
             types = []
             name, dbtype = 'value', Value
         else:
-            types = [ dbtype_from_tag(x.strip()) for x in resource_type.split('|') ]
+            # thinks resource_type is a tuple
+
+            types = [ dbtype_from_tag(x.strip()) for x in resource_type.split('|') ] # pylint: disable=no-member
             name, dbtype = (None, Taggable)
 
     query = DBSession.query(dbtype)
@@ -494,10 +499,10 @@ def prepare_order_expr (query, tag_order, **kw):
             ordertags = taggable.alias()
             ordervals = values.alias()
             query_expr = and_ (#query_expr,
-                               Taggable.id == ordertags.c.document_id,
-                               ordertags.c.resource_type == 'tag',
-                               ordertags.c.resource_name == order)
-                               #ordertags.c.id == ordervals.c.resource_parent_id)
+                Taggable.id == ordertags.c.document_id,
+                ordertags.c.resource_type == 'tag',
+                ordertags.c.resource_name == order)
+                #ordertags.c.id == ordervals.c.resource_parent_id)
 
             query = query.filter(query_expr).order_by (ordering(ordertags.c.resource_value))
             #query = query.filter(query_expr).order_by (ordering(ordervals.c.valstr))
@@ -578,14 +583,15 @@ def tags_special(dbtype, query, params):
        name=tag_name   : all tags have a name="tag_name" as an attribute
        value=tag_val   : all tags having a value attribute of tag_val
     '''
-    filter_map = {#param         DBType, Attribute, Filter
-                  'tag_names' : (Tag,  ['resource_name'], None,),
-                  'tag_values': (Tag, ['resource_name', 'resource_value'], 'resource_name'),
-                  #'tag_types': (Tag, 'resource_user_type', None),
-                  'gob_names' : (GObject, ['resource_name', 'resource_user_type'], 'resource_user_type'),
-                  #'gob_values': (GObject, 'resource_value', 'resource_name'),
-                  'gob_types' : (GObject, ['resource_user_type'], None),
-                   }
+    filter_map = {
+        #param         DBType, Attribute, Filter
+        'tag_names' : (Tag,  ['resource_name'], None,),
+        'tag_values': (Tag, ['resource_name', 'resource_value'], 'resource_name'),
+        #'tag_types': (Tag, 'resource_user_type', None),
+        'gob_names' : (GObject, ['resource_name', 'resource_user_type'], 'resource_user_type'),
+        #'gob_values': (GObject, 'resource_value', 'resource_name'),
+        'gob_types' : (GObject, ['resource_user_type'], None),
+    }
 
     name_map = { 'resource_name' : 'name', 'resource_user_type' : 'type', 'resource_value': 'value', 'count':'text' }
 
@@ -947,7 +953,7 @@ def match_user (user_url =None, email =None ):
     if  user is not None:
         #log.debug ('Found user %s', str(user.user_name)
         return (user, False)
-    log.debug ('AUTH: no user %s sending invite %s', email)
+    log.debug ('AUTH: no user %s sending invite %s', user_url, email)
     # Setup a temporary user so that we can add the ACL
     # Also setup the pre-registration info they can
     name = email.split('@',1)[0]
@@ -988,6 +994,7 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
        if invalidate:
           invalidate users
     """
+    #pylint: disable=no-member
     log.debug ("resource_auth %s %s", str(resource), str(newauth))
     DBSession.autoflush = False
     q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
@@ -1149,10 +1156,12 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
 
 def resource_delete(resource, user_id=None):
     """Delete the given resource:
-       1. if owner delete the resource
-       2. else remove ACL permissions
-       3. Ensure all references are deleted also.
-       """
+    1. if owner delete the resource
+    2. else remove ACL permissions
+    3. Ensure all references are deleted also.
+
+    @param resource: a database resource
+    """
     log.info('resource_delete %s: start' % resource)
     if  user_id is None:
         user_id = get_user_id()
@@ -1197,6 +1206,7 @@ def resource_delete(resource, user_id=None):
     #DBSession.flush()
 
     log.info('resource_delete %s:end' % resource)
+    return None
 
 
 #FILTERED_TYPES=['user', 'system', 'store']
