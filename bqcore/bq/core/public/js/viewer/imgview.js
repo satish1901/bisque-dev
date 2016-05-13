@@ -787,7 +787,8 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
     // print geo coordinates if available
     if (phys.geo && phys.geo.proj4 && phys.geo.res && phys.geo.top_left) {
         var c = phys.coordinate_to_phys(pt, true);
-        text += ' Geo:('+BQ.util.formatFloat(c[0], 4, 6, sep)+','+BQ.util.formatFloat(c[1], 4, 6, sep)+')';
+        if (c)
+            text += ' Geo:('+BQ.util.formatFloat(c[0], 4, 6, sep)+','+BQ.util.formatFloat(c[1], 4, 6, sep)+')';
     }
 
     ip.posbar.innerHTML = text;

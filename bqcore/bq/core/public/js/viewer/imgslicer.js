@@ -69,7 +69,7 @@ ImgSlicer.prototype.updateView = function (view) {
     }
 
     var projection = this.default_projection;
-    if (!this.menu) this.createMenu();
+    if (!this.menu && this.viewer.viewer_controls_surface) this.createMenu();
     if (this.menu) {
         projection = this.projection_combo.getValue();
     }

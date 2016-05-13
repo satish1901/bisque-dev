@@ -1053,24 +1053,18 @@ CanvasControl.prototype.viewerZoomed = function(e) {
     //this.viewer.draw();
 };
 
-
 CanvasControl.prototype.cursorMoved = function(e) {
-    if (this.pastPoint === e) return;
-    if (this.viewer.mode !== 'navigate') return;
-    if (!this.pastPoint)
-        this.pastPoint = e;
+    //if (this.viewer.mode !== 'navigate') return;
 
     var renderer = this.viewer,
         viewer = renderer.viewer,
         tiles = viewer.tiles,
         z = tiles.cur_z,
         t = tiles.cur_t,
-        tpt = this.pastPoint;
+        tpt = e;
 
     if (this.hoverTimeout)
         clearTimeout(this.hoverTimeout);
-    //if (e.event.target !== tiles.tiled_viewer.surface)
-    //    return;
 
     this.hoverTimeout = setTimeout(function() {
         var shape = renderer.findNearestShape(tpt.x, tpt.y, z, t);
@@ -1079,8 +1073,7 @@ CanvasControl.prototype.cursorMoved = function(e) {
         } else {
             viewer.parameters.onhover(undefined, e.event);
         }
-    }, 150);
-    this.pastPoint = e;
+    }, 50);
 };
 
 
@@ -1837,16 +1830,18 @@ CanvasRenderer.prototype.enable_edit = function (enabled) {
 
 CanvasRenderer.prototype.findNearestShape = function(x,y, z, t){
     //not really find nearest, rather find overlapping
-    var node = this.quadtree.nodes[0];
-    var scale = this.stage.scale().x;
-    var w = 10/scale;
-    var shapes = this.quadtree.collectObjectsInRegion(
+    // dima: x and y are not scaled and thus w should not be rescaled
+    var node = this.quadtree.nodes[0],
+        //scale = this.stage.scale().x,
+        w = 10, // dima: should be *scale not /scale;
+        s = null,
+        shapes = this.quadtree.collectObjectsInRegion(
             {min: [x-w, y-w, z-0.5, t-0.5],
              max: [x+w, y+w, z+0.5, t+0.5]}, node);
 
-    for(var i=0; i < shapes.length; i++){
-        if(shapes[i].isInside({x:x, y:y}))
-            return shapes[i];
+    for (var i=0; (s=shapes[i]); ++i) {
+        if (s.isInside({x:x, y:y}))
+            return s;
     }
     return null;
 },

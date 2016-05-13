@@ -243,27 +243,44 @@ Ext.define('BQ.viewer.Image', {
         }
 
         tagData  = function(gob) {
-            var val = gob.value ? 'value: ' + gob.value : '';
-            var tagArr = [], tags = {
-            }, found = '';
-            while(gob.parent){
-                if(!gob.type)
-                    tagArr.push(gob.name);
-                else
-                tagArr.push(gob.type);
-                gob = gob.parent;
+            var g = gob,
+                tree = [],
+                found = '',
+                level = 0,
+                cls = '',
+                text = '',
+                t = null;
+
+            while (g.parent) {
+                tree.push(g);
+                g = g.parent;
             }
-            var spaces = '';
-            for(var i = 0; i < tagArr.length; i++){
-                found += (spaces + '-' + tagArr[tagArr.length - 1 -i] + '<br>');
-                spaces += '&nbsp &nbsp'
+            tree.reverse();
+
+            level = tree.length;
+            for (var i=0; (t=tree[i]); ++i) {
+                cls = level<=2 ? 'emph' : '';
+                text = (t.type || t.name);
+                //text += t.value ? ': '+t.value : '';
+                found += '<p class="'+cls+'" style="margin-left: '+(i*10)+'px;">' + text + '</p>';
+                level -= 1;
             }
 
-            return found + val;
+            // add sub-tags
+            level = tree.length+1;
+            var N = Math.min(10, gob.tags.length);
+            for (var i=0; i<N; ++i) {
+                t = gob.tags[i];
+                text = t.name + ': ' + t.value;
+                found += '<p class="tags" style="margin-left: '+(level*10)+'px;">' + text + '</p>';
+            }
+
+            return found;
         }
 
         if (!this.hoverMenu) {
             this.hoverMenu = Ext.create('Ext.tip.ToolTip', {
+                cls: 'viewer_tooltip',
                 anchor : 'left',
                 anchorToTarget : true,
                 autoHide: true,

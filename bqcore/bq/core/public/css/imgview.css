@@ -702,7 +702,6 @@ table.x-form-color {
     border-right-color: rgba(255,255,255,0.3);
 }
 
-
 /*******************************************************************************
  menu
 *******************************************************************************/
@@ -758,17 +757,48 @@ table.x-form-color {
 }
 
 /*******************************************************************************
+ viewer_tooltip
+*******************************************************************************/
+
+.viewer_tooltip {
+    z-index: 2147483647 !important;
+    background-color: rgba(0, 0, 0, 0.85);
+    border-color: rgba(100,100,100,0.8);
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.viewer_tooltip .x-toolbar-text {
+    color: white;
+}
+
+.viewer_tooltip .x-tip-anchor {
+    border-color: rgba(100,100,100,0.8);
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+}
+
+.viewer_tooltip p {
+    color: #999999;
+    margin: 0px;
+    padding: 0px;
+}
+
+.viewer_tooltip p.emph {
+    color: #ffffff;
+}
+
+.viewer_tooltip p.tags {
+    color: #666666;
+}
+
+/*******************************************************************************
  edit menu
 *******************************************************************************/
 
 .bq-editor-menu {
-    /*background-color: rgba(0, 0, 0, 0.7);
-    opacity: 0.8;
-    border-color: rgba(255,255,255,0.2);
-    border-radius: 5px;
-    padding: 0px 0px 5px 10px;
-    z-index: 2147483647 !important;*/
-    /*margin-top: 15px;*/
+    z-index: 2147483647 !important;
 }
 
 .bq-editor-menu .x-tool img {

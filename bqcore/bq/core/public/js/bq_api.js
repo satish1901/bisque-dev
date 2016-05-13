@@ -1917,9 +1917,13 @@ BQImagePhys.prototype.coordinate_to_phys = function(pt, use_geo) {
 
     // print geo coordinates if available
     if (this.geo && this.geo.proj4 && this.geo.res && this.geo.top_left) {
-        var c = [this.geo.top_left[0] + pt.x*this.geo.res[0], this.geo.top_left[1] - pt.y*this.geo.res[1]];
-        var latlong = proj4(this.geo.proj4, 'EPSG:4326', c);
-        return [latlong[1], latlong[0]];
+        try {
+            var c = [this.geo.top_left[0] + pt.x*this.geo.res[0], this.geo.top_left[1] - pt.y*this.geo.res[1]];
+            var latlong = proj4(this.geo.proj4, 'EPSG:4326', c);
+            return [latlong[1], latlong[0]];
+        } catch (error) {
+            return;
+        }
     }
 
     return [pt.x, pt.y];
