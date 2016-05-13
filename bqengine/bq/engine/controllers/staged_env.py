@@ -15,7 +15,7 @@ import shutil
 # def copy_link (*largs):
 #     largs = list (largs)
 #     d = largs.pop()
-        
+
 #     for f in largs:
 #         try:
 #             dest = d
@@ -48,7 +48,7 @@ class StagedEnvironment(BaseEnvironment):
         super(StagedEnvironment, self).__init__(runner, **kw)
         self.mex = None
         self.initial_dir = None
-        
+
     def process_config(self, runner):
         #super(StagedEnvironment, self).process_config(self, runner)
 
@@ -58,11 +58,11 @@ class StagedEnvironment(BaseEnvironment):
             mex.files = mex.get('files', [])
             if isinstance(mex.files, basestring):
                 mex.files =  strtolist(mex.files)
-                
+
 
             staging_base = mex.get('runtime.staging_base', STAGING_BASE)
             mex.staging_path=mex.named_args.get ('staging_path')
-            mex.staging_id=mex.named_args.get ('staging_id') 
+            mex.staging_id=mex.named_args.get ('staging_id')
 
             if not mex.staging_id:
                 if mex.staging_path:
@@ -98,7 +98,7 @@ class StagedEnvironment(BaseEnvironment):
                 continue
             if not os.path.exists(f) and os.path.exists(f + '.bat'):
                 fs.append(f+'.bat')
-                continue                
+                continue
             fs.append(f)
         return fs
 
@@ -112,6 +112,7 @@ class StagedEnvironment(BaseEnvironment):
                 files = self._filelist(mex.files)
                 runner.log ("copying %s: %s to %s" % (mex.initial_dir, files, mex.staging_path))
                 copy_link(*(files + [ mex.staging_path ]))
+        return {'HOME': mex.staging_path}
 
     def teardown_environment(self, runner, **lw):
         """Remove the staging area
@@ -121,10 +122,9 @@ class StagedEnvironment(BaseEnvironment):
 
             if mex.initial_dir:
                 os.chdir (mex.initial_dir)
-        
+
             if not runner.options.dryrun and not runner.options.debug:
                 runner.log( "Cleaning %s " % mex.staging_path)
                 shutil.rmtree (mex.staging_path)
             else:
                 runner.log('not removing %s for debug or dryrun' % mex.staging_path)
-

@@ -45,55 +45,30 @@
 SYNOPSIS
 ========
 
+
 DESCRIPTION
 ===========
 
-TODO
-===========
-
 """
+from contextlib import contextmanager
 
-__author__    = "Santhoshkumar Sunderrajan"
-
-NO_BYTES=16*1024
-
-###############################################################################
-# FileLikeObject based on generators
-###############################################################################
-
-#this class provides a file like object with generators-to be used with tarfile
-class FileFromGenerator():
-
-    def __init__(self,genobj):
-        self.genobj=genobj
-
-    #read method for file like objects
-    def read(self,buffsize):
-        (blocks,remainder)=divmod(buffsize,NO_BYTES)
-        total_bytes=0
-        return_bytes=''
-        while True:
-            try:
-                if total_bytes == buffsize:
-                    break
-                else:
-                    bytes=self.genobj.next()
-                    return_bytes=return_bytes+bytes
-                    total_bytes=total_bytes+len(bytes)
-            except StopIteration:
-                break
-        #return on fetching buffsize
-        return return_bytes
+@contextmanager
+def optional_cm(cm, *args, **kw):
+    """Create a special contect manager to not duplicate code
+    See http://bugs.python.org/issue10049
+    """
+    if cm is None:
+        yield None
+    else:
+        with cm(*args, **kw) as v:
+            yield v
 
 
-    #provides a generator for the remaining content
-    def genRemainder(self,bytes):
-        f=StringIO(bytes)
-        while True:
-            bytes=f.read()
-            if not bytes:
-                f.close()
-                break
-            else:
-                yield bytes
-
+@contextmanager
+def opener_cm (path):
+    "open a filename or return the already opened file"
+    if hasattr(path, 'read'):
+        yield path
+    else:
+        with open(path, 'rb') as f:
+            yield f
