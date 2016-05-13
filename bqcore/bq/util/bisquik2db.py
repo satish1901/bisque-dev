@@ -513,6 +513,7 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  qfilter=None, **kw)
     for v in vnodes:
         if v.resource_parent_id in nodes and nodes[v.resource_parent_id].get('value') is None:
             xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
+    # pylint: disable=no-member
     vnodes = DBSession.query(Vertex).filter(Vertex.document_id == doc_id).order_by(
         Vertex.resource_parent_id, Vertex.indx)
     for v in vnodes:
@@ -891,22 +892,23 @@ def bisquik2db_internal(inputs, parent, resource,  replace):
     if resource is not None:
         resource = DBSession.merge(resource)
     ts = datetime.now()
+
     for el in inputs:
         node = updateDB(root=el, parent = parent, resource=resource, replace=replace, ts=ts)
         log.debug ("returned %s " , str(node))
         log.debug ('modified : new (%d), dirty (%d), deleted(%d)' ,
-                   len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted))
-        if node not in DBSession:
+                   len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted))     # pylint: disable=no-member
+        if node not in DBSession:  # pylint: disable=unsupported-membership-test
             DBSession.add(node)
         log.debug ("node.document = %s"  % node.document)
         node.document.ts = ts
         results.append(node)
 
-    DBSession.flush()
-    for node in results:
-        DBSession.refresh(node)
+    #DBSession.flush()
+    #for node in results:
+    #    DBSession.refresh(node)
     log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' ,
-               len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted))
+               len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted))     # pylint: disable=no-member
     log.debug("Bisquik2db last_node %s of document %s " % (node, node.document))
     if len(results) == 1:
         return node

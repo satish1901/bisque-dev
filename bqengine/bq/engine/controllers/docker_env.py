@@ -11,17 +11,16 @@ from bq.util.converters import asbool
 
 
 DOCKER_RUN="""#!/bin/bash
-
 exec docker run --rm  -v $(pwd):/module ${DOCKER_IMAGE} $@
 """
 
 class DockerEnvironment(BaseEnvironment):
     '''Docker Environment
 
-    This script environment prepares an execution script to run docker
+    This Docker environment prepares an execution script to run docker
 
 
-    Enable  the matlab environment by adding to your module.cfg::
+    Enable  the Docker environment by adding to your module.cfg::
        environments = ..., Docker, ...
 
     The output file "docker.run" will be placed in the staging directory
@@ -59,6 +58,16 @@ class DockerEnvironment(BaseEnvironment):
                 docker_image = "%s/%s" % (self.docker_hub , docker_image)
             docker = self.create_docker_launcher(mex.rundir, docker_image)
             docker = os.path.join('.', os.path.basename(docker))
+
+            runner.log ("docker setup")
+            if hasattr (mex, 'files') and isinstance (mex.files, list):
+                for p in mex.executable:
+                    pexec = os.path.join(mex.rundir, p)
+                    runner.log ("Checking exec %s->%s" % (pexec, os.path.exists (pexec)))
+                    if os.path.exists (pexec) and p not in mex.files:
+                        mex.files.append (p)
+            runner.log ("docker setup: %s"% mex.files)
+
             if mex.executable:
                 mex.executable.insert(0, docker)
 

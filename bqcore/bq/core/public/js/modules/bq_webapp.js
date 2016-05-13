@@ -384,6 +384,26 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers, me
             definition: i,
             resource: r,
             mex: mex,
+            listeners: {
+              scope: this,
+              selected_submex: function(submex) {
+                  if (typeof submex === 'string') {
+                        BQApp.setLoading(true);
+                        BQFactory.request({
+                            uri : submex,
+                            uri_params : { view: 'deep'},
+                            cb : callback(this, function(doc) {
+                                BQApp.setLoading(false);
+                                this.showOutputs(doc, 'outputs-sub');
+                            }),
+                            errorcb: callback(this, 'onerror'),
+                            cache : false
+                        });
+                  } else {
+                      this.showOutputs(submex, 'outputs-sub');
+                  }
+              },
+            }
         };
 
         // special case if the output is a dataset, we expect sub-Mexs
@@ -391,13 +411,10 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers, me
             this.mex.findMexsForIterable(n, 'outputs/');
             if (Object.keys(this.mex.iterables[n]).length>0) {
                 conf.title = 'Select a thumbnail to see individual results:';
-                conf.listeners = {
-                  scope: this,
-                  selected: function(resource) {
+                conf.listeners.selected = function(resource) {
                      var suburl = resource.uri;
                      var submex = this.mex.iterables[n][suburl];
                      this.showOutputs(submex, 'outputs-sub');
-                  },
                 };
             }
         }
