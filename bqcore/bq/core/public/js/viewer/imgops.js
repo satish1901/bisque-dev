@@ -31,7 +31,7 @@ ImgOperations.prototype.getParams = function () {
 };
 
 ImgOperations.prototype.updateView = function (view) {
-    if (!this.menu) this.createMenu();
+    if (!this.menu  && this.viewer.viewer_controls_surface) this.createMenu();
     if (this.menu) {
         this.params = {};
 
