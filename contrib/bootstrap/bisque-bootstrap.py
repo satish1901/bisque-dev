@@ -9,7 +9,7 @@ import urllib
 import tarfile
 
 #PIP_LIST=[('pip==1.5.4', None), ('setuptools==2.2', None)]
-PIP_LIST=[('pip', None), ('setuptools', None)]
+PIP_LIST=[('pip==8.0.3', None), ('setuptools', None)]
 VENV_SOURCE="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-14.0.6.tar.gz"
 
 if os.name == 'nt':
