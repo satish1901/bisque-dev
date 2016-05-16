@@ -138,7 +138,7 @@ def run_bootstrap():
         install_setup("get-pip.py", "https://bootstrap.pypa.io/get-pip.py")
         install_easy('pywin32-219.win-amd64-py2.7.exe', "http://flour.ece.ucsb.edu:8080/~bisque/wheels/pywin32-219.win-amd64-py2.7.exe")
     else:
-        install_sys_pip('pip')
+        install_sys_pip('pip==8.0.3')
         install_sys_pip('setuptools')
 
     print "\n----------------------------------------------------------"
