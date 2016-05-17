@@ -8,9 +8,8 @@ import shutil
 import urllib
 import tarfile
 
-#PIP_LIST=[('pip==1.5.4', None), ('setuptools==2.2', None)]
-PIP_LIST=[('pip', None), ('setuptools', None)]
 VENV_SOURCE="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-14.0.6.tar.gz"
+PIP_SYS_INSTALL = [ 'pip', 'install', '-U' ]
 
 if os.name == 'nt':
     PIP_LIST=[
@@ -55,6 +54,9 @@ def install_easy(filename, URL=None):
 # installs package using pip wheels from a URL or pypy
 def install_pip(filename, URL=None):
     return install_package(filename, URL, PIP_INSTALL + [ filename ])
+
+def install_sys_pip(filename, URL=None):
+    return install_package(filename, URL, PIP_SYS_INSTALL + [ filename ])
 
 def install_source(filename, URL, command=None):
     if URL is not None:
@@ -135,7 +137,15 @@ def run_bootstrap():
         print "----------------------------------------------------------\n"
         install_setup("get-pip.py", "https://bootstrap.pypa.io/get-pip.py")
         install_easy('pywin32-219.win-amd64-py2.7.exe', "http://flour.ece.ucsb.edu:8080/~bisque/wheels/pywin32-219.win-amd64-py2.7.exe")
+    else:
+        install_sys_pip('pip==8.0.3')
+        install_sys_pip('setuptools')
 
+    print "\n----------------------------------------------------------"
+    print 'Installing additional packages'
+    print "----------------------------------------------------------\n"
+    for pkg,URL in PIP_LIST:
+        install_pip(pkg, URL)
 
     print "\n----------------------------------------------------------"
     print 'Ensure Mercurial installation'
@@ -149,12 +159,6 @@ def run_bootstrap():
             install_pip('mercurial-3.7.1-cp27-none-win_amd64.whl', "http://flour.ece.ucsb.edu:8080/~bisque/wheels/mercurial-3.7.1-cp27-none-win_amd64.whl")
         else:
             install_pip('mercurial')
-
-    print "\n----------------------------------------------------------"
-    print 'Installing additional packages'
-    print "----------------------------------------------------------\n"
-    for pkg,URL in PIP_LIST:
-        install_pip(pkg, URL)
 
     print "********************************"
     print "**     Fetching BisQue        **"
