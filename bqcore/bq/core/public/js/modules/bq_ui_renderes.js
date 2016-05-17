@@ -2090,7 +2090,7 @@ Ext.define('BQ.selectors.Boolean', {
 
             listeners: {
                 scope: this,
-                select: function(field, value) {
+                change: function(field, value) {
                     this.resource.value = field.getValue();
                     this.value = this.resource.value;
                 },
