@@ -1202,7 +1202,7 @@ def install_mail(params):
          "The mail server that delivers mail.. often localhost"),
     ]
 
-    params['mail.smtp.server'] = os.getenv('MAIL_SERVER', 'localhost')
+    params['mail.smtp.server'] = os.getenv('MAIL_SERVER', params['mail.smtp.server'])
 
 
     if getanswer ("Enable mail delivery","Y",
