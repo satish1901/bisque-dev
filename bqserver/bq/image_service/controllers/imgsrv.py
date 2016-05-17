@@ -1172,20 +1172,20 @@ class Rearrange3DOperation(BaseOperation):
 
 class ThumbnailOperation(BaseOperation):
     '''Create and provide thumbnails for images:
-       If no arguments are specified then uses: 128,128,BL
+       The default values are: 128,128,BL,,jpeg
        arg = [w,h][,method][,preproc][,format]
-       w - new width
-       h - new height
+       w - thumbnail width, width and hight are defined as maximum boundary
+       h - thumbnail height, width and hight are defined as maximum boundary
        method - ''|NN|BL|BC - default, Nearest neighbor, Bilinear, Bicubic respectively
        preproc - ''|MID|MIP|NIP - empty (auto), middle slice, maximum intensity projection, minimum intensity projection
-       format - output image format
+       format - output image format, default is JPEG
        ex: ?thumbnail
        ex: ?thumbnail=200,200,BC,,png
        ex: ?thumbnail=200,200,BC,mid,png '''
     name = 'thumbnail'
 
     def __str__(self):
-        return 'thumbnail: returns an image as a thumbnail, arg = [w,h][,method]'
+        return 'thumbnail: returns an image as a thumbnail, arg = [w,h][,method][,preproc][,format]'
 
     def dryrun(self, token, arg):
         ss = arg.split(',')
