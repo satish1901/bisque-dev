@@ -68,7 +68,7 @@ def local_xml_copy(root):
     f.close()
     return path
 
-class MexParser(object):    
+class MexParser(object):
 
     def prepare_inputs (self, module, mex, token = None):
         '''Scan the module definition and the mex and match input
@@ -117,7 +117,7 @@ class MexParser(object):
                     # => traverse the tree and collect all parameters at the leaves
                     addtl_input = [ copy.deepcopy(kid) for kid in found[0].iter() if not len(kid) ]     # WHY DEEPCOPY?????!!!!! NEVER USED?
                     log.debug ("PARAM %s=%s" % (param_name, str(addtl_input)))
-                    input_nodes.extend(addtl_input)
+                    input_nodes.extend(el for el  in addtl_input if el.tag == 'tag')
                 else:
                     log.warn ('missing input for parameter %s' % mi.get('value'))
 
