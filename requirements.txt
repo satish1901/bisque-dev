@@ -16,7 +16,7 @@ Pygments==1.6
 Pylons==1.0
 Routes==2.0
 SQLAlchemy==0.9.4
-TGScheduler==1.6.3
+#TGScheduler==1.6.3
 Tempita==0.5.3dev
 ToscaWidgets==0.9.12
 TurboGears2==2.1.5
