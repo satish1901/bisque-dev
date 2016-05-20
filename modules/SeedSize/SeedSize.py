@@ -173,18 +173,18 @@ class SeedSize(object):
         #parser.add_option('--bisque_token')
         #parser.add_option('--credentials')
 
-        # Parse named arguments from list 
+        # Parse named arguments from list
 
 
         (options, args) = parser.parse_args()
         named_args =dict( [ y for y in [ x.split ('=') for x in args ] if len (y) == 2] )
-        args  =  [  x for x in args if '=' not in x  ] 
+        args  =  [  x for x in args if '=' not in x  ]
 
         staging_path = '.'
         self.auth_token = named_args.get ('bisque_token')
         self.image_map_name = os.path.join(staging_path, IMAGE_MAP)
         self.resource_url = named_args.get ('image_url')
-        self.mex_url = named_args.get ('mex_url') 
+        self.mex_url = named_args.get ('mex_url')
         self.images = os.path.join(staging_path, 'images') + os.sep
 
 
@@ -195,7 +195,7 @@ class SeedSize(object):
             self.bq = BQSession().init_local(user,pwd)
 
         resource_xml = self.bq.fetchxml (self.resource_url, view='short')
-        self.is_dataset = resource_xml.tag == 'dataset' 
+        self.is_dataset = resource_xml.tag == 'dataset'
 
         if len(args) == 1:
             commands = [ args.pop(0)]
@@ -223,4 +223,3 @@ class SeedSize(object):
 
 if __name__ == "__main__":
     SeedSize().run()
-
