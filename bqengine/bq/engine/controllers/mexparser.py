@@ -115,7 +115,7 @@ class MexParser(object):
                 if len(found ):
                     # found parameter but it may be a subtree (tree of parameters)
                     # => traverse the tree and collect all parameters at the leaves
-                    addtl_input = [ copy.deepcopy(kid) for kid in found[0].iter() if not len(kid) ]     # WHY DEEPCOPY?????!!!!! NEVER USED?
+                    addtl_input = [ copy.deepcopy(kid) for kid in found[0].iter() if not len(kid) and kid.tag=='tag' ]
                     log.debug ("PARAM %s=%s" % (param_name, str(addtl_input)))
                     input_nodes.extend(addtl_input)
                 else:
