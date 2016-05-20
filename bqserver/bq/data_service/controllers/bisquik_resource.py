@@ -280,12 +280,13 @@ class BisquikResource(Resource):
                          format=None, progressive=False, **kw):
         #if response is None:
         log.debug ("resource_outtput %s", self.uri)
+        DBSession.flush()
         if isinstance(resource , list):
             response = etree.Element('resource')
             db2tree (resource, view = view, parent = response, baseuri=self.uri)
         elif resource is not None:
             response = db2tree (resource, view = view, parent = response, baseuri=self.uri, **kw)
-        transaction.commit()
+        #transaction.commit()
         formatter, content_type  = find_formatter (format)
         tg.response.headers['Content-Type'] = content_type
         return formatter(response)

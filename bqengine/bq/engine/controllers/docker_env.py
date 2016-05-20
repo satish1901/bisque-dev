@@ -54,13 +54,13 @@ class DockerEnvironment(BaseEnvironment):
         for mex in runner.mexes:
             #if mex.executable:
             docker_image = "%s" % (self.docker_image)
-            if '/' not in docker_image:
+            if self.docker_hub and '/' not in docker_image:
                 docker_image = "%s/%s" % (self.docker_hub , docker_image)
             docker = self.create_docker_launcher(mex.rundir, docker_image)
             docker = os.path.join('.', os.path.basename(docker))
 
             runner.log ("docker setup")
-            if hasattr (mex, 'files') and isinstance (mex.files, list):
+            if mex.executable and hasattr (mex, 'files') and isinstance (mex.files, list):
                 for p in mex.executable:
                     pexec = os.path.join(mex.rundir, p)
                     runner.log ("Checking exec %s->%s" % (pexec, os.path.exists (pexec)))
