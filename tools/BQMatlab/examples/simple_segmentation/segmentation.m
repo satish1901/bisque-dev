@@ -1,10 +1,10 @@
-user = '';
-pass = '';
-image_url = 'http://bisque.ece.ucsb.edu/data_service/00-dcJZKvcHcmKLwQoktSgnfP';
+user = 'my_user';
+pass = 'my_pass';
+bisque_root = 'http://bisque.ece.ucsb.edu';
+image_url = [bisque_root '/data_service/00-dcJZKvcHcmKLwQoktSgnfP'];
 
-%http://bisque.ece.ucsb.edu/image_service/00-dcJZKvcHcmKLwQoktSgnfP?slice=,,1,1&transform=rgb2hsv&remap=1&depth=8,d,u&negative&threshold=220,both&format=jpeg
-
-image = bq.Factory.fetch([image_url '?view=deep'], [], user, pass); 
+s = bq.Session(user, pass, bisque_root);
+image = s.fetch([image_url '?view=deep']);
 
 rectangles = image.findNodes('//rectangle');
 if length(rectangles)>0,
