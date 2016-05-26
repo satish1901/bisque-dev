@@ -95,6 +95,9 @@ def to_posix_path( p ):
     ''' Converts system style path into POSIX style path '''
     return p.replace(os.sep, '/')
 
+def defaults_path(*names):
+    return to_sys_path(os.path.join(BQDIR, 'config-defaults', *names))
+
 def config_path(*names):
     return to_sys_path(os.path.join(BQDIR, 'config', *names))
 
@@ -327,12 +330,13 @@ BQENV = None
 BQBIN = None
 SITE_PACKAGES = None
 
+SITE_DEFAULT = defaults_path('site.cfg.default')
+UWSGI_DEFAULT = defaults_path('uwsgi.cfg.default')
+PASTER_DEFAULT = defaults_path('server.ini.default')
+
 ALEMBIC_CFG  = config_path('alembic.ini')
 SITE_CFG     = config_path('site.cfg')
-SITE_DEFAULT = config_path('site.cfg.default')
 RUNTIME_CFG  = config_path('runtime-bisque.cfg')
-UWSGI_DEFAULT = config_path('uwsgi.cfg.default')
-PASTER_DEFAULT = config_path('server.ini.default')
 
 #HOSTNAME = socket.getfqdn()
 HOSTNAME = "localhost"
@@ -450,6 +454,14 @@ CONDOR_QUESTIONS =[
      """A script used to submit jobs to Condor"""),
     ('condor.dag_template', "A DAGMAN script", None),
     ('condor.dag_config_template', "A DAGMan Config", None)
+    ]
+
+
+DOCKER_QUESTIONS = [
+    ('docker.hub.url', 'A docker image repository to store locally built images', 'biodev.ece.ucsb.edu:5000' ),
+    ('docker.hub.login', 'A docker login', None),
+    ('docker.hub.password', 'A docker login password', None),
+
     ]
 
 #####################################################
@@ -847,7 +859,7 @@ def initialize_database(params, DBURL=None):
         db_initialized = True
 
     params['new_database'] = False
-    install_cfg(ALEMBIC_CFG, section="alembic", default_cfg=config_path('alembic.ini.default'))
+    install_cfg(ALEMBIC_CFG, section="alembic", default_cfg=defaults_path('alembic.ini.default'))
     update_site_cfg(params, section='alembic', cfg = ALEMBIC_CFG, append=False)
     if not db_initialized and getanswer(
         "Intialize the new database",  "Y",
@@ -883,11 +895,11 @@ def install_matlab(params, cfg = RUNTIME_CFG):
     matlab_home = which('matlab')
     if matlab_home:
         params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
-    if params['runtime.matlab_launcher'] == 'config/templates/matlab_launcher_SYS.tmpl':
+    if params['runtime.matlab_launcher'] == 'config-defaults/templates/matlab_launcher_SYS.tmpl':
         if os.name == 'nt':
-            params['runtime.matlab_launcher'] = 'config/templates/matlab_launcher_win.tmpl'
+            params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher_win.tmpl'))
         else:
-            params['runtime.matlab_launcher'] = 'config/templates/matlab_launcher.tmpl'
+            params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher.tmpl'))
     for f in ['runtime.matlab_launcher' ] :
         if os.path.exists(params[f]):
             params[f] = os.path.abspath(params[f])
@@ -941,6 +953,31 @@ def install_matlabwrap(params):
     os.chdir (cwd)
 
 
+def install_docker (params, cfg = RUNTIME_CFG):
+    """Setup docker runners for modules on system
+    """
+    if os.name == 'nt':
+        return params
+
+    has_docker = which('docker')
+    if getanswer( "Enable docker modules", 'Y' if has_docker else 'N',
+                  "Use docker to build and run modules") != 'Y':
+        return params
+    params['docker.enabled'] = 'true'
+    params = modify_site_cfg(DOCKER_QUESTIONS, params, section=None, cfg=cfg)
+
+    if os.path.exists('/dev/null'):
+        devnull = open ('/dev/null')
+
+    retcode = call('docker images|fgrep mcr_runtime' , shell=True, stdout=devnull, stderr=devnull)
+    if retcode != 0:
+        print "Please build mcr_runtime in contrib directory : retcode" , retcode
+    else:
+        print "mcr_runtime found"
+
+    return params
+
+
 
 
 #######################################################
@@ -980,6 +1017,7 @@ def install_modules(params):
     return params
 
 
+    matlab_home = which('matlab')
 
 
 #######################################################
@@ -991,20 +1029,20 @@ def install_server_defaults(params):
     new_install = False
 
     if not os.path.exists(config_path('server.ini')):
-        shutil.copyfile(config_path('server.ini.default'), config_path('server.ini'))
+        shutil.copyfile(defaults_path('server.ini.default'), config_path('server.ini'))
 
     if not os.path.exists(config_path('shell.ini')):
-        shutil.copyfile(config_path('shell.ini.default'), config_path('shell.ini'))
+        shutil.copyfile(defaults_path('shell.ini.default'), config_path('shell.ini'))
 
     if not os.path.exists(config_path('who.ini')):
-        shutil.copy(config_path('who.ini.default'), config_path('who.ini'))
+        shutil.copy(defaults_path('who.ini.default'), config_path('who.ini'))
 
 
     if not os.path.exists(config_path('registration.cfg')):
-        shutil.copyfile(config_path('registration.cfg.default'), config_path('registration.cfg'))
+        shutil.copyfile(defaults_path('registration.cfg.default'), config_path('registration.cfg'))
 
     if not os.path.exists(SITE_CFG):
-        params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=config_path('site.cfg.default') )
+        params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=defaults_path('site.cfg.default') )
         params.update(SITE_VARS)
         new_install = True
 
@@ -1067,16 +1105,16 @@ def install_engine_defaults(params):
     new_install = False
 
     if not os.path.exists(config_path('server.ini')):
-        shutil.copyfile(config_path('server.ini.default'), config_path('server.ini'))
+        shutil.copyfile(defaults_path('server.ini.default'), config_path('server.ini'))
 
     if not os.path.exists(config_path('shell.ini')):
-        shutil.copyfile(config_path('shell.ini.default'), config_path('shell.ini'))
+        shutil.copyfile(defaults_path('shell.ini.default'), config_path('shell.ini'))
 
     if not os.path.exists(config_path('who.ini')):
-        shutil.copy(config_path('who.engine.ini'), config_path('who.ini'))
+        shutil.copy(defaults_path('who.engine.ini'), config_path('who.ini'))
 
     if not os.path.exists(SITE_CFG):
-        params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=config_path('engine.cfg.default'))
+        params = install_cfg(SITE_CFG, section=BQ_SECTION, default_cfg=defaults_path('engine.cfg.default'))
         params.update(ENGINE_VARS)
         new_install = True
 
@@ -1429,7 +1467,7 @@ def fetch_external_binaries (params):
 
     if not os.path.exists(BQDEPOT):
         os.makedirs (BQDEPOT)
-    conf = ConfigFile(config_path('EXTERNAL_FILES'))
+    conf = ConfigFile(defaults_path('EXTERNAL_FILES'))
     external_files = conf.get ('common')
     #local_platform = platform.platform()
     local_platform = platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1) # dima: added 64bit
@@ -1727,6 +1765,9 @@ def install_opencv():
         extract_archive_dir(filename_zip,os.path.join('opencv-2.4.6','python%s.%s'%python_version,''), SITE_PACKAGES)
 
 
+
+
+
 #######################################################
 #
 def setup_admin(params):
@@ -1941,6 +1982,7 @@ engine_options= [
     'modules',
     'runtime',
     'engine',
+    'docker',
     ]
 
 # other unrelated packages
@@ -1975,6 +2017,7 @@ RUNTIME_COMMANDS = {
     'matlab' : [ install_matlab ],
     'runtime' : [ install_runtime ],
     'modules' : [ install_modules ],
+    'docker'  : [ install_docker ],
     }
 
 
@@ -1988,8 +2031,8 @@ def bisque_installer(options, args):
     #    print "ERROR: This script must be bisque installation directory"
     #    sys.exit()
 
-    if not os.path.exists('config'):
-        print "Cannot find config.. please run bq-admin setup from bisque install"
+    if not os.path.exists('config-defaults'):
+        print "Cannot find config-defaults.. please run bq-admin setup from bisque root directory"
         sys.exit()
 
     print """This is the main installer for Bisque
@@ -2027,12 +2070,15 @@ def bisque_installer(options, args):
     print "Beginning install of %s" % (system_type)
 
     params = {}
+    if not os.path.exists (config_path ()):
+        os.makedirs (config_path())
+
     if  os.path.exists (SITE_CFG):
         params = read_site_cfg(cfg = SITE_CFG, section=BQ_SECTION)
         #print params
 
     if not os.path.exists(RUNTIME_CFG):
-        runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=config_path('runtime-bisque.default'))
+        runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=defaults_path('runtime-bisque.default'))
     else:
         runtime_params = read_site_cfg(cfg=RUNTIME_CFG, section = None)
 
