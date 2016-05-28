@@ -458,9 +458,10 @@ CONDOR_QUESTIONS =[
 
 
 DOCKER_QUESTIONS = [
-    ('docker.hub.url', 'A docker image repository to store locally built images', 'biodev.ece.ucsb.edu:5000' ),
-    ('docker.hub.login', 'A docker login', None),
+    ('docker.hub', 'A docker image repository to store locally built images', 'biodev.ece.ucsb.edu:5000' ),
+    ('docker.hub.user', 'A docker login', None),
     ('docker.hub.password', 'A docker login password', None),
+    ('docker.hub.email', 'A docker login password', None),
 
     ]
 

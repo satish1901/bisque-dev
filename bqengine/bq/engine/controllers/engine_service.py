@@ -183,7 +183,7 @@ def load_module(module_dir, engines = None):
         #if engine and not engine.check (module_root):
         #    return None
         #module_root.set('value', engine_root + '/'+module_name)
-        module_root.set('value', engine_root + '/'+module_name)
+        module_root.set('value', module_name)
         module_root.set('path', module_dir)
 
         #module_root.set('status', status)
@@ -264,13 +264,16 @@ class EngineServer(ServiceController):
         self.unavailable = unavailable
         self.modules = modules
         for module in modules:
+            # Add the module resources to the engine controller for direct addressing
             setattr(EngineServer, module.get('name'), EngineModuleResource(module, self.mpool))
             self.module_by_name[module.get('name')]  = module
 
     @expose('bq.engine.templates.engine_modules')
     def index(self):
         """Return the list of available modules urls"""
-        server = urlparse.urljoin(config.get('bisque.server'), self.service_type)
+        #server = urlparse.urljoin(config.get('bisque.server'), self.service_type)
+        server = urlparse.urljoin (tg.request.host_url, self.service_type)
+
         modules = [ ("%s/%s" % (server, k), k) for k in sorted(self.module_by_name.keys())]
         return dict(modules=modules)
 
@@ -278,7 +281,8 @@ class EngineServer(ServiceController):
     def _services(self, *path, **kw):
         resource = etree.Element('resource')
         for m in self.modules:
-            etree.SubElement(resource, 'service', name=m.get('name'), value=m.get('value'))
+            module_uri = urlparse.urljoin (tg.request.host_url, "/".join ([self.service_type, m.get('name')]))
+            etree.SubElement(resource, 'service', name=m.get('name'), value=module_uri)
         return etree.tostring(resource)
 
     @expose(content_type="text/xml")
@@ -315,7 +319,7 @@ class EngineModuleResource(BaseController):
     def __init__(self, module_xml, mpool):
         """Create a web endpoint for the module"""
         self.module_xml = module_xml
-        self.module_uri = module_xml.get('uri')
+        #self.module_uri = module_xml.get('uri')
         self.name       = module_xml.get('name')
         self.path       = module_xml.get('path')
         self.mpool = mpool
@@ -379,7 +383,7 @@ class EngineModuleResource(BaseController):
 
         d = _xml2d(self.module_xml, {})
         d['module/name'] = self.name
-        d['module/uri']  = self.module_uri
+        d['module/uri']  = self.module_uri()
         if not 'title' in d: d['title'] = self.name
         return d
 
@@ -437,6 +441,11 @@ class EngineModuleResource(BaseController):
         log.debug("Inputs : %s", self.inputs)
         log.debug("Outputs: %s", self.outputs)
 
+    def module_uri (self):
+        'generate valid uri for module'
+        return urlparse.urljoin (tg.request.host_url, "/".join ([EngineServer.service_type, self.name]))
+
+
 
     @expose()
     def index(self, **kw):
@@ -450,7 +459,7 @@ class EngineModuleResource(BaseController):
         log.debug('Interface node: %s '%node)
         if not node or not node[0].get('value', None):
             override_template(self.index, "genshi:bq.engine.templates.default_module")
-            return dict (module_uri  = self.module_uri,
+            return dict (module_uri  = self.module_uri(),
                          module_name = self.name,
                          module_def  = self.definition_as_dict(),
                          module_xml  = etree.tostring(self.module_xml),
@@ -469,7 +478,7 @@ class EngineModuleResource(BaseController):
         log.debug('Interface node: %s'%node)
         if not node or not node[0].get('value', None):
             override_template(self.interface, "genshi:bq.engine.templates.default_module")
-            return dict (module_uri  = self.module_uri,
+            return dict (module_uri  = self.module_uri(),
                          module_name = self.name,
                          module_def  = self.definition_as_dict(),
                          module_xml  = etree.tostring(self.module_xml),
@@ -500,6 +509,7 @@ class EngineModuleResource(BaseController):
     @expose(content_type="text/xml")
     def definition(self, **kw):
         # rewrite stuff here for actual entry points
+        self.module_xml.set('value', self.module_uri())
         return etree.tostring(self.module_xml)
 
     @expose()
