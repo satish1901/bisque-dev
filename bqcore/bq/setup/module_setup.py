@@ -280,9 +280,15 @@ def docker_setup (image, command, base, params):
     #print "MODULE", module_config
 
     # Must be lowercase
-    image = image.lower()
     if not asbool(params.get('docker.enabled', False)):
         return
+    docker_hub = params.get('docker.hub', '')
+    docker_user = params.get ('docker.hub.user', '')
+    docker_pass = params.get('docker.hub.password', '')
+    docker_email = params.get('docker.hub.email', '')
+
+    image = "/".join (filter (lambda x:x, [ docker_hub, docker_user, image.lower() ]))
+
     if not os.path.exists ('Dockerfile'):
         files = [ x.strip() for x in module_config.get ('files','').split (",") ]
         dirs =    [ x for x in files if os.path.isdir(x)]
@@ -303,12 +309,12 @@ def docker_setup (image, command, base, params):
 
     print "Calling", " ".join (['docker', 'build', '-q', '-t', image , '.'])
     check_call(['docker', 'build', '-q', '-t',  image, '.'])
-    hub = params.get ('docker.hub', None)
-    if hub:
-        hub_image = '%s/%s' % (hub, image)
-        print "Pushing docker %s to %s" % ( hub_image, hub)
-        check_call(['docker', 'tag', '-f', image, hub_image])
-        check_call(['docker', 'push', hub_image])
+
+    if docker_hub:
+        print "Pushing %s " % ( image )
+        if docker_user and docker_pass:
+            check_call (['docker', 'login', '-u', docker_user, '-p', docker_pass, '-e', docker_email, docker_hub])
+        check_call(['docker', 'push', image])
 
 
 def read_config(filename, section= None):
