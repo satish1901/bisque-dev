@@ -65,7 +65,7 @@ setup(
         #########################
         # Bisque dependencies
         "lxml",
-        "virtualenv",
+#        "virtualenv",
         "poster",
         "shortuuid",
         #"Minimatic",
@@ -112,7 +112,6 @@ setup(
       create-core    = bq.commands.create:createCoreService
       create-service = bq.commands.create:createService
       create-module = bq.commands.create:createModule
-      create-bootstrap = bq.commands.create_bootstrap:make_bootstrap
       server = bq.commands.admin:server
       setup   = bq.commands.admin:setup
       deploy   = bq.commands.admin:deploy
