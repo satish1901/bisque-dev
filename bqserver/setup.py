@@ -11,7 +11,7 @@ install_requires = [
         "gdata",
         "Turbomail",
         "genshi",
-        "TGScheduler",
+#        "TGScheduler",
         "boto",
         "numpy",
         "ordereddict",
