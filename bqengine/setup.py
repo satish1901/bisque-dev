@@ -19,7 +19,7 @@ setup(
                       ],
     setup_requires=["PasteScript>=1.6.3"],
     paster_plugins=['PasteScript', 'Pylons' ],
-    packages= ['bq'],
+    packages= find_packages(),
     namespace_packages = ['bq'],
     zip_safe = False,
     #include_package_data=True,

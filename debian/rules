@@ -1,0 +1,12 @@
+#!/usr/bin/make -f
+
+#%:
+#	dh $@ --with python-virtualenv
+
+%:
+	dh $@ --buildsystem=dh_virtualenv
+
+
+
+#override_dh_auto_install:
+#	dh_auto_install

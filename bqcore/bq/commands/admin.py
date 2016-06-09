@@ -168,9 +168,10 @@ class setup(object):
         parser.add_option("-r", "--read", action="store", help="Read answers from given file" )
         parser.add_option("-w", "--write", action="store", help="Write answers from given file" )
         parser.add_option("-y", "--yes", action="store_true", help="Use default answers for all questions" )
+        parser.add_option("-c", "--config",  help="Set config directory locations"  )
         options, args = parser.parse_args()
         for arg in args:
-            if arg not in all_options + ['bisque', 'engine']:
+            if arg not in all_options + ['bisque', 'server', 'engine', 'developer']:
                 parser.error('argument must be install option')
 
         self.args = args
