@@ -1,0 +1,2 @@
+debian/tmp/*
+config-defaults/*  /usr/share/bisque/config-defaults

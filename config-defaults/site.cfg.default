@@ -94,7 +94,9 @@ bisque.services_disabled = engine_service
 bisque.installed =
 bisque.paths.root  =
 #bisque.paths.data  = installationdir/data
-#bisque.paths.config  = installationdir/config
+bisque.paths.config = ./config # or /etc/bisque/config
+bisque.paths.share  = .       # or /usr/share/bisque
+bisque.paths.run    = .       # or /var/run/bisque
 
 
 # Blobservice
