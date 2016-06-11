@@ -40,6 +40,10 @@ BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String',
                             'pixel_resolution' : 'BQ.selectors.PixelResolution',
                             'annotation_attr'  : 'BQ.selectors.AnnotationsAttributes',
                             'dream3d_pipelineparams' : 'BQ.selectors.Dream3DPipelineParams',
+
+                            'group'            : 'BQ.selectors.Group', // special renderer that groups sub-renderers
+                            'group_per_channel': 'BQ.selectors.GroupPerChannel', // special renderer that groups and inits per channel
+                            'group_channel'    : 'BQ.selectors.GroupChannel', // per-channel sub-group renderer
                           };
 
 BQ.renderers.resources  = { 'image'            : 'BQ.renderers.Image',
@@ -115,7 +119,7 @@ Ext.define('BQ.selectors.Selector', {
     resource : undefined,
 
     // configs
-    cls: 'selector',
+    componentCls: 'selector',
     height: 10,
     border: 0,
     layout: 'auto',
@@ -147,9 +151,18 @@ Ext.define('BQ.selectors.Selector', {
 
     // implement: you need to actually create UI for the element
     initComponent : function() {
-        var resource = this.resource;
-        var template = resource.template || {};
+        var resource = this.resource,
+            template = resource.template || {},
+            meta_xpath = template.metadata_xpath,
+            reference = this.module && this.module.inputs_index ? this.module.inputs_index[template.reference] : null;
+        if (reference && reference.renderer && meta_xpath) {
+            this.reference = reference.renderer;
+            this.reference.on( 'gotPhys', this.onPhys, this );
+        }
+
         this.callParent();
+        if (this.meta_xml && meta_xpath)
+            this.find_meta(this.meta_xml);
     },
 
     // implement: you need to provide a way to check the validity of the element
@@ -160,6 +173,21 @@ Ext.define('BQ.selectors.Selector', {
     // implement: you need to provide a way to programmatically select an element
     select: function(new_resource) {
         BQ.ui.warning('Programmatic select is not implemented in this selector');
+    },
+
+    onPhys: function(sel, phys) {
+        this.find_meta(phys.xml);
+    },
+
+    find_meta: function(xml, xpath) {
+        var resource = this.resource,
+            template = resource.template || {},
+            meta_xpath = (this.xpath === undefined ? 'resource' : this.xpath) + template.metadata_xpath,
+            v = BQ.util.xpath_nodes(xml, xpath || meta_xpath);
+        if (v && v.length>0) {
+            var t = BQFactory.createFromXml(v[0]);
+            this.select(t);
+        }
     },
 
 });
@@ -756,8 +784,8 @@ Ext.define('BQ.selectors.ImageChannel', {
         var reference = this.module.inputs_index[template.reference];
         if (reference && reference.renderer) {
             this.reference = reference.renderer;
-            this.reference.on( 'changed', function(sel, res) { this.onNewResource(sel, res); }, this );
-            this.reference.on( 'gotPhys', function(sel, phys) { this.onPhys(sel, phys); }, this );
+            this.reference.on( 'changed', this.onNewResource, this );
+            this.reference.on( 'gotPhys', this.onPhys, this );
         }
 
         this.items = [];
@@ -783,6 +811,7 @@ Ext.define('BQ.selectors.ImageChannel', {
                     this.resource.value = String(value);
                 },
                 afterrender : function(o) {
+                    if (template.description)
                     o.tip = Ext.create('Ext.tip.ToolTip', {
                         target : o.getEl().getAttribute("id"),
                         html : template.description,
@@ -823,6 +852,7 @@ Ext.define('BQ.selectors.ImageChannel', {
                     this.resource.value = field.getValue();
                 },
                 afterrender : function(o) {
+                    if (template.description)
                     o.tip = Ext.create('Ext.tip.ToolTip', {
                         target : o.getEl().getAttribute("id"),
                         html : template.description,
@@ -934,8 +964,8 @@ Ext.define('BQ.selectors.PixelResolution', {
         var reference = this.module.inputs_index[template.reference];
         if (reference && reference.renderer) {
             this.reference = reference.renderer;
-            this.reference.on( 'changed', function(sel, res) { this.onNewResource(sel, res); }, this );
-            this.reference.on( 'gotPhys', function(sel, phys) { this.onPhys(sel, phys); }, this );
+            this.reference.on( 'changed', this.onNewResource, this );
+            this.reference.on( 'gotPhys', this.onPhys, this );
         }
 
         Ext.tip.QuickTipManager.init();
@@ -978,6 +1008,7 @@ Ext.define('BQ.selectors.PixelResolution', {
                         resource.values[field.value_index] = new BQValue ('number', value, field.value_index);
                     },
                     afterrender : function(o) {
+                        if (template.description)
                         o.tip = Ext.create('Ext.tip.ToolTip', {
                             target : o.getEl().getAttribute("id"),
                             html : template.description,
@@ -999,7 +1030,6 @@ Ext.define('BQ.selectors.PixelResolution', {
             this.items.push({
                 xtype: 'tbtext',
                 itemId: 'units'+i,
-                //html:'<label>'+template.units+'</label>',
                 cls: 'units',
             });
         }
@@ -1376,6 +1406,7 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
                     this.resource.value = field.getValue();
                 },
                 afterrender : function(o) {
+                    if (template.description)
                     o.tip = Ext.create('Ext.tip.ToolTip', {
                         target : o.getEl().getAttribute("id"),
                         html : template.description,
@@ -1764,7 +1795,11 @@ Ext.define('BQ.selectors.Number', {
     requires: ['Ext.form.field.Number'],
 
     height: 30,
-    layout: 'hbox',
+    layout: {
+        type: 'hbox',
+        align: 'stretch',
+        pack: 'start',
+    },
 
     initComponent : function() {
         var resource = this.resource;
@@ -1787,6 +1822,7 @@ Ext.define('BQ.selectors.Number', {
         // configure slider for floating point values
         var defaultDecimalPrecision = template.allowDecimals?2:0;
         var sliderStep = template.stepSlider || ((template.allowDecimals && (!('setep' in template) || template.step>=1))?0.01:1.0);
+        var showLabel = (template.showLabel === undefined) ? true : template.showLabel;
 
         if (this.multivalue || template.showSlider != false)
         this.slider = Ext.create('Ext.slider.Multi', {
@@ -1794,8 +1830,8 @@ Ext.define('BQ.selectors.Number', {
             name: resource.name+'-slider',
 
             labelAlign: 'right',
-            labelWidth: (this.multivalue || template.hideNumberPicker)?200:undefined,
-            fieldLabel: (this.multivalue || template.hideNumberPicker)?label:undefined,
+            labelWidth: (showLabel && (this.multivalue || template.hideNumberPicker))?200:undefined,
+            fieldLabel: (showLabel && (this.multivalue || template.hideNumberPicker))?label:undefined,
 
             values: values,
             minValue: template.minValue,
@@ -1817,6 +1853,7 @@ Ext.define('BQ.selectors.Number', {
                     }
                 },
                 afterrender : function(o) {
+                    if (template.description)
                     o.tip = Ext.create('Ext.tip.ToolTip', {
                         target : o.getEl().getAttribute("id"),
                         html : template.description,
@@ -1831,9 +1868,10 @@ Ext.define('BQ.selectors.Number', {
             //flex: 1,
             cls: 'number',
             name: resource.name,
-            labelWidth: 200,
+
+            labelWidth: (!showLabel)?undefined:200,
             labelAlign: 'right',
-            fieldLabel: label,
+            fieldLabel: (!showLabel)?undefined:label,
 
             value: resource.value!=undefined?parseFloat(resource.value):undefined,
 
@@ -1850,6 +1888,7 @@ Ext.define('BQ.selectors.Number', {
                     if (this.slider && this.slider.getValue(0)!=value) this.slider.setValue(0, value);
                 },
                 afterrender : function(o) {
+                    if (template.description)
                     o.tip = Ext.create('Ext.tip.ToolTip', {
                         target : o.getEl().getAttribute("id"),
                         html : template.description,
@@ -1859,14 +1898,25 @@ Ext.define('BQ.selectors.Number', {
 
         });
 
-        if (!this.multivalue && template.hideNumberPicker)
-            this.numlabel = Ext.create('Ext.form.Label', { cls: 'numberlabel', width: 32, });
+        if (template.units)
+            this.units_label = {
+                xtype: 'tbtext',
+                cls: 'units',
+                text: template.units,
+            };
 
         if (this.numfield) this.items.push(this.numfield);
+        if (this.units_label && this.numfield)
+            this.items.push(this.units_label);
+
         if (this.slider) this.items.push(this.slider);
-        if (this.numlabel) this.items.push(this.numlabel);
-        if (template.units)
-            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', flex: 2, });
+        if (this.units_label && !this.numfield)
+            this.items.push(this.units_label);
+
+        if (!this.multivalue && template.hideNumberPicker) {
+            this.numlabel = Ext.create('Ext.form.Label', { cls: 'numberlabel', width: 32, });
+            this.items.push(this.numlabel);
+        }
 
         this.callParent();
     },
@@ -1949,6 +1999,7 @@ Ext.define('BQ.selectors.String', {
                     this.value = String(value);
                 },
                 afterrender : function(o) {
+                    if (template.description)
                     o.tip = Ext.create('Ext.tip.ToolTip', {
                         target : o.getEl().getAttribute("id"),
                         html : template.description,
@@ -1959,7 +2010,12 @@ Ext.define('BQ.selectors.String', {
         }];
 
         if (template.units)
-            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', });
+            this.items.push({
+                xtype: 'tbtext',
+                cls: 'units',
+                text: template.units,
+            });
+
 
         this.callParent();
     },
@@ -2038,6 +2094,7 @@ Ext.define('BQ.selectors.Combo', {
                     this.fireEvent( 'changed', this, this.value );
                 },
                 afterrender : function(o) {
+                    if (template.description)
                     o.tip = Ext.create('Ext.tip.ToolTip', {
                         target : o.getEl().getAttribute("id"),
                         html : template.description,
@@ -2048,7 +2105,11 @@ Ext.define('BQ.selectors.Combo', {
         });
 
         if (template.units)
-            this.items.push({ xtype: 'container', html:'<label>'+template.units+'</label>', cls: 'units', });
+            this.items.push({
+                xtype: 'tbtext',
+                cls: 'units',
+                text: template.units,
+            });
 
         this.callParent();
     },
@@ -2108,6 +2169,7 @@ Ext.define('BQ.selectors.Boolean', {
                     this.value = this.resource.value;
                 },
                 afterrender : function(o) {
+                    if (template.description)
                     o.tip = Ext.create('Ext.tip.ToolTip', {
                         target : o.getEl().getAttribute("id"),
                         html : template.description,
@@ -2166,6 +2228,7 @@ Ext.define('BQ.selectors.Date', {
                     scope: this,
                     select: this.onselect,
                     afterrender : function(o) {
+                        if (template.description)
                         o.tip = Ext.create('Ext.tip.ToolTip', {
                             target : o.getEl().getAttribute("id"),
                             html : template.description,
@@ -2193,6 +2256,7 @@ Ext.define('BQ.selectors.Date', {
                     scope: this,
                     select: this.onselect,
                     afterrender : function(o) {
+                        if (template.description)
                         o.tip = Ext.create('Ext.tip.ToolTip', {
                             target : o.getEl().getAttribute("id"),
                             html : template.description,
@@ -2230,6 +2294,261 @@ Ext.define('BQ.selectors.Date', {
 
 });
 
+
+/*******************************************************************************
+  groups are used to visually and logically group elements
+*******************************************************************************/
+
+Ext.define('BQ.selectors.Group', {
+    alias: 'widget.bq_selector_group',
+    extend: 'BQ.selectors.Selector',
+    //requires: ['Ext.form.field.Date', 'Ext.form.field.Time'],
+
+    height: 40,
+    layout: 'fit',
+
+    initComponent : function() {
+        var resource = this.resource,
+            template = resource.template || {};
+
+        this.panel = Ext.create('Ext.panel.Panel', { //Ext.create('Ext.container.Container', {
+            itemId: 'panel',
+            cls: 'group',
+            title: template.label?template.label:'',
+            layout: (template.orientation == 'horizontal') ? {type: 'hbox', pack: 'start', } : {type: 'vbox', align: 'stretch' },
+        });
+        this.items = [this.panel];
+
+        // iterate over sub-tags and intstantiate appropriate selectors
+        this.height = 45;
+        var t = null;
+        for (var i=0; (t=resource.tags[i]); ++i) {
+            var selector_type = (t.type || t.resource_type).toLowerCase();
+            if (!(selector_type in BQ.selectors.parameters)) continue;
+            var selector = Ext.create(BQ.selectors.parameters[selector_type], {
+                itemId: t.name,
+                resource: t,
+                module: this.module,
+                webapp: this.webapp,
+            });
+            this.height += selector.height;
+            this.panel.add(selector);
+        }
+
+        this.callParent();
+    },
+
+
+    select: function(value) {
+        //this.child('#checkbox').setValue( value );
+    },
+
+    onselect: function() {
+        //this.resource.value = this.selector_date.getRawValue() +' ' + this.selector_time.getRawValue();
+    },
+
+    isValid: function() {
+        var c = null,
+            r = true;
+        for (var i=0; (c=this.panel.items[i]); ++i) {
+            if (c.isValid)
+                r = r && c.isValid();
+        }
+        return r;
+    },
+
+});
+
+
+Ext.define('BQ.selectors.GroupPerChannel', {
+    alias: 'widget.bq_selector_group_per_channel',
+    extend: 'BQ.selectors.Selector',
+    //requires: ['Ext.form.field.Date', 'Ext.form.field.Time'],
+
+    height: 70,
+    layout: 'fit',
+
+    initComponent : function() {
+        var resource = this.resource,
+            template = resource.template || {};
+
+        var reference = this.module.inputs_index[template.reference];
+        if (reference && reference.renderer) {
+            this.reference = reference.renderer;
+            //this.reference.on( 'changed', function(sel, res) { this.onNewResource(sel, res); }, this );
+            this.reference.on( 'gotPhys', this.onPhys, this );
+        }
+
+        this.panel = Ext.create('Ext.panel.Panel', { //Ext.create('Ext.container.Container', {
+            itemId: 'panel',
+            cls: 'group',
+            title: template.label?template.label:'',
+            layout: (template.orientation == 'horizontal') ? {type: 'hbox', pack: 'start', } : {type: 'vbox', align: 'stretch', },
+        });
+        this.items = [this.panel];
+
+        this.callParent();
+    },
+
+    initChannel: function(channel_num, channel_name) {
+        var resource = this.resource,
+            template = resource.template || {},
+            t = null,
+            channel_tag = resource.tags[channel_num-1];
+
+        // find existing or add a new tag
+        if (!channel_tag) {
+            channel_tag = BQ.util.clone(resource.tags[0]);
+            channel_tag.value = channel_num-1;
+            resource.tags[channel_num-1] = channel_tag;
+        }
+
+        var panel_channel = this.panel.add({
+            xtype: 'bq_selector_group_channel',
+            itemId: 'channel_'+channel_num,
+            channel_num: channel_num,
+            channel_name: channel_name,
+            resource: channel_tag,
+            meta_xml: this.meta_xml,
+        });
+
+        this.setHeight(this.getHeight() + panel_channel.getHeight());
+    },
+
+    onPhys : function(sel, phys) {
+        var resource = this.resource,
+            template = resource.template || {},
+            i=undefined,
+            header = null,
+            elems = resource.tags[0],
+            num_columns = elems.tags.length + 1,
+            cw = 1.0/num_columns;
+        this.meta_xml = phys.xml;
+        //this.setHeight(this.getHeight() - this.panel.getHeight());
+        this.setHeight(70);
+        this.panel.removeAll();
+
+        //if (elems.template.orientation != 'vertical') {
+            header = this.panel.add({
+                xtype: 'container',
+                itemId: 'header',
+                cls: 'header',
+                height: 30,
+                layout:  {
+                    type: 'column',
+                },
+                items: [{
+                    xtype: 'tbtext',
+                    cls: 'h_heading',
+                    text: 'name',
+                    columnWidth: cw,
+                }],
+            });
+
+            for (var p=0; (i=elems.tags[p]); ++p) {
+                header.add({
+                    xtype: 'tbtext',
+                    cls: 'v_heading',
+                    text: i.name,
+                    columnWidth: cw,
+                });
+            }
+        //}
+
+        resource.tags.length = phys.channel_names.length;
+        for (var p=0; (i=phys.channel_names[p]); ++p) {
+            this.initChannel(p+1, String(i));
+        }
+    },
+
+    select: function(value) {
+        //this.child('#checkbox').setValue( value );
+    },
+
+    onselect: function() {
+        //this.resource.value = this.selector_date.getRawValue() +' ' + this.selector_time.getRawValue();
+    },
+
+    isValid: function() {
+        var c = null,
+            r = true;
+        for (var i=0; (c=this.panel.items[i]); ++i) {
+            if (c.isValid)
+                r = r && c.isValid();
+        }
+        return r;
+    },
+});
+
+Ext.define('BQ.selectors.GroupChannel', {
+    alias: 'widget.bq_selector_group_channel',
+    extend: 'BQ.selectors.Selector',
+
+    height: 40,
+    layout: 'fit',
+
+    initComponent : function() {
+        var resource = this.resource,
+            template = resource.template || {},
+            num_columns = resource.tags.length + 1,
+            cw = 1.0/num_columns;
+
+        //requires: channel_num and channel_name
+
+        this.panel = Ext.create('Ext.container.Container', {
+            //itemId: 'panel_channel'+this.channel_num,
+            cls: 'group_channel',
+            layout: (template.orientation == 'vertical') ? {type: 'vbox', pack: 'start', } : {type: 'column' },
+            items: [{
+                xtype: 'tbtext',
+                cls: 'h_heading',
+                text: this.channel_name,
+                columnWidth: cw,
+            }],
+        });
+        this.items = [this.panel];
+
+        // iterate over sub-tags and intstantiate appropriate selectors
+        //this.height = 45;
+        var xpath = "resource/tag[@name='channels']/tag[@name='channel_"+BQ.util.formatInt(this.channel_num-1, 5)+"']",
+            t = null;
+        for (var i=0; (t=resource.tags[i]); ++i) {
+            var selector_type = (t.type || t.resource_type).toLowerCase();
+            if (!(selector_type in BQ.selectors.parameters)) continue;
+            var selector = Ext.create(BQ.selectors.parameters[selector_type], {
+                itemId: t.name,
+                resource: t,
+                module: this.module,
+                webapp: this.webapp,
+                xpath: xpath,
+                meta_xml: this.meta_xml,
+                columnWidth: cw,
+            });
+            //this.height += selector.height;
+            this.panel.add(selector);
+        }
+
+        this.callParent();
+    },
+
+    select: function(value) {
+        //this.child('#checkbox').setValue( value );
+    },
+
+    onselect: function() {
+        //this.resource.value = this.selector_date.getRawValue() +' ' + this.selector_time.getRawValue();
+    },
+
+    isValid: function() {
+        var c = null,
+            r = true;
+        for (var i=0; (c=this.panel.items[i]); ++i) {
+            if (c.isValid)
+                r = r && c.isValid();
+        }
+        return r;
+    },
+});
 
 
 /*******************************************************************************
