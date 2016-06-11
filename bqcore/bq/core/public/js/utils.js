@@ -185,6 +185,71 @@ BQ.util.formatFloat = function(n, c, d, sep) {
     return s;
 };
 
+// n - number
+// c - number of digits padded with 0
+BQ.util.formatInt = function(n, len) {
+    s = n.toString();
+    if (s.length < len) {
+        s = ('0000000000000000000000' + s).slice(-len);
+    }
+    return s;
+}
+
+BQ.util.clone = function(item) {
+    var type,
+        i,
+        j,
+        k,
+        clone,
+        key,
+        t,
+        as_is = {'doc':0, 'parent':0, 'xmlfields':0};
+
+    if (item === null || item === undefined) {
+        return item;
+    }
+
+    // DOM nodes
+    // TODO proxy this to Ext.Element.clone to handle automatic id attribute changing
+    // recursively
+    if (item.nodeType && item.cloneNode) {
+        return item.cloneNode(true);
+    }
+
+    type = toString.call(item);
+
+    // Array
+    if (type === '[object Array]') {
+        i = item.length;
+        clone = [];
+        while (i--) {
+            clone[i] = BQ.util.clone(item[i]);
+        }
+    } else if (type === '[object Function]') {
+        return;
+    } else if (type === '[object Object]' && item.constructor === Object) {
+        clone = {};
+        for (key in item) {
+            if (key in as_is)
+                clone[key] = item[key];
+            else
+                clone[key] = BQ.util.clone(item[key]);
+        }
+    } else if (type === '[object Object]' && item.resource_type) {
+        clone = BQFactory.makeShortCopy(item);
+        for (key in item) {
+            if (key in as_is)
+                clone[key] = item[key];
+            else if (toString.call(item[key]) !== '[object Function]') {
+                t = BQ.util.clone(item[key]);
+                if (t) clone[key] = t;
+            }
+        }
+    }
+
+    return clone || item;
+};
+
 /*******************************************************************************
   WebGL
 *******************************************************************************/
