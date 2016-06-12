@@ -123,7 +123,15 @@ BQFactory.make = function(ty, uri, name, value) {
 };
 
 BQFactory.makeShortCopy = function(resource) {
-    var o = BQFactory.make (resource.resource_type);
+    var ty = resource.resource_type,
+        ctor = BQResource;
+    if (ty in BQFactory.objects)
+        ctor = BQFactory.objects[ty];
+    var o = new ctor();
+    if (ctor == BQResource && ty) o.resource_type = ty;
+    //o.name = name;
+    //o.value = value;
+
     var a = undefined;
     for (var i=0; (a=resource.xmlfields[i]); i++)
         o[a] = resource[a];
