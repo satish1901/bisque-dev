@@ -442,7 +442,7 @@ Ext.define('BQ.Export.Panel', {
                     sortable : false,
                     align : 'center',
                     items : [{
-                        icon : BQ.Server.url('../export_service/public/images/delete.png'),
+                        icon : BQ.Server.url('/export/images/delete.png'),
                         align : 'center',
                         tooltip : 'Remove',
                         handler : function(grid, rowIndex, colIndex) {
@@ -501,14 +501,3 @@ Ext.define('BQ.export.Dialog', {
         this.callParent();
     },
 });
-
-
-
-
-
-
-
-
-
-
-

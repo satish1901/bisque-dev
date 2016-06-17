@@ -126,5 +126,8 @@ setup(
       bisque_service = bq.commands.bisque_template:ServiceTemplate
       bisque_module = bq.commands.bisque_template:ModuleTemplate
 
+      [bisque.services]
+      core   = bq.core.controllers.root
+
     """,
 )

@@ -127,11 +127,14 @@ def p_error(p):
 #  move to some system directory like "/var/run/bisque"
 # http://www.dabeaz.com/ply/ply.html#ply_nn18
 #_mkdir("generated")
-lexer = lex.lex()
-parser  = yacc.yacc( debug= 0)
 
-
+lexer = None
+parser = None
 def filter_parse (text):
+    global lexer, parser
+    if  parser is None:
+        lexer = lex.lex()
+        parser  = yacc.yacc( debug= 0)
     return parser.parse (text, lexer = lexer)
 
 def lexit (text):

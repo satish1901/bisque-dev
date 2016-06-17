@@ -4,15 +4,16 @@
 # Mode is a list of allow runtime platforms i.e. command, condor, [hadoop]
 runtime.platforms = command
 # Where staging directory are createed
-runtime.staging_base = ~/staging
+runtime.staging_base =
 runtime.matlab_home =
 # will be replaced with the system version if unmodified
 runtime.matlab_launcher = config-defaults/templates/matlab_launcher_SYS.tmpl
 
+[docker]
 docker.enabled = false
 # A  hub where to push containers to
 docker.hub =
-#docker.hub.user
+#docker.hub.user =
 #docker.hub.password
 #docker.hub.email
 # A matlab runtime base container for matlab modules

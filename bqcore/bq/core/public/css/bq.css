@@ -65,17 +65,14 @@ width:680px;
 padding:5px 15px 15px 55px;
 }
 #flash .ok {
-background:#EEEEFF url(../images/ok.png) no-repeat scroll left center;
+background:#EEEEFF url(/core/images/ok.png) no-repeat scroll left center;
 border:1px solid #CCCCEE;
 }
 #flash .warning {
-background:#FF9999 url(../images/error.png) no-repeat scroll left center;
+background:#FF9999 url(/core/images/error.png) no-repeat scroll left center;
 border:1px solid #FF3333;
 }
 #flash .alert {
-background:#FFFF99 url(../images/info.png) no-repeat scroll left center;
+background:#FFFF99 url(/core/images/info.png) no-repeat scroll left center;
 border:1px solid #FFFF00;
 }
-
-
-

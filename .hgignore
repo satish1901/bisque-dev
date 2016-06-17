@@ -17,6 +17,10 @@ bqenv/*
 doc/build/*
 doc/data/*
 external/*
+public/*
+debian/tmp/*
+debian/bisque/*
+debian/bisque-contrib
 bqcore/parser.out
 bqcore/parsetab.*
 bqcore/Bisquik.egg-info/*

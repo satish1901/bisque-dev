@@ -64,7 +64,7 @@
 
 .bq-upload-panel .icon {
     width: 34px;
-    background-image: url('/import_service/public/icons.svg');
+    background-image: url('/import/icons.svg');
     background-repeat: no-repeat;
     background-size: 200px;
     background-position: 0px 0px;
@@ -342,4 +342,3 @@
     font-size: 16px;
 }
 */
-
