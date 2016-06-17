@@ -63,11 +63,11 @@ Ext.define('Bisque.Resource.Dataset.Compact', {
                     break;
                 }
                 case 'dataset': {
-                    thumbnail = BQ.Server.url('/export_service/public/images/folder-large.png');
+                    thumbnail = BQ.Server.url('/export/images/folder-large.png');
                     break;
                 }
                 default :
-                    thumbnail = BQ.Server.url('/export_service/public/images/file-large.png');
+                    thumbnail = BQ.Server.url('/export/images/file-large.png');
             }
 
             margin = (i == 1 ? 'margin:0px 0px 0px 2px;' : (i == 2 ? 'margin:2px 2px 0px 0px;' : ''));
@@ -117,11 +117,11 @@ Ext.define('Bisque.Resource.Dataset.Card', {
                     break;
                 }
                 case 'dataset': {
-                    thumbnail = BQ.Server.url('/export_service/public/images/folder-large.png');
+                    thumbnail = BQ.Server.url('/export/images/folder-large.png');
                     break;
                 }
                 default :
-                    thumbnail = BQ.Server.url('/export_service/public/images/file-large.png');
+                    thumbnail = BQ.Server.url('/export/images/file-large.png');
             }
 
             margin = 'margin:0px 3px 2px 0px;';
@@ -180,11 +180,11 @@ Ext.define('Bisque.Resource.Dataset.Full', {
                     break;
                 }
                 case 'dataset': {
-                    thumbnail = BQ.Server.url('/export_service/public/images/folder-large.png');
+                    thumbnail = BQ.Server.url('/export/images/folder-large.png');
                     break;
                 }
                 default :
-                    thumbnail = BQ.Server.url('/export_service/public/images/file-large.png');
+                    thumbnail = BQ.Server.url('/export/images/file-large.png');
             }
 
             margin = 'margin:0px 3px 2px 0px;';
@@ -394,4 +394,3 @@ Ext.define('Bisque.ResourceBrowser.OperationBar.dataset', {
     },
 
 });
-

@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+
+
+# We need an enhanced version of dh_virtualenv to contruct bisque https://github.com/kkvilekval/dh-virtualenv
+DH_VERBOSE=1
+export DH_UPGRADE_PIP=8.0.3
+
+
+#%:
+#	dh $@ --with python-virtualenv
+
+%:
+	dh $@ --buildsystem=dh_virtualenv
+
+
+
+#override_dh_auto_install:
+#	dh_auto_install

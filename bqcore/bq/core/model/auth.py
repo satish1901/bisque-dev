@@ -36,6 +36,19 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
+@event.listens_for(Engine, "connect")
+def do_connect(dbapi_connection, connection_record):
+    # disable pysqlite's emitting of the BEGIN statement entirely.
+    # also stops it from emitting COMMIT before any DDL.
+    if config.get('sqlalchemy.url', '').startswith ("sqlite://"):
+        dbapi_connection.isolation_level = None
+
+@event.listens_for(Engine, "begin")
+def do_begin(conn):
+    # emit our own BEGIN
+    if config.get('sqlalchemy.url', '').startswith ("sqlite://"):
+        conn.execute("BEGIN")
+
 
 from bq.core.model import DeclarativeBase, metadata, DBSession
 

@@ -40,6 +40,12 @@ The bisque server
       license='BSD',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       namespace_packages = ['bq'],
+      message_extractors={'bq': [
+          ('**.py', 'python', None),
+          ('client_service/templates/**.mako', 'mako', None),
+          ('client_service/templates/**.html', 'genshi', None),
+          ('client_service/public/**', 'ignore', None)]},
+      setup_requires=["hgtools"],
       include_package_data=True,
       zip_safe=False,
       install_requires=install_requires,

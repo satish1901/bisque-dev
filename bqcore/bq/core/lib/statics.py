@@ -21,10 +21,10 @@ class BQStaticURLParser (object):
         @param prefix:
         """
         log.info('static path %s -> %s' % (local, top))
-        for root, dirs, files in os.walk(local):
+        for root, dirs, files in os.walk(local, followlinks=True):
             for f in files:
                 pathname = os.path.join(root,f)
-                partpath = pathname[len(top):]
+                partpath = pathname[len(local):]
                 if prefix:
                     #print "PREFIX: ", prefix
                     partpath  = os.path.join(prefix, partpath[1:])
@@ -34,7 +34,7 @@ class BQStaticURLParser (object):
                     log.error("static files : %s will overwrite previous %s "
                               % (pathname, self.files[partpath]))
                     continue
-                #log.debug(  "ADDING %s -> %s " % (partpath, pathname) )
+                log.debug(  "ADDING %s -> %s " % (partpath, pathname) )
                 self.files[partpath] = (pathname, None)
 
 

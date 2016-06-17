@@ -15,16 +15,15 @@ class S3Error(Exception):
 
 log = logging.getLogger('bq.blobs.storage.s3')
 
-if not os.path.exists(S3_CACHE):
-    _mkdir (S3_CACHE)
-
-
 def s3_parse_url(url):
     "Read an s3 url, return a bucket and key"
 
 
 
 def s3_cache_fetch(bucket, key):
+    if not os.path.exists(S3_CACHE):
+        _mkdir (S3_CACHE)
+
     cache_filename = os.path.join(S3_CACHE, key)
     if not os.path.exists(cache_filename):
         k = Key(bucket)
@@ -34,6 +33,8 @@ def s3_cache_fetch(bucket, key):
     return cache_filename
 
 def s3_cache_save(f, bucket, key):
+    if not os.path.exists(S3_CACHE):
+        _mkdir (S3_CACHE)
     cache_filename = os.path.join(S3_CACHE, key)
     _mkdir(os.path.dirname(cache_filename))
 
@@ -68,6 +69,8 @@ def s3_cache_save(f, bucket, key):
     return cache_filename
 
 def s3_cache_delete(bucket, key):
+    if not os.path.exists(S3_CACHE):
+        _mkdir (S3_CACHE)
     cache_filename = os.path.join(S3_CACHE, key)
     if os.path.exists(cache_filename):
         os.remove (cache_filename)
@@ -76,6 +79,8 @@ def s3_cache_delete(bucket, key):
     k.delete()
 
 def s3_fetch_file(bucket, key):
+    if not os.path.exists(S3_CACHE):
+        _mkdir (S3_CACHE)
     localname = s3_cache_fetch(bucket, key)
     return localname
 

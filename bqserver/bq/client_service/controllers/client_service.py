@@ -294,5 +294,3 @@ def initialize(uri):
 
 def uri():
     return client_server.baseuri
-
-

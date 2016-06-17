@@ -431,15 +431,15 @@ Ext.define('BQ.Application.Toolbar', {
             }, {
                 text: 'Privacy policy',
                 itemId: 'menu_help_privacy_policy',
-                handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/public/about/privacypolicy.html')),
+                handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/about/privacypolicy.html')),
             }, {
                 text: 'Terms of use',
                 itemId: 'menu_help_terms_of_use',
-                handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/public/about/termsofuse.html') ),
+                handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/about/termsofuse.html') ),
             }, {
                 text: 'License',
                 itemId: 'menu_help_license',
-                handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/public/about/license.html') ),
+                handler: Ext.Function.pass(htmlAction, BQ.Server.url('/client_service/about/license.html') ),
             }, '-', {
                 text: 'Usage statistics',
                 itemId: 'menu_help_usage_statistics',
@@ -1101,8 +1101,8 @@ Ext.define('BQ.Application.Toolbar', {
         var h = [
             { f: htmlAction, n: 'about', d: '/client_service/about' },
             { f: htmlAction, n: 'privacy_policy', d: '/client_service/about' },
-            { f: htmlAction, n: 'terms_of_use', d: '/client_service/public/about/termsofuse.html' },
-            { f: htmlAction, n: 'license', d: '/client_service/public/about/license.html' },
+            { f: htmlAction, n: 'terms_of_use', d: '/client_service/about/termsofuse.html' },
+            { f: htmlAction, n: 'license', d: '/client_service/about/license.html' },
             { f: pageAction, n: 'usage_statistics', d: '/usage/' },
             { f: urlAction,  n: 'help', d: '/client_service/help' },
             { f: urlAction,  n: 'project_website', d: 'http://bioimage.ucsb.edu/bisque' },
@@ -1161,4 +1161,3 @@ Ext.define('BQ.Application.Toolbar', {
     },
 
 });
-
