@@ -21,6 +21,8 @@ setup(
     paster_plugins=['PasteScript', 'Pylons' ],
     packages= find_packages(),
     namespace_packages = ['bq'],
+    setup_requires=["hgtools"],
+    include_package_data=True,
     zip_safe = False,
     #include_package_data=True,
     test_suite='nose.collector',

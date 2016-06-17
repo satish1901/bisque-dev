@@ -19,7 +19,7 @@ servers = h1
 # services_disabled = list of bisque_service to disable
 # proxyroot =  the value of bisque.root for engines
 
-h1.url = http://localhost:8080
+h1.url = http://0.0.0.0:8080
 h1.services_disabled = engine_service
 # Extra params for uwsgi servers
 # h1.uwsgi.socket = unix:///tmp/bisque.sock
@@ -40,11 +40,11 @@ h1.services_disabled = engine_service
 #h4.services_disabled = engine_service
 
 
-# Engine on this host
-# e1.url = http://localhost:27000
-# e1.services_enabled = engine_service
-# e1.bisque.has_database = false
-# e1.bisque.static_files = false
+# Engine on this host (enable this above in servers)
+e1.url = http://yourhost:27000
+e1.services_enabled = engine_service
+e1.bisque.has_database = false
+#e1.bisque.static_files = false
 # Extra params uwsgi
 # e1.uwsgi.socket = unix:///tmp/engine.sock
 
@@ -87,16 +87,17 @@ bisque.js_environment = production
 #bisque.static_files = true
 
 # server defaults
-bisque.server = http://localhost:8080
+bisque.server = http://0.0.0.0:8080
 bisque.services_disabled = engine_service
 #bisque.services_enabled = client_service
 #bisque.site = http://localhost:8080
-bisque.installed =
-bisque.paths.root  =
-#bisque.paths.data  = installationdir/data
+bisque.installed =  false
+bisque.paths.root  =  .       # or /usr/share/python/bisque
+bisque.paths.data  =  ./data  # or /var/run/bisque
 bisque.paths.config = ./config # or /etc/bisque/config
 bisque.paths.share  = .       # or /usr/share/bisque
 bisque.paths.run    = .       # or /var/run/bisque
+bisque.paths.public = ./public # or /var/run/bisque/public
 
 
 # Blobservice
@@ -200,7 +201,7 @@ runtime.mode = command
 #beaker.cache.data_dir = %(here)s/data/cache
 #beaker.session.data_dir = %(here)s/data/sessions
 #cache_dir = %(here)s/data
-beaker.session.type = cookie
+#beaker.session.type = cookie
 beaker.session.key = bq
 beaker.session.secret = somesecret
 #beaker.session.type = ext:database

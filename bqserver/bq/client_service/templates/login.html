@@ -9,7 +9,7 @@
 <head>
     <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/>
     <title>Bisque login</title>
-    <link rel="stylesheet" type="text/css" href="${tg.url('/client_service/public/css/login.css')}" />
+    <link rel="stylesheet" type="text/css" href="${tg.url('/client_service/css/login.css')}" />
 </head>
 
 <script type="text/javascript">
@@ -36,7 +36,7 @@ function redirect_login (url) {
         <label for="loginusername">Username:<input type="text" id="loginusername" name="login" value="$username" class="text"></input></label>
         <label for="loginpassword">Password:<input type="password" id="loginpassword" name="password" class="text"></input></label>
         <button type="submit" id="submit" class="sigin_button" value="Sign-in with Bisque"><img src="/images/signin/signin_bisque.png" /></button>
-        
+
         <div class="registration">
             <p><a href="/registration/">Register local user</a></p>
             <p><a href="/registration/lost_password">Reset local password</a></p>
