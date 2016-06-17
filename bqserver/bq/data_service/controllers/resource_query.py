@@ -170,7 +170,7 @@ def t_error(t):
         print "Illegal character '%s'" % t.value[0]
     t.lexer.skip(1)
 
-lex.lex()
+#lex.lex()
 
 # End Lexer
 #############
@@ -334,7 +334,7 @@ def p_error(p):
 #  move to some system directory like "/var/run/bisque"
 # http://www.dabeaz.com/ply/ply.html#ply_nn18
 #_mkdir("generated")
-yacc.yacc(outputdir=data_path(), debug= 0)
+#yacc.yacc(outputdir=data_path(), debug= 0)
 
 # End Parser
 #############################################################

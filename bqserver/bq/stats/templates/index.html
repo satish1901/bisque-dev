@@ -19,19 +19,19 @@ ex: http://vidi.ece.ucsb.edu:8080/stats/?url=http://vidi.ece.ucsb.edu:8080/ds/im
 -->
 
 <head>
-  
+
   <title>Statistics Service</title>
-  
-  <script type="text/javascript" > 
+
+  <script type="text/javascript" >
     // update the configuration in your template
     //bq_config.services = { 'browse': false };
-  </script>  
-  
+  </script>
+
 
 <!-- Styles for the form -->
 <style type="text/css">
     body { background-color: white !important; }
-        
+
     form label#header {
       width: 200px;
       float: left;
@@ -46,8 +46,8 @@ ex: http://vidi.ece.ucsb.edu:8080/stats/?url=http://vidi.ece.ucsb.edu:8080/ds/im
       margin-left: 1em;
       font-size: 14px;
       font-family: Tahoma, Geneva, sans-serif;
-    } 
-  
+    }
+
     form div { margin-top: 10px; }
     form input[type="text"], form select { width: 400px; }
     form input#plus_button { margin-left: 220px; }
@@ -67,30 +67,30 @@ ex: http://vidi.ece.ucsb.edu:8080/stats/?url=http://vidi.ece.ucsb.edu:8080/ds/im
 <script type="text/javascript" src="/js/bq_ui_progress.js" charset="utf-8"></script>
 
 <!-- Statistics -->
-<link rel="stylesheet" type="text/css" href="${tg.url('/stats/public/stats.css')}" />
-<script src="/stats/public/js/stats.js" type="text/javascript" charset="utf-8"></script>
+<link rel="stylesheet" type="text/css" href="${tg.url('/stats/stats.css')}" />
+<script src="/stats/js/stats.js" type="text/javascript" charset="utf-8"></script>
 
 
 <script type="text/javascript" charset="utf-8">
 //<!--
-preset_options = { 
+preset_options = {
   'tag_name_unique' : { 'xpath':'//tag', 'xmap':'tag-name-string', 'xreduce':'unique'  },
   'tag_name_histogram' : { 'xpath':'//tag', 'xmap':'tag-name-string', 'xreduce':'histogram'  },
-  'tag_probaility_vector' : { 'xpath':"//tag[@name='probability']", 'xmap':'tag-value-number', 'xreduce':'vector'  },     
+  'tag_probaility_vector' : { 'xpath':"//tag[@name='probability']", 'xmap':'tag-value-number', 'xreduce':'vector'  },
   'gobject_user_types' : { 'xpath':'//gobject', 'xmap':'gobject-type-composed', 'xreduce':'unique'  },
   'gobject_type_histogram' : { 'xpath':'//gobject | //point | //label | //polyline | //polygon | //circle | //ellipse | //rectangle | //square', 'xmap':'gobject-type', 'xreduce':'histogram'  },
-  'gobject_polyline_length_vector' : { 'xpath':'//polyline', 'xmap':'gobject-length', 'xreduce':'vector'  },    
+  'gobject_polyline_length_vector' : { 'xpath':'//polyline', 'xmap':'gobject-length', 'xreduce':'vector'  },
   'gobject_polygon_area_histogram' : { 'xpath':'//polygon', 'xmap':'gobject-area', 'xreduce':'histogram'  },
-  'gobject_polygon_area_vector' : { 'xpath':'//polygon', 'xmap':'gobject-area', 'xreduce':'vector'  },    
-  'gobject_point_number' : { 'xpath':'//point', 'xmap':'gobject-number', 'xreduce':'count'  },        
+  'gobject_polygon_area_vector' : { 'xpath':'//polygon', 'xmap':'gobject-area', 'xreduce':'vector'  },
+  'gobject_point_number' : { 'xpath':'//point', 'xmap':'gobject-number', 'xreduce':'count'  },
 };
 
 function presetComboChanged() {
   var cb = document.getElementById("presets");
   var cb_xpath = document.getElementById("xpath");
   var cb_xmap = document.getElementById("xmap");
-  var cb_xreduce = document.getElementById("xreduce");  
-  
+  var cb_xreduce = document.getElementById("xreduce");
+
   o = preset_options[cb.value];
   if (!o) return;
   cb_xpath.value = o['xpath'];
@@ -101,11 +101,11 @@ function presetComboChanged() {
 function showTip( element, text, opts ) {
   if (!opts) opts={};
   if (!('color' in opts)) opts.color = 'red';
-  if (!('timeout' in opts)) opts.timeout = 5000;  
+  if (!('timeout' in opts)) opts.timeout = 5000;
   var tip = new Ext.ToolTip({
       target: element,
       anchor: 'top',
-      bodyStyle: 'font-size: 120%; color: '+opts.color+';',        
+      bodyStyle: 'font-size: 120%; color: '+opts.color+';',
       html: text
   });
   tip.show();
@@ -119,9 +119,9 @@ function validate() {
     return false;
   }
   if (document.getElementById("xpath").value == '') {
-    showTip( 'xpath', 'Resource XPath is not specified!' );  
+    showTip( 'xpath', 'Resource XPath is not specified!' );
     return false;
-  }  
+  }
   return true;
 }
 
@@ -170,23 +170,23 @@ function cloneInput(surface, tocopy) {
   var n = surface.children.length;
   var d = tocopy.cloneNode(true);
   d.children[1].name = d.children[1].name + n;
-  d.children[1].id = d.children[1].id + n;  
+  d.children[1].id = d.children[1].id + n;
   surface.appendChild (d);
   return d;
 }
 
 function doPlot() {
     if (!validate()) return;
-    
+
     var url = document.getElementById("url").value;
     var xpath = getValues("xpath");
     var xmap = getValues("xmap"); //document.getElementById("xmap").value;
     var xreduce = getValues("xreduce"); //document.getElementById("xreduce").value;
     var args = getHiddenValues("xargs");
 
-  //removeAllChildren(plotter); 
+  //removeAllChildren(plotter);
   //this.visualizer = new BQStatisticsVisualizer( plotter, url, xpath, xmap, xreduce, { height:500, args: args } );
-  
+
     var opts = { /*title: 'Plot for ...',*/ args: args, };
     var plotter = Ext.create('BQ.stats.Dialog', {
         url     : url,
@@ -194,8 +194,8 @@ function doPlot() {
         xmap    : xmap,
         xreduce : xreduce,
         opts    : opts,
-    });  
-  
+    });
+
 }
 
 function parseUrlArguments() {
@@ -213,10 +213,10 @@ function parseUrlArguments() {
 function appendInputs(urldict, id, surface, tocopy) {
   var i=1;
   while (id+i.toString() in urldict) {
-    cloneInput(surface, tocopy);  
-    var e = document.getElementById(id+i.toString());  
+    cloneInput(surface, tocopy);
+    var e = document.getElementById(id+i.toString());
     e.value = urldict[id+i.toString()];
-    i++; 
+    i++;
   }
 }
 
@@ -227,7 +227,7 @@ function doBrowse(surface) {
   var rb  = new Bisque.ResourceBrowser.Dialog({
       'height' : '85%',
       'width' :  '85%',
-      listeners: { 'Select': function(me, resource) { surface.value = resource.uri; }, 
+      listeners: { 'Select': function(me, resource) { surface.value = resource.uri; },
                    scope: this },
   });
 }
@@ -239,7 +239,7 @@ function doDatasetBrowse(surface) {
   var rb  = new Bisque.DatasetBrowser.Dialog({
       'height' : '85%',
       'width' :  '85%',
-      listeners: { 'DatasetSelect': function(me, resource) { surface.value = resource.uri; }, 
+      listeners: { 'DatasetSelect': function(me, resource) { surface.value = resource.uri; },
                    scope: this },
   });
 }
@@ -254,10 +254,10 @@ Ext.onReady(function() {
   appendInputs(myurl, 'xpath', 'xpaths', 'xpathbox');
   appendInputs(myurl, 'xmap', 'xmaps', 'xmapbox');
   appendInputs(myurl, 'xreduce', 'xreduces', 'xreducebox');
-      
+
   if ('run' in myurl) doPlot();
 });
-  
+
 //-->
 </script>
 
@@ -265,7 +265,7 @@ Ext.onReady(function() {
 
 <body>
 <div class="content webapp"> <!-- main wrapping div -->
-  
+
 <!--<span py:if="tg.identity.anonymous"><p>Please log-in to use this service.</p></span>
 <span py:if="not tg.identity.anonymous">-->
 
@@ -275,31 +275,31 @@ Ext.onReady(function() {
 <p>This service allows you to summarize documents stored in the Bisque system. It operates on textual <strong>tag</strong> and graphical <strong>gobject</strong> documents.</p>
 
 <form action="/stats/compute" method="get" name="stats" id="stats">
-  
+
   <div>
     <label id="header">Resource URL:</label>
     <input name="url" type="text" id="url" value="${opts.get('url', '')}" />
     <input name="browse" id="browse" type="button" value="Browse images" onclick="doBrowse('url')" />
     <input name="browseD" id="browseD" type="button" value="Browse datasets" onclick="doDatasetBrowse('url')" />
     <label>URL pointing to an image, tags, gobjects or to a dataset</label>
-  </div>  
+  </div>
 
   <div>
     <label id="header">Presets:</label>
     <select id="presets" style="width: 400px;" onchange="presetComboChanged()" >
       <option value="custom" selected="selected">Custom</option>
-      <option value="tag_name_unique">Unique tag names</option>    
+      <option value="tag_name_unique">Unique tag names</option>
       <option value="tag_name_histogram">Histogram of tag names</option>
-      <option value="tag_probaility_vector">Vector of values of tag &quot;probability&quot;</option>    
+      <option value="tag_probaility_vector">Vector of values of tag &quot;probability&quot;</option>
       <option value="gobject_user_types">User defined gobject types</option>
-      <option value="gobject_type_histogram">Histogram of gobject types</option>     
-      <option value="gobject_polyline_length_vector">Vector of polyline lengths</option>        
-      <option value="gobject_polygon_area_histogram">Histogram of polygon areas</option>        
-      <option value="gobject_polygon_area_vector">Vector of polygon areas</option>    
-      <option value="gobject_point_number">Number of points</option>        
+      <option value="gobject_type_histogram">Histogram of gobject types</option>
+      <option value="gobject_polyline_length_vector">Vector of polyline lengths</option>
+      <option value="gobject_polygon_area_histogram">Histogram of polygon areas</option>
+      <option value="gobject_polygon_area_vector">Vector of polygon areas</option>
+      <option value="gobject_point_number">Number of points</option>
     </select>
-  </div>  
-  
+  </div>
+
   <div id="xpaths">
     <div id="xpathbox">
       <label id="header">XPath expression:</label>
@@ -309,49 +309,47 @@ Ext.onReady(function() {
   </div>
   <div>
     <input id="plus_button" type="button" value="+ XPath" onclick="cloneInput('xpaths', 'xpathbox')" />
-  </div>   
-  
-  <div id="xmaps">  
-    <div id="xmapbox">  
+  </div>
+
+  <div id="xmaps">
+    <div id="xmapbox">
       <label id="header">Mapping operation:</label>
       <select name="xmap" id="xmap" >
-        <option py:for="o in op_keys" label="${'[%s] %s'%(o, operators[o])}">${o}</option>    
+        <option py:for="o in op_keys" label="${'[%s] %s'%(o, operators[o])}">${o}</option>
       </select>
       <label>Map operation to convert a vector or resources into a vector of numbers or strings</label>
-    </div> 
-  </div>  
+    </div>
+  </div>
   <div>
     <input id="plus_button" type="button" value="+ Map" onclick="cloneInput('xmaps', 'xmapbox')" />
-  </div> 
+  </div>
 
-  
-  <div id="xreduces">    
+
+  <div id="xreduces">
     <div id="xreducebox">
       <label id="header">Summarization operation:</label>
       <select name="xreduce" id="xreduce" >
-        <option py:for="o in sum_keys" label="${'[%s] %s'%(o, summarizers[o])}">${o}</option>    
+        <option py:for="o in sum_keys" label="${'[%s] %s'%(o, summarizers[o])}">${o}</option>
       </select>
       <label>Reduce operation to summarize the vector of numbers or string</label>
-    </div> 
-  </div> 
+    </div>
+  </div>
   <div>
     <input id="plus_button" type="button" value="+ Reduce" onclick="cloneInput('xreduces', 'xreducebox')" />
-  </div>      
+  </div>
 
-  <div id="xargs"> 
+  <div id="xargs">
     <input py:for="a in args" id="${a}" name="${a}" type="hidden" value="${args[a]}" />
-  </div> 
-      
+  </div>
+
   <div>
     <input name="plot" id="plot" type="button" value="Show statistics now!" onclick="doPlot()" />
     <input name="submitbtn" id="submitbtn" type="button" value="Get statistics as XML" onclick="getXML()" />
-    <input name="submitbtn" id="submitbtn" type="button" value="Get statistics as CSV" onclick="getCSV()" />        
-  </div> 
-        
+    <input name="submitbtn" id="submitbtn" type="button" value="Get statistics as CSV" onclick="getCSV()" />
+  </div>
+
 </form>
 
 </div>
 </body>
 </html>
-
-

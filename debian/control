@@ -1,0 +1,22 @@
+Source: bisque
+Maintainer: center for bioimage <packages@bioimage.ece.ucsb.edu>
+Section: python
+Priority: extra
+Build-Depends: debhelper (>= 9), python, dh-virtualenv (>= 0.8), libxml2-dev,  libxslt1-dev, libtiff4-dev,
+Standards-Version: 3.9.5
+
+
+Package: bisque
+Architecture: amd64
+PreDepends: dpkg (>= 1.16.1), python2.7 , ${misc:Pre-Depends}
+Depends: ${python:Depends}, ${misc:Depends}, python2.7, libxml2, libxslt1.1, imgcnv, libimgcnv, libopenjpeg5, libopenslide-dev, libsm6, libjpeg62, oracle-j2sdk1.7, libblas3, liblapack3, libhdf5-8, zlib1g, libbz2-1.0
+Description: Bisque
+   Bisque image management and analysis software
+
+
+Package: bisque-contrib
+Architecture: all
+PreDepends: dpkg (>= 1.16.1), python2.7 , ${misc:Pre-Depends}
+Depends: ${python:Depends}, ${misc:Depends}
+Description: Bisque
+   Bisque image management and analysis software contrib directory

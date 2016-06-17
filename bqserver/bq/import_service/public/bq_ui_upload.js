@@ -277,7 +277,7 @@ Ext.define('BQ.upload.ZipAnnotator', {
             'zip'            : {},
             //'zip-volocity'   : {},
             'zip-proprietary': {},
-            'zip-dicom'      : {},            
+            'zip-dicom'      : {},
             'zip-bisque'     : {},
         };
 
@@ -1525,7 +1525,7 @@ Ext.define('BQ.upload.Panel', {
             maxWidth : 1000,
             buttonAlign : 'center',
             loader : {
-                url : '/import_service/public/help.html',
+                url : '/import/help.html',
                 renderer : 'html',
                 autoLoad : true,
                 ajaxOptions : {
@@ -1823,4 +1823,3 @@ Ext.define('BQ.panel.Web', {
             loader.load();
     },
 });
-

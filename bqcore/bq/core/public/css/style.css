@@ -1,5 +1,5 @@
 html {
-	background: #555555 url('../images/pagebg.png') top left repeat-x;
+	background: #555555 url('/core/images/pagebg.png') top left repeat-x;
 	text-align: center;
 	margin: 0;
 	padding: 0;
@@ -21,7 +21,7 @@ a {
 #header {
 	height: 132px;
 	margin: 10px 10px 0 10px;
-	background: url('/images/headerbg.png') top left no-repeat;
+	background: url('/core/images/headerbg.png') top left no-repeat;
 }
 
 #header h1 {
@@ -44,7 +44,7 @@ a {
 ul#mainmenu {
 	margin: 0;
 	padding: 0 10px;
-	background: url('/images/menubg.png') top left no-repeat;
+	background: url('/core/images/menubg.png') top left no-repeat;
 	height: 38px;
 }
 
@@ -67,11 +67,11 @@ ul#mainmenu li a {
 	padding: 0 10px;
 	font-size: 12px;
 	text-decoration: none;
-	background: url('/images/menu-item-border.png') left top no-repeat;
+	background: url('/core/images/menu-item-border.png') left top no-repeat;
 }
 
 ul#mainmenu li a:hover, ul#mainmenu li a.active {
-	background: url('/images/menu-item-actibg.png') left top no-repeat;
+	background: url('/core/images/menu-item-actibg.png') left top no-repeat;
 }
 
 ul#mainmenu li.first a {
@@ -79,7 +79,7 @@ ul#mainmenu li.first a {
 }
 
 ul#mainmenu li.first a:hover, ul#mainmenu li.first a.active {
-	background: url('/images/menu-item-actibg-first.png') left top no-repeat;
+	background: url('/core/images/menu-item-actibg-first.png') left top no-repeat;
 }
 
 ul#mainmenu li.loginlogout
@@ -90,11 +90,11 @@ ul#mainmenu li.loginlogout
 
 ul#mainmenu li.loginlogout a:hover
 {
-    background: url('/images/menu-item-border.png') left top no-repeat;
+    background: url('/core/images/menu-item-border.png') left top no-repeat;
 }
 
 #content {
-	background: #fff url('/images/contentbg.png') left bottom no-repeat;
+	background: #fff url('/core/images/contentbg.png') left bottom no-repeat;
 	margin : 0 10px 10px 10px;
 	padding: 0 10px;
 	overflow: hidden;
@@ -115,7 +115,7 @@ form.loginfields
 {
     text-align: left;
     width: 270px;
-    background: url('/images/loginbg.png') top left no-repeat;
+    background: url('/core/images/loginbg.png') top left no-repeat;
     padding: 0;
     margin: 0 auto;
     border: 0;
@@ -128,7 +128,7 @@ form.loginfields h2
     padding: 0;
     margin: 5px;
     margin-top: 0;
-    background: url('/images/loginheader-left.png') top left no-repeat;
+    background: url('/core/images/loginheader-left.png') top left no-repeat;
 }
 
 * html form.loginfields h2
@@ -140,7 +140,7 @@ form.loginfields h2
 
 form.loginfields h2 span
 {
-    background: url('/images/loginheader-right.png') right top no-repeat;
+    background: url('/core/images/loginheader-right.png') right top no-repeat;
     height: 30px;
     line-height: 30px;
     display: block;
@@ -175,7 +175,7 @@ form.loginfields input.text
     height: 21px;
     padding: 5px;
     border: 0;
-    background: url('/images/inputbg.png') top left no-repeat;
+    background: url('/core/images/inputbg.png') top left no-repeat;
     color: #fff;
 }
 
@@ -197,7 +197,7 @@ form.loginfields #labelremember
 
 form.loginfields input#submit
 {
-    background: url('/images/loginbottombg.png') bottom left no-repeat;
+    background: url('/core/images/loginbottombg.png') bottom left no-repeat;
     width: 270px;
     height: 61px;
     border: 0;
@@ -295,20 +295,20 @@ width:680px;
 padding:20px 15px 20px 65px;
 }
 #flash .ok {
-background:#d8ecd8 url(/images/ok.png) no-repeat scroll 10px center;
+background:#d8ecd8 url(/core/images/ok.png) no-repeat scroll 10px center;
 }
 #flash .warning {
-background:#fff483 url(/images/warning.png) no-repeat scroll 10px center;
+background:#fff483 url(/core/images/warning.png) no-repeat scroll 10px center;
 }
 #flash .error {
-background:#f9c5c1 url(/images/error.png) no-repeat scroll 10px center;
+background:#f9c5c1 url(/core/images/error.png) no-repeat scroll 10px center;
 }
 #flash .alert,
 #flash .info {
-background:#EEEEFF url(/images/info.png) no-repeat scroll 10px center;
+background:#EEEEFF url(/core/images/info.png) no-repeat scroll 10px center;
 }
 .notice {
-background:#EEEEFF url(/images/info.png) no-repeat scroll 10px center;
+background:#EEEEFF url(/core/images/info.png) no-repeat scroll 10px center;
 }
 .fielderror {
 color:red;

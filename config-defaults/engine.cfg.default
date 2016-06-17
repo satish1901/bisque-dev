@@ -16,6 +16,7 @@ servers = e1
 # Each engine must have the proxyroot parameter set
 e1.url = http://yourhost:27000
 e1.services_enabled = engine_service
+e1.has_database = false
 #e1.uwsgi.server = unix:/tmp/engine.sock
 #e1.uwsgi.http   = 0.0.0.0:27000
 

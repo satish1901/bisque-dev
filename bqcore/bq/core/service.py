@@ -93,6 +93,8 @@ class ServiceDirectory(object):
 
     def register_service (self, name, service, service_type = None):
         """Register a new service (type)"""
+        if service is None:
+            return
         if service_type is None:
             service_type = service.__controller__.service_type
         e = self._get_entry (service_type)
@@ -172,9 +174,10 @@ def mount_services (root, enabled = None, disabled = None):
                 #service_url = '/' + entry.name
                 log.debug ('activating %s at %s' % (str(entry.name), service_url))
                 service = entry.module.initialize(service_url)
-                service_registry.register_instance (service)
-                pairs.append ( (entry.name, service) )
-                mounted.append(entry.name)
+                if service:
+                    service_registry.register_instance (service)
+                    pairs.append ( (entry.name, service) )
+                    mounted.append(entry.name)
             else:
                 log.warn ("SKIPPING %s : no initialize" % entry.name)
         else:

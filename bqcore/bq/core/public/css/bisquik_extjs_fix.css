@@ -1,4 +1,4 @@
-
+``
 /*********************************************************************
   Changes to ExtJS styles
 *********************************************************************/
@@ -19,7 +19,7 @@
     background-color: transparent;
     border: 0px;
 
-    background-image: url('/images/progress_circles.gif');
+    background-image: url('/core/images/progress_circles.gif');
     background-size: 40px 40px;
     background-position: center 15px;
     background-repeat: no-repeat;

@@ -59,6 +59,7 @@ import sys
 import logging
 import time
 import urlparse
+import pkg_resources
 from paste.httpexceptions import HTTPNotFound
 
 #from turbogears import controllers, expose, config
@@ -353,3 +354,19 @@ def startup():
 
 #if  server_type == 'root' and ProxyRewriteURL.active_proxy:
 #    cherrypy.filters.input_filters.append(ProxyRewriteURL)
+
+class CoreService:
+    service_type = "core"
+
+def initialize (url):
+    return None
+
+
+def get_static_dirs():
+    """Return the static directories for this server"""
+    package = pkg_resources.Requirement.parse ("bqcore")
+    package_path = pkg_resources.resource_filename(package,'bq')
+    return [(package_path, os.path.join(package_path, 'core', 'public'))]
+
+
+__controller__ =  CoreService

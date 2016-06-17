@@ -13,7 +13,6 @@ from bq.util.copylink import copy_link
 from bq.util.paths import find_config_path
 from bq.util.converters import asbool
 from mako.template import Template
-import bbfreeze
 
 #BISQUE_DEPS = map (functools.partial(os.path.join, '../../external'), [ "bisque.jar", "jai_codec.jar", "jai_core.jar", "jai_imageio.jar", "clibwrapper_jiio.jar"])
 

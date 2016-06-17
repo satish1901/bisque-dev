@@ -2,12 +2,34 @@ import os
 import sys
 import tarfile
 import urllib2
+import glob
 from urlparse import urlparse
 
+import paver
 from paver.easy import *
 import paver.misctasks
+from paver.setuputils import setup as python_setup
+
+paver.setuputils.install_distutils_tasks()
+
+
+def generate_data_files (toplevel, filters=None):
+    'make a pair (dir, [list-of-files] ) for all dirs in toplevel'
+    return ([ (toplevel, list (path(toplevel).walkfiles())) ]
+            + [ (str(d), list ( d.walkfiles())) for d in path(toplevel).walkdirs() ])
+
+
+
 
 options(
+    setup = dict (
+       name='BisQue',
+        version="0.5.9",
+        author="Center for BioImage Informatics, UCSB",
+        author_email = "info@bioimage.ucsb.edu",
+        #data_files = [ ('config-defaults', glob.glob ('config-defaults/*') )],
+        data_files =  generate_data_files ('./contrib') +  generate_data_files ('./config-defaults'),
+    ),
     virtualenv=Bunch(
         packages_to_install=['pip'],
         paver_command_line="required"
@@ -78,6 +100,8 @@ def process_options(options):
     installing = None
     if len(options.args) :
         installing = options.args[0]
+    else:
+        installing = 'server'
 
     if installing not in ('engine', 'server', 'features'):
         installing =  getanswer("install [server, engine or features", "engine",
@@ -88,7 +112,6 @@ all will install everything including the feature service""")
     if installing not in ('engine', 'server', 'features'):
         print "Must choose 'engine', 'server', or 'features'"
         sys.exit(1)
-
 
     preinstalls = PREINSTALLS.get (installing, [])
 
@@ -124,8 +147,8 @@ def setup(options):
     install_prereqs(options)
     setup_developer(options)
     #install_postreqs(options)
-
     print '\nNow run:\nbq-admin setup %s' % ( 'engine' if options.installing =='engine' else '' )
+
 
 
 @task
@@ -148,10 +171,7 @@ def setup_developer(options):
 #    sh('tar -czf dist/bisque-modules-%s.tgz --exclude="*.pyc" --exclude="*~" --exclude="*.ctf" --exclude="*pydist" --exclude="UNPORTED" modules' % VERSION)
 
 
-@task
-@needs('setuptools.command.install')
-def install():
-    setup()
+
 
 
 @task
@@ -179,10 +199,10 @@ def upload(options):
 
 
 
-@task
-def test():
-    os.chdir('bqcore')
-    sh('python setup.py test')
+#@task
+#def test():
+#    os.chdir('bqcore')
+#    sh('python setup.py test')
 
 @task
 def distclean():
@@ -244,3 +264,53 @@ def pylint_modules(options):
 def pyfind(options):
     args = 'bqcore/bq bqserver/bq bqengine/bq bqfeature/bq'
     sh ("find %s -name '*.py' | xargs fgrep %s" % (args, " ".join(options.args)))
+
+
+
+from setuptools.dist import Distribution
+class PureDistribution(Distribution):
+    def is_pure(self):
+        return True
+
+
+
+@task
+#@needs('setuptools.command.install')
+@consume_args
+def install():
+    python_setup(
+        name='BisQue',
+        version="0.5.9",
+        author="Center for BioImage Informatics, UCSB",
+        author_email = "info@bioimage.ucsb.edu",
+        distclass = PureDistribution,
+        classifiers = [
+            'Private :: Do Not Upload',
+    #        "Development Status :: 5 - Production/Stable",
+    #        "Framework :: TurboGears :: Applications",
+    #        "Topic :: Scientific/Engineering :: Bio-Informatics",
+    #        "License :: OSI Approved :: BSD License",
+            ],
+        #package_data=find_package_data(),
+        include_package_data = True,
+        data_files =  generate_data_files ('./contrib') +  generate_data_files ('./config-defaults'),
+        #packages=find_packages(exclude=['ez_setup']),
+        #packages=["bq"],
+        zip_safe=False,
+        setup_requires=["PasteScript >= 1.7"],
+        paster_plugins=['PasteScript', 'Pylons', 'TurboGears2', 'bqengine'],
+        #build_top=path("build"),
+        #        build_dir=lambda: options.build_top / "bisque05",
+        license=Bunch(
+            extensions = set([
+                    ("py", "#"), ("js", "//")
+                    ]),
+            exclude=set([
+                    './ez_setup',
+                    './data',
+                    './tg2env',
+                    './docs',
+                    # Things we don't want to add our license tag to
+                    ])
+            ),
+        )
