@@ -167,7 +167,7 @@ class MexParser(object):
         elif style == 'named':
             params = ['%s=%s'%(i.get('name'), i.get('value')) for i in input_nodes]
         else:
-            params = [ i.get('value', '') for i in input_nodes ]
+            params = [ i.get('value') for i in input_nodes if i.get('value', None) ]
         log.debug('\n\nPARAMS : %s'%params)
         return params
 
