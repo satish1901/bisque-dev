@@ -15,12 +15,20 @@ from bq.util.converters import asbool
 from mako.template import Template
 import bbfreeze
 
-BISQUE_DEPS = map (functools.partial(os.path.join, '../../external'), [ "bisque.jar", "jai_codec.jar", "jai_core.jar", "jai_imageio.jar", "clibwrapper_jiio.jar"])
+#BISQUE_DEPS = map (functools.partial(os.path.join, '../../external'), [ "bisque.jar", "jai_codec.jar", "jai_core.jar", "jai_imageio.jar", "clibwrapper_jiio.jar"])
 
 
 class SetupError(Exception):
     pass
 
+def verbose_call (*args, **kw):
+    if kw.pop('verbose',None):
+        print args
+    return check_call (*args, **kw)
+
+
+def needs_update (output, dependency):
+    return not os.path.exists (output) or os.path.getmtime (dependency) > os.path.getmtime (output)
 
 
 def ensure_matlab(params):
@@ -73,7 +81,7 @@ def mex_compile (command_list, where = None, **kw):
         os.chdir (cwd)
     return ret == 0
 
-def matlab (command, where = None, params={ }):
+def matlab (command, where = None, params=None):
     'run matlab with a command'
     if not require('runtime.matlab_home', params):
         return False
@@ -124,27 +132,22 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
     if main_path.endswith (".m"):
         main_path = main_path [0:-2]
 
-    #try:
-    #    script_name='matlab_launcher'
-    #    template = Template(filename=os.path.abspath (os.path.join('..','..', 'config','templates','matlab_launcher.tmpl')))
-    #    with open(script_name, 'wb') as f:
-    #        f.write(template.render())
-    #        os.chmod (script_name, 0744)
-    #except Exception,e:
-    #    log.exception ("while createing matlab_launcher")
-    #    print ("Could not create matlab launcher script %s" % e)
-
-
     main_name = os.path.basename(main_path)
     if bisque_deps:
         files.extend (BISQUE_DEPS)
     if len(files):
         copy_files (files, '.')
-    if not os.path.exists (dependency_dir): os.mkdir (dependency_dir)
+    if not os.path.exists (dependency_dir):
+        os.mkdir (dependency_dir)
 
-    if mcc(main_path + '.m', '-d', dependency_dir, '-m', '-C', '-R', '-nodisplay', '-R', '-nosplash', *rest):
-        main = main_name + ext_map.get(os.name, '')
-        ctf  = main_name + '.ctf'
+    source = main_path + '.m'
+    main = main_name + ext_map.get(os.name, '')
+    ctf  = main_name + '.ctf'
+    if not needs_update (ctf, source):
+        print "Skipping matlab compilation %s is newer than %s" % (ctf, source)
+        return 0
+
+    if  mcc(source, '-d', dependency_dir, '-m', '-C', '-R', '-nodisplay', '-R', '-nosplash', *rest):
         if os.path.exists (main):
             os.unlink (main)
         shutil.copyfile(os.path.join(dependency_dir, main), main)
@@ -156,7 +159,7 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
         return 0
     return 1
 
-def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', params = {} ):
+def python_setup_bbfreeze(scripts,  package_scripts =True, dependency_dir = 'pydist', params = None ):
     """compile python dependencies into a package
 
     if package_script is true then a runner scripts will be generated
@@ -171,7 +174,7 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
     fr()
     if not package_scripts:
         return
-    data = dict(params)
+    data = dict(params or {})
 
     for script in scripts:
         script_name = os.path.splitext(script)[0]
@@ -179,7 +182,8 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
         # THIS os.path.join needs to be replaced by pkg_resources or pkg_util
         # when the toplevel is packaged
         try:
-            template = Template(filename=os.path.abspath (os.path.join('..','..', 'config','templates','python_launcher.tmpl')))
+            filename=os.path.abspath(find_config_path('templates/python_launcher.tmpl'))
+            template = Template(filename=filename)
             with open(script_name, 'wb') as f:
                 f.write(template.render(script = data['script']))
                 os.chmod (script_name, 0744)
@@ -188,8 +192,47 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
             print ("Could not create python launcher script %s" % e)
 
 
+def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', params = None ):
+    """compile python dependencies into a package
+
+    if package_script is true then a runner scripts will be generated
+    for each script
+    """
+    cmd = [ 'pyinstaller', '--clean', '--noconfirm', '--distpath', dependency_dir ]
+    #fr = bbfreeze.Freezer(dependency_dir)
+    #fr.include_py = False
+    if not isinstance(scripts, list):
+        scripts = [ scripts ]
+    if not any (needs_update (dependency_dir, x) for x in scripts):
+        print "Skippping python packaging step"
+        return
+    for script in scripts:
+        cmd.append (script)
+    if os.path.exists (dependency_dir):
+        shutil.rmtree (dependency_dir)
+    check_call (cmd)
+    data = dict(params or {})
+
+    for script in scripts:
+        script_name = os.path.splitext(script)[0]
+        data['script'] = os.path.join('.', dependency_dir, script_name, script_name)
+        # THIS os.path.join needs to be replaced by pkg_resources or pkg_util
+        # when the toplevel is packaged
+        try:
+            filename=os.path.abspath(find_config_path('templates/python_launcher.tmpl'))
+            template = Template(filename=filename)
+            with open(script_name, 'wb') as f:
+                f.write(template.render(script = data['script']))
+                os.chmod (script_name, 0744)
+                return 0
+        except Exception,e:
+            print ("Could not create python launcher script %s" % e)
+
+
+
 def ensure_binary(exe):
     'make sure executable is available to the module'
+    # pylint: disable=no-name-in-module, import-error, no-member
     import distutils.spawn
     p = distutils.spawn.find_executable(exe)
     if p is None:
@@ -203,6 +246,7 @@ def require(expression, params, throws = True):
     """
 
     valid = True
+    params = params or {}
     if not isinstance(expression,list):
         expression = [ expression ]
 
@@ -236,13 +280,24 @@ def docker_setup (image, command, base, params):
     #print "MODULE", module_config
 
     # Must be lowercase
-    image = image.lower()
     if not asbool(params.get('docker.enabled', False)):
         return
+    docker_hub = params.get('docker.hub', '')
+    docker_user = params.get ('docker.hub.user', '')
+    docker_pass = params.get('docker.hub.password', '')
+    docker_email = params.get('docker.hub.email', '')
+
+    image = "/".join (filter (lambda x:x, [ docker_hub, docker_user, image.lower() ]))
+
     if not os.path.exists ('Dockerfile'):
-        files = module_config.get ('files','')
+        files = [ x.strip() for x in module_config.get ('files','').split (",") ]
+        dirs =    [ x for x in files if os.path.isdir(x)]
+        files =   [ x for x in files if os.path.isfile(x)]
+        copies = []
         if files:
-            files = "COPY %s /module/" % " ".join ([ x.strip() for x in files.split (",") if os.path.exists(x.strip()) ])
+            copies.append ( "COPY %s /module/" % " ".join (files) )
+        for dr in dirs:
+            copies.append ( "COPY %s /module/%s/ " % (dr, dr) )
 
         with open('Dockerfile', 'w') as f:
             maintainer = params.get ('docker.maintainer', 'nobody@example.com')
@@ -250,15 +305,16 @@ def docker_setup (image, command, base, params):
             f.write (string.Template (DOCKERFILE).safe_substitute(base=base,
                                                                   command=command,
                                                                   maintainer=maintainer,
-                                                                  copy = files))
+                                                                  copy = "\n".join (copies) ))
 
     print "Calling", " ".join (['docker', 'build', '-q', '-t', image , '.'])
     check_call(['docker', 'build', '-q', '-t',  image, '.'])
-    hub = params.get ('docker.hub', None)
-    if hub:
-        hub_image = '%s/%s' % (hub, image)
-        check_call(['docker', 'tag', '-f', image, hub_image])
-        check_call(['docker', 'push', hub_image])
+
+    if docker_hub:
+        print "Pushing %s " % ( image )
+        if docker_user and docker_pass:
+            check_call (['docker', 'login', '-u', docker_user, '-p', docker_pass, '-e', docker_email, docker_hub])
+        check_call(['docker', 'push', image])
 
 
 def read_config(filename, section= None):

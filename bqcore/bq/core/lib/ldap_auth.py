@@ -49,7 +49,7 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
 
         # The following option was need to login to certain ldaps servers
         # http://stackoverflow.com/questions/7716562/pythonldapssl
-        ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
+        ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)  #pylint: disable=no-member
         super(LDAPAuthenticatorPluginExt, self).__init__( ldap_connection, base_dn, **kw)
 
 
@@ -71,18 +71,18 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
             dn = identity.get('repoze.who.userid')
         args = (
             dn,
-            ldap.SCOPE_BASE,
+            ldap.SCOPE_BASE, #pylint: disable=no-member
             self.filterstr,
             self.attributes
         )
         if self.bind_dn:
             try:
                 self.ldap_connection.bind_s(self.bind_dn, self.bind_pass)
-            except ldap.LDAPError:
+            except ldap.LDAPError: #pylint: disable=no-member
                 raise ValueError("Couldn't bind with supplied credentials")
         try:
             attributes = self.ldap_connection.search_s(*args)
-        except ldap.LDAPError, msg:
+        except ldap.LDAPError, msg: #pylint: disable=no-member
             environ['repoze.who.logger'].warn('Cannot add metadata: %s' % msg)
             raise Exception("Cannot fetch metatdata %s" % msg)
         else:
@@ -114,7 +114,7 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
             log.debug('metadata identity=%s' % userdata)
             retry (self._add_metadata, args = (environ, identity),
                    recover=self.reconnect,
-                   exc = ldap.LDAPError)
+                   exc = ldap.LDAPError) #pylint: disable=no-member
             log.debug ('LDAP metadata %s' % r)
             info = dict((attr, identity[attr]) for attr in self.attributes)
             info .update ( { 'display_name' : info.get('cn', [r])[0],
@@ -156,12 +156,10 @@ class LDAPAuthenticatorPluginExt(LDAPSearchAuthenticatorPlugin):
 
         res = retry(self._authenticate, args = (environ, identity),
                     recover = self.reconnect,
-                    exc = ldap.LDAPError)
+                    exc = ldap.LDAPError) #pylint: disable=no-member
 
         if self.auto_register is not None and res is not None:
             res = self._auto_register (environ, identity)
             log.debug ('LDAP:authenticated user=%s' % res)
 
         return res
-
-

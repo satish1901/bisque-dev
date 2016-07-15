@@ -30,10 +30,10 @@ from tg import config
 from pylons.controllers.util import abort
 
 #Project
+from bq import data_service
 from bq import blob_service
 from bq.blob_service.controllers.blob_drivers import Blobs
 
-#from bq import data_service
 from bq.core import  identity
 from bq.util.mkdir import _mkdir
 #from collections import OrderedDict
@@ -218,6 +218,56 @@ class ConverterDict(OrderedDict):
                     fs.setdefault(n, c)
         return fs
 
+################################################################################
+# Resource and Blob caching
+################################################################################
+
+class ResourceCache(object):
+    '''Provide resource and blob caching'''
+
+    def __init__(self):
+        self.d = {}
+
+    def get_descriptor(self, ident):
+        user = identity.get_user_id()
+        if user not in self.d:
+            self.d[user] = {}
+        d = self.d[user]
+        if ident not in d:
+            d[ident] = {}
+
+        #etag = r.get('etag', None)
+        #dima: check if etag changed in data_service
+        #if too old
+        #    d[ident] = {}
+
+        return d[ident]
+
+    def get_resource(self, ident):
+        r = self.get_descriptor(ident)
+
+        #if 'resource' in r:
+        #    return r.get('resource')
+
+        resource = data_service.resource_load (uniq = ident, view='image_meta')
+        if resource is not None:
+            r['resource'] = resource
+        return resource
+
+    def get_blobs(self, ident):
+        r = self.get_descriptor(ident)
+
+        #if 'blobs' in r:
+        #    blobs = r.get('blobs')
+        #    # dima: do file existence check here
+        #    # re-request blob service if unavailable
+        #    return blobs
+
+        resource = r['resource']
+        blobs = blob_service.localpath(ident, resource=resource)
+        if blobs is not None:
+            r['blobs'] = blobs
+        return blobs
 
 ################################################################################
 # Operations baseclass
@@ -355,14 +405,17 @@ class MetaOperation(BaseOperation):
                 abort(404, 'Meta: Input file not found...')
 
             dims = token.dims or {}
-            if 'converter' in dims and dims.get('converter') in self.server.converters:
-                meta = self.server.converters[dims.get('converter')].meta(token)
+            converter = None
+            if dims.get('converter', None) in self.server.converters:
+                converter = dims.get('converter')
+                meta = self.server.converters[converter].meta(token)
 
             if meta is None:
                 # exhaustively iterate over converters to find supporting one
                 for c in self.server.converters.itervalues():
                     if c.name == dims.get('converter'): continue
                     meta = c.meta(token)
+                    converter = c.name
                     if meta is not None and len(meta)>0:
                         break
 
@@ -372,6 +425,11 @@ class MetaOperation(BaseOperation):
             # overwrite fileds forced by the fileds stored in the resource image_meta
             if token.meta is not None:
                 meta.update(token.meta)
+            meta['converter'] = converter
+            if token.is_multifile_series() is True:
+                meta['file_mode'] = 'multi-file'
+            else:
+                meta['file_mode'] = 'single-file'
 
             # construct an XML tree
             image = etree.Element ('resource', uri='/%s/%s?meta'%(self.server.base_url, token.resource_id))
@@ -1122,20 +1180,20 @@ class Rearrange3DOperation(BaseOperation):
 
 class ThumbnailOperation(BaseOperation):
     '''Create and provide thumbnails for images:
-       If no arguments are specified then uses: 128,128,BL
+       The default values are: 128,128,BL,,jpeg
        arg = [w,h][,method][,preproc][,format]
-       w - new width
-       h - new height
+       w - thumbnail width, width and hight are defined as maximum boundary
+       h - thumbnail height, width and hight are defined as maximum boundary
        method - ''|NN|BL|BC - default, Nearest neighbor, Bilinear, Bicubic respectively
        preproc - ''|MID|MIP|NIP - empty (auto), middle slice, maximum intensity projection, minimum intensity projection
-       format - output image format
+       format - output image format, default is JPEG
        ex: ?thumbnail
        ex: ?thumbnail=200,200,BC,,png
        ex: ?thumbnail=200,200,BC,mid,png '''
     name = 'thumbnail'
 
     def __str__(self):
-        return 'thumbnail: returns an image as a thumbnail, arg = [w,h][,method]'
+        return 'thumbnail: returns an image as a thumbnail, arg = [w,h][,method][,preproc][,format]'
 
     def dryrun(self, token, arg):
         ss = arg.split(',')
@@ -2162,6 +2220,9 @@ class ImageServer(object):
     ])
     writable_formats = {}
 
+    # cache resources and blob locations
+    cache = ResourceCache()
+
     @classmethod
     def init_converters(cls):
         # test all the supported command line decoders and remove missing
@@ -2182,7 +2243,6 @@ class ImageServer(object):
             log.warn('imgcnv was not found, it is required for most of image service operations! Make sure to install it!')
 
         cls.writable_formats = cls.converters.converters(readable=False, writable=True, multipage=False)
-
 
     def __init__(self, work_dir):
         '''Start an image server, using local dir imagedir,
@@ -2266,7 +2326,10 @@ class ImageServer(object):
         #         files = ['path%s'%f.replace('file://', '') for f in files]
         #         log.debug('files: %s', files)
         #         return Blobs(path=files[0], sub=None, files=files if len(files)>1 else None)
-        return blob_service.localpath(ident, resource=resource) or abort (404, 'File not available from blob service')
+
+        #return blob_service.localpath(ident, resource=resource) or abort (404, 'File not available from blob service')
+        blobs = self.cache.get_blobs(ident)
+        return blobs or abort (404, 'File not available from blob service')
 
     def getImageInfo(self, filename, series=0, infofile=None, meta=None):
         if infofile is None:

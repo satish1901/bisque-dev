@@ -164,11 +164,11 @@ class DataServerController(ServiceController):
 
     def flushchanges(self, *args):
         from bq.core.model import DBSession
-        transaction.commit()
-        for r in args:
-            if r:
-                DBSession.merge(r)
-        #DBSession.flush()
+        #transaction.commit()
+        #for r in args:
+        #    if r:
+        #        DBSession.merge(r)
+        DBSession.flush()
 
     def resource_uniq(self, **kw):
         'generate a unique code to be used for a resource'
@@ -192,11 +192,11 @@ class DataServerController(ServiceController):
             uri = resource.get ('uri')
             resource = load_uri (uri)
         dbresource = bisquik2db(doc=tree, parent=resource)
-        r =  db2tree (dbresource, baseuri=self.url, **kw)
         #self.cache_invalidate(r.get('uri'))
-        self.cache_invalidate_resource(dbresource)
         if flush:
             self.flushchanges(dbresource, resource)
+        self.cache_invalidate_resource(dbresource)
+        r =  db2tree (dbresource, baseuri=self.url, **kw)
         return r
 
     def new_resource(self, resource, parent=None, flush=True, **kw):
@@ -219,12 +219,12 @@ class DataServerController(ServiceController):
 
         node = bisquik2db(doc = resource, parent = parent)
         log.debug ("new_resource %s" , node)
-        r =  db2tree (node, baseuri=self.url, view=view)
         # Invalidate the top level container i.e. /data_service/<resource_type>
         #self.cache_invalidate(r.get('uri').rsplit('/', 1)[0])
-        self.cache_invalidate_resource(node)
         if flush:
             self.flushchanges(node, parent)
+        self.cache_invalidate_resource(node)
+        r =  db2tree (node, baseuri=self.url, view=view)
         return r
 
     def get_resource(self, resource, **kw):
@@ -281,10 +281,10 @@ class DataServerController(ServiceController):
         if resource is not None:
             resource_delete(resource)
             #self.cache_invalidate(uri)
-            self.cache_invalidate_resource(resource)
         else:
             log.warn ("Could not load uri %s ", uri)
         self.flushchanges()
+        self.cache_invalidate_resource(resource)
 
 
 
@@ -309,11 +309,11 @@ class DataServerController(ServiceController):
         log.debug ('resource %s = %s' % ( uri, resource))
         node = bisquik2db(doc=new_resource, resource=resource, replace=replace)
         #response  = etree.Element ('response')
-        r =  db2tree (node, baseuri = self.url, **kw)
         #self.cache_invalidate(r.get('uri'))
-        self.cache_invalidate_resource(resource)
         if flush:
             self.flushchanges(node)
+        self.cache_invalidate_resource(resource)
+        r =  db2tree (node, baseuri = self.url, **kw)
         return r
 
     def update(self, resource_tree, replace_all=False, flush=True, **kw):
@@ -324,11 +324,11 @@ class DataServerController(ServiceController):
         #    r.clear()
         resource = bisquik2db(doc=resource_tree, replace=replace_all)
         #response  = etree.Element ('response')
-        r =  db2tree (resource, parent=None, view=view, baseuri = self.url)
         #self.cache_invalidate(r.get('uri'))
-        self.cache_invalidate_resource(resource)
         if flush:
             self.flushchanges(resource)
+        self.cache_invalidate_resource(resource)
+        r =  db2tree (resource, parent=None, view=view, baseuri = self.url)
         return r
 
 

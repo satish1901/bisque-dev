@@ -123,9 +123,15 @@ BQFactory.make = function(ty, uri, name, value) {
 };
 
 BQFactory.makeShortCopy = function(resource) {
-    //var ctor = BQFactory.ctormap[resource.resource_type];
-    //var o = new ctor();
-    var o = BQFactory.make (resource.resource_type);
+    var ty = resource.resource_type,
+        ctor = BQResource;
+    if (ty in BQFactory.objects)
+        ctor = BQFactory.objects[ty];
+    var o = new ctor();
+    if (ctor == BQResource && ty) o.resource_type = ty;
+    //o.name = name;
+    //o.value = value;
+
     var a = undefined;
     for (var i=0; (a=resource.xmlfields[i]); i++)
         o[a] = resource[a];
@@ -828,7 +834,7 @@ function clean_resources(resource, skiptemplate) {
 };
 
 BQObject.prototype.clone = function (skiptemplate) {
-    var resource = Ext.clone(this);
+    var resource = BQ.util.clone(this);
     clean_resources(resource, skiptemplate);
     return resource;
 };
@@ -1938,9 +1944,10 @@ BQImagePhys.prototype.load = function(cb) {
         cb_xml: callback(this, this.onloadIS),
     });
 
-    if (this.image.tags.length==0)
+    //dima: no longer needed, IS is merging meta from resource
+    /*if (this.image.tags.length==0)
       this.image.load_tags(callback(this, 'onloadDS'));
-    else
+    else*/
       this.onloadDS();
 };
 
@@ -1956,6 +1963,7 @@ BQImagePhys.prototype.onload = function() {
 
 BQImagePhys.prototype.onloadIS = function (image, xml) {
   console.log ("BQImagePhys: Got metadata from IS");
+  this.xml = xml;
   var hash = {};
   for (var t in image.tags )
       hash[image.tags[t].name] = image.tags[t].value;

@@ -48,7 +48,6 @@ class CondorRunner (CommandRunner):
             if mex.executable:
                 mex.log_name = os.path.join(mex.rundir, "%s.log" % mex.executable[0])
 
-
     def command_start(self, **kw):
         super(CondorRunner, self).command_start(**kw)
 
