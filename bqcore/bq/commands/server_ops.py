@@ -4,6 +4,7 @@ from subprocess import Popen, call, PIPE, STDOUT
 from urlparse import urlparse
 from ConfigParser import SafeConfigParser
 import shlex
+import psutil
 
 #from bq.util.commands import find_site_cfg
 from bq.util.paths import find_config_path, site_cfg_path
@@ -16,34 +17,38 @@ LOG_TEMPL = 'bisque_%s.log'
 RUNNER_CMD = ['mexrunner']
 SITE_CFG = 'site.cfg'
 
-if os.name == 'nt':
-    #pylint:disable=F0401
-    import win32api, win32con
-    def kill_process(pid):
-        try:
-            handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, 0, pid)
-            win32api.TerminateProcess(handle, 0)
-            win32api.CloseHandle(handle)
-            return True
-        except Exception:
-            print 'Error terminating %s, the process might be dead' % pid
-        return False
-        #import subprocess
-        #subprocess.call(['taskkill', '/PID', str(pid), '/F'])
+# if os.name == 'nt':
+#     #pylint:disable=F0401
+#     import win32api, win32con
+#     def kill_process(pid):
+#         try:
+#             handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, 0, pid)
+#             win32api.TerminateProcess(handle, 0)
+#             win32api.CloseHandle(handle)
+#             return True
+#         except Exception:
+#             print 'Error terminating %s, the process might be dead' % pid
+#         return False
+#         #import subprocess
+#         #subprocess.call(['taskkill', '/PID', str(pid), '/F'])
 
-else:
-    import signal
-    from bq.util.wait_pid import wait_pid
-    def kill_process(pid):
-        try:
-            pid = os.getpgid(pid)
-            os.killpg (pid, signal.SIGTERM)
-            wait_pid(pid)
-            return True
-        except OSError, e:
-            print "kill process %s failed with %s" % (pid, e)
-        return False
+# else:
+#     import signal
+#     from bq.util.wait_pid import wait_pid
+#     def kill_process(pid):
+#         try:
+#             pid = os.getpgid(pid)
+#             os.killpg (pid, signal.SIGTERM)
+#             wait_pid(pid)
+#             return True
+#         except OSError, e:
+#             print "kill process %s failed with %s" % (pid, e)
+#         return False
 
+def kill_process(pid):
+    p = psutil.Process(pid)
+    p.terminate()
+    p.wait()
 
 #####################################################################
 # utils
@@ -335,13 +340,20 @@ def operation(command, options, *args):
 
             if command in ('start', 'restart'):
                 if os.path.exists(cfgopt['pidfile']):
-                    if options.force:
-                        print 'old pid file: %s exists! restarting...' % cfgopt['pidfile']
-                        operation("stop", options, cfg_file, *args)
-                        time.sleep(5)
-                    else:
-                        print "Can't start because of existing PID file"
-                        sys.exit(2)
+                    try:
+                        pid= int (open (cfgopt['pidfile']).read())
+                        if psutil.pid_exists (pid):
+                            if options.force:
+                                print 'old pid file: %s exists! restarting...' % cfgopt['pidfile']
+                                operation("stop", options, cfg_file, *args)
+                                time.sleep(5)
+                            else:
+                                print "Can't start because of existing PID file"
+                                sys.exit(2)
+                    except ValueError:
+                        pass
+                    if os.path.exists(cfgopt['pidfile']):
+                        os.remove (cfgopt['pidfile'])
                 processes = backend_command('start', options, cfgopt, processes, cfg_file)
 
         if not args and 'logging_server' in cfgopt:

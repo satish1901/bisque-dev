@@ -132,9 +132,12 @@ class ServiceDirectory(object):
             log.error ("Could not find registered service %s", service_type)
             return None
         if len(entry.instances) == 0:
-            service_url = urlparse.urljoin (self.root , entry.name)
-            service = entry.module.initialize(service_url)
-            service_registry.register_instance (service)
+        # Don't automatically try to create instances anymore
+            log.warn ("No available instance for service %s", service_type)
+            return None
+        #    service_url = urlparse.urljoin (self.root , entry.name)
+        #    service = entry.module.initialize(service_url)
+        #    service_registry.register_instance (service)
         return entry.instances[0]
 
     def get_services (self, service_type=None):

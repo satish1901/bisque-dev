@@ -1058,17 +1058,17 @@ def fetch_modules(params):
         if git and module_url.endswith ('.git'):
             module_dir = os.path.splitext(os.path.basename(module_url))[0]
             if not os.path.exists (module_dir):
-                print "git clone % into %s" % (module_url, module_dir)
+                print "git clone %s into %s" % (module_url, module_dir)
                 call ([git, 'clone', module_url, module_dir])
-        elif hg and module_url.startswith ('https') and 'hg@' in module_url:
-            module_dir = os.path.basename(module_url)
-            if not os.path.exists (module_dir):
-                print "hg clone % into %s" % (module_url, module_dir)
-                call ([hg, 'clone', module_url, module_dir])
         elif os.path.exists (module_url):
             module_dir = module_url
+        elif hg and module_url.startswith ('https') : #and 'hg@' in module_url:
+            module_dir = os.path.basename(module_url)
+            if not os.path.exists (module_dir):
+                print "hg clone %s into %s" % (module_url, module_dir)
+                call ([hg, 'clone', module_url, module_dir])
         else:
-            print "Could determine fetch method for module %s" % module_url
+            print "Could not determine fetch method for module %s" % module_url
         if module_dir:
             module_dirs.append (module_dir)
     # Walk any module trees installing modules found
@@ -2133,6 +2133,7 @@ engine_options= [
     'docker',
     'runtime',
     'modules',
+    'fetch-modules',
     ]
 
 # other unrelated admin actions
@@ -2169,6 +2170,7 @@ RUNTIME_COMMANDS = {
     'runtime' : [ install_runtime ],
     'docker'  : [ install_docker ],
     'modules' : [ install_modules ],
+    'fetch-modules'   : [ fetch_modules ] ,
     }
 
 

@@ -27,9 +27,7 @@ setup(
                       "cython",
                       "libtiff==0.4.0"
                       ],
-    setup_requires=["PasteScript>=1.6.3"],
-    paster_plugins=['PasteScript', 'Pylons' ],
-    packages=find_packages(exclude=['ez_setup']),
+    packages=find_packages(),
     namespace_packages = ['bq'],
     zip_safe = False,
     setup_requires=["hgtools"],
