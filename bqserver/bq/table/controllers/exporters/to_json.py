@@ -53,6 +53,7 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 # default imports
 import os
 import logging
+import datetime as dt
 
 __all__ = [ 'ExporterJSON' ]
 
@@ -74,6 +75,20 @@ except ImportError:
     log.info('Json was not found but needed for JSON output...')
 
 from bq.table.controllers.table_exporter import TableExporter
+
+#---------------------------------------------------------------------------------------
+# Json serializer
+#---------------------------------------------------------------------------------------
+
+class ExtEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, (dt.datetime, dt.date, dt.time)):
+            return o.isoformat()
+        #try:
+        #    return super(ExtEncoder, o).default(o)
+        #except TypeError:
+        #    return str(o)
+        return json.JSONEncoder.default(self, o)
 
 #---------------------------------------------------------------------------------------
 # exporters: Json
@@ -99,7 +114,7 @@ class ExporterJSON (TableExporter):
         if table.tables is not None:
             v["group"] = table.tables
         #log.debug(v)
-        return json.dumps(v)
+        return json.dumps(v, cls=ExtEncoder)
 
     def format(self, table):
         """ converts table to JSON """
@@ -118,4 +133,4 @@ class ExporterJSON (TableExporter):
         }
         #if table.sizes is not None:
         #    v["sizes"] = table.sizes
-        return json.dumps(v)
+        return json.dumps(v, cls=ExtEncoder)
