@@ -1,5 +1,5 @@
 import logging
-from paste.httpheaders import AUTHORIZATION
+from paste.httpheaders import AUTHORIZATION #pylint: disable=no-name-in-module
 from paste.deploy.converters import asbool
 from repoze.who.interfaces import IIdentifier
 from zope.interface import implements

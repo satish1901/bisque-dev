@@ -62,6 +62,7 @@ try:
     from lxml import etree
 except ImportError:
     import xml.etree.ElementTree as etree
+from .xmldict import xml2nv
 
 
 log = logging.getLogger('bqapi.class')
@@ -292,25 +293,35 @@ class BQImage(BQResource):
     def __init__(self, *args,  **kw):
         super(BQImage, self).__init__(*args, **kw)
         self._geometry = None
+        self._meta = None
+        self._info = {}
+
+    # returns etree XML with image metadata
+    def meta(self):
+        'return image meta as xml'
+        if self._meta is None:
+            info = self.pixels().meta().fetch()
+            self._meta = etree.XML(info)
+            self._info = xml2nv(self._meta)
+        return self._meta
+
+    # returns dict with image metadata name:value
+    def info(self):
+        'return image meta as dict'
+        if self._meta is None:
+            self.meta()
+        return self._info
 
     def geometry(self):
         'return x,y,z,t,ch of image'
         if self._geometry is None:
-            geom = self.toDict().get ('geometry')
-            if geom:
-                self._geometry = tuple(map(int, geom.value.split(',')))
-                #self._geometry = (x, y, z, t, ch)
-            else:
-                info = self.pixels().meta().fetch()
-                info = etree.XML(info)
-                geom = []
-                for n in 'xyztc':
-                    tn = info.xpath('//tag[@name="image_num_%s"]' % n)
-                    geom.append(tn[0].get('value'))
-                self._geometry = tuple(map(int, geom))
-
+            info = self.meta()
+            geom = []
+            for n in 'xyztc':
+                tn = info.xpath('//tag[@name="image_num_%s"]' % n)
+                geom.append(tn[0].get('value'))
+            self._geometry = tuple(map(int, geom))
         return self._geometry
-
 
     def pixels(self):
         return BQImagePixels(self)
@@ -620,7 +631,7 @@ class BQFactory (object):
             objarr =  getattr(parent, array)
             objarr.extend ([ ctor() for x in range(((indx+1)-len(objarr)))])
             v = objarr[indx]
-            v.indx = indx;
+            v.indx = indx
             #log.debug ('fetching %s %s[%d]:%s' %(parent , array, indx, v))
             return v
 
@@ -636,22 +647,22 @@ class BQFactory (object):
         #    1. The XML node being parsed
         #    2. The current resource being filled outs
         #    3. The parent resource if any
-        stack.append ( (xmlResource, resource, parent ) );
+        stack.append ( (xmlResource, resource, parent ) )
         while stack:
             node, resource, parent = stack.pop(0);
             xmltag = node.tag;
             if resource is None:
-                type_ = node.get( 'type', '');
-                resource = self.make(xmltag, type_);
+                type_ = node.get( 'type', '')
+                resource = self.make(xmltag, type_)
 
             resource.session = self.session
             resource.initializeXml(node)
-            resources.append (resource);
+            resources.append (resource)
             if parent:
-                resource.set_parent(parent);
+                resource.set_parent(parent)
                 #resource.doc = parent.doc;
             for k in node:
-                stack.append( (k, None, resource) );
+                stack.append( (k, None, resource) )
 
         resources[0].initialize()
         resources[0].xmltree = xmlResource
@@ -751,11 +762,7 @@ def model_fields(dbo, baseuri=None):
         # Put value in attribute dictionary
         if attr_val is not None and attr_val!='':
             if isinstance(attr_val, basestring):
-               attrs[fn] = attr_val
+                attrs[fn] = attr_val
             else:
-               attrs[fn] = str(attr_val) #unicode(attr_val,'utf-8')
+                attrs[fn] = str(attr_val) #unicode(attr_val,'utf-8')
     return attrs
-
-
-
-

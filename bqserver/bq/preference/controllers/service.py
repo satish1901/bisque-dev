@@ -375,10 +375,10 @@ class PreferenceController(ServiceController):
                 return self.get(resource_uniq=resource_uniq, xpath=xpath, level=1, **kw)
             elif  not_annon and http_method == 'POST' and request.body:
                 log.info('POST /preference/user -> updating user level preference')
-                return self.user_post(request.body, xpath=xpath, **kw)
+                return self.user_post(body=request.body, xpath=xpath, **kw)
             elif  not_annon and http_method == 'PUT' and request.body:
                 log.info('PUT /preference/user ->  over writing user level preference')
-                return self.user_put(request.body, xpath=xpath, **kw)
+                return self.user_put(body=request.body, xpath=xpath, **kw)
             elif not_annon and http_method == 'DELETE':
                 log.info('DELETE /preference/user -> removing user level preference')
                 return self.user_delete(xpath=xpath, **kw)
@@ -705,7 +705,7 @@ class PreferenceController(ServiceController):
         return self.get(xpath=xpath, level=1, **kw) #return the correct resource
 
 
-    def user_put(self, xpath=None, body=None, **kw):
+    def user_put(self,  body=None, xpath=None, **kw):
         """
             user_put
 
@@ -785,7 +785,7 @@ class PreferenceController(ServiceController):
 
 
 
-    def resource_put(self, resource_uniq, path=None, body=None, **kw):
+    def resource_put(self, resource_uniq, xpath=None, body=None, **kw):
         """
             resource_put
 

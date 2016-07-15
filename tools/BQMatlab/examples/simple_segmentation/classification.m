@@ -1,8 +1,10 @@
-user = '';
-pass = '';
-image_url = 'http://bisque.ece.ucsb.edu/data_service/00-dcJZKvcHcmKLwQoktSgnfP';
+user = 'my_user';
+pass = 'my_pass';
+bisque_root = 'http://bisque.ece.ucsb.edu';
+image_url = [bisque_root '/data_service/00-dcJZKvcHcmKLwQoktSgnfP'];
 
-image = bq.Factory.fetch([image_url '?view=deep'], [], user, pass); 
+s = bq.Session(user, pass, bisque_root);
+image = s.fetch([image_url '?view=deep']);
 
 polygons = image.findNodes('//polygon');
 areas = zeros(length(polygons),1);

@@ -11,6 +11,7 @@ import Queue
 from bqapi.comm import BQCommError
 import numpy as np
 import logging
+import warnings
 from collections import namedtuple
 
 try: #checks for lxml if not found uses python xml
@@ -50,7 +51,7 @@ class Feature(object):
             not required just provided None
             @param: path - the location were the hdf5 file is stored. If None is set the file will be placed in a tempfile and the pytables
             file handle will be returned. (default: None)
-            
+
             @return: returns either a pytables file handle or the file name when the path is provided
         """
         url = '%s/features/%s/hdf'%(session.bisque_root,name)
@@ -147,7 +148,7 @@ class ParallelFeature(Feature):
             if errorcb is not None:
                 self.errorcb = errorcb
             else:
-                
+
                 def error_callback(e):
                     """
                         Default callback function
@@ -155,7 +156,7 @@ class ParallelFeature(Feature):
                         @param: e - BQCommError object
                     """
                     pass
-                
+
                 self.errorcb = error_callback
             super(ParallelFeature.BQRequestThread, self).__init__()
 
@@ -261,10 +262,10 @@ class ParallelFeature(Feature):
         """
         if len(resource_list) < 1:
             log.warning('Warning no resources were provided')
-            return 
-        
+            return
+
         log.debug('Exctracting %s on %s resources'%(name,len(resource_list)))
-        
+
         if path is None:
             f = tempfile.TemporaryFile(suffix='.h5', dir=tempfile.gettempdir())
             f.close()
@@ -341,7 +342,7 @@ class ParallelFeature(Feature):
                         if attempts>MAX_ATTEMPTS:
                             log.debug('Connection fail: Reached max attempts')
                             break
-                        if e.errno == errno.WSAECONNRESET:
+                        if e.errno == errno.WSAECONNRESET: #pylint: disable=no-member
                             attempts+=1
                             log.debug('Connection fail: Attempting to reconnect (try: %s)' % attempts)
                     try:
@@ -354,19 +355,19 @@ class ParallelFeature(Feature):
                         log.debug('HDF5 file may be corrupted: Attempted to redownload (try: %s)' % attempts)
                         if os.path.exists(path):
                             os.remove(path)
-                       
+
                     write_queue.put(path)
                     break
-                
+
             return request
 
         if hasattr(self,'thread_num') and hasattr(self,'chunk_size'):
             thread_num = ceil(self.thread_num)
             chunk_size = ceil(self.chunk_size)
-            
+
             if thread_num <= 0: thread_num = 1
             if chunk_size <= 0: chunk_size = 1
-            
+
         else:
             thread_num, chunk_size = self.calculate_request_plan(resource_list)
 
@@ -411,5 +412,3 @@ class ParallelFeature(Feature):
             @return: a list of features as numpy array
         """
         return super(ParallelFeature, self).fetch_vector(session, name, resource_list)
-
-

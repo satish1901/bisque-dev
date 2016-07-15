@@ -84,22 +84,23 @@ from bq.util.hash import is_uniq_code
 log = logging.getLogger("bq.root")
 
 class MDWrap(object):
-  """A Multidictionary that provides attribute-style access."""
+    """A Multidictionary that provides attribute-style access.
+    """
 
-  def __init__(self, md):
-    self.md = md
+    def __init__(self, md):
+        self.md = md
 
-  def __getitem__(self, key):
-    return  self.md.__getitem__(self, key)
+    def __getitem__(self, key):
+        return  self.md.__getitem__(self, key)
 
-  def __getattr__(self, name):
-    return self.md.getone(name)
+    def __getattr__(self, name):
+        return self.md.getone(name)
 
-  def __delattr__(self, name):
-    try:
-      del self.md[name]
-    except KeyError:
-      raise AttributeError(name)
+    def __delattr__(self, name):
+        try:
+            del self.md[name]
+        except KeyError:
+            raise AttributeError(name)
 
 
 
@@ -157,12 +158,11 @@ class ProxyCache(object):
 
       return proxy, rest
 
-
-
-oldnames = { 'imgsrv' : 'image_service',
-             'ds'     : 'data_service',
-             'ms'     : 'module_service',
-             }
+oldnames = {
+  'imgsrv' : 'image_service',
+  'ds'     : 'data_service',
+  'ms'     : 'module_service',
+}
 
 #class Root(controllers.RootController):
 class RootController(BaseController):
@@ -200,7 +200,7 @@ class RootController(BaseController):
         <service_type>/<path>?arguments
         """
         log.info ('[%s] %s %s', request.identity.get('repoze.who.userid'), request.method, request.url )
-        log.debug ('HEADERS: %s %s', request.url, request.headers)
+        log.debug ('HEADERS: %s %s', request.url, dict(request.headers))
         log.info ('PATH %s', request.path)
         if service_type in oldnames:
             log.warn ('found oldname( %s ) in request' % (service_type))
@@ -236,16 +236,16 @@ class RootController(BaseController):
 
 #from bq.util.http import http_client
 
-def register_proxy_services (proxy):
-    '''Registers all local services with the requested
-    proxyroot.   This allows the main root service to become
-    aware of the existance of sub-servers
-    '''
-    for service_type, service in service_registry.items():
-        log.debug ("send  proxy to %s" % proxy)
-        http_client.request (proxy + "/services/register_internal"
-                             +"?service_type=%s" % service_type
-                             +"&service_url=%s" % service.uri)
+#def register_proxy_services (proxy):
+#    '''Registers all local services with the requested
+#    proxyroot.   This allows the main root service to become
+#    aware of the existance of sub-servers
+#    '''
+#    for service_type, service in service_registry.items():
+#        log.debug ("send  proxy to %s" % proxy)
+#        http_client.request (proxy + "/services/register_internal"
+#                             +"?service_type=%s" % service_type
+#                             +"&service_url=%s" % service.uri)
 
 
 def update_remote_proxies (proxy):

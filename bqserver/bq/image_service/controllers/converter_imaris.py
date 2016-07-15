@@ -300,6 +300,9 @@ class ConverterImaris(ConverterBase):
             safe_config_read(config, sp)
         sp.close()
 
+        # Image parameters
+        safeReadAndSet(config, 'Image', 'numericalaperture', rd, 'numerical_aperture')
+
         # channel names, colors and other info
         for c in range(rd['image_num_c']):
             section = 'Channel %s'%c
@@ -316,7 +319,7 @@ class ConverterImaris(ConverterBase):
             if rgb is not None:
                 rd['channel_color_%s'%c] = ','.join([str(int(misc.safefloat(i)*255)) for i in rgb.split(' ')])
 
-            # new format
+            # new channel format
             if len(name)>0:
                 rd['%s/name'%path] = name
             if rgb is not None:
@@ -326,6 +329,9 @@ class ConverterImaris(ConverterBase):
             safeReadAndSet(config, section, 'GammaCorrection',         rd, '%s/gamma'%path)
             safeReadAndSet(config, section, 'LSMEmissionWavelength',   rd, '%s/lsm_emission_wavelength'%path)
             safeReadAndSet(config, section, 'LSMExcitationWavelength', rd, '%s/lsm_excitation_wavelength'%path)
+            safeReadAndSet(config, section, 'LSMPinhole', rd, '%s/lsm_pinhole_radius'%path)
+            safeReadAndSet(config, section, 'objective', rd, '%s/objective'%path)
+
             rng = safeRead(config, section, 'ColorRange')
             if rng is not None:
                 rd['%s/range'%path] = ','.join(rng.split(' '))
