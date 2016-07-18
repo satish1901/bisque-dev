@@ -405,14 +405,17 @@ class MetaOperation(BaseOperation):
                 abort(404, 'Meta: Input file not found...')
 
             dims = token.dims or {}
-            if 'converter' in dims and dims.get('converter') in self.server.converters:
-                meta = self.server.converters[dims.get('converter')].meta(token)
+            converter = None
+            if dims.get('converter', None) in self.server.converters:
+                converter = dims.get('converter')
+                meta = self.server.converters[converter].meta(token)
 
             if meta is None:
                 # exhaustively iterate over converters to find supporting one
                 for c in self.server.converters.itervalues():
                     if c.name == dims.get('converter'): continue
                     meta = c.meta(token)
+                    converter = c.name
                     if meta is not None and len(meta)>0:
                         break
 
@@ -422,6 +425,11 @@ class MetaOperation(BaseOperation):
             # overwrite fileds forced by the fileds stored in the resource image_meta
             if token.meta is not None:
                 meta.update(token.meta)
+            meta['converter'] = converter
+            if token.is_multifile_series() is True:
+                meta['file_mode'] = 'multi-file'
+            else:
+                meta['file_mode'] = 'single-file'
 
             # construct an XML tree
             image = etree.Element ('resource', uri='/%s/%s?meta'%(self.server.base_url, token.resource_id))

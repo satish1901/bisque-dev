@@ -75,8 +75,10 @@ class DockerEnvironment(BaseEnvironment):
             module_files = [x.strip () for x in module_vars.get ('files', '').split (',') ]
             runner.log ("docker files setup %s" % module_vars.get ('files') )
 
-            copylist = []
+            copylist = list(module_files)
             if mex.executable:
+                # if there are additional executable wrappers needed in the environment, add them to copylist
+                # (e.g., "matlab_run python mymodule")
                 for p in mex.executable:
                     pexec = os.path.join(mex.rundir, p)
                     runner.log ("Checking exec %s->%s" % (pexec, os.path.exists (pexec)))

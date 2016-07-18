@@ -62,6 +62,7 @@ try:
     from lxml import etree
 except ImportError:
     import xml.etree.ElementTree as etree
+from .xmldict import xml2nv
 
 
 log = logging.getLogger('bqapi.class')
@@ -292,25 +293,35 @@ class BQImage(BQResource):
     def __init__(self, *args,  **kw):
         super(BQImage, self).__init__(*args, **kw)
         self._geometry = None
+        self._meta = None
+        self._info = {}
+
+    # returns etree XML with image metadata
+    def meta(self):
+        'return image meta as xml'
+        if self._meta is None:
+            info = self.pixels().meta().fetch()
+            self._meta = etree.XML(info)
+            self._info = xml2nv(self._meta)
+        return self._meta
+
+    # returns dict with image metadata name:value
+    def info(self):
+        'return image meta as dict'
+        if self._meta is None:
+            self.meta()
+        return self._info
 
     def geometry(self):
         'return x,y,z,t,ch of image'
         if self._geometry is None:
-            geom = self.toDict().get ('geometry')
-            if geom:
-                self._geometry = tuple(map(int, geom.value.split(',')))
-                #self._geometry = (x, y, z, t, ch)
-            else:
-                info = self.pixels().meta().fetch()
-                info = etree.XML(info)
-                geom = []
-                for n in 'xyztc':
-                    tn = info.xpath('//tag[@name="image_num_%s"]' % n)
-                    geom.append(tn[0].get('value'))
-                self._geometry = tuple(map(int, geom))
-
+            info = self.meta()
+            geom = []
+            for n in 'xyztc':
+                tn = info.xpath('//tag[@name="image_num_%s"]' % n)
+                geom.append(tn[0].get('value'))
+            self._geometry = tuple(map(int, geom))
         return self._geometry
-
 
     def pixels(self):
         return BQImagePixels(self)

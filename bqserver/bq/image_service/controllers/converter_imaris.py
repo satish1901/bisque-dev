@@ -329,7 +329,7 @@ class ConverterImaris(ConverterBase):
             safeReadAndSet(config, section, 'GammaCorrection',         rd, '%s/gamma'%path)
             safeReadAndSet(config, section, 'LSMEmissionWavelength',   rd, '%s/lsm_emission_wavelength'%path)
             safeReadAndSet(config, section, 'LSMExcitationWavelength', rd, '%s/lsm_excitation_wavelength'%path)
-            safeReadAndSet(config, section, 'LSMPinhole', rd, '%s/lsm_pinhole'%path)
+            safeReadAndSet(config, section, 'LSMPinhole', rd, '%s/lsm_pinhole_radius'%path)
             safeReadAndSet(config, section, 'objective', rd, '%s/objective'%path)
 
             rng = safeRead(config, section, 'ColorRange')
