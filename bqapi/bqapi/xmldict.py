@@ -77,7 +77,26 @@ def d2xml(d):
     _d2xml(v, node)
     return node
 
+# simple dictionary output of name-value pairs, useful for image metadata
+def xml2nv(e):
+    """Convert an etree into a dict structure
 
+    @type  e: etree.Element
+    @param e: the root of the tree
+    @return: The dictionary representation of the XML tree
+    """
+    def _xml2nv(e, a, path):
+        for g in e:
+            n = g.get('name') or g.get('type')
+            if n is None:
+                continue
+            a['%s%s'%(path, n)] = g.get('value')
+            for child in g:
+                _xml2nv(child, a, '%s%s/'%(path, n))
+        return
+    a = {}
+    _xml2nv(e, a, '')
+    return a
 
 if __name__=="__main__":
 
