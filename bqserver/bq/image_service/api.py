@@ -241,11 +241,11 @@ class ImageService(proxy_dispatch):
     def set_file_acl(self, image_uri, owner_name, permission):
         return self.server.set_file_acl(image_uri, owner_name, permission)
 
-    def info (self, uri):
-        return self.server.info (uri)
+    def info (self, uniq):
+        return self.server.info (uniq)
 
-    def meta(self, uri):
-        return self.server.meta(uri)
+    def meta(self, uniq):
+        return self.server.meta(uniq)
 
     def getFileName(self, imgsrc):
         return self.server.get_filename(imgsrc)
@@ -286,8 +286,19 @@ def get_info(filename):
 
 # we use URL here in order to give access to derived computed results as local files
 def local_file(url):
+    ''' Return local path for a given image URL with processing'''
     server = find_server()
     return server.local_file(url)
+
+def meta(uniq):
+    ''' Return metadata XML for a given image ID'''
+    server = find_server()
+    return server.meta(uniq)
+
+def info(uniq):
+    ''' Return image info dictionary for a given image ID'''
+    server = find_server()
+    return server.info(uniq)
 
 #def new_file(src=None, name=None, **kw):
 #    ''' Find the preferred image server and store the file there
@@ -313,27 +324,9 @@ def local_file(url):
 #        # Find a remote image server that is writable and send image there
 #        pass
 
-
-def meta(uniq, **kw):
-        ''' Return meta data of image from image_server
-        '''
-        uri = '/image_service/%s?meta'%uniq
-        server = find_server(uri)
-        if server:
-            return server.meta (uniq, **kw)
-
-def info(imgsrc, **kw):
-        ''' Return meta data of image from image_server
-        '''
-        log.debug ("INFO: %s" % imgsrc)
-        server = find_server(imgsrc)
-        if server:
-            return server.info (imgsrc, **kw)
-
-
 def files_exist(hashes, **kw):
     ''' Return a list of hashes found in the blob server'''
-    server = find_server('')
+    server = find_server()
     if server:
         return server.files_exist(hashes, **kw)
     else:
@@ -342,7 +335,7 @@ def files_exist(hashes, **kw):
 
 def find_uris(hsh, **kw):
     ''' Return a list of uris found in the blob server for a particular hash'''
-    server = find_server('')
+    server = find_server()
     if server:
         return server.find_uris(hsh, **kw)
     else:
