@@ -9,8 +9,10 @@ syntax: glob
 *.mexw32
 *.project
 *.ctf
+*.egg-info*
 runtime-bisque.cfg
 build/*
+public/*
 data/*
 config/*.ini
 bqenv/*
