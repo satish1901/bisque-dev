@@ -171,7 +171,7 @@ class BisqueAppConfig(AppConfig):
         if isinstance(log_stream, basestring ):
             log_stream  = logging.getLogger (log_stream)
         log_level = LOG_LEVELS.get (config['who.log_level'], logging.ERROR)
-        log.debug ("LOG_STREAM %s LOG_LEVEL %s" , log_stream, log_level)
+        log.debug ("LOG_STREAM %s LOG_LEVEL %s" , str(log_stream), str(log_level))
 
         if 'who.config_file' in config and asbool(config.get('bisque.has_database')):
             parser = WhoConfig(config['here'])

@@ -72,7 +72,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 from requests.auth import AuthBase
 from requests import Session
-from requests_toolbelt.multipart.encoder import MultipartEncoder
+from requests_toolbelt import MultipartEncoder
 
 
 from .RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
@@ -573,13 +573,13 @@ class BQSession(object):
         if xml!=None:
             if not isinstance(xml, basestring):
                 xml = self.factory.to_string(xml)
-
+        
         fields = {}
         if filename is not None:
             filename = normalize_unicode(filename)
-            fields['file'] = (filename, open(filename, 'rb'))
-        if xml is not None:
-            fields['file_resource'] = (None, xml, "text/xml")
+            fields['file'] = (filename, open(filename, 'rb'), 'application/octet-stream')
+        if xml is not None:            
+            fields['file_resource'] = xml
         if fields:
             m = MultipartEncoder(fields = fields )
             return self.c.push(url,
