@@ -88,6 +88,7 @@ import copy
 import mimetypes
 import shortuuid
 import posixpath
+import json
 
 
 from lxml import etree
@@ -278,6 +279,8 @@ class import_serviceController(ServiceController):
         self.filters['zip-proprietary']   = self.filter_zip_proprietary
         self.filters['zip-dicom']         = self.filter_zip_dicom
         self.filters['image/proprietary'] = self.filter_series_proprietary
+        # extra filter for Dream3D pipeline files (JSON)
+        self.filters['application/json']  = self.filter_json
 
         self.plugins = blob_service.get_import_plugins()
         for p in self.plugins:
@@ -707,6 +710,39 @@ class import_serviceController(ServiceController):
         return unpack_dir, resources
 
 #------------------------------------------------------------------------------
+# JSON files
+#------------------------------------------------------------------------------
+
+    def process_json(self, uf, intags):
+        ''' Unpack and insert JSON file '''
+        log.debug('process_json: %s %s', uf, intags )
+        
+        uniq = uf.resource.get('resource_uniq') or shortuuid.uuid()
+        unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, uniq)
+        
+        filepath = uf.localpath()
+        if filepath is None:
+            log.debug('process_json file object has no local path: [%s], move local', uf.fileobj)
+            filepath = uf.ensurelocal( os.path.join(unpack_dir, os.path.basename(uf.resource.get('name'))))
+
+        resources = []
+        with open(filepath, 'r') as fo:
+            doc = json.load(fo)
+            # This is a poor man's detector for Dream3D pipeline files; other JSON types could be added later. 
+            if 'PipelineBuilder' in doc and 'Version' in doc['PipelineBuilder'] and 'Number_Filters' in doc['PipelineBuilder']:
+                # Dream3D pipeline file
+                resource = etree.Element ('resource', name=doc['PipelineBuilder']['Name'], value=filepath, resource_type='dream3d_pipeline', ts=uf.ts)
+                etree.SubElement(resource, 'tag', name='Version', value=doc['PipelineBuilder']['Version'])
+                etree.SubElement(resource, 'tag', name='Number Filters', value=str(doc['PipelineBuilder']['Number_Filters']), type='number')
+                resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('%s/'%unpack_dir))
+                resources.append(resource)
+        
+        if len(resources) == 0:
+            return unpack_dir, [self.insert_resource(uf)]   # fall back to default
+        else:
+            return unpack_dir, resources
+
+#------------------------------------------------------------------------------
 # Import archives exported by a BISQUE system
 #------------------------------------------------------------------------------
     def safePath(self, path, base):
@@ -832,6 +868,11 @@ class import_serviceController(ServiceController):
 
     def filter_zip_dicom(self, f, intags):
         unpack_dir, resources = self.process_packaged_dicom(f, intags)
+        self.cleanup_packaging(unpack_dir)
+        return resources
+    
+    def filter_json(self, f, intags):
+        unpack_dir, resources = self.process_json(f, intags)
         self.cleanup_packaging(unpack_dir)
         return resources
 

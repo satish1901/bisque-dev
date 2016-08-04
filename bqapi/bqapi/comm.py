@@ -72,6 +72,8 @@ import requests
 from requests.auth import HTTPBasicAuth
 from requests.auth import AuthBase
 from requests import Session
+from requests_toolbelt import MultipartEncoder
+
 
 from .RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
 try:
@@ -571,19 +573,20 @@ class BQSession(object):
         if xml!=None:
             if not isinstance(xml, basestring):
                 xml = self.factory.to_string(xml)
-
+        
+        fields = {}
         if filename is not None:
             filename = normalize_unicode(filename)
-            with open(filename, 'rb') as f:
-                fields = {'file': (filename, f)}
-                if xml!=None:
-                    fields['file_resource'] = (None, xml, "text/xml")
-                return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
-        elif xml is not None:
-            fields = {'file_resource': (None, xml, "text/xml")}
-            return self.c.push(url, content=None, files=fields, headers={'Accept': 'text/xml'}, path=path, method=method)
-        else:
-            raise BQApiError("improper parameters for postblob")
+            fields['file'] = (filename, open(filename, 'rb'), 'application/octet-stream')
+        if xml is not None:            
+            fields['file_resource'] = xml
+        if fields:
+            m = MultipartEncoder(fields = fields )
+            return self.c.push(url,
+                               content=m,
+                               headers={'Accept': 'text/xml', 'Content-Type':m.content_type},
+                               path=path, method=method)
+        raise BQApiError("improper parameters for postblob: must use paramater xml or filename or both ")
 
 
     def service_url(self, service_type, path = "" , query=None):

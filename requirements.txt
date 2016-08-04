@@ -43,7 +43,7 @@ filechunkio==1.6
 gdata==2.0.18
 httplib2==0.7.1-1
 importlib==1.0.3
-lxml==3.6.0
+lxml==3.6.1
 nose==1.3.1
 numpy==1.11.0
 #numexpr==2.5.2
@@ -76,6 +76,7 @@ repoze.who-friendlyform==1.0.8
 repoze.who-testutil==1.0.1
 repoze.who.plugins.sa==1.0.1
 requests==2.7.0
+requests_toolbelt==0.6.2
 shortuuid==0.4
 simplejson==3.3.3
 six==1.9
@@ -114,8 +115,8 @@ pydicom==0.9.8
 xlrd==0.9.4
 numexpr==2.6.0
 tables==3.2.2
+cython==0.24.1
 pandas==0.18.1
-
 
 # Databases
 psycopg2==2.6.1
