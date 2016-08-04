@@ -12,6 +12,7 @@ __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
+#pylint: skip-file
 import sys
 if sys.version_info  < ( 2, 7 ):
     import unittest2 as unittest

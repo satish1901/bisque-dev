@@ -1,4 +1,57 @@
-#!/usr/bin/env python
+###############################################################################
+##  Bisquik                                                                  ##
+##  Center for Bio-Image Informatics                                         ##
+##  University of California at Santa Barbara                                ##
+## ------------------------------------------------------------------------- ##
+##                                                                           ##
+##     Copyright (c) 2007 by the Regents of the University of California     ##
+##                            All rights reserved                            ##
+##                                                                           ##
+## Redistribution and use in source and binary forms, with or without        ##
+## modification, are permitted provided that the following conditions are    ##
+## met:                                                                      ##
+##                                                                           ##
+##     1. Redistributions of source code must retain the above copyright     ##
+##        notice, this list of conditions, and the following disclaimer.     ##
+##                                                                           ##
+##     2. Redistributions in binary form must reproduce the above copyright  ##
+##        notice, this list of conditions, and the following disclaimer in   ##
+##        the documentation and/or other materials provided with the         ##
+##        distribution.                                                      ##
+##                                                                           ##
+##     3. All advertising materials mentioning features or use of this       ##
+##        software must display the following acknowledgement: This product  ##
+##        includes software developed by the Center for Bio-Image Informatics##
+##        University of California at Santa Barbara, and its contributors.   ##
+##                                                                           ##
+##     4. Neither the name of the University nor the names of its            ##
+##        contributors may be used to endorse or promote products derived    ##
+##        from this software without specific prior written permission.      ##
+##                                                                           ##
+## THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS "AS IS" AND ANY ##
+## EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED ##
+## WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ARE   ##
+## DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR  ##
+## ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL    ##
+## DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS   ##
+## OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)     ##
+## HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,       ##
+## STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN  ##
+## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE           ##
+## POSSIBILITY OF SUCH DAMAGE.                                               ##
+##                                                                           ##
+###############################################################################
+"""
+SYNOPSIS
+========
+Configure bisque
+
+DESCRIPTION
+===========
+
+
+
+"""
 from __future__ import with_statement
 import traceback
 #import package_resources
@@ -404,7 +457,7 @@ initial_vars = {
 }
 
 linked_vars = {
-    'h1.url' : '${bisque.server}',
+#    'h1.url' : '${bisque.server}',
     'bisque.root' : '${bisque.server}',
     'smtp_server' : '${mail.smtp.server}',
     'registration.site_name' : '${bisque.title} (${bisque.server})',
@@ -414,21 +467,41 @@ linked_vars = {
     'beaker.session.sa.url' : '${sqlalchemy.url}',
 }
 
+SERVER_QUESTIONS=[
+    ('backend' , 'The server agent for bisque', "Bisque can configured to be served by paster or uwsgi"),
+    ('servers', "list of server entries to be configured", "Each server listed will be configured"),
+]
+
+PASTER_QUESTIONS=[
+    ('url', 'the url of the server', 'The url including port of the internal server'),
+    ('services_enabled', 'Services enabled', ''),
+    ('services_disabled', 'Services disabled', ''),
+]
+
+UWSGI_QUESTIONS=[
+    ('url', 'the url of the server', 'The url including port of the internal server'),
+    ('services_enabled', 'Services enabled', ''),
+    ('services_disabled', 'Services disabled', ''),
+    ('uwsgi.socket', 'The socket to listen on', ''),
+    ('bisque.static_files', 'enables serving static files', 'usually uwsgi is used behing another web servers, so leave disabled'),
+    ]
+
+
 
 SITE_QUESTIONS = [
 ('bisque.server' , 'Enter the root URL of the server ',
-                   """A complete URL where your application will be mounted i.e. http://someserver:8080/
-#If you server will be mounted behind a proxy, please enter
-#the proxy address and see AdvancedInstalls"""),
-                  ('bisque.admin_displayname', 'Your real name  administrator account', None),
-                  ('bisque.admin_id', 'A login ID for the administrator account', None),
-                  ('bisque.admin_email' , 'An email for the administrator', None),
-                  ('bisque.organization', 'A small organization title for the main page',
-                   "This will show up in the upper left of every page display"),
-                  ('bisque.title', 'The main title for the web page header',
-                   "The title of your collection, group or project" ),
-                  ('bisque.paths.root', 'Installation Directory',
-                   'Location of bisque installation.. used for find configuration and data')]
+ """A complete URL where your application will be mounted i.e. http://someserver:8080/
+ If you server will be mounted behind a proxy, please enter
+ the proxy address and see AdvancedInstalls"""),
+     ('bisque.admin_displayname', 'Your real name  administrator account', None),
+     ('bisque.admin_id', 'A login ID for the administrator account', None),
+     ('bisque.admin_email' , 'An email for the administrator', None),
+     ('bisque.organization', 'A small organization title for the main page',
+      "This will show up in the upper left of every page display"),
+     ('bisque.title', 'The main title for the web page header',
+      "The title of your collection, group or project" ),
+     ('bisque.paths.root', 'Installation Directory',
+      'Location of bisque installation.. used for find configuration and data')]
 
 
 ENGINE_QUESTIONS=[
@@ -567,6 +640,14 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=None
 
     if not os.path.exists (cfg):
         raise InstallError('missing %s' % cfg)
+
+    # Check environment defaults
+    for key, _, _ in qs:
+        # Check environment variables
+        section_name = '' if section == BQ_SECTION or section is None else section + "_"
+        envkey = "BISQUE_" + section_name.upper() + key.upper().replace('.','_')
+        print "checking", envkey
+        bisque_vars[key] = os.environ.get (envkey, bisque_vars.get (key, ''))
 
     bisque_vars =  update_variables(qs, bisque_vars )
     for k,v in linked_vars.items():
@@ -1192,8 +1273,8 @@ def install_server_defaults(params):
             params["bisque.paths.%s" % k] = v
         update_site_cfg(params, section=BQ_SECTION)
 
-        server_params = {  'h1.url' : params['bisque.server']}
-        server_params = update_site_cfg(server_params, 'servers', append=False)
+        #server_params = {'h1.url' : params['bisque.server']}
+        #server_params = update_site_cfg(server_params, 'servers', append=False)
 
     if getanswer ('Do you want to create new server configuations', 'Y',
                   "Use an editor to edit the server section (see http://biodev.ece.ucsb.edu/projects/bisquik/wiki/Installation/ParsingSiteCfg )") == 'Y':
@@ -1209,21 +1290,22 @@ def setup_server_cfg (params):
     pprint.pprint (server_params)
     previous_backend = server_params['backend']
 
-    status = 0
-    if getanswer ('Edit servers in site.cfg ', 'N',
-                  "Please edit only the server section ") != 'N':
-        editor = os.environ.get ('EDITOR', which ('vi'))
-        if editor is not None:
-            status = subprocess.call ([editor, SITE_CFG])
-        else:
-            print "No editor found. Please set EDITOR"
-            return
+    #status = 0
+    #if getanswer ('Edit servers in site.cfg ', 'N',
+    #              "Please edit only the server section ") != 'N':
+    #    editor = os.environ.get ('EDITOR', which ('vi'))
+    #    if editor is not None:
+    #        status = subprocess.call ([editor, SITE_CFG])
+    #    else:
+    #        print "No editor found. Please set EDITOR"
+    #        return
 
-    if status != 0:
-        print "GOT status", status
-        return params
+    #if status != 0:
+    #    print "GOT status", status
+    #    return params
 
-    server_params = read_site_cfg (SITE_CFG, 'servers')
+
+    server_params = modify_site_cfg (SERVER_QUESTIONS,  server_params, section='servers', append=False)
     if server_params['backend'] == 'uwsgi':
         params = setup_uwsgi(params, server_params)
     if server_params['backend'] == 'paster':
@@ -1466,6 +1548,9 @@ def setup_uwsgi(params, server_params):
 
     from bq.util.dotnested import parse_nested, unparse_nested
     servers = [ x.strip() for x in server_params['servers'].split(',') ]
+    for server in servers:
+        questions = [ (server+'.'+q[0], server+': '+q[1], q[2]) for q in UWSGI_QUESTIONS ]
+        server_params = modify_site_cfg (questions, server_params, section="servers")
     servers =  parse_nested (server_params, servers)
     print servers
     for server, sv in servers.items():
@@ -1478,7 +1563,7 @@ def setup_uwsgi(params, server_params):
                 if getanswer ("%s looks newer than %s.. modify" % (cfg, SITE_CFG), "N",
                               "%s may have special modifications" %cfg) == "N":
                     continue
-        install_cfg (cfg, section="*", default_cfg=default_path ('uwsgi.cfg.default'))
+        install_cfg (cfg, section="*", default_cfg=defaults_path ('uwsgi.cfg.default'))
         print "Created uwsgi config: ", cfg
 
         uwsgi_vars = sv.get ('uwsgi', {})
@@ -1510,12 +1595,18 @@ def setup_paster(params, server_params):
                  "Paster is the default backend server") != 'Y':
         return params
 
+    print server_params
+
     from bq.util.dotnested import parse_nested, unparse_nested
     servers = [ x.strip() for x in server_params['servers'].split(',') ]
+    for server in servers:
+        questions = [ (server+'.'+q[0], server+': '+q[1], q[2]) for q in PASTER_QUESTIONS ]
+        server_params = modify_site_cfg (questions, server_params, section="servers")
     servers =  parse_nested (server_params, servers)
     print servers
 
     for server, sv in servers.items():
+
         cfg = config_path ("%s_paster.cfg" % server)
         if os.path.exists (cfg) and os.path.exists(SITE_CFG):
             cfg_time  = os.stat(cfg).st_mtime
@@ -1554,7 +1645,6 @@ def setup_paster(params, server_params):
 
 
     return params
-
 
 
 #######################################################
