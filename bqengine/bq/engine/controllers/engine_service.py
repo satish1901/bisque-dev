@@ -260,7 +260,7 @@ class EngineServer(ServiceController):
                          #'lam' : LamAdapter(),
                          }
         modules, unavailable = initialize_available_modules(self.engines)
-        log.debug ('found modules= %s' % m.get ('name') for m in modules)
+        log.debug ('found modules= %s' % [m.get ('name') for m in modules])
         self.unavailable = unavailable
         self.modules = modules
         for module in modules:

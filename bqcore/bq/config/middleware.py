@@ -35,7 +35,7 @@ base_config.register_hook('before_config', add_profiler)
 def save_bisque_app(app):
     global bisque_app
     bisque_app = app # RegistryManager(app, streaming = True)
-    log.info ("HOOKING App %s", app)
+    log.info ("HOOKING App %s", str(app))
     return app
 
 base_config.register_hook('before_config', save_bisque_app)

@@ -19,6 +19,10 @@ log = logging.getLogger("bq.graph")
 
 
 def _add_mex_inputs_outputs(xnode, edges, checked, unchecked):
+    """
+    Inputs: any ref in top "inputs" section without self-references
+    Outputs: any ref in top "outputs" section without self-references or input references
+    """
     node = xnode.get ('resource_uniq')
     points_to_list = [ x.rsplit('/',1)[1] for x in xnode.xpath('./tag[@name="outputs"]/tag/@value') if x.startswith("http") ]
     points_from_list = [ x.rsplit('/',1)[1] for x in xnode.xpath('./tag[@name="inputs"]/tag/@value') if x.startswith("http") ]
@@ -82,6 +86,8 @@ class graphController(ServiceController):
             if node_type == 'mex':
                 # Mex => find inputs/outputs
                 _add_mex_inputs_outputs(xnode, edges, checked, unchecked)
+                # treat Mex's submex outputs as a dataset
+                datasets[node] = [ x.rsplit('/',1)[1] for x in xnode.xpath('./mex/tag[@name="outputs"]/tag/@value') if x.startswith('http') ]
             else:
                 # Non-mex => Find mexes that reference me (directly or indirectly via a dataset)
                 if node_type == 'dataset':
