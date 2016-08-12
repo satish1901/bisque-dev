@@ -17,7 +17,6 @@ Pylons==1.0
 Routes==2.0
 SQLAlchemy==1.0.12
 PySqlite==2.8.2
-TGScheduler==1.6.3
 Tempita==0.5.3dev
 ToscaWidgets==0.9.12
 TurboGears2==2.1.5
@@ -46,7 +45,6 @@ httplib2==0.7.1-1
 importlib==1.0.3
 lxml==3.6.0
 nose==1.3.1
-numpy==1.11.0
 #numexpr==2.5.2
 openslide-python==1.0.1
 ordereddict==1.1
@@ -57,6 +55,7 @@ pbr==0.6
 pkginfo==1.2b1
 ply==3.4
 poster==0.8.1
+uwsgi==2.0.13
 py==1.4.20
 psutil==4.3.0
 #git+git://github.com/irods/python-irodsclient.git
@@ -77,6 +76,7 @@ repoze.who-friendlyform==1.0.8
 repoze.who-testutil==1.0.1
 repoze.who.plugins.sa==1.0.1
 requests==2.7.0
+requests_toolbelt==0.6.2
 shortuuid==0.4
 simplejson==3.3.3
 six==1.9
@@ -113,14 +113,15 @@ pydicom==0.9.8
 # table service
 #json== #standard python package
 xlrd==0.9.4
-numexpr==2.6.0
 tables==3.2.2
 pandas==0.18.1
 
 # Feature service
 mahotas==1.4.1
-libtiff==0.4.0
 cython==0.24
+numexpr==2.6.0
+numpy==1.11.0
+#libtiff==0.4.0
 
 
 # Databases
