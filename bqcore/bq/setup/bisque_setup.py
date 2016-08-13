@@ -558,6 +558,12 @@ DOCKER_QUESTIONS = [
     ('docker.hub.email', 'A docker login email', None),
 
     ]
+DOCKER_IMAGE_QUESTIONS = [
+    ('docker.image.matlab_runtime', "matlab runtime image", "a docker image spec of the matlab runtime"),
+    ('docker.image.cellprofiler', "cellprofiler runtime image", "a docker image spec of the cellprofiler runtime"),
+    ('docker.image.dream3d', "dream3d runtime image", "a docker image spec of the dream3d runtime"),
+    ]
+
 
 #####################################################
 # Installer routines
@@ -1079,13 +1085,16 @@ def install_docker (params, cfg = None):
     if getanswer( "Enable docker modules", 'Y' if has_docker else 'N',
                   "Use docker to build and run modules") != 'Y':
         return params
-    params['docker.enabled'] = 'true'
-    params = modify_site_cfg(DOCKER_QUESTIONS, params, section='docker', cfg=cfg)
+    docker_params = read_site_cfg (cfg, 'docker')
+    docker_params['docker.enabled'] = 'true'
+    docker_params = modify_site_cfg(DOCKER_QUESTIONS, docker_params, section='docker', cfg=cfg)
 
     if os.path.exists('/dev/null'):
         devnull = open ('/dev/null')
 
     # Ensure base docker images are available
+    docker_params = modify_site_cfg(DOCKER_IMAGE_QUESTIONS, docker_params, section='docker', cfg=cfg,append=False)
+
     retcode = call('docker images|fgrep mcr_runtime' , shell=True, stdout=devnull, stderr=devnull)
     if retcode != 0:
         print "Please build mcr_runtime in contrib directory : retcode" , retcode

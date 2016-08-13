@@ -276,15 +276,16 @@ def docker_setup (image, command, base, params):
     #print "PARAMS:", params
 
     module_config = read_config('runtime-module.cfg', "command")
-    #print "MODULE", module_config
+    docker_params = read_config('runtime-bisque.cfg', "docker")
+    print "Docker ", docker_params
 
     # Must be lowercase
-    if not asbool(params.get('docker.enabled', False)):
+    if not asbool(docker_params.get('docker.enabled', False)):
         return
-    docker_hub = params.get('docker.hub', '')
-    docker_user = params.get ('docker.hub.user', '')
-    docker_pass = params.get('docker.hub.password', '')
-    docker_email = params.get('docker.hub.email', '')
+    docker_hub = docker_params.get('docker.hub', '')
+    docker_user = docker_params.get ('docker.hub.user', '')
+    docker_pass = docker_params.get('docker.hub.password', '')
+    docker_email = docker_params.get('docker.hub.email', '')
 
     image = "/".join (filter (lambda x:x, [ docker_hub, docker_user, image.lower() ]))
 
@@ -299,8 +300,9 @@ def docker_setup (image, command, base, params):
             copies.append ( "COPY %s /module/%s/ " % (dr, dr) )
 
         with open('Dockerfile', 'w') as f:
-            maintainer = params.get ('docker.maintainer', 'nobody@example.com')
-            base = params.get ('docker.image.%s' % base, base)
+            maintainer = docker_params.get ('docker.maintainer', 'nobody@example.com')
+            # check for configured base i.e docker.image.matlab_runtime
+            base = docker_params.get ('docker.image.%s' % base, base)
             f.write (string.Template (DOCKERFILE).safe_substitute(base=base,
                                                                   command=command,
                                                                   maintainer=maintainer,
