@@ -555,7 +555,7 @@ DOCKER_QUESTIONS = [
     ('docker.hub', 'A docker image repository to store locally built images', 'biodev.ece.ucsb.edu:5000' ),
     ('docker.hub.user', 'A docker login', None),
     ('docker.hub.password', 'A docker login password', None),
-    ('docker.hub.email', 'A docker login password', None),
+    ('docker.hub.email', 'A docker login email', None),
 
     ]
 
@@ -1012,26 +1012,23 @@ def install_matlab(params, cfg = None):
     matlab_home = which('matlab')
     if matlab_home:
         params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
-    if params['runtime.matlab_launcher'] == 'config-defaults/templates/matlab_launcher_SYS.tmpl':
-        if os.name == 'nt':
-            params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher_win.tmpl'))
+
+    print "CONFIG", cfg
+    params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
+    if  os.path.exists(params['runtime.matlab_home']):
+        if params.get ('runtime.matlab_launcher') == 'config-defaults/templates/matlab_launcher_SYS.tmpl':
+            if os.name == 'nt':
+                params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher_win.tmpl'))
+            else:
+                params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher.tmpl'))
         else:
-            params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher.tmpl'))
-    for f in ['runtime.matlab_launcher' ] :
-        if os.path.exists(params[f]):
-            params[f] = os.path.abspath(params[f])
-
-    while True:
-        params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
-        if  os.path.exists(params['runtime.matlab_home']):
-            break
-        if  getanswer("Matlab not found: Try again", 'N',
-                      "Matlab (and compile) is needed for many modules") == 'Y':
-            continue
-        print "Matlab must be provided to install modules"
+            print "using matlab_launcher ", params.get ('runtime.matlab_launcher')
+        #for f in ['runtime.matlab_launcher' ] :
+        #    if os.path.exists(params[f]):
+        #        params[f] = os.path.abspath(params[f])
+    else:
+        print "WARNING: Matlab is required for many modules"
         params['matlab_installed'] = False
-        break
-
 
     #install_matlabwrap(params)
     return params
@@ -1088,6 +1085,7 @@ def install_docker (params, cfg = None):
     if os.path.exists('/dev/null'):
         devnull = open ('/dev/null')
 
+    # Ensure base docker images are available
     retcode = call('docker images|fgrep mcr_runtime' , shell=True, stdout=devnull, stderr=devnull)
     if retcode != 0:
         print "Please build mcr_runtime in contrib directory : retcode" , retcode
@@ -1104,7 +1102,7 @@ def install_docker (params, cfg = None):
 
 def install_modules(params):
     # Check each module for an install script and run it.
-    ans =  getanswer( "Try to setup modules", 'N',
+    ans =  getanswer( "Try to setup modules", 'Y',
                   "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly")
     if ans != 'Y':
         return params
@@ -1211,7 +1209,7 @@ def setup_module(module_dir, environ):
     cwd = os.getcwd()
     os.chdir (module_dir)
     print "################################"
-    print "Running setup.py in %s" % module_dir
+    print "Running %s setup.py in %s" % (PYTHON, module_dir)
     try:
         r = call ([PYTHON, '-u', 'setup.py'], env=environ)
         if r == 0:
@@ -1340,7 +1338,7 @@ def install_engine_defaults(params):
             params[k] = ENGINE_VARS[k]
         print "  %s=%s" % (k,params[k])
 
-    if getanswer("Change a site variable", 'Y')=='Y':
+    if getanswer("Change a site variable", 'N')=='Y':
         params = modify_site_cfg(ENGINE_QUESTIONS, params)
 
     server_params = {  'e1.url' : params['bisque.engine'], }
@@ -1490,8 +1488,7 @@ def install_preferences(params):
     if params.get('new_database'): #already initialized
         return params
     if getanswer ("Initialize Preferences ","N",
-                  """Initialize system preferences.. new systems will
-requires this while, upgraded system may depending on chnages""")!="Y":
+                  """Initialize system preferences.. new systems will requires this while, upgraded system may depending on changes""")!="Y":
         return params
     cmd = [bin_path('bq-admin'), 'preferences', 'init', ]
     if getanswer("Force initialization ", "Y", "Replace any existing preferences with new ones") == "Y":
@@ -2223,8 +2220,10 @@ engine_options= [
     'docker',
     'runtime',
     'modules',
-    'fetch-modules',
     ]
+
+full_options = list (install_options + engine_options)
+full_options.remove ('engine_cfg')
 
 # other unrelated admin actions
 other_options = [
@@ -2294,12 +2293,15 @@ def bisque_installer(options, args):
     The default answer is AK and is chosen by simply entering <enter>
 
     """
-    system_type = ['bisque']
+    system_type = ['bisque', 'engine']
     if len(args) == 0 or args[0] in  ( 'bisque', 'developer', 'server' ):
         install_steps = install_options[:]
     elif args[0] == 'engine':
         install_steps = engine_options[:]
         system_type = ['engine']
+    elif args[0] == 'full':
+        install_steps = full_options[:]
+        system_type = ['bisque', 'engine']
     else:
         install_steps = args
 

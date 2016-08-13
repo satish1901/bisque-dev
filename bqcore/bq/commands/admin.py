@@ -171,7 +171,7 @@ class setup(object):
         parser.add_option("-c", "--config",  help="Set config directory locations"  )
         options, args = parser.parse_args()
         for arg in args:
-            if arg not in all_options + ['bisque', 'server', 'engine', 'developer']:
+            if arg not in all_options + ['bisque', 'server', 'engine', 'developer', 'full']:
                 parser.error('argument must be install option')
 
         self.args = args
@@ -288,6 +288,8 @@ class deploy(object):
             dest = os.path.join(currdir, l)
             if os.path.exists (dest):
                 os.unlink (dest)
+            if os.path.isdir (dest):
+                shutil.rmtree(dest)
             print "CORE", src, dest
             copy_symlink (src, dest)
         os.chdir (rootdir)
