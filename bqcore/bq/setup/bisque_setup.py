@@ -1697,7 +1697,7 @@ def install_libtiff():
         Only for Windows, for debian linux use apt-get
     """
     import urllib
-    src = 'https://bitbucket.org/bisque/pylibtiff/downloads/LibTiff-4.0.3-Windows-64bit.zip'
+    src = 'https://bitbucket.org/CBIucsb/pylibtiff/downloads/LibTiff-4.0.3-Windows-64bit.zip'
     filename_zip = os.path.join(BQDEPOT, 'LibTiff-4.0.3-Windows-64bit.zip')
     filename_dest = bisque_path(os.path.join('bqenv','Scripts'))
     filename_check = ''
