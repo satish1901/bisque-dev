@@ -350,7 +350,7 @@ class preferences (object):
                     print ('NO ACTION: %s exists.. cannot init' % prefs)
                     sys.exit(1)
 
-            system = etree.parse('config-defaults/preferences.xml.default').getroot()
+            system = etree.parse('config/preferences.xml.default').getroot()
             for el in system.getiterator(tag=etree.Element):
                 el.set ('permission', 'published')
             system = data_service.new_resource(system, view='deep')
