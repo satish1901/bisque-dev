@@ -18,6 +18,11 @@ def data_path(*names):
     data = data or os.path.join(bisque_root(), 'data')
     return os.path.join(data, *names).replace('\\', '/')
 
+def run_path(*names):
+    'return a path constructed from the data directory path'
+    data = config.get('bisque.paths.run')
+    data = data or os.path.join(bisque_root(), 'run')
+    return os.path.join(data, *names).replace('\\', '/')
 
 def config_path(*names):
     'return a path constructed from the config directory path'

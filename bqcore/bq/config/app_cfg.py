@@ -135,26 +135,29 @@ class BisqueAppConfig(AppConfig):
             # used by engine to add module specific static files
             # Add services static files
             log.info( "LOADING STATICS")
-            static_app.add_path (config['pylons.paths']['static_files'],
-                                 config['pylons.paths']['static_files']
-                                 )
+            #static_app.add_path (config['pylons.paths']['static_files'],
+            #                     config['pylons.paths']['static_files']
+            #                     )
 
-            ###staticfilters = []
-            for x in pkg_resources.iter_entry_points ("bisque.services"):
-                try:
-                    log.info ('found static service: ' + str(x))
-                    service = x.load()
-                    if not hasattr(service, 'get_static_dirs'):
+            if config.get('bisque.js_environment', 'production') == 'production':
+                static_app.add_path ('', config.get ('bisque.paths.public', './public'))
+            else:
+                ###staticfilters = []
+                for x in pkg_resources.iter_entry_points ("bisque.services"):
+                    try:
+                        log.info ('found static service: ' + str(x))
+                        service = x.load()
+                        if not hasattr(service, 'get_static_dirs'):
+                            continue
+                        staticdirs  = service.get_static_dirs()
+                        for d,r in staticdirs:
+                            log.debug( "adding static: %s %s" % ( d,r ))
+                            static_app.add_path(d,r, "/%s" %x.name)
+                    except Exception:
+                        log.exception ("Couldn't load bisque service %s" % x)
                         continue
-                    staticdirs  = service.get_static_dirs()
-                    for d,r in staticdirs:
-                        log.debug( "adding static: %s %s" % ( d,r ))
-                        static_app.add_path(d,r)
-                except Exception:
-                    log.exception ("Couldn't load bisque service %s" % x)
-                    continue
-                #    static_app = BQStaticURLParser(d)
-                #    staticfilters.append (static_app)
+                    #    static_app = BQStaticURLParser(d)
+                    #    staticfilters.append (static_app)
             #cascade = staticfilters + [app]
             #print ("CASCADE", cascade)
             log.info( "END STATICS: discovered %s static files " % len(static_app.files.keys()))

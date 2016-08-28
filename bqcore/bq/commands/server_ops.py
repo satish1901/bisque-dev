@@ -4,8 +4,10 @@ from subprocess import Popen, call, PIPE, STDOUT
 from urlparse import urlparse
 from ConfigParser import SafeConfigParser
 import shlex
+import psutil
 
-from bq.util.commands import find_site_cfg
+#from bq.util.commands import find_site_cfg
+from bq.util.paths import find_config_path, site_cfg_path
 from bq.util.dotnested import parse_nested
 
 #from bq.commands.server_ops import root
@@ -15,45 +17,51 @@ LOG_TEMPL = 'bisque_%s.log'
 RUNNER_CMD = ['mexrunner']
 SITE_CFG = 'site.cfg'
 
-if os.name == 'nt':
-    #pylint:disable=F0401
-    import win32api, win32con
-    def kill_process(pid):
-        try:
-            handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, 0, pid)
-            win32api.TerminateProcess(handle, 0)
-            win32api.CloseHandle(handle)
-            return True
-        except Exception:
-            print 'Error terminating %s, the process might be dead' % pid
-        return False
-        #import subprocess
-        #subprocess.call(['taskkill', '/PID', str(pid), '/F'])
+# if os.name == 'nt':
+#     #pylint:disable=F0401
+#     import win32api, win32con
+#     def kill_process(pid):
+#         try:
+#             handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, 0, pid)
+#             win32api.TerminateProcess(handle, 0)
+#             win32api.CloseHandle(handle)
+#             return True
+#         except Exception:
+#             print 'Error terminating %s, the process might be dead' % pid
+#         return False
+#         #import subprocess
+#         #subprocess.call(['taskkill', '/PID', str(pid), '/F'])
 
-else:
-    import signal
-    from bq.util.wait_pid import wait_pid
-    def kill_process(pid):
-        try:
-            pid = os.getpgid(pid)
-            os.killpg (pid, signal.SIGTERM)
-            wait_pid(pid)
-            return True
-        except OSError, e:
-            print "kill process %s failed with %s" % (pid, e)
-        return False
+# else:
+#     import signal
+#     from bq.util.wait_pid import wait_pid
+#     def kill_process(pid):
+#         try:
+#             pid = os.getpgid(pid)
+#             os.killpg (pid, signal.SIGTERM)
+#             wait_pid(pid)
+#             return True
+#         except OSError, e:
+#             print "kill process %s failed with %s" % (pid, e)
+#         return False
 
+def kill_process(pid):
+    p = psutil.Process(pid)
+    p.terminate()
+    p.wait()
 
 #####################################################################
 # utils
-
+# since we run in a virtualenv this *should* ok..
+def exe_path(cmd):
+    return os.path.join (os.path.dirname (sys.executable), cmd)
 
 def readhostconfig (site_cfg):
     #vars = { 'here' : os.getcwd() }
     config = SafeConfigParser ()
     config.read (site_cfg)
     #root = config.get ('app:main', 'bisque.root')
-    top_dir = config.get ('app:main', 'bisque.paths.root')
+    run_dir = config.get ('app:main', 'bisque.paths.run')
     service_items = config.items ('servers')
     hosts = [ x.strip() for x in config.get  ('servers', 'servers').split(',') ]
 
@@ -77,11 +85,11 @@ def readhostconfig (site_cfg):
 
     servers = parse_nested (service_items, hosts)
 
-    bisque = { 'top_dir': top_dir,  'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
+    bisque = { 'run_dir': run_dir,  'servers': servers, 'log_dir': '.', 'pid_dir' : '.' }
     if config.has_option('servers', 'log_dir'):
-        bisque['log_dir'] = os.path.join (top_dir, config.get ('servers', 'log_dir'))
+        bisque['log_dir'] = os.path.join (run_dir, config.get ('servers', 'log_dir'))
     if config.has_option('servers', 'pid_dir'):
-        bisque['pid_dir'] = os.path.join (top_dir, config.get ('servers', 'pid_dir'))
+        bisque['pid_dir'] = os.path.join (run_dir, config.get ('servers', 'pid_dir'))
     if config.has_option('servers','backend'):
         bisque['backend'] = config.get ('servers', 'backend')
     if config.has_option('servers','mex_dispatcher'):
@@ -139,7 +147,7 @@ def paster_command(command, options, cfgopt, processes, cfg_file = None, *args):
     paster_verbose = '-v' if options.verbose else '-q'
     msg = { 'start': 'starting', 'stop':'stopping', 'restart':'restarting'}[command]
     verbose ("%s bisque on %s .. please wait" % (msg, cfgopt['port']))
-    server_cmd = ['paster', 'serve', paster_verbose]
+    server_cmd = [exe_path('paster'), 'serve', paster_verbose]
     server_cmd.extend (['--log-file', cfgopt['logfile'], '--pid-file', cfgopt['pidfile'],
                         #                   '--deamon',
                         ])
@@ -178,7 +186,7 @@ def uwsgi_command(command, options, cfgopt, processes,  cfg_file = None, *args):
 
     if command is 'stop':
         pidfile = cfgopt['pidfile']
-        uwsgi_cmd = ['uwsgi', '--stop', pidfile]
+        uwsgi_cmd = [exe_path('uwsgi'), '--stop', pidfile]
         #processes.append(Popen(uwsgi_cmd,shell=True,stdout=sys.stdout))
 
         verbose('Executing: ' + ' '.join(uwsgi_cmd))
@@ -189,7 +197,7 @@ def uwsgi_command(command, options, cfgopt, processes,  cfg_file = None, *args):
                 os.remove (pidfile)
     elif command is 'start':
         #uwsgi_opts = cfgopt['uwsgi']
-        uwsgi_cmd = ['uwsgi', '--ini-paste', cfg_file,
+        uwsgi_cmd = [exe_path('uwsgi'), '--ini-paste', cfg_file,
 #                     '--env', 'LC_ALL=en_US.UTF-8',
 #                     '--env', 'LANG=en_US.UTF-8',
                      '--daemonize', cfgopt['logfile'],
@@ -211,7 +219,7 @@ def logger_command(command, cfgopt, processes):
     if command is 'start':
         with open(os.devnull, 'w') as fnull:
             #logger = Popen(cfgopt['logging_server'], stdout=fnull, stderr=fnull, shell=True)
-            logger = Popen(launcher, shell= (os.name == 'nt') )
+            logger = Popen([exe_path (launcher[0])] + launcher[1:],  shell= (os.name == 'nt') )
         if logger.returncode is None and logger.pid:
             with open(pidfile, 'w') as pd:
                 pd.write("%s\n" % logger.pid)
@@ -240,10 +248,10 @@ def operation(command, options, *args):
         if options.verbose:
             print msg
 
-    cfg_file=SITE_CFG
-    site_cfg = options.site or find_site_cfg(cfg_file)
+    cfg_file=options.site or SITE_CFG
+    site_cfg = find_config_path(cfg_file)
     if site_cfg is None:
-        print "Cannot find site.cfg.. please make sure you are in the bisque dir"
+        print "Cannot find %s.. please make sure you are in the bisque dir" % cfg_file
         return
     site_dir = os.path.dirname(os.path.abspath(site_cfg))
 
@@ -260,10 +268,10 @@ def operation(command, options, *args):
             if f in config:
                 cfgopt[f] = config[f]
 
-        if not os.path.exists (config['top_dir']):
-            print "Please check your site.cfg.  bisque.paths.root is not set correctly"
+        if not os.path.exists (config['run_dir']):
+            print "Please check your site.cfg.  bisque.paths.run is not set correctly"
             return
-        os.chdir (config['top_dir'])
+        os.chdir (config['run_dir'])
         # Get the backend
         backend = config.get('backend', None)
         verbose("using backend: " + str(backend))
@@ -305,7 +313,7 @@ def operation(command, options, *args):
             cfgopt['uwsgi']  = serverspec.pop('uwsgi', None)
 
             cfg_file_name =  "%s_%s.cfg" % (key, backend)
-            cfg_file  = find_site_cfg(cfg_file_name)
+            cfg_file  = find_config_path(cfg_file_name)
             if not cfg_file:
                 print ("Cannot find config file %s" % cfg_file_name)
                 print ("Please run bq-admin setup configuration")
@@ -332,13 +340,20 @@ def operation(command, options, *args):
 
             if command in ('start', 'restart'):
                 if os.path.exists(cfgopt['pidfile']):
-                    if options.force:
-                        print 'old pid file: %s exists! restarting...' % cfgopt['pidfile']
-                        operation("stop", options, cfg_file, *args)
-                        time.sleep(5)
-                    else:
-                        print "Can't start because of existing PID file"
-                        sys.exit(2)
+                    try:
+                        pid= int (open (cfgopt['pidfile']).read())
+                        if psutil.pid_exists (pid):
+                            if options.force:
+                                print 'old pid file: %s exists! restarting...' % cfgopt['pidfile']
+                                operation("stop", options, cfg_file, *args)
+                                time.sleep(5)
+                            else:
+                                print "Can't start because of existing PID file"
+                                sys.exit(2)
+                    except ValueError:
+                        pass
+                    if os.path.exists(cfgopt['pidfile']):
+                        os.remove (cfgopt['pidfile'])
                 processes = backend_command('start', options, cfgopt, processes, cfg_file)
 
         if not args and 'logging_server' in cfgopt:

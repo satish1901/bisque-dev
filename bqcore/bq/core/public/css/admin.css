@@ -12,10 +12,10 @@ a.add_link, a.edit_link{
     padding-left: 20px;
 }
 a.add_link{
-    background-image: url('/images/add.png');
+    background-image: url('/core/images/add.png');
 }
 a.edit_link{
-    background-image: url('/images/pencil.png');
+    background-image: url('/core/images/pencil.png');
 }
 
 /* admin list view */
@@ -27,7 +27,7 @@ a.edit_link{
     background-color: #eee;
 }
 .crud_table .grid th{
-    background: url("/images/menubg.png") no-repeat scroll -20px top transparent;
+    background: url("/core/images/menubg.png") no-repeat scroll -20px top transparent;
     color: #fff;
     font-weight: normal;
     text-transform: capitalize;
@@ -48,7 +48,7 @@ a.edit_link{
 }
 .crud_table .grid td.col_0 .delete-button{
     font-size: inherit;
-    background-image: url('/images/delete.png');
+    background-image: url('/core/images/delete.png');
     cursor: pointer;
 }
 

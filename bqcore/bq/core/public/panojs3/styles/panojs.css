@@ -35,7 +35,7 @@
 
 .viewer .surface {
   z-index: 20;
-  /*background: url(../gfx/center.gif) no-repeat center center;*/
+  /* background: url(../gfx/center.gif) no-repeat center center; */
   _background: url(/panojs3/images/blank.gif) no-repeat center center; /* NOTE: required for IE to"see" the surface */
 }
 
@@ -205,5 +205,3 @@
     right: 10px;
     background-position: -34px -162px;
 }
-
-

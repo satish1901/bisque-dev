@@ -78,7 +78,7 @@
 }
 
 .toolbar-menu .icon-user {
-    background-image: url('/images/toolbar/user.png');
+    background-image: url('/core/images/toolbar/user.png');
 }
 
 /******************************************************************
@@ -89,7 +89,7 @@
     width: 200px;
     height: 56px;
     margin: 10px 10px 10px 10px;
-    background-image: url('/images/bisque_logo_gray.svg');
+    background-image: url('/core/images/bisque_logo_gray.svg');
     background-repeat: no-repeat;
     background-size: 200px;
     background-position: 0px 0px;
@@ -99,7 +99,7 @@
     width: 90px;
     height: 25px;
     margin: 0px 10px 0px 5px;
-    background-image: url('/images/bisque_logo_gray.svg');
+    background-image: url('/core/images/bisque_logo_gray.svg');
     background-repeat: no-repeat;
     background-size: 90px;
     background-position: 0px 0px;
@@ -113,7 +113,7 @@
 
 .toolbar-main .icon-help {
     width: 32px;
-    background-image: url('/images/icons_toolbar.svg') !important;
+    background-image: url('/core/images/icons_toolbar.svg') !important;
     background-repeat: no-repeat;
     background-size: 160px;
     background-position: 0px -195px;
@@ -121,7 +121,7 @@
 
 .toolbar-main .icon-user {
     width: 32px;
-    background-image: url('/images/icons_toolbar.svg#icon_user') !important;
+    background-image: url('/core/images/icons_toolbar.svg#icon_user') !important;
     background-repeat: no-repeat;
     background-size: 160px;
     background-position: 0px -162px;
@@ -129,7 +129,7 @@
 
 .toolbar-main .icon-browse {
     width: 32px;
-    background-image: url('/images/icons_toolbar.svg') !important;
+    background-image: url('/core/images/icons_toolbar.svg') !important;
     background-repeat: no-repeat;
     background-size: 160px;
     background-position: 0px -130px;
@@ -137,7 +137,7 @@
 
 .toolbar-main .icon-export {
     width: 32px;
-    background-image: url('/images/icons_toolbar.svg') !important;
+    background-image: url('/core/images/icons_toolbar.svg') !important;
     background-repeat: no-repeat;
     background-size: 160px;
     background-position: 0px -65px;
@@ -145,7 +145,7 @@
 
 .toolbar-main .icon-import {
     width: 32px;
-    background-image: url('/images/icons_toolbar.svg') !important;
+    background-image: url('/core/images/icons_toolbar.svg') !important;
     background-repeat: no-repeat;
     background-size: 160px;
     background-position: 0px -33px;
@@ -153,7 +153,7 @@
 
 .toolbar-main .icon-analysis {
     width: 32px;
-    background-image: url('/images/icons_toolbar.svg') !important;
+    background-image: url('/core/images/icons_toolbar.svg') !important;
     background-repeat: no-repeat;
     background-size: 160px;
     background-position: 0px -98px;
@@ -161,7 +161,7 @@
 
 .toolbar-main .icon-create {
     width: 32px;
-    background-image: url('/images/icons_toolbar.svg');
+    background-image: url('/core/images/icons_toolbar.svg');
     background-repeat: no-repeat;
     background-size: 160px;
     background-position: 0px -1px;
@@ -172,11 +172,11 @@
 }
 
 .toolbar-menu .icon-import {
-    background-image: url('/images/toolbar/upload.png') !important;
+    background-image: url('/core/images/toolbar/upload.png') !important;
 }
 
 .toolbar-menu .icon-export {
-    background-image: url('/images/toolbar/download.png') !important;
+    background-image: url('/core/images/toolbar/download.png') !important;
 }
 
 .toolbar-menu .bq-help-video {

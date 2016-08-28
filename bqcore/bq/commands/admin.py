@@ -168,9 +168,10 @@ class setup(object):
         parser.add_option("-r", "--read", action="store", help="Read answers from given file" )
         parser.add_option("-w", "--write", action="store", help="Write answers from given file" )
         parser.add_option("-y", "--yes", action="store_true", help="Use default answers for all questions" )
+        parser.add_option("-c", "--config",  help="Set config directory locations"  )
         options, args = parser.parse_args()
         for arg in args:
-            if arg not in all_options + ['bisque', 'engine']:
+            if arg not in all_options + ['bisque', 'server', 'engine', 'developer', 'full']:
                 parser.error('argument must be install option')
 
         self.args = args
@@ -189,6 +190,7 @@ class deploy(object):
         parser = optparse.OptionParser(
                     usage="%prog deploy [public]",
                     version="%prog " + version)
+        parser.add_option("--packagedir",  help="Root package of install", default='bqcore' )
         options, args = parser.parse_args()
         self.args = args
         self.options = options
@@ -196,6 +198,7 @@ class deploy(object):
     def run(self):
         #if 'public' in self.args:
         self.public_dir = self.args.pop(0) if len(self.args)>0 else 'public'
+        self.packagedir = self.options.packagedir
         self.deploy_public()
 
 
@@ -221,11 +224,10 @@ class deploy(object):
             pass
 
         rootdir = os.getcwd()
-        coredir = os.path.join(rootdir, 'bqcore/bq/core/public/').replace('/', os.sep)
 
         # update public
-        os.chdir(self.public_dir)
-        currdir = os.getcwd()
+        #os.chdir(self.public_dir)
+        #currdir = os.getcwd()
 
         for x in pkg_resources.iter_entry_points ("bisque.services"):
             try:
@@ -239,59 +241,73 @@ class deploy(object):
                     continue
                 staticdirs  = service.get_static_dirs()
                 for d,r in staticdirs:
-                    #print ( "adding static: %s %s" % ( d,r ))
-                    static_path =  r[len(d)+1:]
-                    #print "path =", os.path.dirname(static_path)
-                    basedir = os.path.dirname(static_path)
-                    try:
-                        #os.makedirs (os.path.join(self.dir, os.path.dirname(static_path)))
-                        os.makedirs (os.path.dirname(static_path))
 
-                    except OSError,e:
-                        pass
-                    #print "link ", (r, os.path.join('public', static_path))
-                    dest = os.path.join(currdir, static_path)
-                    if os.path.exists (dest):
-                        os.unlink (dest)
-                    relpath = os.path.relpath(r, os.path.dirname(dest))
-                    #print "%s -> %s" % (relpath, dest)
+                    # Copy all elements r into public_dir
+                    #shutil.copytree (r, os.path.join (self.public_dir, x.name))
+                    dest = os.path.join (self.public_dir, x.name)
+                    if not os.path.exists (dest):
+                        os.makedirs (dest)
+                        print "Making ", dest
+                    names = os.listdir (r)
+                    for name in names:
+                        src = os.path.join (r, name)
+                        dst = os.path.join (dest, name)
+                        if os.path.exists (dst):
+                            os.unlink(dst)
+                        if os.path.isdir (dst):
+                            shutil.rmtree(dst)
+                        copy_symlink (src, dst)
+                        #print "%s->%s" % (src, dst)
 
-                    copydir = os.getcwd()
-                    os.chdir(basedir)
-                    copy_symlink (relpath, dest)
-                    os.chdir(copydir)
-                    print "Deployed ", r
             except Exception, e:
-                print "Exception: ", e
+                logging.exception ("in copy")
+                #print "Exception: ", e
                 pass
+
         # Link all core dirs
+        # coredir = os.path.join(rootdir, 'bqcore/bq/core/public/').replace('/', os.sep)
+        # import glob
+        # for l in glob.glob(os.path.join(coredir, '*')):
+        #     dest = os.path.join(currdir, os.path.basename(l))
+        #     if os.path.exists (dest):
+        #         os.unlink (dest)
+        #     relpath = os.path.relpath(l, currdir)
+        #     #print "%s -> %s " % (relpath, dest)
+        #     copy_symlink (relpath, dest)
+        # # finish
+
+
+        # Link all core dirs
+        os.chdir(self.public_dir)
+        currdir = os.getcwd()
+        coredir = 'core' #os.path.join(self.public_dir, 'core').replace('/', os.sep)
+        print "COREDIR", coredir
         import glob
-        for l in glob.glob(os.path.join(coredir, '*')):
-            dest = os.path.join(currdir, os.path.basename(l))
+        for l in os.listdir(coredir):
+            src =  os.path.join(coredir, l)
+            dest = os.path.join(currdir, l)
             if os.path.exists (dest):
                 os.unlink (dest)
-
-            relpath = os.path.relpath(l, currdir)
-            #print "%s -> %s " % (relpath, dest)
-            copy_symlink (relpath, dest)
-
-        # finish
+            if os.path.isdir (dest):
+                shutil.rmtree(dest)
+            print "CORE", src, dest
+            copy_symlink (src, dest)
         os.chdir (rootdir)
 
         # regenerate all_js and all_css
         print '\nGenerating packaged JS and CSS files\n'
         from bq.core.lib.js_includes import generate_css_files, generate_js_files
-        rootdir = os.path.join(rootdir, '').replace(os.sep, '/')
-        publicdir = os.path.join(rootdir, 'public/').replace(os.sep, '/')
+        rootdir = os.path.join(self.packagedir, '').replace(os.sep, '/')
+        publicdir = os.path.join(self.public_dir, '').replace(os.sep, '/')
 
-        all_css = os.path.join(rootdir, 'bqcore/bq/core/public/css/all_css.css')
+        #all_css = os.path.join(rootdir, 'bq/core/public/css/all_css.css')
         all_css_public = os.path.join(publicdir, 'css/all_css.css')
-        all_js = os.path.join(rootdir, 'bqcore/bq/core/public/js/all_js.js')
+        #all_js = os.path.join(rootdir, 'bq/core/public/js/all_js.js')
         all_js_public = os.path.join(publicdir, 'js/all_js.js')
 
-        remove_safe(all_css)
+        #remove_safe(all_css)
         remove_safe(all_css_public)
-        remove_safe(all_js)
+        #remove_safe(all_js)
         remove_safe(all_js_public)
 
         import pylons
@@ -299,10 +315,10 @@ class deploy(object):
 
         generate_css_files(root=rootdir, public=publicdir)
         generate_js_files(root=rootdir, public=publicdir)
-        if not os.path.exists (all_css_public):
-            copy_symlink (all_css, all_css_public)
-        if not os.path.exists (all_js_public):
-            copy_symlink (all_js, all_js_public)
+        #if not os.path.exists (all_css_public):
+        #    copy_symlink (all_css, all_css_public)
+        #if not os.path.exists (all_js_public):
+        #    copy_symlink (all_js, all_js_public)
 
 
 class preferences (object):

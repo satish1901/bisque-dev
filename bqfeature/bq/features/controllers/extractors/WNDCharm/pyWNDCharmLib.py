@@ -11,25 +11,36 @@ import inspect
 #    add the other features
 #    have all the features return the correct type
 
-path=os.path.dirname(__file__) #os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) #find current dir of the file
-path = os.path.join(path,'..','..','..','..','src','extractors','WNDCharm','lib')
-_WNDCharmLib = np.ctypeslib.load_library('_WNDCharmLib', path)
+#path=os.path.dirname(__file__) #os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfname()))) #find current dir of the file
+#path = os.path.join(path,'..','..','..','..','src','extractors','WNDCharm','lib')
+#_WNDCharmLib = np.ctypeslib.load_library('_WNDCharmLib', path)
+
+_LIB=None
+def load_lib():
+    global _LIB
+    if _LIB is None:
+        path = run_path ('bqfeature', 'bq', 'src','extractors', 'WNDCharm','lib')
+        _LIB = np.ctypeslib.load_library('_WNDCharmLib', path)
+    return _LIB
+
+
 
 def extractChebyshevCoefficients(im):
     """
     Chebyshev Coefficients -
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
-    @result - a type double feature of length 32 
+    @result - a type double feature of length 32
     """
+    load_lib()
     descSize = 32
 
     #check if the image is in the correct format
     tmp = np.asarray(im)
     if not len(tmp.shape)==2:
         raise TypeError("Requires a grayscale image")
-    
+
     height, width = tmp.shape
 
     #initalizing function arguments
@@ -38,7 +49,7 @@ def extractChebyshevCoefficients(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Chebyshev_Coefficients.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Chebyshev_Coefficients(im, int(height), int(width), result)
@@ -48,11 +59,12 @@ def extractChebyshevCoefficients(im):
 def extractChebyshevFourierCoefficients(im):
     """
     Chebyshev Fourier Coefficients -
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
-    @result - a type double feature of length 32 
+    @result - a type double feature of length 32
     """
+    load_lib()
     descSize = 32
 
     #check if the image is in the correct format
@@ -76,25 +88,26 @@ def extractChebyshevFourierCoefficients(im):
 def extractCombFirstFourMoments(im):
     """
     Comb First Four Moments -
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
-    @result - a type int feature of length 48 
+    @result - a type int feature of length 48
     """
+    load_lib()
     descSize = 48
-    
+
     #check if the image is in the correct format
     tmp = np.asarray(im)
     if not len(tmp.shape)==2:
         raise TypeError("Requires a grayscale image")
-    
+
     height, width = tmp.shape
     _WNDCharmLib.Comb_First_Four_Moments.argtypes = [ \
             np.ctypeslib.ndpointer(dtype = np.double ),\
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Comb_First_Four_Moments.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Comb_First_Four_Moments(im, int(height), int(width), result)
@@ -103,28 +116,29 @@ def extractCombFirstFourMoments(im):
 def extractGaborTextures(im):
     """
     Gabor Textures -
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 7
-    
+
     broken right now
     needs to have imaginary number implemented correctly
     """
+    load_lib()
     descSize = 7
-    
+
     #check if the image is in the correct format
     tmp = np.asarray(im)
     if not len(tmp.shape)==2:
         raise TypeError("Requires a grayscale image")
-    
+
     height, width = tmp.shape
     _WNDCharmLib.Gabor_Textures.argtypes = [ \
             np.ctypeslib.ndpointer(dtype = np.double ),\
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Gabor_Textures.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Gabor_Textures(im,  int(height), int(width), result)
@@ -138,20 +152,21 @@ def extractHaralickTextures(im):
 
     @result - a type double feature of length 28
     """
+    load_lib()
     descSize = 28
-    
+
     #check if the image is in the correct format
     tmp = np.asarray(im)
     if not len(tmp.shape)==2:
         raise TypeError("Requires a grayscale image")
-    
+
     height, width = tmp.shape
     _WNDCharmLib.Haralick_Textures.argtypes = [ \
             np.ctypeslib.ndpointer(dtype = np.double ),\
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Haralick_Textures.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Haralick_Textures(im, int(height), int(width), result)
@@ -160,11 +175,12 @@ def extractHaralickTextures(im):
 def extractMultiscaleHistograms(im):
     """
     Multiscale Histograms
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 24
     """
+    load_lib()
     descSize = 24
 
     #check if the image is in the correct format
@@ -178,7 +194,7 @@ def extractMultiscaleHistograms(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Multiscale_Histograms.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Multiscale_Histograms(im, int(height), int(width), result)
@@ -187,11 +203,12 @@ def extractMultiscaleHistograms(im):
 def extractRadonCoefficients(im):
     """
     Radon Coefficients
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 12
     """
+    load_lib()
     descSize = 12
 
     #check if the image is in the correct format
@@ -205,7 +222,7 @@ def extractRadonCoefficients(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Radon_Coefficients.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Radon_Coefficients(im, int(height), int(width), result)
@@ -214,11 +231,12 @@ def extractRadonCoefficients(im):
 def extractTamuraTextures(im):
     """
     Tamura Testures:
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 6
     """
+    load_lib()
     descSize = 6
 
     #check if the image is in the correct format
@@ -232,7 +250,7 @@ def extractTamuraTextures(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Tamura_Textures.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Tamura_Textures(im, int(height), int(width), result)
@@ -241,11 +259,12 @@ def extractTamuraTextures(im):
 def extractZernikeCoefficients(im):
     """
     Zernike Coefficients:
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 72
     """
+    load_lib()
     descSize = 72
 
     #check if the image is in the correct format
@@ -259,7 +278,7 @@ def extractZernikeCoefficients(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Zernike_Coefficients.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Zernike_Coefficients(im, int(height), int(width), result)
@@ -268,11 +287,12 @@ def extractZernikeCoefficients(im):
 def extractPixelIntensityStatistics(im):
     """
     Pixel Intensity Statistics
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 5
     """
+    load_lib()
     descSize = 5
 
     #check if the image is in the correct format
@@ -286,7 +306,7 @@ def extractPixelIntensityStatistics(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Pixel_Intensity_Statistics.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Pixel_Intensity_Statistics(im, int(height), int(width), result)
@@ -295,11 +315,12 @@ def extractPixelIntensityStatistics(im):
 def extractColorHistogram(im):
     """
     Color Histogram
-    
+
     @im   - a mxnx3 numpy unit matrix (rgb image matrix) (will except mxn but will convert it to s mxnx3 uint matrix)
 
     @result - a type double feature of length 20
     """
+    load_lib()
     descSize = 20
 
     #check if the image is in the correct format
@@ -307,7 +328,7 @@ def extractColorHistogram(im):
     if len(tmp.shape)==3:
         if not tmp.shape[2]==3:
             raise TypeError("Requires a 3 channel rgb image")
-    elif len(tmp.shape)==2:    
+    elif len(tmp.shape)==2:
         #convert gray scale to 3 channeled
         tmp = np.concatenate([tmp[..., np.newaxis] for i in range(3)], axis=2)
     else:
@@ -319,7 +340,7 @@ def extractColorHistogram(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Color_Histogram.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Color_Histogram(im, int(height), int(width), result)
@@ -328,11 +349,12 @@ def extractColorHistogram(im):
 def extractFractalFeatures(im):
     """
     Fractal Features
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 20
     """
+    load_lib()
     descSize = 20
 
     #check if the image is in the correct format
@@ -346,7 +368,7 @@ def extractFractalFeatures(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Fractal_Features.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Fractal_Features(im, int(height), int(width), result)
@@ -355,11 +377,12 @@ def extractFractalFeatures(im):
 def extractEdgeFeatures(im):
     """
     Fractal Features
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 28
     """
+    load_lib()
     descSize = 28
 
     #check if the image is in the correct format
@@ -373,7 +396,7 @@ def extractEdgeFeatures(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Edge_Features.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Edge_Features(im, int(height), int(width), result)
@@ -382,11 +405,12 @@ def extractEdgeFeatures(im):
 def extractObjectFeatures(im):
     """
     Object Features
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 34
     """
+    load_lib()
     descSize = 34
 
     #check if the image is in the correct format
@@ -400,7 +424,7 @@ def extractObjectFeatures(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Object_Features.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Object_Features(im, int(height), int(width), result)
@@ -409,11 +433,12 @@ def extractObjectFeatures(im):
 def extractInverseObjectFeatures(im):
     """
     Inverse Object Features -
-    
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 34
     """
+    load_lib()
     descSize = 34
 
     #check if the image is in the correct format
@@ -427,7 +452,7 @@ def extractInverseObjectFeatures(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Inverse_Object_Features.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Inverse_Object_Features(im, int(height), int(width), result)
@@ -435,12 +460,13 @@ def extractInverseObjectFeatures(im):
 
 def extractGiniCoefficient(im):
     """
-    Gini Coefficient - 
-    
+    Gini Coefficient -
+
     @im - a mxn numpy double matrix (grayscale image matrix) (convert everything to double)
 
     @result - a type double feature of length 1
     """
+    load_lib()
     descSize = 1
 
     #check if the image is in the correct format
@@ -454,7 +480,7 @@ def extractGiniCoefficient(im):
             c_int, c_int,\
             np.ctypeslib.ndpointer(dtype = np.double)]
     _WNDCharmLib.Gini_Coefficient.restype = c_void_p
-    
+
     im = tmp.astype(np.double)
     result = np.empty([descSize], dtype=np.double)
     _WNDCharmLib.Gini_Coefficient(im, int(height), int(width), result)
@@ -467,5 +493,4 @@ if __name__ == '__main__':
     start=time.time()
     feature=extractChebyshevFourierCoefficients(im)
     end=time.time()
-    print 'time elapsed: %s'%str(end-start)  
-    
+    print 'time elapsed: %s'%str(end-start)

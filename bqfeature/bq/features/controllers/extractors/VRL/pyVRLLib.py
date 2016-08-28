@@ -5,29 +5,38 @@ import warnings
 
 
 
-path=os.path.dirname(__file__) #find current dir of the file
-path = os.path.join(path,'..','..','..','..','src','extractors','VRL','lib')
-_VRLLib_warp= np.ctypeslib.load_library('_VRLLib', path)
+#path=os.path.dirname(__file__) #find current dir of the file
+#path = os.path.join(path,'..','..','..','..','src','extractors','VRL','lib')
+#_VRLLib_warp= np.ctypeslib.load_library('_VRLLib', path)
+_LIB=None
+def load_lib():
+    global _LIB
+    if _LIB is None:
+        path = run_path ('bqfeature', 'bq', 'src','extractors', 'VRL','lib')
+        _LIB = np.ctypeslib.load_library('_VRLLib', path)
+    return _LIB
+
 
 def extractEHD(im):
     """
-    Edge Histogram Descriptor - 
-    
+    Edge Histogram Descriptor -
+
     @im   - a mxn numpy unit matrix (grayscale image matrix)
-        
+
     @result - the resulting edge histogram descriptor with given length
     """
+    load_lib()
     #EHD
     _VRLLib_warp.extractEHD.argtypes = [np.ctypeslib.ndpointer(dtype = np.intc), \
                                         ct.c_int, ct.c_int,\
                                         np.ctypeslib.ndpointer(dtype = np.double)]
     _VRLLib_warp.extractEHD.restype  = ct.c_void_p
-    
+
      #check if the image is in the correct format
     tmp = np.asarray(im)
     if not len(tmp.shape)==2:
-        raise TypeError("Requires a grayscale image")   
-    
+        raise TypeError("Requires a grayscale image")
+
     rows, cols = tmp.shape
     im = tmp.astype(np.intc)
     result = np.empty([80], dtype=np.double)
@@ -37,21 +46,22 @@ def extractEHD(im):
 
 def extractHTD(im, mask = None):
     """
-    Homogenious Texture Descriptor - 
-    
+    Homogenious Texture Descriptor -
+
     @im   - a mxn numpy unit matrix (grayscale image matrix)
-        
+
     @result - the resulting homogenious texture descriptor with given length
     """
-    
+    load_lib()
+
     #HTD
     _VRLLib_warp.extractHTD.argtypes = [np.ctypeslib.ndpointer(dtype = np.intc),\
                                         np.ctypeslib.ndpointer(dtype = np.intc),\
                                         np.ctypeslib.ndpointer(dtype = np.intc),\
                                         ct.c_int, ct.c_int, ct.c_int,\
                                         np.ctypeslib.ndpointer(dtype = np.double)]
-    _VRLLib_warp.extractHTD.restype  = ct.c_void_p    
-    
+    _VRLLib_warp.extractHTD.restype  = ct.c_void_p
+
     #check if the image is in the correct format
     tmp = np.asarray(im)
     if not len(tmp.shape)==2:
@@ -90,11 +100,10 @@ if __name__=='__main__':
     im = np.array(im)
     mask = Image.open('mask.gif')
     mask = np.array(mask)
-    
+
     start=time.time()
     feature = extractEHD(im)
     #feature, label=extractHTD(im,mask=mask)
     end=time.time()
     print 'time elapsed: %s'%str(end-start)
     print feature
-

@@ -899,6 +899,7 @@ def bisquik2db_internal(inputs, parent, resource,  replace):
         log.debug ('modified : new (%d), dirty (%d), deleted(%d)' ,
                    len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted))     # pylint: disable=no-member
         if node not in DBSession:  # pylint: disable=unsupported-membership-test
+            # pylint: disable=no-member
             DBSession.add(node)
         log.debug ("node.document = %s"  % node.document)
         node.document.ts = ts

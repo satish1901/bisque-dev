@@ -93,6 +93,8 @@ class ServiceDirectory(object):
 
     def register_service (self, name, service, service_type = None):
         """Register a new service (type)"""
+        if service is None:
+            return
         if service_type is None:
             service_type = service.__controller__.service_type
         e = self._get_entry (service_type)
@@ -130,9 +132,12 @@ class ServiceDirectory(object):
             log.error ("Could not find registered service %s", service_type)
             return None
         if len(entry.instances) == 0:
-            service_url = urlparse.urljoin (self.root , entry.name)
-            service = entry.module.initialize(service_url)
-            service_registry.register_instance (service)
+        # Don't automatically try to create instances anymore
+            log.warn ("No available instance for service %s", service_type)
+            return None
+        #    service_url = urlparse.urljoin (self.root , entry.name)
+        #    service = entry.module.initialize(service_url)
+        #    service_registry.register_instance (service)
         return entry.instances[0]
 
     def get_services (self, service_type=None):
@@ -172,9 +177,10 @@ def mount_services (root, enabled = None, disabled = None):
                 #service_url = '/' + entry.name
                 log.debug ('activating %s at %s' % (str(entry.name), service_url))
                 service = entry.module.initialize(service_url)
-                service_registry.register_instance (service)
-                pairs.append ( (entry.name, service) )
-                mounted.append(entry.name)
+                if service:
+                    service_registry.register_instance (service)
+                    pairs.append ( (entry.name, service) )
+                    mounted.append(entry.name)
             else:
                 log.warn ("SKIPPING %s : no initialize" % entry.name)
         else:

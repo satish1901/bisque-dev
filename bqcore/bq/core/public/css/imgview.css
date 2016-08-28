@@ -388,7 +388,7 @@
     z-index: 32;
     background-repeat: no-repeat;
     background-position: -34px -131px;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
 }
 
@@ -402,7 +402,7 @@
     z-index: 32;
     cursor: 'se-resize';
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/resize-handle.png');
+    background-image: url('/core/images/viewer/resize-handle.png');
 }
 
 /********************************************************************
@@ -535,7 +535,7 @@
     height: 24px !important;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/bisque_logo_gray.svg');
+    background-image: url('/core/images/bisque_logo_gray.svg');
     background-size: 90px;
     background-position: 0px 0px;
 }
@@ -561,7 +561,7 @@
     background-color: transparent;
     background-repeat: no-repeat;
     background-position: -34px -97px;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
 }
 /*
@@ -593,7 +593,7 @@
 
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: -134px -163px;
 }
@@ -615,7 +615,7 @@
 }
 
 .contrast .x-form-item-body {
-    background-image: url('/images/viewer/slider_contrast.svg');
+    background-image: url('/core/images/viewer/slider_contrast.svg');
     background-repeat: no-repeat;
     background-size: 96.5%;
     padding-top: 5px;
@@ -637,7 +637,7 @@
     right: none;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: -134px 0px;
 }
@@ -750,7 +750,7 @@ table.x-form-color {
     margin: 4px 4px 0px 0px;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 72px;
     background-position: -47px -12px;
     width: 13px;
@@ -805,7 +805,7 @@ table.x-form-color {
     margin: 4px 4px 0px 0px;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 75px;
     background-position: -36px -12px;
     width: 14px;
@@ -826,7 +826,7 @@ table.x-form-color {
     height: 31px;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: 0px 0px;
     border-color: transparent !important;
@@ -837,7 +837,7 @@ table.x-form-color {
     height: 31px;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: -101px -163px;
     border-color: transparent !important;
@@ -1030,35 +1030,35 @@ table.x-form-color {
 *******************************************************************************/
 
 .movie {
-    background-image: url('/images/viewer/movie.png');
+    background-image: url('/core/images/viewer/movie.png');
     background-size: 16px;
     background-color: transparent;
     background-repeat: no-repeat;
 }
 
 .view2d {
-    background-image: url('/images/viewer/2d.png');
+    background-image: url('/core/images/viewer/2d.png');
     background-size: 16px;
     background-color: transparent;
     background-repeat: no-repeat;
 }
 
 .view3d {
-    background-image: url('/images/viewer/3d.png');
+    background-image: url('/core/images/viewer/3d.png');
     background-size: 16px;
     background-color: transparent;
     background-repeat: no-repeat;
 }
 
 .external {
-    background-image: url('/images/viewer/external.png');
+    background-image: url('/core/images/viewer/external.png');
     background-size: 16px;
     background-color: transparent;
     background-repeat: no-repeat;
 }
 
 .converter {
-    background-image: url('/images/viewer/converter.png');
+    background-image: url('/core/images/viewer/converter.png');
     background-size: 16px;
     background-color: transparent;
     background-repeat: no-repeat;
@@ -1117,15 +1117,13 @@ table.x-form-color {
 }
 
 .icon-pipette {
-    background-image: url('/images/viewer/pipette.png');
+    background-image: url('/core/images/viewer/pipette.png');
     background-size: 24px 24px;
     background-repeat: no-repeat;
 }
 
 .icon-close {
-    background-image: url('/images/viewer/32px_close.png');
+    background-image: url('/core/images/viewer/32px_close.png');
     background-size: 24px 24px;
     background-repeat: no-repeat;
 }
-
-
