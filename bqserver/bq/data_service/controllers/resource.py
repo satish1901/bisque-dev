@@ -187,8 +187,10 @@ class ResponseCache(object):
     def __init__(self, cachepath):
         "create the local cache"
         self.cachepath  = cachepath
-        if not os.path.exists(cachepath):
-            os.makedirs (cachepath)
+    def _setup (self):
+        if not os.path.exists(self.cachepath):
+            os.makedirs (self.cachepath)
+        return self
 
     def _cache_name (self, url, user):
         scheme, authority, request_uri, defrag_uri = urlnorm(url)
@@ -550,7 +552,7 @@ class Resource(ServiceController):
         log.debug ("Resource()")
         if cache and self.cache == True:
             log.debug ("using CACHE")
-            self.server_cache = self.hier_cache
+            self.server_cache = self.hier_cache._setup()
 
 #             self.modify = error_handler(error_function)(self.modify)
 #             self.new = error_handler(error_function)(self.new)

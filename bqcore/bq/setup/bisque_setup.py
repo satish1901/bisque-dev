@@ -1,4 +1,57 @@
-#!/usr/bin/env python
+###############################################################################
+##  Bisquik                                                                  ##
+##  Center for Bio-Image Informatics                                         ##
+##  University of California at Santa Barbara                                ##
+## ------------------------------------------------------------------------- ##
+##                                                                           ##
+##     Copyright (c) 2007 by the Regents of the University of California     ##
+##                            All rights reserved                            ##
+##                                                                           ##
+## Redistribution and use in source and binary forms, with or without        ##
+## modification, are permitted provided that the following conditions are    ##
+## met:                                                                      ##
+##                                                                           ##
+##     1. Redistributions of source code must retain the above copyright     ##
+##        notice, this list of conditions, and the following disclaimer.     ##
+##                                                                           ##
+##     2. Redistributions in binary form must reproduce the above copyright  ##
+##        notice, this list of conditions, and the following disclaimer in   ##
+##        the documentation and/or other materials provided with the         ##
+##        distribution.                                                      ##
+##                                                                           ##
+##     3. All advertising materials mentioning features or use of this       ##
+##        software must display the following acknowledgement: This product  ##
+##        includes software developed by the Center for Bio-Image Informatics##
+##        University of California at Santa Barbara, and its contributors.   ##
+##                                                                           ##
+##     4. Neither the name of the University nor the names of its            ##
+##        contributors may be used to endorse or promote products derived    ##
+##        from this software without specific prior written permission.      ##
+##                                                                           ##
+## THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS "AS IS" AND ANY ##
+## EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED ##
+## WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ARE   ##
+## DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR  ##
+## ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL    ##
+## DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS   ##
+## OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)     ##
+## HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,       ##
+## STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN  ##
+## ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE           ##
+## POSSIBILITY OF SUCH DAMAGE.                                               ##
+##                                                                           ##
+###############################################################################
+"""
+SYNOPSIS
+========
+Configure bisque
+
+DESCRIPTION
+===========
+
+
+
+"""
 from __future__ import with_statement
 import traceback
 #import package_resources
@@ -13,6 +66,7 @@ import StringIO
 import textwrap
 import getpass
 import string
+import random
 import re
 import logging
 import time
@@ -36,16 +90,6 @@ formatter = logging.Formatter("%(name)s:%(levelname)s:%(message)s")
 ch.setFormatter(formatter)
 log.addHandler(ch)
 
-
-
-if os.name == 'nt':
-    EXEC_EXTS = ['.com', '.exe', '.bat' ]
-    SCRIPT_EXT = '.exe'
-    ARCHIVE_EXT = '.zip'
-else:
-    SCRIPT_EXT = ''
-    ARCHIVE_EXT = '.tar.gz'
-    EXEC_EXTS = ['']
 
 ## ENSURE setup.py has been run before..
 capture = None
@@ -85,6 +129,45 @@ class InstallError(Exception):
     pass
 
 
+
+#############################################
+#  Setup some local constants
+DIRS= dict (
+    # These are by set by install
+    share  =None,
+    run    =None,
+    virtualenv=None,
+    # These are derived from those above
+    bin    = None,
+    config = None,
+    default=None,
+    depot  =None,
+)
+SITE_CFG = None
+RUNTIME_CFG = None
+
+
+PYTHON=sys.executable
+EXT_SERVER = "http://biodev.ece.ucsb.edu/binaries/depot/" # EXTERNAL host server DIRS['depot']
+
+
+#HOSTNAME = socket.getfqdn()
+HOSTNAME = "0.0.0.0"
+
+
+if os.name == 'nt':
+    EXEC_EXTS = ['.com', '.exe', '.bat' ]
+    SCRIPT_EXT = '.exe'
+    ARCHIVE_EXT = '.zip'
+else:
+    SCRIPT_EXT = ''
+    ARCHIVE_EXT = '.tar.gz'
+    EXEC_EXTS = ['']
+
+
+
+
+
 ############################################
 # HELPER FUNCTIONS
 def to_sys_path( p ):
@@ -96,16 +179,20 @@ def to_posix_path( p ):
     return p.replace(os.sep, '/')
 
 def defaults_path(*names):
-    return to_sys_path(os.path.join(BQDIR, 'config-defaults', *names))
+    return to_sys_path(os.path.join(DIRS['default'],  *names))
 
 def config_path(*names):
-    return to_sys_path(os.path.join(BQDIR, 'config', *names))
+    return to_sys_path(os.path.join(DIRS['config'], *names))
 
-def contrib_path(*names):
-    return to_sys_path(os.path.join(BQDIR, 'contrib', *names))
+def share_path(*names):
+    return to_sys_path(os.path.join(DIRS['share'], *names))
 
-def bisque_path(*names):
-    return to_sys_path(os.path.join(BQDIR, *names))
+def bin_path(*names):
+    return to_sys_path(os.path.join(DIRS['bin'],  *names))
+
+def run_path(*names):
+    return to_sys_path(os.path.join(DIRS['run'],  *names))
+
 
 QUOTED_CHARS="#"
 def quoted(value):
@@ -316,30 +403,16 @@ def touch(fname, times=None):
     finally:
         fhandle.close()
 
+def find_path (name, places):
+    """Look in PLACES for a file (or directory) named NAME
+    """
+    for dir in places:
+        place = os.path.join (dir, name)
+        if os.path.exists(place):
+            return place
+    return None
 
 
-#############################################
-#  Setup some local constants
-
-PYTHON=sys.executable
-EXT_SERVER = "http://biodev.ece.ucsb.edu/binaries/depot/" # EXTERNAL host server BQDEPOT
-BQDIR = os.path.abspath ('.')  # Our top installation path
-BQDEPOT  = os.path.join(BQDIR, "external") # Local directory for externals
-
-BQENV = None
-BQBIN = None
-SITE_PACKAGES = None
-
-SITE_DEFAULT = defaults_path('site.cfg.default')
-UWSGI_DEFAULT = defaults_path('uwsgi.cfg.default')
-PASTER_DEFAULT = defaults_path('server.ini.default')
-
-ALEMBIC_CFG  = config_path('alembic.ini')
-SITE_CFG     = config_path('site.cfg')
-RUNTIME_CFG  = config_path('runtime-bisque.cfg')
-
-#HOSTNAME = socket.getfqdn()
-HOSTNAME = "localhost"
 
 
 
@@ -356,7 +429,7 @@ SITE_VARS = {
     }
 
 ENGINE_VARS  ={
-#    'bisque.engine': 'http://%s:27000'  % HOSTNAME,
+    'bisque.engine': 'http://%s:27000'  % HOSTNAME,
     'bisque.paths.root' : os.getcwd(),
     # 'bisque.admin_email' : 'YourEmail@YourOrganization',
     }
@@ -365,7 +438,7 @@ ENGINE_VARS  ={
 # you run bisque-setup
 initial_vars = {
     'bisque.paths.root' : os.getcwd(),
-    'bisque.root' : 'http://localhost:8080',
+    'bisque.root' : 'http://0.0.0.0:8080',
     'bisque.organization': 'Your Organization',
     'bisque.title': 'Image Repository',
     'bisque.admin_email' : 'YourEmail@YourOrganization',
@@ -384,7 +457,7 @@ initial_vars = {
 }
 
 linked_vars = {
-    'h1.url' : '${bisque.server}',
+#    'h1.url' : '${bisque.server}',
     'bisque.root' : '${bisque.server}',
     'smtp_server' : '${mail.smtp.server}',
     'registration.site_name' : '${bisque.title} (${bisque.server})',
@@ -394,30 +467,51 @@ linked_vars = {
     'beaker.session.sa.url' : '${sqlalchemy.url}',
 }
 
+SERVER_QUESTIONS=[
+    ('backend' , 'The server agent for bisque', "Bisque can configured to be served by paster or uwsgi"),
+    ('servers', "list of server entries to be configured", "Each server listed will be configured"),
+]
+
+PASTER_QUESTIONS=[
+    ('url', 'the url of the server', 'The url including port of the internal server'),
+    ('services_enabled', 'Services enabled', ''),
+    ('services_disabled', 'Services disabled', ''),
+]
+
+UWSGI_QUESTIONS=[
+    ('url', 'the url of the server', 'The url including port of the internal server'),
+    ('services_enabled', 'Services enabled', ''),
+    ('services_disabled', 'Services disabled', ''),
+    ('uwsgi.socket', 'The socket to listen on', ''),
+    ('bisque.static_files', 'enables serving static files', 'usually uwsgi is used behing another web servers, so leave disabled'),
+    ]
+
+
 
 SITE_QUESTIONS = [
 ('bisque.server' , 'Enter the root URL of the server ',
-                   """A complete URL where your application will be mounted i.e. http://someserver:8080/
-#If you server will be mounted behind a proxy, please enter
-#the proxy address and see AdvancedInstalls"""),
-                  ('bisque.admin_displayname', 'Your real name  administrator account', None),
-                  ('bisque.admin_id', 'A login ID for the administrator account', None),
-                  ('bisque.admin_email' , 'An email for the administrator', None),
-                  ('bisque.organization', 'A small organization title for the main page',
-                   "This will show up in the upper left of every page display"),
-                  ('bisque.title', 'The main title for the web page header',
-                   "The title of your collection, group or project" ),
-                  ('bisque.paths.root', 'Installation Directory',
-                   'Location of bisque installation.. used for find configuration and data')]
+ """A complete URL where your application will be mounted i.e. http://someserver:8080/
+ If you server will be mounted behind a proxy, please enter
+ the proxy address and see AdvancedInstalls"""),
+     ('bisque.admin_displayname', 'Your real name  administrator account', None),
+     ('bisque.admin_id', 'A login ID for the administrator account', None),
+     ('bisque.admin_email' , 'An email for the administrator', None),
+     ('bisque.organization', 'A small organization title for the main page',
+      "This will show up in the upper left of every page display"),
+     ('bisque.title', 'The main title for the web page header',
+      "The title of your collection, group or project" ),
+     ('bisque.paths.root', 'Installation Directory',
+      'Location of bisque installation.. used for find configuration and data')]
 
 
 ENGINE_QUESTIONS=[
     #    ('bisque.root' , 'Enter the root URL of the BISQUE server ',
     #     "A URL of Bisque site where this engine will register modules"),
-#    ('bisque.engine', "Enter the URL of this bisque module engine",
-#     "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
+    ('bisque.engine', "Enter the URL of this bisque module engine",
+     "A module engine offers services over an open URL like a web-server. Please make sure any firewall software allows access to the selected port"),
     ('bisque.paths.root', 'Installation Directory',
-     'Location of bisque installation.. used for find configuration and data'),]
+     'Location of bisque installation.. used for find configuration and data'),
+]
 
 
 
@@ -461,9 +555,15 @@ DOCKER_QUESTIONS = [
     ('docker.hub', 'A docker image repository to store locally built images', 'biodev.ece.ucsb.edu:5000' ),
     ('docker.hub.user', 'A docker login', None),
     ('docker.hub.password', 'A docker login password', None),
-    ('docker.hub.email', 'A docker login password', None),
+    ('docker.hub.email', 'A docker login email', None),
 
     ]
+DOCKER_IMAGE_QUESTIONS = [
+    ('docker.image.matlab_runtime', "matlab runtime image", "a docker image spec of the matlab runtime"),
+    ('docker.image.cellprofiler', "cellprofiler runtime image", "a docker image spec of the cellprofiler runtime"),
+    ('docker.image.dream3d', "dream3d runtime image", "a docker image spec of the dream3d runtime"),
+    ]
+
 
 #####################################################
 # Installer routines
@@ -514,13 +614,15 @@ def read_site_cfg(cfg , section):
 def visible(k,v):
     return not k.startswith('__')
 
-def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CFG, filterby = visible ):
+def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=None, filterby = visible ):
     """Read the config file and update the variables in a section
     @param bisque_vars: dict of variables
     @param section: name of section to modify
     @param append:  bool append new variables
     @param cfg : the file to modify
     """
+    if cfg is None:
+        cfg = SITE_CFG
 
     c = ConfigFile()
     if os.path.exists (cfg):
@@ -534,13 +636,24 @@ def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CF
     return bisque_vars
 
 
-def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=SITE_CFG):
+def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=None):
     """Ask questions and modify a config file
     see update_site_cfg
     """
 
+    if cfg is None:
+        cfg = SITE_CFG
+
     if not os.path.exists (cfg):
         raise InstallError('missing %s' % cfg)
+
+    # Check environment defaults
+    for key, _, _ in qs:
+        # Check environment variables
+        section_name = '' if section == BQ_SECTION or section is None else section + "_"
+        envkey = "BISQUE_" + section_name.upper() + key.upper().replace('.','_')
+        print "checking", envkey
+        bisque_vars[key] = os.environ.get (envkey, bisque_vars.get (key, ''))
 
     bisque_vars =  update_variables(qs, bisque_vars )
     for k,v in linked_vars.items():
@@ -746,6 +859,9 @@ def get_dburi(params):
 
     if os.getenv('BISQUE_DBURL'):
         params['sqlalchemy.url'] = os.getenv('BISQUE_DBURL')
+    if params['sqlalchemy.url'].startswith('sqlite:///bisque.db'):
+        params['sqlalchemy.url'] = "sqlite:///%s/bisque.db" % (DIRS['run'])
+
     params = modify_site_cfg(DB_QUESTIONS, params)
     dburi = os.getenv('BISQUE_DBURL') or params.get('sqlalchemy.url', None)
     DBURL = sa.engine.url.make_url (dburi)
@@ -860,6 +976,9 @@ def initialize_database(params, DBURL=None):
         db_initialized = True
 
     params['new_database'] = False
+    params['script_location'] = share_path ('migrations')
+    ALEMBIC_CFG  = config_path('alembic.ini')
+
     install_cfg(ALEMBIC_CFG, section="alembic", default_cfg=defaults_path('alembic.ini.default'))
     update_site_cfg(params, section='alembic', cfg = ALEMBIC_CFG, append=False)
     if not db_initialized and getanswer(
@@ -868,7 +987,7 @@ def initialize_database(params, DBURL=None):
         The database is freshly created and doesn't seem to have
         any tables yet.  Allow the system to create them..
         """) == "Y":
-        if call (['paster','setup-app', config_path('site.cfg')]) != 0:
+        if call ([bin_path('paster'),'setup-app', config_path('site.cfg')]) != 0:
             raise SetupError("There was a problem initializing the Database")
         params['new_database'] = True
     return params
@@ -883,7 +1002,7 @@ def migrate_database(DBURL=None):
 
     #if not params['new_database'] : #and test_db_alembic(DBURL):
     print "Upgrading database version (alembic)"
-    if call (["alembic", '-c', config_path('alembic.ini'), 'upgrade', 'head']) != 0:
+    if call ([bin_path("alembic"), '-c', config_path('alembic.ini'), 'upgrade', 'head']) != 0:
         raise SetupError("There was a problem initializing the Database")
 
 
@@ -891,31 +1010,31 @@ def migrate_database(DBURL=None):
 
 #######################################################
 # Matlab
-def install_matlab(params, cfg = RUNTIME_CFG):
+def install_matlab(params, cfg = None):
+
+    if cfg is None:
+        cfg = RUNTIME_CFG
     #print params
     matlab_home = which('matlab')
     if matlab_home:
         params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
-    if params['runtime.matlab_launcher'] == 'config-defaults/templates/matlab_launcher_SYS.tmpl':
-        if os.name == 'nt':
-            params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher_win.tmpl'))
+
+    print "CONFIG", cfg
+    params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
+    if  os.path.exists(params['runtime.matlab_home']):
+        if params.get ('runtime.matlab_launcher') == 'config-defaults/templates/matlab_launcher_SYS.tmpl':
+            if os.name == 'nt':
+                params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher_win.tmpl'))
+            else:
+                params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher.tmpl'))
         else:
-            params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher.tmpl'))
-    for f in ['runtime.matlab_launcher' ] :
-        if os.path.exists(params[f]):
-            params[f] = os.path.abspath(params[f])
-
-    while True:
-        params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
-        if  os.path.exists(params['runtime.matlab_home']):
-            break
-        if  getanswer("Matlab not found: Try again", 'N',
-                      "Matlab (and compile) is needed for many modules") == 'Y':
-            continue
-        print "Matlab must be provided to install modules"
+            print "using matlab_launcher ", params.get ('runtime.matlab_launcher')
+        #for f in ['runtime.matlab_launcher' ] :
+        #    if os.path.exists(params[f]):
+        #        params[f] = os.path.abspath(params[f])
+    else:
+        print "WARNING: Matlab is required for many modules"
         params['matlab_installed'] = False
-        break
-
 
     #install_matlabwrap(params)
     return params
@@ -954,21 +1073,27 @@ def install_matlabwrap(params):
     os.chdir (cwd)
 
 
-def install_docker (params, cfg = RUNTIME_CFG):
+def install_docker (params, cfg = None):
     """Setup docker runners for modules on system
     """
     if os.name == 'nt':
         return params
+    if cfg is None:
+        cfg = RUNTIME_CFG
 
     has_docker = which('docker')
     if getanswer( "Enable docker modules", 'Y' if has_docker else 'N',
                   "Use docker to build and run modules") != 'Y':
         return params
-    params['docker.enabled'] = 'true'
-    params = modify_site_cfg(DOCKER_QUESTIONS, params, section=None, cfg=cfg)
+    docker_params = read_site_cfg (cfg, 'docker')
+    docker_params['docker.enabled'] = 'true'
+    docker_params = modify_site_cfg(DOCKER_QUESTIONS, docker_params, section='docker', cfg=cfg)
 
     if os.path.exists('/dev/null'):
         devnull = open ('/dev/null')
+
+    # Ensure base docker images are available
+    docker_params = modify_site_cfg(DOCKER_IMAGE_QUESTIONS, docker_params, section='docker', cfg=cfg,append=False)
 
     retcode = call('docker images|fgrep mcr_runtime' , shell=True, stdout=devnull, stderr=devnull)
     if retcode != 0:
@@ -986,39 +1111,125 @@ def install_docker (params, cfg = RUNTIME_CFG):
 
 def install_modules(params):
     # Check each module for an install script and run it.
-    ans =  getanswer( "Try to setup modules", 'N',
+    ans =  getanswer( "Try to setup modules", 'Y',
                   "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly")
     if ans != 'Y':
         return params
-    if not os.path.exists(bisque_path('modules')):
-        os.makedirs (bisque_path('modules'))
-        print "No modules were found on the system. Please install sample modules from http://biodev.ece.ucsb.edu/binaries/depot/bisque-modules.tgz"
-        return params
 
+    install_matlab(params)
+    install_docker(params)
+    install_runtime(params)
+    fetch_modules(params)
+
+def fetch_modules(params):
+    """Get and install modules from remote and local sources
+    """
+    hg = which('hg')
+    git = which('git')
+    # Read list of modules trees from config-defaults/MODULES
+    module_list = defaults_path('MODULES')
+    if module_list is None:
+        print "Can't find list of modules to install"
+        return params
+    module_locations = []
+    with open(module_list) as repos_list:
+        for line in repos_list:
+            line = line.split ('#',1)[0].strip()
+            if not line:
+                continue
+            module_locations.append(line)
+    # Clone any remote repositories
+    module_dirs = []
+    for module_url in module_locations:
+        print "Installing module(s) at %s" % module_url
+        module_dir = None
+        if git and module_url.endswith ('.git'):
+            module_dir = os.path.splitext(os.path.basename(module_url))[0]
+            if not os.path.exists (module_dir):
+                print "git clone %s into %s" % (module_url, module_dir)
+                call ([git, 'clone', module_url, module_dir])
+        elif os.path.exists (module_url):
+            module_dir = module_url
+        elif hg and module_url.startswith ('https') : #and 'hg@' in module_url:
+            module_dir = os.path.basename(module_url)
+            if not os.path.exists (module_dir):
+                print "hg clone %s into %s" % (module_url, module_dir)
+                call ([hg, 'clone', module_url, module_dir])
+        else:
+            print "Could not determine fetch method for module %s" % module_url
+        if module_dir:
+            module_dirs.append (module_dir)
+    # Walk any module trees installing modules found
+
+    for module_dir in module_dirs:
+        if not os.path.exists(module_dir):
+            os.makedirs (module_dir)
+        install_module_tree(module_dir)
+
+
+def identify_repository_url(url):
+    """Determine what sort of repository is at URL
+    @param URL: a url string
+    @return: 'git','hg', or None
+    """
+    hg = which('hg')
+    git = which('git')
+    r = call ([hg, 'identify', url])
+    if r == 0:
+        return 'hg'
+    r = call([git, 'ls-remote', url])
+    if r == 0:
+        return 'git'
+    return None
+
+def check_module_enabled(module_dir):
+    cfg = os.path.join(module_dir, 'runtime-module.cfg')
+    if not os.path.exists(cfg):
+        log.debug ("Skipping %s (%s) : no runtime-module.cfg" % (module_dir, cfg))
+        return False
+    cfg = ConfigFile (cfg)
+    mod_vars = cfg.get (None, asdict = True)
+    log.debug ("module config = %s", mod_vars)
+    enabled = mod_vars.get('module_enabled', 'true').lower() in [ "true", '1', 'yes', 'enabled' ]
+    ### Check that there is a valid Module descriptor
+    if not enabled:
+        log.debug ("Skipping %s : disabled" % module_dir)
+        return False
+    return True
+
+def install_module_tree(module_root):
+    """Find and install module based at MODULE_ROOT
+    """
     environ = dict(os.environ)
     environ.pop ('DISPLAY', None) # Makes matlab hiccup
     environ['BISQUE_ROOT'] = os.getcwd()
-    for bm in os.listdir (bisque_path('modules')):
-        modpath = bisque_path('modules', bm)
-        # if os.path.isdir(modpath) and os.path.exists(os.path.join(modpath, "runtime-module.cfg")):
-        #     cfg_path = os.path.join(modpath, 'runtime-bisque.cfg')
-        #     copy_link(RUNTIME_CFG, cfg_path)
-        if os.path.exists(os.path.join(modpath, 'setup.py')):
-            cwd = os.getcwd()
-            os.chdir (modpath)
-            print "################################"
-            print "Running setup.py in %s" % modpath
-            try:
-                r = call ([PYTHON, '-u', 'setup.py'], env=environ)
-                if r != 0:
-                    print "setup in %s returned error " % modpath
-            except Exception, e:
-                log.exception ("An exception occured during the module setup: %s" % str(e))
-            os.chdir (cwd)
-    return params
 
+    for root, dirs, files in os.walk(module_root):
+        for module_file in files:
+            if module_file == 'runtime-module.cfg':
+                module_directory = os.path.dirname (os.path.join (root,module_file))
+                if check_module_enabled (module_directory):
+                    setup_module(module_directory, environ)
 
-    matlab_home = which('matlab')
+def setup_module(module_dir, environ):
+    "Find and setup a single bisque module:"
+    if not os.path.exists(os.path.join(module_dir, 'setup.py')):
+        return False
+    cwd = os.getcwd()
+    os.chdir (module_dir)
+    print "################################"
+    print "Running %s setup.py in %s" % (PYTHON, module_dir)
+    try:
+        r = call ([PYTHON, '-u', 'setup.py'], env=environ)
+        if r == 0:
+            return True
+        print "setup in %s returned error %s " % (module_dir, r)
+    except Exception, e:
+        log.exception ("An exception occured during the module setup: %s" % str(e))
+    finally:
+        os.chdir (cwd)
+    return False
+
 
 
 #######################################################
@@ -1047,6 +1258,10 @@ def install_server_defaults(params):
         params.update(SITE_VARS)
         new_install = True
 
+        for k, v  in DIRS.items():
+            params["bisque.paths.%s" % k] = v
+
+
     print "Top level site variables are:"
     for k in sorted(SITE_VARS.keys()):
         if k not in params:
@@ -1060,8 +1275,13 @@ def install_server_defaults(params):
         params['bisque.root'] = path
 
     if new_install:
-        server_params = {  'h1.url' : params['bisque.server']}
-        server_params = update_site_cfg(server_params, 'servers', append=False)
+        # Update the installation directories
+        for k, v  in DIRS.items():
+            params["bisque.paths.%s" % k] = v
+        update_site_cfg(params, section=BQ_SECTION)
+
+        #server_params = {'h1.url' : params['bisque.server']}
+        #server_params = update_site_cfg(server_params, 'servers', append=False)
 
     if getanswer ('Do you want to create new server configuations', 'Y',
                   "Use an editor to edit the server section (see http://biodev.ece.ucsb.edu/projects/bisquik/wiki/Installation/ParsingSiteCfg )") == 'Y':
@@ -1077,21 +1297,22 @@ def setup_server_cfg (params):
     pprint.pprint (server_params)
     previous_backend = server_params['backend']
 
-    status = 0
-    if getanswer ('Edit servers in site.cfg ', 'N',
-                  "Please edit only the server section ") != 'N':
-        editor = os.environ.get ('EDITOR', which ('vi'))
-        if editor is not None:
-            status = subprocess.call ([editor, SITE_CFG])
-        else:
-            print "No editor found. Please set EDITOR"
-            return
+    #status = 0
+    #if getanswer ('Edit servers in site.cfg ', 'N',
+    #              "Please edit only the server section ") != 'N':
+    #    editor = os.environ.get ('EDITOR', which ('vi'))
+    #    if editor is not None:
+    #        status = subprocess.call ([editor, SITE_CFG])
+    #    else:
+    #        print "No editor found. Please set EDITOR"
+    #        return
 
-    if status != 0:
-        print "GOT status", status
-        return params
+    #if status != 0:
+    #    print "GOT status", status
+    #    return params
 
-    server_params = read_site_cfg (SITE_CFG, 'servers')
+
+    server_params = modify_site_cfg (SERVER_QUESTIONS,  server_params, section='servers', append=False)
     if server_params['backend'] == 'uwsgi':
         params = setup_uwsgi(params, server_params)
     if server_params['backend'] == 'paster':
@@ -1119,23 +1340,31 @@ def install_engine_defaults(params):
         params.update(ENGINE_VARS)
         new_install = True
 
+
     print "Top level site variables are:"
     for k in sorted(ENGINE_VARS.keys()):
         if k not in params:
             params[k] = ENGINE_VARS[k]
         print "  %s=%s" % (k,params[k])
 
-    if getanswer("Change a site variable", 'Y')=='Y':
-        params = modify_site_cfg(SITE_QUESTIONS, params)
+    if getanswer("Change a site variable", 'N')=='Y':
+        params = modify_site_cfg(ENGINE_QUESTIONS, params)
+
+    server_params = {  'e1.url' : params['bisque.engine'], }
+    server_params = update_site_cfg(server_params, 'servers', append=True )
+    pprint.pprint (server_params)
 
     if getanswer("Update servers", 'Y' if new_install else 'N', 'Modify [server] section of site.cfg') == 'Y':
-        server_params = { 'e1.proxyroot' : params['bisque.root'], 'e1.url' : params['bisque.engine'], }
-        server_params = update_site_cfg(server_params, 'servers', append=False )
         params.update(server_params)
     else:
         print "Warning: Please review the [server] section of site.cfg after modifying site variables"
     return params
 
+def install_runtime_cfg(runtime_params):
+    "ensure runtime-bisque.cfg is created and loaded"
+    if not   os.path.exists(RUNTIME_CFG):
+        runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=defaults_path('runtime-bisque.default'))
+    return runtime_params
 
 
 def install_proxy(params):
@@ -1152,7 +1381,9 @@ def install_proxy(params):
 
 #######################################################
 #
-def check_condor (params, cfg  = RUNTIME_CFG):
+def check_condor (params, cfg  = None):
+    if cfg is None:
+        cfg = RUNTIME_CFG
     try:
 
         if os.path.exists('/dev/null'):
@@ -1205,12 +1436,16 @@ def check_condor (params, cfg  = RUNTIME_CFG):
 
 
 
-def install_runtime(params, cfg = RUNTIME_CFG):
+def install_runtime(params, cfg = None):
     """Check and install runtime control files"""
+
+    if cfg is None:
+        cfg = RUNTIME_CFG
 
     params['runtime.platforms'] = "command"
     check_condor(params, cfg=cfg)
 
+    params['runtime.staging_base'] = share_path('staging')
     params = modify_site_cfg(RUNTIME_QUESTIONS, params, section=None, cfg=cfg)
     staging=params['runtime.staging_base'] = os.path.abspath(os.path.expanduser(params['runtime.staging_base']))
 
@@ -1262,10 +1497,9 @@ def install_preferences(params):
     if params.get('new_database'): #already initialized
         return params
     if getanswer ("Initialize Preferences ","N",
-                  """Initialize system preferences.. new systems will
-requires this while, upgraded system may depending on chnages""")!="Y":
+                  """Initialize system preferences.. new systems will requires this while, upgraded system may depending on changes""")!="Y":
         return params
-    cmd = ['bq-admin', 'preferences', 'init', ]
+    cmd = [bin_path('bq-admin'), 'preferences', 'init', ]
     if getanswer("Force initialization ", "Y", "Replace any existing preferences with new ones") == "Y":
         cmd.append ('-f')
     r  = subprocess.call (cmd, stderr = None)
@@ -1281,7 +1515,8 @@ def install_public_static(params):
 
     if getanswer("Deploy all static resources to public directory", "Y",
                  "Usefull for integrating with frontend webserverv") == 'Y':
-        cmd = ['bq-admin', 'deploy', 'public' ]
+        cmd = [bin_path('bq-admin'), 'deploy', '--packagedir=%s'%DIRS['jslocation'],
+               run_path ('public') ]
         r  = subprocess.call (cmd, stderr = None)
         if r!=0:
             print 'Problem deploying static resources... run "bq-admin deploy public" manually'
@@ -1293,7 +1528,10 @@ def install_public_static(params):
 def install_secrets(params):
     "Ensure cookies are unique across sites"
 
-    secrets = os.getenv ("BISQUE_SECRET", None) or "secrets"
+    def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+        return ''.join(random.choice(chars) for _ in range(size))
+
+    secrets = os.getenv ("BISQUE_SECRET", None) or id_generator(8)
     secrets = getanswer("Encrypt cookies with secret phrase", secrets,
                         "Login informations if encoded with this secret")
     who_cfg = config_path ("who.ini")
@@ -1308,7 +1546,7 @@ def install_secrets(params):
 #######################################################
 #
 def setup_uwsgi(params, server_params):
-    if getanswer("Install uwsgi (application server and configs)", 'Y',
+    if getanswer("Install (update) uwsgi config (application server and configs)", 'Y',
                  "Uwsgi can act as backend server when utilized with web-front end (Nginx)") != 'Y':
         return params
     if which ('uwsgi') is None:
@@ -1316,6 +1554,9 @@ def setup_uwsgi(params, server_params):
 
     from bq.util.dotnested import parse_nested, unparse_nested
     servers = [ x.strip() for x in server_params['servers'].split(',') ]
+    for server in servers:
+        questions = [ (server+'.'+q[0], server+': '+q[1], q[2]) for q in UWSGI_QUESTIONS ]
+        server_params = modify_site_cfg (questions, server_params, section="servers")
     servers =  parse_nested (server_params, servers)
     print servers
     for server, sv in servers.items():
@@ -1328,7 +1569,8 @@ def setup_uwsgi(params, server_params):
                 if getanswer ("%s looks newer than %s.. modify" % (cfg, SITE_CFG), "N",
                               "%s may have special modifications" %cfg) == "N":
                     continue
-        install_cfg (cfg, section="*", default_cfg=UWSGI_DEFAULT)
+        install_cfg (cfg, section="*", default_cfg=defaults_path ('uwsgi.cfg.default'))
+        print "Created uwsgi config: ", cfg
 
         uwsgi_vars = sv.get ('uwsgi', {})
         bisque_vars = sv.get ('bisque', {})
@@ -1344,7 +1586,7 @@ def setup_uwsgi(params, server_params):
         for k,v in unparse_nested (bisque_vars):
             svars["bisque.%s" % k] = v
 
-        uwsgi_vars ['virtualenv'] = BQENV
+        uwsgi_vars ['virtualenv'] = DIRS['virtualenv']
         uwsgi_vars ['procname-prefix'] = "bisque_%s_" % server
         update_site_cfg(cfg=cfg, bisque_vars=svars)
         update_site_cfg(cfg=cfg, section='uwsgi',bisque_vars = uwsgi_vars )
@@ -1355,16 +1597,22 @@ def setup_uwsgi(params, server_params):
 #######################################################
 #
 def setup_paster(params, server_params):
-    if getanswer("Install paster (application server and configs)", 'Y',
+    if getanswer("Install (update) paster configs (application server and configs)", 'Y',
                  "Paster is the default backend server") != 'Y':
         return params
 
+    print server_params
+
     from bq.util.dotnested import parse_nested, unparse_nested
     servers = [ x.strip() for x in server_params['servers'].split(',') ]
+    for server in servers:
+        questions = [ (server+'.'+q[0], server+': '+q[1], q[2]) for q in PASTER_QUESTIONS ]
+        server_params = modify_site_cfg (questions, server_params, section="servers")
     servers =  parse_nested (server_params, servers)
     print servers
 
     for server, sv in servers.items():
+
         cfg = config_path ("%s_paster.cfg" % server)
         if os.path.exists (cfg) and os.path.exists(SITE_CFG):
             cfg_time  = os.stat(cfg).st_mtime
@@ -1373,7 +1621,8 @@ def setup_paster(params, server_params):
                 if getanswer ("%s looks newer than %s.. modify" % (cfg, SITE_CFG), "N",
                               "%s may have special modifications" %cfg) == "N":
                     continue
-        install_cfg (cfg, section="*", default_cfg=PASTER_DEFAULT)
+        install_cfg (cfg, section="*", default_cfg=defaults_path('server.ini.default'))
+        print "Created paster config: ", cfg
 
         paster_vars = sv.get ('paster', {})
         bisque_vars = sv.get ('bisque', {})
@@ -1402,7 +1651,6 @@ def setup_paster(params, server_params):
 
 
     return params
-
 
 
 #######################################################
@@ -1466,8 +1714,8 @@ def fetch_external_binaries (params):
                   "This action is required only on first download") != 'Y':
         return params
 
-    if not os.path.exists(BQDEPOT):
-        os.makedirs (BQDEPOT)
+    if not os.path.exists(DIRS['depot']):
+        os.makedirs (DIRS['depot'])
     conf = ConfigFile(defaults_path('EXTERNAL_FILES'))
     external_files = conf.get ('common')
     #local_platform = platform.platform()
@@ -1483,7 +1731,7 @@ def fetch_external_binaries (params):
             lname =line.pop(0)
         if fname:
             try:
-                fetch_file (fname, BQDEPOT, lname)
+                fetch_file (fname, DIRS['depot'], lname)
             except Exception, e:
                 log.exception ("Problem in fetch")
                 print "Failed to fetch '%s' with %s" % (fname,e)
@@ -1529,8 +1777,8 @@ def install_dependencies (params):
     """Install dependencies that aren't handled by setup.py"""
 
     # install ExtJS
-    extzip = os.path.join(BQDEPOT, 'extjs.zip')
-    public = to_sys_path('bqcore/bq/core/public')
+    extzip = os.path.join(DIRS['depot'], 'extjs.zip')
+    public = to_sys_path(os.path.join (DIRS['jslocation'], 'bq/core/public'))
     extjs =  os.path.join (public, "extjs")
     uncompress_extjs (extzip, public, extjs)
 
@@ -1548,7 +1796,7 @@ def install_dependencies (params):
 def install_imgcnv ():
     """Install dependencies that aren't handled by setup.py"""
 
-    filename_zip = os.path.join(BQDEPOT, 'imgcnv.zip')
+    filename_zip = os.path.join(DIRS['depot'], 'imgcnv.zip')
     imgcnv = which('imgcnv')
     if imgcnv :
         r, version = call ([ imgcnv, '-v'], capture = True)
@@ -1569,26 +1817,26 @@ def install_imgcnv ():
     if getanswer ("Install Bio-Image Convert", "Y",
                   "imgcnv will allow image server to read pixel data") == "Y":
 
-        filename_check = os.path.join(BQBIN, 'imgcnv%s'% SCRIPT_EXT)
-        uncompress_dependencies (filename_zip, BQBIN, filename_check)
+        filename_check = os.path.join(DIRS['bin'], 'imgcnv%s'% SCRIPT_EXT)
+        uncompress_dependencies (filename_zip, DIRS['bin'], filename_check)
 
 def install_openslide ():
     """Install dependencies that aren't handled by setup.py"""
 
-    archive = os.path.join(BQDEPOT, 'openslide-bisque%s' % ARCHIVE_EXT)
+    archive = os.path.join(DIRS['depot'], 'openslide-bisque%s' % ARCHIVE_EXT)
     if not os.path.exists(archive):
         print "No pre-compiled version of openslide exists for your system"
         print "Please visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage for help"
         return
     if getanswer ("Install OpenSlide converter", "Y",
                   "OpenSlide will allow image server to read full slide pixel data") == "Y":
-        uncompress_dependencies (archive, BQBIN, '')
+        uncompress_dependencies (archive, DIRS['bin'], '')
 
 
 def install_bioformats():
 
-    archive = os.path.join(BQDEPOT, 'bioformats-pack.zip')
-    filename_check = os.path.join(BQBIN, 'bioformats_package.jar')
+    archive = os.path.join(DIRS['depot'], 'bioformats-pack.zip')
+    filename_check = os.path.join(DIRS['bin'], 'bioformats_package.jar')
 
     if not newer_file(archive, filename_check):
         print "Bioformats is up to date"
@@ -1610,7 +1858,7 @@ def install_bioformats():
 
         # first remove old files
         for f in old_bf_files:
-            p = os.path.join(BQBIN ,f)
+            p = os.path.join(DIRS['bin'] ,f)
             if os.path.exists(p):
                 os.remove(p)
 
@@ -1618,7 +1866,7 @@ def install_bioformats():
         for fname in  biozip.namelist():
             if fname[-1] == '/':  # skip dirs
                 continue
-            dest = os.path.join(BQBIN, os.path.basename(fname))
+            dest = os.path.join(DIRS['bin'], os.path.basename(fname))
 
             data = biozip.read(fname)
             fd = open(dest, 'wb')
@@ -1634,19 +1882,19 @@ def install_bioformats():
 def install_imarisconvert ():
     """Install dependencies that aren't handled by setup.py"""
 
-    archive = os.path.join(BQDEPOT, 'ImarisConvert%s' % ARCHIVE_EXT)
+    archive = os.path.join(DIRS['depot'], 'ImarisConvert%s' % ARCHIVE_EXT)
     if not os.path.exists(archive):
         print "No pre-compiled version of ImarisConvert exists for your system"
         print "Please visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage for help"
         return
     filename_check = which ("ImarisConvert")
-    filename_check = filename_check or os.path.join (BQBIN, 'ImarisConvert%s' % SCRIPT_EXT)
+    filename_check = filename_check or os.path.join (DIRS['bin'], 'ImarisConvert%s' % SCRIPT_EXT)
     if not newer_file(archive, filename_check) :
         print "ImarisConvert is up to date"
         return
     if  getanswer ("Install ImarisConvert", "Y",
                       "ImarisConvert will allow image server to read many image formats") == "Y":
-        uncompress_dependencies (archive, BQBIN, filename_check)
+        uncompress_dependencies (archive, DIRS['bin'], filename_check)
         touch (filename_check)
 
 ############################
@@ -1659,8 +1907,8 @@ def install_features (params):
     if getanswer ("Install feature extractors (Feature Server)", "Y",
                   "Feature extractors will enable many descriptors in the Feature Server that require binary code") == "Y":
 
-        filename_zip = os.path.join(BQDEPOT, 'feature_extractors.zip')
-        filename_dest = to_sys_path('bqfeature/bq')
+        filename_zip = os.path.join(DIRS['depot'], 'feature_extractors.zip')
+        filename_dest = to_sys_path(run_path('bqfeature', 'bq'))
         filename_check = ''
         uncompress_dependencies (filename_zip, filename_dest, filename_check)
 
@@ -1677,7 +1925,7 @@ def install_features_source ():
     if getanswer ("Install source code for feature extractors", "N",
                   "Feature descriptors source code will allow recompiling external feature extractors on unsupported platforms") == "Y":
 
-        filename_zip = os.path.join(BQDEPOT, 'feature_extractors_source.zip')
+        filename_zip = os.path.join(DIRS['depot'], 'feature_extractors_source.zip')
         import urllib
         urllib.urlretrieve ('https://bitbucket.org/bisque/featureextractors/get/default.zip', filename_zip)
         filename_dest = to_sys_path('bqfeature/bq/src')
@@ -1698,8 +1946,8 @@ def install_libtiff():
     """
     import urllib
     src = 'https://bitbucket.org/CBIucsb/pylibtiff/downloads/LibTiff-4.0.3-Windows-64bit.zip'
-    filename_zip = os.path.join(BQDEPOT, 'LibTiff-4.0.3-Windows-64bit.zip')
-    filename_dest = bisque_path(os.path.join('bqenv','Scripts'))
+    filename_zip = os.path.join(DIRS['depot'], 'LibTiff-4.0.3-Windows-64bit.zip')
+    #filename_dest = bisque_path(os.path.join('bqenv','Scripts'))
     filename_check = ''
 
     if sys.platform == 'win32':
@@ -1708,7 +1956,7 @@ def install_libtiff():
             print 'Fetching from %s'%src
 
             urllib.urlretrieve ( src, filename_zip)
-            uncompress_dependencies ( filename_zip, filename_dest, filename_check, strip_root=True)
+            uncompress_dependencies ( filename_zip, DIRS['bin'], filename_check, strip_root=True)
             print 'Installed libtiff-4.0.3 in %s'%filename_dest
     else:
         print """To enable the feature service to read OME-bigtiff for feature extraction install
@@ -1753,9 +2001,9 @@ def install_opencv():
         if not (python_version==(2,6) or python_version==(2,7)):
             print 'Failed to install opencv. Requires python 2.6 or 2.7.'
             return
-        filename_zip = os.path.join(BQDEPOT, 'opencv-2.4.6.zip')
+        filename_zip = os.path.join(DIRS['depot'], 'opencv-2.4.6.zip')
         if sys.platform.startswith ('win'): #windows
-            extract_archive_dir(filename_zip,os.path.join('opencv-2.4.6','static_libs',''), SITE_PACKAGES)
+            extract_archive_dir(filename_zip,os.path.join('opencv-2.4.6','static_libs',''), DIRS['packages'])
         elif sys.platform.startswith('linux'):
             pass
         else:
@@ -1763,7 +2011,7 @@ def install_opencv():
             return
 
         #unpackes opencv cv2.so/.dll and cv.py in to bqenv site-packages
-        extract_archive_dir(filename_zip,os.path.join('opencv-2.4.6','python%s.%s'%python_version,''), SITE_PACKAGES)
+        extract_archive_dir(filename_zip,os.path.join('opencv-2.4.6','python%s.%s'%python_version,''), DIRS['packages'])
 
 
 
@@ -1800,7 +2048,7 @@ def kill_server(params):
 
     if getanswer ("Stop server for upgrade", "Y",
                   "Server must be restarted during an upgrade operation") == "Y":
-        r = call(['bq-admin', 'server', 'stop'])
+        r = call([bin_path('bq-admin'), 'server', 'stop'])
         print "Server is *not* automatically restarted"
     else:
         print "Proceeding with upgrade with (possibly) running server (dangerous)"
@@ -1810,7 +2058,8 @@ def kill_server(params):
 
 
 def fetch_stable (params):
-    r = call (['hg', 'pull', '-u'])
+    hg = which ('hg')
+    r = call ([hg, 'pull', '-u'])
     if r!= 0:
         print("There was a problem fetching new version")
         return
@@ -1959,34 +2208,33 @@ which will register any module with
 
 ########################################################
 # User visible command line packages to be run in order i.e. during a
-# server install
-
+# default steps for a server install
 install_options= [
-    'site',
+    'server_cfg',
     # 'mercurial',
     'binaries',
     'database',
-    'matlab',
-    'modules',
-    'runtime',
     'features',
-    'server',
     'mail',
     'preferences',
     'production',
     ]
 
-# engine install packages
+# default steps for an engine install
 engine_options= [
     # 'binaries',
+    'engine_cfg',
+    'engine_runtime_cfg', # Special creator for runtime-bisque.cfg
     'matlab',
-    'modules',
-    'runtime',
-    'engine',
     'docker',
+    'runtime',
+    'modules',
     ]
 
-# other unrelated packages
+full_options = list (install_options + engine_options)
+full_options.remove ('engine_cfg')
+
+# other unrelated admin actions
 other_options = [
     "upgrade",
     'admin',
@@ -2000,8 +2248,8 @@ all_options = list (set (install_options + engine_options + other_options))
 ######################################################################
 # List of user visible commands and their corresponding internal actions
 SETUP_COMMANDS = {
-    'site' : [ install_server_defaults],
-    'engine' : [install_engine_defaults],
+    'server_cfg' : [ install_server_defaults],
+    'engine_cfg' : [install_engine_defaults],
     'binaries': [ fetch_external_binaries, install_dependencies ],
     'features' : [ install_features ],
     'database' : [ install_database ],
@@ -2015,10 +2263,12 @@ SETUP_COMMANDS = {
 
 # Special procedures that modify runtime-bisque.cfg (for the engine)
 RUNTIME_COMMANDS = {
+    'engine_runtime_cfg' : [ install_runtime_cfg ],
     'matlab' : [ install_matlab ],
     'runtime' : [ install_runtime ],
-    'modules' : [ install_modules ],
     'docker'  : [ install_docker ],
+    'modules' : [ install_modules ],
+    'fetch-modules'   : [ fetch_modules ] ,
     }
 
 
@@ -2032,9 +2282,9 @@ def bisque_installer(options, args):
     #    print "ERROR: This script must be bisque installation directory"
     #    sys.exit()
 
-    if not os.path.exists('config-defaults'):
+    if not os.path.exists(defaults_path()):
         print "Cannot find config-defaults.. please run bq-admin setup from bisque root directory"
-        sys.exit()
+        sys.exit(1)
 
     print """This is the main installer for Bisque
 
@@ -2052,40 +2302,38 @@ def bisque_installer(options, args):
     The default answer is AK and is chosen by simply entering <enter>
 
     """
-    system_type = 'bisque'
-    if len(args) == 0 or args[0] == 'bisque':
-        installer = install_options[:]
+    system_type = ['bisque', 'engine']
+    if len(args) == 0 or args[0] in  ( 'bisque', 'developer', 'server' ):
+        install_steps = install_options[:]
     elif args[0] == 'engine':
-        installer = engine_options[:]
-        system_type = 'engine'
-    elif args[0] == 'server':
-        installer = install_options[:]
-        system_type = 'bisque'
+        install_steps = engine_options[:]
+        system_type = ['engine']
+    elif args[0] == 'full':
+        install_steps = full_options[:]
+        system_type = ['bisque', 'engine']
     else:
-        installer = args
+        install_steps = args
 
-    if 'help' in installer:
+    if 'help' in install_steps:
         print usage
         return
 
-    print "Beginning install of %s" % (system_type)
+    print "Beginning install of %s with %s " % (system_type, args)
 
     params = {}
-    if not os.path.exists (config_path ()):
-        os.makedirs (config_path())
+    runtime_params =  {}
+    #if not os.path.exists (DIRS['config']):
+    #    os.makedirs (DIRS['config'])
 
-    if  os.path.exists (SITE_CFG):
+    if 'bisque' in system_type and  os.path.exists (SITE_CFG):
         params = read_site_cfg(cfg = SITE_CFG, section=BQ_SECTION)
-        #print params
-
-    if not os.path.exists(RUNTIME_CFG):
-        runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=defaults_path('runtime-bisque.default'))
-    else:
+    if 'engine' in system_type and  os.path.exists(RUNTIME_CFG):
         runtime_params = read_site_cfg(cfg=RUNTIME_CFG, section = None)
 
     params['bisque.installed'] = "inprogress"
 
-    for step in installer:
+    print "STEPS", install_steps
+    for step in install_steps:
         # Normal commands that modify site.cfg
         flist  =  SETUP_COMMANDS.get(step, [])
         for step_f in flist:
@@ -2098,11 +2346,11 @@ def bisque_installer(options, args):
     params['bisque.installed'] = "finished"
     params = modify_site_cfg([], params,)
 
-    if installer == install_options:
+    if install_steps == install_options:
         print STemplate(start_msg).substitute(params)
         return 0
 
-    if installer == engine_options:
+    if install_steps == engine_options:
         print STemplate(engine_msg).substitute(params)
         return 0
 
@@ -2155,30 +2403,91 @@ def typescript(command, filename="typescript"):
             return 128
     return 0
 
-def setup(options, args):
+
+def find_virtualenv ():
+    "Find the system virtualenv"
+
     virtenv = os.environ.get ('VIRTUAL_ENV', None)
+    if virtenv is None:
+        # argv should be the bq-admin command path
+        activate_this = os.path.join (os.path.dirname (os.path.realpath(sys.argv[0])),
+                                      'activate_this.py')
+        if os.path.exists (activate_this):
+            execfile (activate_this, dict (__file__ = activate_this))
+        virtenv = os.path.dirname (os.path.dirname (activate_this))
     if virtenv is None:
         print "Cannot determine your python virtual environment"
         print "This make installation much simpler.  Please activate or prepare the environment given by the web instructions"
         if getanswer ("Continue without virtualenv", "N", "Try installation without python virtualenv") == 'N':
             sys.exit(0)
+    return virtenv
+
+def update_globals (options, args):
+    """Update the global directories and files locations based on the type
+    of install we are doing.. developer, system, or engine
+    """
+
+    global SITE_CFG # The site.cfg in configuration
+    global RUNTIME_CFG
+
+    python_version = sys.version_info[:2]
+
+    DIRS['config'] = options.config
+    DIRS['virtualenv'] = find_virtualenv()
+    DIRS['default'] = find_path ('config-defaults', ['.', '/etc/bisque', '/usr/share/bisque'])
+    if os.name == "nt":
+        DIRS['bin'] = os.path.join(DIRS['virtualenv'], 'Scripts') # windows local
+        DIRS['packages'] =  os.path.join(DIRS['virtualenv'], 'Lib', 'site-packages')
+    else:
+        DIRS['bin'] = os.path.join(DIRS['virtualenv'], 'bin') # Our local bin
+        DIRS['packages'] = os.path.join(DIRS['virtualenv'], 'lib','python%s.%s'%python_version,'site-packages')
+
+    # Figure out installation type
+    #
+    install_type = None # unknown
+    if os.path.exists ('./config-defaults'):
+        install_type = 'developer'
+    else:
+        install_type = 'system'
+
+    if install_type is 'system':
+        print "Package installation"
+        # This is a system install
+        DIRS['share']   = "/usr/share/bisque"
+        DIRS['run']     = '/var/run/bisque'
+        DIRS['config']  = DIRS['config'] or "/etc/bisque"
+        log.warn ("Will install new python packages into %s", DIRS['packages'])
+        DIRS['jslocation'] = DIRS['packages']
+    else:
+        print "Developer installation"
+        DIRS['share']   = '.'  # Our top installation path
+        DIRS['run']     = '.'
+        DIRS['config'] = DIRS['config'] or "./config"
+        DIRS['jslocation'] = "bqcore"
+
+    DIRS['data']   = os.path.join(DIRS['run'], 'data')
+    DIRS['depot']  = os.path.join(DIRS['run'], "external") # Local directory for externals
+    DIRS['public'] = os.path.join(DIRS['run'], 'public')
+    print "DIRS: ", DIRS
+    # Ensure dirs are available
+    for key, folder in DIRS.items():
+        if not os.path.exists (folder):
+            os.makedirs (folder)
+
+    SITE_CFG     = config_path('site.cfg')
+    RUNTIME_CFG  = config_path('runtime-bisque.cfg')
+
+    SITE_VARS['bisque.server'] = 'http://0.0.0.0:8080'
+    SITE_VARS['bisque.paths.root'] = DIRS['share']
+
+def setup(options, args):
 
     cancelled = False
     global answer_file, save_answers
     global use_defaults
-    global BQENV
-    global BQBIN
-    global SITE_PACKAGES
 
-    python_version = sys.version_info[:2]
 
-    BQENV = virtenv
-    if os.name == "nt":
-        BQBIN = os.path.join(BQENV, 'Scripts') # windows local
-        SITE_PACKAGES = os.path.join(BQENV, 'Lib', 'site-packages')
-    else:
-        BQBIN = os.path.join(BQENV, 'bin') # Our local bin
-        SITE_PACKAGES = os.path.join(BQENV, 'lib','python%s.%s'%python_version,'site-packages')
+    update_globals (options, args)
 
     begin_install = datetime.datetime.now()
     if options.read:

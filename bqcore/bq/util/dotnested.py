@@ -55,8 +55,14 @@ def parse_nested (dct,  keys=None, sep = '.'):
     """ Create a dictionary for each host listed
      h1.key.key1 = aa
      h1.key.key2 = bb
+
+
        => { 'h1' : { 'key' : { 'key1' : 'val', 'key2' : 'bb' }}}
-       """
+
+    @param dct: A dictionary of the form { 'h1.key.key1' : 'aa' }
+    @param keys: pull only elements in keys i.e. ['h1']
+    @param sep:  The character separator
+    """
     nested = {}
     if isinstance (dct, dict):
         dct = dct.items()
@@ -138,4 +144,3 @@ if __name__ == "__main__":
     nest =  parse_nested(dct, ['A'] )
     print nest
     print unparse_nested (nest)
-

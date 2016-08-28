@@ -3,64 +3,70 @@
 """WebHelpers used in bqcore."""
 
 import tg
+import os
 from minimatic import *
 
 import bq
 from bq.util.paths import bisque_path
 
 def generate_css_files(root=None, public=None):
-    production = False if root is None else True
-    root = root or bisque_path('')
-    public = public or bisque_path('public')
+    #production = False if root is None else True
+    root = os.path.join (root or bisque_path('bqcore'), '')
+    public = public or tg.config.get('bisque.paths.public', 'public')
 
-    if production or tg.config.get('bisque.js_environment', None) == 'production':
+    if root or tg.config.get('bisque.js_environment', None) == 'production':
         css_kw = dict (fs_root=public,
-                    combined='/css/all_css.css',
-                    combined_path = root + '/bqcore/bq/core/public/css/all_css.css',
+                    combined='/core/css/all_css.css',
+                    combined_path = os.path.join(public,'core/css/all_css.css'),
                     checkts = False,
                     version=bq.release.__VERSION_HASH__ )
     else:
         css_kw = {}
 
     return stylesheet_link (
-        '/css/bq.css',
-        '/css/bq_ui_toolbar.css',
-        '/js/bq_ui_misc.css',
-        '/js/ResourceBrowser/ResourceBrowser.css',
-        '/js/ResourceTagger/Tagger.css',
-        '/js/DatasetBrowser/DatasetBrowser.css',
-        '/js/Share/BQ.share.Dialog.css',
-        '/js/settings/BQ.settings.Panel.css',
-        '/js/admin/BQ.user.Manager.css',
-        '/js/picker/Path.css',
-        '/js/tree/files.css',
-        '/js/tree/organizer.css',
-        { 'file' : '/image_service/public/converter.css', 'path' : root + 'bqserver/bq' },
+        '/core/css/bq.css',
+        '/core/css/bq_ui_toolbar.css',
+        '/core/js/bq_ui_misc.css',
+        '/core/js/ResourceBrowser/ResourceBrowser.css',
+        '/core/js/ResourceTagger/Tagger.css',
+        '/core/js/DatasetBrowser/DatasetBrowser.css',
+        '/core/js/Share/BQ.share.Dialog.css',
+        '/core/js/settings/BQ.settings.Panel.css',
+        '/core/js/admin/BQ.user.Manager.css',
+        '/core/js/picker/Path.css',
+        '/core/js/tree/files.css',
+        '/core/js/tree/organizer.css',
+#        { 'file' : '/image_service/public/converter.css', 'path' : root + 'bqserver/bq' },
+        '/image_service/converter.css',
         '/panojs3/styles/panojs.css',
         '/js/slider/slider.css',
         '/js/picker/Color.css',
         '/js/form/field/Color.css',
         '/css/imgview.css',
         '/js/movie/movie.css',
-        { 'file': '/dataset_service/public/dataset_panel.css', 'path' : root + 'bqserver/bq' },
-        '/js/renderers/dataset.css',
-        '/js/graphviewer/graphviewer.css',
-        '/js/volume/bioWeb3D.css',
-        {'file' : '/import_service/public/bq_ui_upload.css', 'path' : root + 'bqserver/bq'},
-        {'file' : '/export_service/public/css/BQ.Export.css', 'path' : root + 'bqserver/bq'},
-        '/css/bisquik_extjs_fix.css',
+#        { 'file': '/dataset_service/public/dataset_panel.css', 'path' : root + 'bqserver/bq' },
+        '/dataset_service/dataset_panel.css',
+        '/core/js/renderers/dataset.css',
+        '/core/js/graphviewer/graphviewer.css',
+        '/core/js/volume/bioWeb3D.css',
+#        {'file' : '/import_service/public/bq_ui_upload.css', 'path' : root + 'bqserver/bq'},
+        '/import/bq_ui_upload.css',
+#        {'file' : '/export_service/public/css/BQ.Export.css', 'path' : root + 'bqserver/bq'},
+        '/export/css/BQ.Export.css',
+        '/core/css/bisquik_extjs_fix.css',
 
         # -- modules
-        '/js/modules/bq_ui_renderes.css',
-        '/js/modules/bq_webapp.css',
+        '/core/js/modules/bq_ui_renderes.css',
+        '/core/js/modules/bq_webapp.css',
 
 
         # -- plugin css
-        plugins = { 'path': root + 'bqcore/bq/core/public/plugins/', 'file': '/plugins/' },
+        #plugins = { 'path': root + 'bq/core/public/plugins/', 'file': '/plugins/' },
+        plugins = { 'file': '/core/plugins/', 'path' : public + "/core/plugins/" },
 
         # combined will not work for now due to relative urls in .css files
         #fs_root=public,
-        #combined='/css/all_css.css',
+        #combined='/core/css/all_css.css',
         #combined_path = root + '/bqcore/bq/core/public/css/all_css.css',
         #checkts = False,
         #version=bq.release.__VERSION_HASH__
@@ -69,14 +75,14 @@ def generate_css_files(root=None, public=None):
     )
 
 def generate_js_files(root=None, public=None):
-    production = False if root is None else True
-    root = root or bisque_path('')
-    public = public or bisque_path('public')
+    #production = False if root is None else True
+    root = os.path.join (root or bisque_path('bqcore'), '')
+    public = public or tg.config.get('bisque.paths.public', 'public')
 
-    if production or tg.config.get('bisque.js_environment', None) == 'production':
+    if root or tg.config.get('bisque.js_environment', None) == 'production':
         link_kw = dict (fs_root = public,
-                      combined= '/js/all_js.js',
-                      combined_path = root + '/bqcore/bq/core/public/js/all_js.js',
+                      combined= '/core/js/all_js.js',
+                      combined_path = public + '/core/js/all_js.js',
                       checkts = False,
                       minify= 'minify', # D3 breaks with minify
                       version=bq.release.__VERSION_HASH__)
@@ -99,86 +105,87 @@ def generate_js_files(root=None, public=None):
         #-- Raphael --
         #'/raphael/raphael.js',
         #-- kinetic --
-        #'/js/viewer/kinetic-v5.1.0.js',
+        #'/core/js/viewer/kinetic-v5.1.0.js',
 
-        #'/js/bq_ui_extjs_fix.js',
+        #'/core/js/bq_ui_extjs_fix.js',
         # --Bisque JsApi - this needs cleaning and updating--
-        '/js/utils.js',
-        '/js/bq_api.js',
-        '/js/bq_ui_application.js',
-        '/js/bq_ui_toolbar.js',
-        '/js/bq_ui_misc.js',
-        '/js/date.js',
-        '/js/encoder.js',
+        '/core/js/utils.js',
+        '/core/js/bq_api.js',
+        '/core/js/bq_ui_application.js',
+        '/core/js/bq_ui_toolbar.js',
+        '/core/js/bq_ui_misc.js',
+        '/core/js/date.js',
+        '/core/js/encoder.js',
 
         # -- ResourceBrowser code --
-        '/js/ResourceBrowser/Browser.js',
-        '/js/ResourceBrowser/LayoutFactory.js',
-        '/js/ResourceBrowser/ResourceQueue.js',
-        '/js/ResourceBrowser/DatasetManager.js',
-        '/js/ResourceBrowser/CommandBar.js',
-        '/js/ResourceBrowser/viewStateManager.js',
-        '/js/ResourceBrowser/OperationBar.js',
-        '/js/ResourceBrowser/ResourceFactory/ResourceFactory.js',
-        '/js/ResourceBrowser/ResourceFactory/ResourceImage.js',
-        '/js/ResourceBrowser/ResourceFactory/ResourceMex.js',
-        '/js/ResourceBrowser/ResourceFactory/ResourceModule.js',
-        '/js/ResourceBrowser/ResourceFactory/ResourceDataset.js',
-        '/js/ResourceBrowser/ResourceFactory/ResourceFile.js',
-        '/js/ResourceBrowser/ResourceFactory/ResourceUser.js',
-        '/js/ResourceBrowser/ResourceFactory/ResourceTemplate.js',
-        '/js/ResourceBrowser/ResourceFactory/ResourceDir.js',
-        '/js/ResourceBrowser/Misc/MessageBus.js',
-        '/js/ResourceBrowser/Misc/Slider.js',
-        '/js/ResourceBrowser/Misc/DataTip.js',
+        '/core/js/ResourceBrowser/Browser.js',
+        '/core/js/ResourceBrowser/LayoutFactory.js',
+        '/core/js/ResourceBrowser/ResourceQueue.js',
+        '/core/js/ResourceBrowser/DatasetManager.js',
+        '/core/js/ResourceBrowser/CommandBar.js',
+        '/core/js/ResourceBrowser/viewStateManager.js',
+        '/core/js/ResourceBrowser/OperationBar.js',
+        '/core/js/ResourceBrowser/ResourceFactory/ResourceFactory.js',
+        '/core/js/ResourceBrowser/ResourceFactory/ResourceImage.js',
+        '/core/js/ResourceBrowser/ResourceFactory/ResourceMex.js',
+        '/core/js/ResourceBrowser/ResourceFactory/ResourceModule.js',
+        '/core/js/ResourceBrowser/ResourceFactory/ResourceDataset.js',
+        '/core/js/ResourceBrowser/ResourceFactory/ResourceFile.js',
+        '/core/js/ResourceBrowser/ResourceFactory/ResourceUser.js',
+        '/core/js/ResourceBrowser/ResourceFactory/ResourceTemplate.js',
+        '/core/js/ResourceBrowser/ResourceFactory/ResourceDir.js',
+        '/core/js/ResourceBrowser/Misc/MessageBus.js',
+        '/core/js/ResourceBrowser/Misc/Slider.js',
+        '/core/js/ResourceBrowser/Misc/DataTip.js',
 
         # -- Gesture manager --
-        '/js/senchatouch/sencha-touch-gestures.js',
-        '/js/ResourceBrowser/Misc/GestureManager.js',
+        '/core/js/senchatouch/sencha-touch-gestures.js',
+        '/core/js/ResourceBrowser/Misc/GestureManager.js',
 
         # -- Share dialog files --
-        '/js/Share/BQ.share.Dialog.js',
-        '/js/Share/BQ.share.Multi.js',
+        '/core/js/Share/BQ.share.Dialog.js',
+        '/core/js/Share/BQ.share.Multi.js',
 
         # -- ResourceTagger --
-        '/js/ResourceTagger/ComboBox.js',
-        '/js/ResourceTagger/RowEditing.js',
-        '/js/ResourceTagger/Tagger.js',
-        '/js/ResourceTagger/TaggerOffline.js',
-        '/js/ResourceTagger/ResourceRenderers/BaseRenderer.js',
+        '/core/js/ResourceTagger/ComboBox.js',
+        '/core/js/ResourceTagger/RowEditing.js',
+        '/core/js/ResourceTagger/Tagger.js',
+        '/core/js/ResourceTagger/TaggerOffline.js',
+        '/core/js/ResourceTagger/ResourceRenderers/BaseRenderer.js',
 
         # -- Preferences --
-        '/js/Preferences/BQ.Preferences.js',
-        '/js/Preferences/PreferenceViewer.js',
-        '/js/Preferences/PreferenceTagger.js',
+        '/core/js/Preferences/BQ.Preferences.js',
+        '/core/js/Preferences/PreferenceViewer.js',
+        '/core/js/Preferences/PreferenceTagger.js',
 
         # -- Settings Page --
-        '/js/settings/BQ.settings.Panel.js',
-        '/js/settings/BQ.ModuleManager.js',
-        '/js/settings/BQ.ModuleDeveloper.js',
-        '/js/settings/BQ.PreferenceManager.js',
+        '/core/js/settings/BQ.settings.Panel.js',
+        '/core/js/settings/BQ.ModuleManager.js',
+        '/core/js/settings/BQ.ModuleDeveloper.js',
+        '/core/js/settings/BQ.PreferenceManager.js',
 
         # -- Admin --
-        '/js/admin/BQ.user.Manager.js',
+        '/core/js/admin/BQ.user.Manager.js',
 
         # -- Modules --
-        '/js/modules/bq_webapp.js',
-        '/js/modules/bq_module_webapp_default.js',
-        '/js/modules/bq_webapp_service.js',
+        '/core/js/modules/bq_webapp.js',
+        '/core/js/modules/bq_module_webapp_default.js',
+        '/core/js/modules/bq_webapp_service.js',
 
         #-- DatasetBrowser --
-        {'file': '/dataset_service/public/dataset_service.js', 'path': root + 'bqserver/bq/'},
-        '/js/DatasetBrowser/DatasetBrowser.js',
+#        {'file': '/dataset_service/public/dataset_service.js', 'path': root + 'bqserver/bq/'},
+        {'file': '/dataset_service/dataset_service.js'},
+        '/core/js/DatasetBrowser/DatasetBrowser.js',
 
         # -- TemplateManager --
-        '/js/TemplateManager/TemplateTagger.js',
-        '/js/TemplateManager/TemplateManager.js',
-        '/js/TemplateManager/TagRenderer.js',
+        '/core/js/TemplateManager/TemplateTagger.js',
+        '/core/js/TemplateManager/TemplateManager.js',
+        '/core/js/TemplateManager/TagRenderer.js',
 
         # -- Tree Organizer --
-        '/js/picker/Path.js',
-        '/js/tree/files.js',
-        '/js/tree/organizer.js',
+        '/core/js/picker/Path.js',
+        '/core/js/tree/files.js',
+        '/core/js/tree/organizer.js',
 
         # -- PanoJS3 --
         '/panojs3/panojs/utils.js',
@@ -190,104 +197,114 @@ def generate_js_files(root=None, public=None):
         '/panojs3/panojs/control_svg.js',
 
         # -- Image Service --
-        { 'file' : '/image_service/public/converter.js', 'path': root + 'bqserver/bq/'},
-        { 'file' : '/image_service/public/bq_is_formats.js', 'path': root + 'bqserver/bq/'},
+#        { 'file' : '/image_service/public/converter.js', 'path': root + 'bqserver/bq/'},
+        { 'file' : '/image_service/converter.js'},
+#        { 'file' : '/image_service/public/bq_is_formats.js', 'path': root + 'bqserver/bq/'},
+        { 'file' : '/image_service/bq_is_formats.js'},
 
-        '/js/slider/inversible.js',
-        '/js/slider/slider.js',
-        '/js/slider/tslider.js',
-        '/js/slider/zslider.js',
+        '/core/js/slider/inversible.js',
+        '/core/js/slider/slider.js',
+        '/core/js/slider/tslider.js',
+        '/core/js/slider/zslider.js',
 
-        '/js/picker/AnnotationStatus.js',
-        '/js/picker/Color.js',
-        '/js/form/field/Color.js',
+        '/core/js/picker/AnnotationStatus.js',
+        '/core/js/picker/Color.js',
+        '/core/js/form/field/Color.js',
 
-        '/js/viewer/menu_gobjects.js',
-        '/js/viewer/scalebar.js',
-        '/js/viewer/2D.js',
-        '/js/viewer/imgview.js',
-        '/js/viewer/imgops.js',
-        '/js/viewer/imgslicer.js',
-        '/js/viewer/imgstats.js',
-        '/js/viewer/listner_zoom.js',
-        '/js/viewer/tilerender.js',
-        '/js/viewer/svgrender.js',
-        '/js/viewer/shapeanalyzer.js',
-        '/js/viewer/canvasshapes.js',
-        '/js/viewer/canvasrender.js',
-        '/js/viewer/imgedit.js',
-        '/js/viewer/imgmovie.js',
-        '/js/viewer/imageconverter.js',
-        '/js/viewer/imgexternal.js',
-        '/js/viewer/imgscalebar.js',
-        '/js/viewer/imginfobar.js',
-        '/js/viewer/progressbar.js',
-        '/js/viewer/widget_extjs.js',
-        '/js/viewer/imgpixelcounter.js',
-        '/js/viewer/imgcurrentview.js',
-        '/js/viewer/imgcalibration.js',
+        '/core/js/viewer/menu_gobjects.js',
+        '/core/js/viewer/scalebar.js',
+        '/core/js/viewer/2D.js',
+        '/core/js/viewer/imgview.js',
+        '/core/js/viewer/imgops.js',
+        '/core/js/viewer/imgslicer.js',
+        '/core/js/viewer/imgstats.js',
+        '/core/js/viewer/listner_zoom.js',
+        '/core/js/viewer/tilerender.js',
+        '/core/js/viewer/svgrender.js',
+        '/core/js/viewer/shapeanalyzer.js',
+        '/core/js/viewer/canvasshapes.js',
+        '/core/js/viewer/canvasrender.js',
+        '/core/js/viewer/imgedit.js',
+        '/core/js/viewer/imgmovie.js',
+        '/core/js/viewer/imageconverter.js',
+        '/core/js/viewer/imgexternal.js',
+        '/core/js/viewer/imgscalebar.js',
+        '/core/js/viewer/imginfobar.js',
+        '/core/js/viewer/progressbar.js',
+        '/core/js/viewer/widget_extjs.js',
+        '/core/js/viewer/imgpixelcounter.js',
+        '/core/js/viewer/imgcurrentview.js',
+        '/core/js/viewer/imgcalibration.js',
 
 
         #-- Movie player --
-        '/js/movie/movie.js',
+        '/core/js/movie/movie.js',
 
         #-- Stats --
-        { 'file' : '/stats/public/js/stats.js', 'path': root + 'bqserver/bq/'},
-        '/js/bq_ui_progress.js',
+#        { 'file' : '/stats/public/js/stats.js', 'path': root + 'bqserver/bq/'},
+        { 'file' : '/stats/js/stats.js'},
+        '/core/js/bq_ui_progress.js',
 
         #-- GMaps API --
-        '/js/map/map.js',
+        '/core/js/map/map.js',
 
         #-- Resource dispatch --
-        { 'file': '/dataset_service/public/dataset_service.js','path': root + 'bqserver/bq/'},
-        { 'file': '/dataset_service/public/dataset_operations.js','path': root + 'bqserver/bq/'},
-        { 'file': '/dataset_service/public/dataset_panel.js','path': root + 'bqserver/bq/'},
-        '/js/renderers/dataset.js',
-        '/js/resourceview.js',
+#        { 'file': '/dataset_service/public/dataset_service.js','path': root + 'bqserver/bq/'},
+        { 'file': '/dataset_service/dataset_service.js'},
+#        { 'file': '/dataset_service/public/dataset_operations.js','path': root + 'bqserver/bq/'},
+        { 'file': '/dataset_service/dataset_operations.js'},
+#        { 'file': '/dataset_service/public/dataset_panel.js','path': root + 'bqserver/bq/'},
+        { 'file': '/dataset_service/dataset_panel.js'},
+        '/core/js/renderers/dataset.js',
+        '/core/js/resourceview.js',
 
         # -- Import Service --
-        { 'file' : '/import_service/public/File.js', 'path': root + 'bqserver/bq/'},
-        { 'file' : '/import_service/public/bq_file_upload.js', 'path': root + 'bqserver/bq/'},
-        { 'file' : '/import_service/public/bq_ui_upload.js', 'path': root + 'bqserver/bq/'},
+#        { 'file' : '/import_service/public/File.js', 'path': root + 'bqserver/bq/'},
+        { 'file' : '/import/File.js'},
+#        { 'file' : '/import_service/public/bq_file_upload.js', 'path': root + 'bqserver/bq/'},
+        { 'file' : '/import/bq_file_upload.js' },
+#        { 'file' : '/import_service/public/bq_ui_upload.js', 'path': root + 'bqserver/bq/'},
+        { 'file' : '/import/bq_ui_upload.js'},
 
         # -- Export Service --
-        { 'file' : '/export_service/public/js/BQ.Export.js', 'path': root + 'bqserver/bq/'},
+#        { 'file' : '/export_service/public/js/BQ.Export.js', 'path': root + 'bqserver/bq/'},
+        { 'file' : '/export/js/BQ.Export.js'},
 
         # -- Request Animation Frame --
-        '/js/requestAnimationFrame.js',
+        '/core/js/requestAnimationFrame.js',
 
         # -- Graph viewer --
-        '/js/d3Component.js',
-        '/js/graphviewer/dagre-d3.js',
-        '/js/graphviewer/GraphViewer.js',
+        '/core/js/d3Component.js',
+        '/core/js/graphviewer/dagre-d3.js',
+        '/core/js/graphviewer/GraphViewer.js',
 
         # -- WebGL viewer --
-        '/js/volume/lib/whammy.js',
-        '/js/volume/lib/polygon.js',
-        '/js/volume/threejs/AnaglyphEffect.js',
-        '/js/volume/threejs/RotationControls.js',
-        '/js/volume/threejs/OrbitControls.js',
-        '/js/volume/threejs/TrackballControls.js',
-        '/js/volume/volumeConfig.js',
-        '/js/volume/renderingControls.js',
-        '/js/volume/lightingControls.js',
-        '/js/volume/animationControls.js',
-        '/js/volume/extThreeJS.js',
-        '/js/volume/gobjectbuffers.js',
-        '/js/picker/Excolor.js',
-        '/js/volume/transferEditorD3.js',
-        '/js/volume/scalebar.js',
-        '/js/volume/bioWeb3D.js',
-        '/js/volume/lightingControls.js',
+        '/core/js/volume/lib/whammy.js',
+        '/core/js/volume/lib/polygon.js',
+        '/core/js/volume/threejs/AnaglyphEffect.js',
+        '/core/js/volume/threejs/RotationControls.js',
+        '/core/js/volume/threejs/OrbitControls.js',
+        '/core/js/volume/threejs/TrackballControls.js',
+        '/core/js/volume/volumeConfig.js',
+        '/core/js/volume/renderingControls.js',
+        '/core/js/volume/lightingControls.js',
+        '/core/js/volume/animationControls.js',
+        '/core/js/volume/extThreeJS.js',
+        '/core/js/volume/gobjectbuffers.js',
+        '/core/js/picker/Excolor.js',
+        '/core/js/volume/transferEditorD3.js',
+        '/core/js/volume/scalebar.js',
+        '/core/js/volume/bioWeb3D.js',
+        '/core/js/volume/lightingControls.js',
 
         # -- Modules --
-        '/js/modules/bq_grid_panel.js',
-        '/js/modules/bq_ui_renderes.js',
+        '/core/js/modules/bq_grid_panel.js',
+        '/core/js/modules/bq_ui_renderes.js',
 
         # -- plugin renderers
-        plugins = { 'path': root + 'bqcore/bq/core/public/plugins/', 'file': '/plugins/' },
+        #plugins = { 'path': root + 'bqcore/bq/core/public/plugins/', 'file': '/plugins/' },
+        plugins = { 'file': '/core/plugins/',  'path' : public + "/core/plugins/" },
 
         # --
         **link_kw
     )
-
