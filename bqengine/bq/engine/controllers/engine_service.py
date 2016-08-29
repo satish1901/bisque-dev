@@ -242,13 +242,15 @@ class EngineServer(ServiceController):
 #        log.debug('CWD: %s'%os.getcwd())
 
         if os.name == 'nt':
-            sys.argv = [sys.argv[0].replace('paster-script.py', 'python.exe'), 'bqengine\\bq\\engine\\controllers\\execone.py']
+            #log.debug('sys.argv: %s', sys.argv)
+            python_ent_env = os.path.join(os.path.dirname(sys.argv[0]), 'python.exe')
+            sys.argv = [python_ent_env, 'bqengine\\bq\\engine\\controllers\\execone.py']
             import execone
             sys.modules['__main__'] = execone
             from multiprocessing.forking import set_executable
-            set_executable( sys.argv[0].replace('paster-script.py', 'python.exe') )
-            sys.argv[1] = 'bqengine\\bq\\engine\\controllers\\execone.py'
-            del sys.argv[2:]
+            set_executable( python_ent_env )
+            #log.debug('sys.argv: %s', sys.argv)
+            #log.debug('os.getcwd: %s', os.getcwd())
 
         self.mpool = multiprocessing.Pool(POOL_SIZE)
 
