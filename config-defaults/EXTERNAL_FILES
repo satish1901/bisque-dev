@@ -21,7 +21,7 @@ FD36E37414682D1218295356A7EE14FE5695B4D5-bftools.5.1.1.zip=bioformats-pack.zip
 #   platform.platform().replace('-', '-%s-'%platform.architecture()[0], 1)
 
 [Windows-64bit-*]
-999A2DA999E38E334AF28CEDE7B55FAD49C0C5B5-imgcnv_win64_2.0.zip=imgcnv.zip
+90DE34B0A8A6223F9451DD7C3539CEC7E8E0D378-imgcnv_win64_2.0.9.zip=imgcnv.zip
 077DCE3016BE95CDDA0C83A9193823E233CD13BA-ImarisConvert_win64_8.0.2.zip=ImarisConvert.zip
 A9F01C51244733E6DB79F44AC13090BC0E1A233B-openslide-bisque-Windows-64bit.1.1.0.zip=openslide-bisque.zip
 5C728E34AF824E23BF42D74451C62C36574D6010-feature_extractors-Windows-64bit.zip=feature_extractors.zip
