@@ -1242,7 +1242,7 @@ Ext.define('Bisque.GObjectTagger', {
     },
 
     appendMex: function (mex) {
-        if (!mex && mex.value !== 'FINISHED') return;
+        if (!mex || mex.value !== 'FINISHED') return;
         var parent = this.tree.getRootNode(),
             dt = Ext.Date.parse(mex.ts, BQ.Date.patterns.BisqueTimestamp);
         parent.insertChild(0, {
