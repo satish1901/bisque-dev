@@ -101,7 +101,7 @@ class IrodsConnection(object):
         env.update (self.env)
         if 'env'  in kw:
             env.update (kw.pop('env'))
-        log.debug ("calling %s with %s", args, env)
+        log.debug ("calling %s ", args)
         retcode = subprocess.call(args=args, env=env, **kw)
         return retcode
 
@@ -175,6 +175,7 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
         localname = irods_cache_save(fileobj, ic.path)
         ic.check_cmd (['imkdir', '-p', os.path.dirname (ic.path)])
         ic.check_cmd (['iput', localname, ic.path])
+        return localname
 
 def irods_delete_file(url, **kw):
     with IrodsConnection(url, **kw) as ic:
