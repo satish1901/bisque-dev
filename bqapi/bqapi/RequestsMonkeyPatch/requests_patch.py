@@ -19,12 +19,12 @@ from monkeypatch import *
 
 requests_v = [int(s) for s in requests.__version__.split('.')]
 
-if requests_v < [2, 4, 0] or  requests_v > [2, 7, 0]:
+if requests_v < [2, 4, 0] or  requests_v > [2, 10, 0]:
     warnings.warn("""\
-We need to patch requests 2.4.0 up to 2.7.0, make sure your version of requests \
+We need to patch requests 2.4.0 up to 2.10.0, make sure your version of requests \
 needs this patch, greater than 2.4.3 we do not know if this patch applys."""
                   )
-    raise ImportError('Requests 2.4.0 to 2.7.0 is required!')
+    raise ImportError('Requests 2.4.0 to 2.10.0 is required!')
 #elif requests_v > [3, 0, 0]:
 #    #does not require this patch
 #    pass
