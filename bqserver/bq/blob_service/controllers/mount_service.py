@@ -680,9 +680,9 @@ class MountServer(TGController):
                 log.warn ("While storing refs: found inplace refs and moving refs in same resource %s", etree.tostring(resource))
 
             if len(fixedrefs):
-                # retrieve storeurl, and no localpath yet
-                first = (fixedrefs[0][2][0], None)
-                log.debug ("_save_storerefs first: %s", first)
+                # retrieve storeurl, and  storepath yet
+                first = (fixedrefs[0][2][0], fixedrefs[0][3])
+                log.debug ("_save_storerefs fixed : %s", fixedrefs)
 
             # References to a readonly store may be registered if no actual data movement takes place.
             if movingrefs and driver.readonly:
