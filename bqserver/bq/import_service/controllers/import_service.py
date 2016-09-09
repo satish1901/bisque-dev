@@ -240,6 +240,11 @@ class UploadedResource(object):
         if self.fileobj:
             self.fileobj.close()
 
+    def get_type(self):
+        if self.resource is None:
+            return None
+        return self.resource.get('type') or self.resource.get('resource_type')
+
     def __del__ (self):
         self.close()
 
@@ -992,15 +997,19 @@ class import_serviceController(ServiceController):
             # remove the ingest tags from the tag document
             uf.resource.remove(xl[0])
 
+        needs_guessing = (uf.get_type() == 'resource' or uf.get_type() == 'image')
+
         # append processing tags based on file type and extension
-        mime = mimetypes.guess_type(sanitize_filename(uf.filename))[0]
+        mime = None
+        if needs_guessing:
+            mime = mimetypes.guess_type(sanitize_filename(uf.filename))[0]
         if mime in self.filters:
             intags['type'] = mime
 
         # take care of no extension case: force deep guessing
         ext = os.path.splitext(uf.filename)[1]
         noext = (ext == '' or len(ext)>6)
-        if mime is None and noext:
+        if needs_guessing and mime is None and noext:
             log.debug('process: setting mime to "image/series"' )
             mime = 'image/series'
 
@@ -1024,7 +1033,7 @@ class import_serviceController(ServiceController):
 
         # try to annotate DICOM files
         filename = uf.localpath()
-        if filename is not None:
+        if needs_guessing and filename is not None:
             ConverterImgcnv.meta_dicom(filename, xml=uf.resource)
 
         # no processing required
