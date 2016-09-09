@@ -31,7 +31,7 @@ import bq.util.io_misc as misc
 log = logging.getLogger("bq.image_service")
 
 # extensions not usually associated with image files
-extensions_ignore = set(['', 'amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log', 'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo'])
+extensions_ignore = set(['', 'amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log', 'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo', 'plotly'])
 
 # confirmed extensions of header files in some proprietary series
 extensions_series = set(['cfg', 'xml'])
