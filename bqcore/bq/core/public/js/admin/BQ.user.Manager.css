@@ -64,3 +64,15 @@
     background-size: 200px;
     background-position: -0px -262px;
 }
+
+.bq_notifications {
+    margin: 10px !important;
+}
+
+.bq_notifications .button {
+    margin: 5px !important;
+}
+
+.bq_notifications .block {
+    margin-bottom: 10px !important;
+}
