@@ -116,12 +116,16 @@ Ext.define('BQ.setting.Panel', {
             hidden: true,
             disabled: true,
             //items: Ext.create('BQ.admin.SystemManager'),
-        },{
+        }, {
             title: 'Log Viewer',
             layout: 'fit',
             itemId: 'settings_log_viewer',
             hidden: true,
             disabled: true,
+        }, {
+            xtype: 'bq_notifications_manager',
+            title: 'Notifications',
+            itemId: 'notifications_manager',
         }];
 
         this.on('beforerender', this.setVisibility);

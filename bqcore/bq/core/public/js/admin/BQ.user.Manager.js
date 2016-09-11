@@ -801,3 +801,235 @@ Ext.define('BQ.admin.UserManager', {
 
     },
 });
+
+//--------------------------------------------------------------------------------
+// Notifications
+// available variables in messages:
+//     $display_name
+//     $user_name
+//     $service_name - the name of the system
+//     $service_url - and A HREF with the name and URL to the system
+//--------------------------------------------------------------------------------
+
+Ext.define('BQ.admin.notifications.Manager', {
+    extend: 'Ext.container.Container',
+    alias: 'widget.bq_notifications_manager',
+
+    componentCls: 'bq_notifications',
+
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },
+
+    messages: {
+        'immediate_outage': '\nThe $service_name team has to perform an unscheduled maintenance on the system. This update will bring higher stability and fix encountered issues. The system will not be available from X to Y.',
+        'scheduled_maintenance': '\nThe $service_name team is planning a scheduled maintenance on the system. This update will bring improvements and higher stability. The system will not be available from X to Y.',
+    },
+    header: 'Dear $display_name,\n',
+    footer: '\n\nWe are sorry for the inconvenience and hope you will like the upgraded service! You are receiving this message because you are a registered user at $service_url.\n\nThe $service_url team.',
+
+    initComponent: function(config) {
+        this.items = [{
+            xtype: 'container',
+            html: '<h2>Users mailing list</h2>',
+        }, {
+            xtype: 'textareafield',
+            itemId: 'mailinglist',
+            grow: true,
+            //name: 'mailinglist',
+            flex: 1,
+        }, {
+            xtype: 'container',
+            html: '<h2>Send a message to all users</h2>',
+        }, {
+            xtype: 'container',
+            cls: 'block',
+            layout: {
+                type: 'hbox',
+                align : 'stretch',
+                pack  : 'start',
+            },
+            defaults: {
+                xtype: 'button',
+                cls: 'button',
+                scale: 'medium',
+                scope: this,
+                handler: this.setMessage,
+            },
+            items: [{
+                xtype: 'container',
+                html: '<h3>Templates:</h3>',
+            }, {
+                itemId: 'immediate_outage',
+                text: 'Temporary outage',
+            }, {
+                itemId: 'scheduled_maintenance',
+                text: 'Scheduled maintenance',
+            }],
+        }, {
+            xtype: 'container',
+            cls: 'block',
+            flex: 3,
+            layout: {
+                type: 'hbox',
+                align : 'stretch',
+                pack  : 'start',
+            },
+            items: [{
+                xtype: 'textareafield',
+                itemId: 'message',
+                grow: true,
+                //name: 'message',
+                flex: 4,
+                listeners: {
+                    scope: this,
+                    change: function ( me, newValue, oldValue, eOpts ) {
+                        this.queryById('send_btn').setDisabled(newValue=='');
+                    },
+                },
+            }, {
+                xtype: 'textareafield',
+                itemId: 'variables',
+                grow: true,
+                flex: 1,
+            }],
+        }, {
+            xtype: 'container',
+            layout: {
+                type: 'hbox',
+                align : 'stretch',
+                pack  : 'start',
+            },
+            items: [{        
+                xtype: 'button',
+                itemId: 'send_btn',
+                text: 'Send message to all users',
+                scale: 'large',
+                disabled: true,
+                scope: this,
+                handler: this.sendMessage,
+            }],
+        }];
+        this.callParent();
+    },
+
+    afterRender: function() {
+        this.callParent(); 
+        this.loadUsers();        
+    },
+
+    loadUsers: function() {
+        var list_w = this.queryById('mailinglist'),
+            vars_w = this.queryById('variables');
+        list_w.setLoading('Loading users...');
+        Ext.Ajax.request({
+            url: '/data_service/user?view=full&tag_order="@ts":desc&wpublic=true',
+            callback: function(opts, succsess, response) {
+                list_w.setLoading(false);
+                if (response.status>=400)
+                    BQ.ui.error(response.responseText);
+                else
+                    this.onUsersLoaded(response.responseXML);
+            },
+            scope: this,
+            disableCaching: false,
+        });
+
+        vars_w.setLoading('Loading variables...');
+        Ext.Ajax.request({
+            url: '/admin/message_variables',
+            callback: function(opts, succsess, response) {
+                vars_w.setLoading(false);
+                if (response.status>=400)
+                    BQ.ui.error(response.responseText);
+                else
+                    this.onVarsLoaded(response.responseXML);
+            },
+            scope: this,
+            disableCaching: false,
+        });        
+    },
+
+    onUsersLoaded: function(xml) {
+        this.users = {};
+        var nodes = BQ.util.xpath_nodes(xml, "*/user"),
+            u = null,
+            message = [];
+        for (var i=0; (u=nodes[i]); ++i) {
+            var username = u.getAttribute('name'),
+                email = u.getAttribute('value'),
+                display_name = BQ.util.xpath_string(u, 'tag[@name="display_name"]/@value');
+            this.users[u.getAttribute('name')] = {
+                username: username,
+                name: display_name,
+                email: email,
+            };
+            message.push(display_name+' <'+email+'>');
+        }
+        this.queryById('mailinglist').setValue( message.join(', ') );
+    },
+
+    onVarsLoaded: function(xml) {
+        var nodes = BQ.util.xpath_nodes(xml, "*/tag"),
+            t = null,
+            vars = [];
+        for (var i=0; (t=nodes[i]); ++i) {
+            var n = t.getAttribute('name'),
+                v = t.getAttribute('value');
+            vars.push('$'+n+': "'+v+'"');
+        }
+        this.queryById('variables').setValue( vars.join('\n') );
+    },
+
+    setMessage: function(btn) {
+        var message_body = this.messages[btn.itemId],
+            message = this.header + message_body + this.footer;
+        this.queryById('message').setValue( message );
+    },
+
+    sendMessage: function() {
+        var msg_w = this.queryById('message'),
+            message = msg_w.getValue(),
+            resource = BQFactory.make('message');
+        msg_w.setLoading('Sending...');
+        resource.setValues([message]);
+        resource.save_('/admin/notify_users',
+                       callback(this, this.onSendDone),
+                       callback(this, this.onSendError),
+                       'POST');
+
+        /*msg_w.setLoading('Sending message...');
+        Ext.Ajax.request({
+            url: '/admin/notify_users',
+            method: 'POST',
+            params: { 
+                //ajax_req: Ext.util.JSON.encode(myObj),
+                ajax_req: message,
+            },
+
+            callback: function(opts, succsess, response) {
+                msg_w.setLoading(false);
+                if (response.status>=400)
+                    BQ.ui.error(response.responseText);
+                else
+                    BQ.ui.notification('Message sent');
+            },
+            scope: this,
+            disableCaching: false,
+        });*/
+    },
+
+    onSendDone: function() {
+        this.queryById('message').setLoading(false);
+        BQ.ui.notification('Message sent');
+    },
+
+    onSendError: function(m) {
+        this.queryById('message').setLoading(false);
+        BQ.ui.error(m.message_short);
+    },    
+
+});
+

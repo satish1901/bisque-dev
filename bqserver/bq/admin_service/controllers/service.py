@@ -54,6 +54,7 @@ import os
 import operator
 import logging
 import transaction
+import copy
 
 from datetime import datetime
 from lxml import etree
@@ -63,6 +64,7 @@ from repoze.what.predicates import not_anonymous
 from sqlalchemy import func
 
 from pylons.controllers.util import abort
+from tg import redirect, request, config
 
 import bq
 from bq import data_service
@@ -76,13 +78,12 @@ from bq.data_service.model import  BQUser, Image, TaggableAcl
 from bq.util.bisquik2db import bisquik2db, db2tree
 from sqlalchemy.exc import IntegrityError
 #from bq.image_service.model import  FileAcl
-from tg import redirect
-from tg import request
 
-log = logging.getLogger('bq.admin')
-
+from bq.client_service.controllers import notify_service
 from bq.core import model
 from bq.core.model import DBSession
+
+log = logging.getLogger('bq.admin')
 
 #from tgext.admin import AdminController
 #class BisqueAdminController(AdminController):
@@ -116,10 +117,39 @@ class AdminController(ServiceController):
         users_xml = etree.SubElement(index_xml,'command', name='user', value='Lists all the users')
         users_xml = etree.SubElement(index_xml,'command', name='user/RESOURCE_UNIQ', value='Lists the particular user')
         users_xml = etree.SubElement(index_xml,'command', name='user/RESOURCE_UNIQ/login', value='Log in as user')
+
+        etree.SubElement(index_xml,'command', name='notify_users', value='sends message to all users')
+        etree.SubElement(index_xml,'command', name='message_variables', value='returns available message variables')
         return etree.tostring(index_xml)
 
+    @expose(content_type='text/xml')
+    def notify_users(self, *arg, **kw):
+        """
+          Sends message to all system users
+        """
+        log.info("notify_users")
+        if request.method.upper() == 'POST' and request.body is not None:
+            try:
+                resource = etree.fromstring(request.body)
+                message = resource.find('value').text
+            except Exception:
+                return abort(400, 'Malformed request document')
+            self.do_notify_users(message)
+            return '<resource type="message" value="sent" />'
 
+        abort(400, 'The request must contain message body')
 
+    @expose(content_type='text/xml')
+    def message_variables(self, **kw):
+        """
+          Sends message to all system users
+        """
+        log.info("message_variables")
+        variables = self.get_variables()
+        response = etree.Element('resource', name='message_variables')
+        for n,v in variables.iteritems():
+            etree.SubElement(response, 'tag', name=n, value=v)
+        return etree.tostring(response)
 
     def add_admin_info2node(self, user_node, view=[]):
         """
@@ -470,7 +500,47 @@ class AdminController(ServiceController):
         log.info("CLEARED CACHE")
         return '<resource name="cache_clear" value="finished">'
 
+    def get_variables(self):
+        bisque_root = config.get ('bisque.root')
+        bisque_organization = config.get ('bisque.organization', 'BisQue')
+        bisque_email = config.get ('bisque.admin_email', 'info@bisque')
 
+        variables = {
+            'service_name': bisque_organization,
+            'service_url': '<a href="%s">%s</a>'%(bisque_root, bisque_organization),
+            'user_name': 'username',
+            'email': 'user@email',
+            'display_name': 'First Last',
+        }
+        return variables
+
+    def do_notify_users(self, message):
+        log.debug(message)
+        variables = self.get_variables()
+
+        #for users
+        users = data_service.query(resource_type='user', wpublic='true', view='full')
+        for u in users:
+            variables['user_name'] = u.get('name')
+            variables['email'] = u.get('value')
+            variables['display_name'] = u.find('tag[@name="display_name"]').get('value')
+            msg = copy.deepcopy(message)
+            for v,t in variables.iteritems():
+                msg = msg.replace('$%s'%v, t)
+
+            # send
+            log.info('Sending message to: %s', variables['email'])
+            log.info('Message:\n%s', msg)
+
+            try:
+                notify_service.send_mail (
+                    bisque_email,
+                    variables['email'],
+                    'Notification from %s service'%variables['service_name'],
+                    msg,
+                )
+            except Exception:
+                log.exception("Mail not sent")            
 
 def initialize(url):
     """ Initialize the top level server for this microapp"""
