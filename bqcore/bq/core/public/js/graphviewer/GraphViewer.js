@@ -126,18 +126,46 @@ PipelineCard.prototype.populateFields = function (xnode) {
 };
 
 
+function SummaryCard(node, resource) {
+    this.resource = resource;
+    this.cardType = 'multi';
+    this.node = node;
+    ResourceCard.call(this,node, resource);
+};
+
+SummaryCard.prototype = new ResourceCard();
+
+SummaryCard.prototype.populateFields = function () {
+    this.addField('type', this.node.label.slice(6));   // label - initial "multi "
+    this.addField('count', this.node.count, 'value');
+};
+
+SummaryCard.prototype.getUrl = function (resource_uniq) {
+    return '/client_service/view?resource=/graph/' + resource_uniq;
+};
+
+
 function BQFactoryGraph(){
 };
 
 BQFactoryGraph.make = function(node, resource){
-    this.buffermap = {
-        mex      : MexCard,
-        dataset  : DataSetCard,
+    var buffermap = {
         image    : ImageCard,
         table    : TableCard,
         dream3d_pipeline : PipelineCard,
     };
-    card = this.buffermap[node.label];
+    if (node.label.startswith("multi ")) {
+        card = SummaryCard;
+    }
+    else if (node.label.startswith("mex")) {
+        card = MexCard;
+    }
+    else if (node.label.startswith("dataset")) {
+        card = DataSetCard;
+    }
+    else {
+        card = buffermap[node.label];
+    }
     if (!card) {
         // for all other types, use ResourceCard
         card = ResourceCard;
@@ -163,43 +191,60 @@ Ext.define('BQ.graphviewer', {
 
     fetchNode : function(resource_uniq, node){
         var me = this;
-        var resUniqueUrl = (this.hostName ? this.hostName : '') + '/data_service/' + resource_uniq;
         var gnode = node;
         console.log(node);
         var g = this.g;
-        Ext.Ajax.request({
-			url : resUniqueUrl,
-			scope : this,
-			disableCaching : false,
-			callback : function (opts, succsess, response) {
-				if (response.status >= 400)
-					BQ.ui.error(response.responseText);
-				else {
-					if (!response.responseXML)
-						return;
-					var xmlDoc = response.responseXML;
-                    console.log(xmlDoc);
-                    var xnode = xmlDoc.childNodes[0];
-                    if(gnode && gnode.card){
-                        gnode.card.populateFields(xnode);
-                        gnode.card.buildHtml();
-                    }
-                    me.numLoaded++;
-                    if(me.numLoaded === g.nodes().length){
-                        me.render(me.group, g);
-                        me.forceRefresh(0);
-                        me.zoomExtents();
-                        var svgNodes = me.group.selectAll("g.node");
-                        var svgEdges = me.group.selectAll("g.edgePath");
+        if (resource_uniq.indexOf('@') == -1){
+            // actual resource => fetch it and populate GUI card
+            var resUniqueUrl = (this.hostName ? this.hostName : '') + '/data_service/' + resource_uniq;
+            Ext.Ajax.request({
+    			url : resUniqueUrl,
+    			scope : this,
+    			disableCaching : false,
+    			callback : function (opts, succsess, response) {
+    				if (response.status >= 400)
+    					BQ.ui.error(response.responseText);
+    				else {
+    					if (!response.responseXML)
+    						return;
+    					var xmlDoc = response.responseXML;
+                        console.log(xmlDoc);
+                        var xnode = xmlDoc.childNodes[0];
+                        if(gnode && gnode.card){
+                            gnode.card.populateFields(xnode);
+                            gnode.card.buildHtml();
+                        }
+                        me.fetchNodeDone();
+    				}
+    			},
+    		});
+    	}
+    	else {
+    	    // summary node (uniq='00-xxxx@id') => only populate GUI card
+    	    if(gnode && gnode.card){
+                gnode.card.populateFields();
+                gnode.card.buildHtml();
+            }
+            me.fetchNodeDone();
+    	}
+    },
 
-                        me.highLightProvenance(g, me.resource.resource_uniq, svgNodes, svgEdges, me);
-                        me.selection = me.highLightEdges(g, me.resource.resource_uniq, svgNodes, svgEdges);
+    fetchNodeDone : function(){
+        var me = this;
+        var g = this.g;
+        me.numLoaded++;
+        if(me.numLoaded === g.nodes().length){
+            me.render(me.group, g);
+            me.forceRefresh(0);
+            me.zoomExtents();
+            var svgNodes = me.group.selectAll("g.node");
+            var svgEdges = me.group.selectAll("g.edgePath");
 
-                        me.fireEvent("loaded", me);
-                    }
-				}
-			},
-		});
+            me.highLightProvenance(g, me.resource.resource_uniq, svgNodes, svgEdges, me);
+            me.selection = me.highLightEdges(g, me.resource.resource_uniq, svgNodes, svgEdges);
+
+            me.fireEvent("loaded", me);
+        }
     },
 
     fetchNodeInfo : function(){
@@ -418,7 +463,6 @@ Ext.define('BQ.graphviewer', {
         var svg = this.svg;
         var color = d3.scale.category20();
 
-
         var window = this.svg
             .insert("rect", "g")
             .attr("width", "100%")
@@ -435,7 +479,8 @@ Ext.define('BQ.graphviewer', {
         nodes.forEach(function(e,i,t){
             var t = e.getAttribute('type');
             var val = e.getAttribute('value');
-            g.setNode(val, {label: t});
+            var cnt = e.getAttribute('count');
+            g.setNode(val, {label: t, count: cnt});
         });
 
         edges.forEach(function(e,i,a){
@@ -453,19 +498,6 @@ Ext.define('BQ.graphviewer', {
             });
         });
 
-/* Le Mis data
-        this.graph.nodes.forEach(function(e,i,a){
-            //g.setNode(i, {label: e["name"], class: e["group"]});
-            g.setNode(i, {label: e["name"]});
-
-        });
-
-        this.graph.links.forEach(function(e,i,a){
-            g.setEdge(e["source"], e["target"],{
-                lineInterpolate: 'basis'
-            });
-        });
-*/
         g.nodes().forEach(function(v) {
             var node = g.node(v);
             console.log(v, g.node(v));
@@ -683,7 +715,7 @@ Ext.define('BQ.viewer.Graph.Panel', {
 
     fetchGraphData : function(){
         var resUniqueUrl = (this.hostName ? this.hostName : '') +
-            '/graph?query=' + this.resource.resource_uniq;
+            '/graph/' + this.resource.resource_uniq.split('@')[0] + '?view=deep';
         Ext.Ajax.request({
 			url : resUniqueUrl,
 			scope : this,
@@ -775,10 +807,15 @@ Ext.define('BQ.viewer.Graph.Panel', {
 		this.callParent();
     },
 
-    afterFirstLayout : function(){
+    afterRender : function(){
         this.fetchGraphData();
         this.callParent();
-    }
+    },
+
+    //afterFirstLayout : function(){
+    //    this.fetchGraphData();
+    //    this.callParent();
+    //}
 });
 //--------------------------------------------------------------------------------------
 // Dialogue Box
