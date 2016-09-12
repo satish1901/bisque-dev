@@ -825,7 +825,7 @@ def resource_query(resource_type,
         sq1 = query.with_labels().subquery()
         query = DBSession.query (Taggable).filter (Taggable.id == sq1.c.values_valobj)
         wpublic = 1
-
+        
     if  permcheck :
         query = prepare_permissions(query, user_id, with_public = wpublic, action=action)
         #query = prepare_readable_docs(query, user_id, with_public = wpublic)
@@ -840,26 +840,7 @@ def resource_query(resource_type,
 
     query = prepare_tag_expr(query, tag_query)
 
-    ## Special tag expressions
-    r = tags_special(dbtype, query, kw)
-    if r is not None:
-        log.debug ('handled by tags special')
-        return r
-
-    # Order the query if there is a sort order
-    query = prepare_order_expr(query, tag_order)
-
-    # This maybe should be moved to special
-    # Given  a tag query fetch only the tags specified by the names list
-    # /ds/images/19292/tags?names=experimenter,date
-    tv = kw.pop('names', None)
-    if tv and dbtype==Tag:
-#        query = query.filter (or_(*[ dbtype.name_id==UniqueName(k).id
-        query = query.filter (or_(*[ taggable.c.resource_name == k
-                                     for k in tv.split(',')]))
-
-
-
+    # handle any legal attributes in kw
     for ky,v in kw.items():
         #log.debug ("extra " + str(k) +'=' + str(v))
         k = LEGAL_ATTRIBUTES.get(ky)
@@ -893,8 +874,29 @@ def resource_query(resource_type,
                     if '*' in val:
                         query =query.filter( getattr(dbtype, k).like (val.replace('*', '%')))
                     else:
-                        query =query.filter( getattr(dbtype, k)==val)
+                        if '|' in val:                            
+                            query = query.filter( or_(*[getattr(dbtype, k)==v for v in val.split('|')]) )
+                        else:
+                            query =query.filter( getattr(dbtype, k)==val)
             del kw[ky]
+            
+    ## Special tag expressions
+    r = tags_special(dbtype, query, kw)
+    if r is not None:
+        log.debug ('handled by tags special')
+        return r
+
+    # Order the query if there is a sort order
+    query = prepare_order_expr(query, tag_order)
+
+    # This maybe should be moved to special
+    # Given  a tag query fetch only the tags specified by the names list
+    # /ds/images/19292/tags?names=experimenter,date
+    tv = kw.pop('names', None)
+    if tv and dbtype==Tag:
+#        query = query.filter (or_(*[ dbtype.name_id==UniqueName(k).id
+        query = query.filter (or_(*[ taggable.c.resource_name == k
+                                     for k in tv.split(',')]))
 
     # These must be last @ SQLAlchemy issues
     if kw.has_key('offset'):
