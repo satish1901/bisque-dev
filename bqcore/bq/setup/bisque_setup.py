@@ -608,6 +608,8 @@ def read_site_cfg(cfg , section):
         tc.read(open(cfg))
         bisque_vars.update(tc.get(section, asdict=True))
 
+    #print "READING CFG", cfg, bisque_vars
+
     return bisque_vars
 
 
@@ -1021,18 +1023,15 @@ def install_matlab(params, cfg = None):
 
     print "CONFIG", cfg
     params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
-    if  os.path.exists(params['runtime.matlab_home']):
-        if params.get ('runtime.matlab_launcher') == 'config-defaults/templates/matlab_launcher_SYS.tmpl':
-            if os.name == 'nt':
-                params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher_win.tmpl'))
-            else:
-                params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher.tmpl'))
+    if params.get ('runtime.matlab_launcher') == 'config-defaults/templates/matlab_launcher_SYS.tmpl':
+        if os.name == 'nt':
+            params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher_win.tmpl'))
         else:
-            print "using matlab_launcher ", params.get ('runtime.matlab_launcher')
-        #for f in ['runtime.matlab_launcher' ] :
-        #    if os.path.exists(params[f]):
-        #        params[f] = os.path.abspath(params[f])
+            params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher.tmpl'))
     else:
+        print "using matlab_launcher ", params.get ('runtime.matlab_launcher')
+
+    if  not os.path.exists(params['runtime.matlab_home']):
         print "WARNING: Matlab is required for many modules"
         params['matlab_installed'] = False
 
@@ -1092,14 +1091,21 @@ def install_docker (params, cfg = None):
     if os.path.exists('/dev/null'):
         devnull = open ('/dev/null')
 
+    return params
+
+def install_docker_base_images(params, cfg=None):
+    if cfg is None:
+        cfg = RUNTIME_CFG
     # Ensure base docker images are available
     docker_params = modify_site_cfg(DOCKER_IMAGE_QUESTIONS, docker_params, section='docker', cfg=cfg,append=False)
 
-    retcode = call('docker images|fgrep mcr_runtime' , shell=True, stdout=devnull, stderr=devnull)
-    if retcode != 0:
-        print "Please build mcr_runtime in contrib directory : retcode" , retcode
-    else:
-        print "mcr_runtime found"
+    for val, _, help in  DOCKER_IMAGE_QUESTIONS:
+        image = docker_params.get (val)
+        if image:
+            retcall = call('docker pull %s' % image, shell=True, stdout=devnull, stderr=devnull)
+            if retcode != 0:
+                print "Could not pull " , image
+                print "Please check contrib/docker-base-images", image
 
     return params
 
@@ -1109,23 +1115,40 @@ def install_docker (params, cfg = None):
 #######################################################
 # Modules
 
-def install_modules(params):
-    # Check each module for an install script and run it.
-    ans =  getanswer( "Try to setup modules", 'Y',
+def build_modules (params):
+    "Build the local set of modules"
+    ans =  getanswer( "Try to Build modules", 'N',
                   "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly")
     if ans != 'Y':
         return params
 
     install_matlab(params)
+
+    module_dirs = params.get ('module_dirs', [])
+
+    # Walk any module trees installing modules found
+    for module_dir in module_dirs:
+        if not os.path.exists(module_dir):
+            os.makedirs (module_dir)
+        install_module_tree(module_dir)
+
+    return params
+
+
+def install_modules(params):
+    # Check each module for an install script and run it.
+    ans =  getanswer( "Try to install precompiled modules", 'Y', "Setup docker to run precompiled modules")
+    if ans != 'Y':
+        return params
     install_docker(params)
     install_runtime(params)
-    fetch_modules(params)
+    return params
 
 def fetch_modules(params):
     """Get and install modules from remote and local sources
+    @params params: dictionay of loaded parameters
+    @return list of directories with modules
     """
-    hg = which('hg')
-    git = which('git')
     # Read list of modules trees from config-defaults/MODULES
     module_list = defaults_path('MODULES')
     if module_list is None:
@@ -1140,31 +1163,39 @@ def fetch_modules(params):
             module_locations.append(line)
     # Clone any remote repositories
     module_dirs = []
-    for module_url in module_locations:
+    for module_url in module_locations + [ DIRS['modules'] ]:
         print "Installing module(s) at %s" % module_url
-        module_dir = None
-        if git and module_url.endswith ('.git'):
-            module_dir = os.path.splitext(os.path.basename(module_url))[0]
-            if not os.path.exists (module_dir):
-                print "git clone %s into %s" % (module_url, module_dir)
-                call ([git, 'clone', module_url, module_dir])
-        elif os.path.exists (module_url):
-            module_dir = module_url
-        elif hg and module_url.startswith ('https') : #and 'hg@' in module_url:
-            module_dir = os.path.basename(module_url)
-            if not os.path.exists (module_dir):
-                print "hg clone %s into %s" % (module_url, module_dir)
-                call ([hg, 'clone', module_url, module_dir])
-        else:
-            print "Could not determine fetch method for module %s" % module_url
+        module_dir = _fetch_update_module (module_url)
         if module_dir:
             module_dirs.append (module_dir)
-    # Walk any module trees installing modules found
+    params['module_dirs'] = module_dirs
+    return params
 
-    for module_dir in module_dirs:
-        if not os.path.exists(module_dir):
-            os.makedirs (module_dir)
-        install_module_tree(module_dir)
+
+def _fetch_update_module (module_url):
+    " Fetch or update module "
+
+    hg = which('hg')
+    git = which('git')
+    cmd = 'pull'
+    module_dir = None
+    if git and module_url.endswith ('.git'):
+        module_dir = os.path.splitext(os.path.basename(module_url))[0]
+        if not os.path.exists (module_dir):
+            cmd = 'clone'
+        print "git %s %s into %s" % (cmd, module_url, module_dir)
+        call ([git, cmd, module_url, module_dir])
+    elif hg and module_url.startswith ('https') : #and 'hg@' in module_url:
+        module_dir = os.path.basename(module_url)
+        if not os.path.exists (module_dir):
+            print "hg %s %s into %s" % (cmd, module_url, module_dir)
+            call ([hg, cmd, '-u', module_url, module_dir])
+    elif os.path.exists (module_url):
+        module_dir = module_url
+    else:
+        print "Could not determine fetch method for module %s" % module_url
+
+    return module_dir
 
 
 def identify_repository_url(url):
@@ -1314,9 +1345,9 @@ def setup_server_cfg (params):
 
     server_params = modify_site_cfg (SERVER_QUESTIONS,  server_params, section='servers', append=False)
     if server_params['backend'] == 'uwsgi':
-        params = setup_uwsgi(params, server_params)
+        params, server_params = setup_uwsgi(params, server_params)
     if server_params['backend'] == 'paster':
-        params = setup_paster(params, server_params)
+        params, server_params = setup_paster(params, server_params)
     return params
 
 
@@ -1445,7 +1476,7 @@ def install_runtime(params, cfg = None):
     params['runtime.platforms'] = "command"
     check_condor(params, cfg=cfg)
 
-    params['runtime.staging_base'] = share_path('staging')
+    params['runtime.staging_base'] = run_path('staging')
     params = modify_site_cfg(RUNTIME_QUESTIONS, params, section=None, cfg=cfg)
     staging=params['runtime.staging_base'] = os.path.abspath(os.path.expanduser(params['runtime.staging_base']))
 
@@ -1555,10 +1586,11 @@ def setup_uwsgi(params, server_params):
     from bq.util.dotnested import parse_nested, unparse_nested
     servers = [ x.strip() for x in server_params['servers'].split(',') ]
     for server in servers:
+        server_params.setdefault(server + '.bisque.static_files', 'false')
         questions = [ (server+'.'+q[0], server+': '+q[1], q[2]) for q in UWSGI_QUESTIONS ]
-        server_params = modify_site_cfg (questions, server_params, section="servers")
+        server_params = modify_site_cfg (questions, server_params, section="servers", append=False)
     servers =  parse_nested (server_params, servers)
-    print servers
+    print "AFTER Q", servers
     for server, sv in servers.items():
         cfg = config_path ("%s_uwsgi.cfg" % server)
 
@@ -1592,7 +1624,7 @@ def setup_uwsgi(params, server_params):
         update_site_cfg(cfg=cfg, section='uwsgi',bisque_vars = uwsgi_vars )
         update_site_cfg(cfg=cfg, section='sa_auth',
                         bisque_vars = { 'cookie_secret' : uuid.uuid4()} )
-    return params
+    return params, server_params
 
 #######################################################
 #
@@ -1606,10 +1638,11 @@ def setup_paster(params, server_params):
     from bq.util.dotnested import parse_nested, unparse_nested
     servers = [ x.strip() for x in server_params['servers'].split(',') ]
     for server in servers:
+        server_params.setdefault(server + '.bisque.static_files', 'true')
         questions = [ (server+'.'+q[0], server+': '+q[1], q[2]) for q in PASTER_QUESTIONS ]
-        server_params = modify_site_cfg (questions, server_params, section="servers")
+        server_params = modify_site_cfg (questions, server_params, section="servers", append=False)
     servers =  parse_nested (server_params, servers)
-    print servers
+    print "AFTER Q", servers
 
     for server, sv in servers.items():
 
@@ -1635,6 +1668,8 @@ def setup_paster(params, server_params):
 
         for k,v in unparse_nested (bisque_vars):
             svars["bisque.%s" % k] = str(v)
+        print "BVARS", bisque_vars
+        print "SVARS", svars
 
         #svars.update (bisque_vars)
 
@@ -1650,7 +1685,7 @@ def setup_paster(params, server_params):
                         bisque_vars = { 'cookie_secret' : uuid.uuid4()} )
 
 
-    return params
+    return params, server_params
 
 
 #######################################################
@@ -2229,6 +2264,8 @@ engine_options= [
     'docker',
     'runtime',
     'modules',
+#    'fetch-modules',
+#    'build-modules',
     ]
 
 full_options = list (install_options + engine_options)
@@ -2267,8 +2304,10 @@ RUNTIME_COMMANDS = {
     'matlab' : [ install_matlab ],
     'runtime' : [ install_runtime ],
     'docker'  : [ install_docker ],
-    'modules' : [ install_modules ],
+    'modules' : [ fetch_modules, install_modules ],
     'fetch-modules'   : [ fetch_modules ] ,
+    'build-modules'   : [ fetch_modules, build_modules ] ,
+    'install-modules' : [ fetch_modules, install_modules ]
     }
 
 
@@ -2303,16 +2342,18 @@ def bisque_installer(options, args):
 
     """
     system_type = ['bisque', 'engine']
-    if len(args) == 0 or args[0] in  ( 'bisque', 'developer', 'server' ):
-        install_steps = install_options[:]
+    install_steps = []
+    if len(args) == 0: # Default install is 'full' both bisque and engine
+        args = [ 'bisque' ]
+
+    if args[0] in  ( 'bisque', 'developer', 'server' ):
+        install_steps.extend ( install_options)
     elif args[0] == 'engine':
-        install_steps = engine_options[:]
-        system_type = ['engine']
+        install_steps.extend ( engine_options )
     elif args[0] == 'full':
-        install_steps = full_options[:]
-        system_type = ['bisque', 'engine']
+        install_steps.extend ( full_options )
     else:
-        install_steps = args
+        install_steps.extend (args)
 
     if 'help' in install_steps:
         print usage
@@ -2468,6 +2509,7 @@ def update_globals (options, args):
     DIRS['data']   = os.path.join(DIRS['run'], 'data')
     DIRS['depot']  = os.path.join(DIRS['run'], "external") # Local directory for externals
     DIRS['public'] = os.path.join(DIRS['run'], 'public')
+    DIRS['modules'] = os.path.join(DIRS['share'], 'modules')
     print "DIRS: ", DIRS
     # Ensure dirs are available
     for key, folder in DIRS.items():
