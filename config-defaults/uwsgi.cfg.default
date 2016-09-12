@@ -1,11 +1,12 @@
 #
-# bqcore - Pylons development environment configuration
+# Bisque UWSGI file
 #
 # The %(here)s variable will be replaced with the parent directory of this file
 #
-# This file is for deployment specific config options -- other configuration
-# that is always required for the app is done in the config directory,
-# and generally should not be modified by end users.
+#  DO NOT EDIT
+#
+#  re-generate with bq-admin setup configuration from changes in site.cfg
+#  Or modify config-defaults/uwsgi.cfg.default
 
 [DEFAULT]
 
@@ -40,7 +41,7 @@ fastrouter_port =
 # Subscribe this instance to a fastrouter
 if-env = BISQUE_FASTROUTER_KEYS
 subscribe-to=%(fastrouter_ip):%(fastrouter_port):%(fastrouter_keys)
-endif = 
+endif =
 
 
 #########
@@ -94,4 +95,3 @@ post-buffering = 1
 
 #buffer-size : internal buffer size for uwsgi packet parsing.
 buffer-size = 8192
-

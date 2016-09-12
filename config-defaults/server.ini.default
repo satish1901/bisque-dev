@@ -1,11 +1,12 @@
 #
-# bqcore - Pylons development environment configuration
+#  Bisque Paster config
 #
 # The %(here)s variable will be replaced with the parent directory of this file
 #
-# This file is for deployment specific config options -- other configuration
-# that is always required for the app is done in the config directory,
-# and generally should not be modified by end users.
+#  DO NOT EDIT
+#
+#  re-generate with bq-admin setup configuration from changes in site.cfg
+#  Or modify config-defaults/server.ini.default
 
 [DEFAULT]
 
@@ -27,5 +28,3 @@ use = config:site.cfg
 bisque.server=%(server)s
 bisque.services_enabled=%(services_enabled)s
 bisque.services_disabled=%(services_disabled)s
-
-
