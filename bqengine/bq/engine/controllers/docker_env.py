@@ -45,6 +45,8 @@ class DockerEnvironment(BaseEnvironment):
     matlab_launcher = ""
 
     def process_config (self, runner, **kw):
+        runner.load_section ('docker', runner.bisque_cfg)
+        runner.load_section ('docker', runner.module_cfg)
         self.enabled = asbool(runner.config.get ('docker.enabled', False))
         self.docker_hub = runner.config.get('docker.hub', '')
         self.docker_image = runner.config.get('docker.image', '')
@@ -59,7 +61,9 @@ class DockerEnvironment(BaseEnvironment):
 
     def setup_environment(self, runner):
         # Construct a special environment script
+        runner.log ("docker environment setup")
         if not self.enabled:
+            runner.log ("docker disabled")
             return
 
         docker_login=""
