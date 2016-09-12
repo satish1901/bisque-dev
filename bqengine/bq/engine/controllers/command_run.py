@@ -167,9 +167,11 @@ class BaseRunner(object):
         if os.path.exists('runtime-bisque.cfg'):
             self.bisque_cfg = ConfigFile('runtime-bisque.cfg')
             self.load_section(None, self.bisque_cfg)
+        else:
+            self.log("BaseRunner: missing runtime-bisque.cfg")
 
         if not os.path.exists('runtime-module.cfg'):
-            self.log ("missing runtime-module.cfg")
+            self.log ("BaseRunner: missing runtime-module.cfg")
             return
         self.module_cfg = ConfigFile('runtime-module.cfg')
         # Process Command section
@@ -237,7 +239,7 @@ class BaseRunner(object):
         mex_tree = kw.pop('mex_tree', None)
         module_tree = kw.pop('module_tree', None)
         bisque_token = kw.pop('bisque_token', None)
-            
+
         # ---- the next items are preserved across execution phases ----
         self.pool = kw.pop('pool', None)
         # list of dict representing each mex : variables and arguments
@@ -250,7 +252,7 @@ class BaseRunner(object):
         #self.process_environment (pre-set)
         #self.options (pre-set)
         # ---- the previous items are preserved across execution phases ----
-        
+
         # Add remaining arguments to the executable line
         # Ensure the loaded executable is a list
         if isinstance(self.config.executable, str):
@@ -265,32 +267,32 @@ class BaseRunner(object):
                            bisque_token = bisque_token,
                            rundir = self.rundir))
         self.mexes.append(topmex)
-        
+
         # Scan argument looking for named arguments
         for arg in arguments:
             tag, sep, val = arg.partition('=')
             if sep == '=':
                 topmex.named_args[tag] = val
-            
+
         # Pull out arguments from mex
         if mex_tree is not None and module_tree is not None:
             mexparser = MexParser()
             mex_inputs  = mexparser.prepare_inputs(module_tree, mex_tree, bisque_token)
             module_options = mexparser.prepare_options(module_tree, mex_tree)
-            self.outputs = mexparser.prepare_outputs(module_tree, mex_tree)            
-            
+            self.outputs = mexparser.prepare_outputs(module_tree, mex_tree)
+
             argument_style = module_options.get('argument_style', 'positional')
-            # see if we have pre/postrun option            
+            # see if we have pre/postrun option
             self.prerun = module_options.get('prerun_entrypoint', None)
             self.postrun = module_options.get('postrun_entrypoint', None)
-            
+
             topmex.named_args.update ( mexparser.prepare_mex_params( mex_inputs ) )
-            topmex.executable.extend(mexparser.prepare_mex_params (mex_inputs, argument_style))            
+            topmex.executable.extend(mexparser.prepare_mex_params (mex_inputs, argument_style))
             topmex.rundir = self.rundir
             #topmex.options = module_options
             # remember topmex executable for pre/post runs
             self.entrypoint_executable = topmex.executable
-    
+
             # Create a nested list of  arguments  (in case of submex)
             submexes = mex_tree.xpath('/mex/mex')
             for mex in submexes:
@@ -313,14 +315,14 @@ class BaseRunner(object):
             topmex.iterables = len(self.mexes) > 1 and mexparser.process_iterables(module_tree, mex_tree)
             if topmex.iterables:
                 topmex.executable = None
-  
-        log.info("processing %d mexes -> %s" % (len(self.mexes), self.mexes))        
+
+        log.info("processing %d mexes -> %s" % (len(self.mexes), self.mexes))
 
     def store_runstate(self):
         staging_path = self.mexes[0].get('staging_path', tempfile.gettempdir())
         state_file = "state%s.bq" % self.mexes[0].get('staging_id', '')
         # pickle the object variables
-        with open('%s/%s' % (staging_path, state_file),'wb') as f:                
+        with open('%s/%s' % (staging_path, state_file),'wb') as f:
             pickle.dump(self.mexes, f)
             pickle.dump(self.rundir, f)
             pickle.dump([et.tostring(tree) for tree in self.outputs if tree and tree.tag == 'tag'], f)
@@ -329,7 +331,7 @@ class BaseRunner(object):
             pickle.dump(self.postrun, f)
             pickle.dump(self.process_environment, f)
             pickle.dump(self.options, f)
-            
+
     def load_runstate(self):
         staging_path = self.mexes[0].get('staging_path', tempfile.gettempdir())
         state_file = "state%s.bq" % self.mexes[0].get('staging_id', '')
@@ -364,13 +366,13 @@ class BaseRunner(object):
             if self.session is None:
                 self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
             self.session.update_mex('running parallel')
-            
+
         # if there is a prerun, run it now
         if self.prerun:
             log.info("prerun starting")
             self.command_single_entrypoint(self.prerun, **kw)
             log.info("prerun completed")
-            
+
         return self.command_execute
 
     def command_execute(self, **kw):
@@ -381,7 +383,7 @@ class BaseRunner(object):
         """Cleanup the environment and perform any needed actions
         after the module completion
         """
-        log.info("finishing %d mexes -> %s" % (len(self.mexes), self.mexes))        
+        log.info("finishing %d mexes -> %s" % (len(self.mexes), self.mexes))
 
         # if there is a postrun (aka "reduce phase"), run it now
         if self.postrun:
@@ -479,17 +481,17 @@ class BaseRunner(object):
         # Find and read a config file for the module
         try:
             self.read_config(**kw)
-            
+
             args  = kw.pop('arguments', None)
             # Pull out command line arguments
             self.options, arguments = self.parser.parse_args(args)
             command = arguments.pop()
-            
+
             # the following always has to run first so that e.g., staging dirs are set up properly
-            self.init_runstate(arguments, **kw)                     
-            self.create_environments(**kw) 
-            self.process_config(**kw)                
-            
+            self.init_runstate(arguments, **kw)
+            self.create_environments(**kw)
+            self.process_config(**kw)
+
             if command == 'start':
                 # new run => setup environments from scratch
                 self.setup_environments()
@@ -498,15 +500,15 @@ class BaseRunner(object):
                 self.load_runstate()
 
             self.mexes[0].arguments = arguments
-            
+
             command = getattr (self, 'command_%s' % command, None)
             while command:
                 log.info("COMMAND_RUNNER %s" % command)
                 command = command(**kw)
-                
+
             # store run state since we may come back (e.g., condor finish)
             self.store_runstate()
-            
+
             return 0
         except ModuleEnvironmentError, e:
             log.exception( "Problem occured in module")
@@ -516,7 +518,7 @@ class BaseRunner(object):
         except Exception, e:
             log.exception ("Unknown exeception: %s" % e)
             raise RunnerException(str(e), self.mexes)
-            
+
         return 1
 
 #import multiprocessing
@@ -558,10 +560,10 @@ class CommandRunner(BaseRunner):
         if self.options.dryrun:
             self.log( "DryRunning '%s' in %s" % (' '.join(command_line), rundir))
         else:
-            self.log( "running '%s' in %s" % (' '.join(command_line), rundir))            
+            self.log( "running '%s' in %s" % (' '.join(command_line), rundir))
             proc = dict(command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex, env=self.process_environment)
-            
-            from bq.engine.controllers.execone import execone            
+
+            from bq.engine.controllers.execone import execone
             retcode = execone (proc)
             if retcode:
                 self.command_failed(proc, retcode)

@@ -23,7 +23,6 @@ log = logging.getLogger("bq.registration")
 
 
 
-
 def initialize(uri):
     """ Initialize the top level server for this microapp"""
     # Add you checks and database initialize
@@ -49,9 +48,9 @@ def get_model():
     from bq.registration import model
     return model
 
-#from tgext.registration2.controllers import UserRegistration as RegistrationController
-#RegistrationController.service_type = "registration"
+from tgext.registration2.controllers import UserRegistration as RegistrationController
+RegistrationController.service_type = "registration"
 
-#__controller__ = RegistrationController
+__controller__ = RegistrationController
 #__staticdir__ = get_static_dirs()
 __model__ = get_model()
