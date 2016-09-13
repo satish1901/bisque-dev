@@ -276,8 +276,8 @@ class BlobServer(RestController, ServiceMixin):
 
         self.subtransactions = asbool(config.get ('bisque.blob_service.subtransaction', True))
 
-        path_root = config.get('bisque.paths.root', '')
-        path_plugins = os.path.join(path_root, 'bqcore/bq/core/public/plugins')
+        path_root = config.get('bisque.paths.public', '')
+        path_plugins = os.path.join(path_root, 'plugins')
         self.plugin_manager = ResourcePluginManager(path_plugins)
 
 
