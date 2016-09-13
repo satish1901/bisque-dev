@@ -1,3 +1,5 @@
 debian/tmp/*
 config-defaults/*  /usr/share/bisque/config-defaults
 migrations/*	   /usr/share/bisque/migrations
+pavement.py        /usr/share/bisque/
+pylint.rc          /usr/share/bisque/

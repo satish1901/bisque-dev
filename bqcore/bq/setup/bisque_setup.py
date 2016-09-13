@@ -359,8 +359,6 @@ def call(cmd, echo=False, capture=False, **kw):
         return p.returncode
 
 
-
-
 def unpack_zip (zfile, dest, strip_root=None):
     z = zipfile.ZipFile (zfile, 'r')
     if strip_root is None:
@@ -412,7 +410,20 @@ def find_path (name, places):
             return place
     return None
 
+def check_env (section, key):
+    """Check the variable
 
+    A site.cfg variable such as bisque.a.b.c in section 'main'  will check the environment variable
+    BISQUE_MAIN_BISQUE_A_B_C
+
+    @param section: The site.cfg section name
+    @param key: a site.cfg key
+    """
+    # Check environment variables
+    section_name = '' if section == BQ_SECTION or section is None else section + "_"
+    envkey = "BISQUE_" + section_name.upper() + key.upper().replace('.','_')
+    print "checking", envkey
+    return os.environ.get (envkey)
 
 
 
@@ -642,7 +653,6 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=None
     """Ask questions and modify a config file
     see update_site_cfg
     """
-
     if cfg is None:
         cfg = SITE_CFG
 
@@ -652,10 +662,7 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=None
     # Check environment defaults
     for key, _, _ in qs:
         # Check environment variables
-        section_name = '' if section == BQ_SECTION or section is None else section + "_"
-        envkey = "BISQUE_" + section_name.upper() + key.upper().replace('.','_')
-        print "checking", envkey
-        bisque_vars[key] = os.environ.get (envkey, bisque_vars.get (key, ''))
+        bisque_vars[key] = check_env(section, key) or bisque_vars.get (key, '')
 
     bisque_vars =  update_variables(qs, bisque_vars )
     for k,v in linked_vars.items():
@@ -978,11 +985,14 @@ def initialize_database(params, DBURL=None):
         db_initialized = True
 
     params['new_database'] = False
-    params['script_location'] = share_path ('migrations')
+    alembic_params = {
+        'script_location' : share_path ('migrations'),
+        'sqlalchemy.url'  : params.get ('sqlalchemy.url'),
+    }
     ALEMBIC_CFG  = config_path('alembic.ini')
 
     install_cfg(ALEMBIC_CFG, section="alembic", default_cfg=defaults_path('alembic.ini.default'))
-    update_site_cfg(params, section='alembic', cfg = ALEMBIC_CFG, append=False)
+    update_site_cfg(alembic_params, section='alembic', cfg = ALEMBIC_CFG, append=False)
     if not db_initialized and getanswer(
         "Intialize the new database",  "Y",
         """
@@ -1088,8 +1098,6 @@ def install_docker (params, cfg = None):
     docker_params['docker.enabled'] = 'true'
     docker_params = modify_site_cfg(DOCKER_QUESTIONS, docker_params, section='docker', cfg=cfg)
 
-    if os.path.exists('/dev/null'):
-        devnull = open ('/dev/null')
 
     return params
 
@@ -1097,12 +1105,16 @@ def install_docker_base_images(params, cfg=None):
     if cfg is None:
         cfg = RUNTIME_CFG
     # Ensure base docker images are available
+    docker_params = {}
     docker_params = modify_site_cfg(DOCKER_IMAGE_QUESTIONS, docker_params, section='docker', cfg=cfg,append=False)
+    devnull = None
+    if os.path.exists('/dev/null'):
+        devnull = open ('/dev/null')
 
     for val, _, help in  DOCKER_IMAGE_QUESTIONS:
         image = docker_params.get (val)
         if image:
-            retcall = call('docker pull %s' % image, shell=True, stdout=devnull, stderr=devnull)
+            retcode = call('docker pull %s' % image, shell=True, stdout=devnull, stderr=devnull)
             if retcode != 0:
                 print "Could not pull " , image
                 print "Please check contrib/docker-base-images", image
@@ -1992,7 +2004,7 @@ def install_libtiff():
 
             urllib.urlretrieve ( src, filename_zip)
             uncompress_dependencies ( filename_zip, DIRS['bin'], filename_check, strip_root=True)
-            print 'Installed libtiff-4.0.3 in %s'%filename_dest
+            print 'Installed libtiff-4.0.3 in %s'% DIRS['bin']
     else:
         print """To enable the feature service to read OME-bigtiff for feature extraction install
         libtiff4

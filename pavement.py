@@ -28,7 +28,7 @@ options(
         author="Center for BioImage Informatics, UCSB",
         author_email = "info@bioimage.ucsb.edu",
         #data_files = [ ('config-defaults', glob.glob ('config-defaults/*') )],
-        data_files =  generate_data_files ('./contrib') +  generate_data_files ('./config-defaults'),
+        #data_files =  generate_data_files ('./contrib') +  generate_data_files ('./config-defaults'),
     ),
     virtualenv=Bunch(
         packages_to_install=['pip'],
@@ -237,15 +237,22 @@ def pastershell():
 @task
 @consume_args
 def pylint(options):
-    args = 'bqcore/bq bqserver/bq bqengine/bq bqfeature/bq'
+    import pkgutil
+    import ConfigParser
+    from bq.util.paths import site_cfg_path
+    import bq
+    site_cfg = ConfigParser.ConfigParser ()
+    site_cfg.read (site_cfg_path())
+    share_path = site_cfg.get ('app:main', 'bisque.paths.share')
+    #args = 'bqcore/bq bqserver/bq bqengine/bq bqfeature/bq'
     if options.args:
         args = " ".join(options.args)
-    if os.name != 'nt':
-        sh('PYTHONPATH=bqcore/bq:bqserver/bq:bqengine/bq:bqfeature/bq pylint %s --rcfile=bqcore/pylint.rc --load-plugins=bqcore/pylint_errors' % args)
     else:
-        sh('set PYTHONPATH=bqcore\\bq;bqserver\\bq;bqengine\\bq;bqfeature\\bq & pylint %s --rcfile=bqcore\\pylint.rc --load-plugins=bqcore\\pylint_errors' % args)
-
-
+        package = bq
+        prefix = package.__name__ + "."
+        args = [ modname for importer, modname, ispkg in pkgutil.iter_modules(package.__path__, prefix) ]
+        args = " ".join(args)
+    sh('pylint --rcfile=%s --load-plugins=bq_pylint %s' % (os.path.join(share_path, 'pylint.rc'), args))
 
 @task
 @consume_args
