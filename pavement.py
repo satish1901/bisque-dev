@@ -245,14 +245,22 @@ def pylint(options):
     site_cfg.read (site_cfg_path())
     share_path = site_cfg.get ('app:main', 'bisque.paths.share')
     #args = 'bqcore/bq bqserver/bq bqengine/bq bqfeature/bq'
-    if options.args:
-        args = " ".join(options.args)
+    opts = []
+    args = []
+    for arg in options.args:
+        if arg.startswith('-'):
+            opts.append (arg)
+        else:
+            args.append (arg)
+    if args:
+        args = " ".join(args)
     else:
         package = bq
         prefix = package.__name__ + "."
         args = [ modname for importer, modname, ispkg in pkgutil.iter_modules(package.__path__, prefix) ]
         args = " ".join(args)
-    sh('pylint --rcfile=%s --load-plugins=bq_pylint %s' % (os.path.join(share_path, 'pylint.rc'), args))
+    opts = " ".join(opts)
+    sh('pylint --rcfile=%s --load-plugins=bq_pylint %s %s' % (os.path.join(share_path, 'pylint.rc'), opts, args))
 
 @task
 @consume_args
