@@ -23,6 +23,7 @@ public/*
 debian/tmp/*
 debian/bisque/*
 debian/bisque-contrib
+debian/bisque-modules
 bqcore/parser.out
 bqcore/parsetab.*
 *.egg-info/*
