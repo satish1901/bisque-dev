@@ -45,7 +45,7 @@ The bisque server
           ('client_service/templates/**.mako', 'mako', None),
           ('client_service/templates/**.html', 'genshi', None),
           ('client_service/public/**', 'ignore', None)]},
-      setup_requires=["hgtools"],
+      #setup_requires=["hgtools"],
       include_package_data=True,
       zip_safe=False,
       install_requires=install_requires,

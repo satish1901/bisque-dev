@@ -1,4 +1,5 @@
 recursive-include bq/core/public *
+recursive-include bq/commands/templates *
 prune bq/core/public/extjs
 #include bq/public/favicon.ico
 recursive-include bq/core/i18n *
