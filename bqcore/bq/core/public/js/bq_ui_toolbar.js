@@ -559,8 +559,7 @@ Ext.define('BQ.Application.Toolbar', {
                         viewMode: 'ModuleBrowser',
                         //showOrganizer: true,
                         showModuleOrganizer: true,
-                        dataset : '/module_service/?wpublic=1',
-                        //dataset: '/data_service/module',
+                        dataset : '/module_service/',
                         wpublic: 'true',
                         listeners : {
                             scope: this,
@@ -1129,13 +1128,13 @@ Ext.define('BQ.Application.Toolbar', {
         var a = this.queryById('analysis_browser');
         if (!a) {
             a = this.queryById('button_analysis');
-            a.menu[0].dataset = '/data_service/module';
+            a.menu[0].dataset = '/module_service/';
             a.menu[0].tagQuery = q;
             a.menu[0].wpublic = 'true';
         } else {
             a.initQuery({
-                baseURL: '/data_service/module',
-                dataset: '/data_service/module',
+                baseURL: '/module_service/',
+                dataset: '/module_service/',
                 offset: 0,
                 tag_order: '"@ts":desc',
                 tag_query: q,

@@ -700,8 +700,8 @@ Ext.define('Bisque.ModuleBrowser.Browser', {
             //showOrganizer: true,
             showModuleOrganizer: true,
 
-            baseURL: this.baseURL || '/data_service/module',
-            dataset: this.dataset || '/data_service/module',
+            baseURL: this.baseURL || '/module_service/',
+            dataset: this.dataset || '/module_service/',
             offset: this.offset || 0,
             tag_order: this.tag_order || '"@ts":desc',
             tag_query: this.tag_query,
