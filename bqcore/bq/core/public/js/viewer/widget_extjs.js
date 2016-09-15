@@ -261,6 +261,9 @@ Ext.define('BQ.viewer.Image', {
             for (var i=0; (t=tree[i]); ++i) {
                 cls = level<=2 ? 'emph' : '';
                 text = (t.type || t.name);
+                if (t instanceof BQGObject && t.name) {
+                    text += ': ' + t.name;
+                }
                 //text += t.value ? ': '+t.value : '';
                 found += '<p class="'+cls+'" style="margin-left: '+(i*10)+'px;">' + text + '</p>';
                 level -= 1;
