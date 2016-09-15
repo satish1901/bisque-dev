@@ -28,7 +28,7 @@
     <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="${tg.url('/js/viewer/kinetic-v5.1.0.js')}"></script>
 
     <!-- BisQue styles -->
-    <link py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" rel="stylesheet" type="text/css" href="/css/all_css.css" />
+    <link py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" rel="stylesheet" type="text/css" href="/core/css/all_css.css" />
 
     <script type="text/javascript" >
         var module_definition_xml = '${Markup(module_xml.replace('\'', '\\\'').replace('\n', ''))}';
@@ -67,7 +67,7 @@
         });
     </script>
 
-    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="/js/all_js.js"> </script>
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="/core/js/all_js.js"> </script>
 
     <script type="text/javascript" >
         BQ.Server.title = 'Bisque WebApp';

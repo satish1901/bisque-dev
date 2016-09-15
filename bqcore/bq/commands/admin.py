@@ -300,14 +300,12 @@ class deploy(object):
         rootdir = os.path.join(self.packagedir, '').replace(os.sep, '/')
         publicdir = os.path.join(self.public_dir, '').replace(os.sep, '/')
 
-        #all_css = os.path.join(rootdir, 'bq/core/public/css/all_css.css')
+        all_css_combined = os.path.join(publicdir, 'core/css/all_css.css')
         all_css_public = os.path.join(publicdir, 'css/all_css.css')
-        #all_js = os.path.join(rootdir, 'bq/core/public/js/all_js.js')
+        all_js_combined = os.path.join(publicdir, 'core/js/all_js.js')
         all_js_public = os.path.join(publicdir, 'js/all_js.js')
 
-        #remove_safe(all_css)
         remove_safe(all_css_public)
-        #remove_safe(all_js)
         remove_safe(all_js_public)
 
         import pylons
@@ -315,10 +313,11 @@ class deploy(object):
 
         generate_css_files(root=rootdir, public=publicdir)
         generate_js_files(root=rootdir, public=publicdir)
-        #if not os.path.exists (all_css_public):
-        #    copy_symlink (all_css, all_css_public)
-        #if not os.path.exists (all_js_public):
-        #    copy_symlink (all_js, all_js_public)
+
+        if not os.path.exists (all_css_public):
+            copy_symlink (all_css_combined, all_css_public)
+        if not os.path.exists (all_js_public):
+            copy_symlink (all_js_combined, all_js_public)
 
 
 class preferences (object):
