@@ -13,108 +13,108 @@
 }
 
 .icon-tag {
-    background-image: url('/js/ResourceTagger/Images/text.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/text.png') !important;
     background-size: 15px 15px;
     background-repeat: no-repeat;
 }
 
 .icon-gobject {
-    background-image: url('/js/ResourceTagger/Images/pencil.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/pencil.png') !important;
     background-size: 15px 15px;
     background-repeat: no-repeat;
 }
 
 .icon-tab-add {
-    background-image: url('/js/ResourceTagger/Images/add.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/add.png') !important;
     left: -6px !important;
 }
 
 .icon-arrow {
-    background-image: url('/js/ResourceTagger/Images/arrow.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/arrow.png') !important;
     left: -12px !important;
     opacity: 1 !important;
 }
 
 .icon-folder {
-    background-image: url('/js/ResourceTagger/Images/folder.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/folder.png') !important;
     background-size: 15px 15px;
     background-repeat: no-repeat;
 }
 
 .icon-add-folder {
-    background-image: url('/js/ResourceTagger/Images/add_folder.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/add_folder.png') !important;
     background-size: 15px 15px;
     background-repeat: no-repeat;
 }
 
 .icon-trash {
-    background-image: url('/js/ResourceTagger/Images/trash.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/trash.png') !important;
     background-size: 15px 15px;
     background-repeat: no-repeat;
 }
 
 .icon-color-picker {
-    background-image: url('/js/ResourceTagger/Images/color_picker.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/color_picker.png') !important;
     background-size: 20px 20px;
     background-repeat: no-repeat;
 }
 
 .icon-stats {
-    background-image: url('/js/ResourceTagger/Images/stats.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/stats.png') !important;
     background-size: 15px 15px;
     background-repeat: no-repeat;
 }
 
 .icon-file {
-    background-image: url('/js/ResourceTagger/Images/file.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/file.png') !important;
 }
 
 .icon-grid {
-    background-image: url('/js/ResourceTagger/Images/grid.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/grid.png') !important;
 }
 
 .icon-add {
-    background-image: url('/js/ResourceTagger/Images/add.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/add.png') !important;
 }
 
 .icon-delete {
-    background-image: url('/js/ResourceTagger/Images/delete.gif') !important;
+    background-image: url('/core/js/ResourceTagger/Images/delete.gif') !important;
 }
 
 .icon-refresh {
-    background-image: url('/js/ResourceTagger/Images/refresh.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/refresh.png') !important;
 }
 
 .icon-save {
-    background-image: url('/js/ResourceTagger/Images/save.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/save.png') !important;
 }
 
 .icon-check {
-    background-image: url('/js/ResourceTagger/Images/check.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/check.png') !important;
 }
 
 .icon-uncheck {
-    background-image: url('/js/ResourceTagger/Images/uncheck.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/uncheck.png') !important;
 }
 
 .icon-import {
-    background-image: url('/js/ResourceTagger/Images/import.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/import.png') !important;
 }
 
 .icon-export {
-    background-image: url('/js/ResourceTagger/Images/export.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/export.png') !important;
 }
 
 .icon-add-large {
-    background-image: url('/js/ResourceTagger/Images/add.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/add.png') !important;
 }
 
 .icon-delete-large {
-    background-image: url('/js/ResourceTagger/Images/delete.gif') !important;
+    background-image: url('/core/js/ResourceTagger/Images/delete.gif') !important;
 }
 
 .icon-save-large {
-    background-image: url('/js/ResourceTagger/Images/save.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/save.png') !important;
 }
 
 .editGrid {
@@ -143,28 +143,28 @@
 }
 
 .bq_inprogress {
-    background-image: url('/images/progress_circles.gif') !important;
+    background-image: url('/core/images/progress_circles.gif') !important;
     background-size: 15px 15px;
     background-position: right center;
     background-repeat: no-repeat;
 }
 
 .bq-gob-tagger .x-grid-tree-loading .x-tree-elbow-img {
-    background-image: url('/images/progress_circles.gif') !important;
+    background-image: url('/core/images/progress_circles.gif') !important;
     background-size: 12px 12px;
     background-position: left center;
     background-repeat: no-repeat;
 }
 
 .bq-gob-tagger .icon-navigate {
-    background-image: url('/js/ResourceTagger/Images/compass.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/compass.png') !important;
     background-size: 15px 15px;
     background-position: left center;
     background-repeat: no-repeat;
 }
 
 .bq-gob-tagger .icon-select {
-    background-image: url('/js/ResourceTagger/Images/select.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/select.png') !important;
     background-size: 15px 15px;
     background-position: left center;
     background-repeat: no-repeat;

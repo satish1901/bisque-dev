@@ -13,14 +13,14 @@ Ext.define('Bisque.ResourceBrowser.OperationBar', {
     initComponent : function() {
         this.items = this.items || [{
             xtype: 'button',
-            icon : BQ.Server.url('/js/ResourceBrowser/Images/down.png'),
+            icon : BQ.Server.url('/core/js/ResourceBrowser/Images/down.png'),
             tooltip : 'Available operations for this resource.',
             handler : this.menuHandler,
             scope : this
         }, {
             xtype: 'button',
             itemId : 'btn_delete',
-            icon : BQ.Server.url('/js/ResourceBrowser/Images/close.gif'),
+            icon : BQ.Server.url('/core/js/ResourceBrowser/Images/close.gif'),
             tooltip : 'Delete this resource',
             handler : this.deleteResource,
             scope : this,

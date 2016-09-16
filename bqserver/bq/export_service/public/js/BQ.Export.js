@@ -415,7 +415,7 @@ Ext.define('BQ.Export.Panel', {
                     sortable : false,
                     align : 'center',
                     items : [{
-                        icon : BQ.Server.url('/js/ResourceTagger/Images/add.png'),
+                        icon : BQ.Server.url('/core/js/ResourceTagger/Images/add.png'),
                         align : 'center',
                         tooltip : 'Add analysis resutls for this resource',
                         scope: this,

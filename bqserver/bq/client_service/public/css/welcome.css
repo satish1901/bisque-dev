@@ -1,8 +1,8 @@
 
-body { 
+body {
     background-size: cover !important;
     background-origin: content-box;
-} 
+}
 
 /* extjs 4.1 */
 #centerEl-body {
@@ -11,7 +11,7 @@ body {
 
 .content {
     background: transparent;
-    color: black;  
+    color: black;
 }
 
 .box {
@@ -19,11 +19,11 @@ body {
     color: white;*/
     background-color: rgba(220,220,220,0.8);
     /*background-color: rgba(215,228,242,0.8);*/
-    
+
     -moz-box-shadow: 0px 0px 5px rgb(220,220,220);
     -webkit-box-shadow: 0px 0px 5px rgb(220,220,220);
-    box-shadow: 0px 0px 5px rgb(220,220,220);    
-    
+    box-shadow: 0px 0px 5px rgb(220,220,220);
+
     color: black;
     padding: 0px 0px 0px 0px;
 }
@@ -38,7 +38,7 @@ body {
 }
 
 .widget {
-    background-color: transparent;    
+    background-color: transparent;
 }
 
 .stats .x-carousel .x-panel-body {
@@ -46,7 +46,7 @@ body {
 }
 
 .widget .x-panel-body {
-    background: transparent;   
+    background: transparent;
     border-top-width: 0px;
     /*background-color: rgba(215,228,242,0.8);*/
     background-color: rgba(239,239,239,0.8);
@@ -67,9 +67,9 @@ body {
     background: -ms-linear-gradient(top,  rgba(119,168,226,0) 0%,rgba(129,178,231,1) 30%,rgba(136,185,234,0.94) 50%,rgba(239,239,239,0.8) 100%);
     background: linear-gradient(to bottom,  rgba(119,168,226,0) 0%,rgba(129,178,231,1) 30%,rgba(136,185,234,0.94) 50%,rgba(239,239,239,0.8) 100%);
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#0077a8e2', endColorstr='#ccefefef',GradientType=0 );
-    
-    -webkit-box-shadow: rgba(244, 248, 253,0) 0px 1px 0px 0px inset;  
-    box-shadow: rgba(244, 248, 253,0) 0px 1px 0px 0px inset;  
+
+    -webkit-box-shadow: rgba(244, 248, 253,0) 0px 1px 0px 0px inset;
+    box-shadow: rgba(244, 248, 253,0) 0px 1px 0px 0px inset;
 }
 
 .widget .widget-header .x-panel-header-text {
@@ -83,14 +83,14 @@ body {
 }
 
 .heading {
-    padding: 0px 30px 0px 30px;   
+    padding: 0px 30px 0px 30px;
     position: absolute;
     top: 30px;
     right: 0px;
 }
 
 .randomimage {
-    padding: 6px 10px 6px 10px;   
+    padding: 6px 10px 6px 10px;
     position: absolute;
     font-size: 12px;
     top: 30px;
@@ -105,7 +105,7 @@ body {
 }
 
 .explore img {
-    margin: 35px 0px 10px 35px;  
+    margin: 35px 0px 10px 35px;
 }
 
 .explore h3 {
@@ -140,14 +140,14 @@ body {
     position: absolute;
     bottom: 0px;
     right: 20px;
-    top: 150px; 
-    left: 460px;   
+    top: 150px;
+    left: 460px;
     min-width: 490px;
 }
 
 .intro {
     width: 490px;
-    left: auto; 
+    left: auto;
 }
 
 .apps .x-panel-body-default {
@@ -158,7 +158,7 @@ body {
 
 .x-carousel, .x-carousel-child .x-panel-body {
     /*color: white;*/
-    color: black;     
+    color: black;
 }
 
 .x-carousel li {
@@ -174,28 +174,28 @@ body {
 
 
 .x-carousel-bar .x-tab {
-    background-image: url('/js/carousel/images/tabs_white.png') !important;    
+    background-image: url('/core/js/carousel/images/tabs_white.png') !important;
 }
 
 /* resource browser  */
 
 .welcome_front .ResourceIconList {
     background-color: transparent; /*rgba(255,255,255,0.5);*/
-    border: solid 0px transparent !important; 
-    cursor: pointer;    
-    
+    border: solid 0px transparent !important;
+    cursor: pointer;
+
     /*color: white;*/
-    color: black;          
+    color: black;
 }
 
 .welcome_front .ResourceIconList .x-box-inner {
     border-bottom-width: 0px;
-    border-top-width: 0px;    
-    border-left-width: 0px;   
-    border-right-width: 0px;     
+    border-top-width: 0px;
+    border-left-width: 0px;
+    border-right-width: 0px;
 }
 
-.welcome_front .ResourceIconList img { 
+.welcome_front .ResourceIconList img {
     /*opacity:0.4;
     filter:alpha(opacity=40); /* For IE8 and earlier */
     /*border: solid 3px orange;*/
@@ -227,37 +227,37 @@ body {
     font-family: Georgia, serif !important;
     font-weight: normal;
     /*margin-bottom: 5px;*/
-    padding: 10px 0px 5px 5px;    
-    
+    padding: 10px 0px 5px 5px;
+
     /*color: white;*/
-    color: black;        
+    color: black;
 }
 
 .welcome_front .ResourceIconList .lblModuleOwner  {
     text-shadow: none;
     font-weight: normal;
-    padding: 0px 0px 0px 5px;    
-    
+    padding: 0px 0px 0px 5px;
+
     /*color: white;*/
-    color: black;        
+    color: black;
 }
 
 .welcome_front .ResourceIconList .lblModuleOwner hr  {
     border-bottom-width: 0px;
-    border-top-width: 0px;    
-    border-left-width: 0px;   
-    border-right-width: 0px;    
+    border-top-width: 0px;
+    border-left-width: 0px;
+    border-right-width: 0px;
 }
 
 .welcome_front .textOnImage  {
-    background-color: transparent;    
+    background-color: transparent;
 }
 
 /* dataset list  */
 
 .welcome_front .dataset {
     background-color: rgba(160,160,160,0.5);
-    border-radius: 5px; 
+    border-radius: 5px;
 }
 
 .welcome_front .ResourceList {
@@ -292,7 +292,7 @@ body {
 }
 
 .welcome_front .x-grid-row-alt .x-grid-cell {
-    background-color: rgba(220,220,220,0.4);    
+    background-color: rgba(220,220,220,0.4);
 }
 
 
@@ -302,10 +302,10 @@ body {
     #stats.stats {
         display: none;
     }
-    
+
     .activity {
         left: auto;
-    }    
+    }
 }
 
 @media screen and (max-height:500px) {
@@ -318,30 +318,29 @@ body {
     #randomimage.randomimage {
         display: none;
     }
-    
+
     .activity {
         bottom: 0px;
         right: 0px;
         left: 0px;
-        top: 150px; 
+        top: 150px;
         min-width: auto;
-        width: 100%;        
+        width: 100%;
     }
-        
+
     .intro {
         width: 100%;
-    }    
+    }
 }
 
 @media screen and (max-height:500px) {
     #heading.heading {
         display: none;
     }
-    
+
     .activity {
         bottom: 0px;
-        top: 0px; 
-    }   
-    
-}
+        top: 0px;
+    }
 
+}

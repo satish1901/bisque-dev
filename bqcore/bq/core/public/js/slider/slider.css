@@ -27,7 +27,7 @@
 }
 
 .slider .button {
-    background-image: url('/js/slider/images/icons_slider.svg');
+    background-image: url('/core/js/slider/images/icons_slider.svg');
     background-size: 200px;
     background-repeat: no-repeat;
     background-color: transparent;

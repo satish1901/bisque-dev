@@ -441,7 +441,7 @@ volumeObject.prototype.initMaterials = function(){
     // initialize the internal object compositing
     //------------------------------------------------------------------------
 
-    var spriteTex = THREE.ImageUtils.loadTexture('/js/volume/icons/dot.png');
+    var spriteTex = THREE.ImageUtils.loadTexture('/core/js/volume/icons/dot.png');
 	this.near = 0.001;
     this.far = 20.0;
     this.useColor = 0;
@@ -942,7 +942,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 			vertex : {
                 ctor : UrlShader,
                 config : {
-				    url : "/js/volume/shaders/rayCast.vs",
+				    url : "/core/js/volume/shaders/rayCast.vs",
                     loader: this.sceneVolume,
                     onloaded: function(){
                         me.sceneVolume.updateMaterials();
@@ -1341,10 +1341,10 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		this.sceneVolume.initMaterial({
 			name : 'screen',
 			vertex : {
-				url : "/js/volume/shaders/screen.vs"
+				url : "/core/js/volume/shaders/screen.vs"
 			},
 			fragment : {
-				url : "/js/volume/shaders/screen.fs",
+				url : "/core/js/volume/shaders/screen.fs",
 			},
 			uniforms : screenUniforms,
 		});

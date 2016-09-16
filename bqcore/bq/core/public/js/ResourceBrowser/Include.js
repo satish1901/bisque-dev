@@ -2,8 +2,8 @@
  {
  // Dynamically include all the script files associated with ResourceBrowser package
  Ext.Loader.setConfig({enabled:true});
- Ext.Loader.setPath('ResourceBrowser', '/js/ResourceBrowser/');
- Ext.Loader.setPath('ResourceBrowser.ResourceFactory', '/js/ResourceBrowser/ResourceFactory/');
+ Ext.Loader.setPath('ResourceBrowser', '/core/js/ResourceBrowser/');
+ Ext.Loader.setPath('ResourceBrowser.ResourceFactory', '/core/js/ResourceBrowser/ResourceFactory/');
 
  'ResourceBrowser.Browser',
 
@@ -27,11 +27,11 @@
 
  // ResourceBrowser core files
 
- Ext.require('/js/ResourceBrowser/Browser');
- Ext.require('/js/ResourceBrowser/LayoutFactory');
- Ext.require('/js/ResourceBrowser/ResourceFactory/ResourceFactory');
+ Ext.require('/core/js/ResourceBrowser/Browser');
+ Ext.require('/core/js/ResourceBrowser/LayoutFactory');
+ Ext.require('/core/js/ResourceBrowser/ResourceFactory/ResourceFactory');
 
- Ext.require('/js/ResourceBrowser/ResourceFactory/ResourceImage');
+ Ext.require('/core/js/ResourceBrowser/ResourceFactory/ResourceImage');
 
  /*
  Ext.require('ResourceBrowser.LayoutFactory');
@@ -79,31 +79,31 @@
  });*/
 
 /*
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Browser.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/LayoutFactory.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Organizer.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceQueue.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/DatasetManager.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/CommandBar.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/viewStateManager.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/Browser.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/LayoutFactory.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/Organizer.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/ResourceQueue.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/DatasetManager.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/CommandBar.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/viewStateManager.js')}"></script>
 
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceFactory.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceImage.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceMex.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/ResourceFactory/ResourceModule.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/ResourceFactory/ResourceFactory.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/ResourceFactory/ResourceImage.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/ResourceFactory/ResourceMex.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/ResourceFactory/ResourceModule.js')}"></script>
 
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/MessageBus.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/GestureManager.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/ComponentDataView.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/Slider.js')}"></script>
- <script type="text/javascript" src="${tg.url('/js/ResourceBrowser/Misc/DataTip.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/Misc/MessageBus.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/Misc/GestureManager.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/Misc/ComponentDataView.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/Misc/Slider.js')}"></script>
+ <script type="text/javascript" src="${tg.url('/core/js/ResourceBrowser/Misc/DataTip.js')}"></script>
 
  function includeJS(fileName) {
  var headID = document.getElementsByTagName('head')[0];
  var newScript = document.createElement('script');
 
  newScript.type = 'text/javascript';
- newScript.src = '/js/ResourceBrowser/' + fileName;
+ newScript.src = '/core/js/ResourceBrowser/' + fileName;
  headID.appendChild(newScript);
  }
 
@@ -113,7 +113,7 @@
 
  cssNode.type = 'text/css';
  cssNode.rel = 'stylesheet';
- cssNode.href = '/js/ResourceBrowser/' + fileName;
+ cssNode.href = '/core/js/ResourceBrowser/' + fileName;
  cssNode.media = 'screen';
  headID.appendChild(cssNode);
  }

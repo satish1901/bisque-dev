@@ -351,7 +351,7 @@ CanvasShape.prototype.getColorManipulator = function(){
         imageObj.onload = function() {
             me.colorImage.setImage(imageObj);
         };
-        imageObj.src = '/images/viewer/color_wheel.png';
+        imageObj.src = '/core/images/viewer/color_wheel.png';
 
     }
 

@@ -164,7 +164,7 @@
 .DS-Tbar {
     border-color: #b9bfc3;
     background-color: #E1E1E8;
-    background-image: url("/js/ResourceBrowser/Images/blank.gif");
+    background-image: url("/core/js/ResourceBrowser/Images/blank.gif");
 }
 
 .DS-Tbar-HLite {
@@ -205,7 +205,7 @@
  width: 16px;
  height: 16px;
  padding: 0px;
- background-image: url('/js/ResourceBrowser/Images/loading.gif');
+ background-image: url('/core/js/ResourceBrowser/Images/loading.gif');
  background-repeat: no-repeat;
  opacity: 1;
  background-position: 0px center;
@@ -225,7 +225,7 @@
 /* dima: extjs 4.1 version */
 /*
 .sliderBackground .x-slider-horz, .sliderBackground .x-slider-horz .x-slider-end, .sliderBackground .x-slider-horz .x-slider-inner {
-    background-image: url('/js/ResourceBrowser/Images/res-slider-bg.png') !important;
+    background-image: url('/core/js/ResourceBrowser/Images/res-slider-bg.png') !important;
 }
 
 .sliderLeftButton .x-slider-horz {
@@ -252,7 +252,7 @@
 /* dima: extjs 4.2.1+ version */
 .sliderBackground .x-slider-horz,.sliderBackground .x-slider-horz .x-slider-end,.sliderBackground .x-slider-horz .x-slider-inner {
     /*z-index : -1;*/
-    background-image:url('/js/ResourceBrowser/Images/res-slider-bg.png') !important;
+    background-image:url('/core/js/ResourceBrowser/Images/res-slider-bg.png') !important;
 }
 
 .sliderLeftButton .x-slider-horz {
@@ -422,43 +422,43 @@
 }
 
 .icon-lightning {
-    background-image: url('/js/ResourceBrowser/Images/lightning.png') !important;
+    background-image: url('/core/js/ResourceBrowser/Images/lightning.png') !important;
 }
 
 .icon-cog {
-    background-image: url('/js/ResourceBrowser/Images/cog.png') !important;
+    background-image: url('/core/js/ResourceBrowser/Images/cog.png') !important;
 }
 
 .icon-eye {
-    background-image: url('/js/ResourceBrowser/Images/eye.png') !important;
+    background-image: url('/core/js/ResourceBrowser/Images/eye.png') !important;
 }
 
 .icon-eye-close {
-    background-image: url('/js/ResourceBrowser/Images/eye-close.png') !important;
+    background-image: url('/core/js/ResourceBrowser/Images/eye-close.png') !important;
 }
 
 .icon-group {
-    background-image: url('/js/ResourceBrowser/Images/group.png') !important;
+    background-image: url('/core/js/ResourceBrowser/Images/group.png') !important;
 }
 
 .icon-owner {
-    background-image: url('/js/ResourceBrowser/Images/owner.png') !important;
+    background-image: url('/core/js/ResourceBrowser/Images/owner.png') !important;
 }
 
 .icon-download-small {
-    background-image: url('/js/ResourceBrowser/Images/download-small.png') !important;
+    background-image: url('/core/js/ResourceBrowser/Images/download-small.png') !important;
 }
 
 .x-grid-checkheader {
     height: 14px;
-    background-image: url('/js/ResourceBrowser/Images/unchecked.gif');
+    background-image: url('/core/js/ResourceBrowser/Images/unchecked.gif');
     background-position: 50% -2px;
     background-repeat: no-repeat;
     background-color: transparent;
 }
 
 .x-grid-checkheader-checked {
-    background-image: url('/js/ResourceBrowser/Images/checked.gif');
+    background-image: url('/core/js/ResourceBrowser/Images/checked.gif');
 }
 
 .x-grid-checkheader-editor .x-form-cb-wrap {
@@ -556,7 +556,7 @@
 
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: 30px 30px;
 }
@@ -576,7 +576,7 @@
 /* store */
 
 .resicon.store {
-    background-image: url('/js/ResourceBrowser/Images/store_512.png');
+    background-image: url('/core/js/ResourceBrowser/Images/store_512.png');
     background-position: 15px 0px;
     background-size: 130px;
 }
@@ -585,7 +585,7 @@
 }
 
 .resicon.gridIcon.store {
-    background-image: url('/js/ResourceBrowser/Images/store.png');
+    background-image: url('/core/js/ResourceBrowser/Images/store.png');
     background-size: 40px;
 }
 
@@ -603,7 +603,7 @@
 /* folder */
 
 .resicon.folder {
-    background-image: url('/js/ResourceBrowser/Images/folder.svg');
+    background-image: url('/core/js/ResourceBrowser/Images/folder.svg');
     background-position: 0px 10px;
     background-size: 185px;
 }
@@ -613,7 +613,7 @@
 }
 
 .resicon.gridIcon.folder {
-    background-image: url('/js/ResourceBrowser/Images/folder.svg');
+    background-image: url('/core/js/ResourceBrowser/Images/folder.svg');
     background-size: 45px;
     background-position: 0px 0px;
 }
@@ -621,7 +621,7 @@
 /* file */
 
 .file {
-    background-image: url('/js/ResourceBrowser/Images/file.svg');
+    background-image: url('/core/js/ResourceBrowser/Images/file.svg');
     background-position: 10px 40px;
     background-size: 230px;
     background-repeat: no-repeat;
@@ -632,7 +632,7 @@
 }
 
 .resicon.file {
-    background-image: url('/js/ResourceBrowser/Images/file.svg');
+    background-image: url('/core/js/ResourceBrowser/Images/file.svg');
     background-position: 0px 0px;
     background-size: 160px;
     /*padding: 15px 20px 10px 20px;*/
@@ -643,7 +643,7 @@
 }
 
 .resicon.gridIcon.file {
-    background-image: url('/js/ResourceBrowser/Images/file.svg');
+    background-image: url('/core/js/ResourceBrowser/Images/file.svg');
     background-size: 35px;
     background-position: 2px 3px;
 }

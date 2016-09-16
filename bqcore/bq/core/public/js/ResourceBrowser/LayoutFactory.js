@@ -236,7 +236,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base', {
             width : 300,
             margin : 0,
             padding : 0,
-            src : BQ.Server.url('/js/ResourceBrowser/Images/no-results.png'),
+            src : BQ.Server.url('/core/js/ResourceBrowser/Images/no-results.png'),
         });
 
         var ct = Ext.create('Ext.panel.Panel', {

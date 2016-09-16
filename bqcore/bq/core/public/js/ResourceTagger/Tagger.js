@@ -71,7 +71,7 @@ Ext.define('Bisque.ResourceTagger', {
                 startParam: undefined,
 
                 //url : '/data_service/image?tag_values=mytag',
-                url: '/xml/dummy_tag_values.xml', // a dummy document just to inhibit initial complaining
+                url: '/core/xml/dummy_tag_values.xml', // a dummy document just to inhibit initial complaining
                 reader: {
                     type: 'xml',
                     root: 'resource',
@@ -1740,4 +1740,3 @@ Ext.define('Bisque.ResourceTagger.viewStateManager',
 
     }
 });
-

@@ -58,7 +58,7 @@
 }
 
 .bq-icon-visibility {
-    background-image: url('/js/Share/images/lock.png');
+    background-image: url('/core/js/Share/images/lock.png');
     background-size: 64px 32px;
     background-repeat: no-repeat;
 }
@@ -68,7 +68,7 @@
 }
 
 .x-btn-default-toolbar-medium .bq-icon-visibility {
-    background-image: url('/js/Share/images/lock.png');
+    background-image: url('/core/js/Share/images/lock.png');
     background-size: 46px 24px;
     background-repeat:no-repeat;
 }
@@ -110,5 +110,3 @@
     -moz-box-shadow: 0px 0px 8px 0px rgba(0, 153, 255, 1);
     box-shadow: 0px 0px 8px 0px rgba(0, 153, 255, 1);
 }
-
-

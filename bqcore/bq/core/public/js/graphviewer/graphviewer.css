@@ -125,7 +125,7 @@ text {
     width: 32px !important;
     height: 32px !important;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
 
 }
@@ -207,4 +207,3 @@ g div span
     padding-left: 1px;
     padding-right: 1px;
 }
-

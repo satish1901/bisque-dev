@@ -24,43 +24,43 @@
     height: 32px;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: 0px 0px;
 }
 
 .bq_users_manager .icon.user {
-    background-image: url('/images/icons_toolbar.svg#icon_user') !important;
+    background-image: url('/core/images/icons_toolbar.svg#icon_user') !important;
     background-size: 160px;
     background-position: 0px -162px;
 }
 
 .bq_users_manager .icon.add {
-    background-image: url('/images/icons_toolbar.svg') !important;
+    background-image: url('/core/images/icons_toolbar.svg') !important;
     background-size: 160px;
     background-position: 0px -1px;
 }
 
 .bq_users_manager .icon.remove {
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: -100px -32px;
 }
 
 .bq_users_manager .icon.clear {
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: -100px -65px;
 }
 
 .bq_users_manager .icon.login {
-    background-image: url('/images/icons_toolbar.svg#icon_user') !important;
+    background-image: url('/core/images/icons_toolbar.svg#icon_user') !important;
     background-size: 160px;
     background-position: 0px -162px;
 }
 
 .bq_users_manager .icon.refresh {
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: -0px -262px;
 }

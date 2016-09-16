@@ -8,12 +8,12 @@
 }
 
 .iconverter .service .x-panel-header-text {
-    margin-left: 20px;   
+    margin-left: 20px;
 }
 
 .iconverter .service .x-tool {
-    right: 0px !important;   
-    left: auto !important;    
+    right: 0px !important;
+    left: auto !important;
 }
 
 .iconverter .service .checkbox {
@@ -39,7 +39,7 @@
 }
 
 .iconverter .service .checkbox img {
-    background-image: url('/images/viewer/tool-checkbox.png');
+    background-image: url('/core/images/viewer/tool-checkbox.png');
     background-size: 15px 30px;
 }
 

@@ -112,7 +112,7 @@ Ext.define('BQ.TagRenderer.String', {
                     limitParam : undefined,
                     pageParam : undefined,
                     startParam : undefined,
-                    url : '/xml/dummy_tag_values.xml',
+                    url : '/core/xml/dummy_tag_values.xml',
                     reader : {
                         type : 'xml',
                         root : 'resource',
@@ -189,7 +189,7 @@ Ext.define('BQ.TagRenderer.Date', {
         template : {
             'Type' : 'Date',
             'format' : 'Y:m:d H:i:s',
-            'help' : '/html/dateformat.html',
+            'help' : '/core/html/dateformat.html',
         }
     },
 
