@@ -98,6 +98,8 @@ Ext.define('Bisque.Resource', {
     extend:'Ext.container.Container',
     operationBarClass: 'Bisque.ResourceBrowser.OperationBar',
 
+    componentCls: 'bq_resource',
+
     constructor : function(config)
     {
         Ext.apply(this,

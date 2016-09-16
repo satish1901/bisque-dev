@@ -8,97 +8,142 @@ Ext.define('Bisque.Resource.Mex', {
         if (this.getData('fetched') == 1)
             this.updateContainer();
     },
+
+   afterRenderFn : function(me) {
+        if (!this.ttip) {
+            this.ttip = Ext.create('Ext.tip.ToolTip', {
+                target : me.id,
+                anchor : 'right',
+                anchorToTarget : true,
+                width : 500,
+
+                cls : 'LightShadow',
+                layout : 'fit',
+                listeners : {
+                    afterrender : function(me) {
+                        if (!this.tagsLoaded)
+                            me.setLoading('');
+                    },
+                    scope : this
+                }
+            });
+        }
+
+        this.callParent(arguments);
+    },
+
+    onMouseEnter : function() {
+        if (!this.tagsLoaded) {
+            Ext.Ajax.request({
+                url: this.resource.uri,
+                method: 'GET',
+                params : {
+                    view: 'start-time,end-time,inputs',
+                },
+                callback: function(opts, succsess, response) {
+                    if (response.status>=400)
+                        BQ.ui.error(response.responseText);
+                    else
+                        this.tagData(response.responseXML);
+                },
+                scope: this,
+                disableCaching: false,
+            });  
+        }
+        this.callParent(arguments);
+    },
+
+    onMouseLeave : function(e) {
+        this.mouseIn = false;
+        this.callParent(arguments);
+    },
+
+    tagData : function(xml) {
+        var start = BQ.util.xpath_string(xml, '*/tag[@name="start-time"]/@value'),
+            finish = BQ.util.xpath_string(xml, '*/tag[@name="end-time"]/@value'),
+            inputs = BQ.util.xpath_nodes(xml, '*/tag[@name="inputs"]/tag'),
+            ds = new Date(),
+            de = new Date(),
+            elapsed=null, t=null, n=null, v=null, html=null;
+
+        ds.setISO8601(start);
+        de.setISO8601(finish);
+        elapsed = new DateDiff(de - ds);
+
+        html = Ext.String.format('<h2>{0}</h2>', this.resource.name);
+        html += Ext.String.format('<p>Status: {0}</p>', this.resource.value);
+        html += Ext.String.format('<p>Started: {0}</p>', start);
+        html += Ext.String.format('<p>Finished: {0} ({1})</p>', finish, elapsed.toString());
+
+        // inputs
+        html += '<h3>Inputs</h3>';
+        for (var i=0; (t=inputs[i]); ++i) {
+            n = t.getAttribute('name');
+            v = t.getAttribute('value');
+            if (v)
+                html += Ext.String.format('<p>{0}: {1}</p>', n, v);
+        }
+
+        this.ttip.add({
+            xtype: 'tbtext',
+            cls: 'mex_preview',
+            text: html,
+        });
+        
+        this.ttip.setLoading(false);
+        this.tagsLoaded = true;
+        //this.resource.tags = data.tags;
+    },    
+
+    prefetch : function() {
+        if (!this.getData('fetched')) {
+            this.setData('fetched', -1);
+            this.loadResource();
+        }
+    },
+
+    loadResource : function(moduleInfo) {
+        this.setData('module', this.resource.name);
+        this.setData('fetched', 1);
+        var renderedRef = this.getData('renderedRef');
+        if (renderedRef)
+            renderedRef.updateContainer();
+    },    
+
 });
 
 Ext.define('Bisque.Resource.Mex.Compact', {
     extend : 'Bisque.Resource.Mex',
 
+    layout : {
+        type : 'vbox',
+        align : 'stretch',
+    },
+
     constructor : function() {
-        Ext.apply(this, {
-            layout : {
-                type : 'vbox',
-                align : 'stretch'
-            }
-        });
         this.callParent(arguments);
         this.addCls('compact');
     },
 
-    onMouseEnter : function() {
-        if (!this.tagsLoaded) {
-            BQFactory.request({
-                uri : this.resource.uri + '/tag',
-                cb : Ext.bind(this.tagData, this)
-            });
-        }
-        this.callParent(arguments);
-    },
-
-    tagData : function(data) {
-        this.tagsLoaded = true;
-        this.resource.tags = data.tags;
-
-        var tagArr = [], tags = {}, found = '';
-
-        for (var i = 0; i < this.resource.tags.length; i++) {
-            found = this.resource.tags[i].value;
-            tags[this.resource.tags[i].name] = (found == null || found == "" ? 'None' : found);
-            tagArr.push(new Ext.grid.property.Property({
-                name : this.resource.tags[i].name,
-                value : tags[this.resource.tags[i].name]
-            }));
-        }
-
-        var propsGrid = this.GetPropertyGrid({
-            width : 270
-        }, tagArr);
-
-        if (tagArr.length > 0 && this.ttip)
-            this.ttip.add(propsGrid);
-        if (this.ttip)
-            this.ttip.setLoading(false);
-    },
-
-    prefetch : function() {
-        if (!this.getData('fetched')) {
-            this.setData('fetched', -1);
-            //Loading
-            this.loadResource({
-                name : 'Module.NoName'
-            });
-        }
-    },
-
-    loadResource : function(moduleInfo) {
-        this.setData('module', moduleInfo.name);
-        this.setData('fetched', 1);
-        //Loaded
-
-        var renderedRef = this.getData('renderedRef')
-        if (renderedRef)
-            renderedRef.updateContainer();
-    },
-
     updateContainer : function() {
-        var name = Ext.create('Ext.container.Container', {
-            cls : 'lblHeading1',
-            html : Ext.String.ellipsis(this.resource.name || 'undefined', 24),
-        });
-
         var date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
-        var type = Ext.create('Ext.container.Container', {
-            cls : 'lblHeading2',
-            html : Ext.Date.format(date, BQ.Date.patterns.ISO8601Long),
-        });
 
-        var value = Ext.create('Ext.container.Container', {
-            cls : 'lblContent',
-            html : this.resource.value,
-        });
-
-        this.add([name, type, value]);
+        this.add([{
+            xtype:'tbtext',
+            cls : 'title',
+            text : Ext.String.ellipsis(this.resource.name || 'undefined', 24),
+        }, {
+            xtype:'tbtext',
+            cls : 'mex_status ' + this.resource.value,
+            text : this.resource.value,
+        }, {
+            xtype:'tbtext',
+            cls : 'date',
+            text : Ext.Date.format(date, BQ.Date.patterns.ISO8601Long),
+        }]);
         this.setLoading(false);
     },
+
 });
 
 Ext.define('Bisque.Resource.Mex.Card', {
@@ -185,138 +230,34 @@ Ext.define('Bisque.Resource.Mex.Full', {
 Ext.define('Bisque.Resource.Mex.List', {
     extend : 'Bisque.Resource.Mex',
 
+    layout: {
+        type: 'hbox',
+        align: 'middle',
+    },
+
     constructor : function() {
-        Ext.apply(this, {
-            layout : {
-                type : 'hbox',
-                align : 'middle'
-            }
-        });
         this.callParent(arguments);
         this.addCls('list');
     },
 
-    afterRenderFn : function(me) {
-        if (!this.ttip) {
-            this.ttip = Ext.create('Ext.tip.ToolTip', {
-                target : me.id,
-                width : 278,
-                cls : 'LightShadow',
-                layout : 'hbox',
-                style : {
-                    'background-color' : '#FAFAFA',
-                    'border' : 'solid 3px #E0E0E0'
-                },
-                listeners : {
-                    'afterrender' : function(me) {
-                        if (!this.tagsLoaded)
-                            me.setLoading({
-                                msg : ''
-                            });
-                    },
-                    scope : this
-                }
-            });
-        }
-
-        // HACK to hide session "mex". Come up with better strategy in future
-        //if (this.resource.status=='SESSION')
-        //    this.setVisible(false);
-
-        this.callParent(arguments);
-    },
-
-    onMouseEnter : function() {
-        if (!this.tagsLoaded) {
-            BQFactory.request({
-                uri : this.resource.uri + '/tag',
-                cb : Ext.bind(this.tagData, this)
-            });
-        }
-        this.callParent(arguments);
-    },
-
-    onMouseLeave : function(e) {
-        this.mouseIn = false;
-        this.callParent(arguments);
-    },
-
-    tagData : function(data) {
-        this.tagsLoaded = true;
-        this.resource.tags = data.tags;
-
-        var tagArr = [], tags = {}, found = '';
-
-        for (var i = 0; i < this.resource.tags.length; i++) {
-            found = this.resource.tags[i].value;
-            tags[this.resource.tags[i].name] = (found == null || found == "" ? 'None' : found);
-            tagArr.push(new Ext.grid.property.Property({
-                name : this.resource.tags[i].name,
-                value : tags[this.resource.tags[i].name]
-            }));
-        }
-
-        var propsGrid = this.GetPropertyGrid({
-            width : 270
-        }, tagArr);
-
-        if (tagArr.length > 0)
-            this.ttip.add(propsGrid);
-        this.ttip.setLoading(false);
-    },
-
-    prefetch : function() {
-        if (!this.getData('fetched')) {
-            this.setData('fetched', -1);
-            //Loading
-
-            if (this.resource.module && this.resource.module.indexOf(window.location.host) != -1)// HACK: Load module names if running on the same host
-            {
-                BQFactory.request({
-                    uri : this.resource.module,
-                    cb : Ext.bind(this.loadResource, this),
-                    errorcb : Ext.emptyFn
-                });
-            } else {
-                this.loadResource({
-                    name : 'Module.NoName'
-                });
-            }
-        }
-    },
-
-    loadResource : function(moduleInfo) {
-        this.setData('module', this.resource.name);
-        this.setData('fetched', 1);
-        //Loaded
-
-        var renderedRef = this.getData('renderedRef');
-        if (renderedRef)
-            renderedRef.updateContainer();
-    },
-
     updateContainer : function() {
-        var mexName = new Ext.form.Label({
-            text : ' ' + Ext.String.ellipsis(this.resource.name, 22) + ' ',
-            padding : '0 8 0 8',
-            cls : 'lblModuleName',
-        });
-
-        var mexStatus = new Ext.form.Label({
-            text : this.resource.status,
-            padding : '0 0 0 4',
-            cls : this.resource.status == 'FINISHED' ? 'lblModuleOwnerFin' : (this.resource.status == 'FAILED' ? 'lblModuleOwnerFail' : 'lblModuleOwner')
-        });
-
         var date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
-        var mexDate = new Ext.form.Label({
-            text : Ext.Date.format(date, BQ.Date.patterns.ISO8601Long),
-            padding : '0 8 0 8',
-            cls : 'lblModuleDate',
+        this.add([{
+            xtype:'tbtext',
+            text : this.resource.name,
+            cls : 'title',
             flex : 1,
-        });
+        }, {
+            xtype:'tbtext',
+            cls : 'mex_status ' + this.resource.value,
+            text : this.resource.status,
+            //cls : this.resource.status == 'FINISHED' ? 'lblModuleOwnerFin' : (this.resource.status == 'FAILED' ? 'lblModuleOwnerFail' : 'lblModuleOwner')
+        }, {
+            xtype:'tbtext',
+            text : Ext.Date.format(date, BQ.Date.patterns.ISO8601Long),
+            cls : 'lblModuleDate',
+        }]);
 
-        this.add([mexName, mexStatus, mexDate]);
         this.setLoading(false);
     },
 });

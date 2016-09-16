@@ -66,6 +66,44 @@
 }
 
 /* ResourceLayout settings: */
+
+.bq_resource {
+    background-color: #eeeeee;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+
+.bq_resource .mex_status {
+    padding-top: 0px;
+    padding-left: 5px;
+}
+
+.bq_resource .mex_status.FINISHED {
+    color: green;
+}
+
+.bq_resource .mex_status.FAILED {
+    color: red;
+}
+
+.bq_resource .date {
+    padding-top: 10px;
+    padding-left: 5px;
+}
+
+.bq_resource .title {
+    color: #555;
+    font-size: 14px;
+    font-family: tahoma, arial, verdana, sans-serif !important;
+    padding: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;    
+}
+
+
+/* ResourceLayout settings: */
 .ImageCompact {
     margin: 15px;
     padding: 0px;
@@ -74,6 +112,11 @@
     height: 160px;
     border: solid 0px #F00 !important;	/* FBFBFB */
     position: relative;
+
+    background-color: #eeeeee;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
 }
 
 .ImageCard {
@@ -130,9 +173,12 @@
 
 
 .LightShadow {
-    -moz-box-shadow: 1px 1px 5px #999;
+    /*-moz-box-shadow: 1px 1px 5px #999;
     -webkit-box-shadow: 1px 1px 5px #999;
-    box-shadow: 1px 1px 5px #999;
+    box-shadow: 1px 1px 5px #999;*/
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;    
 }
 
 .Res-ImgMed {
@@ -294,12 +340,12 @@
 
 .lblModuleName {
     color: #555;
-    /*background:#f4f4f4;*/
-    text-shadow: 1px 1px 1px #CCC;
     font-size: 14px;
-    font-weight: bold;
     font-family: tahoma, arial, verdana, sans-serif !important;
     padding: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;    
 }
 
 .compact .lblModuleName {
@@ -491,6 +537,23 @@
 .bq-btn-edit.active .x-btn-inner {
     color: #009900;
 }
+
+.mex_preview {
+    margin: 10px;
+}
+
+.mex_preview h2 {
+    margin: 0px 0px 4px 0px;
+}
+
+.mex_preview h3 {
+    margin: 4px 0px 2px 0px;
+}
+
+.mex_preview p {
+    margin: 2px 0px 2px 5px;
+}
+
 
 /*****************************************************************
   Resource renderers
