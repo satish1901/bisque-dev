@@ -236,8 +236,7 @@ Ext.define('Bisque.Resource.Dataset.List', {
     updateContainer : function() {
         var datasetName = new Ext.form.Label({
             text : ' ' + this.resource.name + ' ',
-            padding : '0 8 0 8',
-            cls : 'lblModuleName',
+            cls : 'title',
         });
 
         var datasetOwner = new Ext.form.Label({
