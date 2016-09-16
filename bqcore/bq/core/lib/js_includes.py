@@ -10,18 +10,20 @@ import bq
 from bq.util.paths import bisque_path
 
 def generate_css_files(root=None, public=None):
-    #production = False if root is None else True
-    root = os.path.join (root or bisque_path('bqcore'), '')
     public = public or tg.config.get('bisque.paths.public', 'public')
 
-    if root or tg.config.get('bisque.js_environment', None) == 'production':
+    if tg.config.get('bisque.js_environment', None) != 'development':
         css_kw = dict (fs_root=public,
                     combined='/core/css/all_css.css',
                     combined_path = os.path.join(public,'core/css/all_css.css'),
                     checkts = False,
                     version=bq.release.__VERSION_HASH__ )
     else:
-        css_kw = {}
+        # point root to public deployment, it's linked and so all changes should be reflected properly
+        # if new files appear since links are per files the deployment should simply be re-run         
+        css_kw = {
+            'fs_root': public,
+        }
 
     return stylesheet_link (
         '/core/css/bq.css',
@@ -75,11 +77,9 @@ def generate_css_files(root=None, public=None):
     )
 
 def generate_js_files(root=None, public=None):
-    #production = False if root is None else True
-    root = os.path.join (root or bisque_path('bqcore'), '')
     public = public or tg.config.get('bisque.paths.public', 'public')
 
-    if root or tg.config.get('bisque.js_environment', None) == 'production':
+    if tg.config.get('bisque.js_environment', None) != 'development':
         link_kw = dict (fs_root = public,
                       combined= '/core/js/all_js.js',
                       combined_path = public + '/core/js/all_js.js',
@@ -87,7 +87,11 @@ def generate_js_files(root=None, public=None):
                       minify= 'minify', # D3 breaks with minify
                       version=bq.release.__VERSION_HASH__)
     else:
-        link_kw = {}
+        # point root to public deployment, it's linked and so all changes should be reflected properly
+        # if new files appear since links are per files the deployment should simply be re-run        
+        link_kw = {
+            'fs_root': public,
+        }
 
     return javascript_link(
 
