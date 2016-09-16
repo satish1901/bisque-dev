@@ -11,7 +11,7 @@ Ext.define('BQ.ResourceViewer', {
             BQApp.setLoading('Fetching resource...');
             BQFactory.request({
                 uri         :   resourceURL,
-                uri_params  :   {view : 'deep'},
+                // uri_params  :   {view : 'deep'}, // only request deep if really needed; and only with paging!
                 cb          :   this.initViewer,
                 errorcb     :   this.onError
             });
