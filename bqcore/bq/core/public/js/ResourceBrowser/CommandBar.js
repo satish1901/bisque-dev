@@ -55,7 +55,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                             shadow : true,
                             autoScroll : true,
                             loader : {
-                                url : '/html/querying.html',
+                                url : '/core/html/querying.html',
                                 renderer : 'html',
                                 autoLoad : true
                             },
@@ -64,7 +64,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                     },
                 }
             }, {
-                icon : BQ.Server.url('/js/ResourceBrowser/Images/search.png'),
+                icon : BQ.Server.url('/core/js/ResourceBrowser/Images/search.png'),
                 hidden : this.viewMgr.cBar.searchBar,
                 tooltip : 'Search',
                 scale : 'large',
@@ -75,7 +75,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 hidden : this.viewMgr.cBar.searchBar
             }, {
                 itemId : 'btnThumb',
-                icon : BQ.Server.url('/js/ResourceBrowser/Images/thumb.png'),
+                icon : BQ.Server.url('/core/js/ResourceBrowser/Images/thumb.png'),
                 hidden : this.viewMgr.cBar.btnLayoutThumb,
                 tooltip : 'Thumbnail layout',
                 toggleGroup : 'btnLayout',
@@ -85,7 +85,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 scope : this
             }, {
                 itemId : 'btnGrid',
-                icon : BQ.Server.url('/js/ResourceBrowser/Images/grid.png'),
+                icon : BQ.Server.url('/core/js/ResourceBrowser/Images/grid.png'),
                 hidden : this.viewMgr.cBar.btnLayoutGrid,
                 tooltip : 'Grid layout',
                 scale : 'large',
@@ -95,7 +95,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 scope : this
             }, {
                 itemId : 'btnCard',
-                icon : BQ.Server.url('/js/ResourceBrowser/Images/card.png'),
+                icon : BQ.Server.url('/core/js/ResourceBrowser/Images/card.png'),
                 hidden : this.viewMgr.cBar.btnLayoutCard,
                 tooltip : 'Card layout',
                 scale : 'large',
@@ -105,7 +105,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 scope : this
             }, {
                 itemId : 'btnFull',
-                icon : BQ.Server.url('/js/ResourceBrowser/Images/full.png'),
+                icon : BQ.Server.url('/core/js/ResourceBrowser/Images/full.png'),
                 hidden : this.viewMgr.cBar.btnLayoutFull,
                 tooltip : 'Full layout',
                 scale : 'large',
@@ -115,7 +115,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 scope : this
             }, '->', {
                 itemId : 'btnRefresh',
-                icon : BQ.Server.url('/js/ResourceBrowser/Images/refresh.png'),
+                icon : BQ.Server.url('/core/js/ResourceBrowser/Images/refresh.png'),
                 tooltip : 'Refresh browser',
                 hidden : this.viewMgr.cBar.btnRefresh,
                 scale : 'large',
@@ -123,7 +123,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 scope : this
             }, {
                 itemId : 'btnActivate',
-                //icon : BQ.Server.url('/js/ResourceBrowser/Images/activate.png'),
+                //icon : BQ.Server.url('/core/js/ResourceBrowser/Images/activate.png'),
                 text: 'Edit',
                 tooltip : 'Switch to editing mode',
                 state : 'ACTIVATE',
@@ -134,7 +134,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 cls: 'bq-btn-edit',
             }, {
                 itemId : 'btnTS',
-                icon : BQ.Server.url('/js/ResourceBrowser/Images/desc.png'),
+                icon : BQ.Server.url('/core/js/ResourceBrowser/Images/desc.png'),
                 tooltip : 'Sort data ascending by timestamp (current: descending)',
                 hidden : this.viewMgr.cBar.btnTS,
                 sortState : 'DESC',
@@ -147,7 +147,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
             }, {
                 tooltip : 'Load more data',
                 itemId : 'btnLeft',
-                icon : BQ.Server.url('/js/ResourceBrowser/Images/left.png'),
+                icon : BQ.Server.url('/core/js/ResourceBrowser/Images/left.png'),
                 hidden : this.viewMgr.cBar.btnLeft,
                 scale : 'large',
                 padding : '0 1 0 0',
@@ -161,7 +161,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
             }, {
                 tooltip : 'Load more data',
                 itemId : 'btnRight',
-                icon : BQ.Server.url('/js/ResourceBrowser/Images/right.png'),
+                icon : BQ.Server.url('/core/js/ResourceBrowser/Images/right.png'),
                 hidden : this.viewMgr.cBar.btnRight,
                 scale : 'large',
                 padding : '0 0 0 1',
@@ -177,7 +177,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 xtype : 'tbseparator',
                 hidden : this.viewMgr.cBar.btnGear
             }, {
-                icon : BQ.Server.url('/js/ResourceBrowser/Images/gear.png'),
+                icon : BQ.Server.url('/core/js/ResourceBrowser/Images/gear.png'),
                 hidden : this.viewMgr.cBar.btnGear,
                 itemId : 'btnGear',
                 scale : 'large',
@@ -204,19 +204,19 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                     }, '-', {
                         text : 'Organize',
                         itemId : 'btnOrganize',
-                        icon : BQ.Server.url('/js/ResourceBrowser/Images/organize.png'),
+                        icon : BQ.Server.url('/core/js/ResourceBrowser/Images/organize.png'),
                         hidden : true,
                         handler : this.btnOrganizerClick,
                         scope : this
                     }, {
                         text : 'Datasets',
-                        icon : BQ.Server.url('/js/ResourceBrowser/Images/datasets.png'),
+                        icon : BQ.Server.url('/core/js/ResourceBrowser/Images/datasets.png'),
                         hidden : true, //this.viewMgr.cBar.btnDataset,
                         handler : this.btnDatasetClick,
                         scope : this
                     }, {
                         text : 'Link',
-                        icon : BQ.Server.url('/js/ResourceBrowser/Images/link.png'),
+                        icon : BQ.Server.url('/core/js/ResourceBrowser/Images/link.png'),
                         hidden : this.viewMgr.cBar.btnLink,
                         handler : function() {
                             var val = configOpts.browser.resourceQueue.uriStateToString(configOpts.browser.getURIFromState());
@@ -285,12 +285,12 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
 
     btnActivate : function(btn) {
         if (btn.state == 'ACTIVATE') {
-            btn.setIcon(BQ.Server.url('/js/ResourceBrowser/Images/select.png'));
+            btn.setIcon(BQ.Server.url('/core/js/ResourceBrowser/Images/select.png'));
             btn.state = 'SELECT';
             btn.setTooltip('Switch to view mode');
             btn.addCls('active');
         } else {
-            btn.setIcon(BQ.Server.url('/js/ResourceBrowser/Images/activate.png'));
+            btn.setIcon(BQ.Server.url('/core/js/ResourceBrowser/Images/activate.png'));
             btn.state = 'ACTIVATE';
             btn.setTooltip('Switch to editing mode');
             btn.removeCls('active');
@@ -318,12 +318,12 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         (tagOrder.length != 0) ? ((tagOrder[tagOrder.length - 1] != ',') ? tagOrder += ',' : "") : "";
 
         if (btn.sortState == 'ASC') {
-            btn.setIcon(BQ.Server.url('/js/ResourceBrowser/Images/desc.png'));
+            btn.setIcon(BQ.Server.url('/core/js/ResourceBrowser/Images/desc.png'));
             btn.sortState = 'DESC';
             btn.setTooltip('Sort data ascending by timestamp (current: descending)');
             tagOrder += '"@ts":desc';
         } else {
-            btn.setIcon(BQ.Server.url('/js/ResourceBrowser/Images/asc.png'));
+            btn.setIcon(BQ.Server.url('/core/js/ResourceBrowser/Images/asc.png'));
             btn.sortState = 'ASC';
             btn.setTooltip('Sort data descending by timestamp (current: ascending)');
             tagOrder += '"@ts":asc';
@@ -502,11 +502,11 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
 
         if (btn.sortState != sortState)
             if (sortState == 'DESC') {
-                btn.setIcon(BQ.Server.url('/js/ResourceBrowser/Images/desc.png'));
+                btn.setIcon(BQ.Server.url('/core/js/ResourceBrowser/Images/desc.png'));
                 btn.sortState = 'DESC';
                 btn.setTooltip('Sort data ascending by timestamp (current: descending)');
             } else {
-                btn.setIcon(BQ.Server.url('/js/ResourceBrowser/Images/asc.png'));
+                btn.setIcon(BQ.Server.url('/core/js/ResourceBrowser/Images/asc.png'));
                 btn.sortState = 'ASC';
                 btn.setTooltip('Sort data descending by timestamp (current: ascending)');
             }

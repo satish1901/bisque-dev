@@ -278,7 +278,7 @@ Ext.define('Bisque.Resource.Module.IconList', {
         this.addCls('disabled');
         this.resource.available = false;
         var cmp = this.queryById('thumbnail');
-        cmp.getEl().dom.src = '/js/ResourceBrowser/Images/stop.svg';
+        cmp.getEl().dom.src = '/core/js/ResourceBrowser/Images/stop.svg';
     },
 });
 

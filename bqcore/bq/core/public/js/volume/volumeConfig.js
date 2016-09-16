@@ -1273,7 +1273,7 @@ DepthShader.prototype.config = function(config){
 		'}'
 	].join('\n');
 
-	var spriteTex = THREE.ImageUtils.loadTexture('/js/volume/icons/dot.png');
+	var spriteTex = THREE.ImageUtils.loadTexture('/core/js/volume/icons/dot.png');
 
 	var frag = [
 		'uniform sampler2D tex1;',

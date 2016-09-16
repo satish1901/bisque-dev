@@ -1070,13 +1070,13 @@ table.x-form-color {
 *******************************************************************************/
 
 .bq-viewer-menu .icon-navigate {
-    background-image: url('/js/ResourceTagger/Images/compass.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/compass.png') !important;
     background-size: 15px 15px;
     background-repeat: no-repeat;
 }
 
 .bq-viewer-menu .icon-select {
-    background-image: url('/js/ResourceTagger/Images/select.png') !important;
+    background-image: url('/core/js/ResourceTagger/Images/select.png') !important;
     background-size: 15px 15px;
     background-repeat: no-repeat;
 }

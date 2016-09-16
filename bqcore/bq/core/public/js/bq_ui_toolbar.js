@@ -172,7 +172,7 @@ Ext.define('BQ.Application.Toolbar', {
                   'menu_system',],
 
     initComponent : function() {
-        this.images_base_url = this.images_base_url || BQ.Server.url('/images/toolbar/');
+        this.images_base_url = this.images_base_url || BQ.Server.url('/core/images/toolbar/');
         this.title = BQ.Server.title || this.title;
 
         Ext.QuickTips.init();
@@ -638,7 +638,7 @@ Ext.define('BQ.Application.Toolbar', {
                             dismissDelay: 20000,
                             shadow: true,
                             autoScroll: true,
-                            loader: { url: '/html/querying.html', renderer: 'html', autoLoad: true },
+                            loader: { url: '/core/html/querying.html', renderer: 'html', autoLoad: true },
                         });
                         tip.show();
                     },

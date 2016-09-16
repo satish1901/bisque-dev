@@ -33,18 +33,18 @@
     margin: 0px 10px 0px 10px;
     width: 40px;
     height: 40px;
-    background-image: url('/js/ResourceBrowser/Images/file.svg');
+    background-image: url('/core/js/ResourceBrowser/Images/file.svg');
     background-repeat: no-repeat;
     background-size: contain;
     background-position: center;
 }
 
 .thumbnail.dataset {
-    background-image: url('/js/ResourceBrowser/Images/folder.svg');
+    background-image: url('/core/js/ResourceBrowser/Images/folder.svg');
 }
 
 .thumbnail.dir {
-    background-image: url('/js/ResourceBrowser/Images/folder.svg');
+    background-image: url('/core/js/ResourceBrowser/Images/folder.svg');
 }
 
 .thumbnail.image {

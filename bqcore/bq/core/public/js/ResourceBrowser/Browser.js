@@ -111,7 +111,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         //Prefetch the loading spinner
         var me = this;
         var imgSpinner = new Image();
-        imgSpinner.src = BQ.Server.url('/js/ResourceBrowser/Images/loading.gif');
+        imgSpinner.src = BQ.Server.url('/core/js/ResourceBrowser/Images/loading.gif');
 
         //organizer tab panel
         this.westPanel = Ext.create('Ext.tab.Panel', { //Ext.create('Ext.panel.Panel', {
@@ -181,26 +181,26 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         });
 
         this.callParent([arguments]);
-        
+
         //load preferences
         var me = this;
-        
+
         //need to be called before bq_ui_application onGotUser or a load preferences
         //needs to be called to initialize this component
         BQ.Preferences.on('update_user_pref', this.onPreferences, this);
         BQ.Preferences.on('onerror_user_pref', this.onPreferences, this);
         if ('user' in BQ.Preferences.preferenceXML) this.onPreferences();
-        
+
         if (Ext.supports.Touch)
             this.gestureMgr = new Bisque.Misc.GestureManager();
     },
-    
-    
+
+
     onPreferences : function() {
         this.preferences = {};
-        
+
         //this.applyPreferences();
-        
+
         // defaults (should be loaded from system preferences)
         Ext.apply(this.browserParams, {
             layout : this.browserParams.layout || 1,
@@ -220,18 +220,18 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         this.showModuleOrganizer = this.browserParams.showModuleOrganizer || false;
         this.selectState = this.browserParams.selectState || 'ACTIVATE';
         this.commandBar.applyPreferences();
-        
+
         if (!this.browserParams.viewMode) {
             this.browserParams.tagQuery = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Tag Query', this.browserParams.tagQuery);
-            
+
             //all these check for backwards comparability; if there is not template a user can set any of the layout types
             var prefLayout = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Layout', this.browserParams.layout);
             var layout = (parseInt(prefLayout)!=parseInt(prefLayout))? Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS[prefLayout] : parseInt(prefLayout);
             this.layoutKey = (!layout) ? this.browserParams.layout : layout; //layout key must be an int
-            
+
             this.browserParams.wpublic = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Include Public Resources', this.browserParams.wpublic);
         }
-        
+
         if (this.browserParams.dataset != "None") {
             var baseURL = (this.browserParams.dataset instanceof BQDataset) ? this.browserParams.dataset.uri + '/value' : this.browserParams.dataset;
             this.loadData({

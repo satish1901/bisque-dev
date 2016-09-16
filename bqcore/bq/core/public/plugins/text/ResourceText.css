@@ -13,7 +13,7 @@
 /* ctyles for browser */
 
 .LightShadow.text {
-    background-image: url('/plugins/text/text.svg');
+    background-image: url('/core/plugins/text/text.svg');
     background-position: center center;
     background-size: 150px;
     background-repeat: no-repeat;
@@ -24,7 +24,7 @@
 }
 
 .resicon.text {
-    background-image: url('/plugins/text/text.svg');
+    background-image: url('/core/plugins/text/text.svg');
     background-position: center top;
     background-size: 100px;
 }
@@ -34,7 +34,7 @@
 }
 
 .resicon.gridIcon.text {
-    background-image: url('/plugins/text/text.svg');
+    background-image: url('/core/plugins/text/text.svg');
     background-size: 29px;
     background-position: 6px 0px;
 }
@@ -57,5 +57,3 @@
 .resicon.text.ImageCard .lblHeading1, .resicon.text.ImageFull .lblHeading1  {
     margin-top: 60px;
 }
-
-

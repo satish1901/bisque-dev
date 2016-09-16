@@ -1,7 +1,7 @@
 
 PanoJS.MSG_BEYOND_MIN_ZOOM = null;
 PanoJS.MSG_BEYOND_MAX_ZOOM = null;
-PanoJS.STATIC_BASE_URL = '/panojs3/';
+PanoJS.STATIC_BASE_URL = '/core/panojs3/';
 PanoJS.CREATE_INFO_CONTROLS = false;
 PanoJS.CREATE_THUMBNAIL_CONTROLS = true;
 PanoJS.USE_KEYBOARD = false;
@@ -143,5 +143,3 @@ function TiledResizeListner(viewer, parent) {
 TiledResizeListner.prototype.viewerResized = function(e) {
     this.parent.resize();
 };
-
-

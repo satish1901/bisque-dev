@@ -320,7 +320,7 @@ Ext.define('Bisque.ResourceBrowser.OperationBar.dataset', {
     initComponent : function() {
         this.items = [{
             xtype: 'button',
-            icon : BQ.Server.url('/js/ResourceBrowser/Images/down.png'),
+            icon : BQ.Server.url('/core/js/ResourceBrowser/Images/down.png'),
             tooltip : 'Available operations for this resource.',
             handler : this.menuHandler,
             scope : this
@@ -328,14 +328,14 @@ Ext.define('Bisque.ResourceBrowser.OperationBar.dataset', {
             xtype: 'button',
             itemId : 'btn_delete_full',
             text: 'Delete',
-            //icon : BQ.Server.url('/js/ResourceBrowser/Images/close.gif'),
+            //icon : BQ.Server.url('/core/js/ResourceBrowser/Images/close.gif'),
             tooltip : 'Delete this dataset and its elements',
             handler : this.deleteDataset,
             scope : this,
         }, {
             xtype: 'button',
             itemId : 'btn_delete',
-            icon : BQ.Server.url('/js/ResourceBrowser/Images/close.gif'),
+            icon : BQ.Server.url('/core/js/ResourceBrowser/Images/close.gif'),
             tooltip : 'Delete this dataset, keep elements',
             handler : this.deleteResource,
             scope : this,

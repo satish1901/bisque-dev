@@ -21,18 +21,18 @@
     <link href="//fonts.googleapis.com/css?family=Abel|Varela+Round|Roboto:400,300,100" rel="stylesheet" type="text/css" />
 
     <!-- ExtJS4 styles -->
-    <link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all.css')}" />
-    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/resources/css/ext-all-neptune.css')}"/>-->
+    <link rel="stylesheet" type="text/css" href="${tg.url('/core/extjs/resources/css/ext-all.css')}" />
+    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/core/extjs/resources/css/ext-all-neptune.css')}"/>-->
 
     <!-- ExtJS5 styles -->
-    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/packages/ext-theme-classic/build/resources/ext-theme-classic-all.css')}"/>-->
-    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/extjs/packages/ext-theme-crisp/build/resources/ext-theme-crisp-all.css')}"/>-->
+    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/core/extjs/packages/ext-theme-classic/build/resources/ext-theme-classic-all.css')}"/>-->
+    <!--<link rel="stylesheet" type="text/css" href="${tg.url('/core/extjs/packages/ext-theme-crisp/build/resources/ext-theme-crisp-all.css')}"/>-->
     <!-- BisQue UI code -->
     ${h.generate_css_files()}
 
     <!-- ExtJS 4 -->
-    <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
-    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all-dev.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/core/extjs/ext-all.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/core/extjs/ext-all-dev.js')}"></script>
 
     <!-- ExtJS 5 -->
     <!--
@@ -44,8 +44,8 @@
             },
         };*/
     </script>
-    <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all.js')}"></script>
-    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/extjs/ext-all-debug.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', None) == 'production'" type="text/javascript" src="${tg.url('/core/extjs/ext-all.js')}"></script>
+    <script py:if="tg.config.get('bisque.js_environment', None) != 'production'" type="text/javascript" src="${tg.url('/core/extjs/ext-all-debug.js')}"></script>
 
     <script type="text/javascript">
         // xml reader is used extensively is utilizes .raw property
@@ -61,13 +61,13 @@
     -->
 
     <!-- Third party libs -->
-    <script type="text/javascript" src="${tg.url('/d3/d3.js')}"></script>
-    <script type="text/javascript" src="${tg.url('/threejs/three.js')}"></script>
-    <script type="text/javascript" src="${tg.url('/async/async.js')}"></script>
-    <script type="text/javascript" src="${tg.url('/jquery/jquery.min.js')}"></script>
-    <script type="text/javascript" src="${tg.url('/proj4js/proj4.js')}"></script>
-    <script type="text/javascript" src="${tg.url('/raphael/raphael.js')}"></script>
-    <script type="text/javascript" src="${tg.url('/js/viewer/kinetic-v5.1.0.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/core/d3/d3.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/core/threejs/three.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/core/async/async.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/core/jquery/jquery.min.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/core/proj4js/proj4.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/core/raphael/raphael.js')}"></script>
+    <script type="text/javascript" src="${tg.url('/core/js/viewer/kinetic-v5.1.0.js')}"></script>
 
     <!-- GMaps API -->
     <!--<script type="text/javascript" src="//maps.googleapis.com/maps/api/js?sensor=false"></script>-->

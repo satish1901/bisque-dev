@@ -12,8 +12,8 @@
     <title py:if="not welcome_message">Welcome</title>
     <title py:if="welcome_message">${welcome_message}</title>
 
-    <link rel="stylesheet" type="text/css" href="${tg.url('/js/carousel/carousel.css')}" />
-    <script type="text/javascript" src="${tg.url('/js/carousel/Panel.js')}" ></script>
+    <link rel="stylesheet" type="text/css" href="${tg.url('/core/js/carousel/carousel.css')}" />
+    <script type="text/javascript" src="${tg.url('/core/js/carousel/Panel.js')}" ></script>
 
     <script type="text/javascript" src="${tg.url('/usage/bq_usage_stats.js')}" ></script>
 
@@ -137,7 +137,7 @@
 
 
         var s = '<img src="';
-        s += '${tg.url('/images/browse_80.png')}';
+        s += '${tg.url('/core/images/browse_80.png')}';
         s += '" alt="Browse public images" />';
         s += '<h3>Browse</h3>';
 

@@ -37,8 +37,8 @@ ImgSlicer.prototype.create = function (parent) {
     this.image_buffer_z = [];
     this.image_buffer_t = [];
 
-    //this.cacher_z = new Worker('/js/viewer/cacher.js');
-    //this.cacher_t = new Worker('/js/viewer/cacher.js');
+    //this.cacher_z = new Worker('/core/js/viewer/cacher.js');
+    //this.cacher_t = new Worker('/core/js/viewer/cacher.js');
 
     //parent.appendChild(this.div);
     return this.div;

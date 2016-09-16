@@ -6,7 +6,7 @@ Copyright: 2015 (C) Center for Bio-Image Informatics, University of California a
 /* ctyles for browser */
 
 .table {
-    background-image: url('/plugins/table/icons.svg');
+    background-image: url('/core/plugins/table/icons.svg');
     background-position: center center;
     background-size: 220px;
     background-repeat: no-repeat;
@@ -17,7 +17,7 @@ Copyright: 2015 (C) Center for Bio-Image Informatics, University of California a
 }
 
 .resicon.table {
-    background-image: url('/plugins/table/icons.svg');
+    background-image: url('/core/plugins/table/icons.svg');
     background-position: center top;
     background-size: 100px;
     background-repeat: no-repeat;
@@ -28,7 +28,7 @@ Copyright: 2015 (C) Center for Bio-Image Informatics, University of California a
 }
 
 .resicon.gridIcon.table {
-    background-image: url('/plugins/table/icons.svg');
+    background-image: url('/core/plugins/table/icons.svg');
     background-size: 35px;
     background-position: 2px 3px;
 }
@@ -65,7 +65,7 @@ menu styles
     top: 10px !important;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
 
     background-position: -34px -97px;
@@ -82,7 +82,7 @@ menu styles
     left: auto !important;
     background-color: transparent;
     background-repeat: no-repeat;
-    background-image: url('/images/viewer/icons_viewer.svg');
+    background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
 
     background-position: -34px -162px;
@@ -111,7 +111,7 @@ tree styles
 }
 
 .tableio .bq_table_panel .icon-group .x-tree-icon {
-    background-image: url('/plugins/table/icons_tree.svg');
+    background-image: url('/core/plugins/table/icons_tree.svg');
     background-repeat: no-repeat;
     background-size: 70px;
     background-position: -18px 2px;

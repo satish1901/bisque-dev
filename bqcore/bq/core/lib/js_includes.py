@@ -38,12 +38,12 @@ def generate_css_files(root=None, public=None):
         '/core/js/tree/organizer.css',
 #        { 'file' : '/image_service/public/converter.css', 'path' : root + 'bqserver/bq' },
         '/image_service/converter.css',
-        '/panojs3/styles/panojs.css',
-        '/js/slider/slider.css',
-        '/js/picker/Color.css',
-        '/js/form/field/Color.css',
-        '/css/imgview.css',
-        '/js/movie/movie.css',
+        '/core/panojs3/styles/panojs.css',
+        '/core/js/slider/slider.css',
+        '/core/js/picker/Color.css',
+        '/core/js/form/field/Color.css',
+        '/core/css/imgview.css',
+        '/core/js/movie/movie.css',
 #        { 'file': '/dataset_service/public/dataset_panel.css', 'path' : root + 'bqserver/bq' },
         '/dataset_service/dataset_panel.css',
         '/core/js/renderers/dataset.css',
@@ -94,8 +94,8 @@ def generate_js_files(root=None, public=None):
         # Pre-required libraries
         #'/d3/d3.js',
         #'/threejs/three.js',
-        '/threejs/TypedArrayUtils.js',
-        '/threejs/math/ColorConverter.js',
+        '/core/threejs/TypedArrayUtils.js',
+        '/core/threejs/math/ColorConverter.js',
         #-- Async.js --
         #'/async/async.js',
         #-- jquery --
@@ -188,13 +188,13 @@ def generate_js_files(root=None, public=None):
         '/core/js/tree/organizer.js',
 
         # -- PanoJS3 --
-        '/panojs3/panojs/utils.js',
-        '/panojs3/panojs/PanoJS.js',
-        '/panojs3/panojs/controls.js',
-        '/panojs3/panojs/pyramid_Bisque.js',
-        '/panojs3/panojs/control_thumbnail.js',
-        '/panojs3/panojs/control_info.js',
-        '/panojs3/panojs/control_svg.js',
+        '/core/panojs3/panojs/utils.js',
+        '/core/panojs3/panojs/PanoJS.js',
+        '/core/panojs3/panojs/controls.js',
+        '/core/panojs3/panojs/pyramid_Bisque.js',
+        '/core/panojs3/panojs/control_thumbnail.js',
+        '/core/panojs3/panojs/control_info.js',
+        '/core/panojs3/panojs/control_svg.js',
 
         # -- Image Service --
 #        { 'file' : '/image_service/public/converter.js', 'path': root + 'bqserver/bq/'},
