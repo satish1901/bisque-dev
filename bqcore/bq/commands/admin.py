@@ -305,8 +305,9 @@ class deploy(object):
         all_js_combined = os.path.join(publicdir, 'core/js/all_js.js')
         all_js_public = os.path.join(publicdir, 'js/all_js.js')
 
-        remove_safe(all_css_public)
-        remove_safe(all_js_public)
+        if os.name != 'nt': # under windows the whole public is removed at the beginning 
+            remove_safe(all_css_public)
+            remove_safe(all_js_public)
 
         import pylons
         pylons.config["cache_enabled"] = "False"

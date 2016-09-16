@@ -132,7 +132,7 @@ def remove_safe(f):
     try:
         os.remove(f)
     except OSError:
-        log.warning ('Command not remove "%s"', f)
+        log.warning ('Could not remove "%s"', f)
 
 # dima: We have to do some ugly stuff to get all unicode filenames to work correctly
 # under windows, although imgcnv and ImarisConvert support unicode filenames
