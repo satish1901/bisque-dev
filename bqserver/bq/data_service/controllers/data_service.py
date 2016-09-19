@@ -449,7 +449,7 @@ class DataServerController(ServiceController):
             # More path to process.. move it into parent
             if path:
                 parent = resource
-                resouce = None
+                resource = None
             #log.debug ("path=%s resource_type=%s resource=%s, parent=%s", path, resource_type, resource, parent)
 
         #log.debug ("final path=%s resource_type=%s resource=%s, parent=%s", path, resource_type, resource, parent)
