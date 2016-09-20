@@ -138,7 +138,7 @@ class RuntimeAdapter(BaseAdapter):
         try:
             log.info ("Currently in %s" % os.getcwd())
             log.info ("Exec of %s '%s' in %s " % (module_name, ' '.join(command_line), module_dir))
-            copy_link ( config_path('runtime-bisque.cfg'), module_dir)
+            #copy_link ( config_path('runtime-bisque.cfg'), module_dir)
 
             os.chdir(module_dir)
             m = ModuleRunner()

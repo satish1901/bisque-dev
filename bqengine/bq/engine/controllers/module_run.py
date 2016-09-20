@@ -4,7 +4,7 @@ import os,sys
 import subprocess
 import logging
 
-from bq.util.paths import config_path
+from bq.util.paths import find_config_path
 from bq.util.configfile import ConfigFile
 
 from module_env import ModuleEnvironmentError
@@ -63,7 +63,7 @@ class ModuleRunner(object):
 
         runtime_bisque = 'runtime-bisque.cfg'
         if not os.path.exists(runtime_bisque):
-            runtime_bisque = config_path (runtime_bisque)
+            runtime_bisque = find_config_path (runtime_bisque)
 
         if os.path.exists (runtime_bisque):
             cfg = ConfigFile(runtime_bisque)
