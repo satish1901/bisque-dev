@@ -12,14 +12,12 @@ syntax: glob
 *.egg-info*
 runtime-bisque.cfg
 build/*
-public/*
 data/*
 config/*.ini
 bqenv/*
 doc/build/*
 doc/data/*
 external/*
-public/*
 debian/tmp/*
 debian/bisque/*
 debian/bisque-contrib
@@ -37,4 +35,5 @@ pydist/*
 
 syntax: regexp
 .*\#.*\#$
+^public/.*
 
