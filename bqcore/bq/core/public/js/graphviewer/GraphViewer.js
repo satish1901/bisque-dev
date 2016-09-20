@@ -3,6 +3,8 @@ function ResourceCard(node, resource) {
     this.resource = resource;
     this.node = node;
     this.fields = {};
+    this.cardType = 'mex';   // TODO: change to some generic graph node style
+    this.cardTitle = node ? node.name : 'node';
 };
 
 
@@ -25,10 +27,10 @@ ResourceCard.prototype.getSpan = function (field) {
 };
 
 ResourceCard.prototype.buildHtml = function () {
-    var html = "<div class= "+this.cardType+" id="+this.resource+">";
+    var html = "<div class="+this.cardType+" id="+this.resource+">";
     //html += "<span class=status></span>";
 
-    html += "<span class=resource>"  + this.cardType + "</span>";
+    html += "<span class=resource>"  + this.cardTitle + "</span>";
     for(var field in this.fields){
         html += this.getSpan(field);
     }
@@ -51,11 +53,9 @@ ResourceCard.prototype.getUrl = function (resource_uniq) {
 
 
 function MexCard(node, resource) {
-    this.resource = resource;
+    ResourceCard.call(this, node, resource);
     this.cardType = 'mex';
-	this.node = node;
-
-    ResourceCard.call(this,node, resource);
+    this.cardTitle = 'mex';
 };
 
 MexCard.prototype = new ResourceCard();
@@ -71,10 +71,9 @@ MexCard.prototype.getUrl = function (resource_uniq) {
 };
 
 function DataSetCard(node, resource) {
-    this.resource = resource;
+    ResourceCard.call(this, node, resource);
     this.cardType = 'dataset';
-	this.node = node;
-    ResourceCard.call(this,node, resource);
+    this.cardTitle = 'dataset';
 };
 
 DataSetCard.prototype = new ResourceCard();
@@ -85,10 +84,9 @@ DataSetCard.prototype.populateFields = function (xnode) {
 
 
 function ImageCard(node, resource) {
-    this.resource = resource;
+    ResourceCard.call(this, node, resource);
     this.cardType = 'image';
-	this.node = node;
-    ResourceCard.call(this,node, resource);
+    this.cardTitle = 'image';
 };
 
 ImageCard.prototype = new ResourceCard();
@@ -99,10 +97,9 @@ ImageCard.prototype.populateFields = function (xnode) {
 
 
 function TableCard(node, resource) {
-    this.resource = resource;
+    ResourceCard.call(this, node, resource);
     this.cardType = 'table';
-	this.node = node;
-    ResourceCard.call(this,node, resource);
+    this.cardTitle = 'table';
 };
 
 TableCard.prototype = new ResourceCard();
@@ -113,10 +110,9 @@ TableCard.prototype.populateFields = function (xnode) {
 
 
 function PipelineCard(node, resource) {
-    this.resource = resource;
+    ResourceCard.call(this, node, resource);
     this.cardType = 'dream3d_pipeline';
-	this.node = node;
-    ResourceCard.call(this,node, resource);
+    this.cardTitle = 'dream3d_pipeline';
 };
 
 PipelineCard.prototype = new ResourceCard();
@@ -127,16 +123,14 @@ PipelineCard.prototype.populateFields = function (xnode) {
 
 
 function SummaryCard(node, resource) {
-    this.resource = resource;
+    ResourceCard.call(this, node, resource);
     this.cardType = 'multi';
-    this.node = node;
-    ResourceCard.call(this,node, resource);
+    this.cardTitle = node.label;
 };
 
 SummaryCard.prototype = new ResourceCard();
 
 SummaryCard.prototype.populateFields = function () {
-    this.addField('type', this.node.label.slice(6));   // label - initial "multi "
     this.addField('count', this.node.count, 'value');
 };
 
@@ -194,7 +188,7 @@ Ext.define('BQ.graphviewer', {
         var gnode = node;
         console.log(node);
         var g = this.g;
-        if (resource_uniq.indexOf('@') == -1){
+        if (resource_uniq.startswith("00-") && resource_uniq.indexOf('@') == -1){
             // actual resource => fetch it and populate GUI card
             var resUniqueUrl = (this.hostName ? this.hostName : '') + '/data_service/' + resource_uniq;
             Ext.Ajax.request({
@@ -220,7 +214,7 @@ Ext.define('BQ.graphviewer', {
     		});
     	}
     	else {
-    	    // summary node (uniq='00-xxxx@id') => only populate GUI card
+    	    // summary node (uniq='00-xxxx@id') or other node => only populate GUI card
     	    if(gnode && gnode.card){
                 gnode.card.populateFields();
                 gnode.card.buildHtml();
@@ -254,7 +248,6 @@ Ext.define('BQ.graphviewer', {
         g.nodes().forEach(function(v) {
             var node = g.node(v);
             me.fetchNode(v,node);
-
             node.rx = node.ry = 5;
             node.padding = 1.5;
         });
@@ -456,7 +449,7 @@ Ext.define('BQ.graphviewer', {
 
     },
 
-    buildGraph : function(nodes, edges, members){
+    buildGraph : function(nodes, edges, members, rankdir){
         var me = this;
         var data1 = this.data;
 
@@ -477,21 +470,22 @@ Ext.define('BQ.graphviewer', {
         this.g = g;
 
         nodes.forEach(function(e,i,t){
-            var t = e.getAttribute('type');
-            var val = e.getAttribute('value');
-            var cnt = e.getAttribute('count');
-            g.setNode(val, {label: t, count: cnt});
+            var t = e['type'];
+            var val = e['value'];
+            var cnt = e['count'];
+            var name = e['name'];
+            g.setNode(val, {label: t, count: cnt, name: name});
         });
 
         edges.forEach(function(e,i,a){
-            var val = e.getAttribute('value').split(':');
+            var val = e['value'].split(':');
             g.setEdge(val[0], val[1],{
                 lineInterpolate: 'basis'
             });
         });
 
         members.forEach(function(e,i,a){
-            var val = e.getAttribute('value').split(':');
+            var val = e['value'].split(':');
             g.setEdge(val[0], val[1],{
             	style: "stroke-dasharray: 5, 5; fill: none;",
             	arrowhead: "undirected"
@@ -508,7 +502,7 @@ Ext.define('BQ.graphviewer', {
         });
 
 
-        g.graph().rankdir = "LR";
+        g.graph().rankdir = rankdir;
         g.graph().nodeSep = 20;
         g.graph().edgeSep = 10;
         g.graph().rankSep = 20;
@@ -699,7 +693,7 @@ Ext.define('BQ.graphviewer', {
 });
 
 Ext.define('BQ.viewer.Graph.Panel', {
-	alias : 'widget.bq_graphviewer_panel',
+	alias : 'widget.bq_basegraphviewer_panel',
 	extend : 'Ext.panel.Panel',
 	//border : 0,
 	cls : 'bq-graph-panel',
@@ -714,8 +708,14 @@ Ext.define('BQ.viewer.Graph.Panel', {
     },
 
     fetchGraphData : function(){
+        // resource_type can be
+        //   - 'graph_url': fetch graph from graph service
+        //   - 'dataservice_url': fetch graph from data service (as a doc)
+        //   - 'blobservice_url': fetch graph from blob service (as JSON doc)
         var resUniqueUrl = (this.hostName ? this.hostName : '') +
-            '/graph/' + this.resource.resource_uniq.split('@')[0] + '?view=deep';
+            (this.resourceType === 'blobservice_url' ? '/blob_service/' : (this.resourceType === 'dataservice_url' ? '/data_service/' : '/graph/')) +
+            this.resource.resource_uniq.split('@')[0] +
+            (this.resourceType === 'blobservice_url' ? '' : '?view=deep');
         Ext.Ajax.request({
 			url : resUniqueUrl,
 			scope : this,
@@ -724,18 +724,72 @@ Ext.define('BQ.viewer.Graph.Panel', {
 				if (response.status >= 400)
 					BQ.ui.error(response.responseText);
 				else {
-					if (!response.responseXML)
+					if ((this.resourceType !== 'blobservice_url' && !response.responseXML) ||
+					    (this.resourceType === 'blobservice_url' && !response.responseText)) {
 						return;
-					var xmlDoc = response.responseXML;
-                    var graph = xmlDoc.childNodes[0];
+					}
 
-                    console.log(graph);
-                    this.graphView.graph = this.graph;
+                    // nodes: [ {name:..., type:..., value:..., <addtl. attrib>}, ... ]
+                    // edges: [ {value: "from:to"}, ...]
+                    var nodes = [];
+                    var edges = [];
+                    var members = [];
 
-                    var nodes = BQ.util.xpath_nodes(xmlDoc, "graph/node");
-                    var edges = BQ.util.xpath_nodes(xmlDoc, "graph/edge");
-                    var members = BQ.util.xpath_nodes(xmlDoc, "graph/member");
-                    this.graphView.buildGraph(nodes, edges, members);
+					if (this.resourceType === 'blobservice_url') {
+                        // Extract nodes/edges from a JSON pipeline document
+                        // Assumes this structure:
+                        // {
+                        //     <node_id> : { <key>:<value>, ..., <key>:<value> },
+                        //     ...
+                        //     <node_id> : { <key>:<value>, ..., <key>:<value> },
+                        //     "edges" :  [ { "from" : <node_id>, "to" : <node_id> },
+                        //                  ...,
+                        //                  { "from" : <node_id>, "to" : <node_id> } ],
+                        //     ...
+                        // }
+					    var txt = response.responseText;
+					    // parse json and extract nodes/edges
+                        json = Ext.JSON.decode(txt);
+                        var context =  {root:json, nodes:nodes, edges:edges };
+                        this.extractNodesEdges( context );
+					}
+					else {
+					    // Extract nodes/edges from an XML document
+					    // Assumes this structure:
+					    // <graph ...>
+					    //    <node type="..." value="<node_id>" ... />
+					    //    ...
+					    //    <node type="..." value="<node_id>" ... />
+					    //    <edge value="<from>:<to>"/>
+					    //    ...
+					    //    <edge value="<from>:<to>"/>
+					    //    ...
+					    // </graph>
+					    var xmlDoc = response.responseXML;
+					    // extract nodes/edges
+                        var xnodes = BQ.util.xpath_nodes(xmlDoc, "graph/node");
+                        var xedges = BQ.util.xpath_nodes(xmlDoc, "graph/edge");
+                        var xmembers = BQ.util.xpath_nodes(xmlDoc, "graph/member");
+                        // convert to objects
+                        for (var i = 0; i < xnodes.length; i++) {
+                            node = {};
+                            for (var ai = 0; ai < xnodes[i].attributes.length; ai++) {
+                                var attr = xnodes[i].attributes[ai];
+                                node[attr.name] = attr.value;
+                            }
+                            nodes.push(node);
+                        }
+                        for (var i = 0; i < xedges.length; i++) {
+                            edge = {};
+                            for (var ai = 0; ai < xedges[i].attributes.length; ai++) {
+                                var attr = xedges[i].attributes[ai];
+                                edge[attr.name] = attr.value;
+                            }
+                            edges.push(edge);
+                        }
+                    }
+
+                    this.graphView.buildGraph(nodes, edges, members, this.rankdir);
                     this.graphView.fetchNodeInfo();
                     /*
                     for(var prop in graph.childNodes){
@@ -751,7 +805,46 @@ Ext.define('BQ.viewer.Graph.Panel', {
 		});
     },
 
+    extractNodesEdges: function(context) {
+        // context: {root:..., nodes:..., edges:..., name_key:..., type_key:...}
+        var fields = [];
+        var root = context['root'];
+        var nodes = context['nodes'];
+        var edges = context['edges'];
+        var name_key = context['name_key'];
+        var type_key = context['type_key'];
+        for (var key in root) {
+            if (!isNaN(key)) {
+                // key is a number => assume node id
+                new_node = root[key];
+                new_node["name"] = (name_key ? root[key][name_key] : ''+key);
+                new_node["type"] = (type_key ? root[key][type_key] : 'node');
+                new_node["value"] = ''+key;
+                nodes.push(new_node);
+            }
+            else {
+                if (key === 'edges') {
+                    // TODO!!!
+                }
+            }
+        }
+    },
 
+    afterRender : function(){
+        this.fetchGraphData();
+        this.callParent();
+    },
+
+    //afterFirstLayout : function(){
+    //    this.fetchGraphData();
+    //    this.callParent();
+    //}
+});
+
+
+Ext.define('BQ.viewer.ProvenanceGraph.Panel', {
+    alias : 'widget.bq_graphviewer_panel',
+    extend : 'BQ.viewer.Graph.Panel',
 
     initComponent: function(){
         var me = this;
@@ -772,51 +865,117 @@ Ext.define('BQ.viewer.Graph.Panel', {
         });
 
         this.items = [ this.graphView, {
-			xtype : 'component',
-			itemId : 'button-extents',
-			autoEl : {
-				tag : 'span',
-				cls : 'control zoomextents',
-			},
+            xtype : 'component',
+            itemId : 'button-extents',
+            autoEl : {
+                tag : 'span',
+                cls : 'control zoomextents',
+            },
 
-			listeners : {
-				scope : this,
-				click : {
-					element : 'el', //bind to the underlying el property on the panel
-					fn : this.zoomExtents,
+            listeners : {
+                scope : this,
+                click : {
+                    element : 'el', //bind to the underlying el property on the panel
+                    fn : this.zoomExtents,
                     scope: me
-				},
-			}
+                },
+            }
         }, {
-			xtype : 'component',
-			itemId : 'button-tocurrent',
-			autoEl : {
-				tag : 'span',
-				cls : 'control zoomtocurrent',
-			},
-			listeners : {
-				scope : this,
-				click : {
-					element : 'el', //bind to the underlying el property on the panel
-					fn : this.zoomToCurrent,
+            xtype : 'component',
+            itemId : 'button-tocurrent',
+            autoEl : {
+                tag : 'span',
+                cls : 'control zoomtocurrent',
+            },
+            listeners : {
+                scope : this,
+                click : {
+                    element : 'el', //bind to the underlying el property on the panel
+                    fn : this.zoomToCurrent,
                     scope: me
-				},
-			},
-		}];
+                },
+            },
+        }];
         this.setLoading(true);
-		this.callParent();
-    },
-
-    afterRender : function(){
-        this.fetchGraphData();
         this.callParent();
     },
 
-    //afterFirstLayout : function(){
-    //    this.fetchGraphData();
-    //    this.callParent();
-    //}
 });
+
+
+Ext.define('BQ.viewer.Pipeline.Panel', {
+    alias : 'widget.bq_pipelineviewer_panel',
+    extend : 'BQ.viewer.Graph.Panel',
+
+    initComponent: function(){
+        var me = this;
+
+        this.graphView = Ext.create('BQ.graphviewer', {
+            resource : this.resource,
+            listeners:{
+                loaded: function(res, div, comp){
+                    me.setLoading(false);
+                },
+            }
+        });
+
+        this.items = [ this.graphView, {
+            xtype : 'component',
+            itemId : 'button-extents',
+            autoEl : {
+                tag : 'span',
+                cls : 'control zoomextents',
+            },
+
+            listeners : {
+                scope : this,
+                click : {
+                    element : 'el', //bind to the underlying el property on the panel
+                    fn : this.zoomExtents,
+                    scope: me
+                },
+            }
+        }, {
+            xtype : 'component',
+            itemId : 'button-tocurrent',
+            autoEl : {
+                tag : 'span',
+                cls : 'control zoomtocurrent',
+            },
+            listeners : {
+                scope : this,
+                click : {
+                    element : 'el', //bind to the underlying el property on the panel
+                    fn : this.zoomToCurrent,
+                    scope: me
+                },
+            },
+        }];
+        this.setLoading(true);
+        this.callParent();
+    },
+
+    extractNodesEdges: function(context) {
+        // overwrite to handle pipeline files without (i.e., with implicit) edge information
+        // (right now, this is very specific to Dream.3D pipeline format!)
+        var me = this;
+
+        context['name_key'] = 'Filter_Human_Label';
+        context['type_key'] = 'Filter_Name';
+        me.callParent([context]);
+
+        // now add edges between consecutively numbered nodes
+        var sorted_nodes = context['nodes'].sort(function(a,b) { return parseInt(a.value)-parseInt(b.value)});
+        var previous_node = undefined;
+        for (var i = 0; i < sorted_nodes.length; i++) {
+            if (previous_node) {
+                context['edges'].push({value: previous_node.value + ':' + sorted_nodes[i].value});
+            }
+            previous_node = sorted_nodes[i];
+        }
+    },
+});
+
 //--------------------------------------------------------------------------------------
 // Dialogue Box
 //--------------------------------------------------------------------------------------

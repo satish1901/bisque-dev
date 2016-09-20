@@ -77,13 +77,14 @@ Ext.define('BQ.renderers.dataset', {
             itemId: 'graph',
             title : 'Provenance',
             resource: this.resource,
+            resourceType: 'graph_url',
+            rankdir: 'LR',
             listeners:{
                 'context' : function(res, div, graph) {
                     var node = graph.g.node(res);
                     window.open(BQ.Server.url(node.card.getUrl(res)));
                 },
             },
-            resource : this.resource,
         };
 
         var tabber = {
@@ -100,8 +101,8 @@ Ext.define('BQ.renderers.dataset', {
             //collapsed: true,
 
             //items : [this.tagger, mexs, this.operations, map]
-            items : [this.tagger, mexs, graph, map]
-            //items : [this.tagger, mexs, map]
+            //items : [this.tagger, mexs, graph, map]
+            items : [this.tagger, mexs, map]
         };
 
         this.preview = Ext.create('Bisque.ResourceBrowser.Browser', {

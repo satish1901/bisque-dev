@@ -630,13 +630,14 @@ Ext.define('Bisque.Resource.Page',
             itemId: 'graph',
             title : 'Provenance',
             resource: this.resource,
+            resourceType: 'graph_url',
+            rankdir: 'LR',
             listeners:{
                 'context' : function(res, div, graph) {
                     var node = graph.g.node(res);
                     window.open(BQ.Server.url(node.card.getUrl(res)));
                 },
             },
-            resource : this.resource,
         };
 
 		// PLEASE REVIEW:
@@ -654,8 +655,8 @@ Ext.define('Bisque.Resource.Page',
             split : true,
             width : 400,
             plain : true,
-            items : [resourceTagger, graph]
-            //items : [resourceTagger]
+            //items : [resourceTagger, graph]
+            items : [resourceTagger]
         };
 
 		// PLEASE REVIEW:

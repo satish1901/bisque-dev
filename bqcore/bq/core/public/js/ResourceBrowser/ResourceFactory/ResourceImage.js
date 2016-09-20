@@ -854,13 +854,14 @@ Ext.define('Bisque.Resource.Image.Page', {
             itemId: 'graph',
             title : 'Provenance',
             resource: this.resource,
+            resourceType: 'graph_url',
+            rankdir: 'LR',
             listeners:{
                 'context' : function(res, div, graph) {
                     var node = graph.g.node(res);
                     window.open(BQ.Server.url(node.card.getUrl(res)));
                 },
             },
-            resource : this.resource,
         };
 
         var resTab = {
@@ -876,8 +877,8 @@ Ext.define('Bisque.Resource.Image.Page', {
             split : true,
             width : 400,
             plain : true,
-            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, graph, map]
-            //items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, map]
+            //items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, graph, map]
+            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, map]
         };
 
         this.add({
