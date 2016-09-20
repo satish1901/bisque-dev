@@ -2,35 +2,56 @@
 
 import os
 import sys
-import bqapi
+import argparse
 import multiprocessing
+import bqapi
 
-def sendimage_to_bisque(root, user, passwd, image_path, meta_path=None):
+
+ROOT = 'http://bisque_host/'
+USER ='USER'
+PASSWD = 'SECRET'
+
+SESSION = None
+
+def create_session (user, passwd, root):
+    global SESSION
+    SESSION = bqapi.BQSession ().init_local(user, passwd, bisque_root=root, create_mex=False)
+
+
+def sendimage_to_bisque(image_path, meta_path=None):
     "Send one image to bisque"
-    session = bqapi.BQSession ().init_local(user, passwd, bisque_root=root, create_mex=False)
     if meta_path:
-         meta_path = open (meta_path).read()
-    session.postblob (image_path, xml = meta_path)
-    session.close()
+        meta_path = open (meta_path).read()
+    resource = SESSION.postblob (image_path, xml = meta_path)
+    return resource
 
 def sendimage_helper (arg_tuple):
     "Expand tuple args"
-    sendimage_to_bisque (*arg_tuple)
+    return sendimage_to_bisque (*arg_tuple)
 
-root = 'http://bisque_host/'
-user='USER'
-passwd = 'SECRET'
+
+def create_dataset (name, images):
+    pass
+
+
+
 
 def main(argv):
-    direct = argv[1]
-    if not os.path.isdir (direct):
-        print "Usage uploaddirp <directory>"
-        sys.exit (1)
+    parser = argpase.ArgumentParser("Upload files to bisque")
+    parser.add_argument('-r','--root', help='set bisque server', default=ROOT)
+    parser.add_argument('-U','--user', help='set user:passwd', )
+    parser.add_argument('-D','--dataset', help='add to dataset', default=None)
+    parser.add_argument('--cas', help='use cas login', action="store_true", default=False)
+    parser.add_argument('directory', help='directory to upload', default='.')
 
-    pool = multiprocessing.Pool(6)
+    args = parser.parse_args()
+
+    pool = multiprocessing.Pool(6, create_session, (user, passwd, root))
     files = os.listdir (direct)
     print "Uploading ", files
-    pool.map (sendimage_helper, [ (root, user, passwd, f) for f in os.listdir (direct) ])
+    resource_list = pool.map (sendimage_helper, [ (root, user, passwd, f) for f in os.listdir (direct) ])
+
+
 
 
 

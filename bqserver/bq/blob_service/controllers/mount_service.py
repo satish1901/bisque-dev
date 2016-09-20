@@ -571,7 +571,7 @@ class MountServer(TGController):
         log.debug ("Trying mounts %s", stores.keys())
         for store_name, store in stores.items():
             try:
-                storeurl, lpath = self._save_store (store, storepath, resource, fileobj, rooturl)
+                storeurl, storepath, lpath = self._save_store (store, storepath, resource, fileobj, rooturl)
                 break
             except IllegalOperation, e:
                 log.debug ("failed %s store on %s with %s", storepath, store_name, e )
@@ -583,7 +583,7 @@ class MountServer(TGController):
         if storeurl is None:
             log.error ('storing %s failed (%s)', storepath, storeurl)
 
-        return storeurl, store, lpath
+        return storeurl, store, storepath, lpath
 
     def _save_store(self, store, storepath, resource, fileobj=None, rooturl=None):
         'store the file to the named store'
@@ -616,7 +616,7 @@ class MountServer(TGController):
             storepath[-1] = os.path.basename(storeurl)
         #    self.insert_mount_path (store, storepath, resource)
         log.debug('_save_store: %s %s %s', storeurl, localpath, etree.tostring(resource))
-        return storeurl, localpath
+        return storeurl, storepath, localpath
 
     def _save_storerefs(self, store, storepath, resource, rooturl):
         """store a resource with storeurls already in place.. these may be on a true store or simply reside locally

@@ -164,6 +164,8 @@ def python_setup_bbfreeze(scripts,  package_scripts =True, dependency_dir = 'pyd
     if package_script is true then a runner scripts will be generated
     for each script
     """
+    import bbfreeze
+
     fr = bbfreeze.Freezer(dependency_dir)
     fr.include_py = False
     if not isinstance(scripts, list):
@@ -192,7 +194,7 @@ def python_setup_bbfreeze(scripts,  package_scripts =True, dependency_dir = 'pyd
 
 
 def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', params = None ):
-    """compile python dependencies into a package
+    """compile python dependencies into a package using pyinstaller
 
     if package_script is true then a runner scripts will be generated
     for each script
