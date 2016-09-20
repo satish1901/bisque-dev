@@ -14,6 +14,7 @@ try:
 except Exception:
     from xml.etree import ElementTree as et
 from bq.util.configfile import ConfigFile
+from bq.util.paths import  find_config_path
 from bqapi import BQSession, BQTag
 
 from module_env import MODULE_ENVS, ModuleEnvironmentError
@@ -36,9 +37,6 @@ def strtobool(x):
 
 def strtolist(x, sep=','):
     return [ s.strip() for s in x.split(sep)]
-
-def config_path(*names):
-    return to_sys_path(os.path.join('.', 'config', *names))
 
 def which(program):
     import os
@@ -164,9 +162,11 @@ class BaseRunner(object):
         self.sections = {}
         self.log("BaseRunner: read_config")
         # Load any bisque related variable into this runner
-        if os.path.exists('runtime-bisque.cfg'):
-            self.bisque_cfg = ConfigFile('runtime-bisque.cfg')
+        runtime_bisque_cfg = find_config_path ('runtime-bisque.cfg')
+        if os.path.exists(runtime_bisque_cfg):
+            self.bisque_cfg = ConfigFile(runtime_bisque_cfg)
             self.load_section(None, self.bisque_cfg)
+            self.config['files'] = self.config.setdefault ('files', '') + ',' + runtime_bisque_cfg
         else:
             self.log("BaseRunner: missing runtime-bisque.cfg")
 

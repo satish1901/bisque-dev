@@ -45,6 +45,8 @@ def find_config_path(config_file):
     if cfg is not None:
         return cfg.replace('\\', '/')
     paths = ['.', 'config', '/etc/bisque']
+    if config.get ('bisque.paths.config'):
+        paths.insert (0, config.get ('bisque.paths.config'))
     for d in paths:
         site_cfg = os.path.join(d, config_file)
         if os.path.exists(site_cfg):

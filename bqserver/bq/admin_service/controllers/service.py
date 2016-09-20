@@ -501,7 +501,8 @@ class AdminController(ServiceController):
         return '<resource name="cache_clear" value="finished">'
 
     def get_variables(self):
-        bisque_root = config.get ('bisque.root')
+        #bisque_root = config.get ('bisque.root')
+        bisque_root = request.url
         bisque_organization = config.get ('bisque.organization', 'BisQue')
         bisque_email = config.get ('bisque.admin_email', 'info@bisque')
 
@@ -511,6 +512,7 @@ class AdminController(ServiceController):
             'user_name': 'username',
             'email': 'user@email',
             'display_name': 'First Last',
+            'bisque_email' : bisque_email,
         }
         return variables
 
@@ -534,13 +536,13 @@ class AdminController(ServiceController):
 
             try:
                 notify_service.send_mail (
-                    bisque_email,
+                    variables['bisque_email'],
                     variables['email'],
                     'Notification from %s service'%variables['service_name'],
                     msg,
                 )
             except Exception:
-                log.exception("Mail not sent")            
+                log.exception("Mail not sent")
 
 def initialize(url):
     """ Initialize the top level server for this microapp"""
