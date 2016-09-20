@@ -55,7 +55,11 @@ def bisque_link(session, args):
     params = {}
 
     if args.srcpath:
-        resource = ET.Element ('resource', value=args.srcpath[0], permission=args.permission)
+        el_args = {}
+        for fld in ('permission', 'hidden'):
+            if args[fld] is not None:
+                el_args [fld] = args[fld]
+        resource = ET.Element ('resource', value=args.srcpath[0], **el_args)
         if args.tag_file:
             # Load file into resource
             resource_tags = ET.parse (args.tag_file)
@@ -167,6 +171,7 @@ def main():
     parser.add_argument('-T', '--tag_file', default = None, help="tag document for insert")
     parser.add_argument('-C', '--compatible',  action="store_true", help="Make compatible with old script")
     parser.add_argument('-P', '--permission',   default="private", help="Set resource permission (compatibility)")
+    parser.add_argument('--hidden',   default=None, help="Set resource visibility (hidden)")
     parser.add_argument('command', help="one of ls, cp, mv, rm, ln" )
     parser.add_argument('paths',  nargs='+')
 

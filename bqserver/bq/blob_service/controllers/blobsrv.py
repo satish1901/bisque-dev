@@ -485,7 +485,7 @@ class BlobServer(RestController, ServiceMixin):
         if log.isEnabledFor (logging.DEBUG):
             log.debug(' => store_blob: %s, %s -> %s', fileobj, rooturl, etree.tostring(resource))
 
-        store_url, store, lpath = self.mounts.store_blob(resource, rooturl=rooturl, fileobj=fileobj)
+        store_url, store, store_path, lpath = self.mounts.store_blob(resource, rooturl=rooturl, fileobj=fileobj)
         if store_url is  None:
             log.error ("Could not store FILEOBJ of resource")
             # TODO: Clean up created resource
@@ -496,7 +496,7 @@ class BlobServer(RestController, ServiceMixin):
             log.error("Resource creation failed=> %s", etree.tostring (resource))
             return None
 
-        self.mounts.insert_mount_path (store, lpath, resource)
+        self.mounts.insert_mount_path (store, store_path, resource)
 
         if log.isEnabledFor (logging.DEBUG):
             log.debug("store_blob stored: %s %s -> %s", store_url, lpath, etree.tostring (resource))
