@@ -34,7 +34,7 @@ BQ.ui = function(){
     var msgCt;
 
     function createBox(t, s, c){
-       return '<div class="msg '+c+'"><img id="btn_close" src="/images/cancel.png" /><h3>' + t + '</h3><p>' + s + '</p></div>';
+       return '<div class="msg '+c+'"><img id="btn_close" src="/core/images/cancel.png" /><h3>' + t + '</h3><p>' + s + '</p></div>';
     }
     return {
         message: function(title, format, delay, css) {

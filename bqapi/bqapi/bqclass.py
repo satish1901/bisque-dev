@@ -287,7 +287,7 @@ class BQResource (BQNode):
 
 class BQImage(BQResource):
     xmltag = "image"
-    xmlfields = ['name', 'value', 'type', 'uri', 'ts' ,  'resource_uniq' ] #  "x", "y","z", "t", "ch"  ]
+    xmlfields = ['name', 'value', 'type', 'uri', 'ts', 'resource_uniq' ] #  "x", "y","z", "t", "ch"  ]
     xmlkids = ['tags', 'gobjects']
 
     def __init__(self, *args,  **kw):
@@ -337,7 +337,7 @@ class BQImagePixels(object):
         """build the final url based on the operation
         """
         session = self.image.session
-        return session.service_url('image_service', "images/%s?%s"
+        return session.service_url('image_service', '%s?%s'
                                    % (self.image.resource_uniq, '&'.join(self.ops)))
     def fetch(self, path=None):
         """resolve the current and fetch the pixel
