@@ -282,48 +282,26 @@ Ext.define('Bisque.Resource.Module.IconList', {
     },
 });
 
-// Page view for a module
 Ext.define('Bisque.Resource.Module.Page', {
     extend : 'Bisque.Resource.Page',
 
-    /*    setDisabled : function(btn)
-     {
+    /*downloadOriginal : function() {
+        var exporter = Ext.create('BQ.Export.Panel');
+        exporter.downloadResource(this.resource, 'none');
+    },*/
 
-     },
+    createDefaultViewer: function() {
+        var url = Ext.String.format('/module_service/{0}/?embed=true', this.resource.name);
+        return {
+            xtype: 'component',
+            layout: 'fit',
+            border: 0,
+            autoEl: {
+                tag: 'iframe',
+                src: url,
+                frameborder: "0",
+            },
+        };
+    },
 
-     getOperations : function(resource)
-     {
-     var ops = this.callParent(arguments);
-     ops.push({
-     itemId      :   'btnDisable',
-     operation   :   this.setDisabled,
-     handler     :   this.testAuth1,
-     setBtnText  :   function(me)
-     {
-     var text = 'Visibility: ';
-
-     if (this.resource.permission == 'published')
-     {
-     text += '<span style="font-weight:bold;color: #079E0C">published</span>';
-     me.setIconCls('icon-eye');
-     }
-     else
-     {
-     text += 'private';
-     me.setIconCls('icon-eye-close')
-     }
-
-     me.setText(text);
-     },
-     listeners   :   {
-     'afterrender'   :   function(me)
-     {
-     me.setBtnText.call(this, me);
-     },
-     scope           :   this
-
-     }
-     });
-
-     }*/
 });
