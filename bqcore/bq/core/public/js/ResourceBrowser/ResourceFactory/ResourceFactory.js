@@ -661,6 +661,13 @@ Ext.define('Bisque.Resource.Page',
 
 		// PLEASE REVIEW:
 		// default resource viewer: show msg "No viewer associated..."
+        var default_viewer = {
+            xtype     : 'label',
+            text      : 'No viewer is associated with this resource.'
+        };
+        if (this.createDefaultViewer) {
+            default_viewer = this.createDefaultViewer();
+        }
         this.add({
             xtype : 'container',
             itemId: 'viewer_container',
@@ -670,10 +677,7 @@ Ext.define('Bisque.Resource.Page',
                 itemId: 'main_container',
                 region : 'center',
                 layout: 'fit',
-                items : [{
-                	xtype     : 'label',
-        			text      : 'No viewer is associated with this resource.'
-                }]
+                items : [default_viewer]
             }]
         });
 
