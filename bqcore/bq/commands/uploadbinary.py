@@ -3,7 +3,7 @@
 #
 import os, re, urllib2, hashlib, inspect, sys
 
-BASE= "http://biodev.ece.ucsb.edu/binaries/upload/"
+BASE= "https://biodev.ece.ucsb.edu/binaries/upload/"
 
 class Abort(Exception):
     pass
