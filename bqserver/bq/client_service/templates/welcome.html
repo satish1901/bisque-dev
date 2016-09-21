@@ -209,13 +209,14 @@
         this.recentsExplorer.setTitle('My recent stuff');
 
         var mexBrowser = new Bisque.ResourceBrowser.Browser({
-          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid,
+          //layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid,
+          layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.List,
           title : 'Analysis',
-            layoutConfig    :   {
-                                    colIconWidth    :   25,
-                                    colValueText    :   'Name',
-                                    colValueText    :   'Status'
-                                },
+          /*layoutConfig: {
+              colIconWidth:   25,
+              colValueText:   'Name',
+              colValueText:   'Status'
+          },*/
           viewMode : 'MexBrowser',
           dataset : '/data_service/mex',
           tagOrder: '"@ts":desc',

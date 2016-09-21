@@ -2,14 +2,7 @@
 Ext.define('Bisque.Resource.Mex', {
     extend : 'Bisque.Resource',
 
-    afterRenderFn : function() {
-        this.setData('renderedRef', this);
-
-        if (this.getData('fetched') == 1)
-            this.updateContainer();
-    },
-
-   afterRenderFn : function(me) {
+    afterRenderFn : function(me) {
         if (!this.ttip) {
             this.ttip = Ext.create('Ext.tip.ToolTip', {
                 target : me.id,
@@ -276,13 +269,29 @@ Ext.define('Bisque.Resource.Mex.Grid', {
 });
 
 // Page view for a mex
-/*Ext.define('Bisque.Resource.Mex.Page',
- {
- extend : 'Bisque.Resource.Page',
 
- constructor : function(config)
- {
- window.location = BQ.Server.url('/module_service/'+config.resource.name+'/?mex='+config.resource.uri);
- }
- });*/
+Ext.define('Bisque.Resource.Mex.Page', {
+    extend : 'Bisque.Resource.Page',
+
+    downloadOriginal : function() {
+        var exporter = Ext.create('BQ.Export.Panel');
+        exporter.downloadResource(this.resource, 'none');
+    },
+
+    createDefaultViewer: function() {
+        var url = Ext.String.format('/module_service/{0}/?mex={1}&embed=true', this.resource.name, this.resource.uri);
+        return {
+            xtype: 'component',
+            layout: 'fit',
+            border: 0,
+            autoEl: {
+                tag: 'iframe',
+                src: url,
+                frameborder: "0",
+            },
+        };
+    },
+
+});
+
 

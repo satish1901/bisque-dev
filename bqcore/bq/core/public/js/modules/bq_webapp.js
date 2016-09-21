@@ -426,10 +426,63 @@ BQWebApp.prototype.setupUI_output = function (i, outputs_index, my_renderers, me
 BQWebApp.prototype.setupUI_outputs = function (key, mex) {
     key = key || 'outputs';
 
+    // ensure inputs
+    var inputs = mex.find_tags('inputs');
+    if (inputs instanceof Array)
+        inputs = inputs[0];
+    if ((!inputs || (inputs && inputs.tags && inputs.tags.length<1)) && !mex.fetched_inputs) {
+        BQApp.setLoading('Fetching inputs...');
+        if (inputs) {
+            // in case we have outputs URL
+            BQFactory.request({
+                uri : inputs.uri,
+                uri_params : { view: 'deep'},
+                cb : callback(this, function(doc) {
+                    BQApp.setLoading(false);
+                    inputs.tags = doc.tags;
+                    mex.fetched_inputs = true;
+                    mex.dict = null;
+                    mex.afterInitialized();
+                    this.setupUI_outputs(key, mex);
+                }),
+                errorcb: callback(this, 'onerror'),
+                cache : false
+            });
+        } else {
+            // we have nothing to start with, fetch the whole MEX deep
+            BQFactory.request({
+                uri : mex.uri,
+                uri_params : { view: 'deep'},
+                cb : callback(this, function(doc) {
+                    BQApp.setLoading(false);
+                    mex = doc;
+                    this.setupUI_outputs(key, mex);
+                }),
+                errorcb: callback(this, 'onerror'),
+                cache : false
+            });
+        }
+        return;
+    }
+
+
     // outputs must be present
     var outputs = mex.find_tags('outputs');
     if (outputs instanceof Array)
         outputs = outputs[0];
+
+    // in case with no outputs but present sub-mexs (mex fetched with at least "full"), this might be malformed MEX
+    // create an output to at least show sub-mexs
+    if (!outputs && mex.children.length>0) {
+        // create outputs tag with mex renderer inside
+        outputs = new BQTag(undefined, 'outputs');
+        mex.tags.push(outputs);
+        mex.fetched_outputs = true;
+        //var t = new BQTag(undefined, 'mex_renderer', mex.uri, 'mex');
+        //outputs.tags.push(t);
+    }      
+
+    // ensure outputs
     if ((!outputs || (outputs && outputs.tags && outputs.tags.length<1)) && !mex.fetched_outputs) {
         BQApp.setLoading('Fetching results...');
         if (outputs) {

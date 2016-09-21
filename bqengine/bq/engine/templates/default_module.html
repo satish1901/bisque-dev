@@ -3,6 +3,15 @@
         xmlns:py="http://genshi.edgewall.org/"
         xmlns:xi="http://www.w3.org/2001/XInclude">
 
+<script type="text/javascript"><!--
+    if (location.search.indexOf('embed=true')>0) {
+        var BQ = {};
+        BQ.config = BQ.config || {};
+        BQ.config.embedded_mode = true;    
+        BQ.config.toolbar_visibility = true;
+    }
+--></script>
+
 <!--?python tg.config['bisque.js_environment'] = 'production' ?-->
 
 <xi:include py:if="tg.config.get('bisque.js_environment', None) != 'production'" href="master.html" />
@@ -49,21 +58,23 @@
             BQ.Application.on( 'nouser', webapp.onnouser );
 
             // load help
-            var h = BQApp.main.getHelpComponent();
-            h.setVisible(true);
-            h.add({
-                xtype: 'container',
-                cls: 'help-container',
-                loader: {
-                    url: 'help',
-                    renderer: 'html',
-                    autoLoad: true,
-                    ajaxOptions: {
-                        disableCaching: false,
+            if (!BQ.config.embedded_mode) {
+                var h = BQApp.main.getHelpComponent();
+                h.setVisible(true);
+                h.add({
+                    xtype: 'container',
+                    cls: 'help-container',
+                    loader: {
+                        url: 'help',
+                        renderer: 'html',
+                        autoLoad: true,
+                        ajaxOptions: {
+                            disableCaching: false,
+                        },
                     },
-                },
-                autoScroll: true,
-            });
+                    autoScroll: true,
+                });
+            }
         });
     </script>
 
