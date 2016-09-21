@@ -1910,6 +1910,7 @@ def install_bioformats():
                 os.remove(p)
 
         biozip = zipfile.ZipFile (archive)
+        mask = stat.S_IXUSR|stat.S_IRUSR|stat.S_IRGRP|stat.S_IXGRP|stat.S_IROTH|stat.S_IXOTH
         for fname in  biozip.namelist():
             if fname[-1] == '/':  # skip dirs
                 continue
@@ -1919,7 +1920,7 @@ def install_bioformats():
             fd = open(dest, 'wb')
             fd.write(data)
             if not fname.endswith ('jar'):
-                os.chmod (dest, os.fstat(fd.fileno()).st_mode | stat.S_IXUSR)  # User exec
+                os.chmod (dest, os.fstat(fd.fileno()).st_mode|mask)  # User exec
             fd.close()
 
         # python >2.6
