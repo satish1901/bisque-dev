@@ -2514,9 +2514,9 @@ def update_globals (options, args):
         DIRS['jslocation'] = DIRS['packages']
     else:
         print "Developer installation"
-        DIRS['share']   = '.'  # Our top installation path
-        DIRS['run']     = '.'
-        DIRS['config'] = DIRS['config'] or "./config"
+        DIRS['share']  = '.'  # Our top installation path
+        DIRS['run']    = DIRS['share'] #'.'
+        DIRS['config'] = DIRS['config'] or os.path.join(DIRS['share'], "config")
         DIRS['jslocation'] = "bqcore"
 
     DIRS['data']   = os.path.join(DIRS['run'], 'data')

@@ -228,10 +228,11 @@ def html(options):
 @task
 def pastershell():
     'setup env for paster shell config/shell.ini'
-    bisque_info = path('bisque.egg-info')
+    bisque_info = path('BisQue.egg-info')
     if not bisque_info.exists():
         sh ('paver egg_info')
     path ('bqcore/bqcore.egg-info/paster_plugins.txt').copy (bisque_info)
+    sh ('pip install ipython==0.10')
 
 
 @task

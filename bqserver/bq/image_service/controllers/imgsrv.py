@@ -2500,7 +2500,7 @@ class ImageServer(object):
     def process(self, url, ident, resource=None, **kw):
         resource_id, query = getOperations(url, self.base_url)
         log.debug ('STARTING %s: %s', ident, query)
-        os.chdir(self.workdir)
+        #os.chdir(self.workdir)
         log.debug('Current path %s: %s', ident, self.workdir)
 
         if resource is None:
