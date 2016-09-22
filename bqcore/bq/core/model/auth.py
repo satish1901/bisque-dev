@@ -47,7 +47,7 @@ def do_connect(dbapi_connection, connection_record):
 def do_begin(conn):
     # emit our own BEGIN
     if config.get('sqlalchemy.url', '').startswith ("sqlite://"):
-        conn.execute("BEGIN")
+        conn.execute("BEGIN EXCLUSIVE")
 
 
 from bq.core.model import DeclarativeBase, metadata, DBSession

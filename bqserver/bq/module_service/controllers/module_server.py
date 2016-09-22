@@ -326,7 +326,7 @@ def create_mex(module, name, mex = None, **kw):
     iters = {}
     for itr in iterables:
         resource_tag = itr.get('value')
-        resource_type = itr.get('type')        
+        resource_type = itr.get('type')
         resource_iterexpr = './value/text()' if resource_type not in ['list', 'range'] else '@'+resource_type
         if len(itr):
             # Children of iterable allow overide of extraction expression
@@ -347,7 +347,7 @@ def create_mex(module, name, mex = None, **kw):
                 mex_tags[iter_tag] = resource_tag[0]
     log.debug ('iterable tags found in mex %s' , mex_tags)
 
-    # all_iterables is list of all iter lists: 
+    # all_iterables is list of all iter lists:
     # [ [(tag1, val1), (tag1, val2), ...], [(tag2, valx), (tag2, valy), ...], ... ]
     all_iterables = []
     # for each iterable found in the mex inputs, check the resource type
@@ -359,7 +359,7 @@ def create_mex(module, name, mex = None, **kw):
             # list type: value is comma-separated list itself
             members = csv.reader([resource_value], skipinitialspace=True).next()
         else:
-            # must be dataset, assume resource_iterexpr is xpath 
+            # must be dataset, assume resource_iterexpr is xpath
             resource = data_service.get_resource(resource_value, view='deep')
             # if the fetched resource doesn't match the expected type, then skip to next iterable
             if not (resource_type == resource.tag or resource_type == resource.get('type')):
@@ -378,11 +378,11 @@ def create_mex(module, name, mex = None, **kw):
     # ...
     for iter_combo in itertools.product(*all_iterables):
         # Create SubMex section with original parameters replaced with iterated members
-        subinputs = copy.deepcopy(mex_inputs)        
+        subinputs = copy.deepcopy(mex_inputs)
         for iter_tag, value in iter_combo:
             resource_tag = subinputs.xpath('.//tag[@name="%s"]' % iter_tag)[0]
             etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=value)
-            resource_tag.getparent().remove (resource_tag)            
+            resource_tag.getparent().remove (resource_tag)
         submex = etree.Element('mex', name=name, type=module.get ('uri'))
         submex.append(subinputs)
         mex.append(submex)
@@ -433,7 +433,7 @@ def wait_for_query (query, retries = 10, interval = 1):
         time.sleep(interval)
         counter -= 1
         found = query.first()
-    return query
+    return found
 
 def POST_mex (service_uri, mex, username):
     "POST A MEX in a subthread"
@@ -443,7 +443,9 @@ def POST_mex (service_uri, mex, username):
     log.debug ("MEX Dispatch : waiting for mex")
     #Instance of 'scoped_session' has no 'query' member
     # pylint: disable=E1101
-    mexq = wait_for_query (DBSession.query(ModuleExecution).filter_by (resource_uniq =  mex_uniq)).first()
+    transaction.begin()
+    mexq = wait_for_query (DBSession.query(ModuleExecution).filter_by (resource_uniq =  mex_uniq))
+    transaction.commit()
     if mexq is None:
         log.error('Mex not in DB: abondoning dispatch')
         POST_error(mex_url, username, {'status':'500'}, '')
@@ -501,8 +503,10 @@ def POST_error (mex_url, username, resp, content):
     registry.register(session, SessionObject({}))
     registry.register(request, Request.blank('/'))
     request.identity  = {}
+    transaction.begin()
     set_current_user (username)
     bisquik2db(mextree)
+    transaction.commit()
 
 def POST_over (request, result):
     log.debug ('CLEANING workers %s -> %s', str(request), str(result))
@@ -553,6 +557,8 @@ class ServiceDelegate(controllers.WSGIAppController):
                          value=time.strftime("%Y-%m-%d %H:%M:%S",
                                              time.localtime()))
         mex = data_service.new_resource (mex, view='deep')
+        transaction.commit() # NO ACTIVE TRANSACTION
+
         self.remap_uri(mex)
         log.debug ("SCHEDULING_MEX %s %s", self.module.get ('uri'), mex.get ('uri'))
         req = WorkRequest (async_dbaction, [ POST_mex, [ self.service_url, mex, get_username() ]],
