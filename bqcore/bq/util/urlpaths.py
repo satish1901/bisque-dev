@@ -113,6 +113,8 @@ else:
 
     def url2localpath(url):
         "url should be utf8 encoded (but may actually be unicode from db)"
+        if url.startswith('file://'):
+            url = url[7:]
         path = posixpath.normpath(urlparse.urlparse(url).path)
         path = urllib.unquote(path)
         path = force_filesys(path)

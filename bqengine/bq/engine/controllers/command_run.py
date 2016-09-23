@@ -563,10 +563,11 @@ class CommandRunner(BaseRunner):
             self.log( "running '%s' in %s" % (' '.join(command_line), rundir))
             proc = dict(command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex, env=self.process_environment)
 
-            from bq.engine.controllers.execone import execone
-            retcode = execone (proc)
-            if retcode:
-                self.command_failed(proc, retcode)
+            #from bq.engine.controllers.execone import execone
+            #retcode = execone (proc)
+            #if retcode:
+            #    self.command_failed(proc, retcode)
+            self.pool.schedule (proc, fail = self.command_fail)
         return None
 
     def command_execute(self, **kw):
@@ -591,44 +592,45 @@ class CommandRunner(BaseRunner):
 
             self.processes.append(dict( command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex, env=self.process_environment))
 
-        # ****NOTE***
-        # execone must be in engine_service as otherwise multiprocessing is unable to find it
-        # I have no idea why not.
-        from bq.engine.controllers.execone import execone
 
-        if self.pool:
-            log.debug ('Using async ppool %s with %s ' % (self.pool, self.processes))
-            #self.pool.map_async(fun, [1,2], callback = self.command_return)
-            self.pool.map_async(execone, self.processes, callback = self.command_return)
-        else:
-            for p in self.processes:
-                retcode = execone (p)
-                if retcode:
-                    self.command_failed(p, retcode)
-            return self.command_finish
 
+        for p in self.processes:
+            self.pool.schedule (p, success=self.command_success, fail=self.command_fail)
         return None
-    def command_return(self, returns):
+        # # ****NOTE***
+        # # execone must be in engine_service as otherwise multiprocessing is unable to find it
+        # # I have no idea why not.
+        # from bq.engine.controllers.execone import execone
+
+        # if self.pool:
+        #     log.debug ('Using async ppool %s with %s ' % (self.pool, self.processes))
+        #     #self.pool.map_async(fun, [1,2], callback = self.command_return)
+        #     self.pool.map_async(execone, self.processes, callback = self.command_return)
+        # else:
+        #     for p in self.processes:
+        #         retcode = execone (p)
+        #         if retcode:
+        #             self.command_failed(p, retcode)
+        #     return self.command_finish
+        #return None
+
+    def command_success(self, p):
         "collect return values when mex was executed asynchronously "
-        log.info ("Command_return with %s" % returns)
-        for item, retcode in enumerate(returns):
-            command = self.processes[item]['command_line']
-            if retcode:
-                self.command_failed(self.processes[item], retcode)
+        log.info ("Command %s with %s" , " ".join (p.get ('command_line')), p.get ('return_code'))
         self.command_finish(**self.execute_kw)
 
-    def command_failed(self, process, retcode):
+    def command_fail(self, process):
         """Update the bisque server  with a failed command for a mex"""
         mex = process['mex']
         command = " ".join(process['command_line'])
-        msg = "%s: returned (non-zero) %s" % (command, retcode)
+        retcode = process['return_code']
+        msg = "%s: returned (non-zero) %s" %(command, retcode)
         log.error(msg)
         # update process mex
         if self.session is None:
             self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
         if self.session.mex.value not in ('FAILED', 'FINISHED'):
             self.session.fail_mex (msg)
-
 
 
 
