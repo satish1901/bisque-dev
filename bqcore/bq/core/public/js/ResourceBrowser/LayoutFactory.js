@@ -490,6 +490,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid', {
     getResourceGrid : function() {
         this.resourceGrid = Ext.create('Ext.grid.Panel', {
             store : this.getResourceStore(),
+            cls: 'bq_browser_grid',
             border : 0,
             multiSelect : true,
             simpleSelect : true,

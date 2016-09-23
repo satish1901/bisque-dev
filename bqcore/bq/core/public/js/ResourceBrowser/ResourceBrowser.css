@@ -102,6 +102,16 @@
     text-overflow: ellipsis;    
 }
 
+.bq_resource .thumbnail {
+    background-image: none;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-size: 30px;
+    background-position: 0px 0px;
+    width : 30px;
+    height : 30px;
+    padding: 0px 0px 0px 0px;
+}
 
 /* ResourceLayout settings: */
 .ImageCompact {
@@ -117,6 +127,13 @@
     -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
     border-radius: 5px;
+}
+
+.ImageCompact .thumbnail {
+    background-size: 35px;
+    background-position: 0px 0px;
+    width : 35px;
+    height : 35px;
 }
 
 .ImageCard {
@@ -171,6 +188,16 @@
     box-shadow: none;
 }
 
+.bq_browser_grid .thumbnail {
+    background-image: none;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-size: 30px;
+    background-position: 0px 0px;
+    width : 30px;
+    height : 30px;
+    padding: 0px 0px 0px 0px;    
+}
 
 .LightShadow {
     /*-moz-box-shadow: 1px 1px 5px #999;

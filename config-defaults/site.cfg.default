@@ -163,19 +163,19 @@ bisque.login.providers =  local
 
 #bisque.login.iplant.text = iPlant Login
 #bisque.login.iplant.url = /auth_service/cas_login_handler
-#bisque.login.iplant.icon = /images/signin/signin_iplant.png
+#bisque.login.iplant.icon = /core/images/signin/signin_iplant.png
 
 #bisque.login.google.text = Google Login
 #bisque.login.google.url = /auth_service/openid_login_handler?openid_provider=https://www.google.com/accounts/o9/id
-#bisque.login.google.icon = /images/signin/signin_google.png
+#bisque.login.google.icon = /core/images/signin/signin_google.png
 
 #bisque.login.yahoo.text = Yahoo Login
 #bisque.login.yahoo.url = /auth_service/openid_login_handler?openid_provider=https://www.yahoo.com/
-#bisque.login.yahoo.icon = /images/signin/signin_yahoo.png
+#bisque.login.yahoo.icon = /core/images/signin/signin_yahoo.png
 
 bisque.login.local.text = Local Login
 bisque.login.local.url = /auth_service/login
-bisque.login.local.icon = /images/signin/signin_bisque.png
+bisque.login.local.icon = /core/images/signin/signin_bisque.png
 bisque.local.password = hashed
 
 # User traffic tracking
