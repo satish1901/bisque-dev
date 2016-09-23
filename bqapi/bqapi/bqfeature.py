@@ -8,7 +8,7 @@ import urllib
 import os
 from math import ceil
 import Queue
-from bqapi.comm import BQCommError
+#from bqapi.comm import BQCommError
 import numpy as np
 import logging
 import warnings
@@ -33,7 +33,7 @@ MAX_ATTEMPTS = 5
 FeatureResource = namedtuple('FeatureResource',['image','mask','gobject'])
 FeatureResource.__new__.__defaults__ = (None, None, None)
 
-class FeatureCommError(BQCommError):
+class FeatureError(Exception):
     """
         Feature Communication Exception
     """
@@ -103,7 +103,7 @@ class Feature(object):
             status = status[index[0]][0]
             hdf5.close()
             os.remove(hdf5.filename) #remove file from temp directory
-            raise FeatureCommError('%s:Error occured during feature calculations' % status, {})
+            raise FeatureError('%s:Error occured during feature calculations' % status)
         table = hdf5.root.values
         status_table = hdf5.root.status
         feature_vector = table[:]['feature']

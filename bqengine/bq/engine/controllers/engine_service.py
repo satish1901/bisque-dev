@@ -74,6 +74,7 @@ from bq.util.paths import bisque_path, config_path
 from bq.util.copylink import copy_link
 
 from .runtime_adapter import RuntimeAdapter
+from .pool import ProcessManager
 
 log = logging.getLogger('bq.engine_service')
 
@@ -252,7 +253,7 @@ class EngineServer(ServiceController):
             #log.debug('sys.argv: %s', sys.argv)
             #log.debug('os.getcwd: %s', os.getcwd())
 
-        self.mpool = multiprocessing.Pool(POOL_SIZE)
+        self.mpool = ProcessManager (POOL_SIZE)
 
         #self.module_resource = EngineResource()
         self.engines = { #'matlab': MatlabAdapter(),

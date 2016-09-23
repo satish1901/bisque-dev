@@ -105,7 +105,7 @@ class BQApiError(BQException):
 
 class BQCommError(BQException):
 
-    def __init__(self, status, headers, content=None):
+    def __init__(self, response):
         """
             @param: status - error code
             @param: headers - dictionary of response headers
@@ -114,12 +114,14 @@ class BQCommError(BQException):
         """
         #print 'Status: %s'%status
         #print 'Headers: %s'%headers
-        self.status = status
-        self.headers = headers
-        self.content = content
+        self.response = response
+
 
     def __str__(self):
-        return "BQCommError(status=%s, headers=%s)%s" % (self.status, self.headers, self.content)
+        return "BQCommError(%s, status=%s, req headers=%s)%s" % (self.response.url,
+                                                                 self.response.status_code,
+                                                                 self.response.request.headers,
+                                                                 self.content)
 
 
 class MexAuth(AuthBase):
@@ -265,10 +267,9 @@ class BQServer(Session):
         try:
             r.raise_for_status()
         except requests.exceptions.HTTPError:
-            if r.content:
-                raise BQCommError(r.status_code, r.headers, r.content)
-            else:
-                raise BQCommError(r.status_code, r.headers)
+            log.exception ("issue with %s", r)
+            raise BQCommError(r)
+
         if path:
             with open(path, 'wb') as f:
                 f.write(r.content)
@@ -305,7 +306,7 @@ class BQServer(Session):
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             log.debug("Error body: %s" % (r.content))
-            raise BQCommError(r.status_code, r.headers)
+            raise BQCommError(r)
 
         if path:
             with open(path, 'wb') as f:
@@ -573,12 +574,12 @@ class BQSession(object):
         if xml!=None:
             if not isinstance(xml, basestring):
                 xml = self.factory.to_string(xml)
-        
+
         fields = {}
         if filename is not None:
             filename = normalize_unicode(filename)
             fields['file'] = (filename, open(filename, 'rb'), 'application/octet-stream')
-        if xml is not None:            
+        if xml is not None:
             fields['file_resource'] = xml
         if fields:
             m = MultipartEncoder(fields = fields )
