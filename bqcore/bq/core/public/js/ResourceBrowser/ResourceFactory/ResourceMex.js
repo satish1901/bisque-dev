@@ -2,6 +2,8 @@
 Ext.define('Bisque.Resource.Mex', {
     extend : 'Bisque.Resource',
 
+    default_view: 'full',
+
     afterRenderFn : function(me) {
         if (!this.ttip) {
             this.ttip = Ext.create('Ext.tip.ToolTip', {
@@ -59,14 +61,18 @@ Ext.define('Bisque.Resource.Mex', {
             de = new Date(),
             elapsed=null, t=null, n=null, v=null, html=null;
 
-        ds.setISO8601(start);
-        de.setISO8601(finish);
-        elapsed = new DateDiff(de - ds);
+        if (start && finish) {
+            ds.setISO8601(start);
+            de.setISO8601(finish);
+            elapsed = new DateDiff(de - ds);
+            elapsed = Ext.String.format('({0})', elapsed.toString());
+        }
 
         html = Ext.String.format('<h2>{0}</h2>', this.resource.name);
         html += Ext.String.format('<p>Status: {0}</p>', this.resource.value);
-        html += Ext.String.format('<p>Started: {0}</p>', start);
-        html += Ext.String.format('<p>Finished: {0} ({1})</p>', finish, elapsed.toString());
+
+        if (start) html += Ext.String.format('<p>Started: {0}</p>', start);
+        if (finish) html += Ext.String.format('<p>Finished: {0} {1}</p>', finish, elapsed);
 
         // inputs
         html += '<h3>Inputs</h3>';
@@ -119,9 +125,17 @@ Ext.define('Bisque.Resource.Mex.Compact', {
     },
 
     updateContainer : function() {
-        var date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
-
+        this.date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
+        this.url_thumbnail = '/module_service/'+this.resource.name+'/thumbnail';
         this.add([{
+            xtype: 'component',
+            itemId: 'thumbnail',
+            autoEl: {
+                tag: 'div',
+                style: Ext.String.format("background-image: url('{0}');", this.url_thumbnail),
+            },
+            cls : 'thumbnail',
+        }, {
             xtype:'tbtext',
             cls : 'title',
             text : Ext.String.ellipsis(this.resource.name || 'undefined', 24),
@@ -132,7 +146,7 @@ Ext.define('Bisque.Resource.Mex.Compact', {
         }, {
             xtype:'tbtext',
             cls : 'date',
-            text : Ext.Date.format(date, BQ.Date.patterns.ISO8601Long),
+            text : Ext.Date.format(this.date, BQ.Date.patterns.ISO8601Long),
         }]);
         this.setLoading(false);
     },
@@ -234,8 +248,17 @@ Ext.define('Bisque.Resource.Mex.List', {
     },
 
     updateContainer : function() {
-        var date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
+        this.date = Ext.Date.parse(this.resource.ts, BQ.Date.patterns.BisqueTimestamp);
+        this.url_thumbnail = '/module_service/'+this.resource.name+'/thumbnail';
         this.add([{
+            xtype: 'component',
+            itemId: 'thumbnail',
+            autoEl: {
+                tag: 'div',
+                style: Ext.String.format("background-image: url('{0}');", this.url_thumbnail),
+            },
+            cls : 'thumbnail',
+        }, {
             xtype:'tbtext',
             text : this.resource.name,
             cls : 'title',
@@ -247,7 +270,7 @@ Ext.define('Bisque.Resource.Mex.List', {
             //cls : this.resource.status == 'FINISHED' ? 'lblModuleOwnerFin' : (this.resource.status == 'FAILED' ? 'lblModuleOwnerFail' : 'lblModuleOwner')
         }, {
             xtype:'tbtext',
-            text : Ext.Date.format(date, BQ.Date.patterns.ISO8601Long),
+            text : Ext.Date.format(this.date, BQ.Date.patterns.ISO8601Long),
             cls : 'lblModuleDate',
         }]);
 
@@ -261,11 +284,14 @@ Ext.define('Bisque.Resource.Mex.Grid', {
     getFields : function(cb) {
         var status = this.resource.status || 'unknown', resource = this.resource;
         var color = (status == 'FINISHED') ? '#1C1' : (status == 'FAILED') ? '#E11' : '#22F';
+        this.url_thumbnail = '/module_service/'+this.resource.name+'/thumbnail';
+        var thumb_html = Ext.String.format('<div class="thumbnail" style="background-image: url({0});" />', this.url_thumbnail);
 
-        return ['', resource.name || '', '<div style="color:' + color + '">' + Ext.String.capitalize(status.toLowerCase()) + '</div>' || '', resource.resource_type, resource.ts, this, {
+        return [thumb_html, resource.name || '', '<div style="color:' + color + '">' + Ext.String.capitalize(status.toLowerCase()) + '</div>' || '', resource.resource_type, resource.ts, this, {
             height : 21
         }];
     }
+
 });
 
 // Page view for a mex

@@ -495,11 +495,22 @@ Ext.define('BQ.selectors.Resource', {
     select: function(resource) {
         // if the input resource is a reference to an image with wrapped gobjects
         if (resource instanceof BQTag) {
-            this.gobs = resource.gobjects;
-            BQFactory.request( { uri: resource.value,
-                                 cb: callback(this, 'onfetched'),
-                                 errorcb: callback(this, 'onerror'),
-                               });
+            if (resource.gobjects && resource.gobjects.length>0) {
+                this._fetched_gobs = resource.gobjects;
+            } else {
+                BQFactory.request({ 
+                    uri: resource.uri,
+                    cb: callback(this, 'onfetched_gobs'),
+                    errorcb: callback(this, 'onerror'),
+                    uri_params: { view:'deep' },
+                });
+            }
+
+            BQFactory.request({ 
+                uri: resource.value,
+                cb: callback(this, 'onfetched'),
+                errorcb: callback(this, 'onerror'),
+            });
         } else if (typeof resource != 'string')
             this.onselected(resource);
         else
@@ -510,11 +521,20 @@ Ext.define('BQ.selectors.Resource', {
     },
 
     onfetched: function(R) {
-        R.gobjects = this.gobs;
-        this.onselected(R);
+        this._fetched_resource = R;
+        if (this._fetched_gobs) {
+            this._fetched_resource.gobjects = this._fetched_gobs;
+            this.onselected(this._fetched_resource);
+        }
     },
 
-
+    onfetched_gobs: function(R) {
+        this._fetched_gobs = R.gobjects;
+        if (this._fetched_resource) {
+            this._fetched_resource.gobjects = this._fetched_gobs;
+            this.onselected(this._fetched_resource);
+        }
+    },
 
     onselected: function(R) {
         this.selected_resource = R;

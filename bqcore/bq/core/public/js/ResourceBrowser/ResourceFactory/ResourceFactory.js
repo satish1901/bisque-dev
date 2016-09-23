@@ -99,6 +99,7 @@ Ext.define('Bisque.Resource', {
     operationBarClass: 'Bisque.ResourceBrowser.OperationBar',
 
     componentCls: 'bq_resource',
+    default_view: 'short',
 
     constructor : function(config)
     {
