@@ -46,10 +46,13 @@ function ModuleService(module_URI, conf) {
         this.setModule( BQFactory.parseBQDocument(module_definition_xml) );
     } else {
         // fetch it otherwise
-        BQFactory.request({ uri: this.URI+'/definition',
-                            cb: callback(this, 'setModule'),
-                            errorcb: callback(this, 'onerror'),
-                            cache: false });
+        BQFactory.request({ 
+            uri: this.URI+'/definition',
+            cb: callback(this, 'setModule'),
+            errorcb: callback(this, 'onerror'),
+            cache: false,
+            uri_params : { view: 'deep' },
+        });
     }
 }
 
@@ -82,7 +85,7 @@ ModuleService.prototype.checkMexStatus = function (mex) {
             //this.conf.ondone(mex);
             BQFactory.request ({
                 uri : mex.uri,
-                uri_params : { view: 'full' },
+                uri_params : { view: 'full' }, // we request full to see the sub mexs if present
                 cb : function(doc) {
                     me.conf.ondone(doc);
                 },
@@ -102,7 +105,7 @@ ModuleService.prototype.checkMexStatus = function (mex) {
 ModuleService.prototype.requestMexStatus = function(mex_uri) {
     BQFactory.request ({
         uri : mex_uri,
-        //uri_params : { view: 'full' },
+        uri_params : { view: 'full' }, // we request full to see the sub mexs if present
         cb : callback(this, this.checkMexStatus),
         errorcb: callback(this, this.onerror),
         cache : false,

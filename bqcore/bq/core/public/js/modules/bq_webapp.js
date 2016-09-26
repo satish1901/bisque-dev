@@ -709,6 +709,7 @@ BQWebApp.prototype.run = function () {
 
     this.clearUI_outputs_all();
     this.updateResultsVisibility(false);
+    this.mex = undefined;
 
     var button_run = document.getElementById("webapp_run_button");
     button_run.disabled=true;

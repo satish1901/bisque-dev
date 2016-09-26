@@ -337,6 +337,20 @@ class FormatsOperation(BaseOperation):
                 etree.SubElement(codec, 'tag', name='bits_per_sample_minmax',   value='%s,%s'%f.bits_per_sample_min_max )
         return token.setXml(etree.tostring(xml))
 
+
+class ViewOperation(BaseOperation):
+    '''View operation is only needed to ignore view=deep in the request if given'''
+    name = 'view'
+
+    def __str__(self):
+        return 'view: only needed to ignore view=deep in the request if given'
+
+    def dryrun(self, token, arg):
+        return token
+
+    def action(self, token, arg):
+        return token
+
 # class InfoOperation(BaseOperation):
 #     '''Provide image information'''
 #     name = 'operations'
@@ -2252,6 +2266,7 @@ class ImageServer(object):
         self.base_url = "image_service"
 
         self.operations = {
+            'view'         : ViewOperation(self),
             'operations'   : OperationsOperation(self),
             'formats'      : FormatsOperation(self),
             #'info'         : InfoOperation(self),
