@@ -651,13 +651,12 @@ QuadTree.prototype.collectObjectsInRegion = function(frust, node){
     var z = this.renderer.viewer.tiles.cur_z;
     var t = this.renderer.viewer.tiles.cur_t;
 
-    var collectSprite = function(node){
-        if(node.leaves.length > 0){
-            for(var i = 0; i < node.leaves.length; i++){
-                var leaf = node.leaves[i];
-                if(leaf.collected || !leaf.isVisible(z, t)) continue;
-                if(me.hasOverlap(frust, leaf.bbox)){
-
+    var collectSprite = function(node) {
+        var leaf = null;
+        if (node.leaves.length > 0) {
+            for (var i=0; (leaf=node.leaves[i]); ++i) {
+                if (leaf.collected || !leaf.isVisible(z, t)) continue;
+                if (me.hasOverlap(frust, leaf.bbox)){
                     collection.push(leaf);
                     leaf.collected = true;
                 }
@@ -678,9 +677,10 @@ QuadTree.prototype.collectObjectsInRegion = function(frust, node){
         else
             return ab - aa;
     });
-    collection.forEach(function(e){
+    var e = null;
+    for (var i=0; (e=collection[i]); ++i) {
         e.collected = false;
-    });
+    }
     return collection;
 };
 
