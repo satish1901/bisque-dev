@@ -1014,8 +1014,10 @@ PanoJS.prototype.resolveCoordinates = function(e) {
   if (this.maximized)
     return { 'x' : e.clientX, 'y' : e.clientY };
 
-  var x = e.layerX || (e.pageX || (e.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft))) - this.left;
-  var y = e.layerY || (e.pageY || (e.clientY + (document.documentElement.scrollTop || document.body.scrollTop))) - this.top;
+  var bbox = this.viewer.getBoundingClientRect(),
+      x = Math.round(e.pageX - bbox.left),
+      y = Math.round(e.pageY - bbox.top);
+
   return {
     'x' : x,
     'y' : y,
@@ -1144,6 +1146,7 @@ PanoJS.prototype.mouseReleasedHandler = function(e) {
 
 PanoJS.prototype.mouseMovedHandler = function(e) {
   e = e ? e : window.event;
+  this.blockPropagation(e);
 
   // only move on left-click
   if (e.button < 2) {
@@ -1157,6 +1160,8 @@ PanoJS.prototype.mouseMovedHandler = function(e) {
 
 PanoJS.prototype.mouseMoveHandler = function(e) {
     e = e ? e : window.event;
+    this.blockPropagation(e);
+
     var pt = this.resolveCoordinates(e);
     pt = this.toImageFromViewer({x: pt.x - this.x, y: pt.y - this.y, event: e});
     this.notifyCursorMoved(pt);
