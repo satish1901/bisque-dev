@@ -153,7 +153,9 @@ else:
 def config2url(conf):
     "Make entries read from config with corrent encoding.. check for things that look like path urls"
     if conf.startswith('file://'):
-        return localpath2url( posixpath.normpath (urlparse.urlparse(conf).path))
+        #return localpath2url( posixpath.normpath (urlparse.urlparse(conf).path))
+        # Above breaks for dotted paths e.g. ./data .. simply returns /data
+        return localpath2url( posixpath.normpath (conf[7:]))
     elif os.name == 'nt':
         return localpath2url(conf)
     else:

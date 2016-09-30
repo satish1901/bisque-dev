@@ -625,6 +625,9 @@ class CommandRunner(BaseRunner):
         command = " ".join(process['command_line'])
         retcode = process['return_code']
         msg = "%s: returned (non-zero) %s" %(command, retcode)
+        exc  = process.get ('with_exception', None)
+        if exc is not None:
+            msg = "%s: %s" % (msg, repr(exc))
         log.error(msg)
         # update process mex
         if self.session is None:

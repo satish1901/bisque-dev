@@ -109,7 +109,7 @@ bisque.paths.jslocation = ./bqcore
 # Store paths all uploaded objects (into a store resource)
 #bisque.blob_service.store_paths = true
 # Use subtransactions for storing paths (must  be true ..   sqlite must use false but will fail)
-bisque.blob_service.subtransaction = true
+bisque.blob_service.subtransaction = false
 
 # Ordered list of stores .. path is created based on template
 # bisque.blob_service.stores = irods1,s3,local

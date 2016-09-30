@@ -24,7 +24,7 @@ setup(
                       "mahotas",
                       "tables",
                       "numexpr",
-                      "cython",
+#                      "cython",
                       "libtiff==0.4.0"
                       ],
     packages=find_packages(),

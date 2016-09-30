@@ -1,8 +1,8 @@
 #bqfeatures requirments
---index-url==http://biodev.ece.ucsb.edu/py/bisque/dev/+simple
+--index-url==https://biodev.ece.ucsb.edu/py/bisque/dev/+simple
 #numpy==1.9.1 installed in main bisque
-Cython==0.20.1
-numexpr==2.4 #needs be install after numpy and before tables
+#Cython==0.20.1
+numexpr==2.6 #needs be install after numpy and before tables
 mahotas==1.2.1
 libtiff==0.4.0
 scikit-image==0.10.0
