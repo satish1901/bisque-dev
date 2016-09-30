@@ -794,6 +794,15 @@ table.x-form-color {
     color: #666666;
 }
 
+.viewer_tooltip p.tags.warning {
+    color: #FFFF00;
+}
+
+.viewer_tooltip p.tags.error {
+    color: #FF0000;
+    font-size: 120%;
+}
+
 /*******************************************************************************
  edit menu
 *******************************************************************************/
