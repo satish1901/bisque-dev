@@ -1363,6 +1363,11 @@ BQ.annotations.status = {
     validated: 'validated',
 };
 
+BQ.annotations.types_ignore_user_presentation = {
+    color: 'color',
+    functional: 'functional',
+};
+
 //-----------------------------------------------------------------------------
 // BQGObject
 //-----------------------------------------------------------------------------
