@@ -31,8 +31,10 @@ chmod-socket = 666
 #number of worker processes to run
 processes = 4
 
-#number of threads per worker process
-threads = 1
+#enable python threads
+enable-threads = true
+#number of uwsgi threads per worker process
+threads=1
 
 fastrouter_keys =
 fastrouter_ip =

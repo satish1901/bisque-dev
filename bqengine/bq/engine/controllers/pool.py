@@ -30,11 +30,33 @@ def which(program):
 
 
 def worker(queue):
-    for params in iter(queue.get, None):
-        rundir = params['rundir']
-        env    = params['env']
+    """Worker waits forever command requests and executes one command at a time
+
+    @param queue: is a queue of command requests
+
+    requests  = {
+      command_line : ['processs', 'arg1', 'arg1']
+      rundir       : 'directory to run in ',
+      logfile      :  'file to  write stderr and stdout',
+      on_success   : callback with (request) when success,
+      on_fail      : callback with (request) when fail,
+      env          : dict of environment
+    }
+
+    This routine will add the following fields:
+    {
+       return_code : return code of the command
+       with_exception : an exception when exited with excepttion
+    }
+    """
+    for request in iter(queue.get, None):
+        rundir = request['rundir']
+        env    = request['env']
+        callme = request.get ('on_fail') # Default to fail
+        request.setdefault('return_code',1)
+
         current_dir = os.getcwd()
-        command_line = params['command_line']
+        command_line = request['command_line']
         os.chdir(rundir)
         if os.name=='nt':
             exe = which(command_line[0])
@@ -49,22 +71,21 @@ def worker(queue):
         os.chdir(current_dir)
         try:
             retcode = subprocess.call(command_line,
-                                      stdout = open(params['logfile'], 'a'),
+                                      stdout = open(request['logfile'], 'a'),
                                       stderr = subprocess.STDOUT,
                                       shell  = (os.name == "nt"),
                                       cwd    = rundir,
                                       env    = env,)
-            params ['return_code'] =retcode
-            callme = 'on_success'
-            if retcode != 0:
-                callme = 'on_fail'
-            callme = params.get(callme)
-            if callable(callme):
-                callme (params)
+            request ['return_code'] =retcode
+            if retcode == 0:
+                callme = request.get('on_success')
         except Exception, e:
-            params['with_exception'] = e
-            if callable(params.get ('on_fail')):
-                params['on_fail'] (params)
+            request['with_exception'] = e
+        finally:
+            if callable(callme):
+                callme(request)
+
+
 
 
 class ProcessManager(object):
@@ -77,6 +98,12 @@ class ProcessManager(object):
             t.start()
 
     def schedule  (self, process, success=None, fail=None):
+        """Schedule  a process to be run when a worker thread is available
+
+        @param process: a request see "worker"
+        @param success:  a callable to call on success
+        @param fail:  a callable to call on failure
+        """
         process.setdefault ('on_success', success)
         process.setdefault ('on_fail', fail)
         self.pool.put_nowait (process)
