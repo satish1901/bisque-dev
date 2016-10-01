@@ -60,14 +60,18 @@ Ext.define('BQ.viewer.MenuButton', {
         if (!this.menu)
             this.createMenu();
         var m = this.menu;
-        if (m.isVisible())
+        if (m.isVisible() || !this.needsShow())
             m.hide();
         else
             m.show();
     },
 
-    // methods to override
+    // override if sometimes on click the menu may not need to show
+    needsShow: function() {
+        return true;
+    },
 
+    // methods to override
     onPreferences: function() {
         //this.auto_hide = BQ.Preferences.get('user','Viewer/gobjects_editor_auto_hide', true);
     },
@@ -117,6 +121,12 @@ Ext.define('BQ.editor.GraphicalMenu', {
         this.fireEvent( 'selected', this.primitive, this.semantic, this );
     },
 
+    needsShow: function() {
+        if (this.no_semantic_types === true && this.num_buttons_visible<=1)
+            return false;
+        return true;
+    },
+
     createMenu: function() {
         if (this.menu) return;
         var buttons = [],
@@ -124,7 +134,8 @@ Ext.define('BQ.editor.GraphicalMenu', {
             offset = el.getY(),
             h = 90,
             btn = null;
-
+        
+        this.num_buttons_visible = 0;
         for (var p in BQGObject.primitives) {
             buttons.push({
                 xtype: 'button',
@@ -142,6 +153,8 @@ Ext.define('BQ.editor.GraphicalMenu', {
             });
             if (!btn && (p in this.editprimitives))
                 btn = buttons.slice(-1).pop();
+            if (p in this.editprimitives)
+                ++this.num_buttons_visible;
         }
         if (btn) {
             btn.pressed = true;
@@ -208,6 +221,7 @@ Ext.define('BQ.editor.GraphicalMenu', {
             shadow: false,
             closable: true,
             closeAction: 'hide',
+            showDelay: 10000,
             layout: {
                 type: 'vbox',
                 align: 'stretch',
