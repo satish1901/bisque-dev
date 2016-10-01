@@ -103,24 +103,25 @@ def process_options(options):
     else:
         installing = 'server'
 
-    if installing not in ('engine', 'server', 'features'):
+    if installing not in ('engine', 'server', 'features', 'all'):
         installing =  getanswer("install [server, engine or features", "engine",
 """server installs component to run a basic bisque server
 engine will provide just enough components to run a module engine,
 all will install everything including the feature service""")
 
-    if installing not in ('engine', 'server', 'features'):
+    if installing not in ('engine', 'server', 'features', 'all'):
         print "Must choose 'engine', 'server', or 'features'"
         sys.exit(1)
 
     preinstalls = PREINSTALLS.get (installing, [])
 
     for package in preinstalls:
-        sh ("pip install -i http://biodev.ece.ucsb.edu/py/bisque/dev/+simple %s" % package)
+        sh ("pip install -i https://biodev.ece.ucsb.edu/py/bisque/dev/+simple %s" % package)
 
     subdirs  = dict (engine = engine_subdirs,
                      server = server_subdirs,
-                     features = feature_subdirs) [ installing]
+                     features = feature_subdirs,
+                     all = all_packages) [ installing]
     print "installing all components from  %s" % subdirs
     options.subdirs = subdirs
     options.installing = installing
@@ -159,7 +160,7 @@ def setup_developer(options):
     for d in options.subdirs:
         app_dir = path('.') / d
         if os.path.exists(app_dir):
-	    sh('pip install -i http://biodev.ece.ucsb.edu/py/bisque/dev/+simple -e %s' % app_dir)
+	    sh('pip install -i https://biodev.ece.ucsb.edu/py/bisque/dev/+simple -e %s' % app_dir)
             #os.chdir(app_dir)
             #sh('python setup.py develop')
             #os.chdir(top)
