@@ -2258,11 +2258,12 @@ class ImageServer(object):
 
         cls.writable_formats = cls.converters.converters(readable=False, writable=True, multipage=False)
 
-    def __init__(self, work_dir):
+    def __init__(self, work_dir, run_dir):
         '''Start an image server, using local dir imagedir,
         and loading extensions as methods'''
         #super(ImageServer, self).__init__(image_dir, server_url)
         self.workdir = work_dir
+        self.rundir = run_dir
         self.base_url = "image_service"
 
         self.operations = {
@@ -2495,8 +2496,8 @@ class ImageServer(object):
         workpath = os.path.realpath(self.workdir)
         if image_id and not path.startswith (workpath):
             path = self.initialWorkPath(image_id, user_name)
-        # keep paths relative to workdir to reduce file name size
-        path = os.path.relpath(path, workpath)
+        # keep paths relative to running dir to reduce file name size
+        path = os.path.relpath(path, self.rundir)
         # make sure that the path directory exists
         _mkdir( os.path.dirname(path) )
         return path
