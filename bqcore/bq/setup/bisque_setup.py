@@ -2512,7 +2512,8 @@ def update_globals (options, args):
         print "Package installation"
         # This is a system install
         DIRS['share']   = "/usr/share/bisque"
-        DIRS['run']     = '/var/run/bisque'
+        # Was /var/run/bisque but /var/run -> symlinked /run hiccuped in imgsrv ../../../var/run/bisque
+        DIRS['run']     = '/run/bisque'
         DIRS['config']  = DIRS['config'] or "/etc/bisque"
         log.warn ("Will install new python packages into %s", DIRS['packages'])
         DIRS['jslocation'] = DIRS['packages']
