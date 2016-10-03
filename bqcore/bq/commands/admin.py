@@ -264,35 +264,22 @@ class deploy(object):
                 #print "Exception: ", e
                 pass
 
-        # Link all core dirs
-        # coredir = os.path.join(rootdir, 'bqcore/bq/core/public/').replace('/', os.sep)
+        # # Link all core dirs
+        # os.chdir(self.public_dir)
+        # currdir = os.getcwd()
+        # coredir = 'core' #os.path.join(self.public_dir, 'core').replace('/', os.sep)
+        # print "COREDIR", coredir
         # import glob
-        # for l in glob.glob(os.path.join(coredir, '*')):
-        #     dest = os.path.join(currdir, os.path.basename(l))
+        # for l in os.listdir(coredir):
+        #     src =  os.path.join(coredir, l)
+        #     dest = os.path.join(currdir, l)
         #     if os.path.exists (dest):
         #         os.unlink (dest)
-        #     relpath = os.path.relpath(l, currdir)
-        #     #print "%s -> %s " % (relpath, dest)
-        #     copy_symlink (relpath, dest)
-        # # finish
-
-
-        # Link all core dirs
-        os.chdir(self.public_dir)
-        currdir = os.getcwd()
-        coredir = 'core' #os.path.join(self.public_dir, 'core').replace('/', os.sep)
-        print "COREDIR", coredir
-        import glob
-        for l in os.listdir(coredir):
-            src =  os.path.join(coredir, l)
-            dest = os.path.join(currdir, l)
-            if os.path.exists (dest):
-                os.unlink (dest)
-            if os.path.isdir (dest):
-                shutil.rmtree(dest)
-            print "CORE", src, dest
-            copy_symlink (src, dest)
-        os.chdir (rootdir)
+        #     if os.path.isdir (dest):
+        #         shutil.rmtree(dest)
+        #     print "CORE", src, dest
+        #     copy_symlink (src, dest)
+        # os.chdir (rootdir)
 
         # regenerate all_js and all_css
         print '\nGenerating packaged JS and CSS files\n'
@@ -305,7 +292,7 @@ class deploy(object):
         all_js_combined = os.path.join(publicdir, 'core/js/all_js.js')
         all_js_public = os.path.join(publicdir, 'js/all_js.js')
 
-        if os.name != 'nt': # under windows the whole public is removed at the beginning 
+        if os.name != 'nt': # under windows the whole public is removed at the beginning
             remove_safe(all_css_public)
             remove_safe(all_js_public)
 
@@ -315,10 +302,10 @@ class deploy(object):
         generate_css_files(root=rootdir, public=publicdir)
         generate_js_files(root=rootdir, public=publicdir)
 
-        if not os.path.exists (all_css_public):
-            copy_symlink (all_css_combined, all_css_public)
-        if not os.path.exists (all_js_public):
-            copy_symlink (all_js_combined, all_js_public)
+        #if not os.path.exists (all_css_public):
+        #    copy_symlink (all_css_combined, all_css_public)
+        #if not os.path.exists (all_js_public):
+        #    copy_symlink (all_js_combined, all_js_public)
 
 
 class preferences (object):
