@@ -421,7 +421,7 @@ volumeObject.prototype.initMaterials = function(){
 		vertex : {
             ctor : UrlShader,
             config : {
-				url : "/js/volume/shaders/rayCast.vs",
+				url : "/core/js/volume/shaders/rayCast.vs",
                 loader: this.sceneVolume,
                 onloaded: function(){
                     me.shaderManager.updateMaterials();

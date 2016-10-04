@@ -435,7 +435,7 @@ transfer
 }
 
 .bq-volume-playback .x-slider-horz .x-slider-thumb{
-    background-image: url(/js/volume/icons/movieSlider-thumb.svg) !important;
+    background-image: url(/core/js/volume/icons/movieSlider-thumb.svg) !important;
     background: no-repeat;
     height: 14px;
     width: 18px;
@@ -444,7 +444,7 @@ transfer
 }
 
 .bq-volume-playback .x-slider-horz .x-slider-thumb-over{
-    background-image: url(/js/volume/icons/movieSlider-thumb.svg) !important;
+    background-image: url(/core/js/volume/icons/movieSlider-thumb.svg) !important;
     background: no-repeat 0px -14px;
     height: 14px;
     width: 18px;
@@ -453,19 +453,19 @@ transfer
 }
 
 .bq-volume-playback .x-slider-horz{
-    background-image: url(/js/volume/icons/movieSlider-bg.svg) !important;
+    background-image: url(/core/js/volume/icons/movieSlider-bg.svg) !important;
     background: no-repeat left -12px;
     height: 12px;
 }
 
 .bq-volume-playback .x-slider-horz .x-slider-inner{
-    background-image: url(/js/volume/icons/movieSlider-bg.svg) !important;
+    background-image: url(/core/js/volume/icons/movieSlider-bg.svg) !important;
     background: 0px -0px;
     height: 12px;
 }
 
 .bq-volume-playback .x-slider-horz .x-slider-end{
-    background-image: url(/js/volume/icons/movieSlider-bg.svg) !important;
+    background-image: url(/core/js/volume/icons/movieSlider-bg.svg) !important;
     background: no-repeat right -24px;
     height: 12px;
 }

@@ -1,16 +1,9 @@
-# converter_imaris.py
-# Author: Dmitry Fedorov
-# Center for BioImage Informatics, University California, Santa Barbara
-from __future__ import with_statement
 
 """ Imaris command line converter
 """
 
-__module__    = "converter_imaris"
 __author__    = "Dmitry Fedorov"
 __version__   = "0.1"
-__revision__  = "$Rev$"
-__date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
 import os
@@ -24,9 +17,13 @@ import ConfigParser
 from bq.util.compat import OrderedDict
 import bq.util.io_misc as misc
 
-from .process_token import ProcessToken
-from .converter_base import ConverterBase, Format
+# from .process_token import ProcessToken
+# from .converter_base import ConverterBase, Format
+# from .converter_imgcnv import ConverterImgcnv
+from bq.image_service.controllers.process_token import ProcessToken
+from bq.image_service.controllers.converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
+
 
 import logging
 log = logging.getLogger('bq.image_service.converter_imaris')

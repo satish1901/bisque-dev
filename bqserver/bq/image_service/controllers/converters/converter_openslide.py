@@ -1,22 +1,14 @@
-# converter_openslide.py
-# Author: Dmitry Fedorov
-# Center for BioImage Informatics, University California, Santa Barbara
-#
-# This converter will not support the full API for now since it would be really inefficient
-# trying to create ome-tiff out of pyramidal tiled images, instead it will only provide
-# tile and thumbnail access, this will work perfectly for the UI and module access
-# if tiles are used, better integration will be looked at later if need arises
-#
-from __future__ import with_statement
 
-""" Imaris command line converter
+""" Openslide python deep-zoom based driver
+
+This converter will not support the full API for now since it would be really inefficient
+trying to create ome-tiff out of pyramidal tiled images, instead it will only provide
+tile and thumbnail access, this will work perfectly for the UI and module access
+if tiles are used, better integration will be looked at later if need arises
 """
 
-__module__    = "converter_openslide"
 __author__    = "Dmitry Fedorov"
 __version__   = "0.1"
-__revision__  = "$Rev$"
-__date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
 import os.path
@@ -32,9 +24,13 @@ from bq.util.compat import OrderedDict
 from bq.util.locks import Locks
 import bq.util.io_misc as misc
 
-from .imgsrv import min_level_size
-from .process_token import ProcessToken
-from .converter_base import ConverterBase, Format
+#from .imgsrv import min_level_size
+#from .process_token import ProcessToken
+#from .converter_base import ConverterBase, Format
+#from .converter_imgcnv import ConverterImgcnv
+from bq.image_service.controllers.imgsrv import min_level_size
+from bq.image_service.controllers.process_token import ProcessToken
+from bq.image_service.controllers.converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
 
 try:
@@ -84,7 +80,7 @@ class ConverterOpenSlide(ConverterBase):
         v['full'] = openslide.__version__
 
         if 'full' in v:
-            d = [int(s) for s in v['full'].split('.', 2)]
+            d = [int(s) for s in v['full'].split('.')]
             if len(d)>2:
                 v['numeric'] = d
                 v['major']   = d[0]
@@ -314,8 +310,17 @@ class ConverterOpenSlide(ConverterBase):
         return None
 
     @classmethod
-    def tile(cls, token, ofnm, level, x, y, sz, **kw):
-        '''extract Level,X,Y tile from input filename into output in OME-TIFF format'''
+    def tile(cls, token, ofnm, level=None, x=None, y=None, sz=None, **kw):
+        '''extract tile from image
+        default interface:
+            Level,X,Y tile from input filename into output in TIFF format
+        alternative interface, not required to support and may return None in this case
+        scale=scale, x1=x1, y1=y1, x2=x2, y2=y2, arbitrary_size=False '''
+         
+        # open slide driver does not support arbitrary size interface
+        if kw.get('arbitrary_size', False) == True or level is None or sz is None:
+            return None
+
         ifnm = token.first_input_file()
         series = token.series
         if not cls.supported(token):

@@ -1,16 +1,10 @@
-# converter_base.py
-# Author: Dmitry Fedorov
-# Center for BioImage Informatics, University California, Santa Barbara
-from __future__ import with_statement
-
 """ Base class defining command line converter API
 """
 
-__module__    = "converter_base"
+from __future__ import with_statement
+
 __author__    = "Dmitry Fedorov"
 __version__   = "0.1"
-__revision__  = "$Rev$"
-__date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
 import os.path
@@ -301,8 +295,12 @@ class ConverterBase(object):
         return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'OmeTiff', '-series', '%s'%series, 'z', '%s'%z, 't', '%s'%t] )
 
     @classmethod
-    def tile(cls, token, ofnm, level, x, y, sz, **kw):
-        '''extract tile Level,X,Y tile from input filename into output in TIFF format'''
+    def tile(cls, token, ofnm, level=None, x=None, y=None, sz=None, **kw):
+        '''extract tile from image
+        default interface:
+            Level,X,Y tile from input filename into output in TIFF format
+        alternative interface, not required to support and may return None in this case
+        scale=scale, x1=x1, y1=y1, x2=x2, y2=y2, arbitrary_size=False '''
         ifnm = token.first_input_file()
         series = token.series
         return cls.run(ifnm, ofnm, ['-input', ifnm, '-output', ofnm, '-format', 'tiff', '-series', '%s'%series, '-tile'] )
