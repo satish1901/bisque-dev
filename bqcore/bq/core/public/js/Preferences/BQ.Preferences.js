@@ -1,7 +1,7 @@
-/* 
+/*
  *  BQ.Preference
  *
- *  
+ *
  *
  */
 Ext.define('BQ.Preferences', {
@@ -19,14 +19,14 @@ Ext.define('BQ.Preferences', {
     resourceDict: {},
     silence: false,
     resource_uniq: undefined, //if the preference has a resource set
-    
+
     level : {
         'system'  : '/preference',
         'user'    : '/preference/user',
         //'resource': '/preference/user',
     },
     preferenceXML : {}, //list of all preferences loaded
-    
+
     // load system preferences
     constructor : function() {
         this.addEvents({
@@ -38,11 +38,11 @@ Ext.define('BQ.Preferences', {
         this.mixins.observable.constructor.call(this);
         this.load('system');
     },
-    
+
     setSilence: function(bool) {
         this.silence = bool;
     },
-    
+
     load : function(lvl, path, cb) {
         var me = this;
         var path = (!path) ? '' : '/'+path;
@@ -69,7 +69,7 @@ Ext.define('BQ.Preferences', {
             });
         }
     },
-    
+
     update: function(lvl, path, body, cb, errorcb) {
         var me = this;
         var path = (!path) ? '' : '/'+path;
@@ -96,7 +96,7 @@ Ext.define('BQ.Preferences', {
             });
         }
     },
-    
+
     remove: function(lvl, path, cb, errorcb) {
         var me = this;
         var path = (!path) ? '' : '/'+path;
@@ -118,8 +118,8 @@ Ext.define('BQ.Preferences', {
             });
         }
     },
-    
-    
+
+
     parseValueType: function parseValueType(v, t) { //taken from bqapi
         try {
             if (t && typeof v === 'string' && t == 'number')
@@ -131,7 +131,7 @@ Ext.define('BQ.Preferences', {
         }
         return v;
     },
-    
+
 
     toDict: function(tagElements) {
         var pref = {};
@@ -144,25 +144,25 @@ Ext.define('BQ.Preferences', {
                     conv(childList, node[name]);
                 } else { //child node
                     var value = tagList[t].getAttribute('value');
-                    var type = tagList[t].getAttribute('type'); //cast if type is boolean or number                    
+                    var type = tagList[t].getAttribute('type'); //cast if type is boolean or number
                     node[name] = parseValueType(value, type);
                 }
             }
             return node;
         };
-        
+
         //check if its a preference document
         //var tagElements = BQ.util.xpath_nodes(dom, 'preference/tag');
         return conv(tagElements, pref);
     },
-    
-    
+
+
     /*
     * get
     *
-    * @param: lvl - 
+    * @param: lvl -
     * @param: path -
-    * @param: value - 
+    * @param: value -
     */
     get : function(lvl, path, defaultValue) {
         var pattern = /\s*\/\s*/;
@@ -179,30 +179,30 @@ Ext.define('BQ.Preferences', {
             return nodes.length ? this.toDict(nodes): defaultValue;
         }
     },
-    
+
     /*
     * set
     *
-    * @param: lvl - 
-    * @param: path - 
-    * @param: value - xml string 
+    * @param: lvl -
+    * @param: path -
+    * @param: value - xml string
     *
     * if no value is set to undefined or not set the value is removed from the resource document
     */
     set : function(lvl, path, value, cb, errorcb) {
-        if (value===undefined) { //forces the removal 
+        if (value===undefined) { //forces the removal
             BQ.Preferences.remove(lvl, path, cb, errorcb);
         } else {
             BQ.Preferences.update(lvl, path, value, cb, errorcb);
         }
     },
-    
+
     /*
      * Listens for an update and calls the other updates accordingly
      *
      *
      */
     onPreference: function() {
-        
+
     },
 });

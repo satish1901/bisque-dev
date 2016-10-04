@@ -76,21 +76,6 @@ Ext.define('Bisque.Resource.Dream3d_pipeline.Page', {
     onResourceRender : function() {
         this.setLoading(true);
 
-        var graph = {
-            xtype : 'bq_graphviewer_panel',
-            itemId: 'graph',
-            title : 'Provenance',
-            resource: this.resource,
-            resourceType: 'graph_url',
-            rankdir: 'LR',
-            listeners:{
-                'context' : function(res, div, graph) {
-                    var node = graph.g.node(res);
-                    window.open(BQ.Server.url(node.card.getUrl(res)));
-                },
-            },
-        };
-
         var resourceTagger = {
             xtype: 'bq-tagger',
             resource : this.resource,
@@ -114,8 +99,7 @@ Ext.define('Bisque.Resource.Dream3d_pipeline.Page', {
                 split : true,
                 width : 400,
                 plain : true,
-                //items : [resourceTagger, graph]
-                items : [resourceTagger]
+                items : [resourceTagger],
             }, {
                 xtype: 'bq_pipelineviewer_panel',
                 itemId: 'pipelineViewer',
