@@ -1828,7 +1828,7 @@ def install_dependencies (params):
     public = to_sys_path(os.path.join (DIRS['jslocation'], 'bq/core/public'))
     extjs =  os.path.join (public, "extjs")
     uncompress_extjs (extzip, public, extjs)
-    for skip in ('docs', 'examples', 'builds'):
+    for skip in ('docs', 'examples', 'builds', '.sencha', 'cmd', 'locale', 'packages', 'plugins', 'src', 'welcome'):
         if os.path.exists (os.path.join(extjs, skip)):
             shutil.rmtree (os.path.join(extjs, skip))
 
