@@ -221,6 +221,7 @@ class ResourceFactory(object):
             if tag == 'user':
                 node.user = node
 
+        # pylint: disable=no-member
         log.debug  ('factory.new %s -> %s document(%s)' , xmlname, node, node.document_id)
         return node
 
