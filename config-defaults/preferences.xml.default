@@ -78,6 +78,17 @@
             </tag>
         </tag>
 
+        <tag name="ResourceViewer">
+            <tag name="Show Provenance" value="false" type="boolean">
+                <template>
+                    <tag name="Type" value="Boolean"/>
+                    <tag name="defaultValue" value="false"/>
+                    <tag name="allowBlank" value="false" type="boolean" />
+                    <tag name="Editable" value="true" type="boolean" />
+                </template>
+            </tag>
+        </tag>
+        
         <tag name="Viewer">
             <tag type="boolean" name="autoUpdate" value="true">
                 <template>

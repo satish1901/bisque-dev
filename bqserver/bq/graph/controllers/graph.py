@@ -72,7 +72,7 @@ def _summarize_nodes(query_node, nodes, edges, members, summ_by_types=False):
     for key in partitions:
         # create summary node
         if len(partitions[key]) > 1:
-            sum_node = SummaryNode(type='multi %s' % key[0], node_ids=[node[0] for node in partitions[key]], value='%s@%s' % (query_node[0], summarize_id))
+            sum_node = SummaryNode(type='multi %s' % key[0], node_ids=[node[0] for node in partitions[key]], value='%s/%s' % (query_node[0], summarize_id))
             summarize_id += 1
         else:
             # singleton => keep node itself
@@ -153,23 +153,26 @@ class graphController(ServiceController):
         path = list(path)
 
         res_uniq = path[0]
-        extra = path[1] if len(path)>1 else None   # could be 'auth', 'value', or 'tag'
+        query = path[0]
+        # if path is of format "<resource_uniq>/<multi_node_id>", return the contents of the multi node as a "virtual" dataset
+        if len(path) > 1 and path[1].isdigit():            
+            multi_node_id = "%s/%s" % (path[0], path[1])
+            res_uniq = "%s-%s" % (path[0], path[1])
+        else:
+            multi_node_id = None
+        extra = path[-1] if len(path)>1 and not path[-1].isdigit() else None   # could be 'auth', 'value', or 'tag'
 
         view = kw.pop('view', 'short')
         offset = kw.pop('offset', 0)
         limit = kw.pop('limit', 1000)
         tag_query = kw.pop('tag_query', None)
         tag_order = kw.pop('tag_order', None)
-        extract = kw.pop('extract', None)
-        
-        # if query is of format "<resource_uniq>@<multi_node_id>", return the contents of the multi node as a "virtual" dataset
-        toks = res_uniq.split('@')        
-        multi_node_id = res_uniq if len(toks)==2 else None
-        query = toks[0]
+        extract = kw.pop('extract', None)        
+        request_url = request.url
         
         if extra == 'auth' or extra == 'tag':
             # no sharing etc and no tags
-            response = etree.Element('resource', uri=request.url)
+            response = etree.Element('resource', uri=request_url)
             return etree.tostring (response)            
 
         nodes = set()
@@ -231,14 +234,14 @@ class graphController(ServiceController):
 
         if multi_node_id:
             # caller wants specific multi node back as dataset            
-            response = etree.Element('dataset', uri=request.url, resource_uniq=res_uniq) # data_service.uri() + ('vd-%s' % multi_node_id))
+            response = etree.Element('dataset', uri=request_url, resource_uniq=res_uniq) # data_service.uri() + ('vd-%s' % multi_node_id))
             if view != 'short' or extra == 'value':
                 if extra == 'value':
                     # ask data_service to expand all elements
                     for node in nodes:
                         if isinstance(node, SummaryNode) and node.value == multi_node_id:
                             response = data_service.query( cache=False, resource_uniq='|'.join(node.node_ids), view=view, offset=offset, limit=limit, tag_query=tag_query, tag_order=tag_order, extract=extract )
-                            response.set('uri', request.url)
+                            response.set('uri', request_url)
                             break
                 else:
                     for node in nodes:

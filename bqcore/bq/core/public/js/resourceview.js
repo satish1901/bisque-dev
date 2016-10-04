@@ -11,7 +11,7 @@ Ext.define('BQ.ResourceViewer', {
             BQApp.setLoading('Fetching resource...');
             BQFactory.request({
                 uri         :   resourceURL,
-                uri_params  :   {view : 'deep'}, // only request deep if really needed; and only with paging!
+                uri_params  :   {view : 'deep'}, // TODO: only request deep if really needed; and only with paging!
                 cb          :   this.initViewer,
                 errorcb     :   this.onError
             });
@@ -20,7 +20,7 @@ Ext.define('BQ.ResourceViewer', {
         initViewer : function(resource) {
             BQApp.setLoading(false);
             BQApp.resource = resource;
-            BQ.Preferences.load(resource.resource_uniq) //loading in resource level preferences
+            BQ.Preferences.load(resource.resource_uniq); //loading in resource level preferences
             BQApp.setAnalysisQuery(encodeURIComponent('(accepted_type:"{1}" or "{1}":::)'.replace(/\{1\}/g, resource.resource_type)));
 
             var resourceCt = Bisque.ResourceFactoryWrapper.getResource({

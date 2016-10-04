@@ -793,21 +793,6 @@ Ext.define('Bisque.Resource.Table.Page', {
     onResourceRender : function() {
         // create view components: grid and tagger
 
-        var graph = {
-            xtype : 'bq_graphviewer_panel',
-            itemId: 'graph',
-            title : 'Provenance',
-            resource: this.resource,
-            resourceType: 'graph_url',
-            rankdir: 'LR',
-            listeners:{
-                'context' : function(res, div, graph) {
-                    var node = graph.g.node(res);
-                    window.open(BQ.Server.url(node.card.getUrl(res)));
-                },
-            },
-        };
-
         var resourceTagger = {
             xtype: 'bq-tagger',
             resource : this.resource,
@@ -833,7 +818,6 @@ Ext.define('Bisque.Resource.Table.Page', {
                 split : true,
                 width : 400,
                 plain : true,
-                //items : [resourceTagger, graph]
                 items : [resourceTagger]
             }, {
                 xtype: 'bq_table_panel',

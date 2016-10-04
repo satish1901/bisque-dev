@@ -604,6 +604,33 @@ Ext.define('Bisque.Resource.Page',
         }, config);
 
         this.callParent(arguments);
+
+        // if user preferences request provenance, add this tab now
+        if (BQ.Preferences) {
+            // if user wants to see provenance tab, add it now
+            var me = this;
+            BQ.Preferences.load('user', '', function(pref) {
+                var show_provenance = BQ.Preferences.get('user', 'ResourceViewer/Show Provenance', false);
+                var tabPanel = me.queryById('tabs');
+                if (tabPanel && show_provenance) {
+                    tabPanel.add({
+                        xtype : 'bq_graphviewer_panel',
+                        itemId: 'graph',
+                        title : 'Provenance',
+                        resource: me.resource,
+                        resourceType: 'graph_url',
+                        rankdir: 'LR',
+                        listeners:{
+                            'context' : function(res, div, graph) {
+                                var node = graph.g.node(res);
+                                window.open(BQ.Server.url(node.card.getUrl(res)));
+                            },
+                        },
+                    });
+                }
+            });    // TODO: double check this
+        }
+
         this.toolbar = this.getDockedComponent(0);
 
         if (Ext.isEmpty(BQApp.userList))
@@ -626,23 +653,6 @@ Ext.define('Bisque.Resource.Page',
             split       :   true,
         });
 
-        var graph = {
-            xtype : 'bq_graphviewer_panel',
-            itemId: 'graph',
-            title : 'Provenance',
-            resource: this.resource,
-            resourceType: 'graph_url',
-            rankdir: 'LR',
-            listeners:{
-                'context' : function(res, div, graph) {
-                    var node = graph.g.node(res);
-                    window.open(BQ.Server.url(node.card.getUrl(res)));
-                },
-            },
-        };
-
-		// PLEASE REVIEW:
-		// default resource viewer has tagger and provenance (every resource has at least those?)
         var resTab = {
             xtype: 'tabpanel',
             itemId: 'tabs',
@@ -656,7 +666,6 @@ Ext.define('Bisque.Resource.Page',
             split : true,
             width : 400,
             plain : true,
-            //items : [resourceTagger, graph]
             items : [resourceTagger]
         };
 

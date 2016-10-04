@@ -72,21 +72,6 @@ Ext.define('BQ.renderers.dataset', {
             resource: this.resource,
         };
 
-        var graph = {
-            xtype : 'bq_graphviewer_panel',
-            itemId: 'graph',
-            title : 'Provenance',
-            resource: this.resource,
-            resourceType: 'graph_url',
-            rankdir: 'LR',
-            listeners:{
-                'context' : function(res, div, graph) {
-                    var node = graph.g.node(res);
-                    window.open(BQ.Server.url(node.card.getUrl(res)));
-                },
-            },
-        };
-
         var tabber = {
             xtype: 'tabpanel',
             region : 'east',
@@ -101,7 +86,6 @@ Ext.define('BQ.renderers.dataset', {
             //collapsed: true,
 
             //items : [this.tagger, mexs, this.operations, map]
-            //items : [this.tagger, mexs, graph, map]
             items : [this.tagger, mexs, map]
         };
 

@@ -519,7 +519,7 @@ BQXml.prototype.xmlNode = function (content) {
 function BQObject (uri, doc) {
     BQXml.call(this, uri, doc);
     this.readonly = false;
-    this.uri = uri;
+    this.uri = stripParams(uri);
     this.doc = doc || this;
 
     this.children = [];
@@ -544,7 +544,7 @@ BQObject.prototype.initializeXml = function (node) {
     this.type          = attribStr(node, 'type');
     this.name          = attribStr(node, 'name');
     this.value         = parseValueType(attribStr(node, 'value'), this.type);
-    this.uri           = attribStr(node, 'uri');
+    this.uri           = stripParams(attribStr(node, 'uri'));
     this.owner         = attribStr(node, 'owner');
     this.permission    = attribStr(node, 'permission');
     this.ts            = attribStr(node, 'ts');
@@ -627,7 +627,7 @@ BQObject.prototype.getkids = function (){
 };
 
 BQObject.prototype.load = function (uri, cb) {
-    this.uri = uri;
+    this.uri = stripParams(uri);
     makeRequest(this.uri, callback(this, 'load_response', cb), null, "get");
 };
 
@@ -1429,7 +1429,7 @@ var bq_create_gradient = function (r1,g1,b1,a1,r2,g2,b2,a2) {
         bi += bd;
         ai += ad;
     }
-}
+};
 
 BQGObject.default_color = {
     r: 255,
@@ -2243,6 +2243,11 @@ function parseUri(sourceUri){
     return uri;
 };
 
+// strip off all query params
+function stripParams(uri) {
+    return uri ? uri.split('?')[0] : uri;
+};
+
 function BQUrl (u){
   this.uri = parseUri(u);
 };
@@ -2293,7 +2298,7 @@ BQUser.prototype.on_credentials = function(cb, cred) {
 
 BQUser.prototype.is_admin = function () {
     return this.groups && this.groups.indexOf ('admin')>-1;
-}
+};
 
 
 //-------------------------------------------------------------------------------
@@ -2763,9 +2768,9 @@ BQSession.prototype.end_session  = function () {
     this.timeout = 0;
     this.reset_timeout();
     if (this.callbacks.onsignedout) {
-        this.callbacks.onsignedout(this)
+        this.callbacks.onsignedout(this);
     }
-}
+};
 
 BQSession.prototype.reset_timeout  = function (){
     clearTimeout (this.current_timer);
@@ -2775,9 +2780,9 @@ BQSession.prototype.reset_timeout  = function (){
 
 BQSession.prototype.timeout_checker = function () {
     BQFactory.load (this.uri, callback(this, 'check_timeout'));
-}
+};
 BQSession.prototype.check_timeout = function (newsession) {
-    newuser  = newsession.find_tags('user')
+    newuser  = newsession.find_tags('user');
     if (! newuser) {
         // User logged out or session timed out
         this.end_session();
@@ -2826,7 +2831,7 @@ BQSession.prototype.hasUser = function () {
 
 BQSession.prototype.setUser = function (user) {
     this.user = user;
-    user.groups = this.groups
+    user.groups = this.groups;
     if (this.callbacks.ongotuser)
         this.callbacks.ongotuser(this.user);
 };

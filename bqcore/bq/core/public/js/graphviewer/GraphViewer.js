@@ -139,22 +139,42 @@ SummaryCard.prototype.getUrl = function (resource_uniq) {
 };
 
 
+function PipelineStepCard(node, resource) {
+    ResourceCard.call(this, node, resource);
+    this.cardType = 'mex';   // TODO: change to new style
+    this.cardTitle = node ? node.name : 'Unknown action';
+};
+
+PipelineStepCard.prototype = new ResourceCard();
+
+PipelineStepCard.prototype.populateFields = function (xnode) {
+    this.addField('name', xnode.getAttribute('name'), 'name');
+    for (var i = 0; i < xnode.attributes.length; i++) {
+        var attr = xnode.attributes[i];
+        if (attr.name.startsWith('extra_attr_')) {
+            this.addField(attr.name.replace(/^extra_attr_/, ''), attr.value, 'value');
+        }
+    }
+};
+
+
 function BQFactoryGraph(){
 };
 
 BQFactoryGraph.make = function(node, resource){
     var buffermap = {
-        image    : ImageCard,
-        table    : TableCard,
+        image            : ImageCard,
+        table            : TableCard,
         dream3d_pipeline : PipelineCard,
+        pipeline_step    : PipelineStepCard,
     };
-    if (node.label.startswith("multi ")) {
+    if (node.label.startsWith("multi ")) {
         card = SummaryCard;
     }
-    else if (node.label.startswith("mex")) {
+    else if (node.label.startsWith("mex")) {
         card = MexCard;
     }
-    else if (node.label.startswith("dataset")) {
+    else if (node.label.startsWith("dataset")) {
         card = DataSetCard;
     }
     else {
@@ -188,7 +208,7 @@ Ext.define('BQ.graphviewer', {
         var gnode = node;
         console.log(node);
         var g = this.g;
-        if (resource_uniq.startswith("00-") && resource_uniq.indexOf('@') == -1){
+        if (resource_uniq.startsWith("00-") && resource_uniq.indexOf('/') == -1){
             // actual resource => fetch it and populate GUI card
             var resUniqueUrl = (this.hostName ? this.hostName : '') + '/data_service/' + resource_uniq;
             Ext.Ajax.request({
@@ -214,9 +234,16 @@ Ext.define('BQ.graphviewer', {
     		});
     	}
     	else {
-    	    // summary node (uniq='00-xxxx@id') or other node => only populate GUI card
+    	    // summary node (uniq='00-xxxx/id') or other node => only populate GUI card using fake XML doc
     	    if(gnode && gnode.card){
-                gnode.card.populateFields();
+    	        var xmlDoc = document.implementation.createDocument(null, "tmpdoc");
+    	        var xnode = xmlDoc.createElement("tmpnode");
+    	        for (var attr in gnode) {
+    	            if (gnode.hasOwnProperty(attr)) {
+    	                xnode.setAttribute(attr, gnode[attr]);
+    	            }
+    	        }
+                gnode.card.populateFields(xnode);
                 gnode.card.buildHtml();
             }
             me.fetchNodeDone();
@@ -234,8 +261,10 @@ Ext.define('BQ.graphviewer', {
             var svgNodes = me.group.selectAll("g.node");
             var svgEdges = me.group.selectAll("g.edgePath");
 
-            me.highLightProvenance(g, me.resource.resource_uniq, svgNodes, svgEdges, me);
-            me.selection = me.highLightEdges(g, me.resource.resource_uniq, svgNodes, svgEdges);
+            // pick as start index, based on availability: resource_uniq, "0", or first key
+            var startIndex = (g.nodes().indexOf(me.resource.resource_uniq) != -1 ? me.resource.resource_uniq : (g.nodes().indexOf("0") != -1 ? "0" : g.nodes()[0]));
+            me.highLightProvenance(g, startIndex, svgNodes, svgEdges, me);
+            me.selection = me.highLightEdges(g, startIndex, svgNodes, svgEdges);
 
             me.fireEvent("loaded", me);
         }
@@ -263,13 +292,15 @@ Ext.define('BQ.graphviewer', {
             var nIndex = stack.pop();
             var node = g.node(nIndex);
             var edges = g.nodeEdges(nIndex);
-            edges.forEach(function(e, i, a){
-                var oIndex = e.v == nIndex ? e.w : e.v;
-                if(!traversed[oIndex] && func(oIndex, e, traversed[oIndex])){
-                    stack.push(oIndex);
-                }
-                traversed[nIndex] = true;
-            });
+            if (edges) {
+                edges.forEach(function(e, i, a){
+                    var oIndex = e.v == nIndex ? e.w : e.v;
+                    if(!traversed[oIndex] && func(oIndex, e, traversed[oIndex])){
+                        stack.push(oIndex);
+                    }
+                    traversed[nIndex] = true;
+                });
+            }
         }
     },
 
@@ -474,7 +505,13 @@ Ext.define('BQ.graphviewer', {
             var val = e['value'];
             var cnt = e['count'];
             var name = e['name'];
-            g.setNode(val, {label: t, count: cnt, name: name});
+            var props = {label: t, count: cnt, name: name};
+            for (var attr in e) {
+                if (e.hasOwnProperty(attr) && attr.startsWith('extra_attr_')) {
+                    props[attr] = e[attr];
+                }
+            }
+            g.setNode(val, props);
         });
 
         edges.forEach(function(e,i,a){
@@ -714,10 +751,11 @@ Ext.define('BQ.viewer.Graph.Panel', {
         //   - 'blobservice_url': fetch graph from blob service (as JSON doc)
         var resUniqueUrl = (this.hostName ? this.hostName : '') +
             (this.resourceType === 'blobservice_url' ? '/blob_service/' : (this.resourceType === 'dataservice_url' ? '/data_service/' : '/graph/')) +
-            this.resource.resource_uniq.split('@')[0] +
-            (this.resourceType === 'blobservice_url' ? '' : '?view=deep');
+            this.resource.resource_uniq; // !!! .split('@')[0];
+        var rparams = (this.resourceType === 'blobservice_url' ? {} : { view: 'deep' });
         Ext.Ajax.request({
 			url : resUniqueUrl,
+			params : rparams,
 			scope : this,
 			disableCaching : false,
 			callback : function (opts, succsess, response) {
@@ -806,20 +844,26 @@ Ext.define('BQ.viewer.Graph.Panel', {
     },
 
     extractNodesEdges: function(context) {
-        // context: {root:..., nodes:..., edges:..., name_key:..., type_key:...}
+        // context: {root:..., nodes:..., edges:..., name_key:..., type_key:..., fixed_type:...}
         var fields = [];
         var root = context['root'];
         var nodes = context['nodes'];
         var edges = context['edges'];
         var name_key = context['name_key'];
         var type_key = context['type_key'];
+        var fixed_type = context['fixed_type'];
         for (var key in root) {
             if (!isNaN(key)) {
                 // key is a number => assume node id
                 new_node = root[key];
                 new_node["name"] = (name_key ? root[key][name_key] : ''+key);
-                new_node["type"] = (type_key ? root[key][type_key] : 'node');
+                new_node["type"] = (type_key ? root[key][type_key] : fixed_type);
                 new_node["value"] = ''+key;
+                for (var attr in root[key]) {
+                    if (root[key].hasOwnProperty(attr) && attr != "name" && attr != "type" && attr != "value") {
+                        new_node["extra_attr_"+attr] = String(root[key][attr]);
+                    }
+                }
                 nodes.push(new_node);
             }
             else {
@@ -961,7 +1005,8 @@ Ext.define('BQ.viewer.Pipeline.Panel', {
         var me = this;
 
         context['name_key'] = 'Filter_Human_Label';
-        context['type_key'] = 'Filter_Name';
+        context['type_key'] = undefined;
+        context['fixed_type'] = 'pipeline_step';
         me.callParent([context]);
 
         // now add edges between consecutively numbered nodes

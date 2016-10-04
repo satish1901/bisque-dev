@@ -232,7 +232,9 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             this.browserParams.wpublic = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Include Public Resources', this.browserParams.wpublic);
         }
 
-        if (this.browserParams.dataset != "None") {
+        // TODO: is the following even correct here? why does the dataset get loaded here in onPreferences?
+        if (this.browserParams.dataset != "None" && !this.dataset_loaded) {
+            this.dataset_loaded = true;    // prevent duplicate loads if onPreferences is called multiple times
             var baseURL = (this.browserParams.dataset instanceof BQDataset) ? this.browserParams.dataset.uri + '/value' : this.browserParams.dataset;
             this.loadData({
                 baseURL : baseURL,
