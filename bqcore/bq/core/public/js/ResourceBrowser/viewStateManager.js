@@ -32,6 +32,7 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager', {
             case 'ViewerOnly': {
                 this.cBar.btnActivate = true;
                 this.cBar.btnRefresh = false; // true
+                this.cBar.btnRefresh_only_update = true;
 
                 this.cBar.searchBar = true;
 
