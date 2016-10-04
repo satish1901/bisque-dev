@@ -407,9 +407,9 @@ class HierarchicalCache(ResponseCache):
                     resource = ('', resource[1])
                 resource = Bunch(resource_uniq = None, resource_type = resource [0], permission="published")
         if isinstance(resource, Query):
-            resource = resource.first()
+            resource = resource.first() #pylint: disable=no-member
         if isinstance(resource, Taggable):
-            resource = resource.document
+            resource = resource.document #pylint: disable=no-member
         return resource
 
     def invalidate_resource(self, resource, user):
