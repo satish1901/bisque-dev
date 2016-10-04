@@ -159,6 +159,7 @@ Ext.define('BQ.editor.GraphicalMenu', {
         if (btn) {
             btn.pressed = true;
             this.primitive = btn.primitive;
+            this.selected = true;
         }
 
         var items = [{
