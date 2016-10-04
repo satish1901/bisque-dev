@@ -1,16 +1,8 @@
-# converter_bioformats.py
-# Author: Dmitry Fedorov
-# Center for BioImage Informatics, University California, Santa Barbara
-from __future__ import with_statement
-
 """ BioFormats command line converter
 """
 
-__module__    = "converter_bioformats"
 __author__    = "Dmitry Fedorov"
 __version__   = "0.7"
-__revision__  = "$Rev$"
-__date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
 import os.path
@@ -19,9 +11,12 @@ from lxml import etree
 from bq.util.compat import OrderedDict
 import bq.util.io_misc as misc
 
-from .process_token import ProcessToken
-from .converter_base import ConverterBase, Format
-from .converter_imgcnv import ConverterImgcnv
+# from .process_token import ProcessToken
+# from .converter_base import ConverterBase, Format
+# from .converter_imgcnv import ConverterImgcnv
+from bq.image_service.controllers.process_token import ProcessToken
+from bq.image_service.controllers.converter_base import ConverterBase, Format
+from .imgcnv import ConverterImgcnv
 
 import logging
 log = logging.getLogger('bq.image_service.converter_bioformats')

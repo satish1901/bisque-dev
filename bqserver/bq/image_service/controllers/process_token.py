@@ -1,16 +1,8 @@
-# process_token.py
-# Author: Dmitry Fedorov
-# Center for BioImage Informatics, University California, Santa Barbara
-from __future__ import with_statement
-
 """ Token passed between image service operations
 """
 
-__module__    = "process_token"
 __author__    = "Dmitry Fedorov"
 __version__   = "0.1"
-__revision__  = "$Rev$"
-__date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
 import os
