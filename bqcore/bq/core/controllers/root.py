@@ -201,8 +201,9 @@ class RootController(BaseController):
         <service_type>/<path>?arguments
         """
         log.info ('[%s] %s %s', request.identity.get('repoze.who.userid'), request.method, request.url )
-        log.debug ('HEADERS: %s %s', request.url, dict(request.headers))
-        log.info ('PATH %s', request.path)
+        if log.isEnabledFor (logging.DEBUG):
+            log.debug ('HEADERS: %s %s', request.url, dict(request.headers))
+            log.debug ('PATH %s in DIR %s', request.path, os.getcwd())
         if service_type in oldnames:
             log.warn ('found oldname( %s ) in request' % (service_type))
             service_type = oldnames[service_type]
