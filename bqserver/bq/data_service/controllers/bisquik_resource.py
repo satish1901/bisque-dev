@@ -412,7 +412,7 @@ class BisquikResource(Resource):
         parent = self.load_parent()
         resource = None
         if parent:
-            resource = self.check_access(resource, RESOURCE_EDIT)
+            resource = self.check_access(parent, RESOURCE_EDIT)
             DBSession.autoflush = False
             log.info('REPLACE %s in %s' % (self.resource_name , parent))
             log.debug ("replace: %s => %s" %(xml, resource))
@@ -431,12 +431,13 @@ class BisquikResource(Resource):
         """delete a container of objects
         DELETE /ds/images/1/gobjects
         """
-        log.info ('DELETE_ALL %s' % (request.url))
-        resource = self.check_access(resource, RESOURCE_EDIT)
         parent = self.load_parent()
+        log.info ('DELETE_ALL %s' % (request.url))
+        resource = self.check_access(parent, RESOURCE_EDIT)
         parent.clear([self.resource_name])
         #transaction.commit()
-        resource = etree.Element ('resource')
+        if resource is None:
+            resource = etree.Element ('resource')
         return self.resource_output(resource, **kw)
 
     @expose()

@@ -10,6 +10,7 @@ import logging
 
 from bq.release import __VERSION__
 from bq.util.io_misc import remove_safe
+from bq.util.paths import site_cfg_path
 
 
 logging.basicConfig(level=logging.INFO)
@@ -136,7 +137,7 @@ class database(object):
                     version="%prog " + version)
 
 
-        parser.add_option('-c','--config', default="config/site.cfg")
+        parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         parser.add_option('-n','--dryrun', action="store_true", default=False)
         options, args = parser.parse_args()
 
@@ -264,35 +265,22 @@ class deploy(object):
                 #print "Exception: ", e
                 pass
 
-        # Link all core dirs
-        # coredir = os.path.join(rootdir, 'bqcore/bq/core/public/').replace('/', os.sep)
+        # # Link all core dirs
+        # os.chdir(self.public_dir)
+        # currdir = os.getcwd()
+        # coredir = 'core' #os.path.join(self.public_dir, 'core').replace('/', os.sep)
+        # print "COREDIR", coredir
         # import glob
-        # for l in glob.glob(os.path.join(coredir, '*')):
-        #     dest = os.path.join(currdir, os.path.basename(l))
+        # for l in os.listdir(coredir):
+        #     src =  os.path.join(coredir, l)
+        #     dest = os.path.join(currdir, l)
         #     if os.path.exists (dest):
         #         os.unlink (dest)
-        #     relpath = os.path.relpath(l, currdir)
-        #     #print "%s -> %s " % (relpath, dest)
-        #     copy_symlink (relpath, dest)
-        # # finish
-
-
-        # Link all core dirs
-        os.chdir(self.public_dir)
-        currdir = os.getcwd()
-        coredir = 'core' #os.path.join(self.public_dir, 'core').replace('/', os.sep)
-        print "COREDIR", coredir
-        import glob
-        for l in os.listdir(coredir):
-            src =  os.path.join(coredir, l)
-            dest = os.path.join(currdir, l)
-            if os.path.exists (dest):
-                os.unlink (dest)
-            if os.path.isdir (dest):
-                shutil.rmtree(dest)
-            print "CORE", src, dest
-            copy_symlink (src, dest)
-        os.chdir (rootdir)
+        #     if os.path.isdir (dest):
+        #         shutil.rmtree(dest)
+        #     print "CORE", src, dest
+        #     copy_symlink (src, dest)
+        # os.chdir (rootdir)
 
         # regenerate all_js and all_css
         print '\nGenerating packaged JS and CSS files\n'
@@ -305,7 +293,7 @@ class deploy(object):
         all_js_combined = os.path.join(publicdir, 'core/js/all_js.js')
         all_js_public = os.path.join(publicdir, 'js/all_js.js')
 
-        if os.name != 'nt': # under windows the whole public is removed at the beginning 
+        if os.name != 'nt': # under windows the whole public is removed at the beginning
             remove_safe(all_css_public)
             remove_safe(all_js_public)
 
@@ -315,10 +303,10 @@ class deploy(object):
         generate_css_files(root=rootdir, public=publicdir)
         generate_js_files(root=rootdir, public=publicdir)
 
-        if not os.path.exists (all_css_public):
-            copy_symlink (all_css_combined, all_css_public)
-        if not os.path.exists (all_js_public):
-            copy_symlink (all_js_combined, all_js_public)
+        #if not os.path.exists (all_css_public):
+        #    copy_symlink (all_css_combined, all_css_public)
+        #if not os.path.exists (all_js_public):
+        #    copy_symlink (all_js_combined, all_js_public)
 
 
 class preferences (object):
@@ -327,7 +315,7 @@ class preferences (object):
         parser = optparse.OptionParser(
                     usage="%prog preferences [init (db)|read (from db)|save (to db)]",
                     version="%prog " + version)
-        parser.add_option('-c','--config', default="config/site.cfg")
+        parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         parser.add_option('-f','--force', action="store_true", help="Force action if able")
         options, args = parser.parse_args()
 
@@ -337,6 +325,7 @@ class preferences (object):
             parser.error('argument must be init, read, save')
 
     def run(self):
+
         load_config(self.options.config)
         from lxml import etree
         from tg import config, session, request
@@ -403,7 +392,7 @@ class sql(object):
         parser = optparse.OptionParser(
                     usage="%prog sql <sql>",
                     version="%prog " + version)
-        parser.add_option('-c','--config', default="config/site.cfg")
+        parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         options, args = parser.parse_args()
 
         self.args = args
@@ -417,7 +406,6 @@ class sql(object):
         from sqlalchemy import create_engine
         from sqlalchemy.sql import text
         from ConfigParser import ConfigParser
-
         load_config(self.options.config)
 
         engine = config['pylons.app_globals'].sa_engine
@@ -431,7 +419,7 @@ class group(object):
         parser = optparse.OptionParser(
                     usage="%prog sql <sql>",
                     version="%prog " + version)
-        parser.add_option('-c','--config', default="config/site.cfg")
+        parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         options, args = parser.parse_args()
 
         self.args = args
@@ -445,7 +433,6 @@ class group(object):
         from sqlalchemy import create_engine
         from sqlalchemy.sql import text
         from ConfigParser import ConfigParser
-
         load_config(self.options.config)
 
         engine = config['pylons.app_globals'].sa_engine
@@ -461,7 +448,7 @@ class stores(object):
         parser = optparse.OptionParser(
                     usage="%prog stores  [list|create [name]]|fill[name]|update[name]",
                     version="%prog " + version)
-        parser.add_option('-c','--config', default="config/site.cfg")
+        parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         options, args = parser.parse_args()
         if len(args) < 1 or args[0] not in ('list', 'init', 'fill', 'update', 'move'):
             parser.error("No command given")
@@ -515,7 +502,7 @@ class password(object):
         parser = optparse.OptionParser(
                     usage="%prog password [convert: freetext to hashed][list: users and password][set: username password] ",
                     version="%prog " + version)
-        parser.add_option('-c','--config', default="config/site.cfg")
+        parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         parser.add_option('-f','--force', action="store_true", default=False)
         options, args = parser.parse_args()
 

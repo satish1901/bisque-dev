@@ -606,6 +606,20 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         });
     },
 
+    activateAutoReload: function() {
+        var me = this,
+            delay_timeout = 60000;
+        if (!me.task_reload) {
+            me.task_reload = new Ext.util.DelayedTask( function() {
+                Ext.log(">>>>>>>>>> BROWSER RELOAD");
+                me.loadData(me.uri);
+                if (me.isVisible())
+                    me.task_reload.delay(delay_timeout);
+            });
+        }
+        me.task_reload.delay(delay_timeout);
+    },
+
 });
 
 
