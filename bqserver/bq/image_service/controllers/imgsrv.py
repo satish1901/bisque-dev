@@ -47,10 +47,10 @@ from .operation_base import BaseOperation
 from .converter_dict import ConverterDict
 from .resource_cache import ResourceCache
 
-from .converters.imgcnv import ConverterImgcnv
-from .converters.imaris import ConverterImaris
-from .converters.bioformats import ConverterBioformats
-from .converters.openslide import ConverterOpenSlide
+from .converters.converter_imgcnv import ConverterImgcnv
+from .converters.converter_imaris import ConverterImaris
+from .converters.converter_bioformats import ConverterBioformats
+from .converters.converter_openslide import ConverterOpenSlide
 
 from .operations.operations import OperationsOperation
 from .operations.formats import FormatsOperation

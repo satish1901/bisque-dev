@@ -16,7 +16,7 @@ import bq.util.io_misc as misc
 # from .converter_imgcnv import ConverterImgcnv
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converter_base import ConverterBase, Format
-from .imgcnv import ConverterImgcnv
+from .converter_imgcnv import ConverterImgcnv
 
 import logging
 log = logging.getLogger('bq.image_service.converter_bioformats')
