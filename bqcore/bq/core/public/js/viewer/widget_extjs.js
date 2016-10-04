@@ -274,8 +274,13 @@ Ext.define('BQ.viewer.Image', {
             var N = Math.min(10, gob.tags.length);
             for (var i=0; i<N; ++i) {
                 t = gob.tags[i];
+                if (t.type in BQ.annotations.types_ignore_user_presentation)
+                    continue;
                 text = t.name + ': ' + t.value;
-                found += '<p class="tags" style="margin-left: '+(level*10)+'px;">' + text + '</p>';
+                cls = 'tags';
+                if (t.type)
+                   cls += ' '+t.type; 
+                found += Ext.String.format('<p class="{0}" style="margin-left: {1}px;">{2}</p>', cls, level*10, text);
             }
 
             return found;

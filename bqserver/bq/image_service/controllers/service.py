@@ -60,16 +60,17 @@ class ImageServiceController(ServiceController):
     def __init__(self, server_url):
         super(ImageServiceController, self).__init__(server_url)
         workdir= config.get('bisque.image_service.work_dir', data_path('workdir'))
+        rundir= config.get('bisque.paths.run', os.getcwd())
 
         _mkdir (workdir)
-        log.info('ROOT=%s work=%s' , config.get('bisque.root'),  workdir)
+        log.info('ROOT=%s work=%s run = ' , config.get('bisque.root'),  workdir)
 
         self.user_map = {}
         # users = data_service.query('user', wpublic=1)
         # for u in users.xpath('user'):
         #     self.user_map[u.get('uri')] = u.get('name')
 
-        self.srv = ImageServer(work_dir = workdir)
+        self.srv = ImageServer(work_dir = workdir, run_dir = rundir)
 
     def info (self, uniq, **kw):
         ''' returns etree metadata element'''

@@ -279,15 +279,43 @@ BQWebApp.prototype.load_from_resource = function (R) {
 };
 
 BQWebApp.prototype.inputs_from_mex = function (mex) {
-    if (mex.inputs_index && Object.keys(mex.inputs_index).length<1) {
-        this.showProgress(null, 'Fetching execution inputs');
-        BQFactory.request( { uri: mex.uri,
-                             cb: callback(this, 'inputs_from_mex'),
-                             errorcb: callback(this, 'onerror'),
-                             uri_params: {view:'inputs'} });
+    // first ensure we have full inputs
+    var inputs = mex.find_tags('inputs');
+    if (inputs instanceof Array)
+        inputs = inputs[0];
+
+    if (!inputs && mex.inputs_index && Object.keys(mex.inputs_index).length<1) {
+        BQApp.setLoading('Fetching inputs...');
+        BQFactory.request({ 
+            uri: mex.uri,
+            cb: callback(this, this.inputs_from_mex),
+            errorcb: callback(this, 'onerror'),
+            uri_params: { view:'inputs' },
+        });
         return;
     }
+    
+    // unfortunately we can't fetch inputs deep via view=, refetch
+    if (inputs && mex.inputs_index && Object.keys(mex.inputs_index).length<1 && !mex.fetched_inputs) {
+        BQApp.setLoading('Fetching inputs...');
+        BQFactory.request({
+            uri : inputs.uri,
+            uri_params : { view: 'deep'},
+            errorcb: callback(this, 'onerror'),
+            cache : false,
+            cb : callback(this, function(doc) {
+                inputs.tags = doc.tags;
+                mex.fetched_inputs = true;
+                mex.dict = null;
+                mex.afterInitialized();
+                this.inputs_from_mex(mex);
+            }),
+        });
+        return;
+    }
+
     this.hideProgress();
+    BQApp.setLoading(false);
     var inputs = this.ms.module.inputs_index;
     var inputs_mex = mex.inputs_index;
 
@@ -299,13 +327,14 @@ BQWebApp.prototype.inputs_from_mex = function (mex) {
             renderer.select(r);
     }
     this.inputsValid();
+    this.done(mex);
 };
 
 BQWebApp.prototype.load_from_mex = function (mex) {
     this.hideProgress();
     this.mexMode(mex);
     this.inputs_from_mex(mex);
-    this.done(mex);
+    //this.done(mex); // moved to inputs_from_mex
 };
 
 
@@ -427,6 +456,7 @@ BQWebApp.prototype.setupUI_outputs = function (key, mex) {
     key = key || 'outputs';
 
     // ensure inputs
+    /*
     var inputs = mex.find_tags('inputs');
     if (inputs instanceof Array)
         inputs = inputs[0];
@@ -464,7 +494,7 @@ BQWebApp.prototype.setupUI_outputs = function (key, mex) {
         }
         return;
     }
-
+    */
 
     // outputs must be present
     var outputs = mex.find_tags('outputs');

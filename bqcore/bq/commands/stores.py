@@ -195,7 +195,7 @@ def _update_mounts(drivers):
     elif len(user_root) == 1:
         user_root =  user_root[0]
     elif len(user_root) > 1:
-        log.error("Root store created more than once: %s please check DB", etree.tostring(root))
+        log.error("Root store created more than once for %s: %s please check DB", user_name, etree.tostring(user_root))
         return None
 
     user_stores = dict ((x.get ('name'), x)  for x in user_root.xpath('store'))

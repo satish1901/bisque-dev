@@ -1828,6 +1828,10 @@ def install_dependencies (params):
     public = to_sys_path(os.path.join (DIRS['jslocation'], 'bq/core/public'))
     extjs =  os.path.join (public, "extjs")
     uncompress_extjs (extzip, public, extjs)
+    for skip in ('docs', 'examples', 'builds', '.sencha', 'cmd', 'locale', 'packages', 'plugins', 'src', 'welcome'):
+        if os.path.exists (os.path.join(extjs, skip)):
+            shutil.rmtree (os.path.join(extjs, skip))
+
 
     install_imgcnv()
     install_imarisconvert()
@@ -2508,7 +2512,8 @@ def update_globals (options, args):
         print "Package installation"
         # This is a system install
         DIRS['share']   = "/usr/share/bisque"
-        DIRS['run']     = '/var/run/bisque'
+        # Was /var/run/bisque but /var/run -> symlinked /run hiccuped in imgsrv ../../../var/run/bisque
+        DIRS['run']     = '/run/bisque'
         DIRS['config']  = DIRS['config'] or "/etc/bisque"
         log.warn ("Will install new python packages into %s", DIRS['packages'])
         DIRS['jslocation'] = DIRS['packages']
