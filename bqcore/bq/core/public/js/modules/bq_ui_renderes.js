@@ -524,6 +524,7 @@ Ext.define('BQ.selectors.Resource', {
         this._fetched_resource = R;
         if (this._fetched_gobs) {
             this._fetched_resource.gobjects = this._fetched_gobs;
+            this.resource.gobjects = this._fetched_gobs;
             this.onselected(this._fetched_resource);
         }
     },

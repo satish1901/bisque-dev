@@ -225,10 +225,15 @@
           wpublic: ${wpublicjs},
           border: true,
           cls: 'welcome',
-          listeners: { 'Select': function(me, resource) {
-                          window.open( BQ.Server.url('/module_service/'+resource.name+'/?mex='+resource.uri) );
-                       },
-                       scope: this },
+          listeners: { 
+              scope: this,
+              'Select': function(me, resource) {
+                  window.open( BQ.Server.url('/module_service/'+resource.name+'/?mex='+resource.uri) );
+              },
+              show: function(me) {
+                  me.activateAutoReload();
+              },              
+          },
         });
         my_items.push(mexBrowser);
     });

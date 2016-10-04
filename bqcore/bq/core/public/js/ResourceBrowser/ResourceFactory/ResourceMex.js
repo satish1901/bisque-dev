@@ -33,7 +33,7 @@ Ext.define('Bisque.Resource.Mex', {
                 url: this.resource.uri,
                 method: 'GET',
                 params : {
-                    view: 'start-time,end-time,inputs',
+                    view: 'start-time,end-time,inputs,error_message',
                 },
                 callback: function(opts, succsess, response) {
                     if (response.status>=400)
@@ -56,6 +56,7 @@ Ext.define('Bisque.Resource.Mex', {
     tagData : function(xml) {
         var start = BQ.util.xpath_string(xml, '*/tag[@name="start-time"]/@value'),
             finish = BQ.util.xpath_string(xml, '*/tag[@name="end-time"]/@value'),
+            error_message = BQ.util.xpath_string(xml, '*/tag[@name="error_message"]/@value'),
             inputs = BQ.util.xpath_nodes(xml, '*/tag[@name="inputs"]/tag'),
             ds = new Date(),
             de = new Date(),
@@ -81,6 +82,12 @@ Ext.define('Bisque.Resource.Mex', {
             v = t.getAttribute('value');
             if (v)
                 html += Ext.String.format('<p>{0}: {1}</p>', n, v);
+        }
+
+        // error
+        if (error_message) {
+            html += '<h3>Error</h3>';
+            html += Ext.String.format('<pre class="error">{0}</pre>', error_message);
         }
 
         this.ttip.add({

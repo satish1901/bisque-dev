@@ -811,18 +811,25 @@ Ext.define('Bisque.Resource.Image.Page', {
             showOrganizer : false,
             mexLoaded : false,
             listeners : {
+                scope : this,
                 'browserLoad' : function(me, resQ){ e
                     me.mexLoaded = true;
                 },
+
                 'Select' : function(me, resource) {
                     window.open(BQ.Server.url('/module_service/' + resource.name + '/?mex=' + resource.uri));
                 },
+
                 'browserLoad' : function(mb, resQ) {
                     for (var i=resQ.length-1; i>=0; i--)
                         this.gobjectTagger.appendMex(resQ[i].resource);
                 },
-                scope : this
+
+                show: function(me) {
+                    me.activateAutoReload();
+                },
             },
+
         });
 
         var resourceTagger = {
