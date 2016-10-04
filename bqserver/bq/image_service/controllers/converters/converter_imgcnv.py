@@ -1,16 +1,8 @@
-# converter_imgcnv.py
-# Author: Dmitry Fedorov
-# Center for BioImage Informatics, University California, Santa Barbara
-from __future__ import with_statement
-
 """ BioImageConvert command line converter
 """
 
-__module__    = "converter_imgcnv"
 __author__    = "Dmitry Fedorov"
 __version__   = "1.3"
-__revision__  = "$Rev$"
-__date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
 import logging
@@ -30,8 +22,10 @@ from bq.util.locks import Locks
 from bq.util.read_write_locks import HashedReadWriteLock
 import bq.util.io_misc as misc
 
-from .process_token import ProcessToken
-from .converter_base import ConverterBase, Format
+#from .process_token import ProcessToken
+#from .converter_base import ConverterBase, Format
+from bq.image_service.controllers.process_token import ProcessToken
+from bq.image_service.controllers.converter_base import ConverterBase, Format
 
 log = logging.getLogger('bq.image_service.converter_imgcnv')
 
@@ -718,6 +712,11 @@ class ConverterImgcnv(ConverterBase):
     @classmethod
     def tile(cls, token, ofnm, level, x, y, sz, **kw):
         '''extract tile Level,X,Y tile from input filename into output in OME-TIFF format'''
+
+        # imgcnv driver does not support arbitrary size interface
+        if kw.get('arbitrary_size', False) == True or level is None or sz is None:
+            return None
+
         ifnm = token.first_input_file()
         series = token.series
         log.debug('Tile: %s %s %s %s %s for [%s]', level, x, y, sz, series, ifnm)
@@ -735,21 +734,7 @@ class ConverterImgcnv(ConverterBase):
             log.debug('Image does not contain tiles, skipping...')
             return None
 
-        # images may have different resolution levels embedded, find the right scale
-        # this will later be hidden in the imgcnv tile level and size interface
-        # not needed anymore: now computed by the imgcnv
-        # try:
-        #     scales = info.get('image_resolution_level_scales', '')
-        #     log.debug('scales: %s', scales)
-        #     scales = [float(i) for i in scales.split(',')]
-        #     log.debug('scales: %s', scales)
-        #     level = scales.index(1.0 / math.pow(2, level))
-        #     log.debug('level: %s', level)
-        # except (ValueError):
-        #     return None
-
         queue = token.getQueue()
-
         #command = ['-o', ofnm, '-t', 'tiff']
         command = []
 
