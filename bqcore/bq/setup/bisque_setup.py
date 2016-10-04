@@ -470,12 +470,15 @@ initial_vars = {
 linked_vars = {
 #    'h1.url' : '${bisque.server}',
     'bisque.root' : '${bisque.server}',
-    'smtp_server' : '${mail.smtp.server}',
     'registration.site_name' : '${bisque.title} (${bisque.server})',
     'registration.host' : '${bisque.server}',
     'registration.mail.smtp_server' : '${mail.smtp.server}',
     'registration.mail.admin_email' : '${bisque.admin_email}',
     'beaker.session.sa.url' : '${sqlalchemy.url}',
+    # Paster error variables
+    'error_email_from' : '${bisque.admin_email}',
+    'email_to' : '${bisque.admin_email}',
+    'smtp_server' : '${mail.smtp.server}',
 }
 
 SERVER_QUESTIONS=[
@@ -564,8 +567,8 @@ CONDOR_QUESTIONS =[
 
 DOCKER_QUESTIONS = [
     ('docker.hub', 'A docker image repository to store locally built images', 'biodev.ece.ucsb.edu:5000' ),
-    ('docker.hub.user', 'A docker login', None),
-    ('docker.hub.password', 'A docker login password', None),
+    ('docker.hub.user', 'A docker login', "a username or blank e.g. your images will be named hubaddr/username/imagename"),
+    ('docker.hub.password', 'A docker login password', "Password on docker registry or blank if none"),
     ('docker.hub.email', 'A docker login email', None),
 
     ]
@@ -1311,7 +1314,7 @@ def install_server_defaults(params):
             params[k] = SITE_VARS[k]
         print "  %s=%s" % (k,params[k])
 
-    if getanswer("Change a site variable", 'N')=='Y':
+    if getanswer("Change a site variable", 'Y' if new_install else 'N') == 'Y':
         params = modify_site_cfg(SITE_QUESTIONS, params)
 
         path = urlparse.urlparse(params['bisque.server']).path
@@ -2282,7 +2285,7 @@ engine_options= [
     'runtime',
     'modules',
 #    'fetch-modules',
-#    'build-modules',
+    'build-modules',
     ]
 
 full_options = list (install_options + engine_options)

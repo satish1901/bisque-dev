@@ -1204,6 +1204,7 @@ BQObject.prototype.dispose = function (){
 };
 
 BQObject.prototype.addtag = function (tag, deep){
+    // Tag must be either a BQTag or dictionary of attribute value pairs { name:xx, value:xx , type:xx }
     if (!(tag instanceof BQTag) || deep) {
         var nt = new BQTag();
         for (var i in tag) {

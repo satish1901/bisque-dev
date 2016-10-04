@@ -219,12 +219,13 @@ beaker.cache.lock_dir = data/beakerlock
 #beaker.cache.url = 127.0.0.1:11211
 #
 
-# Paster  Config
-error_email_from=bisque@localhost
-email_to=bisque-dev@biodev.ece.ucsb.edu
-error_subject_prefix=Bisque Error:
+# Paster  Error Config
+error_subject_prefix = Bisque Error:
 error_message = An Unexpected exception:
-smtp_server=localhost
+error_email_from = bisque_admin@localhost
+email_to = bisque_admin@localhost
+smtp_server = localhost
+
 
 # TGExt.Registration2 Config
 registration_config = %(here)s/registration.cfg
@@ -300,7 +301,7 @@ toscawidgets.framework.resource_variant=debug
 ################################################################################
 
 [loggers]
-#keys = root, bq, bqroot, bqapi, sqlalchemy, auth, image, image-locks, import, export, blobs, usage, engine
+#keys = root, bq, bqroot, bqapi, sqlalchemy, auth, image, image-locks, import, export, blobs, usage, engine, registration
 keys = root, bqapi, bq,  sqlalchemy, auth
 
 [handlers]
@@ -394,6 +395,13 @@ qualname = sqlalchemy.engine
 level = WARN
 handlers =
 qualname = auth
+
+
+# A logger for registration events (user create etc)
+[logger_registration]
+level=INFO
+handlers=
+qualname = registration
 
 #######################################
 # Handlers
