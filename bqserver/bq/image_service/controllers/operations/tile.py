@@ -42,7 +42,7 @@ from bq.util.locks import Locks
 from bq.util.mkdir import _mkdir
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
-from bq.image_service.controllers.converters.imgcnv import ConverterImgcnv
+from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
 from bq.image_service.controllers.imgsrv import default_format, default_tile_size, min_level_size
 
 log = logging.getLogger("bq.image_service.operations.tile")

@@ -31,7 +31,7 @@ import bq.util.io_misc as misc
 from bq.image_service.controllers.imgsrv import min_level_size
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converter_base import ConverterBase, Format
-from .imgcnv import ConverterImgcnv
+from .converter_imgcnv import ConverterImgcnv
 
 try:
     import openslide
@@ -80,7 +80,7 @@ class ConverterOpenSlide(ConverterBase):
         v['full'] = openslide.__version__
 
         if 'full' in v:
-            d = [int(s) for s in v['full'].split('.', 2)]
+            d = [int(s) for s in v['full'].split('.')]
             if len(d)>2:
                 v['numeric'] = d
                 v['major']   = d[0]

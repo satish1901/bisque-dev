@@ -108,7 +108,7 @@ from bq.blob_service.controllers.blob_drivers import move_file
 from bq.util.io_misc import blocked_alpha_num_sort, toascii, tounicode
 
 from bq.image_service.controllers.service import ImageServiceController
-from bq.image_service.controllers.converters.imgcnv import ConverterImgcnv
+from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
 
 from bq.util.mkdir import _mkdir
 
