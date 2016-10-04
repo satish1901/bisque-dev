@@ -272,11 +272,15 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         if (this.organizerCt && this.organizerCt.isVisible()) {
             this.organizerCt.reset();
         }
-        this.browser.msgBus.fireEvent('Browser_ReloadData', {
-            offset : 0,
-            tag_query : '',
-            tag_order : '',
-        });
+        if (this.viewMgr.cBar.btnRefresh_only_update) {
+            this.browser.msgBus.fireEvent('Browser_ReloadData', {});
+        } else {
+            this.browser.msgBus.fireEvent('Browser_ReloadData', {
+                offset : 0,
+                tag_query : '',
+                tag_order : '',
+            });
+        }
         var t = this.westPanel.queryById('files');
         if (t && t.isVisible()) {
             t.reset();
