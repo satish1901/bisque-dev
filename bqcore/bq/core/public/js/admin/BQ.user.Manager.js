@@ -902,7 +902,7 @@ Ext.define('BQ.admin.notifications.Manager', {
                 align : 'stretch',
                 pack  : 'start',
             },
-            items: [{        
+            items: [{
                 xtype: 'button',
                 itemId: 'send_btn',
                 text: 'Send message to all users',
@@ -916,8 +916,8 @@ Ext.define('BQ.admin.notifications.Manager', {
     },
 
     afterRender: function() {
-        this.callParent(); 
-        this.loadUsers();        
+        this.callParent();
+        this.loadUsers();
     },
 
     loadUsers: function() {
@@ -949,7 +949,7 @@ Ext.define('BQ.admin.notifications.Manager', {
             },
             scope: this,
             disableCaching: false,
-        });        
+        });
     },
 
     onUsersLoaded: function(xml) {
@@ -992,9 +992,12 @@ Ext.define('BQ.admin.notifications.Manager', {
     sendMessage: function() {
         var msg_w = this.queryById('message'),
             message = msg_w.getValue(),
+            userlist =this.queryById('mailinglist').getValue(),
             resource = BQFactory.make('message');
         msg_w.setLoading('Sending...');
-        resource.setValues([message]);
+        resource.addtag( { name:'message', value: message });
+        resource.addtag( { name:'users', value:userlist } );
+        //resource.setValues([message]);
         resource.save_('/admin/notify_users',
                        callback(this, this.onSendDone),
                        callback(this, this.onSendError),
@@ -1004,7 +1007,7 @@ Ext.define('BQ.admin.notifications.Manager', {
         Ext.Ajax.request({
             url: '/admin/notify_users',
             method: 'POST',
-            params: { 
+            params: {
                 //ajax_req: Ext.util.JSON.encode(myObj),
                 ajax_req: message,
             },
@@ -1029,7 +1032,6 @@ Ext.define('BQ.admin.notifications.Manager', {
     onSendError: function(m) {
         this.queryById('message').setLoading(false);
         BQ.ui.error(m.message_short);
-    },    
+    },
 
 });
-
