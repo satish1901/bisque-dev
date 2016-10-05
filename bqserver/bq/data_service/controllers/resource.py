@@ -306,6 +306,9 @@ class ResponseCache(object):
             # pylint: enable=E1103
         return None
 
+    def force_load (self, resource):
+        return resource
+
     def etag_resource(self, resource):
         resource = self.force_load(resource)
         mtime =  self.modified_resource(resource)
