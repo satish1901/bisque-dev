@@ -2,19 +2,19 @@ import numpy as np
 import ctypes as ct
 import inspect, os
 import warnings
-
+from bq.util.paths import run_path
 
 
 #path=os.path.dirname(__file__) #find current dir of the file
 #path = os.path.join(path,'..','..','..','..','src','extractors','VRL','lib')
 #_VRLLib_warp= np.ctypeslib.load_library('_VRLLib', path)
-_LIB=None
+_VRLLib_warp=None
 def load_lib():
-    global _LIB
-    if _LIB is None:
+    global _VRLLib_warp
+    if _VRLLib_warp is None:
         path = run_path ('bqfeature', 'bq', 'src','extractors', 'VRL','lib')
-        _LIB = np.ctypeslib.load_library('_VRLLib', path)
-    return _LIB
+        _VRLLib_warp = np.ctypeslib.load_library('_VRLLib', path)
+    return _VRLLib_warp
 
 
 def extractEHD(im):

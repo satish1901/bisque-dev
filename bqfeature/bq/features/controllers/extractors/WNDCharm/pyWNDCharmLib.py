@@ -5,6 +5,7 @@ import numpy as np
 import sys
 import os
 import inspect
+from bq.util.paths import run_path
 
 #Notes
 #    add documentation
@@ -15,13 +16,13 @@ import inspect
 #path = os.path.join(path,'..','..','..','..','src','extractors','WNDCharm','lib')
 #_WNDCharmLib = np.ctypeslib.load_library('_WNDCharmLib', path)
 
-_LIB=None
+_WNDCharmLib=None
 def load_lib():
-    global _LIB
-    if _LIB is None:
+    global _WNDCharmLib
+    if _WNDCharmLib is None:
         path = run_path ('bqfeature', 'bq', 'src','extractors', 'WNDCharm','lib')
-        _LIB = np.ctypeslib.load_library('_WNDCharmLib', path)
-    return _LIB
+        _WNDCharmLib = np.ctypeslib.load_library('_WNDCharmLib', path)
+    return _WNDCharmLib
 
 
 
