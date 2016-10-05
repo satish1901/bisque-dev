@@ -438,6 +438,7 @@ class Format(object):
 
             @yield: rows of a request
         """
+        # pylint: disable=no-member
         idx = 0
         query_plan = resource_list.create_query_plan(feature)
         for query in table.get(query_plan):
@@ -470,6 +471,7 @@ class Format(object):
 
             @yield: rows of a request
         """
+        # pylint: disable=no-member
         idx = 0
         for (row, status) in table.get():
             resource = FeatureResource(image=row['image'], mask=row['mask'], gobject=row['gobject'])

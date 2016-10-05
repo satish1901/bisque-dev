@@ -67,6 +67,7 @@ setup(
         "lxml",
 #        "virtualenv",
         "poster",
+        "linesman",
         "shortuuid",
         #"Minimatic",
         ],
