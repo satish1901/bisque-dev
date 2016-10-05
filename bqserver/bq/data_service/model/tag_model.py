@@ -373,7 +373,7 @@ class Taggable(object):
         '''Clear all the children'''
         results = []
         if 'all' in what:
-            results.extend(self.children)
+            results.extend(self.children) # pylint: disable=access-member-before-definition
             self.children = []
             self.tags = []
             self.gobjects = []
@@ -666,10 +666,10 @@ class BQUser(Taggable):
 
         if create_tg:
             tg_user = User()
-            tg_user.user_name = user_name
-            tg_user.email_address = email_address
+            tg_user.user_name = email
+            tg_user.email_address = email
             tg_user.password = password
-            tg_user.display_name = display_name
+            tg_user.display_name = email
             #tg_user.dough_user_id = self.id
             DBSession.add(tg_user)
             DBSession.flush()
@@ -739,30 +739,6 @@ class Dataset(Taggable):
 class BQStore(Taggable):
     xmltag = 'store'
 
-class PermissionToken(object):
-    '''
-    Permission Token object i.e. R_all, W_user1
-    '''
-
-class PermissionSetToken(object):
-    '''
-    Permission Token object i.e. R_all, W_user1
-    '''
-
-class PermissionSet(object):
-    '''
-    A Set of permissions.
-    '''
-    def __init__(self, o):
-        '''Create a permissionSet for object o'''
-        if o:
-            self.taggable = o
-    def add(self, token):
-        pst = PermissionSetToken()
-        pst.token=token
-        pst.set = self
-
-        self.tokens.append (pst)
 
 class TaggableAcl(object):
     """A permission for EDIT or READ on a taggable object
@@ -1016,15 +992,15 @@ def registration_hook(action, **kw):
     if action=="new_user":
         u = kw.pop('user', None)
         if u:
-            BQUser.new_user (u.email_adress)
+            BQUser.new_user (u.email_adress, u.password)
     elif action=="update_user":
         u = kw.pop('user', None)
         if u:
             bquser = DBSession.query(BQUser).filter_by(resource_value=u.email_address).first()
             if not bquser:
-                bquser = BQUser.new_user (u.email_adress)
-            dn = bq_user.findtag('display_name', create=True)
-            dn.value = tg_user.display_name
+                bquser = BQUser.new_user (u.email_adress, u.password)
+            dn = bquser.findtag('display_name', create=True)
+            dn.value = u.display_name
             dn.permission = 'published'
             #bquser.display_name = u.display_name
             bquser.resource_name = u.user_name
