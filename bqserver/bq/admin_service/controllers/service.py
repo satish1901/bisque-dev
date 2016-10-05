@@ -55,6 +55,7 @@ import operator
 import logging
 import transaction
 import copy
+import string
 
 from datetime import datetime
 from lxml import etree
@@ -131,11 +132,13 @@ class AdminController(ServiceController):
         if request.method.upper() == 'POST' and request.body is not None:
             try:
                 resource = etree.fromstring(request.body)
-                message = resource.find('value').text
+                message = resource.find('tag[@name="message"]').get ('value')
+                userlist = resource.find('tag[@name="users"]').get('value')
+                self.do_notify_users(userlist, message)
+                return '<resource type="message" value="sent" />'
             except Exception:
+                log.exception ("processing message")
                 return abort(400, 'Malformed request document')
-            self.do_notify_users(message)
-            return '<resource type="message" value="sent" />'
 
         abort(400, 'The request must contain message body')
 
@@ -516,7 +519,7 @@ class AdminController(ServiceController):
         }
         return variables
 
-    def do_notify_users(self, message):
+    def do_notify_users(self, userlist, message):
         log.debug(message)
         variables = self.get_variables()
 
@@ -526,9 +529,13 @@ class AdminController(ServiceController):
             variables['user_name'] = u.get('name')
             variables['email'] = u.get('value')
             variables['display_name'] = u.find('tag[@name="display_name"]').get('value')
+            if variables['email'] not in userlist:
+                continue
+
             msg = copy.deepcopy(message)
-            for v,t in variables.iteritems():
-                msg = msg.replace('$%s'%v, t)
+            msg = string.Template(msg).safe_substitute(variables)
+            #for v,t in variables.iteritems():
+            #    msg = msg.replace('$%s'%v, t)
 
             # send
             log.info('Sending message to: %s', variables['email'])
