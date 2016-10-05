@@ -7,7 +7,7 @@
     var BQ = BQ || {};
     BQ.config = BQ.config || {};
     if (location.search.indexOf('embed=true')>0) {
-        BQ.config.embedded_mode = true;    
+        BQ.config.embedded_mode = true;
         BQ.config.toolbar_visibility = true;
     }
 --></script>
@@ -24,8 +24,8 @@
     <meta name = "viewport" content="width=900, maximum-scale=1" />
     <link href="//fonts.googleapis.com/css?family=Abel|Varela+Round|Roboto:400,300,100" rel="stylesheet" type="text/css" />
 
-    <link py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" rel="stylesheet" type="text/css" href="/extjs/resources/css/ext-all-gray.css"/>
-    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="/extjs/ext-all.js"> </script>
+    <link py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" rel="stylesheet" type="text/css" href="/core/extjs/resources/css/ext-all-gray.css"/>
+    <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="/core/extjs/ext-all.js"> </script>
 
     <!-- Third party libs -->
     <script py:if="tg.config.get('bisque.js_environment', 'production') == 'production'" type="text/javascript" src="${tg.url('/core/d3/d3.js')}"></script>
