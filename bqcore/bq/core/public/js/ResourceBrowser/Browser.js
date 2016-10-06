@@ -23,6 +23,7 @@ Ext.define('Bisque.ResourceBrowser.Dialog', {
         config.height = config.height || '85%';
         config.width = config.width || '85%';
         config.selType = config.selType || 'MULTI';
+        config.selectState = config.selectState || 'SELECT';
         config.showOrganizer = ('showOrganizer' in config) ? config.showOrganizer : true;
 
         var bodySz = Ext.getBody().getViewSize();
@@ -63,6 +64,11 @@ Ext.define('Bisque.ResourceBrowser.Dialog', {
             this.destroy();
         }, this);
 
+        var me = this;
+        if (config.selection) {
+            setTimeout( function() { me.doSelect(config.selection); }, 300 );
+        }
+
         this.show();
     },
 
@@ -86,6 +92,11 @@ Ext.define('Bisque.ResourceBrowser.Dialog', {
         }
 
         BQ.ui.notification('Selection is empty. Please select an image or press cancel to abort.');
+    },
+
+    doSelect: function(selection) {
+        if (!this.browser) return;
+        this.browser.doSelect(selection);
     },
 });
 
@@ -222,7 +233,8 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         this.commandBar.applyPreferences();
 
         if (!this.browserParams.viewMode) {
-            this.browserParams.tagQuery = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Tag Query', this.browserParams.tagQuery);
+            if (!this.browserParams.tagQuery)
+                this.browserParams.tagQuery = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Tag Query', this.browserParams.tagQuery);
 
             //all these check for backwards comparability; if there is not template a user can set any of the layout types
             var prefLayout = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Layout', this.browserParams.layout);
@@ -619,6 +631,19 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         }
         me.task_reload.delay(delay_timeout);
     },
+
+    doSelect: function(selection) {
+        var rq = this.resourceQueue,
+            r = null;
+        for (var i=0; (r=rq[i]); ++i) {
+            if (r.resource.resource_uniq in selection) {
+                r.toggleSelect(true);
+                rq.selectedRes[r.resource.uri] = r;
+            }
+        }
+        // re-render
+        this.ChangeLayout(this.layoutKey);
+    },    
 
 });
 

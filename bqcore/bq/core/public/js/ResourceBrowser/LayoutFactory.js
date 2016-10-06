@@ -133,24 +133,14 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base', {
                 'select' : function(resCt) {
                     this.browser.resourceQueue.selectedRes[resCt.resource.uri] = resCt;
                     var selRes = this.browser.resourceQueue.selectedRes;
-                    var keys = Ext.Object.getKeys(selRes);
-                    var selection = [];
-
-                    for (var i = 0; i < keys.length; i++)
-                        selection.push(keys[i]);
-
+                    var selection = Ext.Object.getKeys(selRes);
                     this.msgBus.fireEvent('ResSelectionChange', selection);
                 },
 
                 'unselect' : function(resCt) {
                     delete this.browser.resourceQueue.selectedRes[resCt.resource.uri];
                     var selRes = this.browser.resourceQueue.selectedRes;
-                    var keys = Ext.Object.getKeys(selRes);
-                    var selection = [];
-
-                    for (var i = 0; i < keys.length; i++)
-                        selection.push(selRes[i]);
-
+                    var selection = Ext.Object.getKeys(selRes);
                     this.msgBus.fireEvent('ResSelectionChange', selection);
                 },
 
