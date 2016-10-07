@@ -233,7 +233,7 @@ class RootController(BaseController):
 
     @expose()
     def index(self, **kw):
-        redirect (config.get('bisque.root','') + "/client_service/")
+        redirect (config.get('bisque.root', tg.request.url) + "/client_service/")
 
 
 

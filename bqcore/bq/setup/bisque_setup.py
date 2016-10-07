@@ -422,7 +422,7 @@ def check_env (section, key):
     # Check environment variables
     section_name = '' if section == BQ_SECTION or section is None else section + "_"
     envkey = "BISQUE_" + section_name.upper() + key.upper().replace('.','_')
-    print "checking", envkey
+    #print "checking", envkey
     return os.environ.get (envkey)
 
 
@@ -449,7 +449,8 @@ ENGINE_VARS  ={
 # you run bisque-setup
 initial_vars = {
     'bisque.paths.root' : os.getcwd(),
-    'bisque.root' : 'http://0.0.0.0:8080',
+#    bisque.root overides use of request url in generating responses
+#    'bisque.root' : 'http://0.0.0.0:8080',
     'bisque.organization': 'Your Organization',
     'bisque.title': 'Image Repository',
     'bisque.admin_email' : 'YourEmail@YourOrganization',
@@ -1751,7 +1752,7 @@ def setup_stores(params):
                  "Setup Stores use of external storage ") != 'Y':
         return params
 
-    print params
+    #print params
 
     params = modify_site_cfg (STORES_QUESTIONS, params,  append=False)
     from bq.util.dotnested import parse_nested, unparse_nested
@@ -1760,7 +1761,6 @@ def setup_stores(params):
         while True:
             questions = [ ('bisque.stores.%s.%s' %(store,q[0]), store+': '+q[1], q[2],q[3])
                           for q in ensure_default(STORE_QUESTIONS) ]
-            print questions
             params = modify_site_cfg (questions, params,  append=False)
             scheme = urlparse.urlparse(params.get ('bisque.stores.%s.mounturl' %store)).scheme
             if scheme not in DRIVER_QS:

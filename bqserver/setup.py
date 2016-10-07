@@ -69,7 +69,6 @@ The bisque server
     usage            = bq.usage.controllers.usage
     graph            = bq.graph.controllers.graph
     preference       = bq.preference.controllers.service
-    mnt              = bq.blob_service.controllers.file_service
     table            = bq.table.controllers.service
 
 
