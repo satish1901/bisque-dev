@@ -236,7 +236,6 @@ class RootController(BaseController):
         redirect (config.get('bisque.root','') + "/client_service/")
 
 
-#from bq.util.http import http_client
 
 #def register_proxy_services (proxy):
 #    '''Registers all local services with the requested
@@ -255,6 +254,7 @@ def update_remote_proxies (proxy):
     bisque server on remote servers.. Requests  a list of
     services available from the root server and adds them
     """
+    from bq.util.http import http_client
     count = 0
     while True:
         try:

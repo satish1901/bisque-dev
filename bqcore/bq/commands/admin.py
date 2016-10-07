@@ -7,10 +7,11 @@ import bq
 import optparse
 import errno
 import logging
+import shutil
 
 from bq.release import __VERSION__
 from bq.util.io_misc import remove_safe
-from bq.util.paths import site_cfg_path
+from bq.util.paths import site_cfg_path, data_path
 
 
 logging.basicConfig(level=logging.INFO)
@@ -123,7 +124,6 @@ class cache(object):
 
     def run(self):
         #Check for self.command in init..
-        from bq.utils.paths import data_path
         for p in (data_path('.server_cache'), data_path('.client_cache')):
             if os.path.exists (p):
                 shutil.rmtree (p)
@@ -208,7 +208,6 @@ class deploy(object):
         ''
         from bq.util.copylink import copy_symlink, copy_link
         import pkg_resources
-        import shutil
 
         # dima: deploy fails under windows with access denied, need to clean dir first
         if os.name == 'nt':

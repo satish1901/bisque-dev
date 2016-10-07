@@ -50,8 +50,9 @@ DESCRIPTION
 ===========
 
  Base engine adaptor for common code
- 
+
 """
+import os
 import logging
 import copy
 from lxml import etree
@@ -85,7 +86,7 @@ class BaseAdapter(object):
         '''
         pass
 
-    
+
     def prepare_inputs (self, module, mex):
         '''Scan the module definition and the mex and match input
         formal parameters creating a list of actual parameters in the
@@ -126,11 +127,11 @@ class BaseAdapter(object):
             else:
                 found = actual_inputs.xpath ('./tag[@name="%s"]'%param_name)
                 log.debug ("PARAM %s=%s" % (param_name, found))
-                input_nodes +=  found 
+                input_nodes +=  found
             if found is None:
                 log.warn ('missing input for parameter %s' % mi.get('value'))
 
-        # Add the index 
+        # Add the index
         for i, node in enumerate(input_nodes):
             if 'index' in node.keys():
                 continue
@@ -140,7 +141,7 @@ class BaseAdapter(object):
 
         return input_nodes
 
-    
+
 
     def prepare_outputs (self, module, mex):
         '''Scan the module definition and the mex and match output

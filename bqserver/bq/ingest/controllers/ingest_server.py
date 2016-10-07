@@ -7,7 +7,7 @@ import pkg_resources
 
 from tempfile import NamedTemporaryFile
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
-from tg import expose, flash, controllers
+from tg import expose, flash, controllers, request
 from repoze.what import predicates
 
 from bq.core.service import ServiceMixin
@@ -40,7 +40,7 @@ def image_ingest (blob):
     #f.close()
     #fname = f.name
 
-    log.debug ('NAME = %s' % fname)
+    #log.debug ('NAME = %s' % fname)
     #info = image_service.new_image(src=open(fname,'rb'), name=original_name)
     info = image_service.uri(blob_uri).info().get()
     if info==None:
@@ -79,7 +79,7 @@ class ingestController(controllers.RestController, ServiceMixin):
         path = "/".join ([''] + list (path))
         xml = request.body_file.read()
         log.debug ("POST %s %s " % (str(path), xml))
-        return new_blobs(body = xml)
+       # return new_blobs(body = xml)
 
     def new_blobs(self, body, **kw):
         log.info("new_blobs %s" % body)

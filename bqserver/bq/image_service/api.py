@@ -192,10 +192,10 @@ class proxy_dispatch (object):
             return ofs
             log.debug('Returning file: ' + str(fname) )
 
-    def remote_dispatch (self, fullurl):
-        header, content  = http_client.request (fullurl)
-        # Process content is similar way to local dispatch based on returned headers
-        return content
+    #def remote_dispatch (self, fullurl):
+    #    header, content  = http_client.request (fullurl)
+    #    # Process content is similar way to local dispatch based on returned headers
+    #    return content
 
 
 class ImageService(proxy_dispatch):
@@ -382,11 +382,3 @@ def set_file_acl(image_uri, owner_name, permission):
 def uri(image_uri):
     server = find_server(image_uri)
     return server.uri(image_uri)
-
-
-
-
-
-
-
-

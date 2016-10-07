@@ -132,8 +132,8 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
         main_path = main_path [0:-2]
 
     main_name = os.path.basename(main_path)
-    if bisque_deps:
-        files.extend (BISQUE_DEPS)
+    #if bisque_deps:
+    #    files.extend (BISQUE_DEPS)
     if len(files):
         copy_files (files, '.')
     if not os.path.exists (dependency_dir):

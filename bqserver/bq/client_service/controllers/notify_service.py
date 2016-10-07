@@ -84,10 +84,8 @@ def send_invite(sender_email, recepient_email, subject, body):
     """Create a new user and send them an invitation
     returns the new BQuser
     """
-    
+
     log.debug ("Creating new user %s" % (recepient_email))
     send_mail(sender_email, recepient_email, subject, body)
 
-    return newuser
-                     
-                      
+    #return newuser

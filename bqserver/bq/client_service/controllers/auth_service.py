@@ -65,7 +65,7 @@ import tg
 from tg import request, response, session, flash, require
 from tg import  expose, redirect, url
 from tg import config, validate
-from pylons.i18n import _
+from pylons.i18n import ugettext as  _
 from repoze.what import predicates
 
 from bq.core.service import ServiceController
@@ -262,6 +262,8 @@ class AuthenticationServer(ServiceController):
 
             current_user = identity.get_user()
             if current_user:
+                # Pylint misses type of current_user
+                # pylint: disable=no-member
                 etree.SubElement(sess,'tag',
                                  name='user', value=data_service.uri() + current_user.uri)
                 etree.SubElement(sess, 'tag', name='group', value=",".join([ g.group_name for g in  current_user.get_groups()]))

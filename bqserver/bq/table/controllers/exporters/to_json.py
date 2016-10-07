@@ -81,7 +81,7 @@ from bq.table.controllers.table_exporter import TableExporter
 #---------------------------------------------------------------------------------------
 
 class ExtEncoder(json.JSONEncoder):
-    def default(self, o):
+    def default(self, o): # pylint: disable=method-hidden
         if isinstance(o, (dt.datetime, dt.date, dt.time)):
             return o.isoformat()
         #try:

@@ -8,7 +8,7 @@ log = logging.getLogger('bq.engine_service.condor_templates')
 # Variables (staging_id, post_exec, post_args)
 templateDAG =\
 """JOB ${staging_id}  ./${staging_id}.cmd
-CONFIG ./${staging_id}.dag.config 
+CONFIG ./${staging_id}.dag.config
 SCRIPT POST ${staging_id} ${post_exec} ${post_args}
 """
 #RETRY ${staging_id} 5
@@ -40,8 +40,8 @@ request_memory = 1024
 ${condor_submit}
 
 %for mex in mexes:
-<%   
-    if not mex.executable: 
+<%
+    if not mex.executable:
         continue
 %>
 initialdir = ${mex.staging_path}
@@ -81,7 +81,7 @@ def load_engines(wanted=None, defaults= {} ):
 
     """
     stdvars = {}
-    get = defaults.get 
+    get = defaults.get
     engine_options = {
         "cheetah.importhooks": get("cheetah.importhooks", False),
         "cheetah.precompiled": get("cheetah.precompiled", False),
@@ -149,7 +149,7 @@ class CondorTemplates(object):
     def mk_path(cls, name, mapping):
         return os.path.join('%(staging_path)s' % mapping,
                             name % mapping)
-                            
+
     def __init__(self, cfg):
         engine = cfg.get('condor.template_engine', 'mako')
         self.engines = load_engines(engine,  cfg)
@@ -162,7 +162,7 @@ class CondorTemplates(object):
             else:
                 log.warn('template %s: %s not found: defaulting to internal version' % (x,path))
                 self.template[x] = CONDOR_TEMPLATES[x]
-            
+
 
     def create_file(self,output_path, template, mapping):
         try:
@@ -174,10 +174,10 @@ class CondorTemplates(object):
 
             f.write(self.engine.render(template=template, info=mapping))
             f.close()
-        except KeyError:
+        except KeyError, e:
             log.exception('Bad template : %s dict=%s' % (template, mapping))
             raise e
-            
+
 
     def construct_launcher(self, mapping):
         try:
@@ -187,8 +187,8 @@ class CondorTemplates(object):
         except KeyError, e:
             log.exception('missing  mapping in %s' % mapping)
             raise e
-            
-        
+
+
     def prepare_submit(self, mapping):
         """Create the condor required files"""
         self.dag_path = self.mk_path('%(staging_id)s.dag', mapping)
@@ -202,6 +202,3 @@ class CondorTemplates(object):
         self.submit_path = self.mk_path('%(staging_id)s.cmd', mapping)
         self.create_file(self.submit_path,
                          self.template['condor.submit_template'], mapping)
-
-        
-        
