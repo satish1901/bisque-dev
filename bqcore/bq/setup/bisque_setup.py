@@ -581,16 +581,36 @@ DOCKER_IMAGE_QUESTIONS = [
 
 #####################################################
 # Installer routines
+def unpack(seq, nfirst):
+    """Unpack N elements of a tuple and return them with rest
+    a = (1,2,3)
+    unpack (a, 2)
+    1,2, (3)
+    """
+    it = iter(seq)
+    for x in xrange(nfirst):
+        yield next(it, None)
+    yield tuple(it)
+
+def make_ntuple (tpl, n, default=None):
+    "Force a tuple to be a certain length"
+    return tuple (list(tpl) + [default]*(n-len(tpl)))
+
+def ensure_default (qs):
+    return map(lambda x: make_ntuple(x, 4, ''), qs)
+
+
 def update_variables (qs, store):
     """Ask questions to update any global  variables"""
     values = {}
     values.update (store)
 
-    for key, q, h in qs:
-        values.setdefault (key, '')
+    # Set all values to empty or default values if provided
+    for key, q, h, default  in ensure_default(qs):
+        values.setdefault (key, default)
 
     # Ask the question in qs after substituting vars
-    for key, question, help in qs:
+    for key, question, help, _ in ensure_default(qs):
         values[key] = STemplate (values[key]).safe_substitute(values)
         values[key] = getanswer (question, values[key], help)
 
@@ -651,6 +671,7 @@ def update_site_cfg (bisque_vars, section = BQ_SECTION, append=True, cfg=None, f
     c.write (open (cfg, 'w'))
     return bisque_vars
 
+Nonce = object()
 
 def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=None):
     """Ask questions and modify a config file
@@ -663,9 +684,11 @@ def modify_site_cfg(qs, bisque_vars, section = BQ_SECTION, append=True, cfg=None
         raise InstallError('missing %s' % cfg)
 
     # Check environment defaults
-    for key, _, _ in qs:
+    for key, _ in [unpack(q, 1) for q in qs ]:
         # Check environment variables
-        bisque_vars[key] = check_env(section, key) or bisque_vars.get (key, '')
+        default = check_env(section, key) or bisque_vars.get (key, Nonce)
+        if default is not Nonce:
+            bisque_vars[key] = default
 
     bisque_vars =  update_variables(qs, bisque_vars )
     for k,v in linked_vars.items():
@@ -1701,6 +1724,61 @@ def setup_paster(params, server_params):
 
 
     return params, server_params
+#######################################################
+#
+
+STORES_QUESTIONS=[
+    ('bisque.blob_service.stores', 'Stores to be configured', 'A list of simple names of stores lile "images"')]
+
+
+STORE_QUESTIONS=[
+    ( 'mounturl', 'The location of the external store', 'file:// or irods:// or s3://'),
+    ( 'readonly', 'The store is readonly', 'true or false', 'false')
+    ]
+DRIVER_QS =  {
+    'file': [ ('top', 'top store if using macros',
+               'i.e. top = file://$datadir/blobdir/ for file://$datadir/imagedir/$user/')],
+    's3': [ ('credentials', '<AWS_KEY>:<AWS_SECRET>', ''),
+            ('bucket_id', 'The bucket id', ''),
+            ('location', 'a location string', 'us-west-1, us-west-2, sa-east-1, EU, ap-northeast-1, etc', 'us-west-2'),],
+    'irods': [ ('credentials', ' <user>:<pass> pair', '')]
+}
+
+
+def setup_stores(params):
+    """Stores """
+    if getanswer("Install Stores", 'Y',
+                 "Setup Stores use of external storage ") != 'Y':
+        return params
+
+    print params
+
+    params = modify_site_cfg (STORES_QUESTIONS, params,  append=False)
+    from bq.util.dotnested import parse_nested, unparse_nested
+    stores = [ x.strip() for x in params['bisque.blob_service.stores'].split(',') ]
+    for store in stores:
+        while True:
+            questions = [ ('bisque.stores.%s.%s' %(store,q[0]), store+': '+q[1], q[2],q[3])
+                          for q in ensure_default(STORE_QUESTIONS) ]
+            print questions
+            params = modify_site_cfg (questions, params,  append=False)
+            scheme = urlparse.urlparse(params.get ('bisque.stores.%s.mounturl' %store)).scheme
+            if scheme not in DRIVER_QS:
+                print "Invalide driver must be one of:", DRIVER_QS.keys()
+                continue
+            questions = [ ('bisque.stores.%s.%s' %(store,q[0]), store+': '+q[1], q[2],q[3])
+                          for q in ensure_default( DRIVER_QS[scheme])]
+            params = modify_site_cfg (questions, params,  append=False)
+            break
+
+    #stores =  parse_nested (params, ['bisque.stores.%s' % store for store in stores])
+    #print "AFTER Q", stores
+
+    #for store, sv in stores.items():
+    #    print store, sv
+
+    return params
+
 
 
 #######################################################
@@ -2273,6 +2351,7 @@ install_options= [
     'mail',
     'preferences',
     'production',
+    'stores',
     ]
 
 # default steps for an engine install
@@ -2316,6 +2395,7 @@ SETUP_COMMANDS = {
     'upgrade' : [ kill_server, fetch_stable, fetch_external_binaries, install_dependencies, migrate, cleanup ],
     "configuration" : [ setup_server_cfg ],
     "createdb" : [ setup_database ],
+    "stores": [ setup_stores ],
     }
 
 # Special procedures that modify runtime-bisque.cfg (for the engine)
