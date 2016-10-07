@@ -78,6 +78,7 @@ full_stack = true
 bisque.organization = ORG
 bisque.title = BioImage Repository
 bisque.admin_email = admin@nowhere.com
+bisque.admin_id = admin
 bisque.welcome_message = Welcome to the Bisque database
 #bisque.background_query = welcome_background:
 #bisque.background_resource  =

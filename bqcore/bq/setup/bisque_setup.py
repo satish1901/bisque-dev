@@ -470,7 +470,7 @@ initial_vars = {
 
 linked_vars = {
 #    'h1.url' : '${bisque.server}',
-    'bisque.root' : '${bisque.server}',
+#    'bisque.root' : '${bisque.server}',
     'registration.site_name' : '${bisque.title} (${bisque.server})',
     'registration.host' : '${bisque.server}',
     'registration.mail.smtp_server' : '${mail.smtp.server}',
@@ -1758,13 +1758,19 @@ def setup_stores(params):
     from bq.util.dotnested import parse_nested, unparse_nested
     stores = [ x.strip() for x in params['bisque.blob_service.stores'].split(',') ]
     for store in stores:
-        while True:
+        count = 0
+        while count < 2:
             questions = [ ('bisque.stores.%s.%s' %(store,q[0]), store+': '+q[1], q[2],q[3])
                           for q in ensure_default(STORE_QUESTIONS) ]
             params = modify_site_cfg (questions, params,  append=False)
             scheme = urlparse.urlparse(params.get ('bisque.stores.%s.mounturl' %store)).scheme
             if scheme not in DRIVER_QS:
                 print "Invalide driver must be one of:", DRIVER_QS.keys()
+                count+=1
+                if count == 2:
+                    print "Removing ", store, " from store list"
+                    stores.remove (store)
+                    params['bisque.blob_service.stores'] = ",".join (stores)
                 continue
             questions = [ ('bisque.stores.%s.%s' %(store,q[0]), store+': '+q[1], q[2],q[3])
                           for q in ensure_default( DRIVER_QS[scheme])]
