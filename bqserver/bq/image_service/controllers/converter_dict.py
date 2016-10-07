@@ -78,7 +78,7 @@ class ConverterDict(OrderedDict):
         for c in self.itervalues():
             for n,f in c.formats().iteritems():
                 if f.multipage is True:
-                    formats.append[n]
+                    formats.append(n)
         return formatName.lower() in formats
 
     def converters(self, readable=True, writable=True, multipage=False):
@@ -95,4 +95,3 @@ class ConverterDict(OrderedDict):
                 if ok is True:
                     fs.setdefault(n, c)
         return fs
-

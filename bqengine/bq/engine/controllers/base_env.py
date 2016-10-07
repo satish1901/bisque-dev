@@ -68,7 +68,7 @@ class BaseEnvironment (ModuleEnvironment):
         if value_type==list:
             return strtolist(value)
 
-        raise ModuleEnvironmentError("Illegal conversion of %s to type %s" % (value, typ))
+        raise ModuleEnvironmentError("Illegal conversion of %s to type %s" % (value, value_type))
 
     def parse_mex_inputs (self, module, mex):
         """Scan the module definition and the mex and match input

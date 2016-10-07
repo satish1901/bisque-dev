@@ -42,7 +42,7 @@ class ModuleRunner(object):
             if launcher and os.path.abspath(sys.argv[0]) != os.path.abspath(launcher):
                 if os.path.exists (launcher):
                     # Given launcher
-                    cmd = launcher.split(' ')
+                    cmd = launcher.split(' ') # pylint: disable=no-member
                     cmd.extend (sys.argv[1:])
                     log.debug( "Calling %s" % cmd )
                     subprocess.call (cmd)
@@ -59,7 +59,7 @@ class ModuleRunner(object):
         if runners is None:
             raise ModuleEnvironmentError("Must define legal platforms:  runtime.platforms in module config")
         log.debug('Module runners: %s'%runners)
-        self.module_runners = [r.strip() for r in runners.split(',')]
+        self.module_runners = [r.strip() for r in runners.split(',')]  # pylint: disable=no-member
 
         runtime_bisque = 'runtime-bisque.cfg'
         if not os.path.exists(runtime_bisque):
@@ -69,7 +69,7 @@ class ModuleRunner(object):
             cfg = ConfigFile(runtime_bisque)
             runners = cfg.get(None, 'runtime.platforms')
             log.debug('System runners: %s'%runners)
-            self.system_runners = [r.strip() for r in runners.split(',')]
+            self.system_runners = [r.strip() for r in runners.split(',')]  # pylint: disable=no-member
         else:
             log.warn ("Could not file runtime-bisque.cfg")
             # Default to module runners ?  They may not be availble

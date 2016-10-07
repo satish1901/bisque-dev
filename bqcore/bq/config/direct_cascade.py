@@ -36,6 +36,7 @@ class DirectCascade(Cascade):
                         list(v)
                         # then close:
                         v.close()
-            except self.catch_exceptions, e:
+            # Pylin misses that this is a list of exception values
+            except tuple (self.catch_exceptions) as e:
                 pass
         return self.apps[-1](environ, start_response)

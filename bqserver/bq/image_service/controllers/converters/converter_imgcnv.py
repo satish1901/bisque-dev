@@ -342,7 +342,8 @@ class ConverterImgcnv(ConverterBase):
                         log.info ('Run: timed-out for [%s]', misc.tounicode(command))
                         if ofnm is not None and os.path.exists(ofnm):
                             os.remove(ofnm)
-                        abort(412, 'Requested timeout reached')
+                        #abort(412, 'Requested timeout reached')
+                        log.error ("Request timed out")
                     if retcode!=0:
                         log.info ('Run: returned [%s] for [%s]', retcode, misc.tounicode(command))
                         return None

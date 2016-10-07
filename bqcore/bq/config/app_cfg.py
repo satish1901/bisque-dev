@@ -29,7 +29,7 @@ from tg.error import ErrorHandler
 #import tgscheduler
 #from repoze.who.config import make_middleware_with_config
 from repoze.who.middleware import PluggableAuthenticationMiddleware
-from repoze.who.plugins.testutil import AuthenticationForgerPlugin
+from repoze.who.plugins.testutil import AuthenticationForgerMiddleware
 from repoze.who.config import WhoConfig
 
 import bq

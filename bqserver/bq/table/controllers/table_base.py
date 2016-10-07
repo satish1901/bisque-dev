@@ -57,6 +57,8 @@ import logging
 import pkg_resources
 from pylons.controllers.util import abort
 
+log = logging.getLogger("bq.table.base")
+
 try:
     import numpy as np
 except ImportError:
@@ -67,7 +69,6 @@ try:
 except ImportError:
     log.info('Pandas was not found but required for table service!')
 
-log = logging.getLogger("bq.table.base")
 
 __all__ = [ 'TableBase' ]
 
@@ -108,7 +109,7 @@ class TableBase(object):
         self.subpath = None # list containing subpath to elements within the resource
         self.tables = None # {'path':.., 'type':..} for all available tables in the resource
         self.t = None # represents a pointer to the actual element being operated on based on the driver
-        self.data = None # Numpy array or pandas dataframe 
+        self.data = None # Numpy array or pandas dataframe
         self.offset = 0
         self.headers = None
         self.types = None
