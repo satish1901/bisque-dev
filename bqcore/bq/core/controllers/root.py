@@ -69,6 +69,7 @@ import simplejson as json
 from lxml import etree
 from tg import expose,  request, redirect, config, response, abort
 from tg.controllers import CUSTOM_CONTENT_TYPE
+from tg.controllers import WSGIAppController
 #from tgext.admin import AdminController
 
 from bq.core.model import DBSession
@@ -79,6 +80,7 @@ from bq.core.service import ServiceController, service_registry
 from bq.core.service import load_services, mount_services, start_services
 from bq.core.controllers.error import ErrorController
 from bq.util.hash import is_uniq_code
+from bq.util.proxy import make_proxy
 
 #from proxy import ProxyRewriteURL
 
@@ -141,29 +143,23 @@ class ServiceRegistryController (ServiceController):
         return etree.tostring(resource)
 
 
-from tg.controllers import WSGIAppController
-from bq.util.proxy import make_proxy
 class ProxyCache(object):
     "Cache proxy services"
     def __init__(self):
         self.proxies = {}
     @expose()
     def index(self, **kw):
-      return str (self.proxies.keys())
+        return str (self.proxies.keys())
     @expose()
     def _lookup (self, host_addr, *rest):
+        log.debug ("Proxy for %s", host_addr)
+        proxy = self.proxies.setdefault(host_addr, WSGIAppController (make_proxy(config, "http://%s" % host_addr)))
+        log.debug ("PROXIES %s", str (self.proxies))
+        return proxy, rest
 
-      log.debug ("Proxy for %s", host_addr)
-      proxy = self.proxies.setdefault(host_addr, WSGIAppController (make_proxy(config, "http://%s" % host_addr)))
-      log.debug ("PROXIES %s", str (self.proxies))
-
-      return proxy, rest
-
-oldnames = {
-  'imgsrv' : 'image_service',
-  'ds'     : 'data_service',
-  'ms'     : 'module_service',
-}
+oldnames = {'imgsrv' : 'image_service',
+            'ds'     : 'data_service',
+            'ms'     : 'module_service',}
 
 #class Root(controllers.RootController):
 class RootController(BaseController):
@@ -172,7 +168,7 @@ class RootController(BaseController):
 
     proxy = ProxyCache()
     error  = ErrorController()
-    root = config.get ('bisque.root')
+    root = config.get ('bisque.root', '')
 
     @classmethod
     def mount_local_services(cls, root, wanted = None, unwanted=None):
@@ -183,10 +179,10 @@ class RootController(BaseController):
         cls.services = ServiceRegistryController(root + "/services/")
         load_services ()
         for name, service in mount_services (root, wanted, unwanted):
-          # This will circumvent the use of lookup below by
-          # directly mount the services on the root class controller
-          #setattr(cls, name, service)
-          pass
+            # This will circumvent the use of lookup below by
+            # directly mount the services on the root class controller
+            #setattr(cls, name, service)
+            pass
 
 
 
@@ -209,18 +205,18 @@ class RootController(BaseController):
             service_type = oldnames[service_type]
 
         #log.debug ("find controller for %s  " % (str(service_type) ))
-        log.debug ("lookup for %s/%s" % (service_type,str (rest) ))
+        log.debug ("lookup for %s/%s" , service_type, rest )
         #import pdb
         #pdb.set_trace()
         service = service_registry.find_service(service_type)
         if service is not None:
-          log.debug ('found %s ' % str(service))
-          return service, rest
+            log.debug ('found %s ' ,  str(service))
+            return service, rest
         log.warn ('no service found %s with %s', service_type, rest)
         if is_uniq_code(service_type):
-          log.debug ("uniq code %s", request.path_qs)
-          # Skip 1st /
-          redirect(urlparse.urljoin(config.get ('bisque.root',''), '/data_service/%s' % request.path_qs[1:]))
+            log.debug ("uniq code %s", request.path_qs)
+            # Skip 1st /
+            redirect(urlparse.urljoin(config.get ('bisque.root', request.application_url), '/data_service/%s' % request.path_qs[1:]))
 
         abort(404)
         #return super(RootController, self)._lookup(service_type, *rest)
@@ -233,7 +229,7 @@ class RootController(BaseController):
 
     @expose()
     def index(self, **kw):
-        redirect (config.get('bisque.root', tg.request.url) + "/client_service/")
+        redirect (config.get('bisque.root', request.application_url) + "/client_service/")
 
 
 
@@ -260,7 +256,7 @@ def update_remote_proxies (proxy):
         try:
             header, content = http_client.request (proxy + "/services")
         except Exception, e:
-            log.debug ("failed connect to %s with %s" % (proxy, e))
+            log.debug ("failed connect to %s with %s" , proxy, e)
             time.sleep (2)
             count += 1
             if count > 5:
@@ -271,14 +267,14 @@ def update_remote_proxies (proxy):
             service_type  = service.tag
             service_uri   = service.text
 
-            log.debug ('remote %s -> %s' % (service_type, service_uri))
+            log.debug ('remote %s -> %s' , service_type, service_uri)
             if not service_registry.has_service(service_type, service_uri):
                 cls = service_registry.find_class (service_type)
                 if cls is not None:
                     service = service_proxy (cls, service_uri)
                     service_registry.register_instance (service )
                 else:
-                    log.error ("unknown class for service type '%s'" %service_type)
+                    log.error ("unknown class for service type '%s'" , service_type)
         break
 
 
@@ -295,7 +291,7 @@ def startup():
     disabled = os.getenv('BISQUE_SERVICES_DISABLED') or config.get('bisque.services_disabled', None)
     enabled  = enabled and [ x.strip() for x in enabled.split(',') ] or []
     disabled = disabled and [ x.strip() for x in disabled.split(',') ] or []
-    log.info ('using root=%s with services=%s - %s' % (root,  enabled, disabled))
+    log.info ('using root=%s with services=%s - %s' , root,  enabled, disabled)
 
     RootController.mount_local_services(root, enabled, disabled)
     # if proxy:
