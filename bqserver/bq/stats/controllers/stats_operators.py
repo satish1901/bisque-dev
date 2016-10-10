@@ -75,7 +75,7 @@ import math
 import operator
 import logging
 
-from bqapi import BQFactory, BQValue
+from .bqapi import BQFactory, BQValue, gobject_primitives
 
 log = logging.getLogger('bisquik.SS.operators')
 

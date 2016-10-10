@@ -1,25 +1,28 @@
 import os
 import re
 import urlparse
-import shutil
-import atexit
 import logging
-import irods
 import posixpath
-
-import subprocess
 import urllib
+
 
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 
 
-from irods.exception import (DataObjectDoesNotExist,
-                             CollectionDoesNotExist,
-                             iRODSException) # pylint: disable=import-error
+log = logging.getLogger('bq.irods')
+
+try:
+    # pylint: disable=import-error
+    from irods.exception import (DataObjectDoesNotExist,
+                                 CollectionDoesNotExist,
+                                 iRODSException)
 
 
-from irods.session import iRODSSession # pylint: disable=import-error
+    from irods.session import iRODSSession # pylint: disable=import-error
+except ImportError:
+    log.warn ("Irods not available: unable to import irods")
+
 IRODS_CACHE = data_path('irods_cache')
 
 CONNECTION_POOL = {}
@@ -28,8 +31,7 @@ CONNECTION_POOL = {}
 class IrodsError(Exception):
     pass
 
-log = logging.getLogger('bq.irods')
-log.setLevel (logging.DEBUG)
+#log.setLevel (logging.DEBUG)
 
 parse_net = re.compile('^((?P<user>[^:]+):(?P<password>[\w.#^!;]+)?@)?(?P<host>[^:]+)(?P<port>:\d+)?')
 

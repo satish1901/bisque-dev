@@ -16,7 +16,7 @@ except Exception:
     from xml.etree import ElementTree as et
 
 try:
-    import magic
+    import magic # pylint: disable=import-error
     ms = magic.open(magic.MAGIC_NONE)
     ms.load()
     def isimagefile(fname):
@@ -38,7 +38,7 @@ def upload(dest, filename, userpass, tags=None):
     if response.status_code != 200:
         print "error while copying %s: Server response %s" % (filename, response.headers)
         print "saving error information to ", filename , "-transfer.err"
-        open(filename + "-transfer.err",'wb').write(content)
+        open(filename + "-transfer.err",'wb').write(response.content)
         return
     return response.content
 

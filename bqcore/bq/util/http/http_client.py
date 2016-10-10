@@ -111,11 +111,11 @@ def xmlrequest(url, method="GET", body=None, headers= {}, **kw):
 
 
 
-def local_request(url, method="GET", body=None, headers = {}, **kw):
-    from bq.config.middleware import wsgiapp
-    from webob import Request
-    req = Request (url)
-    resp = req.get_response (wsgiapp)
+#def local_request(url, method="GET", body=None, headers = {}, **kw):
+#    from bq.config.middleware import wsgiapp
+#    from webob import Request
+#    req = Request (url)
+#    resp = req.get_response (wsgiapp)
 
 
 
@@ -166,5 +166,3 @@ def send (req):
     response.headers = headers
     response.body    = content
     return response
-
-
