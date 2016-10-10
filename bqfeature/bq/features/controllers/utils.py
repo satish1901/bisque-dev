@@ -8,17 +8,19 @@ import logging
 import tempfile
 import urlparse
 import urllib
+from lxml import etree
 from tg import request
+
+from webob.request import Request, environ_from_url
 from libtiff import TIFF
 import threading
 from PIL import Image, ImageDraw
+
 from bq import image_service
 from bq import data_service
 from bq.core import identity
-from bqapi import BQServer
-from lxml import etree
+from bqapi import BQServer, BQCommError
 from bq.util.mkdir import _mkdir
-from webob.request import Request, environ_from_url
 from bq.features.controllers.exceptions import InvalidResourceError, FeatureExtractionError
 from .var import FEATURES_TEMP_DIR
 
@@ -299,7 +301,7 @@ def convert_image2numpy(image_path):
             image = np.dstack(image)
         else:
             image = image[0]
-
+        # pylint: disable=no-member
         if len(image.shape) == 2:
             return image
         elif len(image.shape) == 3:
@@ -349,7 +351,7 @@ def gobject2mask(uri, im):
     if xml.tag in set(['gobject']):
         tag = xml.attrib.get('type')
         if tag is None:
-            raise FeatureExtractionError(None, 415, 'Url: %s, Not an except gobject' % (uri,xml.tag))
+            raise FeatureExtractionError(None, 415, 'Url: %s, Not an expected gobject' % uri)
     else:
         tag = xml.tag
 
@@ -487,4 +489,3 @@ def gobject2keypoint(uri):
         if point_x is None or point_y is None:
             raise FeatureExtractionError(None, 415, 'Url: %s, gobject does not have x or y coordinate' % uri)
         return (int(float(point_x)), int(float(point_y)), 1.0)
-
