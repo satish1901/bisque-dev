@@ -34,8 +34,9 @@ class BQStaticURLParser (object):
                     log.error("static files : %s will overwrite previous %s "
                               % (pathname, self.files[partpath]))
                     continue
-                log.debug(  "ADDING %s -> %s " % (partpath, pathname) )
+                #log.debug(  "ADDING %s -> %s " % (partpath, pathname) )
                 self.files[partpath] = (pathname, None)
+        #log.debug ("Added statics %s", self.files.keys())
 
 
     def __call__(self, environ, start_response):

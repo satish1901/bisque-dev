@@ -2357,7 +2357,6 @@ install_options= [
     'mail',
     'preferences',
     'production',
-    'stores',
     ]
 
 # default steps for an engine install
@@ -2382,6 +2381,7 @@ other_options = [
     'admin',
     'configuration',
     'createdb',
+    'stores',
 ]
 
 all_options = list (set (install_options + engine_options + other_options))

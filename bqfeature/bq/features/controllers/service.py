@@ -66,7 +66,7 @@ class Feature_Archive(dict):
                 extractor = importlib.import_module('bq.features.controllers.extractors.' + module + '.extractor')  # the module needs to have a file named
                 for n, item in inspect.getmembers(extractor):  # extractor.py to import correctly
                     if inspect.isclass(item) and issubclass(item, BaseFeature) and item.disabled==False:
-                        log.debug('Imported Feature: %s' % item.name)
+                        #log.debug('Imported Feature: %s' % item.name)
                         item.library = module #for the list of features
                         self[item.name] = item
 
@@ -79,6 +79,7 @@ class Feature_Archive(dict):
                 log.warning('Failed to import: %s reason %s ', module, e)
                 #log.debug('Failed to import: %s\n%s'%(module, traceback.format_exc()))
                 continue
+        log.debug("Imported Features: %s", self.keys())
 
 
 FEATURE_ARCHIVE = Feature_Archive()

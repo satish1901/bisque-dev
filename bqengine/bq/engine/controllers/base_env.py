@@ -45,6 +45,7 @@ class BaseEnvironment (ModuleEnvironment):
 
     def __init__(self, runner):
         super(BaseEnvironment, self).__init__(runner)
+        self.log = logging.getLogger ('bq.engine.base_env')
 
 
     def process_config (self, runner):
@@ -84,7 +85,7 @@ class BaseEnvironment (ModuleEnvironment):
             param_name = mi.get('value').split(':')[0].strip('$')
             found = mex.xpath ('./tag[@name="%s"]'%param_name)
             if not found:
-                log.warn ('missing input for parameter %s' % mi.get('value'))
+                self.log.warn ('missing input for parameter %s' , mi.get('value'))
             input_nodes += found
         for i, node in enumerate(input_nodes):
             if 'index' in node.keys():
