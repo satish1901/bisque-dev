@@ -83,14 +83,14 @@ usage = """
 
 def error (msg):
     print >>sys.stderr, msg
-    
+
 
 class module_admin(object):
     desc = 'module options'
     def __init__(self, version):
         parser = optparse.OptionParser(usage=usage, version="%prog " + version)
         parser.add_option('-u', '--user', default=None, help='Login as user <user>:<pass>')
-        parser.add_option('-a', '--all', action='store_true', help='Register/Unregister all modules at engine', 
+        parser.add_option('-a', '--all', action='store_true', help='Register/Unregister all modules at engine',
                           default=False)
         parser.add_option('-r', '--root', help='Bisque server root url')
         parser.add_option('-p', '--published', help='Make published module', default=False, action='store_true')
@@ -123,19 +123,19 @@ class module_admin(object):
 
     def run(self):
         if self.options.root:
-            self.root = options.root
+            self.root = self.options.root
         else:
             site_cfg = find_site_cfg('site.cfg')
             load_config(site_cfg)
             self.root = norm(config.get('bisque.root') + '/')
         self.command()
 
-    
+
     def get_xml(self, url):
         print "loading ", url
         resp, xml = http.xmlrequest(url)
         if resp['status'] != '200':
-            print "Can't access %s" %url 
+            print "Can't access %s" %url
             print resp
             return None
         try:
@@ -145,14 +145,14 @@ class module_admin(object):
             print "Problem parsing"
             log.exception("During parsing of %s " % xml)
         return None
-        
+
     def get_modules(self, engine_path):
         'list module urls  at engine given path path'
-        engine_path = norm(engine_path + '/') 
+        engine_path = norm(engine_path + '/')
         modules = self.get_xml( url = urlparse.urljoin(engine_path, '_services'))
         if modules is None:
             return error ('Cannot read modules from engine: %s' % engine_path)
-        return  [ m.get('value') for m in modules ] 
+        return  [ m.get('value') for m in modules ]
 
     def register_one(self, module_path):
         bisque_root = self.root
@@ -175,7 +175,7 @@ class module_admin(object):
             xml = etree.tostring(module_xml)
             params = [ ('engine_uri', module_path) ]
             if self.module_uri:
-                params.append ( ('module_uri', module_uri) )
+                params.append ( ('module_uri', self.module_uri) )
             url = "%s?%s" % (module_register, urllib.urlencode(params))
             resp, content = http.xmlrequest (url, method='POST', body=xml, userpass=self.credentials)
 
@@ -191,7 +191,7 @@ class module_admin(object):
         if self.options.all:
             module_paths = self.get_modules(self.engine_path)
         else:
-            module_paths = [ self.engine_path ] 
+            module_paths = [ self.engine_path ]
         for m in module_paths:
             print "registering %s" % m
             self.register_one(m)
@@ -201,7 +201,7 @@ class module_admin(object):
         if self.options.all:
             module_paths = self.get_modules(self.engine_path)
         else:
-            module_paths = [ self.engine_path ] 
+            module_paths = [ self.engine_path ]
         for m in module_paths:
             print "unregistering %s" % m
             self.unregister_one(m)
@@ -215,7 +215,7 @@ class module_admin(object):
         module_name = module_path.split('/')[-2]
         params = [ ('engine_uri', module_path) ]
         if self.module_uri:
-            params.append ( ('module_uri', module_uri) )
+            params.append ( ('module_uri', self.module_uri) )
         url = "%s?%s" % (module_unregister, urllib.urlencode(params))
         resp, content = http.xmlrequest (url, method='GET', userpass=self.credentials)
         if resp.status == '401':
@@ -225,14 +225,14 @@ class module_admin(object):
             print content
             return
         print "UnRegistered"
-        
+
     def list_engine(self):
         module_paths = self.get_modules(self.engine_path)
         if module_paths is None:
             module_paths = self.get_modules(self.engine_path + '/engine_service/')
         for module in module_paths or []:
             print module
-        
+
 
     def list_server(self):
         from collections import namedtuple
@@ -241,8 +241,8 @@ class module_admin(object):
         if server_modules is None:
             error ("No modules registered at %s. Is this a bisque server?" % self.root)
 
-        rows = [ Row(name=module.get('name'), engine=module.get('value'), module=module.get ('uri'))  
-                 for module in server_modules ] 
+        rows = [ Row(name=module.get('name'), engine=module.get('value'), module=module.get ('uri'))
+                 for module in server_modules ]
         pprinttable ( rows)
 
 

@@ -177,7 +177,7 @@ class module_admin(object):
             xml = etree.tostring(module_xml)
             params = [ ('engine_uri', module_path) ]
             if self.module_uri:
-                params.append ( ('module_uri', module_uri) )
+                params.append ( ('module_uri', self.module_uri) )
             url = "%s?%s" % (module_register, urllib.urlencode(params))
             self.session.postxml (url, xml = xml)
             print "Registered"
@@ -210,9 +210,9 @@ class module_admin(object):
         module_name = module_path.split('/')[-2]
         params = [ ('engine_uri', module_path) ]
         if self.module_uri:
-            params.append ( ('module_uri', module_uri) )
+            params.append ( ('module_uri', self.module_uri) )
 
-        self.session.fetchxml (url, ** dict (params))
+        self.session.fetchxml (module_unregister, ** dict (params))
 
         print "UnRegistered"
 

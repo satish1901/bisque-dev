@@ -70,10 +70,10 @@ class MultipartPostHandler(urllib2.BaseHandler):
             v_vars = []
             for(key, value) in data.items():
                 try:
-                     value.name
-                     v_files.append((key, value))
+                    value.name
+                    v_files.append((key, value))
                 except AttributeError:
-                     v_vars.append((key, value))
+                    v_vars.append((key, value))
 
             if len(v_files) == 0:
                 data = urllib.urlencode(v_vars, doseq)
@@ -88,12 +88,14 @@ class MultipartPostHandler(urllib2.BaseHandler):
             request.add_data(data)
         return request
 
-    def multipart_encode(vars, files, boundary = None, buffer = None):
+    # For some reason this not a real method see re-assign of Callable after defition
+    # maybe for urlib? rewrite using requests someday
+    def multipart_encode(vars, files, boundary = None, buffer = None): # pylint: disable=no-self-argument
         if boundary is None:
             boundary = mimetools.choose_boundary()
         if buffer is None:
             buffer = ''
-        for(key, value) in vars:
+        for(key, value) in vars: # pylint: disable=not-an-iterable
             buffer += '--%s\r\n' % boundary
             buffer += 'Content-Disposition: form-data; name="%s"' % key
             buffer += '\r\n\r\n' + value + '\r\n'

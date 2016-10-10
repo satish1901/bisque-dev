@@ -222,16 +222,16 @@ class ClientServer(ServiceController):
         """
         return dict()
 
+    # USE /services instead
+    # @expose (content_type="application/xml")
+    # def services(self):
+    #     resource = etree.Element ('resource', uri=tg.url('/client_service/services'))
+    #     for service_type, service_list in service_registry.items():
+    #         for service in service_list:
+    #             etree.SubElement (resource, 'tag', name=service_type, value=service.uri)
 
-    @expose (content_type="application/xml")
-    def services(self):
-        resource = etree.Element ('resource', uri=tg.url('/services'))
-        for service_type, service_list in service_registry.items():
-            for service in service_list:
-                etree.SubElement (resource, 'tag', name=service_type, value=service.uri)
-
-        #tg.response.content_type = "text/xml"
-        return etree.tostring(resource)
+    #     #tg.response.content_type = "text/xml"
+    #     return etree.tostring(resource)
 
 
 

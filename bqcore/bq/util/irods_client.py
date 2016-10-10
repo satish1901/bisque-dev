@@ -13,11 +13,13 @@ import urllib
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 
+
 from irods.exception import (DataObjectDoesNotExist,
                              CollectionDoesNotExist,
-                             iRODSException)
+                             iRODSException) # pylint: disable=import-error
 
-from irods.session import iRODSSession
+
+from irods.session import iRODSSession # pylint: disable=import-error
 IRODS_CACHE = data_path('irods_cache')
 
 CONNECTION_POOL = {}

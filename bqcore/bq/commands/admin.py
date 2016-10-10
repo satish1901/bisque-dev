@@ -13,6 +13,8 @@ from bq.release import __VERSION__
 from bq.util.io_misc import remove_safe
 from bq.util.paths import site_cfg_path, data_path
 
+from .stores import init_stores, list_stores, fill_stores, update_stores, move_stores
+
 
 logging.basicConfig(level=logging.INFO)
 #logging.basicConfig(level=logging.DEBUG)
@@ -465,7 +467,6 @@ class stores(object):
         load_bisque_services()
 
         import transaction
-        from bq.commands.stores import init_stores, list_stores, fill_stores, update_stores, move_stores
 
 
         command = self.command.lower()

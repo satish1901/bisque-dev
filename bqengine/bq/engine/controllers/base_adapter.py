@@ -55,6 +55,7 @@ DESCRIPTION
 import os
 import logging
 import copy
+import tempfile
 from lxml import etree
 from bq.core import identity
 

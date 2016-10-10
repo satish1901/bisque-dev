@@ -194,7 +194,7 @@ class XFile(file):
             raise LockError, "expected int or long for lock flags, got %s" % type(num_LockFlags).__name__
 
         # Check that we're not doing LOCK_EX when in read mode on POSIX.
-        if name == "POSIX" and num_LockFlags | LOCK_EX == num_LockFlags and "r" in self.mode and "+" not in self.mode:
+        if name == "POSIX" and num_LockFlags | LOCK_EX == num_LockFlags and "r" in self.mode and "+" not in self.mode: # pylint: disable=unsupported-membership-test
             raise LockError, "LOCK_EX cannot be used in read mode on POSIX; use LOCK_SH instead"
 
         # Check that num_Start and num_End are integers.

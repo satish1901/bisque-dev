@@ -53,10 +53,8 @@ DESCRIPTION
   Abstract access to local, remote and multiple actual datas servers
 
 """
-import urlparse
 import logging
 
-from bq.util import http
 from bq.core.service import service_registry
 
 RESOURCE_READ=0
@@ -72,10 +70,10 @@ def uri():
     server = find_server('')
     return server.uri
 
-def servers():
-    '''return list of dataservers
-    '''
-    return service_registry.get_services ('data_service').instances
+#def servers():
+#    '''return list of dataservers
+#    '''
+#    return service_registry.get_services ('data_service').instances
 
 def new_image(server=None, **kw):
     ''' Find the preferred data server and store the data there
