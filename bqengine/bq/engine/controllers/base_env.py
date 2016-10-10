@@ -1,6 +1,7 @@
 #
 #
 #
+import logging
 
 class ModuleEnvironmentError(Exception):
     """For errors while setting up or tearing down environments

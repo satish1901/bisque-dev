@@ -52,6 +52,7 @@ DESCRIPTION
  Base engine adaptor for common code
 
 """
+import os
 import copy
 import logging
 import tempfile
