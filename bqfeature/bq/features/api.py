@@ -59,6 +59,7 @@ import functools
 from tg import config
 
 from bq.core.service import service_registry
+from .controllers.TablesInterface import Tables
 
 log = logging.getLogger('bq.features')
 
@@ -71,20 +72,20 @@ def return_feature_vector(feature_name,**resource):
         returns feature on the resource from the feature service
     """
     server = find_server()
-    feature_init = server.FEATURE_ARCHIVE[feature]()
+    feature_init = server.FEATURE_ARCHIVE[feature_name]()
     resource_list = server.ResourceList( None, feature_name, 'none')
     resource_list.append(**resource)
     format = server.NumPy(feature_init, None)
     feature_table = Tables(feature_init)
     return format.return_from_tables( feature_table, resource_list)
-    
+
 
 def return_feature_location_in_tables(feature_name, **resource):
     """
         returns the location of the features requested on the resource from the stored tables
     """
     server = find_server()
-    feature_init = server.FEATURE_ARCHIVE[feature]()
+    feature_init = server.FEATURE_ARCHIVE[feature_name]()
     resource_list = server.ResourceList( None, feature_name, 'none')
     resource_list.append(**resource)
     format = server.LocalPath(feature_init, None)
@@ -106,7 +107,7 @@ def return_feature_list():
 #    """
 #        returns information in the xml format
 #    """
-#    return 
+#    return
 
 #def return_table_length(feature_name):
 #    """returns amount of features in the feature table storage"""
@@ -116,7 +117,7 @@ def return_feature_list():
 
 #def cached_feature(feature_name,**resource):
 #    """Checks to see if the features are stored in the feature tables"""
-#    return 
+#    return
 
 #def delete(feature_name,**resource):
 #    """Delete feature vectors attached to this resource"""
@@ -129,11 +130,3 @@ def return_feature_list():
 #def delete_cache(feature_name):
 #    """Deletes a table in the workdir"""
 #    pass
-    
-
-
-
-
-
-
-

@@ -837,7 +837,7 @@ class NumPy(Format):
     content_type = None
 
     def return_from_tables(self, table, element_list, **kw):
-        query_queue = resource_list.get_query_queue()
+        query_queue = element_list.get_query_queue()
         numpy_response = []
         for query in table.get(query_queue):
             for results in query:
@@ -858,7 +858,7 @@ class LocalPath(Format):
 
     def return_from_tables(self, table, element_list, **kw):
         localpath = []
-        for hash in resource_list:
+        for hash in element_list:
             localpath.append((os.path.join(table.get_path(),hash[:self.feature.hash]),hash))
         return localpath
 

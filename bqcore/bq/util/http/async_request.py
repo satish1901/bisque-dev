@@ -24,7 +24,7 @@ class URLThread(Thread):
 
 def request(uri, method="GET", body=None, headers={}, callback=None, client= None, **kw):
     """ Make an aynchrounous request adding user credential if available"""
-    prepare_credentials(headers)
+    http_client.prepare_credentials(http_client.local_client, headers=headers)
     return URLThread (uri=uri,
                       method=method,
                       body=body,
@@ -36,11 +36,10 @@ def xmlrequest(url, op = 'GET', body='', headers={}, **kw):
     '''usage: headers, response = xmlrequest("http://aaa.com")
               headers, response = xmlrequest("http://aaa.com", "POST", "<xml>...")
     '''
-    prepare_credentials(headers)
+    http_client.prepare_credentials(http_client.local_client, headers=headers)
     headers['content-type'] = 'text/xml'
     return URLThread (uri=url,
                       method=op,
                       body=body,
                       headers=headers,
                       **kw)
-

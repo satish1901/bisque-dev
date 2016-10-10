@@ -16,7 +16,6 @@ from dateutil.relativedelta import relativedelta
 
 import bq
 from bq.core import identity
-from bq.client_service.controllers import aggregate_service
 from bq import data_service
 
 log = logging.getLogger("bq.usage")
@@ -42,10 +41,6 @@ class usageController(ServiceController):
 
         def usage_resource ():
             log.info ("CALL EXPENSIVE")
-            #images2d = aggregate_service.count("image", wpublic=wpublic, images2d=True)
-            #all_count = aggregate_service.count("image", wpublic=wpublic, welcome=True)
-            #image_count = aggregate_service.count("image", wpublic=wpublic)
-            #tag_count = aggregate_service.count("tag", wpublic=wpublic, welcome=True )
             all_count = data_service.count("image", wpublic=wpublic, images2d=True, parent=False)
             image_count = data_service.count("image", wpublic=wpublic, permcheck = not anonymous )
             #images2d = data_service.count("image", wpublic=wpublic, images2d=True)
