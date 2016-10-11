@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import sys, os
 
 #from bq.release import __VERSION__
-__VERSION__ = '0.5.8'
+__VERSION__ = '0.5.9'
 
 # -*- Extra requirements: -*-
 install_requires = [
