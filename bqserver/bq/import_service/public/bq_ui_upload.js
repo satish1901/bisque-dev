@@ -741,7 +741,7 @@ Ext.define('BQ.upload.Panel', {
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'BQ.picker.Path', 'Bisque.ResourceTaggerOffline'],
 
     border: 0,
-    autoScroll: true,
+    autoScroll: false,
     layout: 'fit',
     defaults: BQ.upload.DEFAULTS,
 

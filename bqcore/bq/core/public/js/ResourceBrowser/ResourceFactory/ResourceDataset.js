@@ -263,24 +263,16 @@ Ext.define('Bisque.Resource.Dataset.List', {
 // Page view for a dataset
 Ext.define('Bisque.Resource.Dataset.Page', {
     extend : 'Bisque.Resource',
-
-    constructor : function() {
-        Ext.apply(this, {
-            layout : 'fit',
-        });
-
-        this.callParent(arguments);
-    },
-
+    layout : 'fit',
+    
     updateContainer : function() {
         this.setLoading(false);
 
-        var renderer = Ext.create('BQ.renderers.dataset', {
+        this.add({
+            xtype: 'renderersdataset',
             resource : this.resource,
             loadmap : true,
-        });
-
-        this.add(renderer);
+        });        
 
         var download = BQApp.getToolbar().queryById('button_download'),
             url = this.resource.uri,

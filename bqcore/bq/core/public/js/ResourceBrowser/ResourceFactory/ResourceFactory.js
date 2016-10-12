@@ -566,6 +566,7 @@ Ext.define('Bisque.Resource.Page',
     extend   :'Ext.panel.Panel',
     defaults : { border: false, },
     layout   : 'fit',
+    componentCls: 'bq_resource_page',
 
     constructor : function(config)
     {
