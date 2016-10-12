@@ -17,7 +17,7 @@ Ext.define('BQ.renderers.dataset', {
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'BQ.dataset.Panel'],
 
     border: 0,
-    autoScroll: true,
+    autoScroll: false,
     layout : 'border',
     heading: 'Dataset',
     cls : 'bq-dataset',
