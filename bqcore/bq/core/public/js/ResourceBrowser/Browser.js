@@ -23,7 +23,8 @@ Ext.define('Bisque.ResourceBrowser.Dialog', {
         config.height = config.height || '85%';
         config.width = config.width || '85%';
         config.selType = config.selType || 'MULTI';
-        config.selectState = config.selectState || 'SELECT';
+        var initial_state = config.selType === 'MULTI' ? 'SELECT' : 'ACTIVATE';
+        config.selectState = config.selectState || initial_state;
         config.showOrganizer = ('showOrganizer' in config) ? config.showOrganizer : true;
 
         var bodySz = Ext.getBody().getViewSize();
@@ -74,7 +75,11 @@ Ext.define('Bisque.ResourceBrowser.Dialog', {
 
     btnSelect : function() {
         var selectedRes = this.browser.resourceQueue.selectedRes;
-        var selection = Ext.Object.getValues(selectedRes);
+        if (selectedRes instanceof Bisque.Resource) {
+            var selection = [selectedRes];
+        } else {
+            var selection = Ext.Object.getValues(selectedRes);
+        } 
         var dir = this.browser.getSelectedFolder();
 
         if (selection.length) {
