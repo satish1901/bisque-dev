@@ -20,7 +20,7 @@ def generate_css_files(root=None, public=None):
                     version=bq.release.__VERSION_HASH__ )
     else:
         # point root to public deployment, it's linked and so all changes should be reflected properly
-        # if new files appear since links are per files the deployment should simply be re-run         
+        # if new files appear since links are per files the deployment should simply be re-run
         css_kw = {
             'fs_root': public,
         }
@@ -82,13 +82,13 @@ def generate_js_files(root=None, public=None):
     if tg.config.get('bisque.js_environment', None) != 'development':
         link_kw = dict (fs_root = public,
                       combined= '/core/js/all_js.js',
-                      combined_path = public + '/core/js/all_js.js',
+                      combined_path = os.path.join(public, 'core/js/all_js.js'),
                       checkts = False,
                       minify= 'minify', # D3 breaks with minify
                       version=bq.release.__VERSION_HASH__)
     else:
         # point root to public deployment, it's linked and so all changes should be reflected properly
-        # if new files appear since links are per files the deployment should simply be re-run        
+        # if new files appear since links are per files the deployment should simply be re-run
         link_kw = {
             'fs_root': public,
         }

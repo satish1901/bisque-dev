@@ -8,7 +8,7 @@
 /* ctyles for browser */
 
 .LightShadow.pipeline {
-    background-image: url('/plugins/pipeline/text.svg');
+    background-image: url('/core/plugins/pipeline/text.svg');
     background-position: center center;
     background-size: 150px;
     background-repeat: no-repeat;
@@ -19,7 +19,7 @@
 }
 
 .resicon.pipeline {
-    background-image: url('/plugins/pipeline/text.svg');
+    background-image: url('/core/plugins/pipeline/text.svg');
     background-position: center top;
     background-size: 100px;
 }
@@ -29,7 +29,7 @@
 }
 
 .resicon.gridIcon.pipeline {
-    background-image: url('/plugins/pipeline/text.svg');
+    background-image: url('/core/plugins/pipeline/text.svg');
     background-size: 29px;
     background-position: 6px 0px;
 }
@@ -52,5 +52,3 @@
 .resicon.pipeline.ImageCard .lblHeading1, .resicon.pipeline.ImageFull .lblHeading1  {
     margin-top: 60px;
 }
-
-
