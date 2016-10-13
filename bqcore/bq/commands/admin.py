@@ -289,10 +289,10 @@ class deploy(object):
         rootdir = os.path.join(self.packagedir, '').replace(os.sep, '/')
         publicdir = os.path.join(self.public_dir, '').replace(os.sep, '/')
 
-        all_css_combined = os.path.join(publicdir, 'core/css/all_css.css')
-        all_css_public = os.path.join(publicdir, 'css/all_css.css')
-        all_js_combined = os.path.join(publicdir, 'core/js/all_js.js')
-        all_js_public = os.path.join(publicdir, 'js/all_js.js')
+        #all_css_combined = os.path.join(publicdir, 'core/css/all_css.css')
+        all_css_public = os.path.join(publicdir, 'core/css/all_css.css')
+        #all_js_combined = os.path.join(publicdir, 'core/js/all_js.js')
+        all_js_public = os.path.join(publicdir, 'core/js/all_js.js')
 
         if os.name != 'nt': # under windows the whole public is removed at the beginning
             remove_safe(all_css_public)
