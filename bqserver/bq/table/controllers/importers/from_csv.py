@@ -55,6 +55,7 @@ import os
 import sys
 import logging
 import pkg_resources
+from pylons.controllers.util import abort
 
 from bq import blob_service
 
@@ -133,7 +134,9 @@ class TableCSV(TableBase):
         else:
             data = pd.read_csv(self.filename, skiprows=0, nrows=10, header=None )
         self.headers, self.types = _get_headers_types(data, has_header=self.has_header)
-        self.sizes = [sys.maxint, data.shape[1]]   # TODO: rows set to maxint for now
+
+        # TODO: rows set to maxint for now
+        self.sizes = [sys.maxint, data.shape[1]] # pylint: disable=no-member
         self.t = True
         log.debug('CSV types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
         return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }
@@ -144,7 +147,9 @@ class TableCSV(TableBase):
         rng = kw.get('rng')
         log.debug('rng %s', str(rng))
         data = pd.read_csv(self.filename, nrows=1)   # to get the shape later
-        sizes = [sys.maxint, data.shape[1]]   # TODO: rows set to maxint for now
+
+        # TODO: rows set to maxint for now
+        sizes = [sys.maxint, data.shape[1]] # pylint: disable=no-member
         startrows = [0]*2
         endrows   = [min(50, sizes[i]) for i in range(2)]
         if rng is not None:
@@ -158,9 +163,9 @@ class TableCSV(TableBase):
                     if startrows[i] > endrows[i]:
                         endrows[i] = startrows[i]
         log.debug('startrows %s, endrows %s', startrows, endrows)
-        
+
         usecols = range(startrows[1], endrows[1])
-        if endrows[0] > startrows[0] and endrows[1] > startrows[1]:     
+        if endrows[0] > startrows[0] and endrows[1] > startrows[1]:
             if self.has_header is True:
                 self.data = pd.read_csv(self.filename, skiprows=startrows[0], nrows=endrows[0]-startrows[0], usecols=usecols )
             else:
