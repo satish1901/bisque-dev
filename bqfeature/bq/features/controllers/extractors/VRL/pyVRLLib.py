@@ -86,7 +86,7 @@ def extractHTD(im, mask = None):
 
     im = tmp.astype(np.intc)
     mask = mask.astype(np.intc)
-    mask_labels = mask_labels.astype(np.intc)
+    mask_labels = mask_labels.astype(np.intc) # pylint: disable=no-member
     result = np.empty([48*label_count], dtype=np.double)
     _VRLLib_warp.extractHTD(im, mask, mask_labels, label_count, rows, cols, result)
     result = np.reshape(result,(label_count,48))

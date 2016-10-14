@@ -54,7 +54,7 @@ def extractCSD(im, mask = np.array([]), descSize=64):
     cols, rows, channel = tmp.shape
 
     #check for correctly formated mask
-    if mask.any():
+    if mask.any(): # pylint: disable=no-member
         if len(mask.shape)==2:
             hasmask = True
             mask = np.asarray(mask)
@@ -75,7 +75,7 @@ def extractCSD(im, mask = np.array([]), descSize=64):
     _MPEG7FlexLib.computeCSD.restype = c_void_p
 
     im = tmp.astype(np.uint8)
-    mask = mask.astype(np.bool_)
+    mask = mask.astype(np.bool_) # pylint: disable=no-member
 
     result = np.empty([descSize], dtype=np.uint8)
     _MPEG7FlexLib.computeCSD(im, descSize, int(rows), int(cols), hasmask , mask, result)
@@ -111,7 +111,7 @@ def extractSCD(im, mask = np.array([]), descSize=64):
     cols, rows, channel = tmp.shape
 
     #check for correctly formated mask
-    if mask.any():
+    if mask.any(): # pylint: disable=no-member
         if len(mask.shape)==2:
             hasmask = True
             mask = np.asarray(mask)
@@ -132,7 +132,7 @@ def extractSCD(im, mask = np.array([]), descSize=64):
     _MPEG7FlexLib.computeSCD.restype = c_void_p
 
     im = tmp.astype(np.uint8)
-    mask = mask.astype(np.bool_)
+    mask = mask.astype(np.bool_) # pylint: disable=no-member
 
     result = np.empty([descSize], dtype=np.uint8)
 
@@ -173,7 +173,7 @@ def extractCLD(im, mask = np.array([]), numYCoef=64, numCCoef = 28):
     cols, rows, channel = tmp.shape
 
     #check for correctly formated mask
-    if mask.any():
+    if mask.any(): # pylint: disable=no-member
         if len(mask.shape)==2:
             hasmask = True
             mask = np.asarray(mask)
@@ -194,7 +194,7 @@ def extractCLD(im, mask = np.array([]), numYCoef=64, numCCoef = 28):
     _MPEG7FlexLib.computeCLD.restype = c_void_p
 
     im = tmp.astype(np.uint8)
-    mask = mask.astype(np.bool_)
+    mask = mask.astype(np.bool_) # pylint: disable=no-member
 
     result = np.empty([(numYCoef+2*numCCoef)], dtype=np.uint8)
     _MPEG7FlexLib.computeCLD(im, numYCoef, numCCoef, int(rows), int(cols), hasmask, mask, result)
@@ -253,7 +253,7 @@ def extractDCD(im, mask = np.array([]), normalize=True, variance=False, spatial=
     cols, rows, channel = tmp.shape
 
     #check for correctly formated mask
-    if mask.any():
+    if mask.any(): # pylint: disable=no-member
         if len(mask.shape)==2:
             hasmask = True
             mask = np.asarray(mask)
@@ -278,7 +278,7 @@ def extractDCD(im, mask = np.array([]), normalize=True, variance=False, spatial=
     _MPEG7FlexLib.computeDCD.restype = c_void_p
 
     im = tmp.astype(np.uint8)
-    mask = mask.astype(np.bool_)
+    mask = mask.astype(np.bool_) # pylint: disable=no-member
 
     length = np.empty([1], dtype=np.intc)
     results = np.empty([300], dtype=np.uint8) #has a buffer of 300
@@ -363,7 +363,7 @@ def extractEHD(im,  mask = np.array([])):
     cols, rows, channel = tmp.shape
 
     #check for correctly formated mask
-    if mask.any():
+    if mask.any(): # pylint: disable=no-member
         if len(mask.shape)==2:
             hasmask = True
             mask = np.asarray(mask)
@@ -385,7 +385,7 @@ def extractEHD(im,  mask = np.array([])):
     _MPEG7FlexLib.computeEHD.restype = c_void_p
 
     im = tmp.astype( np.uint8)
-    mask = mask.astype( np.bool_)
+    mask = mask.astype( np.bool_) # pylint: disable=no-member
 
     result = np.empty([80], dtype=np.uint8)
     _MPEG7FlexLib.computeEHD(im, int(rows), int(cols), hasmask, mask, result)
@@ -415,7 +415,7 @@ def extractRSD(im, mask = np.array([])):
     cols, rows, channel = tmp.shape
 
     #check for correctly formated mask
-    if mask.any():
+    if mask.any(): # pylint: disable=no-member
         if len(mask.shape)==2:
             #hasmask = True
             mask = np.asarray(mask)
@@ -437,7 +437,7 @@ def extractRSD(im, mask = np.array([])):
     _MPEG7FlexLib.computeRSD.restype = c_void_p
 
     im = tmp.astype( np.uint8)
-    mask = mask.astype( np.bool_)
+    mask = mask.astype( np.bool_) # pylint: disable=no-member
     result = np.empty( [35], dtype = np.uint8)
     _MPEG7FlexLib.computeRSD(im, mask, int(rows), int(cols), result)
     return result

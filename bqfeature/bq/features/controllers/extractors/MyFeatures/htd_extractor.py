@@ -5,7 +5,7 @@ import numpy as np
 
 
 def gabor_gen(height,width,s,n,scales=4,orientations=6,Ul=0.05,Uh=.5):
-    
+
     base = Uh/Ul
     a = base**(1.0/(scales-1))
     u0 = Uh
@@ -17,15 +17,15 @@ def gabor_gen(height,width,s,n,scales=4,orientations=6,Ul=0.05,Uh=.5):
     coef = 1/(2*np.pi*sigmaX*sigmaY);
     t1 = np.cos(np.pi/orientations*n);
     t2 = np.sin(np.pi/orientations*n);
-    
+
     x = np.linspace(0, width-1, width) - width/2 #width
     y = np.linspace(0, height-1, height) - height/2 #height
     xv,yv = np.meshgrid(x,y)
-    
+
     X = (a**(-s))*(t1*xv+t2*yv)
     Y = (a**(-s))*(t1*yv-t2*xv)
     G = coef*(a**(-s))*np.exp(-.5*((X*X)/(sigmaX*sigmaX)+(Y*Y)/(sigmaY*sigmaY)))
-    
+
     angle = 2*np.pi*u0*X
     gabor = G*np.sin(angle)
 
@@ -33,7 +33,7 @@ def gabor_gen(height,width,s,n,scales=4,orientations=6,Ul=0.05,Uh=.5):
 
 
 def homogenious_texture_descriptor(im, scales=4, orientations=6):
-    
+
     HTDmean = []
     HTDstd = []
     for s in np.arange(0,scales):
@@ -44,17 +44,18 @@ def homogenious_texture_descriptor(im, scales=4, orientations=6):
             result = np.absolute(result)
             HTDmean.append(np.mean(result))
             HTDstd.append(np.std(result))
-    
+
     return HTDmean+HTDstd
 
 
 if __name__ == '__main__':
-    import cv2
-    #import matplotlib.pyplot as plt
-    import time
-    im = cv2.imread('image2.tif',0)
-    start = time.time()
-    htd = Homogenious_Texture_Descriptor(im)
-    end = time.time()
-    print htd
-    print 'Time: %s'%(end-start)
+    # import cv2
+    # #import matplotlib.pyplot as plt
+    # import time
+    # im = cv2.imread('image2.tif',0)
+    # start = time.time()
+    # htd = Homogenious_Texture_Descriptor(im)
+    # end = time.time()
+    # print htd
+    # print 'Time: %s'%(end-start)
+    pass
