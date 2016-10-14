@@ -290,7 +290,14 @@ class LocalDriver (StorageDriver):
             if not os.path.exists (localpath):
                 log.debug('local.write: %s -> %s' , tounicode(storeurl), tounicode(localpath))
                 #patch for no copy file uploads - check for regular file or file like object
-                move_file (fp, localpath)
+                try:
+                    move_file (fp, localpath)
+                except OSError as e:
+                    if not os.path.exists (localpath):
+                        log.exception ("Problem moving file to%s ", localpath)
+                    else:
+                        log.error ("Problem moving file, but it seems to be there.. check permissions on store")
+
                 ident = localpath[len(self.top_path):]
                 if ident[0] == '/':
                     ident = ident[1:]

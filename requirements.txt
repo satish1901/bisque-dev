@@ -116,7 +116,7 @@ pydicom==0.9.8
 xlrd==0.9.4
 numexpr==2.6.0
 tables==3.2.2
-cython==0.24.1
+#cython==0.24.1
 pandas==0.18.1
 
 # Databases
