@@ -1,20 +1,18 @@
 <system name="system"  >
-    <tag name="version" value="0.5.8" />
+    <tag name="version" value="0.5.9" />
     <preference>
         <tag name="titles">
             <tag name="organization" value="" />
             <tag name="title" value="" />
         </tag>
         <tag name="Welcome">
-            <tag name="Types of images" value="image_type" />
-            <tag name="Experimenters" value="experimenter" />
-            <tag name="Species" value="species" />
+            <tag name="message" value="" />
         </tag>
         <tag name="Toolbar">
             <tag name="registration" value="/auth_service/login" /> <!-- /registration -->
             <tag name="password_recovery" value="/auth_service/login" /> <!-- /registration/lost_password -->
             <tag name="user_profile" value="/registration/edit_user" />
-                        
+
             <tag name="about" value="/client_service/about" />
             <tag name="privacy_policy" value="/client_service/public/about/privacypolicy.html" />
             <tag name="terms_of_use" value="/client_service/public/about/termsofuse.html" />
@@ -88,7 +86,7 @@
                 </template>
             </tag>
         </tag>
-        
+
         <tag name="Viewer">
             <tag type="boolean" name="autoUpdate" value="true">
                 <template>

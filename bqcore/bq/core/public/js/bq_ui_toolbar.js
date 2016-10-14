@@ -673,9 +673,9 @@ Ext.define('BQ.Application.Toolbar', {
         this.callParent();
         BQ.Preferences.on('update_user_pref', this.onPreferences, this);
         BQ.Preferences.on('onerror_user_pref', this.onPreferences, this);
-        if ('user' in BQ.Preferences.preferenceXML) this.onPreferences(); //checks to see if preference has been loaded already
-
-
+        //checks to see if preference has been loaded already
+        if (BQ.Preferences.isLoaded('user'))
+            this.onPreferences();
 
         // update user menu based on application events
         Ext.util.Observable.observe(BQ.Application);
