@@ -9,6 +9,7 @@ from bqapi import BQServer
 import random
 from bq.features.controllers.utils import image2numpy, except_image_only, fetch_resource
 from bq.features.controllers import Feature
+from bq.features.controllers.exceptions import FeatureExtractionError
 from hog_extractor import histogram_of_oriented_gradients
 #from htd_extractor import homogenious_texture_descriptor
 
@@ -40,7 +41,7 @@ class FFTSD(Feature.BaseFeature):
 
         try:
             poly_xml = etree.fromstring(response)
-        except etre.XMLSyntaxError:
+        except etree.XMLSyntaxError:
             raise FeatureExtractionError(resource, 400, 'image resource is not accepted')
 
         if poly_xml.tag=='polygon':
@@ -59,28 +60,28 @@ class FFTSD(Feature.BaseFeature):
         return [descriptor[:500]]
 
 
-class HOG(Feature.BaseFeature):
+# class HOG(Feature.BaseFeature):
 
-    file = 'features_hog.h5'
-    name = 'HOG'
-    description = """Histogram of Orientated Gradients: bin = 9"""
-    length = 9
-    confidence = 'good'
-    disabled = True
+#     file = 'features_hog.h5'
+#     name = 'HOG'
+#     description = """Histogram of Orientated Gradients: bin = 9"""
+#     length = 9
+#     confidence = 'good'
+#     disabled = True
 
-    def calculate(self, resource):
-        """ Append descriptors to HOG h5 table """
+#     def calculate(self, resource):
+#         """ Append descriptors to HOG h5 table """
 
-        except_image_only(resource)
-        image_uri = resource.image
+#         except_image_only(resource)
+#         image_uri = resource.image
 
-        with ImageImport(image_uri) as imgimp:
-            im = image2numpy(image_uri, remap='gray')
+#         with ImageImport(image_uri) as imgimp:
+#             im = image2numpy(image_uri, remap='gray')
 
-        descriptor = histogram_of_oriented_gradients(im)
+#         descriptor = histogram_of_oriented_gradients(im)
 
-        #initalizing rows for the table
-        return [descriptor]
+#         #initalizing rows for the table
+#         return [descriptor]
 
 
 #class HTD(Feature.BaseFeature):

@@ -10,12 +10,12 @@ from bqapi import BQServer
 import random
 from bq.features.controllers.utils import image2numpy, except_image_only, fetch_resource
 from bq.features.controllers import Feature
-from skimage.feature import corner_harris, corner_peaks
-from skimage.feature import BRIEF as BRIEF_
-from skimage.feature import ORB
-from skimage.feature import hog
-from skimage.feature import local_binary_pattern
-from skimage.transform import resize
+from skimage.feature import corner_harris, corner_peaks # pylint: disable=import-error
+from skimage.feature import BRIEF as BRIEF_ # pylint: disable=import-error
+from skimage.feature import ORB # pylint: disable=import-error
+from skimage.feature import hog # pylint: disable=import-error
+from skimage.feature import local_binary_pattern # pylint: disable=import-error
+from skimage.transform import resize # pylint: disable=import-error
 
 
 log = logging.getLogger("bq.features.ScikitImage")
@@ -130,7 +130,7 @@ class HOG(Feature.BaseFeature):
     def calculate(self, resource):
         except_image_only(resource)
         im = image2numpy(resource.image, remap='gray')
-        min_length = np.min(im.shape)
+        min_length = np.min(im.shape) # pylint: disable=no-member
         return hog(im, pixels_per_cell=(min_length, min_length), cells_per_block=(1,1))
 
 
@@ -232,18 +232,18 @@ class RotationInvMoments(Feature.BaseFeature):
     name = 'RotationInvMoments'
     description = """Rotation Inveriant Moments"""
     length = 8
-    
+
     def calculate(self, resource):
         except_image_only(resource)
         im = image2numpy(resource.image, remap='gray')
         return rotation_invariant_moments(im)
-    
-    
+
+
 class ScaleInvMoments(Feature.BaseFeature):
     name = 'ScaleInvMoments'
     description = """Scale Invariant Moments for grayscale image in the order n00, n01, n10, n11, n02, n20, n03, n30, n21, n12"""
     length = 10
-    
+
     def calculate(self, resource):
         except_image_only(resource)
         im = image2numpy(resource.image, remap='gray')
@@ -264,7 +264,7 @@ class CentralMoments(Feature.BaseFeature):
     name = 'CentralMoments'
     description = """Moments for grayscale image in the order n00, n01, n10, n11, n02, n20, n03, n30, n21, n12"""
     length = 10
-    
+
     def calculate(self, resource):
         except_image_only(resource)
         im = image2numpy(resource.image, remap='gray')
@@ -277,14 +277,14 @@ class CentralMoments(Feature.BaseFeature):
         u03 = central_moments(im, 0, 3)
         u30 = central_moments(im, 3, 0)
         u21 = central_moments(im, 2, 1)
-        u12 = central_moments(im, 1, 2)        
+        u12 = central_moments(im, 1, 2)
         return np.array([u00, u01, u10, u11, u02, u02, u03, u30, u21, u12])
-    
+
 class RawMoments(Feature.BaseFeature):
     name = 'RawMoments'
     description = """Raw moments with out any invariants in the order n00, n01, n10, n11, n02, n20, n03, n30, n21, n12"""
     length = 10
-    
+
     def calculate(self, resource):
         except_image_only(resource)
         im = image2numpy(resource.image, remap='gray')
@@ -297,8 +297,8 @@ class RawMoments(Feature.BaseFeature):
         m03 = raw_moments(im, 0, 3)
         m30 = raw_moments(im, 3, 0)
         m21 = raw_moments(im, 2, 1)
-        m12 = raw_moments(im, 1, 2)           
-        return  np.array([m00, m01, m10, m11, m02, m02, m03, m30, m21, m12]) 
+        m12 = raw_moments(im, 1, 2)
+        return  np.array([m00, m01, m10, m11, m02, m02, m03, m30, m21, m12])
 
 #requires the implimetation of input parameters to fs
 #class LBP2(Feature.BaseFeature):

@@ -1,17 +1,16 @@
-from scipy.signal import convolve2d
+from scipy.signal import convolve2d # pylint: disable=import-error
 import numpy as np
 from numpy import histogram
 
 def histogram_of_oriented_gradients(im, bins=9):
     """
-    
+
     """
     KERNEL = np.array([[-1.0,0.0,1.0],[-1.0,0.0,1.0],[-1.0,0.0,1.0]])
 
-    from scipy.signal import convolve2d
     imx = convolve2d( im, KERNEL, mode='same' )
     imy = convolve2d( im, np.transpose(KERNEL), mode='same' )
-    
+
     mag = np.sqrt(imx**2+imy**2)
     ori = np.arctan(imy/imx)
     hog,edges = histogram(ori,bins=9,range=(-np.pi/2,np.pi/2),weights=mag)
