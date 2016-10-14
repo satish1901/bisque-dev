@@ -505,7 +505,7 @@ class AdminController(ServiceController):
 
     def get_variables(self):
         #bisque_root = config.get ('bisque.root')
-        bisque_root = request.url
+        bisque_root = request.application_url
         bisque_organization = config.get ('bisque.organization', 'BisQue')
         bisque_email = config.get ('bisque.admin_email', 'info@bisque')
 
