@@ -3,7 +3,6 @@ import os
 import subprocess
 import re
 import pkg_resources
-import bq
 import optparse
 import errno
 import logging
@@ -13,7 +12,6 @@ from bq.release import __VERSION__
 from bq.util.io_misc import remove_safe
 from bq.util.paths import site_cfg_path, data_path
 
-from .stores import init_stores, list_stores, fill_stores, update_stores, move_stores
 
 
 logging.basicConfig(level=logging.INFO)
@@ -92,9 +90,8 @@ class server(object):
     desc = "Start or stop a bisque server"
 
     def __init__(self, version):
-        parser = optparse.OptionParser(
-                    usage="%prog servers [options] start|stop|restart",
-                    version="%prog " + version)
+        parser = optparse.OptionParser(usage="%prog servers [options] start|stop|restart",
+                                       version="%prog " + version)
         parser.add_option("--reload", action="store_true", help="autoreload for development" )
         parser.add_option("-n", "--dryrun", action="store_true", help="Dry run and show commands")
         parser.add_option("-v", "--verbose", action="store_true", help="show commands as run" )
@@ -117,7 +114,7 @@ class server(object):
 
     def run(self):
         #Check for self.command in init..
-        import server_ops
+        from . import server_ops
         if self.command:
             server_ops.operation(self.command, self.options, *self.args)
 
@@ -134,9 +131,8 @@ class cache(object):
 class database(object):
     desc = 'Execute a database command'
     def __init__(self, version):
-        parser = optparse.OptionParser(
-                    usage="%prog database [admin]",
-                    version="%prog " + version)
+        parser = optparse.OptionParser(usage="%prog database [admin]",
+                                       version="%prog " + version)
 
 
         parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
@@ -155,7 +151,7 @@ class database(object):
 
     def run(self):
         load_config(self.options.config)
-        import cleandb
+        from . import cleandb
         cleandb.clean_images(self.options)
 
 
@@ -164,9 +160,7 @@ class setup(object):
     desc = 'Setup or update a bisque server'
     def __init__(self, version):
         from bq.setup.bisque_setup import usage, all_options
-        parser = optparse.OptionParser(
-                    usage=usage,
-                    version="%prog " + version)
+        parser = optparse.OptionParser(usage=usage, version="%prog " + version)
         parser.add_option("--inscript", action="store_true", help="we are running under typescript" )
         parser.add_option("-r", "--read", action="store", help="Read answers from given file" )
         parser.add_option("-w", "--write", action="store", help="Write answers from given file" )
@@ -190,9 +184,7 @@ class setup(object):
 class deploy(object):
     desc = 'Advanced deployment options: public'
     def __init__(self, version):
-        parser = optparse.OptionParser(
-                    usage="%prog deploy [public]",
-                    version="%prog " + version)
+        parser = optparse.OptionParser(usage="%prog deploy [public]", version="%prog " + version)
         parser.add_option("--packagedir",  help="Root package of install", default='bqcore' )
         options, args = parser.parse_args()
         self.args = args
@@ -209,7 +201,6 @@ class deploy(object):
     def deploy_public(self):
         ''
         from bq.util.copylink import copy_symlink, copy_link
-        import pkg_resources
 
         # dima: deploy fails under windows with access denied, need to clean dir first
         if os.name == 'nt':
@@ -313,9 +304,8 @@ class deploy(object):
 class preferences (object):
     desc = "read and/or update preferences"
     def __init__(self, version):
-        parser = optparse.OptionParser(
-                    usage="%prog preferences [init (db)|read (from db)|save (to db)]",
-                    version="%prog " + version)
+        parser = optparse.OptionParser(usage="%prog preferences [init (db)|read (from db)|save (to db)]",
+                                       version="%prog " + version)
         parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         parser.add_option('-f','--force', action="store_true", help="Force action if able")
         options, args = parser.parse_args()
@@ -390,9 +380,8 @@ class preferences (object):
 class sql(object):
     desc = 'Run a sql command (disabled)'
     def __init__(self, version):
-        parser = optparse.OptionParser(
-                    usage="%prog sql <sql>",
-                    version="%prog " + version)
+        parser = optparse.OptionParser(usage="%prog sql <sql>",
+                                       version="%prog " + version)
         parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         options, args = parser.parse_args()
 
@@ -403,7 +392,6 @@ class sql(object):
         ''
 
         from tg import config
-        import bq
         from sqlalchemy import create_engine
         from sqlalchemy.sql import text
         from ConfigParser import ConfigParser
@@ -417,9 +405,8 @@ class sql(object):
 class group(object):
     'do a group command'
     def __init__(self, version):
-        parser = optparse.OptionParser(
-                    usage="%prog sql <sql>",
-                    version="%prog " + version)
+        parser = optparse.OptionParser(usage="%prog sql <sql>",
+                                       version="%prog " + version)
         parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         options, args = parser.parse_args()
 
@@ -430,7 +417,6 @@ class group(object):
         ''
 
         from tg import config
-        import bq
         from sqlalchemy import create_engine
         from sqlalchemy.sql import text
         from ConfigParser import ConfigParser
@@ -446,9 +432,8 @@ class stores(object):
     desc = 'Generate stores resource by visiting image/file resouces'
 
     def __init__(self, version):
-        parser = optparse.OptionParser(
-                    usage="%prog stores  [list|create [name]]|fill[name]|update[name]",
-                    version="%prog " + version)
+        parser = optparse.OptionParser(usage="%prog stores  [list|create [name]]|fill[name]|update[name]",
+                                       version="%prog " + version)
         parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         options, args = parser.parse_args()
         if len(args) < 1 or args[0] not in ('list', 'init', 'fill', 'update', 'move'):
@@ -466,6 +451,7 @@ class stores(object):
         load_config(self.options.config)
         load_bisque_services()
 
+        from .stores import init_stores, list_stores, fill_stores, update_stores, move_stores
         import transaction
 
 
@@ -500,8 +486,8 @@ class password(object):
 
     def __init__(self, version):
         parser = optparse.OptionParser(
-                    usage="%prog password [convert: freetext to hashed][list: users and password][set: username password] ",
-                    version="%prog " + version)
+            usage="%prog password [convert: freetext to hashed][list: users and password][set: username password] ",
+            version="%prog " + version)
         parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
         parser.add_option('-f','--force', action="store_true", default=False)
         options, args = parser.parse_args()
@@ -541,10 +527,10 @@ class password(object):
         transaction.commit()
 
     def set_password(self, user_name, password):
-            from bq.core.model.auth import User, DBSession
-            user = DBSession.query(User).filter_by(user_name = user_name).first()
-            if user:
-                print "setting %s" % user.user_name
-                user.password = password
-            else:
-                print "cannot find user %s" % user_name
+        from bq.core.model.auth import User, DBSession
+        user = DBSession.query(User).filter_by(user_name = user_name).first()
+        if user:
+            print "setting %s" % user.user_name
+            user.password = password
+        else:
+            print "cannot find user %s" % user_name

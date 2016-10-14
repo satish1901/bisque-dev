@@ -141,7 +141,8 @@ class DNServer(ServiceController):
             all_hashes = [ fhash.strip() for fhash in hashes_str.split(',') ]
             #for fhash in hashes_str.split(','):
             #    all_hashes.append( fhash )
-            found_hashes = blob_service.files_exist(all_hashes)
+            #found_hashes = blob_service.files_exist(all_hashes) TODO
+            found_hashes = []
             found_html = ",".join([str(h) for h in found_hashes])
             return "Found: "+found_html
 
