@@ -94,11 +94,11 @@
     <!-- Derived template includes   -->
     ${select('*[local-name()!="title" and not(@id="config" and local-name()="script")]')}
 
-    <script type="text/javascript" py:if="tg.flash" >
+    <!--<script type="text/javascript" py:if="tg.flash" >
         Ext.onReady( function() {
             BQ.ui.popup( '${tg.flash_obj.status}', '${tg.flash_obj.message}' );
         });
-    </script>
+    </script>-->
 
 </head>
 </py:match>

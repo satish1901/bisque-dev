@@ -40,10 +40,24 @@
         }, 100);
     }
 
+    function onWelcomePreferences ( ) {
+        var message = BQ.Preferences.get('system', 'Welcome/message', '');
+        if (message) {
+            BQ.ui.notification( message, 15000 );
+        }
+    }
+
     Ext.onReady( function() {
 
-        if (!(Ext.isChrome || Ext.firefoxVersion || Ext.isSafari))
+        /*
+        // dima: moved to bq application
+        if (!(Ext.isChrome || Ext.firefoxVersion || Ext.isSafari)) {
             BQ.ui.warning('<b>BISQUE</b> runs best on Chrome, Firefox and Safari.', 15000);
+        }*/
+        // dima: only show notification messages in the welcome page
+        BQ.Preferences.on('update_system_pref', onWelcomePreferences);
+        if (BQ.Preferences.isLoaded('system'))
+            onWelcomePreferences();
 
         var main = BQApp.getCenterComponent();
         main.body.addCls('welcome_front');
@@ -225,14 +239,14 @@
           wpublic: ${wpublicjs},
           border: true,
           cls: 'welcome',
-          listeners: { 
+          listeners: {
               scope: this,
               'Select': function(me, resource) {
                   window.open( BQ.Server.url('/module_service/'+resource.name+'/?mex='+resource.uri) );
               },
               show: function(me) {
                   me.activateAutoReload();
-              },              
+              },
           },
         });
         my_items.push(mexBrowser);

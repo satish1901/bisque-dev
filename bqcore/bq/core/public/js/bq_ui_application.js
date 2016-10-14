@@ -225,6 +225,13 @@ Ext.define('BQ.Application.Window', {
     initComponent : function() {
         Ext.tip.QuickTipManager.init();
 
+        if (!(Ext.isChrome || Ext.firefoxVersion || Ext.isSafari)) {
+            BQ.ui.warning('<b>BISQUE</b> runs best on Chrome, Firefox and Safari.', 15000);
+        }
+
+        // dima: the application should request preferences but right no toolbar does it
+        // ideally we should check for welcome messages here, but currently we can do it in the toolbar
+
         var content = document.getElementById('content');
         if (content && content.children.length<1) {
           document.body.removeChild(content);
