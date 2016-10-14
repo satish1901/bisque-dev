@@ -498,7 +498,7 @@ Ext.define('BQ.selectors.Resource', {
             if (resource.gobjects && resource.gobjects.length>0) {
                 this._fetched_gobs = resource.gobjects;
             } else {
-                BQFactory.request({ 
+                BQFactory.request({
                     uri: resource.uri,
                     cb: callback(this, 'onfetched_gobs'),
                     errorcb: callback(this, 'onerror'),
@@ -506,7 +506,7 @@ Ext.define('BQ.selectors.Resource', {
                 });
             }
 
-            BQFactory.request({ 
+            BQFactory.request({
                 uri: resource.value,
                 cb: callback(this, 'onfetched'),
                 errorcb: callback(this, 'onerror'),
@@ -784,7 +784,7 @@ Ext.define('BQ.selectors.Gobject', {
             editprimitives: editprimitives,
             no_semantic_types: true,
         };
-        if (this.selected_resource && this.selected_resource.gobjects) parameters.gobjects = this.selected_resource.gobjects;
+        //if (this.selected_resource && this.selected_resource.gobjects) parameters.gobjects = this.selected_resource.gobjects;
         this.viewer = Ext.create('BQ.viewer.Image', {
             resource: this.selected_resource || resource.parent.value,
             parameters: parameters,
