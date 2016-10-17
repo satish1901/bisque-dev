@@ -1211,7 +1211,7 @@ def fetch_modules(params):
             continue
         if module_dir:
             module_dirs.append (module_dir)
-    params['bisque.engine_service.module_dirs'] = ", ".join (module_dirs)
+    params['bisque.engine_service.module_dirs'] = ", ".join(os.path.abspath (x) for x in module_dirs)
     return params
 
 
