@@ -42,7 +42,7 @@ bisque.paths.root = .
 
 # Engine Service
 bisque.engine = http://localhost:27000
-#bisque.engine_service.local_modules = modules
+#bisque.engine_service.module_dirs = modules
 #bisque.engine_service.poolsize = 4
 
 
