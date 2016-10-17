@@ -1163,7 +1163,8 @@ def build_modules (params):
 
     install_matlab(params)
 
-    module_dirs = params.get ('module_dirs', [])
+    module_dirs = params.get ('module_dirs', "")
+    module_dirs = [ x.strip() for x in module_dirs.split(",") ]
 
     # Walk any module trees installing modules found
     for module_dir in module_dirs:
@@ -1205,9 +1206,12 @@ def fetch_modules(params):
     for module_url in module_locations + [ DIRS['modules'] ]:
         print "Installing module(s) at %s" % module_url
         module_dir = _fetch_update_module (module_url)
+        if module_dir in module_dirs:
+            print "Skipping duplicated module", module_url
+            continue
         if module_dir:
             module_dirs.append (module_dir)
-    params['module_dirs'] = module_dirs
+    params['bisque.engine_service.module_dirs'] = ", ".join (module_dirs)
     return params
 
 
@@ -1216,23 +1220,32 @@ def _fetch_update_module (module_url):
 
     hg = which('hg')
     git = which('git')
-    cmd = 'pull'
+    mdir = '.'
     module_dir = None
-    if git and module_url.endswith ('.git'):
+    if git and ( module_url.endswith ('.git') or 'git@' in module_url):
+        cmd =  [ git ]
         module_dir = os.path.splitext(os.path.basename(module_url))[0]
         if not os.path.exists (module_dir):
-            cmd = 'clone'
-        print "git %s %s into %s" % (cmd, module_url, module_dir)
-        call ([git, cmd, module_url, module_dir])
-    elif hg and module_url.startswith ('https') : #and 'hg@' in module_url:
+            cmd.extend(['clone', module_url, module_dir])
+        else:
+            cmd.extend(['pull'])
+            mdir = module_dir
+        print "calling  %s in  %s" % (cmd, mdir)
+        call (cmd, cwd=mdir)
+    elif hg and ( module_url.startswith ('https') or 'hg@' in module_url):
+        cmd = [hg]
         module_dir = os.path.basename(module_url)
         if not os.path.exists (module_dir):
-            print "hg %s %s into %s" % (cmd, module_url, module_dir)
-            call ([hg, cmd, '-u', module_url, module_dir])
+            cmd.extend ([ 'clone', module_url, module_dir])
+        else:
+            cmd.extend (['pull', '-u'])
+            mdir = module_dir
+        print "calling %s in   %s" % (cmd, mdir)
+        call (cmd, cwd=mdir)
     elif os.path.exists (module_url):
         module_dir = module_url
     else:
-        print "Could not determine fetch method for module %s" % module_url
+        print "Could not determine fetch method for module %s " % module_url
 
     return module_dir
 
@@ -2402,6 +2415,7 @@ SETUP_COMMANDS = {
     "configuration" : [ setup_server_cfg ],
     "createdb" : [ setup_database ],
     "stores": [ setup_stores ],
+    "modules" : [ fetch_modules ] ,
     }
 
 # Special procedures that modify runtime-bisque.cfg (for the engine)
@@ -2410,10 +2424,10 @@ RUNTIME_COMMANDS = {
     'matlab' : [ install_matlab ],
     'runtime' : [ install_runtime ],
     'docker'  : [ install_docker ],
-    'modules' : [ fetch_modules, install_modules ],
-    'fetch-modules'   : [ fetch_modules ] ,
+    'modules' : [ install_modules ],
+#    'fetch-modules'   : [ fetch_modules ] ,
     'build-modules'   : [ fetch_modules, build_modules ] ,
-    'install-modules' : [ fetch_modules, install_modules ]
+#    'install-modules' : [ fetch_modules, install_modules ]
     }
 
 

@@ -78,7 +78,7 @@ from .pool import ProcessManager
 
 log = logging.getLogger('bq.engine_service')
 
-MODULE_PATH = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
+MODULE_PATH = config.get('bisque.engine_service.module_dirs', bisque_path('modules'))
 POOL_SIZE   = int(config.get('bisque.engine_service.poolsize', 4))
 
 engine_root = '/'.join ([config.get('bisque.server','') , 'engine_service'])
@@ -208,16 +208,18 @@ def initialize_available_modules(engines):
     log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
     #for g in os.listdir(MODULE_PATH):
 
-    for root, dirs, files in os.walk(MODULE_PATH):
-        for module_file in files:
-            if module_file == 'runtime-module.cfg':
-                module_directory = os.path.dirname (os.path.join (root,module_file))
-                module_root = load_module(module_directory, engines)
-                if module_root is not None:
-                    available.append(module_root)
-                else:
-                    unavailable.append ( module_directory )
-                    log.debug("Skipping %s : module load failed" % module_directory)
+    module_paths = [ x.strip() for x in MODULE_PATH.split(",")]
+    for modules_dir in module_paths:
+        for root, dirs, files in os.walk(modules_dir):
+            for module_file in files:
+                if module_file == 'runtime-module.cfg':
+                    module_directory = os.path.dirname (os.path.join (root,module_file))
+                    module_root = load_module(module_directory, engines)
+                    if module_root is not None:
+                        available.append(module_root)
+                    else:
+                        unavailable.append ( module_directory )
+                        log.debug("Skipping %s : module load failed" % module_directory)
 
     return available, unavailable
 
