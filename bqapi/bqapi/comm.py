@@ -717,9 +717,9 @@ class BQSession(object):
         try:
             return self.update_mex(status, tags=tags, gobjects=gobjects, children=children, reload=False, merge=True)
         except BQCommError, ce:
-            log.error ("Problem during finish mex %s" % ce.headers)
+            log.error ("Problem during finish mex %s" % ce.response.request.headers)
             try:
-                return self.update_mex( status='FAILED',tags= [  { 'name':'error_message', 'value':  "Error during saving (status %s)" % ce.status } ] )
+                return self.update_mex( status='FAILED',tags= [  { 'name':'error_message', 'value':  "Error during saving (status %s)" % ce.response.status_code } ] )
             except:
                 log.exception ("Cannot finish/fail Mex ")
 
