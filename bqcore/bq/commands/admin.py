@@ -10,7 +10,7 @@ import shutil
 
 from bq.release import __VERSION__
 from bq.util.io_misc import remove_safe
-from bq.util.paths import site_cfg_path, data_path
+from bq.util.paths import site_cfg_path, data_path, config_path, defaults_path
 
 
 
@@ -325,7 +325,7 @@ class preferences (object):
         import transaction
         load_bisque_services()
 
-        prefs = 'config/preferences.xml'
+        prefs = config_path('preferences.xml')
 
         set_admin_mode(True)
         if self.args[0].startswith('init'):
@@ -346,7 +346,7 @@ class preferences (object):
                     print ('NO ACTION: %s exists.. cannot init' % prefs)
                     sys.exit(1)
 
-            system = etree.parse('config-defaults/preferences.xml.default').getroot()
+            system = etree.parse(defaults_path ('preferences.xml.default')).getroot()
             for el in system.getiterator(tag=etree.Element):
                 el.set ('permission', 'published')
             system = data_service.new_resource(system, view='deep')
