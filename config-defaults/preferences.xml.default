@@ -14,9 +14,9 @@
             <tag name="user_profile" value="/registration/edit_user" />
 
             <tag name="about" value="/client_service/about" />
-            <tag name="privacy_policy" value="/client_service/public/about/privacypolicy.html" />
-            <tag name="terms_of_use" value="/client_service/public/about/termsofuse.html" />
-            <tag name="license" value="/client_service/public/about/license.html" />
+            <tag name="privacy_policy" value="/client_service/about/privacypolicy.html" />
+            <tag name="terms_of_use" value="/client_service/about/termsofuse.html" />
+            <tag name="license" value="/client_service/about/license.html" />
             <tag name="usage_statistics" value="/usage/" />
             <tag name="help" value="/client_service/help" />
             <tag name="project_website" value="http://bioimage.ucsb.edu/bisque" />
