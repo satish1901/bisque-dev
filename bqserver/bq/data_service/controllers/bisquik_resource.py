@@ -493,9 +493,9 @@ class BisquikResource(Resource):
         resource = self.check_access(resource, RESOURCE_EDIT)
         response = etree.Element ('resource')
         if resource is not None:
-            resource_uniq = resource.resource_uniq
+            uri = resource.uri
             resource_delete(resource, user_id = identity.get_user_id())
-            response.set ('resource_uniq', resource_uniq)
+            response.set ('uri', uri)
         return self.resource_output(resource=None, response=response, **kw)
 
 
