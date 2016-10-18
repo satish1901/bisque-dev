@@ -30,6 +30,12 @@ def config_path(*names):
     conf = conf or os.path.join(bisque_root(), 'config')
     return os.path.join(conf, *names).replace('\\', '/')
 
+def defaults_path(*names):
+    'return a path constructed from the config directory path'
+    conf = config.get('bisque.paths.default')
+    conf = conf or os.path.join(bisque_root(), 'config-defaults')
+    return os.path.join(conf, *names).replace('\\', '/')
+
 def find_config_path(config_file):
     """find a config from the usual places: locally, config, or /etc or by search up from current
     position
