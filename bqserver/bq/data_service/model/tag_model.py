@@ -103,13 +103,15 @@ admin_user =  init_module = init_mex = None
 
 # Legal attributes for Taggable
 LEGAL_ATTRIBUTES = {
-     'name': 'resource_name',  'resource_name' : 'resource_name',
-     'type': 'resource_user_type', 'resource_user_type': 'resource_user_type',
-     'value': 'resource_value', 'resource_value' : 'resource_value',
-     'hidden': 'resource_hidden', 'resource_hidden': 'resource_hidden',
-     'ts': 'ts', 'created': 'created',
-     'unid' : 'resource_unid', 'resource_unid' : 'resource_unid',
-     'uniq' : 'resource_uniq', 'resource_uniq' : 'resource_uniq'
+    'name': 'resource_name',  'resource_name' : 'resource_name',
+    'type': 'resource_user_type', 'resource_user_type': 'resource_user_type',
+    'value': 'resource_value', 'resource_value' : 'resource_value',
+    'hidden': 'resource_hidden', 'resource_hidden': 'resource_hidden',
+    'ts': 'ts', 'created': 'created',
+    'unid' : 'resource_unid', 'resource_unid' : 'resource_unid',
+    'uniq' : 'resource_uniq', 'resource_uniq' : 'resource_uniq',
+    'mex': 'mex_id',   # 'mex_id': 'mex_id',
+    'owner' : 'owner_id', 'owner_id' : 'owner_id',
      }
 
 

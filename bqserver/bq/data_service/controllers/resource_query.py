@@ -565,6 +565,7 @@ class fobject(object):
 ##
 
 def unique(l, fn):
+    """Special UNIQUE code for sqllite which doesn't support it"""
     current = l[0]
     yield current
     for x in l[1:]:
@@ -789,6 +790,63 @@ def tags_special(dbtype, query, params):
     return None
 
 
+def prepare_attributes (query, dbtype, attribs):
+    """Filter on attributes"""
+    # handle any legal attributes in kw
+    for ky,v in attribs.items():
+        #log.debug ("extra " + str(k) +'=' + str(v))
+        k = LEGAL_ATTRIBUTES.get(ky)
+
+        # Check for special attributes
+        if k in ( 'owner_id', 'mex_id'):
+            sv = DBSession.query (Taggable).filter_by (resource_uniq= v).first()
+            log.debug ("loaded %s values by uniq %s", k, sv)
+            if sv is not None:
+                v = sv.id
+            query = query.filter (getattr (dbtype, k) == v)
+            continue
+
+        if k and hasattr(dbtype, k):
+            # for un-repeated attributes i.e. ts<= & ts >=
+            if not hasattr(v, '__iter__'):
+                v = [v]
+            # Check all expressions of attribute k
+            for val  in v:
+                val  = val.strip('"\'')
+                op, val = ATTR_EXPR.match(val).groups()
+                if k in ('ts', 'created'):
+                    try:
+                        if '.' not in val:
+                            val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
+                        else:
+                            val, frag = val.split('.')
+                            val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
+                            val = val.replace(microsecond=int(frag))
+                    except ValueError:
+                        log.error('bad time: %s' %val)
+                        continue
+                log.debug ("adding attribute search %s %s op=%s %s" % (dbtype, k, op,  val))
+                if op == '>=':
+                    query =query.filter( getattr(dbtype, k) >= val)
+                elif op == '>':
+                    query =query.filter( getattr(dbtype, k) > val)
+                elif op == '<=':
+                    query =query.filter( getattr(dbtype, k) <= val)
+                elif op == '<':
+                    query =query.filter( getattr(dbtype, k) < val )
+                else:
+                    if '*' in val:
+                        query =query.filter( getattr(dbtype, k).like (val.replace('*', '%')))
+                    else:
+                        if '|' in val:
+                            query = query.filter( or_(*[getattr(dbtype, k)==v for v in val.split('|')]) )
+                        else:
+                            query =query.filter( getattr(dbtype, k)==val)
+            del attribs[ky]
+    return query
+
+
+
 
 ATTR_EXPR = re.compile('([><=]*)([^><=]+)')
 def resource_query(resource_type,
@@ -825,7 +883,7 @@ def resource_query(resource_type,
         sq1 = query.with_labels().subquery()
         query = DBSession.query (Taggable).filter (Taggable.id == sq1.c.values_valobj)
         wpublic = 1
-        
+
     if  permcheck :
         query = prepare_permissions(query, user_id, with_public = wpublic, action=action)
         #query = prepare_readable_docs(query, user_id, with_public = wpublic)
@@ -840,46 +898,9 @@ def resource_query(resource_type,
 
     query = prepare_tag_expr(query, tag_query)
 
-    # handle any legal attributes in kw
-    for ky,v in kw.items():
-        #log.debug ("extra " + str(k) +'=' + str(v))
-        k = LEGAL_ATTRIBUTES.get(ky)
-        if k and hasattr(dbtype, k):
-            if not hasattr(v, '__iter__'):
-                v = [v]
-            for val  in v:
-                val  = val.strip('"\'')
-                op, val = ATTR_EXPR.match(val).groups()
-                if k in ('ts', 'created'):
-                    try:
-                        if '.' not in val:
-                            val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
-                        else:
-                            val, frag = val.split('.')
-                            val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
-                            val = val.replace(microsecond=int(frag))
-                    except ValueError:
-                        log.error('bad time: %s' %val)
-                        continue
-                log.debug ("adding attribute search %s %s op=%s %s" % (dbtype, k, op,  val))
-                if op == '>=':
-                    query =query.filter( getattr(dbtype, k) >= val)
-                elif op == '>':
-                    query =query.filter( getattr(dbtype, k) > val)
-                elif op == '<=':
-                    query =query.filter( getattr(dbtype, k) <= val)
-                elif op == '<':
-                    query =query.filter( getattr(dbtype, k) < val )
-                else:
-                    if '*' in val:
-                        query =query.filter( getattr(dbtype, k).like (val.replace('*', '%')))
-                    else:
-                        if '|' in val:                            
-                            query = query.filter( or_(*[getattr(dbtype, k)==v for v in val.split('|')]) )
-                        else:
-                            query =query.filter( getattr(dbtype, k)==val)
-            del kw[ky]
-            
+    ## Attributes
+    query  = prepare_attributes (query, dbtype, kw)
+
     ## Special tag expressions
     r = tags_special(dbtype, query, kw)
     if r is not None:
