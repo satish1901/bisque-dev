@@ -18,6 +18,8 @@ import pkg_resources
 from lxml import etree
 from pylons.controllers.util import abort
 
+import bq.util.io_misc as misc
+
 __all__ = [ 'FuseOperation' ]
 
 from bq.image_service.controllers.operation_base import BaseOperation
@@ -46,6 +48,16 @@ class FuseOperation(BaseOperation):
         elif '.' in arg:
             (arg, method) = arg.split('.', 1)
         argenc = ''.join([hex(int(i)).replace('0x', '') for i in arg.replace(';', ',').split(',') if i is not ''])
+
+        # test if all channels are valid
+        dims = token.dims or {}
+        img_num_c = misc.safeint(dims.get('image_num_c'), 0)
+        groups = [i for i in arg.split(';') if i is not '']
+        for i, g in enumerate(groups):
+            num_channels = len(g.split(','))
+            if num_channels>img_num_c:
+                abort(400, 'Fuse: requested invalid number of input channels to be fused %s>%s in group %s (%s)'%(num_channels, img_num_c, i, g))
+
         ofile = '%s.fuse_%s_%s'%(token.data, argenc, method)
         return token.setImage(fname=ofile, fmt=default_format)
 
@@ -56,8 +68,16 @@ class FuseOperation(BaseOperation):
             (arg, method) = arg.split(':', 1)
         elif '.' in arg:
             (arg, method) = arg.split('.', 1)
-
         argenc = ''.join([hex(int(i)).replace('0x', '') for i in arg.replace(';', ',').split(',') if i is not ''])
+
+        # test if all channels are valid
+        dims = token.dims or {}
+        img_num_c = misc.safeint(dims.get('image_num_c'), 0)
+        groups = [i for i in arg.split(';') if i is not '']
+        for i, g in enumerate(groups):
+            num_channels = len(g.split(','))
+            if num_channels>img_num_c:
+                abort(400, 'Fuse: requested invalid number of input channels to be fused %s>%s in group %s (%s)'%(num_channels, img_num_c, i, g))
 
         ifile = token.first_input_file()
         ofile = '%s.fuse_%s_%s'%(token.data, argenc, method)

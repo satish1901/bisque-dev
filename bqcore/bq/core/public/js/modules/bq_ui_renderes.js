@@ -1015,7 +1015,7 @@ Ext.define('BQ.selectors.ImageChannel', {
 
     isValid: function() {
         if (!this.resource.value) {
-            var template = resource.template || {};
+            var template = this.resource.template || {};
             var msg = template.fail_message || 'You need to select an option!';
             BQ.ui.tip(this.getId(), msg, {anchor:'left',});
             return false;
