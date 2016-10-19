@@ -53,10 +53,14 @@ class FuseOperation(BaseOperation):
         dims = token.dims or {}
         img_num_c = misc.safeint(dims.get('image_num_c'), 0)
         groups = [i for i in arg.split(';') if i is not '']
-        for i, g in enumerate(groups):
-            num_channels = len(g.split(','))
-            if num_channels>img_num_c:
-                abort(400, 'Fuse: requested invalid number of input channels to be fused %s>%s in group %s (%s)'%(num_channels, img_num_c, i, g))
+        # if there are more groups than input channels
+        if len(groups)>img_num_c:
+            groups = groups[img_num_c:]
+            for i, g in enumerate(groups):
+                channels = [misc.safeint(i, 0) for i in g.split(',')]
+                # we can skip 0 weighted channels even if they are outside of the image channel range
+                if max(channels)>0:
+                    abort(400, 'Fuse: requested fusion of channel outside bounds %s>%s (%s)'%(img_num_c+i, img_num_c, g))
 
         ofile = '%s.fuse_%s_%s'%(token.data, argenc, method)
         return token.setImage(fname=ofile, fmt=default_format)
@@ -74,10 +78,14 @@ class FuseOperation(BaseOperation):
         dims = token.dims or {}
         img_num_c = misc.safeint(dims.get('image_num_c'), 0)
         groups = [i for i in arg.split(';') if i is not '']
-        for i, g in enumerate(groups):
-            num_channels = len(g.split(','))
-            if num_channels>img_num_c:
-                abort(400, 'Fuse: requested invalid number of input channels to be fused %s>%s in group %s (%s)'%(num_channels, img_num_c, i, g))
+        # if there are more groups than input channels
+        if len(groups)>img_num_c:
+            groups = groups[img_num_c:]
+            for i, g in enumerate(groups):
+                channels = [misc.safeint(i, 0) for i in g.split(',')]
+                # we can skip 0 weighted channels even if they are outside of the image channel range
+                if max(channels)>0:
+                    abort(400, 'Fuse: requested fusion of channel outside bounds %s>%s (%s)'%(img_num_c+i, img_num_c, g))
 
         ifile = token.first_input_file()
         ofile = '%s.fuse_%s_%s'%(token.data, argenc, method)
