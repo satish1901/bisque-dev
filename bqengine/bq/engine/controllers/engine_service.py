@@ -332,10 +332,11 @@ class EngineModuleResource(BaseController):
 
         static_path = os.path.join ( self.path, 'public')
         if os.path.exists(static_path):
-            log.info ("adding static path %s" % static_path)
+            url = "/engine_service/%s" % self.name
+            log.info ("Adding static path %s -> %s" %(url, static_path))
             public_file_filter.add_path(static_path,
                                         static_path,
-                                        "/engine_service/%s" % self.name)
+                                        url)
 
     def serve_entry_point(self, node, default='Entry point was not found...', **kw):
         """Provide a general way to serve an entry point"""
@@ -343,15 +344,20 @@ class EngineModuleResource(BaseController):
         from pylons.controllers.util import forward
         from paste.fileapp import FileApp
 
+        log.debug('Serving entry point: %s', node)
+
         if isinstance(node, str) is True:
             node = self.module_xml.xpath(node)
 
         text = default
-        if  len(node): # Found at least one xpath match
+        if len(node)>0: # Found at least one xpath match
             node = node[0]
+            log.debug('Node: %s', etree.tostring(node))
+
             type = node.get('type', None)
             if type == 'file':
                 path = self.filepath(node.get('value'))
+                log.debug('Serving file: %s', path)
                 if os.path.exists(path):
                     return forward(FileApp(path).cache_control (max_age=60*60*24*7*6))
 
@@ -441,8 +447,8 @@ class EngineModuleResource(BaseController):
                 l.append(x)
             return l
 
-        self.inputs  = define_template( self.module_xml.xpath('//tag[@name="inputs"]/*') )
-        self.outputs = define_template( self.module_xml.xpath('//tag[@name="outputs"]/*') )
+        self.inputs  = define_template( self.module_xml.xpath('./tag[@name="inputs"]/*') )
+        self.outputs = define_template( self.module_xml.xpath('./tag[@name="outputs"]/*') )
         log.debug("Inputs : %s", self.inputs)
         log.debug("Outputs: %s", self.outputs)
 
@@ -460,7 +466,7 @@ class EngineModuleResource(BaseController):
         module itself.
         """
         log.debug("index %s" % self.name)
-        node = self.module_xml.xpath('//tag[@name="interface"]')
+        node = self.module_xml.xpath('./tag[@name="interface"]')
         log.debug('Interface node: %s '%node)
         if not node or not node[0].get('value', None):
             override_template(self.index, "genshi:bq.engine.templates.default_module")
@@ -479,7 +485,7 @@ class EngineModuleResource(BaseController):
     @expose()
     def interface(self, **kw):
         """Provide Generate a module interface to be used"""
-        node = self.module_xml.xpath('//tag[@name="interface"]')
+        node = self.module_xml.xpath('./tag[@name="interface"]')
         log.debug('Interface node: %s'%node)
         if not node or not node[0].get('value', None):
             override_template(self.interface, "genshi:bq.engine.templates.default_module")
@@ -495,21 +501,21 @@ class EngineModuleResource(BaseController):
                          )
         return self.serve_entry_point(node)
 
-    @expose()
+    @expose(content_type="text/html")
     def help(self, **kw):
         """Return the help of the module"""
         help_text =  "No help available for %s" % self.name
-        return self.serve_entry_point('//tag[@name="help"]', help_text)
+        return self.serve_entry_point('./tag[@name="help"]', help_text)
 
     @expose()
     def thumbnail(self, **kw):
         """Return the thumbnail of the module"""
-        return self.serve_entry_point('//tag[@name="thumbnail"]', 'No thumbnail found')
+        return self.serve_entry_point('./tag[@name="thumbnail"]', 'No thumbnail found')
 
-    @expose()
+    @expose(content_type="text/plain")
     def description(self, **kw):
         """Return the textual desfription of the module"""
-        return self.serve_entry_point('//tag[@name="description"]', 'No description found')
+        return self.serve_entry_point('./tag[@name="description"]', 'No description found')
 
     @expose(content_type="text/xml")
     def definition(self, **kw):

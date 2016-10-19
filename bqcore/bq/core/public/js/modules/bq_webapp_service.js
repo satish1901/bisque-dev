@@ -18,7 +18,6 @@
 
 *******************************************************************************/
 
-
 //----------------------------------------------------------------------------------
 // misc
 //----------------------------------------------------------------------------------
@@ -40,13 +39,14 @@ function removeTrailingSlash(s) {
 function ModuleService(module_URI, conf) {
     this.URI = removeTrailingSlash(module_URI);
     this.conf = conf || {};
+    module_definition_xml = undefined;
 
     // this global variable may be defined by the template and contain the module definition XML
     if (typeof module_definition_xml != 'undefined') {
         this.setModule( BQFactory.parseBQDocument(module_definition_xml) );
     } else {
         // fetch it otherwise
-        BQFactory.request({ 
+        BQFactory.request({
             uri: this.URI+'/definition',
             cb: callback(this, 'setModule'),
             errorcb: callback(this, 'onerror'),
