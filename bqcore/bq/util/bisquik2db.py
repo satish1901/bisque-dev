@@ -521,7 +521,7 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  qfilter=None, **kw)
         if v.resource_parent_id in nodes:
             xmlnode (v, parent = nodes[v.resource_parent_id], baseuri=baseuri, view=view)
 
-    log.debug('resource2nodes: doc %s read %d nodes ', doc_id,  (len(nodes.keys())))
+    #log.debug('resource2nodes: doc %s read %d nodes ', doc_id,  (len(nodes.keys())))
     return nodes, doc_id
 
 
