@@ -132,7 +132,7 @@ class TableHDF(TableBase):
 
     name = 'hdf'
     version = '1.0'
-    ext = ['h5', 'hdf5', 'h5ebsd']
+    ext = ['h5', 'hdf5', 'h5ebsd', 'dream3d']
     mime_type = 'application/x-hdf'
 
     def __init__(self, uniq, resource, path, **kw):
