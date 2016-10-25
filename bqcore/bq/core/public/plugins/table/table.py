@@ -99,3 +99,8 @@ class HdfTablePlugin5 (TablePlugin):
     '''Supports HDF5 file'''
     ext = 'h5ebsd'
     mime_type = 'application/x-hdf'
+    
+class HdfTablePlugin6 (TablePlugin):
+    '''Supports HDF5 file used by Dream.3D'''
+    ext = 'dream3d'
+    mime_type = 'application/x-hdf'
