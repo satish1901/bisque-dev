@@ -70,6 +70,7 @@ from tg import controllers, redirect, expose, response, request
 from tg import require
 from lxml import etree
 
+from bq import data_service
 from bq.core import identity
 from bq.core.model import metadata, DBSession
 from bq.data_service.model  import Taggable, TaggableAcl, BQUser
@@ -153,7 +154,7 @@ def _aclelem(resource, user, acl=None):
     " Return an etree element <auth > record "
     return  etree.Element ('auth',
                            action = (acl and acl.action) or 'read',
-                           user   = "/data_service/user/%s" % user.resource_uniq,
+                           user   = "%s/data_service/user/%s" % (request.application_url, user.resource_uniq),
 #                           user   =  user.resource_uniq,
                            email  =user.value)
 
@@ -223,8 +224,9 @@ class ResourceAuth(Resource):
             response.append (_aclelem (resource, user, auth))
         if is_admin() : #and resource.owner_id != current_user.id:
             current_user = get_user()
-            etree.SubElement (response, 'auth',  action="edit",
-                              user = current_user.resource_uniq, email=current_user.value)
+            admin_auth = _aclelem (resource, current_user)
+            admin_auth.set ('action', 'edit')
+            response.append (admin_auth)
 
         formatter, content_type  = find_formatter (format)
         tg.response.headers['Content-Type'] = content_type
@@ -477,12 +479,18 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
 
 
 
-def mex_acl_handler (resource, user, acl, action):
+def mex_acl_handler (resource_uniq, user, acl, action):
     """Special handling for mexes
 
     Share A mexes input and outputs
     """
+    mex = data_service.resource_load (uniq=resource_uniq,view='deep')
 
+
+    points_from_list = [ x.rsplit('/',1)[1] for x in mex.xpath('./tag[@name="inputs"]/tag/@value') if x.startswith("http") ]
+    points_to_list = [ x.rsplit('/',1)[1] for x in mex.xpath('./tag[@name="outputs"]/tag/@value') if x.startswith("http") ]
+
+    log.info ("Discovered incoming %s", points_from_list)
 
 
 
