@@ -21,7 +21,8 @@ IRODS_CACHE = data_path('irods_cache')
 # Here's a list of all the environment variables that can control the icommands environment.  https://wiki.irods.org/index.php/User_Environment_Variables
 
 try:
-    subprocess.check_call (['ienv', '-h'])
+    FNULL = open(os.devnull, 'w')
+    subprocess.check_call (['ienv', '-h'], stdout=FNULL, stderr=FNULL)
 except:
     raise ImportError ("Cannot initialize icommands for irods")
 

@@ -70,16 +70,15 @@ from tg import controllers, redirect, expose, response, request
 from tg import require
 from lxml import etree
 
-from bq import data_service
+from bq.util.hash import is_uniq_code
 from bq.core import identity
 from bq.core.model import metadata, DBSession
-from bq.data_service.model  import Taggable, TaggableAcl, BQUser
-from bq.exceptions import IllegalOperation
-from bq.client_service.controllers import notify_service
 from bq.core.identity import get_user_id, is_admin, get_user
 from bq.core.model import User
-
-
+from bq import data_service
+from bq.data_service.model  import Taggable, TaggableAcl, BQUser
+from bq.client_service.controllers import notify_service
+from bq.exceptions import IllegalOperation
 
 from .resource import Resource
 from .resource_query import RESOURCE_READ, RESOURCE_EDIT
@@ -341,10 +340,13 @@ def resource_acls(resources, newauth, user=None, acl=None, notify=False, invalid
 
     """
     results = []
-    for resource in resource:
+    for resource in resources:
         uniq = posixpath.basename (resource)
         r = DBSession.query(Taggable).filter_by(resource_uniq=uniq).first()
-        results.append (resource_acl(resource, newauth, user, acl, notify, invalidate, action))
+        if r is None:
+            log.warn ("uniq %s was not a shareable resource", r)
+            continue
+        results.append (resource_acl(r, newauth, user, acl, notify, invalidate, action))
     return results
 
 
@@ -370,11 +372,17 @@ def resource_acl (resource,  newauth, user=None, acl=None, notify=False, invalid
             acl = TaggableAcl()
             acl.taggable_id = resource.id
             acl.user_id = user.id
+            acl.action = "read"
             DBSession.add (acl)
 
     if action =='delete':
-        DBSession.delete (acl)
+        log.debug ("Removing %s from %s  for %s", newauth.get ('action', RESOURCE_READ), resource.resource_uniq, user.resource_uniq)
+        if acl in DBSession.new: # http://stackoverflow.com/questions/8306506/deleting-an-object-from-an-sqlalchemy-session-before-its-been-persisted
+            DBSession.expunge(acl)
+        else:
+            DBSession.delete (acl)
     else:
+        log.debug ("Changing share on %s for %s action=%s", resource.resource_uniq, user.resource_uniq,  newauth.get ('action', RESOURCE_READ))
         acl.action = newauth.get ('action', RESOURCE_READ)
     # Special actions on sharing  specific resource types
     handler = SHARE_HANDLERS.get(resource.resource_type)
@@ -479,18 +487,23 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
 
 
 
-def mex_acl_handler (resource_uniq, user, acl, action):
+def mex_acl_handler (resource_uniq, user_uniq, newauth, action):
     """Special handling for mexes
 
     Share A mexes input and outputs
     """
     mex = data_service.resource_load (uniq=resource_uniq,view='deep')
 
+    # extract urls from mex inputs and outputs
+    points_from_list = [ x.rsplit('/',1)[1] for x in mex.xpath('./tag[@name="inputs"]/tag/@value')
+                         if x.startswith("http") ]
+    points_to_list = [ x.rsplit('/',1)[1] for x in mex.xpath('./tag[@name="outputs"]/tag/@value')
+                       if x.startswith("http") ]
+    mex_resources  = [ x for x in points_from_list + points_to_list if is_uniq_code(x) ]
+    log.debug ("Discovered incoming %s outgoing %s = %s", points_from_list, points_to_list, mex_resources)
 
-    points_from_list = [ x.rsplit('/',1)[1] for x in mex.xpath('./tag[@name="inputs"]/tag/@value') if x.startswith("http") ]
-    points_to_list = [ x.rsplit('/',1)[1] for x in mex.xpath('./tag[@name="outputs"]/tag/@value') if x.startswith("http") ]
+    resource_acls(mex_resources, newauth, action=action)
 
-    log.info ("Discovered incoming %s", points_from_list)
 
 
 
