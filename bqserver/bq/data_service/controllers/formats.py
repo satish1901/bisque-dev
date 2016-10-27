@@ -60,13 +60,17 @@ import csv
 
 log = logging.getLogger ("bq.data_service.formats")
 
-def format_xml(tree):
-    return etree.tounicode(tree).encode('utf-8')
-def format_json(tree):
+def format_tree(tree, view=None):
+    "For internal use.. just return the tree"
+    return tree
+def format_xml(tree, view=None):
+    pretty = True if  view and 'pretty' in view else False
+    return etree.tounicode(tree, pretty_print=pretty).encode('utf-8')
+def format_json(tree, view=None):
     return ""
 
 
-def format_csv (tree):
+def format_csv (tree, view=None):
     ''' <response>
            <gobject type="mytpe" name="myx" >
              <gobject type="point">
@@ -130,9 +134,6 @@ def format_csv (tree):
     return buffer.getvalue()
 
 
-def format_tree(tree):
-    "For internal use.. just return the tree"
-    return tree
 
 
 formatters = { 'xml' : (format_xml, 'text/xml' ),

@@ -51,7 +51,6 @@ DESCRIPTION
    RESTful access to DoughDB resources
 
 """
-import pdb
 import logging
 import sqlalchemy
 import urllib
@@ -79,9 +78,10 @@ from bq.util.hash import make_uniq_code, is_uniq_code
 
 
 from .resource import Resource
-from .resource_query import resource_query, resource_load, resource_count, resource_auth, resource_permission, resource_delete, document_permission
+from .resource_query import resource_query, resource_load, resource_count, resource_permission, resource_delete, document_permission
 from .resource_query import RESOURCE_READ, RESOURCE_EDIT
 from .formats import find_formatter
+from .resource_auth import ResourceAuth, force_dbload, check_access
 
 log = logging.getLogger("bq.data_service.bisquik_resource")
 
@@ -89,37 +89,6 @@ log = logging.getLogger("bq.data_service.bisquik_resource")
 #PROTECTED = [ 'module', 'mex', 'system' ]
 PROTECTED = [ 'store', 'link', 'dir' ]
 
-
-def force_dbload(item):
-    if item and isinstance(item, Query):
-        item = item.first()
-    return item
-
-
-def check_access(query, action=RESOURCE_READ):
-    if action == RESOURCE_EDIT and not identity.not_anonymous():
-        log.debug ("EDIT denied because annonymous")
-        abort(401)
-    if query is None:
-        return None
-    if  isinstance(query, Query):
-        query = resource_permission(query, action=action)
-    else:
-        #   Previously loaded resource .. recreate query but with
-        #   permission check
-        #query = resource_load (self.resource_type, query.id)
-        query = resource_load ((query.xmltag, query.__class__), query.id)
-        query = resource_permission (query, action=action)
-
-    resource = force_dbload(query)
-    if resource is None:
-        log.info ("Permission check failure %s" % query)
-        if identity.not_anonymous():
-            abort(403)
-        else:
-            abort(401)
-    #log.debug ("PERMISSION: user %s : %s" % (user_id, resource))
-    return resource
 
 
 class PixelHandler (object):
@@ -136,55 +105,6 @@ class PixelHandler (object):
         redirect (base_url=url.url)
 
 
-class ResourceAuth(Resource):
-    'Handle resource authorization records'
-
-    def __init__(self, baseuri):
-        self.baseuri = baseuri
-
-    def create(self, **kw):
-        return int
-
-
-    def dir(self, **kw):
-        'Read the list of authorization records associated with the parent resource'
-        #baseuri = request.url
-        format = kw.pop('format', None)
-        view = kw.pop('view', None)
-        resource = check_access(request.bisque.parent, RESOURCE_READ)
-        baseuri = self.baseuri
-        log.info ("AUTH %s  %s" % (resource, request.environ))
-        auth = resource_auth (resource)
-        response = etree.Element('resource', uri="%s%s/auth" % (baseuri, resource.uri))
-        tree = db2tree (auth,  parent = response, view=view,baseuri=baseuri)
-        formatter, content_type  = find_formatter (format)
-        tg.response.headers['Content-Type'] = content_type
-        return formatter(response)
-
-    def replace_all(self, resource, xml, **kw):
-        return self.new (None, xml, **kw)
-    def replace(self, resource, xml, **kw):
-        return self.new (None, xml, **kw)
-    def modify(self, factory, xml, **kw):
-        return self.new (factory, xml, **kw)
-
-    def new(self, factory,  xml, notify=True, **kw):
-        'Create/Modify resource auth records'
-        format = None
-        baseuri = self.uri
-        #resource = force_dbload(request.bisque.parent)
-        #baseuri = resource.uri
-        resource = check_access( request.bisque.parent, RESOURCE_EDIT)
-        log.debug ("AUTH %s with %s" % (resource, xml))
-        #DBSession.autoflush = False
-        resource = resource_auth (resource,  action=RESOURCE_EDIT, newauth=etree.XML(xml),
-                                  notify=asbool(notify))
-        response = etree.Element('resource', uri=baseuri)
-        tree = db2tree (resource,  parent = response, baseuri=baseuri)
-        formatter, content_type  = find_formatter (format)
-        tg.response.headers['Content-Type'] = content_type
-        transaction.commit()
-        return formatter(response)
 
 RESOURCE_HANDLERS = {
     'auth'   : ResourceAuth ,
@@ -289,7 +209,7 @@ class BisquikResource(Resource):
         #transaction.commit()
         formatter, content_type  = find_formatter (format)
         tg.response.headers['Content-Type'] = content_type
-        return formatter(response)
+        return formatter(response,view=view)
 
 
     def dir(self, **kw):
@@ -372,8 +292,7 @@ class BisquikResource(Resource):
 
         formatter, content_type  = find_formatter (format)
         tg.response.headers['Content-Type'] = content_type
-
-        text_response =  formatter(response)
+        text_response =  formatter(response, view=view)
         #ex = etree.XML (text_response)
         #log.debug ("text_response %d" % len(ex) )
         return text_response
@@ -463,7 +382,6 @@ class BisquikResource(Resource):
         parent = self.load_parent()
         DBSession.autoflush = False
         old = resource.clear()
-        #pdb.set_trace()
         log.debug ("MODIFY: parent=%s resource=%s" % (parent, resource))
         resource = bisquik2db (doc=xml, resource=resource, parent=parent, replace=True)
         log.info ('MODIFIED: ==> %s ' %(resource))

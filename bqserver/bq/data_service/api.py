@@ -121,11 +121,11 @@ def auth_resource(resource, server=None, **kw):
     if server is None: server = service_registry.find_service ('data_service')
     return server.auth_resource(resource, **kw)
 
-def update_resource(resource, server=None, replace=True,  **kw):
+def update_resource(resource, server=None, new_resource=None, replace=True,  **kw):
     ''' Create a new resource
     '''
     if server is None: server = service_registry.find_service ('data_service')
-    return server.update_resource(resource=resource, replace=replace, **kw)
+    return server.update_resource(resource=resource, new_resource=new_resource, replace=replace, **kw)
 
 def resource_uniq(server=None, **kw):
     ''' Create a new resource
