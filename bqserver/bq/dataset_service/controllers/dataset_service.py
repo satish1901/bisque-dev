@@ -3,7 +3,7 @@ import logging
 import pkg_resources
 from lxml import etree
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
-from tg import expose, flash, require
+from tg import expose, flash, require, request
 from repoze.what import predicates
 from bq.core.service import ServiceController
 from bq.dataset_service import model
@@ -11,6 +11,8 @@ from bq.dataset_service import model
 
 from bq import data_service
 from bq import module_service
+from bq.data_service.controllers.resource_auth import  append_share_handler
+
 
 log = logging.getLogger('bq.dataset')
 
@@ -117,15 +119,72 @@ class TagEditOp (DatasetOp):
 
 class ShareOp (DatasetOp):
     'Apply sharing options to  each member'
-    def action(self, member, auth, last=False, **kw):
+    def action(self, member, auth, action, last=False, **kw):
         member = member.text
-        data_service.auth_resource(member, action=data_service.RESOURCE_EDIT, auth=auth, notify=False, invalidate=last)
+        data_service.auth_resource(member,  auth=auth, invalidate=last, action=action)
         return None
+
+def dataset_share_handler (resource_uniq, user_uniq, auth, action):
+    """Apply share to all members
+
+    resource dataset
+    auth   xml auth record
+    acl    acl of dataset
+    """
+    dataset = data_service.resource_load (uniq = resource_uniq, view='full')
+    iterate(dataset=dataset, operation='share', auth=auth, action=action, last=True)
+
+
+append_share_handler ('dataset', dataset_share_handler)
+
+
 
 
 #---------------------------------------------------------------------------------------
 # controller
 #---------------------------------------------------------------------------------------
+
+
+def iterate(duri=None, operation='idem', dataset=None, members = None, last= False, **kw):
+    """Iterate over a dataset executing an operation on each member
+
+    @param  duri: dataset uri
+    @param operation: an operation name (i.e. module, permisssion)
+    @param kw : operation parameters by name
+    """
+
+    log.info('iterate op %s on  %s' % (operation, duri))
+    if dataset is None:
+        dataset = data_service.get_resource(duri, view='full')
+    if members is None:
+        members = dataset.xpath('/dataset/value')
+
+    op_klass  = DatasetServer.operations.get(operation, IdemOp)
+    op = op_klass(duri, dataset=dataset, members = members)
+
+    #mex = module_service.begin_internal_mex ("dataset_iterate")
+
+    log.debug ("%s on  members %s" , str( op ),  [ x.text for x in members ] )
+    results = etree.Element('resource', uri=request.url)
+    if last:
+        last_member = members[-1]
+        members = members[:-1]
+
+    for val in members:
+        result =  op(member = val, **kw)
+        log.debug ("%s on %s -> %s" , operation, val.text, result )
+        if result is not None:
+            results.append (result)
+
+    if last:
+        result =  op(member = last_member, last = True, **kw)
+        log.debug ("%s on %s -> %s" , operation, last_member.text, result )
+        if result is not None:
+            results.append (result)
+
+    return etree.tostring(results)
+
+
 
 class DatasetServer(ServiceController):
     """Server side actions on datasets
@@ -145,46 +204,7 @@ class DatasetServer(ServiceController):
         super(DatasetServer, self).__init__(server_url)
 
     def iterate(self, duri=None, operation='idem', dataset=None, members = None, last= False, **kw):
-        """Iterate over a dataset executing an operation on each member
-
-        @param  duri: dataset uri
-        @param operation: an operation name (i.e. module, permisssion)
-        @param kw : operation parameters by name
-        """
-
-        log.info('iterate op %s on  %s' % (operation, duri))
-        if dataset is None:
-            dataset = data_service.get_resource(duri, view='full')
-        if members is None:
-            members = dataset.xpath('/dataset/value')
-
-        op_klass  = self.operations.get(operation, IdemOp)
-        op = op_klass(duri, dataset=dataset, members = members)
-
-        #mex = module_service.begin_internal_mex ("dataset_iterate")
-
-        log.debug ("%s on  members %s" , str( op ),  [ x.text for x in members ] )
-        results = etree.Element('resource', uri=self.baseuri + 'iterate')
-        if last:
-            last_member = members[-1]
-            members = members[:-1]
-
-        for val in members:
-            result =  op(member = val, **kw)
-            log.debug ("%s on %s -> %s" , operation, val.text, result )
-            if result is not None:
-                results.append (result)
-
-        if last:
-            result =  op(member = last_member, last = True, **kw)
-            log.debug ("%s on %s -> %s" , operation, last_member.text, result )
-            if result is not None:
-                results.append (result)
-
-
-        #module_service.end_internal_mex(mex.uri)
-
-        return etree.tostring(results)
+        return iterate(duri,operation,dataset, members, last, **kw)
 
     #############################################
     # visible
@@ -252,10 +272,12 @@ class DatasetServer(ServiceController):
     @require(predicates.not_anonymous())
     def share(self, duri, **kw):
         'Apply share settings of dataset to all members'
-        dataset_auth = data_service.auth_resource(duri)
-        log.info ("dataset: auth setting members of %s to %s" , duri, etree.tostring(dataset_auth))
-        values =  self.iterate(duri, operation='share', auth=dataset_auth, last=True, **kw)
-        return values
+
+        #dataset_auth = data_service.auth_resource(duri)
+        #log.info ("dataset: auth setting members of %s to %s" , duri, etree.tostring(dataset_auth))
+        #values =  self.iterate(duri, operation='share', auth=dataset_auth, last=True, **kw)
+        #return values
+        return "<resource/>"
 
 
 
