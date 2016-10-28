@@ -136,11 +136,11 @@
 
 .bq-share-panel .bq_row .x-grid-cell-inner-action-col {
     padding: 0px;
-    margin-top: 4px;    
+    margin-top: 4px;
 }
 
 .bq-share-panel .icon_add .x-grid-cell-inner {
-    margin: 4px 10px 1px 10px;    
+    margin: 4px 10px 1px 10px;
     height: 27px;
     background-image: url(/core/images/icons_toolbar.svg);
     background-repeat: no-repeat;
@@ -156,6 +156,14 @@
     cursor: pointer;
 }
 
+.bq-share-panel .icon_sharing {
+    background-image: none;
+    font-size: 18px;
+    font-weight: 300;
+    cursor: pointer;
+    color: #AAAA00;
+}
+
 .bq-share-panel .icon_remove {
     width: 27px;
     height: 27px;
@@ -167,5 +175,5 @@
 }
 
 .bq-share-panel .permission {
-    cursor: pointer;  
+    cursor: pointer;
 }
