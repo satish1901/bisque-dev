@@ -74,10 +74,11 @@ def send_mail(sender_email, recepient_email, subject, body ):
 
     msg = turbomail.Message(sender_email, recepient_email, subject)
     msg.plain = body
-    turbomail.send(msg)
-
-    log.debug ("Sending mail to %s %s" % (recepient_email, subject))
-
+    try:
+        turbomail.send(msg)
+        log.debug ("Sending mail to %s %s" % (recepient_email, subject))
+    except turbomail.MailNotEnabledException:
+        log.warning("Failed sending mail to %s with '%s'" % (recepient_email, subject))
 
 
 def send_invite(sender_email, recepient_email, subject, body):

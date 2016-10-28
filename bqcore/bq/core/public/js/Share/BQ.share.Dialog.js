@@ -131,7 +131,9 @@ Ext.define('BQ.model.Users', {
                {name: 'name', convert: getName },
                {name: 'email', mapping: '@value' },
                {name: 'uri', mapping: '@uri' },
+               {name: 'uniq', mapping: '@resource_uniq' },
                {name: 'full', convert: getFull },
+               {name: 'mexs' },
              ],
     //belongsTo: 'BQ.model.Auth',
     proxy : {
@@ -154,13 +156,18 @@ Ext.define('BQ.share.Panel', {
     alias: 'widget.bqsharepanel',
     requires: ['Ext.toolbar.Toolbar', 'Ext.tip.QuickTipManager', 'Ext.tip.QuickTip', 'Ext.selection.CellModel' ],
     cls: 'bq-share-panel',
+
     layout: {
         type: 'vbox',
         align: 'stretch'
     },
 
-    initComponent : function() {
+    auto_reload: true,
+    delay_timeout: 60000,
+    mexs: [],
 
+    initComponent : function() {
+        var me = this;
         if (this.resource)
             this.url = this.resource.uri+'/auth';
 
@@ -175,42 +182,19 @@ Ext.define('BQ.share.Panel', {
             },
         });
 
-        var storetype = this.resource ? 'BQ.share.Store' : 'Ext.data.Store';
-        this.store = Ext.create(storetype, {
+        this.store = Ext.create('Ext.data.Store', {
             model : 'BQ.model.Auth',
             autoLoad : false,
             autoSync : this.resource ? true : false,
             proxy : {
-                type: 'ajax',
+                type: 'bq-auth',
                 url : this.url,
-                actionMethods: {
-                    create : 'PUT',
-                    read   : 'GET',
-                    update : 'POST',
-                    destroy: 'PUT'
-                },
-                limitParam : undefined,
-                pageParam: undefined,
-                startParam: undefined,
-                noCache: false,
-                reader : {
-                    type :  'xml',
-                    root :  'resource',
-                    record: 'auth',
-                },
-                writer : {
-                    type :  'bqauthxml',
-                    root :  'resource',
-                    record: 'auth',
-                    resource: this.resource,
-                    writeAllFields : true,
-                    writeRecordId: false,
-                },
             },
             listeners : {
                 scope: this,
                 load: this.onStoreLoaded,
                 datachanged: this.onStoreChange,
+                write: this.onStoreWrite,
             },
         });
 
@@ -224,85 +208,110 @@ Ext.define('BQ.share.Panel', {
         var grid_panel = {
             xtype: 'gridpanel',
             itemId  : 'main_grid',
+            cls: 'users',
             autoScroll: true,
             flex: 2,
             store: this.store,
             plugins: [this.cellEditing],
-            //border: 0,
-            columns: [{
-                text: 'User',
-                flex: 1,
-                dataIndex: 'user',
-                sortable: true,
-                renderer: function(value, meta, record, row, col, store, view) {
-                    if (me.users_xml)
-                        return BQ.util.xpath_string(me.users_xml, '//user[@uri="'+value+'"]/@name');
-                    // can't read directly from the store used for combobox due to filtering applied by it
-                    //me.store_users.clearFilter(true);
-                    //var r = me.store_users.findRecord( 'uri', value );
-                    //if (r && r.data)
-                    //    return r.data.username;
-                    return '';
-                },
-            }, {
-                text: 'Name',
-                flex: 2,
-                dataIndex: 'user',
-                sortable: true,
-                renderer: function(value) {
-                    if (me.users_xml)
-                        return BQ.util.xpath_string(me.users_xml, '//user[@uri="'+value+'"]/tag[@name="display_name"]/@value');
-                    // can't read directly from the store used for combobox due to filtering applied by it
-                    //me.store_users.clearFilter(true);
-                    //var r = me.store_users.findRecord( 'uri', value );
-                    //if (r && r.data)
-                    //    return r.data.name;
-                    return '';
-                },
-            }, {
-                text: 'E-Mail',
-                flex: 2,
-                dataIndex: 'email',
-                sortable: true,
-                renderer: function(value, meta, record) {
-                    if (value!=='') return value;
-                    if (me.users_xml)
-                        return BQ.util.xpath_string(me.users_xml, '//user[@uri="'+record.data.user+'"]/@value');
-                    // can't read directly from the store used for combobox due to filtering applied by it
-                    //me.store_users.clearFilter(true);
-                    //var r = me.store_users.findRecord( 'uri', record.data.user );
-                    //if (r && r.data)
-                    //    return r.data.email;
-                    return '';
-                },
-            }, {
-                text: 'Permission',
-                flex: 2,
-                dataIndex: 'action',
-                sortable: true,
-                editor: new Ext.form.field.ComboBox({
-                    triggerAction: 'all',
-                    editable: false,
-                    store: [
-                        ['read','read'],
-                        ['edit','edit']
-                    ]
-                })
-            }, {
-                xtype: 'actioncolumn',
-                width: 30,
-                sortable: false,
-                menuDisabled: true,
-                items: [{
-                    icon : BQ.Server.url('/export/images/delete.png'),
-                    tooltip: 'Delete share',
-                    scope: this,
-                    handler: this.onRemoveShare,
-                }]
-            }],
             viewConfig: {
                 stripeRows: true,
-                forceFit: true
+                forceFit: true,
+            },
+
+            listeners : {
+                scope: this,
+                cellclick: this.onCellClick,
+            },
+
+            columns: {
+                defaults: {
+                    tdCls: 'bq_row',
+                    cls: 'bq_row',
+                },
+                items: [{
+                    text: 'User',
+                    flex: 1,
+                    dataIndex: 'user',
+                    sortable: true,
+                    renderer: function(value, meta, record, row, col, store, view) {
+                        if (me.users_xml)
+                            return BQ.util.xpath_string(me.users_xml, '//user[@resource_uniq="'+value+'"]/@name');
+                        // can't read directly from the store used for combobox due to filtering applied by it
+                        //me.store_users.clearFilter(true);
+                        //var r = me.store_users.findRecord( 'uri', value );
+                        //if (r && r.data)
+                        //    return r.data.username;
+                        return '';
+                    },
+                }, {
+                    text: 'Name',
+                    flex: 2,
+                    dataIndex: 'user',
+                    sortable: true,
+                    renderer: function(value) {
+                        if (me.users_xml)
+                            return BQ.util.xpath_string(me.users_xml, '//user[@resource_uniq="'+value+'"]/tag[@name="display_name"]/@value');
+                        // can't read directly from the store used for combobox due to filtering applied by it
+                        //me.store_users.clearFilter(true);
+                        //var r = me.store_users.findRecord( 'uri', value );
+                        //if (r && r.data)
+                        //    return r.data.name;
+                        return '';
+                    },
+                }, {
+                    text: 'E-Mail',
+                    flex: 2,
+                    dataIndex: 'email',
+                    sortable: true,
+                    renderer: function(value, meta, record) {
+                        if (value!=='') return value;
+                        if (me.users_xml)
+                            return BQ.util.xpath_string(me.users_xml, '//user[@resource_uniq="'+record.data.user+'"]/@value');
+                        // can't read directly from the store used for combobox due to filtering applied by it
+                        //me.store_users.clearFilter(true);
+                        //var r = me.store_users.findRecord( 'uri', record.data.user );
+                        //if (r && r.data)
+                        //    return r.data.email;
+                        return '';
+                    },
+                }, {
+                    text: 'Permission',
+                    width : 100,
+                    tdCls: 'bq_row permission',
+                    dataIndex: 'action',
+                    sortable: true,
+                    /*editor: new Ext.form.field.ComboBox({
+                        triggerAction: 'all',
+                        editable: false,
+                        store: [
+                            ['read','read'],
+                            ['edit','edit']
+                        ]
+                    })*/
+                }, {
+                    //xtype : 'actioncolumn',
+                    text: 'Analysis',
+                    width : 80,
+                    dataIndex: 'mexs',
+                    menuDisabled : true,
+                    sortable : false,
+                    align : 'center',
+                    scope: this,
+                    renderer: this.renderer_mexs,
+                }, {
+                    xtype: 'actioncolumn',
+                    text: 'Remove',
+                    width: 80,
+                    align : 'center',
+                    sortable: false,
+                    menuDisabled: true,
+                    items: [{
+                        iconCls: 'icon_remove',
+                        tooltip: 'Delete share',
+                        scope: this,
+                        handler: this.onRemoveShare,
+                    }]
+                }],
             },
         };
 
@@ -394,17 +403,30 @@ Ext.define('BQ.share.Panel', {
             }],
         };
 
-        this.items = [{
+        this.items = [/*{
             xtype: 'container',
-            html: '<h2>Share with public:</h2>',
+            html: '<h2>Also share associated analysis results</h2>',
+        }, {
+            xtype: 'bq_associated_mex_panel',
+            resource: this.resource,
+            listeners : {
+                scope: this,
+                //changePermission: this.onChangePermission,
+            },
+        },*/ {
+            xtype: 'container',
+            html: '<h2>Share with public</h2>',
         }, visibility_cnt, {
             xtype: 'container',
-            html: '<h2>Share with collaborators:</h2>',
+            html: '<h2>Share with collaborators</h2>',
         }, {
             xtype: 'container',
             html: '<p>Add new shares by <b>user name</b> or by any <b>e-mail</b>, if the e-mail is not registered with the system a new user will be created and notified.</p>',
         }, new_share_cnt, grid_panel ];
+
         this.callParent();
+        this.on('show', this.updateAutoReload, this);
+        this.on('hide', this.stopAutoReload, this);
     },
 
     afterRender : function() {
@@ -420,16 +442,9 @@ Ext.define('BQ.share.Panel', {
             this.store.load();
     },
 
-    onStoreLoaded: function( store, records, successful, eOpts) {
-        this.changed = undefined;
-    },
-
     onNotifyUsers: function(box) {
         var notify = box.getValue();
-        var url = this.url;
-        if (!notify)
-            url = Ext.urlAppend(url, 'notify=false');
-        this.store.getProxy().url = url;
+        this.store.getProxy().setExtraParam( 'notify', notify===true ? 'true' : 'false' );
     },
 
     onAddShare: function() {
@@ -452,7 +467,7 @@ Ext.define('BQ.share.Panel', {
         var user = '';
         r = this.store_users.findRecord( 'email', email );
         if (r && r.data)
-            user = r.data.uri;
+            user = r.data.uniq;
 
         var self_user = BQSession.current_session && BQSession.current_session.user ? BQSession.current_session.user.uri : '';
         if (user === self_user) {
@@ -489,12 +504,98 @@ Ext.define('BQ.share.Panel', {
         this.fireEvent( 'changePermission', perm, this );
     },
 
+    onStoreLoaded: function( store, records, successful, eOpts) {
+        this.changed = undefined;
+    },
+
+    onStoreWrite: function() {
+        this.store.load();
+    },
+
     onStoreChange: function() {
+        this.updateAutoReload();
         this.changed = true;
     },
 
     isChanged: function() {
         return this.changed === true;
+    },
+
+    renderer_mexs: function(v, metadata, record, rowIndex, colIndex, store) {
+        var num_mexs = record.data.mexs ? Object.keys(record.data.mexs).length : 0;
+        if (num_mexs < 1) {
+            metadata.css = 'icon_add'; // class
+            return '';
+        }
+
+        metadata.css = 'icon_number';
+        return num_mexs;
+    },
+
+    onCellClick: function( grid, td, cellIndex, record, tr, rowIndex, e) {
+        if (cellIndex === 3)
+            this.onClickPermission( grid, td, cellIndex, record, tr, rowIndex, e);
+        else
+        if (cellIndex === 4)
+            this.onClickMex( grid, td, cellIndex, record, tr, rowIndex, e);
+    },
+
+    onClickPermission: function( grid, td, cellIndex, record, tr, rowIndex, e) {
+        record.set('action', record.data.action === 'read' ? 'edit' : 'read');
+    },
+
+    onClickMex: function( grid, td, cellIndex, record, tr, rowIndex, e) {
+        if (cellIndex !== 4) return;
+        var browser = Ext.create('Bisque.ResourceBrowser.Dialog', {
+            width :  '85%',
+            height : '85%',
+            dataset: BQ.Server.url('/data_service/mex'),
+            tagQuery: '"*'+this.resource.resource_uniq+'"&value=FINISHED',
+            wpublic: 'false',
+            //value: 'FINISHED',
+            selection: record.data.mexs,
+            listeners: {
+                scope: this,
+                Select: function(rb, mexs) {
+                    this.onAddingMexs(rb, mexs, record, rowIndex);
+                },
+            },
+        });
+    },
+
+    onAddingMexs : function(rb, mexs, record, rowIndex) {
+        if (!(mexs instanceof Array)) {
+            mexs = [mexs];
+        }
+        record.data.mexs = record.data.mexs || {};
+        var num_mexs = mexs.length,
+            m = null;
+        for (var i=0; (m=mexs[i]); ++i) {
+            record.data.mexs[m.resource_uniq] = m.resource_uniq;
+        }
+        this.grid = this.grid || this.queryById('main_grid');
+        this.grid.getView().refresh();
+    },
+
+    updateAutoReload : function(delay) {
+        var me = this;
+        if (!me.task_reload) {
+            me.task_reload = new Ext.util.DelayedTask( function() {
+                Ext.log(">>>>>>>>>> reload shares");
+                me.store.reload();
+                if (me.isVisible())
+                    me.task_reload.delay(me.delay_timeout);
+            });
+        }
+        if (me.auto_reload) {
+            me.task_reload.delay(delay || me.delay_timeout);
+        }
+    },
+
+    stopAutoReload : function() {
+        var me = this;
+        if (me.task_reload)
+            me.task_reload.cancel();
     },
 
 });
@@ -503,6 +604,7 @@ Ext.define('BQ.share.Panel', {
 // BQ.button.ResourceVisibility
 // button that shows and changes resource visibility
 // Parameters: resource
+// events: changePermission
 //--------------------------------------------------------------------------------------
 
 Ext.define('BQ.button.ResourcePermissions', {
@@ -513,14 +615,6 @@ Ext.define('BQ.button.ResourcePermissions', {
     minWidth: 120,
     permission: 'private',
     prefix: 'Visibility: ',
-
-    constructor: function(config) {
-        this.addEvents({
-            'changePermission' : true,
-        });
-        this.callParent(arguments);
-        return this;
-    },
 
     initComponent : function() {
         this.handler = this.toggleVisibility;
@@ -574,95 +668,243 @@ Ext.define('BQ.button.ResourcePermissions', {
     },
 });
 
+
 //--------------------------------------------------------------------------------------
-// BQ.auth.writer.Xml
-// XML writer that writes records in the Bisque Auth format
+// BQ.data.writer.Share
+// XML writer that writes auth records to the data store
 //--------------------------------------------------------------------------------------
 
-Ext.define('BQ.auth.writer.Xml', {
+Ext.define('BQ.data.writer.Auth', {
     extend: 'Ext.data.writer.Xml',
-    alternateClassName: 'BQ.auth.XmlWriter',
-
-    alias: 'writer.bqauthxml',
-
-    documentRoot: 'resource',
-    defaultDocumentRoot: 'resource',
-    record: 'auth',
-    ignoreKeys: {'id':undefined},
+    alias: 'writer.bq-auth',
 
     writeRecords: function(request, data) {
-        var me = this,
-            xml = [],
-            i = 0,
-            len = data.length,
-            root = me.documentRoot,
-            record = me.record,
-            needsRoot = data.length !== 1,
-            item,
-            key;
-
-        // may not exist
-        xml.push(me.header || '');
-
-        if (!root && needsRoot) {
-            root = me.defaultDocumentRoot;
-        }
-
-        if (root) {
-            if (this.resource)
-                xml.push('<', root, ' uri="', this.resource.uri, '/auth">');
-            else
-                xml.push('<', root, '>');
-        }
-
-        if (request.action !== "destroy") // destroy will only be fired when the list is empty
-        for (i=0; i<len; ++i) {
-            item = data[i];
-            xml.push('<', record);
+        var record = request.records[0],
+            item = data[0],
+            xml = [];
+        if (request.action !== "destroy") {
+            xml.push('<auth');
             for (key in item) {
-                if (item.hasOwnProperty(key) && !(key in this.ignoreKeys)) {
-                    xml.push(' ', key, '="', item[key], '"');
+                if (item.hasOwnProperty(key) && item[key]) {
+                    xml.push(Ext.String.format('{0}="{1}"', key, item[key]));
                 }
             }
             xml.push('/>');
+            request.xmlData = xml.join(' ');
+            //request.xmlData = Ext.String.format('<auth action="{0}" email="{1}" user="{2}" />', item.action, item.email, item.user);
+        } else {
+            request.xmlData = '';
         }
-
-        if (root) {
-            xml.push('</', root, '>');
-        }
-
-        request.xmlData = xml.join('');
         return request;
     }
+
 });
 
 //--------------------------------------------------------------------------------------
-// BQ.share.Store
-// store that writes all of its data records disconsidering dirty bit at any change to store content,
-// all records go out as a NEW record
+// BQ.data.proxy.Auth
+// Proxy to perform REST operations on auth records
 //--------------------------------------------------------------------------------------
 
-Ext.define('BQ.share.Store', {
-    extend: 'Ext.data.Store',
-    alias: 'store.bqsharestore',
+Ext.define('BQ.data.proxy.Auth', {
+    extend: 'Ext.data.proxy.Rest',
+    alias : 'proxy.bq-auth',
 
-    getNewRecords: function() {
-        return this.data.items;
+    batchActions: false,
+    noCache : false,
+
+    limitParam : undefined,
+    pageParam: undefined,
+    startParam: undefined,
+    sortParam : undefined,
+    filterParam : undefined,
+
+    //appendId: true,
+    //idParam: 'user',
+
+    actionMethods: {
+        create : 'POST', // 'PUT'
+        read   : 'GET',
+        update : 'POST',
+        destroy: 'DELETE'
     },
 
-    getUpdatedRecords: function() {
+    extraParams: {
+        notify: 'true',
+    },
+
+    reader : {
+        type : 'xml',
+        root : 'resource',
+        record: 'auth',
+    },
+
+    writer : {
+        type : 'bq-auth',
+        root : 'resource',
+        record: 'auth',
+        writeAllFields : true,
+        writeRecordId: false,
+    },
+
+    buildUrl: function(request) {
+        // extjs attempts adding ?node=NAME to all requests
+        if (request.params && request.params.node) {
+            delete request.params.node;
+        }
+        // extjs attempts adding sorters as well
+        if (request.params && request.params.sort) {
+            delete request.params.sort;
+        }
+
+        request.url = this.url;
+        if (request.action !== 'read' && request.action !== 'create') {
+            var record = request.records[0];
+            request.url += '/' + record.data.user;
+        }
+
+        return request.url;
+    }
+
+});
+
+
+//--------------------------------------------------------------------------------------
+// BQ.mex.AssociatedPanel
+// Parameters:
+//     resource
+//--------------------------------------------------------------------------------------
+
+Ext.define('BQ.mex.AssociatedPanel', {
+    extend: 'Ext.container.Container',
+    alias: 'widget.bq_associated_mex_panel',
+    componentCls: 'bq_associated_mex_panel',
+
+    layout: 'fit',
+
+    types_to_show: {
+        'string':null,
+        'number':null,
+        'boolean':null
+    },
+
+    initComponent : function() {
+        this.store = Ext.create('Ext.data.Store', {
+            autoLoad: false,
+            autoSync: false,
+            fields: ['id', 'str'],
+            data : [
+                {'id':'None', 'str':'None'},
+                {'id':'All', 'str':'All'},
+            ]
+        });
+
+        this.items = [{
+            xtype: 'combobox',
+            itemId: 'mex_combo',
+            cls: 'bq-user-picker',
+            heigth: 30,
+            //fieldLabel: 'Choose State',
+
+            multiSelect: true,
+            editable: false,
+            forceSelection: true,
+            hideTrigger: true,
+
+            store: this.store,
+            queryMode: 'local',
+            displayField: 'str',
+            valueField: 'id',
+
+            listeners : {
+                scope: this,
+                change: this.onComboChanged,
+            },
+        }];
+        this.callParent();
+    },
+
+    afterRender : function() {
+        this.callParent();
+        this.loadMexs();
+    },
+
+    selectedMexs: function() {
+        var items = field.getSubmitValue();
         return [];
     },
 
-    getModifiedRecords : function(){
-        return [];
+    loadMexs: function() {
+        var w = this.queryById('mex_combo');
+        w.setLoading('Loading MEXs...');
+        Ext.Ajax.request({
+            url: '/data_service/mex',
+            method: 'GET',
+            params : {
+                'offset': '0',
+                'limit': '700',
+                'tag_order': '"@ts:desc"',
+                'wpublic': 'false',
+                'view': 'inputs',
+                //'name': '"%s"'%module_name,
+                'value': 'FINISHED',
+                'tag_query': '"*'+this.resource.resource_uniq+'"',
+            },
+            callback: function(opts, succsess, response) {
+                w.setLoading(false);
+                if (response.status>=400)
+                    BQ.ui.error(response.responseText);
+                else
+                    this.onLoadedMexs(response.responseXML);
+            },
+            scope: this,
+            disableCaching: false,
+        });
     },
 
-    getRemovedRecords: function() {
-        // we have to set the removed list to fire the request with an empty document if everything is removed
-        if (this.data.items.length>0)
-            return [];
-        return this.removed;
+    onLoadedMexs: function(xml) {
+        this.queryById('mex_combo').setLoading(false);
+        var nodes = BQ.util.xpath_nodes(xml, "*/mex"),
+            n=null, ins=null,
+            inputs=[];
+        for (var i=0; (n=nodes[i]); ++i) {
+            var name = n.getAttribute('name'),
+                id = n.getAttribute('resource_uniq'),
+                ts = n.getAttribute('ts'),
+                inputs = [];
+                ins = BQ.util.xpath_nodes(n, 'tag[@name="inputs"]/tag');
+            for (var ii=0; (nn=ins[ii]); ++ii) {
+                var vt = nn.getAttribute('type'),
+                    vn = nn.getAttribute('name'),
+                    vv = nn.getAttribute('value');
+                if (vt in this.types_to_show && typeof vv !== 'undefined') {
+                    inputs.push(vn+':'+vv);
+                }
+            }
+            ts = ts.replace('T', ' ').replace(/\.\d*$/, '');
+            //var repr = Ext.String.format('{0}({1}) on {2}', name, inputs.join(', '), ts);
+            var repr = Ext.String.format('{0}({1})', name, inputs.join(', '));
+            this.store.add({
+                id: id,
+                str: repr,
+            });
+        }
+    },
+
+    onError: function() {
+        this.queryById('mex_combo').setLoading(false);
+        BQ.ui.warning('Could not change permission!');
+    },
+
+    onComboChanged: function(field, newValue, oldValue) {
+        if (newValue === 'None') {
+            field.clearValue();
+        } else if (newValue === 'All') {
+            //select( r )
+        } else {
+
+        }
+        var items = field.getSubmitValue();
     },
 
 });
+

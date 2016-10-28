@@ -191,6 +191,8 @@ Ext.define('BQ.selectors.Selector', {
             uis.forEach(function(e) { e.addCls('autoloaded'); });
         else
             uis.forEach(function(e) { e.removeCls('autoloaded'); });
+
+        this.fireEvent( 'changed', this, v );
     },
 
     // reimplement: you need to provide a way to programmatically select a resource
