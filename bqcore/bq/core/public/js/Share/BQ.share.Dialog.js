@@ -522,13 +522,19 @@ Ext.define('BQ.share.Panel', {
     },
 
     renderer_mexs: function(v, metadata, record, rowIndex, colIndex, store) {
-        var num_mexs = record.data.mexs ? Object.keys(record.data.mexs).length : 0;
+        var num_mexs = record.data.mexs ? Object.keys(record.data.mexs).length : 0,
+            sharing_mexs = record.data.mexs_to_share || 0;
         if (num_mexs < 1) {
             metadata.css = 'icon_add'; // class
             return '';
         }
 
-        metadata.css = 'icon_number';
+        if (sharing_mexs>0) {
+            metadata.css = 'icon_sharing';
+            return Ext.String.format('{0}/{1}', num_mexs-sharing_mexs, num_mexs);
+        } else {
+            metadata.css = 'icon_number';
+        }
         return num_mexs;
     },
 
@@ -567,14 +573,46 @@ Ext.define('BQ.share.Panel', {
         if (!(mexs instanceof Array)) {
             mexs = [mexs];
         }
-        record.data.mexs = record.data.mexs || {};
-        var num_mexs = mexs.length,
-            m = null;
-        for (var i=0; (m=mexs[i]); ++i) {
-            record.data.mexs[m.resource_uniq] = m.resource_uniq;
-        }
         this.grid = this.grid || this.queryById('main_grid');
-        this.grid.getView().refresh();
+
+        var me = this,
+            data = record.data,
+            grid = this.grid;
+
+        data.mexs = data.mexs || {};
+        data.mexs_to_share = mexs.length;
+        for (var i=0; (m=mexs[i]); ++i) {
+            data.mexs[m.resource_uniq] = m.resource_uniq;
+        }
+        grid.getView().refresh();
+        setTimeout(function(){ me.shareMexs(record); }, 100);
+    },
+
+    shareMexs : function(record) {
+        var data = record.data,
+            grid = this.grid,
+            auth_record = Ext.String.format('<auth action="{0}" email="{1}" user="{2}" />', data.action, data.email, data.user);
+        for (var m in data.mexs) {
+            Ext.Ajax.request({
+                url: Ext.String.format('/data_service/{0}/auth', m),
+                method: 'POST',
+                //xmlData:
+                rawData: auth_record,
+                headers: {
+                    'Content-Type': 'text/xml',
+                },
+                callback: function(opts, succsess, response) {
+                    if (response.status>=400)
+                        BQ.ui.error(response.responseText);
+                    else {
+                        if (data.mexs_to_share) data.mexs_to_share--;
+                        grid.getView().refresh();
+                    }
+                },
+                scope: this,
+                disableCaching: false,
+            });
+        }
     },
 
     updateAutoReload : function(delay) {
