@@ -153,8 +153,8 @@ def _aclelem(resource, user, acl=None):
     " Return an etree element <auth > record "
     return  etree.Element ('auth',
                            action = (acl and acl.action) or 'read',
-                           user   = "%s/data_service/user/%s" % (request.application_url, user.resource_uniq),
-#                           user   =  user.resource_uniq,
+#                           user   = "%s/data_service/user/%s" % (request.application_url, user.resource_uniq),
+                           user   =  user.resource_uniq,
                            email  =user.value)
 
 
@@ -508,3 +508,7 @@ def mex_acl_handler (resource_uniq, user_uniq, newauth, action):
 
 
 append_share_handler('mex', mex_acl_handler)
+
+
+# wpublic=true, shared, owner,public
+#

@@ -338,37 +338,56 @@ def p_error(p):
 
 # End Parser
 #############################################################
-PUBLIC_VALS = { 'false': False, '0': False, 'private':False, 0:False,
-                'true': True, '1': True, 'public': True, 1:True }
-
+OS="owner,shared"
+OSP="owner,shared,public"
+PUBLIC_VALS = { 'false': OS, '0': OS, 'private':'owner', 0:OS,
+                'true': OSP, '1': OSP, 1:OSP,
+                None : OS}
+# owner, shared, public or true-> owner,shared,public, false = owner,shared
+# wpublic, viewset
 
 def base_permissions (user_id, with_public, action = RESOURCE_READ):
     # get system supplied user ID
     document = Taggable
+    with_public = PUBLIC_VALS.get(with_public, with_public)
 
     if isinstance(with_public, list): # protects against lists, that are not hashable -chris
-        with_public = with_public[-1]
+        with_public = ",".join(with_public)
 
-    with_public = PUBLIC_VALS.get(with_public, False)
-    user_id = user_id or get_user_id()
+    viewsets = [ x.strip() for x in with_public.split(",") ]
 
     if is_admin():
-        if with_public:
+        if 'shared' in with_public:
             log.info('user (%s) is admin wpublic %s. Skipping protection filters' , user_id, with_public)
             return None
+    user_id = user_id or get_user_id()
+    if user_id is None:
+        viewsets = 'public'
+
+    log.debug ("Final %s ->  viewsets %s", with_public, viewsets)
+    visibility = []
+    if 'owner' in viewsets:
+        visibility.append ( document.owner_id == user_id )
+    if 'public' in viewsets:
+        visibility.append ( document.perm == PUBLIC)
+    if 'shared' in viewsets:
+        visibility.append (Taggable.acl.any(and_(TaggableAcl.user_id == user_id,
+                                                  TaggableAcl.action_code >= action)))
+    visibility =  or_(*visibility)
+    log.debug ("Visibility clause %s", visibility)
+    return visibility
 
     # Check if logged in, else just check for public items.
-    if user_id:
-        visibility = ( document.owner_id == user_id )
-        if with_public and action == RESOURCE_READ:
-            visibility = or_(visibility, document.perm == PUBLIC)
-        visibility = or_(visibility,
-                         Taggable.acl.any(and_(TaggableAcl.user_id == user_id,
-                                               TaggableAcl.action_code >= action)))
-    else:
-        visibility = (document.perm == PUBLIC)
-
-    return visibility
+    # if user_id:
+    #     visibility = ( document.owner_id == user_id )
+    #     if with_public and action == RESOURCE_READ:
+    #         visibility = or_(visibility, document.perm == PUBLIC)
+    #     visibility = or_(visibility,
+    #                      Taggable.acl.any(and_(TaggableAcl.user_id == user_id,
+    #                                            TaggableAcl.action_code >= action)))
+    # else:
+    #     visibility = (document.perm == PUBLIC)
+    # return visibility
 
 def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     visibility = base_permissions(user_id, with_public, action = action)
