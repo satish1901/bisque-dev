@@ -579,7 +579,7 @@ class MountServer(TGController):
             except Exception:
                 log.exception ("failed %s store on %s", storepath, store_name )
                 storeurl = lpath = None
-        log.debug('store_blob: %s %s %s', storeurl, lpath, etree.tostring(resource))
+        log.debug('store_blob: %s at %s (%s)', storeurl, lpath, etree.tostring(resource))
         if storeurl is None:
             log.error ('storing %s failed (%s)', storepath, storeurl)
 
@@ -589,6 +589,7 @@ class MountServer(TGController):
         'store the file to the named store'
 
         resource_name, sub  = split_subpath (resource.get ('name'))
+        # Force a move into the store
         if fileobj:
             with  self._get_driver(store) as driver:
                 if driver.readonly:
@@ -606,15 +607,14 @@ class MountServer(TGController):
                 resource.set('value', join_subpath(storeurl, sub))
                 log.debug('_save_store: %s', etree.tostring(resource))
         else:
+            # Try to reference the data in place (if on safe store)
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
             name = os.path.basename(resource_name) or tounicode(url2localpath(os.path.basename(storeurl)))
             resource.set('name', join_subpath(name, sub))
 
-        #if self.store_paths:
-            # Update the store path reference to similar to the storeurl
-            storepath = storepath.split ('/')
-            storepath[-1] = os.path.basename(storeurl)
-        #    self.insert_mount_path (store, storepath, resource)
+        # Update the store path reference to similar to the storeurl
+        storepath = storepath.split ('/')
+        storepath[-1] = os.path.basename(storeurl)
         log.debug('_save_store: %s %s %s', storeurl, localpath, etree.tostring(resource))
         return storeurl, storepath, localpath
 
