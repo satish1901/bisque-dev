@@ -79,7 +79,7 @@ Ext.define('Bisque.ResourceBrowser.Dialog', {
             var selection = [selectedRes];
         } else {
             var selection = Ext.Object.getValues(selectedRes);
-        } 
+        }
         var dir = this.browser.getSelectedFolder();
 
         if (selection.length) {
@@ -224,7 +224,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             offset : this.browserParams.offset || 0,
             tagQuery : this.browserParams.tagQuery || '',
             tagOrder : this.browserParams.tagOrder || '"@ts":desc',
-            wpublic : (this.browserParams.wpublic == 'true' ? true : false),
+            wpublic : this.browserParams.wpublic,
             selType : (this.browserParams.selType || 'SINGLE').toUpperCase()
         });
 
@@ -235,7 +235,6 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         this.showOrganizer = this.browserParams.showOrganizer || false;
         this.showModuleOrganizer = this.browserParams.showModuleOrganizer || false;
         this.selectState = this.browserParams.selectState || 'ACTIVATE';
-        this.commandBar.applyPreferences();
 
         if (!this.browserParams.viewMode) {
             if (!this.browserParams.tagQuery)
@@ -246,8 +245,10 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             var layout = (parseInt(prefLayout)!=parseInt(prefLayout))? Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS[prefLayout] : parseInt(prefLayout);
             this.layoutKey = (!layout) ? this.browserParams.layout : layout; //layout key must be an int
 
-            this.browserParams.wpublic = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Include Public Resources', this.browserParams.wpublic);
+            this.browserParams.wpublic = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Default visibility', this.browserParams.wpublic);
         }
+
+        this.commandBar.applyPreferences();
 
         // TODO: is the following even correct here? why does the dataset get loaded here in onPreferences?
         if (this.browserParams.dataset != "None" && !this.dataset_loaded) {
@@ -648,7 +649,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         }
         // re-render
         this.ChangeLayout(this.layoutKey);
-    },    
+    },
 
 });
 
@@ -751,7 +752,7 @@ Ext.define('Bisque.ModuleBrowser.Browser', {
             offset: this.offset || 0,
             tag_order: this.tag_order || '"@ts":desc',
             tag_query: this.tag_query,
-            wpublic: this.wpublic || 'true',
+            wpublic: this.wpublic || 'owner',
 
         });
         this.relayEvents(this.queryById('analysis_organizer'), ['Select']);

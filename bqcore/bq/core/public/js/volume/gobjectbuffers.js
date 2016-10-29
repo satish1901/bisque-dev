@@ -1269,11 +1269,9 @@ gObjectTool.prototype.initControls = function(){
 	//this.items = [slider];
 };
 
-gObjectTool.prototype.loadPreferences = function(prefs){
-//////////////////////
-//set toggled on start
-//////////////////////
-    this.button.toggle(prefs.show);
+gObjectTool.prototype.loadPreferences = function(path, resource_uniq){
+    var show = BQ.Preferences.get(resource_uniq, path+'/show', true);
+    this.button.toggle(show);
 };
 
 gObjectTool.prototype.updateColor = function(){

@@ -191,6 +191,21 @@ Ext.define('BQ.Preferences', {
         return defaultValue;
     },
 
+    get_children : function(lvl, path) {
+        var pattern = /\s*\/\s*/,
+            xpath = 'preference/tag';
+        if (path) {
+            xpath = 'preference';
+            var names = path.split(pattern);
+            for (var n = 0; n<names.length; n++) {
+                xpath += '/tag[@name="'+names[n]+'"]';
+            }
+        }
+
+        var nodes = BQ.util.xpath_nodes(BQ.Preferences.preferenceXML[lvl], xpath);
+        return this.toDict(nodes);
+    },
+
     /*
     * set
     *
@@ -204,6 +219,17 @@ Ext.define('BQ.Preferences', {
         if (value===undefined) { //forces the removal
             BQ.Preferences.remove(lvl, path, cb, errorcb);
         } else {
+            if (value instanceof HTMLElement) {
+                // dom value
+                value = value.outerHTML;
+            } else if (typeof(value) === 'string' && value[0]!=='<') {
+                // actual value
+                var tag = document.createElement('tag'),
+                    name = path.split('/').slice(-1)[0];
+                tag.setAttribute('name', name);
+                tag.setAttribute('value', value);
+                value = tag.outerHTML;
+            }
             BQ.Preferences.update(lvl, path, value, cb, errorcb);
         }
     },

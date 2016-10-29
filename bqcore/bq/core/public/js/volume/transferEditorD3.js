@@ -968,47 +968,26 @@ transferTool.prototype.initData = function(){
     return data;
 },
 
-transferTool.prototype.loadPreferences = function(prefs){
-    //////////////////////
-    //set toggled on start
-    //////////////////////
-    var me = this;
-    this.button.toggle(prefs.show === true);
+transferTool.prototype.loadPreferences = function(path, resource_uniq){
+    var show = BQ.Preferences.get(resource_uniq, path+'/show', true);
+    this.button.toggle(show);
 
-    if(!this.presets) this.presets = {}; //initialize a presets menu
-    //if for some reason a default isn't available lets just make one ahead of time
+    this.presets = this.presets || {}; //initialize a presets menu
     this.presets['default'] = this.initData();
+    this.presets['current'] = this.initData();
 
     //check to see if there are presets available
-    this.presets['current'] = this.initData();
-    if(!prefs.functions) {
-        this.presets['default'] = this.initData();
-        return
-    }
-
-    for (var key in prefs.functions) {
-        if (!prefs.functions.hasOwnProperty(key)) {
+    var functions = BQ.Preferences.get_children(resource_uniq, path+'/functions');
+    functions = functions.functions || functions;
+    for (var key in functions) {
+        if (!functions.hasOwnProperty(key)) {
             //The current property is not a direct property of functions
             continue;
         }
         //parse the jason in the key and store it
-        var transfer = prefs.functions[key];
-        this.presets[key] = JSON.parse(transfer);
-        //for future use:
-        //console.log(JSON.stringify(this.presets[key]));
+        this.presets[key] = JSON.parse(functions[key]);
     }
 };
-
-
-
-
-transferTool.prototype.loadDefaults = function(prefs){
-    if(!this.presets) this.presets = {}; //initialize a presets menu
-    this.presets['default'] = this.initData();
-    this.presets['current'] = this.initData();
-};
-
-
 
 transferTool.prototype.createTransferEditor = function(){
     var data = this.transferData;

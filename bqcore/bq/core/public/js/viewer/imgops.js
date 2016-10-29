@@ -141,10 +141,7 @@ ImgOperations.prototype.createMenu = function () {
         {"value":"m", "text":"Maximum"},
     ], fusion, this,
     function() {
-        var fusionTag = document.createElement('tag');
-        fusionTag.setAttribute('name', 'fusion');
-        fusionTag.setAttribute('value', this.combo_fusion.value);
-        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/fusion', fusionTag.outerHTML);
+        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/fusion', this.combo_fusion.value);
         this.changed();
     });
 
@@ -153,10 +150,7 @@ ImgOperations.prototype.createMenu = function () {
     this.combo_enhancement = this.viewer.createCombo( 'Enhancement', enhancement_options, enhancement, this,
     function() {
         var enhancementVer = phys && parseInt(phys.pixel_depth)===8 ? 'enhancement-8bit' : 'enhancement';
-        var enhancementTag = document.createElement('tag');
-        enhancementTag.setAttribute('name', enhancementVer);
-        enhancementTag.setAttribute('value', this.combo_enhancement.value);
-        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/'+enhancementVer, enhancementTag.outerHTML);
+        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/'+enhancementVer, this.combo_enhancement.value);
         this.changed();
     },
     300);
@@ -166,10 +160,7 @@ ImgOperations.prototype.createMenu = function () {
         {"value":"", "text":"No"},
     ], this.default_negative, this,
     function() {
-        var negativeTag = document.createElement('tag');
-        negativeTag.setAttribute('name', 'negative');
-        negativeTag.setAttribute('value', this.combo_negative.value);
-        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/negative', negativeTag.outerHTML);
+        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/negative', this.combo_negative.value);
         this.changed();
     });
 };

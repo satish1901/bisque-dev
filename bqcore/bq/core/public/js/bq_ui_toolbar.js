@@ -811,6 +811,7 @@ Ext.define('BQ.Application.Toolbar', {
         for (var i=0; (t=types[i]); i++) {
             var name = t.name;
             var uri = t.uri;
+            if (name)
             this.queryById('menu_create').insert(3, {
                 text    : 'Create a new <b>'+name+'</b>',
                 itemId  : 'menu_create_'+name.replace(' ', '_'),

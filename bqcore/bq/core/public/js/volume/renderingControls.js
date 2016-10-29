@@ -158,13 +158,6 @@ renderingTool.prototype.addUniforms = function(){
 renderingTool.prototype.initControls = function(){
 };
 
-renderingTool.prototype.loadDefaults = function(prefs){
-};
-
-renderingTool.prototype.loadPreferences = function(prefs){
-};
-
-
 renderingTool.prototype.toggle = function(button){
     //default is just to show and hide, but can modify this as well
     if (button.pressed) {
@@ -446,7 +439,7 @@ materialTool.prototype.initControls = function(){
     */
 };
 
-materialTool.prototype.loadDefaults = function(){
+materialTool.prototype.loadPreferences = function(path, resource_uniq) {
     this.sliders['density'].setValue(100);
     this.sliders['brightness'].setValue(100);
 };
@@ -477,12 +470,9 @@ ditherTool.prototype.initControls = function(){
     //});
 };
 
-ditherTool.prototype.loadDefaults = function(){
-    this.button.toggle(true);
-};
-
-ditherTool.prototype.loadPreferences = function(prefs){
-    this.button.toggle(prefs);
+ditherTool.prototype.loadPreferences = function(path, resource_uniq) {
+    var show = BQ.Preferences.get(resource_uniq, path+'/show', true);
+    this.button.toggle(show);
 };
 
 ditherTool.prototype.toggle = function(button){

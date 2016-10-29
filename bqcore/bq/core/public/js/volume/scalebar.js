@@ -514,21 +514,12 @@ qualityTool.prototype.addButton = function () {
 qualityTool.prototype.addUniforms = function(){
 };
 
-qualityTool.prototype.loadPreferences = function(prefs){
-    var menu = this.qualityMenu;
-    //var chk = menu.getAt(0);
-    var idx = this.button.getStore().find('text', prefs);
-    var rcd = this.button.getStore().getAt(idx);
+qualityTool.prototype.loadPreferences = function(path, resource_uniq) {
+    var quality = BQ.Preferences.get(resource_uniq, path),
+        idx = this.button.getStore().find('text', quality),
+        rcd = this.button.getStore().getAt(idx);
     this.button.setValue(rcd.get('value'));
     this.setQuality();
-    /*
-    menu.items.each(function(item){
-        if(item.text == prefs){
-            item.setChecked(true);
-        }
-    });
-    */
-
 };
 
 qualityTool.prototype.setQuality = function() {
