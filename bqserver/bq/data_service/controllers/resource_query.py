@@ -340,9 +340,8 @@ def p_error(p):
 #############################################################
 OS="owner,shared"
 OSP="owner,shared,public"
-PUBLIC_VALS = { 'false': OS, '0': OS, 'private':'owner', 0:OS,
-                'true': OSP, '1': OSP, 1:OSP,
-                None : OS}
+PUBLIC_VALS = { 'false': OS, '0': OS, 'private':'owner', 0:OS, False: OS, None:OS,
+                'true': OSP, '1': OSP, 1:OSP, True: OSP }
 # owner, shared, public or true-> owner,shared,public, false = owner,shared
 # wpublic, viewset
 
@@ -357,25 +356,25 @@ def base_permissions (user_id, with_public, action = RESOURCE_READ):
     viewsets = [ x.strip() for x in with_public.split(",") ]
 
     if is_admin():
-        if 'shared' in with_public:
+        if 'public' in with_public:
             log.info('user (%s) is admin wpublic %s. Skipping protection filters' , user_id, with_public)
             return None
     user_id = user_id or get_user_id()
     if user_id is None:
-        viewsets = 'public'
+        viewsets = ['public']
 
-    log.debug ("Final %s ->  viewsets %s", with_public, viewsets)
+    #log.debug ("Final %s ->  viewsets %s", with_public, viewsets)
     visibility = []
     if 'owner' in viewsets:
         visibility.append ( document.owner_id == user_id )
-    if 'public' in viewsets:
+    if 'public' in viewsets and action==RESOURCE_READ:
         visibility.append ( document.perm == PUBLIC)
     if 'shared' in viewsets:
         visibility.append (Taggable.acl.any(and_(TaggableAcl.user_id == user_id,
                                                   TaggableAcl.action_code >= action)))
-    visibility =  or_(*visibility)
-    log.debug ("Visibility clause %s", visibility)
-    return visibility
+    if visibility:
+        return  or_(*visibility)
+    return None
 
     # Check if logged in, else just check for public items.
     # if user_id:
