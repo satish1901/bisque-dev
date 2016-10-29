@@ -1475,10 +1475,6 @@ animationTool.prototype.initControls = function(){
     });
 };
 
-
-animationTool.prototype.loadPreferences = function(prefs){
-};
-
 animationTool.prototype.toggle = function(button){
     radio1 = this.controls.queryById('toolRadio1'),
 	radio2 = this.controls.queryById('toolRadio2');

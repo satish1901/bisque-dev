@@ -37,12 +37,14 @@
                         <tag name="passedValues" value="1,2,8,4"/>
                     </template>
                 </tag>
-                <tag name="Include Public Resources" value="false">
+                <tag name="Default visibility" value="owner">
                     <template>
-                        <tag type="string" name="Type" value="Boolean"/>
-                        <tag type="string" name="defaultValue" value="false"/>
+                        <tag type="string" name="Type" value="ComboBox"/>
+                        <tag type="string" name="defaultValue" value="owner"/>
                         <tag type="boolean" name="allowBlank" value="false"/>
                         <tag type="boolean" name="Editable" value="true"/>
+                        <tag type="string" name="select" value="owner,shared,public"/>
+                        <tag name="passedValues" value="owner,shared,public"/>
                     </template>
                 </tag>
             </tag>

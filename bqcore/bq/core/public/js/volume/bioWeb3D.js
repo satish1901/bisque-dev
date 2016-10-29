@@ -1862,14 +1862,11 @@ Ext.define('BQ.viewer.Volume.Panel', {
                 //The current property is not a direct property of p
                 continue;
             }
-            //if(this.preferences[key] && key != 'transfer_editor'){ //save for debug
 
-            var pref = BQ.Preferences.get(resource_uniq, 'Viewer3D/' + key, null);
-            if(pref){
-                this.tools[key].loadPreferences(pref);
-            }
-            else
-                this.tools[key].loadDefaults();
+            var tool = this.tools[key],
+                path = 'Viewer3D/' + key;
+            if (tool.loadPreferences)
+                tool.loadPreferences(path, resource_uniq);
         }
 
         if (this.preferences.title)

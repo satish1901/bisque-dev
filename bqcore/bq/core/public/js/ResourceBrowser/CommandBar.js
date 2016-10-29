@@ -184,10 +184,38 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 tooltip : 'Options',
                 menu : {
                     items : [{
+                        xtype: 'menucheckitem',
+                        text : 'Show my data',
+                        itemId : 'btn_show_owner',
+                        checked : true,
+                        value: 'owner',
+                        //group: 'show',
+                        scope: this,
+                        checkHandler: this.onWpublicCheck,
+                    }, {
+                        xtype: 'menucheckitem',
+                        text : 'Show shared data',
+                        itemId : 'btn_show_shared',
+                        checked : false,
+                        value: 'shared',
+                        //group: 'show',
+                        scope: this,
+                        checkHandler: this.onWpublicCheck,
+                    }, {
+                        xtype: 'menucheckitem',
+                        text : 'Show public data',
+                        itemId : 'btn_show_public',
+                        checked : false,
+                        value: 'public',
+                        //group: 'show',
+                        scope: this,
+                        checkHandler: this.onWpublicCheck,
+                    }, /*{
                         text : 'Include published resources',
                         itemId : 'btnWpublic',
                         checked : false,
                         listeners : {
+                            scope: this,
                             checkchange : {
                                 fn : function(chkbox, value) {
                                     var uri = {
@@ -201,7 +229,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                                 scope : this
                             }
                         }
-                    }, '-', {
+                    },*/ '-', {
                         text : 'Organize',
                         itemId : 'btnOrganize',
                         icon : BQ.Server.url('/core/js/ResourceBrowser/Images/organize.png'),
@@ -528,6 +556,44 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
     applyPreferences : function() {
         if (this.rendered)
             this.toggleLayoutBtn();
-        this.getComponent('btnGear').menu.getComponent('btnWpublic').setChecked(this.browser.browserParams.wpublic, true);
-    }
+        this.setResourceVisibilityUI(this.browser.browserParams.wpublic);
+    },
+
+    onWpublicCheck : function(chkbox, value) {
+        var uri = {
+            offset : 0
+        };
+        this.browser.browserParams.wpublic = this.getResourceVisibilityUI();
+        this.browser.msgBus.fireEvent('Browser_ReloadData', uri);
+        if (this.organizerCt)
+            this.organizerCt.reset();
+        BQ.Preferences.set('user', 'ResourceBrowser/Browser/Default visibility', this.browser.browserParams.wpublic);
+    },
+
+    setResourceVisibilityUI: function(v) {
+        var menu = this.getComponent('btnGear').menu;
+        v = String(v) || '';
+        //menu.getComponent('btnWpublic').setChecked(this.browser.browserParams.wpublic, true);
+        if (v.indexOf('owner')>=0 || v === 'false' || v === '0' || v === 'true' || v === '1')
+            menu.getComponent('btn_show_owner').setChecked(true);
+        if (v.indexOf('shared')>=0 || v === 'false' || v === '0' || v === 'true' || v === '1')
+            menu.getComponent('btn_show_shared').setChecked(true);
+        if (v.indexOf('public')>=0 || v === 'true' || v === '1')
+            menu.getComponent('btn_show_public').setChecked(true);
+    },
+
+    getResourceVisibilityUI: function() {
+        var menu = this.getComponent('btnGear').menu,
+            v = [],
+            c = null,
+            elems = {'btn_show_owner':null, 'btn_show_shared':null, 'btn_show_public':null};
+
+        for (var e in elems) {
+           c = menu.getComponent(e);
+           if (c.checked)
+               v.push(c.value);
+        }
+        return v.join(',');
+    },
+
 });
