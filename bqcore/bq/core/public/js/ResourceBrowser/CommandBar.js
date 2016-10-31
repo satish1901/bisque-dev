@@ -567,7 +567,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         this.browser.msgBus.fireEvent('Browser_ReloadData', uri);
         if (this.organizerCt)
             this.organizerCt.reset();
-        BQ.Preferences.set('user', 'ResourceBrowser/Browser/Default visibility', this.browser.browserParams.wpublic);
+        //BQ.Preferences.set('user', 'ResourceBrowser/Browser/Default visibility', this.browser.browserParams.wpublic);
     },
 
     setResourceVisibilityUI: function(v) {
