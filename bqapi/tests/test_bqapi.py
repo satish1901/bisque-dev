@@ -1,14 +1,19 @@
 
 from lxml import etree
 from bqapi import BQSession
-from bqapi.bqclass import fromXml, toXml
+from bqapi.bqclass import BQFactory
+from tg import config
 
 def test_load ():
     'Check that loading works'
 
+    host = config.get ('host.root')
+    user = config.get ('host.user')
+    passwd = config.get ('host.password')
     bq = BQSession()
-    x = bq.load ('http://loup.ece.ucsb.edu/ds/images/?limit=10&view=short')
-    print "loading /ds/images->", etree.tostring(toXml(x), pretty_print=True)
+    bq.init_local (user, passwd, bisque_root = host, create_mex = False)
+    x = bq.load ('/data_service/image/?limit=10')
+    print "loading /data_service/images->", BQFactory.to_string((x))
 
 
 def test_load_pixels():
@@ -23,5 +28,3 @@ def test_load_pixels():
     f.write(pixels)
     f.close
     print len(pixels)
-
-    
