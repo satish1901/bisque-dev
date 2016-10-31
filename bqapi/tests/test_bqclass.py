@@ -1,5 +1,5 @@
 from lxml import etree
-from bqapi.bqclass import fromXml, toXml
+from bqapi.bqclass import BQFactory
 
 
 X="""
@@ -17,13 +17,12 @@ def test_conversion():
     print "ORIGINAL"
     print X
 
-    r = etree.XML(X)
-    x = fromXml(r)
-    
+    r = BQFactory.from_string(X)
+
     print "PARSED"
     print x
-    
-    r = toXml(x)
-    
+
+    r = BQFactory.to_string (x)
+
     print "XML"
-    print etree.tostring (r)
+    print r

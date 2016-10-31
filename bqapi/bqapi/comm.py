@@ -300,12 +300,11 @@ class BQServer(Session):
         """
         log.debug("POST %s req %s" % (url, headers))
 
-        r = self.request(method, url, data=content, headers=headers, files=files)
-
         try: #error checking
+            r = self.request(method, url, data=content, headers=headers, files=files)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
-            log.debug("Error body: %s" % (r.content))
+            log.exception("In push request: %s %s %s" % (method, url, r.content))
             raise BQCommError(r)
 
         if path:

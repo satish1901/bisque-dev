@@ -20,7 +20,7 @@ except ImportError:
 TEST_PATH = 'tests_%s'%urllib.quote(datetime.now().strftime('%Y%m%d%H%M%S%f'))  #set a test dir on the system so not too many repeats occur
 
 
-from bqapi.comm import USENODE
+from bqapi import USENODE
 if USENODE:
     from bqapi.bqnode import  BQMex, BQNode, BQFactory
 else:
@@ -308,7 +308,3 @@ def test_saveimagepixels():
         result = save_image_pixels(bqsession, file1_location, image_tags=bqimage)
     except BQCommError, e:
         assert False, 'BQCommError: Status: %s'%e.status
-
-
-
-
