@@ -9,6 +9,7 @@ It's perfectly fine to re-use this definition in the bqcore application,
 though.
 
 """
+import logging
 from tg import config
 
 import os
@@ -28,6 +29,9 @@ from sqlalchemy.orm import relation, synonym, validates
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.hybrid import hybrid_property
+from bq.core.model import DeclarativeBase, metadata, DBSession
+
+log = logging.getLogger('bq.core.model.auth')
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -35,6 +39,7 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
+        log.debug ("SQLITE: enabling foriegn keys")
 
 @event.listens_for(Engine, "connect")
 def do_connect(dbapi_connection, connection_record):
@@ -42,17 +47,22 @@ def do_connect(dbapi_connection, connection_record):
     # also stops it from emitting COMMIT before any DDL.
     if config.get('sqlalchemy.url', '').startswith ("sqlite://"):
         dbapi_connection.isolation_level = None
+        log.debug ("SQLITE: Disable automatic transactions")
 
 @event.listens_for(Engine, "begin")
 def do_begin(conn):
     # emit our own BEGIN
     if config.get('sqlalchemy.url', '').startswith ("sqlite://"):
-        conn.execute("BEGIN EXCLUSIVE")
+        #http://docs.sqlalchemy.org/en/rel_1_0/dialects/sqlite.html#transaction-isolation-level
+        #conn.execute("BEGIN EXCLUSIVE")
+        conn.execute("BEGIN ")
+        log.debug ("SQLITE: Begin Transaction")
 
 
-from bq.core.model import DeclarativeBase, metadata, DBSession
 
 __all__ = ['User', 'Group', 'Permission', 'HashPassword', 'FreeTextPassword']
+
+
 
 from sqlalchemy.engine import Engine
 
@@ -233,6 +243,7 @@ class User(DeclarativeBase):
         # Make sure the hashed password is an UTF-8 object at the end of the
         # process because SQLAlchemy _wants_ a unicode object for Unicode
         # columns
+        log.debug ("Setting %s password", password_type)
 
         if not isinstance(password, unicode):
             password = password.decode('utf-8')
