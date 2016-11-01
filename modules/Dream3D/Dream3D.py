@@ -143,7 +143,7 @@ class Dream3D(object):
         with open(err_file, 'w') as fo:
 #             res = 0  #!!! TESTING
 #             open(hdf_output_file, 'a').close()
-            res = subprocess.call(['/dream3d/DREAM3D-6.2.327-Linux-x86_64/bin/PipelineRunner',
+            res = subprocess.call(['/dream3d/bin/PipelineRunner',
                                    '-p',
                                    pipeline_file],
                                   stderr=fo, stdout=fo)
