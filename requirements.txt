@@ -123,10 +123,10 @@ pandas==0.18.1
 psycopg2==2.6.1
 
 # Bisque Dirs
-./bqengine
-./bqapi
-./bqcore
-./bqserver
-./bqfeature
+-e ./bqengine
+-e ./bqapi
+-e ./bqcore
+-e ./bqserver
+-e ./bqfeature
 setuptools==23.0
 pip==8.0.3
