@@ -108,14 +108,15 @@ Ext.define('BQ.preference.Tagger', {
             silent = this.silent !== undefined ? this.silent : false;
 
         if (tag && tag.resource_type=='tag' && this.store.applyModifications() && this.level) {
-            var level = (this.level == 'resource') ? this.resource_uniq : this.level;
-            var path = [];
+            var level = (this.level == 'resource') ? this.resource_uniq : this.level,
+                path = [],
+                value = tag['value'];
             while(tag.resource_type!='preference'&&tag.parent) {
                 path.unshift(tag['name']);
                 var tag = tag.parent
             }
             var path = path.join('/');
-            BQ.Preferences.set(level, path, tag['value']);
+            BQ.Preferences.set(level, path, value);
         } else {
             if (!silent) BQ.ui.notification('No records modified, save canceled!');
         }

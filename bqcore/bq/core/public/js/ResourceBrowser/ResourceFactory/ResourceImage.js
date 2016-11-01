@@ -572,7 +572,6 @@ Ext.define('Bisque.Resource.Image.Page', {
                 loaded: function(vc) {
                     var editor = vc.viewer.editor;
                     this.gobjectTagger.on('createGob', editor.onCreateGob, editor);
-
                 },
                 changed : function(me, gobjects) {
                     this.gobjectTagger.tree.getView().refresh();
@@ -846,15 +845,16 @@ Ext.define('Bisque.Resource.Image.Page', {
             disableAuthTest : true
         };
 
-        var map = {
+        /*var map = {
             xtype : 'bqmap',
             itemId: 'map',
             title : 'Map',
             zoomLevel : 16,
             gmapType : 'map',
             autoShow : true,
+            hidden: true,
             resource : this.resource,
-        };
+        };*/
 
         var resTab = {
             xtype: 'tabpanel',
@@ -869,7 +869,7 @@ Ext.define('Bisque.Resource.Image.Page', {
             split : true,
             width : 400,
             plain : true,
-            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser, map]
+            items : [resourceTagger, this.gobjectTagger, embeddedTagger, mexBrowser], //map]
         };
 
         this.add({
@@ -1003,6 +1003,18 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     onImagePhys : function(viewer, phys, dims) {
+        if (viewer.viewer.is_geo_enabeled()) {
+            var tabs = this.queryById('tabs');
+            tabs.add({
+                xtype : 'bqmap',
+                itemId: 'map',
+                title : 'Map',
+                zoomLevel : 16,
+                gmapType : 'map',
+                autoShow : true,
+                resource : this.resource,
+            });
+        }
 
         this.dims = dims;
         if (dims.t>1 || dims.z>1)

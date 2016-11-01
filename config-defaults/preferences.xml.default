@@ -191,6 +191,13 @@
                 </template>
             </tag>
             <tag name="hide_gobjects_creation" value=""/>
+            <tag name="disable_geographical_extensions" value="false" type="boolean">
+                <template>
+                    <tag type="string" name="Type" value="Boolean"/>
+                    <tag type="string" name="defaultValue" value="false"/>
+                    <tag name="Editable" value="true" type="boolean"/>
+                </template>
+            </tag>
         </tag>
 
         <tag name="Viewer3D" >
