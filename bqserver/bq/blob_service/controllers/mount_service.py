@@ -609,7 +609,11 @@ class MountServer(TGController):
         else:
             # Try to reference the data in place (if on safe store)
             storeurl, localpath = self._save_storerefs (store, storepath, resource, rooturl)
-            name = os.path.basename(resource_name) or tounicode(url2localpath(os.path.basename(storeurl)))
+            #Store  url may have changed due to conflict
+            if resource.get ('value') is None: # This is multifile
+                name = os.path.basename(resource_name)
+            else:
+                name = tounicode(url2localpath(os.path.basename(storeurl)))
             resource.set('name', join_subpath(name, sub))
 
         # Update the store path reference to similar to the storeurl
@@ -880,7 +884,7 @@ class MountServer(TGController):
     ##############################
     # services for mounts
 
-    def _create_full_path(self, store, path, resource_uniq=None, resource_name=None, **kw):
+    def _create_full_path(self, store, path, resource_uniq=None, resource_name=None, count=1, **kw):
         """Create the full path relative to store
         @param store: a string name or etreeElement
         @param path: a path relative to the store
@@ -897,6 +901,7 @@ class MountServer(TGController):
             resource = root = etree.Element ('store', name = store, resource_unid = store)
             store = self._load_root_mount()
 
+        # Scan path for all existing directories and possible existing filelink
         parent = store
         while parent is not None and path:
             el = path.pop(0)
@@ -912,11 +917,18 @@ class MountServer(TGController):
                 log.error ('multiple names (%s) in store level %s', el, q.get('uri'))
                 #path.insert(0, el)
                 parent = q[0]
-                break
+                return None
+                #break # return Fail?
+            # len(q) == 1 .. we have a result .. just keep searching down the path
+            parent2 = parent
             parent = q[0]
-        # any left over path needs to be created
+        # directories do not exists len(path) > 1
+        # directories exist but filelink does not len(path) == 1
+        # directories and filelink exists len(path) == 0
+
         log.debug ("create: at %s rest %s", (parent is not None) and parent.get ('uri'), path)
         while len(path)>1:
+            # any left over path needs to be created
             nm = path.pop(0)
             if root is None:
                 resource = root = etree.Element ('dir', name=nm, resource_unid = nm)
@@ -936,11 +948,23 @@ class MountServer(TGController):
             # create the new resource
             log.debug ("New resource %s at %s " , etree.tostring(root), (parent is not None) and parent.get ('uri'))
             q = data_service.new_resource(resource=root, parent=parent, flush=False)
+        elif len(path) == 0:
+            log.warn ("NAME conflict? %s %s", resource_name, count)
+            # Conflict in link name?  Possible when mutltfile name has not be disambiguated by underlying filesystem
+            nm = "%s-%s" % (resource_name, count)
+            if root is None:
+                resource = root = etree.Element ('link' if resource_uniq else 'dir', name=nm, resource_unid = nm)
+            else:
+                resource = etree.SubElement (resource, 'link' if resource_uniq else 'dir', name=nm, resource_unid=nm)
+            if resource_uniq:
+                resource.set ('value', resource_uniq)
+            q = data_service.new_resource(resource=root, parent=parent2, flush=False)
+
         return q
 
 
 
-    def _insert_mount_path(self, store, mount_path, resource, **kw):
+    def _insert_mount_path(self, store, mount_path, resource, count, **kw):
         """ insert a store path into the store resource
 
         This will create a store element if does not exist
@@ -948,7 +972,7 @@ class MountServer(TGController):
         """
         log.info("Insert_mount_path %s(%s) create %s path %s ", resource.get('name'), resource.get('uniq'), str(store), str(mount_path))
 
-        return self._create_full_path(store, mount_path, resource.get ('resource_uniq'), resource.get('name'), **kw)
+        return self._create_full_path(store, mount_path, resource.get ('resource_uniq'), resource.get('name'), count, **kw)
 
 
     def insert_mount_path(self, store, mount_path, resource, **kw):
@@ -961,8 +985,8 @@ class MountServer(TGController):
         for x in range(1, repeats+1):
             try:
                 with optional_cm(subtrans):
-                    value =  self._insert_mount_path (store, mount_path, resource, **kw)
-                log.debug ("Inserted path %s", mount_path)
+                    value =  self._insert_mount_path (store, mount_path, resource, count=x, **kw)
+                log.debug ("Inserted path %s -> %s", mount_path, value)
                 return value
             except IntegrityError:
                 log.exception ('Integrity Error caught on attempt %s.. retrying %s', x, mount_path)
