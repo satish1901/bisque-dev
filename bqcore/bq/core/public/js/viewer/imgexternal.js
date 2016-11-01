@@ -153,18 +153,19 @@ ImgExternal.prototype.create = function (parent) {
 };
 
 ImgExternal.prototype.newImage = function () {
-    if (this.viewer.toolbar) {
-        var m = this.viewer.toolbar.queryById('menu_viewer_external_bioView3D');
-        if (m) m.setDisabled(this.viewer.imagedim.z<2);
+    var v = this.viewer;
+    if (v.toolbar) {
+        var m = v.toolbar.queryById('menu_viewer_external_bioView3D');
+        if (m) m.setDisabled(v.imagedim.z<2);
     }
 
     // Add download graphical annotations as KML
-    var phys = this.viewer.imagephys,
+    var phys = v.imagephys,
         download = BQApp.getToolbar().queryById('button_download'),
-        url = this.viewer.image.uri,
+        url = v.image.uri,
         url_kml = url.replace('/data_service/', '/export/') + '?format=kml',
         url_geojson = url.replace('/data_service/', '/export/') + '?format=geojson';
-    if (phys.geo && download && phys.geo.proj4 && phys.geo.res && phys.geo.top_left) {
+    if (v.is_geo_enabeled()) {
         download.menu.add(['-', {
             itemId: 'download_annotations_as_kml',
             text: 'Graphical annotations as KML',

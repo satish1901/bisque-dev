@@ -763,6 +763,11 @@ ImgViewer.prototype.newPhys = function (phys) {
     if (this.parameters.afterphys) this.parameters.afterphys();
 };
 
+ImgViewer.prototype.is_geo_enabeled = function() {
+    var phys = this.imagephys;
+    return (!this.disable_geo && phys && phys.geo && phys.geo.proj4 && phys.geo.res && phys.geo.top_left);
+};
+
 ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
     var phys = this.imagephys,
         text = '',
@@ -785,7 +790,7 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
     }
 
     // print geo coordinates if available
-    if (phys.geo && phys.geo.proj4 && phys.geo.res && phys.geo.top_left) {
+    if (this.is_geo_enabeled()) {
         var c = phys.coordinate_to_phys(pt, true);
         if (c)
             text += ' Geo:('+BQ.util.formatFloat(c[0], 4, 6, sep)+','+BQ.util.formatFloat(c[1], 4, 6, sep)+')';
@@ -799,6 +804,8 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
 //----------------------------------------------------------------------
 
 ImgViewer.prototype.onPreferences = function() {
+    var resource_uniq = this.image.resource_uniq;
+    this.disable_geo = BQ.Preferences.get(resource_uniq, 'Viewer/disable_geographical_extensions', false);
 
     this.preferences = this.parameters || {}; // local defines overwrite preferences
     for (var i = 0; i < this.plugins.length; i++) {
