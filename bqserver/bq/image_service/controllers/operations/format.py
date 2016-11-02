@@ -172,6 +172,7 @@ class FormatOperation(BaseOperation):
         #     except Exception:
         #         pass
 
+        #log.debug('Token: %s', str(token))
 
         if (ofile != ifile):
             info = {
