@@ -20,7 +20,7 @@
 ##        distribution.                                                      ##
 ##                                                                           ##
 ##     3. All advertising materials mentioning features or use of this       ##
-##        software must display the following acknowledgement: This product  ##
+##        software must display the following acknowledgment: This product  ##
 ##        includes software developed by the Center for Bio-Image Informatics##
 ##        University of California at Santa Barbara, and its contributors.   ##
 ##                                                                           ##
@@ -243,7 +243,7 @@ class UploadedResource(object):
     def get_type(self):
         if self.resource is None:
             return None
-        return self.resource.get('type') or self.resource.get('resource_type')
+        return self.resource.get('type') or self.resource.get('resource_type') or self.resource.tag
 
     def __del__ (self):
         self.close()
@@ -721,10 +721,10 @@ class import_serviceController(ServiceController):
     def process_json(self, uf, intags):
         ''' Unpack and insert JSON file '''
         log.debug('process_json: %s %s', uf, intags )
-        
+
         uniq = uf.resource.get('resource_uniq') or shortuuid.uuid()
         unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, uniq)
-        
+
         filepath = uf.localpath()
         if filepath is None:
             log.debug('process_json file object has no local path: [%s], move local', uf.fileobj)
@@ -733,7 +733,7 @@ class import_serviceController(ServiceController):
         resources = []
         with open(filepath, 'r') as fo:
             doc = json.load(fo)
-            # This is a poor man's detector for Dream3D pipeline files; other JSON types could be added later. 
+            # This is a poor man's detector for Dream3D pipeline files; other JSON types could be added later.
             if 'PipelineBuilder' in doc and 'Version' in doc['PipelineBuilder'] and 'Number_Filters' in doc['PipelineBuilder']:
                 # Dream3D pipeline file
                 resource = etree.Element ('resource', name=doc['PipelineBuilder']['Name'], value=filepath, resource_type='dream3d_pipeline', ts=uf.ts)
@@ -741,7 +741,7 @@ class import_serviceController(ServiceController):
                 etree.SubElement(resource, 'tag', name='Number Filters', value=str(doc['PipelineBuilder']['Number_Filters']), type='number')
                 resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('%s/'%unpack_dir))
                 resources.append(resource)
-        
+
         if len(resources) == 0:
             return unpack_dir, [self.insert_resource(uf)]   # fall back to default
         else:
@@ -875,7 +875,7 @@ class import_serviceController(ServiceController):
         unpack_dir, resources = self.process_packaged_dicom(f, intags)
         self.cleanup_packaging(unpack_dir)
         return resources
-    
+
     def filter_json(self, f, intags):
         unpack_dir, resources = self.process_json(f, intags)
         self.cleanup_packaging(unpack_dir)
@@ -997,11 +997,13 @@ class import_serviceController(ServiceController):
             # remove the ingest tags from the tag document
             uf.resource.remove(xl[0])
 
+        log.debug('Resource type: %s', uf.get_type())
         needs_guessing = (uf.get_type() == 'resource' or uf.get_type() == 'image')
 
         # append processing tags based on file type and extension
         mime = None
         if needs_guessing:
+            log.debug('Guessing the mime type for: %s', sanitize_filename(uf.filename))
             mime = mimetypes.guess_type(sanitize_filename(uf.filename))[0]
         if mime in self.filters:
             intags['type'] = mime
@@ -1014,6 +1016,7 @@ class import_serviceController(ServiceController):
             mime = 'image/series'
 
         # check if an image can be a series
+        log.debug('mime: %s', mime)
         log.debug('process uf: %s', uf)
         if mime == 'image/series':
             filename = uf.localpath()

@@ -73,7 +73,7 @@ class SliceOperation(BaseOperation):
             abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
 
         # shortcuts are only possible with no ROIs are requested
-        if x1==x2==0 and y1==y2==0:
+        if x1==x2==0 and y1==y2==0 and len(dims)>0:
             # shortcut if input image has only one T and Z
             if dims.get('image_num_z', 1)<=1 and dims.get('image_num_t', 1)<=1:
                 #log.debug('Slice: plane requested on image with no T or Z planes, skipping...')
@@ -102,7 +102,7 @@ class SliceOperation(BaseOperation):
         if new_h>0: info['image_num_y'] = new_h+1
 
         ofname = '%s.%d-%d,%d-%d,%d-%d,%d-%d.ome.tif' % (token.data, x1,x2,y1,y2,z1,z2,t1,t2)
-        return token.setImage(ofname, fmt=default_format, dims=info)
+        return token.setImage(ofname, fmt=default_format, dims=info, input=ofname)
 
     def action(self, token, arg):
         '''arg = x1-x2,y1-y2,z|z1-z2,t|t1-t2'''

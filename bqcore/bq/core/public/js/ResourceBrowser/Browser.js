@@ -334,9 +334,11 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                 this.uri.baseURL = membersTag.uri + '/value';
             this.browserState['baseURL'] = this.uri.baseURL;
 
-            for (var param in this.uri)
-            if (this.uri[param].length == 0)
-                delete this.uri[param];
+            for (var param in this.uri) {
+                var p = this.uri[param];
+                if (typeof p === "undefined" || p === null || (p.hasOwnProperty(length) && p.length<1))
+                    delete this.uri[param];
+            }
 
             this.resourceQueue = new Bisque.ResourceBrowser.ResourceQueue();
             this.resourceQueue.init({
