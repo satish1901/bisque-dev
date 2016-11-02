@@ -643,11 +643,14 @@ class MountServer(TGController):
             refs = resource.get ('value')
             if refs is not None:
                 refs = [ (resource, setval, split_subpath(refs), storepath) ]
+                rootpath = os.path.dirname(storepath) # dima: fix for stripping multi-file paths
             else:
                 refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
+                rootpath = storepath # dima: fix for stripping multi-file paths
             log.debug ("_save_storerefs refs: %s", str(refs))
 
-            rootpath = os.path.dirname(storepath)
+            #rootpath = os.path.dirname(storepath) # dima: fix for stripping multi-file paths
+
             # Determine a list of URL that need to be moved to a store (these were unpacked locally)
             # Assume the first URL is special and the others are related which can be used
             # to calculate storepath
