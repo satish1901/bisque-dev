@@ -843,17 +843,23 @@ class ConverterImgcnv(ConverterBase):
                 return ''
             return t.value or default
 
-        def read_tag_float(ds, key, default=None):
+       def read_tag_float(ds, key, default=None):
             t = ds.get(key)
             if t is None:
-                return None
-            return float(t.value) or default
+                return default
+            try:
+                return float(t.value)
+            except ValueError:
+                return default
 
         def read_tag_int(ds, key, default=None):
             t = ds.get(key)
             if t is None:
-                return None
-            return int(t.value) or default
+                return default
+            try:
+                return int(t.value)
+            except ValueError:
+                return default
 
         if not cls.installed:
             return False
