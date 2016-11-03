@@ -537,7 +537,7 @@ class ServiceDelegate(controllers.WSGIAppController):
         try:
             html = super(ServiceDelegate, self)._default(*args, **kw)
         except socket.error:
-            log.exception('service %s at %s is not available' , self.name, self.service_url)
+            log.info('service %s at %s is not available' , self.name, self.service_url)
             override_template(self._default, "genshi:bq.core.templates.master")
             abort(503, 'The service provider for %s at %s is unavailable' % (self.name, self.service_url))
         #log.info("Service proxy return status %s body %s" % (tg.response.status_int, html))

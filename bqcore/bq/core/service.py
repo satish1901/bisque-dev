@@ -129,7 +129,7 @@ class ServiceDirectory(object):
         """Return the service instance of service type"""
         entry = self.services.get (service_type, None)
         if not entry:
-            log.error ("Could not find registered service %s", service_type)
+            log.debug ("Could not find registered service %s", service_type)
             return None
         if len(entry.instances) == 0:
         # Don't automatically try to create instances anymore

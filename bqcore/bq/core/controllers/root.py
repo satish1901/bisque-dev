@@ -205,23 +205,20 @@ class RootController(BaseController):
             service_type = oldnames[service_type]
 
         #log.debug ("find controller for %s  " % (str(service_type) ))
-        log.debug ("lookup for %s/%s" , service_type, rest )
+        #log.debug ("lookup for %s/%s" , service_type, rest )
         #import pdb
         #pdb.set_trace()
         service = service_registry.find_service(service_type)
         if service is not None:
-            log.debug ('found %s ' ,  str(service))
+            #log.debug ('found %s ' ,  str(service))
             return service, rest
-        log.warn ('no service found %s with %s', service_type, rest)
         if is_uniq_code(service_type):
             log.debug ("uniq code %s", request.path_qs)
             # Skip 1st /
-            redirect(urlparse.urljoin(config.get ('bisque.root', request.application_url), '/data_service/%s' % request.path_qs[1:]))
+            redirect(urlparse.urljoin(request.application_url, '/data_service/%s' % request.path_qs[1:]))
 
+        log.warn ('no service found %s with %s', service_type, rest)
         abort(404)
-        #return super(RootController, self)._lookup(service_type, *rest)
-
-        #redirect ("/error/", msg="No such service: %s" % service_type, status=404 )
 
     #@expose('bq.templates.error')
     #def error (self, msg='', status=400):
