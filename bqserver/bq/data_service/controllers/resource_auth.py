@@ -202,16 +202,16 @@ class ResourceAuth(Resource):
         """
         log.debug ("Load %s" % token)
         # Can we read the ACLs at all?
-        #resource = check_access(request.bisque.parent, RESOURCE_READ)
+        resource = check_access(request.bisque.parent, RESOURCE_READ)
         # token should be a resource_uniq of user .. so join Taggable(user) and  TaggableAcl
-        #if resource is  None:
-        #    return (None, None,None)
+        if resource is  None:
+            return (None, None,None)
 
-        #acl, user = DBSession.query (TaggableAcl, Taggable).filter (TaggableAcl.taggable_id == resource.id,
-        #                                                            TaggableAcl.user_id == Taggable.id,
-        #                                                            Taggable.resource_uniq == token).first()
-        #return resource, user, acl
-        return token
+        acl, user = DBSession.query (TaggableAcl, Taggable).filter (TaggableAcl.taggable_id == resource.id,
+                                                                    TaggableAcl.user_id == Taggable.id,
+                                                                    Taggable.resource_uniq == token).first()
+        return resource, user, acl
+        #return token
 
     def create(self, **kw):
         return int
@@ -242,14 +242,14 @@ class ResourceAuth(Resource):
         tg.response.headers['Content-Type'] = content_type
         return formatter(response)
     @expose()
-    def get(self, user_uniq , **kw):
+    def get(self, useracl , **kw):
         """GET /ds/images/1 : fetch the resource
         """
         recurse = kw.pop('recurse', None)
         response = etree.Element('resource', uri=request.url)
-        resource = check_access(request.bisque.parent, RESOURCE_READ)
+        resource, user, acl  = useracl
         if resource:
-            resource_acl_query(resource, user_uniq=user_uniq, recurse=recurse,response=response)
+            resource_acl_query(resource, user_uniq=user.resource_uniq, recurse=recurse,response=response)
         formatter, content_type  = find_formatter ('xml')
         tg.response.headers['Content-Type'] = content_type
         return formatter(response)
