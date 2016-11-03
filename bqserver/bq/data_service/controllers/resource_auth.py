@@ -89,7 +89,7 @@ from .formats import find_formatter
 log = logging.getLogger("bq.data_service.resource_auth")
 
 INVITE_MSG = """
-You've been invited by $owner_name <$owner_email> to view an image at
+You've been invited by $owner_name <$owner_email> to view $article $resource_type at
 $image_url
 
 A login has been created for you at $root.  Please login
@@ -97,7 +97,7 @@ using $name as your login ID and $password as your password.
 """
 
 SHARE_MSG = """
-You've been invited by $owner_name <$owner_email> to view an image at $image_url
+You've been invited by $owner_name <$owner_email> to view $article $resource_type at $image_url
 """
 
 REMOVE_MSG = """
@@ -155,7 +155,15 @@ def _aclelem(resource, user, acl=None):
                            action = (acl and acl.action) or 'read',
 #                           user   = "%s/data_service/user/%s" % (request.application_url, user.resource_uniq),
                            user   =  user.resource_uniq,
+#                           resource = resource.resource_uniq,
                            email  =user.value)
+
+
+#
+# given a resource id fetch
+# look for mexes have a value of resource uniq
+#  For given a given resource return the list non-empty auth records of associated resources (all the mexes that points to the current resource)
+# Image -> Template sharing -> other resources?
 
 
 class ResourceAuth(Resource):
@@ -194,14 +202,16 @@ class ResourceAuth(Resource):
         """
         log.debug ("Load %s" % token)
         # Can we read the ACLs at all?
-        resource = check_access(request.bisque.parent, RESOURCE_READ)
+        #resource = check_access(request.bisque.parent, RESOURCE_READ)
         # token should be a resource_uniq of user .. so join Taggable(user) and  TaggableAcl
-        if resource is  None:
-            return (None, None,None)
-        acl, user = DBSession.query (TaggableAcl, Taggable).filter (TaggableAcl.taggable_id == resource.id,
-                                                                    TaggableAcl.user_id == Taggable.id,
-                                                                    Taggable.resource_uniq == token).first()
-        return resource, user, acl
+        #if resource is  None:
+        #    return (None, None,None)
+
+        #acl, user = DBSession.query (TaggableAcl, Taggable).filter (TaggableAcl.taggable_id == resource.id,
+        #                                                            TaggableAcl.user_id == Taggable.id,
+        #                                                            Taggable.resource_uniq == token).first()
+        #return resource, user, acl
+        return token
 
     def create(self, **kw):
         return int
@@ -211,16 +221,17 @@ class ResourceAuth(Resource):
         #baseuri = request.url
         format = kw.pop('format', None)
         view = kw.pop('view', None)
+        recurse = kw.pop('recurse', None)
         resource = check_access(request.bisque.parent, RESOURCE_READ)
         log.info ("AUTH %s  %s" , resource, request.environ)
         response = etree.Element('resource', uri=request.url)
-        for auth, user in DBSession.query(TaggableAcl, Taggable)\
-                                          .filter(TaggableAcl.taggable_id == resource.id)\
-                                          .filter(TaggableAcl.user_id == Taggable.id).all():
 
-
-            log.debug ("Found %s with user %s", auth, user)
-            response.append (_aclelem (resource, user, auth))
+        resource_acl_query(resource, recurse=recurse,response=response)
+        #for auth, user in DBSession.query(TaggableAcl, Taggable)\
+        #                                  .filter(TaggableAcl.taggable_id == resource.id)\
+        #                                  .filter(TaggableAcl.user_id == Taggable.id).all():
+        #    log.debug ("Found %s with user %s", auth, user)
+        #    response.append (_aclelem (resource, user, auth))
         if is_admin() : #and resource.owner_id != current_user.id:
             current_user = get_user()
             admin_auth = _aclelem (resource, current_user)
@@ -231,15 +242,17 @@ class ResourceAuth(Resource):
         tg.response.headers['Content-Type'] = content_type
         return formatter(response)
     @expose()
-    def get(self, useracl , **kw):
+    def get(self, user_uniq , **kw):
         """GET /ds/images/1 : fetch the resource
         """
-        resource, user, acl = useracl
-        if acl:
-            aclelem = _aclelem (resource, user, acl)
-            formatter, content_type  = find_formatter ('xml')
-            tg.response.headers['Content-Type'] = content_type
-            return formatter(aclelem)
+        recurse = kw.pop('recurse', None)
+        response = etree.Element('resource', uri=request.url)
+        resource = check_access(request.bisque.parent, RESOURCE_READ)
+        if resource:
+            resource_acl_query(resource, user_uniq=user_uniq, recurse=recurse,response=response)
+        formatter, content_type  = find_formatter ('xml')
+        tg.response.headers['Content-Type'] = content_type
+        return formatter(response)
 
     #############
     # Modifies
@@ -278,6 +291,7 @@ class ResourceAuth(Resource):
     def modify(self, useracl, xml, notify=False, **kw):
         resource, user, acl  = useracl
         response = etree.Element('resource', uri=request.url)
+        DBSession.autoflush = False
         resource = check_access(resource, RESOURCE_EDIT)
         if resource is not None:
             DBSession.autoflush = False
@@ -294,6 +308,7 @@ class ResourceAuth(Resource):
     #@identity.require(identity.not_anonymous())
     def delete(self, useracl, **kw):
         resource, user, acl = useracl
+        DBSession.autoflush = False
         resource = check_access(resource, RESOURCE_EDIT)
         #if resource is not None:
         #    DBSession.query(TaggableAcl).join (Taggable).filter (Taggable.resource_uniq == uniq).delete()
@@ -325,6 +340,7 @@ class ResourceAuth(Resource):
         '''
         resource, user, acl = useracl
         response = etree.Element('resource', uri=request.url)
+        DBSession.autoflush = False
         if acl:
             DBSession.autoflush = False
             newauth=etree.XML(xml)
@@ -333,6 +349,46 @@ class ResourceAuth(Resource):
         tg.response.headers['Content-Type'] = content_type
         #transaction.commit()
         return formatter(response)
+
+
+#
+# given a resource id fetch
+# look for mexes have a value of resource uniq
+#  For given a given resource return the list non-empty auth records of associated resources (all the mexes that points to the current resource)
+
+def resource_acl_query (resource, user_uniq=None, recurse = False, filter_resource_type=None, response=None):
+    """Query a set of resource acl
+    """
+    log.debug ("ACL_QUERY %s %s", resource, user_uniq)
+    if response is None:
+        response = etree.Element ('response')
+
+    query  = DBSession.query(TaggableAcl)
+    if resource:
+        query = query.filter(TaggableAcl.taggable_id == resource.id)
+    if user_uniq:
+        query = query.filter (TaggableAcl.user_id == Taggable.id,
+                              Taggable.resource_uniq == user_uniq)
+    for auth in query:
+        log.debug ("Found %s with user %s", auth, auth.user)
+        response.append (_aclelem (auth.resource, auth.user, auth))
+
+        if recurse:
+            # look for filter_resource have a value of resource uniq
+            related = data_service.query(resource_type=recurse, tag_query="*%s*" % auth.resource.resource_uniq)
+            #  For given a given resource return the list non-empty
+            #  auth records of associated resources (all the mexes
+            #  that points to the current resource)
+            for relation in related:
+                resource = DBSession.query (Taggable).filter_by (resource_uniq = relation.get ('resource_uniq')).first()
+                log.debug ("LOADED %s %s", recurse, resource)
+                # Nested response
+                response.append (relation)
+                resource_acl_query (resource, auth.user.resource_uniq, response=relation)
+                # flat response
+                #resource_acl_query (resource, auth.user.resource_uniq, response=response)
+    return response
+
 
 
 def resource_acls(resources, newauth, user=None, acl=None, notify=False, invalidate=True, action='append'):
@@ -350,6 +406,7 @@ def resource_acls(resources, newauth, user=None, acl=None, notify=False, invalid
     return results
 
 
+# Change an Image -> Template sharing -> other resources?
 def resource_acl (resource,  newauth, user=None, acl=None, notify=False, invalidate=True, action='append'):
     """Create or modify resource acls
 
@@ -363,6 +420,7 @@ def resource_acl (resource,  newauth, user=None, acl=None, notify=False, invalid
 
     @return an etree acl record
     """
+    log.debug ("ACL SET %s", resource)
     user, passwd = match_user(user =  user,
                               user_uniq = newauth.get ('user'),
                               email     = newauth.get ('email'))
@@ -376,8 +434,11 @@ def resource_acl (resource,  newauth, user=None, acl=None, notify=False, invalid
             DBSession.add (acl)
 
     if action =='delete':
-        log.debug ("Removing %s from %s  for %s", newauth.get ('action', RESOURCE_READ), resource.resource_uniq, user.resource_uniq)
-        if acl in DBSession.new: # http://stackoverflow.com/questions/8306506/deleting-an-object-from-an-sqlalchemy-session-before-its-been-persisted
+        log.debug ("Removing %s from %s  for %s", newauth.get ('action', RESOURCE_READ),
+                   resource.resource_uniq, user.resource_uniq)
+        # http://stackoverflow.com/questions/8306506/deleting-an-object-from-an-sqlalchemy-session-before-its-been-persisted
+
+        if acl in DBSession.new:
             DBSession.expunge(acl)
         else:
             DBSession.delete (acl)
@@ -415,6 +476,8 @@ def notify_user(action, resource, user, passwd):
     # Not really owner, just the person sharing
     owner = get_user()
     params = dict (
+        resource_type = resource.resource_type,
+        article = "an" if resource.resource_type[0] in ('a', 'e', 'i', 'o', 'u') else 'a',
         owner_name = owner.name,
         owner_email = owner.value,
         name = user.name,
