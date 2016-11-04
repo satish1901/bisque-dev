@@ -3,26 +3,29 @@ from bqapi.bqclass import BQFactory
 
 
 X="""
-<resource >
-<image uri="/is/1" x="100" y="100">
+<resource>
+<image uri="/is/1">
 <tag name="filename" value="boo"/>
-<tag name="xxx" value = "yyy"/>
+<tag name="xxx" value="yyy"/>
 </image>
 </resource>
 """
 
 
-def test_conversion():
+
+
+def test_conversion(session):
     'test simple xml conversions'
     print "ORIGINAL"
     print X
 
-    r = BQFactory.from_string(X)
+    factory = BQFactory(session)
 
+    r = factory.from_string(X)
     print "PARSED"
-    print x
 
-    r = BQFactory.to_string (x)
+    x = factory.to_string (r)
 
     print "XML"
     print r
+    assert x == X.translate(None, '\r\n')
