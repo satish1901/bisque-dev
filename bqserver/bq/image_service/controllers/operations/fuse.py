@@ -16,12 +16,12 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 import bq.util.io_misc as misc
 
 __all__ = [ 'FuseOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -60,7 +60,7 @@ class FuseOperation(BaseOperation):
                 channels = [misc.safeint(i, 0) for i in g.split(',')]
                 # we can skip 0 weighted channels even if they are outside of the image channel range
                 if max(channels)>0:
-                    abort(400, 'Fuse: requested fusion of channel outside bounds %s>%s (%s)'%(img_num_c+i, img_num_c, g))
+                    raise ImageServiceException(400, 'Fuse: requested fusion of channel outside bounds %s>%s (%s)'%(img_num_c+i, img_num_c, g))
 
         ofile = '%s.fuse_%s_%s'%(token.data, argenc, method)
         return token.setImage(fname=ofile, fmt=default_format)
@@ -85,7 +85,7 @@ class FuseOperation(BaseOperation):
                 channels = [misc.safeint(i, 0) for i in g.split(',')]
                 # we can skip 0 weighted channels even if they are outside of the image channel range
                 if max(channels)>0:
-                    abort(400, 'Fuse: requested fusion of channel outside bounds %s>%s (%s)'%(img_num_c+i, img_num_c, g))
+                    raise ImageServiceException(400, 'Fuse: requested fusion of channel outside bounds %s>%s (%s)'%(img_num_c+i, img_num_c, g))
 
         ifile = token.first_input_file()
         ofile = '%s.fuse_%s_%s'%(token.data, argenc, method)

@@ -14,10 +14,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'PixelCounterOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -42,7 +42,7 @@ class PixelCounterOperation(BaseOperation):
 
     def action(self, token, arg):
         if not token.isFile():
-            abort(400, 'Pixelcount: input is not an image...' )
+            raise ImageServiceException(400, 'Pixelcount: input is not an image...' )
         arg = safeint(arg.lower(), 256)-1
         ifile = token.first_input_file()
         ofile = '%s.pixelcount_%s.xml'%(token.data, arg)

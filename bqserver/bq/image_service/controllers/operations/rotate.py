@@ -15,10 +15,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'RotateOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -54,7 +54,7 @@ class RotateOperation(BaseOperation):
         if ang=='270':
             ang='-90'
         if ang not in angles:
-            abort(400, 'rotate: angle value not yet supported' )
+            raise ImageServiceException(400, 'rotate: angle value not yet supported' )
 
         ifile = token.first_input_file()
         ofile = '%s.rotated_%s'%(token.data, ang)

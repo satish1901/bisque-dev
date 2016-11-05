@@ -19,11 +19,11 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'RoiOperation' ]
 
 from bq.util.locks import Locks
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -60,7 +60,7 @@ class RoiOperation(BaseOperation):
 
     def action(self, token, arg):
         if not token.isFile():
-            abort(400, 'Roi: input is not an image...' )
+            raise ImageServiceException(400, 'Roi: input is not an image...' )
         rois = []
         for a in arg.split(';'):
             vs = a.split(',', 4)
@@ -72,7 +72,7 @@ class RoiOperation(BaseOperation):
         x1,y1,x2,y2 = rois[0]
 
         if x1<=0 and x2<=0 and y1<=0 and y2<=0:
-            abort(400, 'ROI: region is not provided')
+            raise ImageServiceException(400, 'ROI: region is not provided')
 
         ifile = token.first_input_file()
         otemp = token.data

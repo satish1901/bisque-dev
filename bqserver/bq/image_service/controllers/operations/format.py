@@ -27,10 +27,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'FormatOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -86,7 +86,7 @@ class FormatOperation(BaseOperation):
 
     def action(self, token, arg):
         if not token.isFile():
-            abort(400, 'Format: input is not an image...' )
+            raise ImageServiceException(400, 'Format: input is not an image...' )
 
         args = arg.lower().split(',')
         fmt = default_format
@@ -105,7 +105,7 @@ class FormatOperation(BaseOperation):
             return token
 
         if fmt not in self.server.writable_formats:
-            abort(400, 'Requested format [%s] is not writable'%fmt )
+            raise ImageServiceException(400, 'Requested format [%s] is not writable'%fmt )
 
         name_extra = '' if len(args)<=0 else '.%s'%'.'.join(args)
         ext = self.server.converters.defaultExtension(fmt)
@@ -151,7 +151,7 @@ class FormatOperation(BaseOperation):
 
             if r is None:
                 log.error('Format %s: %s could not convert with [%s] format [%s] -> [%s]', token.resource_id, c.CONVERTERCOMMAND, fmt, ifile, ofile)
-                abort(415, 'Could not convert into %s format'%fmt )
+                raise ImageServiceException(415, 'Could not convert into %s format'%fmt )
 
         if stream:
             fpath = ofile.split('/')

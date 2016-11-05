@@ -15,6 +15,7 @@ from lxml import etree
 
 __all__ = [ 'ViewOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 

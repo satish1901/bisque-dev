@@ -5,7 +5,7 @@ Provides a tile of an image :
        arg = s,x1,y1,x2,y2
 
        # 4 parameter request:
-       # gridded tile size interface, 
+       # gridded tile size interface,
        # it is the fastest possible especially if hitting the native tile size
        l: level of the pyramid, 0=100%, 1=50%, 2=25%, ...
        tnx, tny: x and y tile number on the grid
@@ -34,12 +34,12 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'TileOperation' ]
 
 from bq.util.locks import Locks
 from bq.util.mkdir import _mkdir
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -78,7 +78,7 @@ class TileOperation(BaseOperation):
         x = tnx * tsz
         y = tny * tsz
         if x>=width or y>=height:
-            abort(400, 'Tile: tile position outside of the image: %s,%s'%(tnx, tny))
+            raise ImageServiceException(400, 'Tile: tile position outside of the image: %s,%s'%(tnx, tny))
 
         # the new tile service does not change the number of z points in the image and if contains all z will perform the operation
         info = {
@@ -95,7 +95,7 @@ class TileOperation(BaseOperation):
     def action(self, token, arg):
         '''arg = l,tnx,tny,tsz'''
         if not token.isFile():
-            abort(400, 'Tile: input is not an image...' )
+            raise ImageServiceException(400, 'Tile: input is not an image...' )
         level=0; tnx=0; tny=0; tsz=512;
         vs = arg.split(',', 4)
         if len(vs)>0 and vs[0].isdigit(): level = int(vs[0])
@@ -129,7 +129,7 @@ class TileOperation(BaseOperation):
                 log.debug('Generate tiled pyramid %s: from %s to %s with %s', token.resource_id, ifname, pyramid, command )
                 r = self.server.imageconvert(token, ifname, pyramid, fmt=default_format, extra=command)
                 if r is None:
-                    abort(500, 'Tile: could not generate pyramidal file' )
+                    raise ImageServiceException(500, 'Tile: could not generate pyramidal file' )
             # ensure the file was created
             with Locks(pyramid):
                 pass
@@ -165,7 +165,7 @@ class TileOperation(BaseOperation):
         x = tnx * tsz
         y = tny * tsz
         if x>=width or y>=height:
-            abort(400, 'Tile: tile position outside of the image: %s,%s'%(tnx, tny))
+            raise ImageServiceException(400, 'Tile: tile position outside of the image: %s,%s'%(tnx, tny))
 
         # the new tile service does not change the number of z points in the image and if contains all z will perform the operation
         info = {
@@ -210,5 +210,5 @@ class TileOperation(BaseOperation):
                                 c.writeHistogram(token, ofnm=hist_name)
                             return token.setImage(ofname, fmt=default_format, dims=info, hist=hist_name, input=ofname)
 
-        abort(500, 'Tile could not be extracted')
+        raise ImageServiceException(500, 'Tile could not be extracted')
 

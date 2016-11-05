@@ -16,10 +16,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'TransformOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -101,12 +101,12 @@ class TransformOperation(BaseOperation):
         log.debug('Transform %s: %s to %s with [%s]', token.resource_id, ifile, ofile, arg)
 
         if not transform in transforms:
-            abort(400, 'transform: requested transform is not yet supported')
+            raise ImageServiceException(400, 'transform: requested transform is not yet supported')
 
         dims = token.dims or {}
         for n,v in transforms[transform]['require'].iteritems():
             if v != dims.get(n):
-                abort(400, 'transform: input image is incompatible, %s must be %s but is %s'%(n, v, dims.get(n)) )
+                raise ImageServiceException(400, 'transform: input image is incompatible, %s must be %s but is %s'%(n, v, dims.get(n)) )
 
         extra = transforms[transform]['command']
         if len(params)>0:

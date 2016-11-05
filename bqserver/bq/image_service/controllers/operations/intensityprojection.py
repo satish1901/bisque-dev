@@ -14,10 +14,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'IntensityProjectionOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -37,14 +37,14 @@ class IntensityProjectionOperation(BaseOperation):
     def dryrun(self, token, arg):
         arg = arg.lower()
         if arg not in ['min', 'max']:
-            abort(400, 'IntensityProjection: parameter must be either "max" or "min"')
+            raise ImageServiceException(400, 'IntensityProjection: parameter must be either "max" or "min"')
         ofile = '%s.iproject_%s'%(token.data, arg)
         return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
         arg = arg.lower()
         if arg not in ['min', 'max']:
-            abort(400, 'IntensityProjection: parameter must be either "max" or "min"')
+            raise ImageServiceException(400, 'IntensityProjection: parameter must be either "max" or "min"')
 
         ifile = token.first_input_file()
         ofile = '%s.iproject_%s'%(token.data, arg)

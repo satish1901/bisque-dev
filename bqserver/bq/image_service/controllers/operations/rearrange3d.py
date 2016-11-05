@@ -16,10 +16,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'Rearrange3DOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -46,12 +46,12 @@ class Rearrange3DOperation(BaseOperation):
 
     def action(self, token, arg):
         if not token.isFile():
-            abort(400, 'Rearrange3D: input is not an image...' )
+            raise ImageServiceException(400, 'Rearrange3D: input is not an image...' )
         log.debug('Rearrange3D %s: %s', token.resource_id, arg )
         arg = arg.lower()
 
         if arg not in ['xzy', 'yzx']:
-            abort(400, 'Rearrange3D: method is unsupported: [%s]'%arg )
+            raise ImageServiceException(400, 'Rearrange3D: method is unsupported: [%s]'%arg )
 
         # if the image must be 3D, either z stack or t series
         dims = token.dims or {}
@@ -60,7 +60,7 @@ class Rearrange3DOperation(BaseOperation):
         z = dims['image_num_z']
         t = dims['image_num_t']
         if (z>1 and t>1) or (z==1 and t==1):
-            abort(400, 'Rearrange3D: only supports 3D images' )
+            raise ImageServiceException(400, 'Rearrange3D: only supports 3D images' )
 
         nz = y if arg == 'xzy' else x
         info = {

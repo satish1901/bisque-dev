@@ -22,10 +22,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'ResizeOperation', 'Resize3DOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -84,10 +84,10 @@ class ResizeOperation(BaseOperation):
     #         textAddition = ss[3].upper()
 
     #     if size[0]<=0 and size[1]<=0:
-    #         abort(400, 'Resize: size is unsupported: [%s]'%arg )
+    #         raise ImageServiceException(400, 'Resize: size is unsupported: [%s]'%arg )
 
     #     if method not in ['NN', 'BL', 'BC']:
-    #         abort(400, 'Resize: method is unsupported: [%s]'%arg )
+    #         raise ImageServiceException(400, 'Resize: method is unsupported: [%s]'%arg )
 
     #     # if the image is smaller and MX is used, skip resize
     #     dims = token.dims or {}
@@ -125,10 +125,10 @@ class ResizeOperation(BaseOperation):
             aspectRatio = ',AR'
 
         if size[0]<=0 and size[1]<=0:
-            abort(400, 'Resize: size is unsupported: [%s]'%arg )
+            raise ImageServiceException(400, 'Resize: size is unsupported: [%s]'%arg )
 
         if method not in ['NN', 'BL', 'BC']:
-            abort(400, 'Resize: method is unsupported: [%s]'%arg )
+            raise ImageServiceException(400, 'Resize: method is unsupported: [%s]'%arg )
 
         # if the image is smaller and MX is used, skip resize
         dims = token.dims or {}
@@ -210,7 +210,7 @@ class Resize3DOperation(BaseOperation):
 
     def action(self, token, arg):
         if not token.isFile():
-            abort(400, 'Resize3D: input is not an image...' )
+            raise ImageServiceException(400, 'Resize3D: input is not an image...' )
         log.debug('Resize3D %s: %s', token.resource_id, arg )
 
         #size = tuple(map(int, arg.split(',')))
@@ -239,10 +239,10 @@ class Resize3DOperation(BaseOperation):
             aspectRatio = ',AR'
 
         if size[0]<=0 and size[1]<=0 and size[2]<=0:
-            abort(400, 'Resize3D: size is unsupported: [%s]'%arg )
+            raise ImageServiceException(400, 'Resize3D: size is unsupported: [%s]'%arg )
 
         if method not in ['NN', 'TL', 'TC']:
-            abort(400, 'Resize3D: method is unsupported: [%s]'%arg )
+            raise ImageServiceException(400, 'Resize3D: method is unsupported: [%s]'%arg )
 
         # if the image is smaller and MX is used, skip resize
         dims = token.dims or {}
@@ -256,7 +256,7 @@ class Resize3DOperation(BaseOperation):
         if maxBounding and w<=size[0] and h<=size[1] and d<=size[2]:
             return token
         if (z>1 and t>1) or (z==1 and t==1):
-            abort(400, 'Resize3D: only supports 3D images' )
+            raise ImageServiceException(400, 'Resize3D: only supports 3D images' )
 
         ifile = token.first_input_file()
         ofile = '%s.size3d_%d,%d,%d,%s,%s' % (token.data, size[0], size[1], size[2], method,textAddition)
