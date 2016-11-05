@@ -22,8 +22,7 @@ from bq.util.locks import Locks
 from bq.util.read_write_locks import HashedReadWriteLock
 import bq.util.io_misc as misc
 
-#from .process_token import ProcessToken
-#from .converter_base import ConverterBase, Format
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converter_base import ConverterBase, Format
 
@@ -342,8 +341,7 @@ class ConverterImgcnv(ConverterBase):
                         log.info ('Run: timed-out for [%s]', misc.tounicode(command))
                         if ofnm is not None and os.path.exists(ofnm):
                             os.remove(ofnm)
-                        #abort(412, 'Requested timeout reached')
-                        log.error ("Request timed out")
+                        raise ImageServiceException(412, 'Requested timeout reached')
                     if retcode!=0:
                         log.info ('Run: returned [%s] for [%s]', retcode, misc.tounicode(command))
                         return None

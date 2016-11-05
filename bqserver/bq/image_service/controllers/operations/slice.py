@@ -18,10 +18,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'SliceOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -64,13 +64,13 @@ class SliceOperation(BaseOperation):
 
         # check image bounds
         if z1>dims.get('image_num_z', 1):
-            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z1 )
+            raise ImageServiceException(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z1 )
         if z2>dims.get('image_num_z', 1):
-            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z2 )
+            raise ImageServiceException(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z2 )
         if t1>dims.get('image_num_t', 1):
-            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t1 )
+            raise ImageServiceException(400, 'Slice: requested T plane outside of image bounds: [%s]'%t1 )
         if t2>dims.get('image_num_t', 1):
-            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
+            raise ImageServiceException(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
 
         # shortcuts are only possible with no ROIs are requested
         if x1==x2==0 and y1==y2==0 and len(dims)>0:
@@ -108,7 +108,7 @@ class SliceOperation(BaseOperation):
         '''arg = x1-x2,y1-y2,z|z1-z2,t|t1-t2'''
 
         if not token.isFile():
-            abort(400, 'Slice: input is not an image...' )
+            raise ImageServiceException(400, 'Slice: input is not an image...' )
 
         # parse arguments
         vs = [ [safeint(i, 0) for i in vs.split('-', 1)] for vs in arg.split(',')]
@@ -130,13 +130,13 @@ class SliceOperation(BaseOperation):
 
         # check image bounds
         if z1>dims.get('image_num_z', 1):
-            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z1 )
+            raise ImageServiceException(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z1 )
         if z2>dims.get('image_num_z', 1):
-            abort(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z2 )
+            raise ImageServiceException(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z2 )
         if t1>dims.get('image_num_t', 1):
-            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t1 )
+            raise ImageServiceException(400, 'Slice: requested T plane outside of image bounds: [%s]'%t1 )
         if t2>dims.get('image_num_t', 1):
-            abort(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
+            raise ImageServiceException(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
 
         # shortcuts are only possible with no ROIs are requested
         if x1==x2==0 and y1==y2==0:
@@ -200,7 +200,7 @@ class SliceOperation(BaseOperation):
 
             if r is None:
                 log.error('Slice %s: could not generate slice for [%s]', token.resource_id, ifname)
-                abort(415, 'Could not generate slice' )
+                raise ImageServiceException(415, 'Could not generate slice' )
 
             # if decoder returned a list of operations for imgcnv to enqueue
             if isinstance(r, list):

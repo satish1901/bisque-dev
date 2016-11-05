@@ -13,10 +13,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'HistogramOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -38,7 +38,7 @@ class HistogramOperation(BaseOperation):
 
     def action(self, token, arg):
         if not token.isFile():
-            abort(400, 'Histogram: input is not an image...' )
+            raise ImageServiceException(400, 'Histogram: input is not an image...' )
         ifile = token.first_input_file()
         ofile = '%s.histogram.xml'%(token.data)
         log.debug('Histogram %s: %s to %s', token.resource_id, ifile, ofile)

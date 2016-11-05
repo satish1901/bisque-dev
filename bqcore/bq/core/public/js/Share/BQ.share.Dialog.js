@@ -594,7 +594,7 @@ Ext.define('BQ.share.Panel', {
             auth_record = Ext.String.format('<auth action="{0}" email="{1}" user="{2}" />', data.action, data.email, data.user);
         for (var m in data.mexs) {
             Ext.Ajax.request({
-                url: Ext.String.format('/data_service/{0}/auth', m),
+                url: Ext.String.format('/data_service/{0}/auth?notify=false', m),
                 method: 'POST',
                 //xmlData:
                 rawData: auth_record,

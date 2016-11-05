@@ -12,10 +12,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'MetaOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -56,7 +56,7 @@ class MetaOperation(BaseOperation):
         if not os.path.exists(metacache):
             meta = {}
             if not os.path.exists(ifile):
-                abort(404, 'Meta: Input file not found...')
+                raise ImageServiceException(404, 'Meta: Input file not found...')
 
             dims = token.dims or {}
             converter = None
@@ -74,7 +74,7 @@ class MetaOperation(BaseOperation):
                         break
 
             if meta is None or len(meta)<1:
-                abort(415, 'Meta: file format is not supported...')
+                raise ImageServiceException(415, 'Meta: file format is not supported...')
 
             # overwrite fileds forced by the fileds stored in the resource image_meta
             if token.meta is not None:

@@ -14,10 +14,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'ThresholdOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -50,7 +50,7 @@ class ThresholdOperation(BaseOperation):
         arg = arg.lower()
         args = arg.split(',')
         if len(args)<1:
-            abort(400, 'Threshold: requires at least one parameter')
+            raise ImageServiceException(400, 'Threshold: requires at least one parameter')
         method = 'both'
         if len(args)>1:
             method = args[1]

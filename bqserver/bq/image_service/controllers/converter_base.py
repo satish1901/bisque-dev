@@ -9,13 +9,13 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 import os.path
 from subprocess import call
-from pylons.controllers.util import abort
 #from collections import OrderedDict
 from bq.util.compat import OrderedDict
 from itertools import groupby
 from bq.util.locks import Locks
 import bq.util.io_misc as misc
 
+from .exceptions import ImageServiceException
 from .process_token import ProcessToken
 
 import logging
@@ -229,7 +229,7 @@ class ConverterBase(object):
                         log.info ('Run: timed-out for [%s]', misc.toascii(command))
                         if ofnm is not None and os.path.exists(ofnm):
                             os.remove(ofnm)
-                        abort(412, 'Requested timeout reached')
+                        raise ImageServiceException(412, 'Requested timeout reached')
                     if retcode!=0:
                         log.info ('Run: returned [%s] for [%s]', retcode, misc.toascii(command))
                         return None

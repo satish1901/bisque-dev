@@ -22,10 +22,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'ThumbnailOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -105,13 +105,13 @@ class ThumbnailOperation(BaseOperation):
         fmt = ss[4].lower() if len(ss)>4 and len(ss[4])>0 else 'jpeg'
 
         if size[0]<=0 and size[1]<=0:
-            abort(400, 'Thumbnail: size is unsupported [%s]'%arg)
+            raise ImageServiceException(400, 'Thumbnail: size is unsupported [%s]'%arg)
 
         if method not in ['NN', 'BL', 'BC']:
-            abort(400, 'Thumbnail: method is unsupported [%s]'%arg)
+            raise ImageServiceException(400, 'Thumbnail: method is unsupported [%s]'%arg)
 
         if preproc not in ['', 'mid', 'mip', 'nip']:
-            abort(400, 'Thumbnail: method is unsupported [%s]'%arg)
+            raise ImageServiceException(400, 'Thumbnail: method is unsupported [%s]'%arg)
 
         ext = self.server.converters.defaultExtension(fmt)
         ifile = token.first_input_file()
@@ -153,7 +153,7 @@ class ThumbnailOperation(BaseOperation):
                         break
             if r is None:
                 log.error('Thumbnail %s: could not generate thumbnail for [%s]', token.resource_id, ifile)
-                abort(415, 'Could not generate thumbnail' )
+                raise ImageServiceException(415, 'Could not generate thumbnail' )
             if isinstance(r, list):
                 return self.server.enqueue(token, 'thumbnail', ofile, fmt=fmt, command=r, dims=info)
 

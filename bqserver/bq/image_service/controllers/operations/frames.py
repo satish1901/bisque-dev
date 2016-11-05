@@ -14,10 +14,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'FramesOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -41,7 +41,7 @@ class FramesOperation(BaseOperation):
 
     def action(self, token, arg):
         if not arg:
-            abort(400, 'Frames: no frames provided')
+            raise ImageServiceException(400, 'Frames: no frames provided')
 
         ifile = token.first_input_file()
         ofile = '%s.frames_%s'%(token.data, arg)

@@ -12,10 +12,10 @@ import math
 import logging
 import pkg_resources
 from lxml import etree
-from pylons.controllers.util import abort
 
 __all__ = [ 'DepthOperation' ]
 
+from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -74,15 +74,15 @@ class DepthOperation(BaseOperation):
         if len(args)>5: window_width = args[5] or None
 
         if d is None or d not in ds:
-            abort(400, 'Depth: depth is unsupported: %s'%d)
+            raise ImageServiceException(400, 'Depth: depth is unsupported: %s'%d)
         if m is None or m not in ms:
-            abort(400, 'Depth: method is unsupported: %s'%m )
+            raise ImageServiceException(400, 'Depth: method is unsupported: %s'%m )
         if f is not None and f not in fs:
-            abort(400, 'Depth: format is unsupported: %s'%f )
+            raise ImageServiceException(400, 'Depth: format is unsupported: %s'%f )
         if c is not None and c not in cm:
-            abort(400, 'Depth: channel mode is unsupported: %s'%c )
+            raise ImageServiceException(400, 'Depth: channel mode is unsupported: %s'%c )
         if m == 'hounsfield' and (window_center is None or window_width is None):
-            abort(400, 'Depth: hounsfield enhancement requires window center and width' )
+            raise ImageServiceException(400, 'Depth: hounsfield enhancement requires window center and width' )
 
         ifile = token.first_input_file()
         ofile = '%s.depth_%s'%(token.data, arg)

@@ -24,9 +24,11 @@ from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq import data_service
 from bq import export_service
+import bq.util.io_misc as misc
+
 from .process_token import ProcessToken
 from .imgsrv import ImageServer, getOperations
-import bq.util.io_misc as misc
+from .exceptions import ImageServiceException
 
 log = logging.getLogger("bq.image_service")
 
@@ -128,7 +130,10 @@ class ImageServiceController(ServiceController):
             meta = None
 
         # run processing
-        return self.srv.process(url, uniq, imagemeta=meta, resource=resource, user_name=user_name)
+        try:
+            return self.srv.process(url, uniq, imagemeta=meta, resource=resource, user_name=user_name)
+        except ImageServiceException, e:
+            abort(e.code, e.message)
 
     @classmethod
     def is_image_type (cls, filename):
@@ -186,7 +191,10 @@ class ImageServiceController(ServiceController):
 
     @expose()
     def operations(self, **kw):
-        token = self.srv.request( 'operations', ProcessToken(), None )
+        try:
+            token = self.srv.request( 'operations', ProcessToken(), None )
+        except ImageServiceException, e:
+            abort(e.code, e.message)
         tg.response.headers['Content-Type']  = token.contentType
         cache_control( token.cacheInfo )
         return token.data
@@ -194,14 +202,20 @@ class ImageServiceController(ServiceController):
     @expose(content_type="application/xml")
     #@identity.require(identity.not_anonymous())
     def formats(self, **kw):
-        token = self.srv.request( 'formats', ProcessToken(), None )
+        try:
+            token = self.srv.request( 'formats', ProcessToken(), None )
+        except ImageServiceException, e:
+            abort(e.code, e.message)
         tg.response.headers['Content-Type']  = token.contentType
         cache_control( token.cacheInfo )
         return token.data
 
     def check_access(self, ident, view=None):
         #resource = data_service.resource_load (uniq = ident, view=view)
-        resource = self.srv.cache.get_resource(ident)
+        try:
+            resource = self.srv.cache.get_resource(ident)
+        except ImageServiceException, e:
+            abort(e.code, e.message)
         if resource is None:
             if identity.not_anonymous():
                 abort(403)
@@ -269,7 +283,10 @@ class ImageServiceController(ServiceController):
 
         # Run processing
         log.info ("PROCESSING (%s): %s", datetime.now().isoformat(), url)
-        token = self.srv.process(url, ident, timeout=timeout, imagemeta=meta, resource=resource, user_name=user_name, **kw)
+        try:
+            token = self.srv.process(url, ident, timeout=timeout, imagemeta=meta, resource=resource, user_name=user_name, **kw)
+        except ImageServiceException, e:
+            abort(e.code, e.message)
         tg.response.headers['Content-Type']  = token.contentType
         #tg.response.content_type  = token.contentType
         #tg.response.headers['Cache-Control'] = ",".join ([token.cacheInfo, "public"])

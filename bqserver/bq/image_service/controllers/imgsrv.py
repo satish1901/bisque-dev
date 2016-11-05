@@ -19,7 +19,6 @@ import datetime
 import math
 
 from tg import config
-from pylons.controllers.util import abort
 
 #Project
 from bq import data_service
@@ -42,6 +41,7 @@ min_level_size = 128
 converters_preferred_order = ['openslide', 'imgcnv', 'ImarisConvert', 'bioformats']
 
 
+from .exceptions import ImageServiceException
 from .process_token import ProcessToken
 from .operation_base import BaseOperation
 from .converter_dict import ConverterDict
@@ -259,9 +259,11 @@ class ImageServer(object):
         #         log.debug('files: %s', files)
         #         return Blobs(path=files[0], sub=None, files=files if len(files)>1 else None)
 
-        #return blob_service.localpath(ident, resource=resource) or abort (404, 'File not available from blob service')
+        #return blob_service.localpath(ident, resource=resource) or raise ImageServiceException (404, 'File not available from blob service')
         blobs = self.cache.get_blobs(ident)
-        return blobs or abort (404, 'File not available from blob service')
+        if blobs is None:
+            raise ImageServiceException (404, 'File not available from blob service')
+        return blobs
 
     def getImageInfo(self, filename, series=0, infofile=None, meta=None):
         if infofile is None:
@@ -341,7 +343,7 @@ class ImageServer(object):
 
     def imageconvert(self, token, ifnm, ofnm, fmt=None, extra=None, dims=None, **kw):
         if not token.isFile():
-            abort(400, 'Convert: input is not an image...' )
+            raise ImageServiceException(400, 'Convert: input is not an image...' )
         fmt = fmt or token.format or default_format
 
         command = []
@@ -392,7 +394,7 @@ class ImageServer(object):
 
             if r is None or os.path.getsize(ometiff)<16:
                 log.error('Convert %s: failed for [%s]', token.resource_id, ifnm)
-                abort(415, 'Convert failed' )
+                raise ImageServiceException(415, 'Convert failed' )
 
         return self.converters[ConverterImgcnv.name].convert( ProcessToken(ifnm=ometiff), ofnm, fmt=fmt, extra=command)
 
@@ -421,7 +423,7 @@ class ImageServer(object):
     def request(self, method, token, arguments):
         '''Apply an image request'''
         if method not in self.operations:
-            abort(400, 'Requested operation does not exist: %s'%method)
+            raise ImageServiceException(400, 'Requested operation does not exist: %s'%method)
         return self.operations[method].action (token, arguments)
         # try:
         #     return self.operations[method].action (token, arguments)
@@ -479,12 +481,12 @@ class ImageServer(object):
             token.init(resource_id=ident, ifnm=b.path, imagemeta=kw.get('imagemeta', None), files=b.files, timeout=kw.get('timeout', None), resource_name=resource.get('name'), initial_workpath=workpath)
 
             if not os.path.exists(b.path):
-                abort(404, 'File not found...')
+                raise ImageServiceException(404, 'File not found...')
 
             if len(query)>0:
                 token.dims = self.getImageInfo(filename=token.first_input_file(), series=token.series, infofile='%s.info'%token.data, meta=token.meta)
                 if token.dims is None or 'image_num_x' not in token.dims:
-                    abort(415, 'File format is not supported...')
+                    raise ImageServiceException(415, 'File format is not supported...')
                 # overwrite fields from resource image meta
                 if token.meta is not None:
                     token.dims.update(token.meta)
