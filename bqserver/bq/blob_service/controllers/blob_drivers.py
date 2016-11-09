@@ -83,6 +83,7 @@ supported_storage_schemes = [ '', 'file' ]
 #    pass
 
 try:
+    # pylint: disable=import-error
     from bq.util import irods_client as irods
     supported_storage_schemes.append('irods')
 except ImportError:

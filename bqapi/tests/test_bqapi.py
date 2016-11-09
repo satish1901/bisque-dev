@@ -1,8 +1,12 @@
+import pytest
 
 from lxml import etree
 from bqapi import BQSession
 from bqapi.bqclass import BQFactory
 from tg import config
+
+
+pytestmark = pytest.mark.functional
 
 
 

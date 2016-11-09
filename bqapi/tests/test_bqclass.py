@@ -1,5 +1,9 @@
+import pytest
+
 from lxml import etree
 from bqapi.bqclass import BQFactory
+
+pytestmark = pytest.mark.unit
 
 
 X="""
@@ -13,13 +17,12 @@ X="""
 
 
 
-
-def test_conversion(session):
+def test_conversion():
     'test simple xml conversions'
     print "ORIGINAL"
     print X
 
-    factory = BQFactory(session)
+    factory = BQFactory(None)
 
     r = factory.from_string(X)
     print "PARSED"
