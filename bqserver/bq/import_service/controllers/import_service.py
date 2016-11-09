@@ -722,13 +722,14 @@ class import_serviceController(ServiceController):
         ''' Unpack and insert JSON file '''
         log.debug('process_json: %s %s', uf, intags )
 
-        uniq = uf.resource.get('resource_uniq') or shortuuid.uuid()
-        unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, uniq)
+        #uniq = uf.resource.get('resource_uniq') or shortuuid.uuid()
+        #unpack_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name, uniq)
 
         filepath = uf.localpath()
-        if filepath is None:
-            log.debug('process_json file object has no local path: [%s], move local', uf.fileobj)
-            filepath = uf.ensurelocal( os.path.join(unpack_dir, os.path.basename(uf.resource.get('name'))))
+        #KGK should always have a localpath for an uploaded file
+        #if filepath is None:
+        #    log.debug('process_json file object has no local path: [%s], move local', uf.fileobj)
+        #    filepath = uf.ensurelocal( os.path.join(unpack_dir, os.path.basename(uf.resource.get('name'))))
 
         resources = []
         with open(filepath, 'r') as fo:
@@ -736,16 +737,26 @@ class import_serviceController(ServiceController):
             # This is a poor man's detector for Dream3D pipeline files; other JSON types could be added later.
             if 'PipelineBuilder' in doc and 'Version' in doc['PipelineBuilder'] and 'Number_Filters' in doc['PipelineBuilder']:
                 # Dream3D pipeline file
-                resource = etree.Element ('resource', name=doc['PipelineBuilder']['Name'], value=filepath, resource_type='dream3d_pipeline', ts=uf.ts)
-                etree.SubElement(resource, 'tag', name='Version', value=doc['PipelineBuilder']['Version'])
-                etree.SubElement(resource, 'tag', name='Number Filters', value=str(doc['PipelineBuilder']['Number_Filters']), type='number')
-                resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('%s/'%unpack_dir))
-                resources.append(resource)
+                #resource = etree.Element ('resource', name=doc['PipelineBuilder']['Name'], value= blob_service.local2url(filepath), resource_type='dream3d_pipeline', ts=uf.ts)
+                #etree.SubElement(resource, 'tag', name='Version', value=doc['PipelineBuilder']['Version'])
+                #etree.SubElement(resource, 'tag', name='Number Filters', value=str(doc['PipelineBuilder']['Number_Filters']), type='number')
+                #resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('file://%s/'%unpack_dir))
+                #resources.append(resource)
+                #uf.resource.set ('name', doc['PipelineBuilder']['Name'])
+                #uf.resource.set ('value', blob_service.local2url(filepath))
+                uf.resource.set ('resource_type', 'dream3d_pipeline')
 
-        if len(resources) == 0:
-            return unpack_dir, [self.insert_resource(uf)]   # fall back to default
-        else:
-            return unpack_dir, resources
+                etree.SubElement(uf.resource, 'tag', name='Version', value=doc['PipelineBuilder']['Version'])
+                etree.SubElement(uf.resource, 'tag', name='Number Filters', value=str(doc['PipelineBuilder']['Number_Filters']), type='number')
+                #resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('file://%s/'%unpack_dir))
+                #resources.append(resource)
+
+        #if len(resources) == 0:
+        #    return unpack_dir, [self.insert_resource(uf)]   # fall back to default
+        #else:
+        #    return unpack_dir, resources
+        return [self.insert_resource(uf)]   # fall back to default
+
 
 #------------------------------------------------------------------------------
 # Import archives exported by a BISQUE system
@@ -877,8 +888,9 @@ class import_serviceController(ServiceController):
         return resources
 
     def filter_json(self, f, intags):
-        unpack_dir, resources = self.process_json(f, intags)
-        self.cleanup_packaging(unpack_dir)
+        #unpack_dir, resources = self.process_json(f, intags)
+        #self.cleanup_packaging(unpack_dir)
+        resources = self.process_json(f, intags)
         return resources
 
 #------------------------------------------------------------------------------
