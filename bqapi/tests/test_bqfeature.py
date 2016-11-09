@@ -24,6 +24,7 @@ from bqapi.bqfeature import *
 TEST_PATH = 'tests_%s'%urllib.quote(datetime.now().strftime('%Y%m%d%H%M%S%f'))  #set a test dir on the system so not too many repeats occur
 
 pytestmark = pytest.mark.skip("Unported tests")
+#pytestmark = pytest.mark.functional
 
 #setup comm test
 def setUp():

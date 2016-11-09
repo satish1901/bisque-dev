@@ -1,20 +1,23 @@
+import pytest
+
 from collections import OrderedDict, namedtuple
 import os
 from lxml import etree
 import urllib
 from datetime import datetime
 import time
-import pytest
 
 from bqapi import BQSession
 
 TEST_PATH = 'tests_%s'%urllib.quote(datetime.now().strftime('%Y%m%d%H%M%S%f'))  #set a test dir on the system so not too many repeats occur
 
-
+# default mark is function.. may be overridden
+pytestmark = pytest.mark.functional
 
 #############################
 ###   BQServer
 #############################
+@pytest.mark.unit
 def test_prepare_url_1(server):
     """
     """
@@ -24,6 +27,7 @@ def test_prepare_url_1(server):
     url = server.prepare_url(url, odict=odict)
     assert url == check_url
 
+@pytest.mark.unit
 def test_prepare_url_2(server):
     """
     """
@@ -32,6 +36,7 @@ def test_prepare_url_2(server):
     url = server.prepare_url(url, remap='gray', format='tiff')
     assert url == check_url
 
+@pytest.mark.unit
 def test_prepare_url_3(server):
     """
     """
@@ -40,6 +45,7 @@ def test_prepare_url_3(server):
     odict = OrderedDict([('remap','gray')])
     url = server.prepare_url(url, odict=odict, format='tiff')
     assert url == check_url
+
 
 
 #Test BQSession
