@@ -76,16 +76,17 @@ __all__ = [ 'make_storage_driver' ]
 
 supported_storage_schemes = [ '', 'file' ]
 
+#try:
+#    from bq.util import irods_icmd as irods
+#    supported_storage_schemes.append('irods')
+#except ImportError:
+#    pass
+
 try:
-    from bq.util import irods_icmd as irods
+    from bq.util import irods_client as irods
     supported_storage_schemes.append('irods')
 except ImportError:
-    try:
-        from bq.util import irods_client as irods
-        supported_storage_schemes.append('irods')
-    except ImportError:
-        log.warn ("Can't import irods: irods storage not supported")
-        pass
+    log.warn ("Can't import irods: irods storage not supported")
 
 
 try:
@@ -252,7 +253,7 @@ class LocalDriver (StorageDriver):
         storeurl,_ = split_subpath(storeurl)
         scheme = urlparse.urlparse(storeurl).scheme
 
-        if not scheme:
+        if not scheme and storeurl[0] != '/':
             storeurl = urlparse.urljoin (self.top, storeurl)
             # OLD STYLE : may have written %encoded values to file system
             path = posixpath.normpath(urlparse.urlparse(storeurl).path)
@@ -502,7 +503,12 @@ class S3Driver(StorageDriver):
         if self.access_key is None or self.secret_key is None or self.bucket_id is None:
             raise ConfigurationError('bisque.blob_service.s3 incomplete config')
 
-        self.conn = S3Connection(self.access_key, self.secret_key)
+        try:
+            self.conn = S3Connection(self.access_key, self.secret_key)
+        except boto.exception.S3ResponseError:
+            log.error ("S3 Connection failed")
+            raise IllegalOperation ("S3 connection Failed")
+
         try:
             self.bucket = self.conn.get_bucket(self.bucket_id)
         except boto.exception.S3ResponseError:
