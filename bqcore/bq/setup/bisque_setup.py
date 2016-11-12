@@ -77,6 +77,16 @@ import posixpath
 
 import pkg_resources
 from setuptools.command import easy_install
+try:
+    from marrow.mailer import  Mailer
+    MAILER='marrow.mailer'
+except ImportError:
+    try:
+        import turbomail as Mailer
+        MAILER='turbomail'
+    except ImportError:
+        MAILER=None
+
 
 #logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('bisque-setup')
@@ -236,7 +246,7 @@ def copy_link (*largs):
                 log.exception( "Problem in link %s .. trying copy" , f)
             shutil.copyfile (f, dest)
 
-def getanswer(question, default, help=None):
+def getanswer(question, default, help=None, envvar=None):
     global capture
     if "\n" in question:
         question = textwrap.dedent (question)
@@ -262,7 +272,7 @@ def getanswer(question, default, help=None):
             else:
                 six.print_ ("Sorry no help available currently.")
             continue
-        y_n = ['Y', 'y', 'N', 'n']
+        y_n = ('Y', 'y', 'N', 'n')
         if default in y_n and a in y_n:
             a = a.upper()
 
@@ -579,6 +589,11 @@ DOCKER_IMAGE_QUESTIONS = [
     ('docker.image.dream3d', "dream3d runtime image", "a docker image spec of the dream3d runtime"),
     ]
 
+TEST_QUESTIONS = [
+    ('host.root', 'The root bisque server to test', ''),
+    ('host.user', 'The testing user login ID', ''),
+    ('host.password', 'Testing user password', ''),
+    ]
 
 #####################################################
 # Installer routines
@@ -1003,6 +1018,25 @@ def create_database(DBURL):
     return True
 
 
+
+
+def setup_testing(params):
+    "ensure test.ini is created and loaded"
+
+    TEST_CFG = config_path ('test.ini')
+    if not  os.path.exists(TEST_CFG):
+        test_params = install_cfg(TEST_CFG, section='test', default_cfg=defaults_path('test.ini.default'))
+    else:
+        test_params = read_site_cfg(cfg=TEST_CFG, section = 'test')
+
+    test_params = modify_site_cfg (TEST_QUESTIONS, test_params,section='test', cfg = TEST_CFG)
+
+
+    return params
+
+
+
+
 def initialize_database(params, DBURL=None):
     "Initialize the database with tables"
 
@@ -1211,7 +1245,8 @@ def fetch_modules(params):
             continue
         if module_dir:
             module_dirs.append (module_dir)
-    params['bisque.engine_service.module_dirs'] = ", ".join(os.path.abspath (x) for x in module_dirs)
+    #params['bisque.engine_service.module_dirs'] = ", ".join(os.path.abspath (x) for x in module_dirs)
+    params['bisque.engine_service.module_dirs'] = DIRS['modules']
     return params
 
 
@@ -1224,7 +1259,7 @@ def _fetch_update_module (module_url):
     module_dir = None
     if git and ( module_url.endswith ('.git') or 'git@' in module_url):
         cmd =  [ git ]
-        module_dir = os.path.splitext(os.path.basename(module_url))[0]
+        module_dir = os.path.join (DIRS['modules'], os.path.splitext(os.path.basename(module_url))[0])
         if not os.path.exists (module_dir):
             cmd.extend(['clone', module_url, module_dir])
         else:
@@ -1234,7 +1269,7 @@ def _fetch_update_module (module_url):
         call (cmd, cwd=mdir)
     elif hg and ( module_url.startswith ('https') or 'hg@' in module_url):
         cmd = [hg]
-        module_dir = os.path.basename(module_url)
+        module_dir = os.path.join (DIRS['modules'], os.path.basename(module_url))
         if not os.path.exists (module_dir):
             cmd.extend ([ 'clone', module_url, module_dir])
         else:
@@ -1548,17 +1583,25 @@ def install_runtime(params, cfg = None):
     return params
 
 
-
-
 #######################################################
 #
-
-def install_mail(params):
+if MAILER=='marrow.mailer':
     MAIL_QUESTIONS = [
-        ('mail.smtp.server', "Enter your smtp mail server",
+        ('mail.transport.use', "Enter mail transport", "Mail transport", "smtp"),
+    ]
+    SMTP_QS = [
+        ('mail.transport.host', "Enter your smtp mail server",
          "The mail server that delivers mail.. often localhost"),
+        ('mail.transport.username', "A login for authenticated smtp", "Usernmae"),
+        ('mail.transport.password.', "A login password for authenticated smtp", "password"),
+        ('mail.transport.tls', "Use TLS", "Use TLS", 'false'),
+    ]
+if MAILER=='turbomail':
+    MAIL_QUESTIONS = [
+        ('mail.smtp.server', "Enter mail transport", "Mail transport"),
     ]
 
+def install_mail(params):
     params['mail.smtp.server'] = os.getenv('MAIL_SERVER', params['mail.smtp.server'])
 
 
@@ -1571,6 +1614,9 @@ def install_mail(params):
         return params
     params['mail.on'] = 'True'
     params = modify_site_cfg (MAIL_QUESTIONS, params)
+    if params.get ('mail.transport.use') == 'smtp':
+        params = modify_site_cfg (SMTP_QS, params)
+
     print "Please review/edit the mail.* settings in site.cfg for you site"""
     return params
 
@@ -2274,10 +2320,6 @@ def send_installation_report(params):
                   come up with installation.  This information is never
                   shared with others.""") != "Y":
         return
-    import socket
-    import turbomail
-    import platform
-    import textwrap
 
     BISQUE_REPORT="""
     Host: %(host)s
@@ -2294,10 +2336,11 @@ def send_installation_report(params):
                                sender_email,
                                """This will us to contact you (very rarely) with updates""")
 
-    turbomail.control.interface.start ({'mail.on':True,
-                                        'mail.transport': 'smtp',
-#                                        'mail.transport': 'debug',
-                                        'mail.smtp.server' : 'localhost'})
+    config  = { k:v for k,v in params.items() if k.startswith('mail.') }
+    config['mail.on'] = True
+    mailer = Mailer (config)
+    mailer.start()
+
 
     parts = []
     text = textwrap.dedent(BISQUE_REPORT) % dict (host = socket.getfqdn(),
@@ -2314,7 +2357,7 @@ def send_installation_report(params):
         parts.append (remove_control_chars (open('bisque-install.log','r').read()))
 
     try:
-        msg = turbomail.Message(sender_email, "bisque-install@biodev.ece.ucsb.edu", "Installation report")
+        msg = mailer.Message(sender_email, "bisque-install@biodev.ece.ucsb.edu", "Installation report")
 
         msg.plain = "\n-----------\n".join (parts)
         msg.send()
@@ -2395,6 +2438,7 @@ other_options = [
     'configuration',
     'createdb',
     'stores',
+    'testing',
 ]
 
 all_options = list (set (install_options + engine_options + other_options))
@@ -2415,7 +2459,8 @@ SETUP_COMMANDS = {
     "configuration" : [ setup_server_cfg ],
     "createdb" : [ setup_database ],
     "stores": [ setup_stores ],
-    "modules" : [ fetch_modules ] ,
+    "modules" : [ fetch_modules ],
+    "testing" : [ setup_testing ],
     }
 
 # Special procedures that modify runtime-bisque.cfg (for the engine)
