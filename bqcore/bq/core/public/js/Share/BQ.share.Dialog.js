@@ -26,6 +26,7 @@
 Ext.define('BQ.share.Dialog', {
     extend : 'Ext.window.Window',
     alias: 'widget.bqsharedialog',
+
     border: 0,
     layout: 'fit',
     modal : true,
@@ -35,6 +36,11 @@ Ext.define('BQ.share.Dialog', {
     //maxWidth: 900,
     buttonAlign: 'center',
     autoScroll: true,
+
+    monitorResize: true,
+    closable : true,
+    closeAction: 'destroy',
+
     bodyCls: 'bq-share-dialog',
 
     constructor : function(config) {
@@ -78,7 +84,8 @@ Ext.define('BQ.share.Dialog', {
     },
 
     onPageClose : function(e) {
-        if (this.queryById('sharepanel').isChanged()) {
+        var p = this.queryById('sharepanel');
+        if (p.isChanged()) {
             var message = 'Some shares have not yet been saved, by closing the page you will discard all changes!';
             if (e) e.returnValue = message;
             if (window.event) window.event.returnValue = message;
@@ -427,6 +434,7 @@ Ext.define('BQ.share.Panel', {
         this.callParent();
         this.on('show', this.updateAutoReload, this);
         this.on('hide', this.stopAutoReload, this);
+        this.on('beforedestroy', this.stopAutoReload, this);
     },
 
     afterRender : function() {
@@ -506,6 +514,7 @@ Ext.define('BQ.share.Panel', {
 
     onStoreLoaded: function( store, records, successful, eOpts) {
         this.changed = undefined;
+        this.updateRecordsWithMexs();
     },
 
     onStoreWrite: function() {
@@ -615,6 +624,38 @@ Ext.define('BQ.share.Panel', {
         }
     },
 
+    updateRecordsWithMexs: function() {
+        //if (this.pre_loaded_mexs === true) return;
+        var xml = this.store.proxy.reader.xmlData || this.store.proxy.reader.rawData,
+            mexs_per_user = {},
+            nodes = BQ.util.xpath_nodes(xml, "*/mex"),
+            n=null, auths=null, nn=null;
+        for (var i=0; (n=nodes[i]); ++i) {
+            var uniq = n.getAttribute('resource_uniq'),
+                auths = BQ.util.xpath_nodes(n, 'auth');
+            for (var ii=0; (nn=auths[ii]); ++ii) {
+                var user = nn.getAttribute('user'),
+                    action = nn.getAttribute('action');
+                mexs_per_user[user] = mexs_per_user[user] || {};
+                mexs_per_user[user][uniq] = uniq;
+            }
+        }
+
+        var records = this.store.data.items,
+            r = null, mexs = null, user = null, data=null;
+        for (var i=0; (r=records[i]); ++i) {
+            data = r.data;
+            user = data.user;
+            if (user in mexs_per_user) {
+                data.mexs = mexs_per_user[user];
+            }
+        }
+
+        this.grid = this.grid || this.queryById('main_grid');
+        this.grid.getView().refresh();
+        //this.pre_loaded_mexs = true;
+    },
+
     updateAutoReload : function(delay) {
         var me = this;
         if (!me.task_reload) {
@@ -625,7 +666,7 @@ Ext.define('BQ.share.Panel', {
                     me.task_reload.delay(me.delay_timeout);
             });
         }
-        if (me.auto_reload) {
+        if (me.auto_reload && me.isVisible()) {
             me.task_reload.delay(delay || me.delay_timeout);
         }
     },
@@ -773,13 +814,13 @@ Ext.define('BQ.data.proxy.Auth', {
     reader : {
         type : 'xml',
         root : 'resource',
-        record: 'auth',
+        record: '>auth',
     },
 
     writer : {
         type : 'bq-auth',
         root : 'resource',
-        record: 'auth',
+        record: '>auth',
         writeAllFields : true,
         writeRecordId: false,
     },
@@ -798,6 +839,8 @@ Ext.define('BQ.data.proxy.Auth', {
         if (request.action !== 'read' && request.action !== 'create') {
             var record = request.records[0];
             request.url += '/' + record.data.user;
+        } else if (request.action === 'read') {
+            request.url += '?recurse=mex';
         }
 
         return request.url;

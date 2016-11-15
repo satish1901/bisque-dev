@@ -1,4 +1,4 @@
-""" 
+"""
 Base class for all image service operations
 """
 
@@ -12,7 +12,7 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 class BaseOperation(object):
     '''Provide operations base'''
-    name = 'base'
+    name = ''
 
     def __init__(self, server):
         self.server = server

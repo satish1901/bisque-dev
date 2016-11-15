@@ -1,7 +1,7 @@
 """
 Return pixel counts of a thresholded image
-       pixelcount=value, where value is a threshold
-       ex: pixelcount=128
+       pixelcounter=value, where value is a threshold
+       ex: pixelcounter=128
 """
 
 __author__    = "Dmitry Fedorov <dima@dimin.net>"
@@ -24,29 +24,29 @@ from bq.image_service.controllers.converters.converter_imgcnv import ConverterIm
 from bq.util.io_misc import safeint
 from bq.image_service.controllers.imgsrv import default_format
 
-log = logging.getLogger("bq.image_service.operations.pixelcount")
+log = logging.getLogger("bq.image_service.operations.pixelcounter")
 
 class PixelCounterOperation(BaseOperation):
     '''Return pixel counts of a thresholded image
-       pixelcount=value, where value is a threshold
-       ex: pixelcount=128'''
-    name = 'pixelcount'
+       pixelcounter=value, where value is a threshold
+       ex: pixelcounter=128'''
+    name = 'pixelcounter'
 
     def __str__(self):
-        return 'pixelcount: returns a count of pixels in a thresholded image, ex: pixelcount=128'
+        return 'pixelcounter: returns a count of pixels in a thresholded image, ex: pixelcounter=128'
 
     def dryrun(self, token, arg):
         arg = safeint(arg.lower(), 256)-1
-        ofile = '%s.pixelcount_%s.xml'%(token.data, arg)
+        ofile = '%s.pixelcounter_%s.xml'%(token.data, arg)
         return token.setXmlFile(fname=ofile)
 
     def action(self, token, arg):
         if not token.isFile():
-            raise ImageServiceException(400, 'Pixelcount: input is not an image...' )
+            raise ImageServiceException(400, 'Pixelcounter: input is not an image...' )
         arg = safeint(arg.lower(), 256)-1
         ifile = token.first_input_file()
-        ofile = '%s.pixelcount_%s.xml'%(token.data, arg)
-        log.debug('Pixelcount %s: %s to %s with [%s]', token.resource_id, ifile, ofile, arg)
+        ofile = '%s.pixelcounter_%s.xml'%(token.data, arg)
+        log.debug('Pixelcounter %s: %s to %s with [%s]', token.resource_id, ifile, ofile, arg)
 
         command = token.drainQueue()
         if not os.path.exists(ofile):
