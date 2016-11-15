@@ -240,18 +240,9 @@ class ProcessToken(object):
         commands = self.queue or []
         self.queue = []
         return commands
-        # commands = []
-        # for n,c in self.operations.iteritems():
-        #     commands.extend(c)
-        # self.operations = OrderedDict()
-        # return commands
 
     def getQueue (self):
         return self.queue
-        # commands = []
-        # for c in self.operations.itervalues():
-        #     commands.extend(c)
-        # return commands
 
     def is_multifile_series(self):
         return isinstance(self.input, list) and len(self.input)>1
