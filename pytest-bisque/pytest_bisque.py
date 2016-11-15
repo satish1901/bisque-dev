@@ -22,32 +22,50 @@ from bqapi import BQSession
 from bq.util.configfile import ConfigFile
 from bq.util.bunch import Bunch
 
-#def load_config(filename):
-#    # setup resources before any test is executed
-#    from paste.deploy import appconfig
-#    from bq.config.environment import load_environment
-#    conf = appconfig('config:' + os.path.abspath(filename))
-#    load_environment(conf.global_conf, conf.local_conf)
-#    return conf
+def load_application_config(filename):
+    # setup resources before any test is executed
+    from paste.deploy import appconfig, load_app
+    from bq.config.environment import load_environment
+    from webtest import TestApp
 
-def load_config(filename):
+    conf = appconfig('config:' + os.path.abspath(filename))
+    load_environment(conf.global_conf, conf.local_conf)
+    return conf
+
+def load_test_application(filename):
+    # setup resources before any test is executed
+    from paste.deploy import appconfig, loadapp
+    from bq.config.environment import load_environment
+    from webtest import TestApp
+    from paste.script.appinstall import SetupCommand
+
+    print "TEST APPL", filename
+    wsgiapp = loadapp('config:' + os.path.abspath(filename))
+    app = TestApp(wsgiapp)
+    #print app.config.get ('sqlalchemy.url')
+    app.authorization = ('Basic', ('admin', 'admin'))
+    cmd = SetupCommand('setup-app')
+    cmd.run([filename])
+    #transaction.commit()
+    return app
+
+@pytest.fixture(scope="session")
+def application ():
+    return load_test_application ('config/test.ini')
+
+
+
+def load_api_config(filename):
     config = ConfigFile (filename)
-
     cfg = Bunch(config.get ('test', asdict=True))
     cfg.store = Bunch (config.get ('store', asdict=True))
-
     return cfg
-
-
-
-
-
 
 
 @pytest.fixture(scope="session")
 def config():
     "Load the bisque test config/test.ini"
-    cfg =  load_config ("config/test.ini")
+    cfg =  load_api_config ("config/test.ini")
     print "CFG", cfg
     return cfg
 

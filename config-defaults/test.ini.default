@@ -18,8 +18,11 @@ use = egg:Paste#http
 host = localhost
 port = 8080
 
+
 [app:main]
 use = config:site.cfg
+sqlalchemy.url = sqlite:///./test1.db
+skip_authentication = true
 
 
 
