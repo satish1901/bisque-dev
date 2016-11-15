@@ -380,11 +380,17 @@ def resource_acl_query (resource, user_uniq=None, recurse = False, filter_resour
             #  auth records of associated resources (all the mexes
             #  that points to the current resource)
             for relation in related:
-                resource = DBSession.query (Taggable).filter_by (resource_uniq = relation.get ('resource_uniq')).first()
+                #resource = DBSession.query (Taggable).filter_by (resource_uniq = relation.get ('resource_uniq')).first()
+
+                rq = DBSession.query (TaggableAcl).filter (TaggableAcl.taggable_id == Taggable.id,
+                                                           TaggableAcl.user_id == auth.user_id,
+                                                           Taggable.resource_uniq == relation.get ('resource_uniq')).first()
                 log.debug ("LOADED %s %s", recurse, resource)
-                # Nested response
-                response.append (relation)
-                resource_acl_query (resource, auth.user.resource_uniq, response=relation)
+                if rq is not None:
+                    # Nested response
+                    relation.append (_aclelem (rq.resource, rq.user, rq ))
+                    response.append (relation)
+                #resource_acl_query (resource, auth.user.resource_uniq, response=relation)
                 # flat response
                 #resource_acl_query (resource, auth.user.resource_uniq, response=response)
     return response
