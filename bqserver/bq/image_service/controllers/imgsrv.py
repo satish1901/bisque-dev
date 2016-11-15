@@ -17,6 +17,7 @@ from urlparse import urlparse
 from lxml import etree
 import datetime
 import math
+import inspect
 
 from tg import config
 
@@ -46,43 +47,12 @@ from .process_token import ProcessToken
 from .operation_base import BaseOperation
 from .converter_dict import ConverterDict
 from .resource_cache import ResourceCache
+from .plugin_manager import PluginManager
 
 from .converters.converter_imgcnv import ConverterImgcnv
 from .converters.converter_imaris import ConverterImaris
 from .converters.converter_bioformats import ConverterBioformats
 from .converters.converter_openslide import ConverterOpenSlide
-
-from .operations.operations import OperationsOperation
-from .operations.formats import FormatsOperation
-from .operations.view import ViewOperation
-from .operations.dims import DimsOperation
-from .operations.meta import MetaOperation
-from .operations.localpath import LocalPathOperation
-from .operations.cleancache import CacheCleanOperation
-from .operations.slice import SliceOperation
-from .operations.format import FormatOperation
-from .operations.resize import ResizeOperation, Resize3DOperation
-from .operations.rearrange3d import Rearrange3DOperation
-from .operations.thumbnail import ThumbnailOperation
-from .operations.roi import RoiOperation
-from .operations.remap import RemapOperation
-from .operations.fuse import FuseOperation
-from .operations.depth import DepthOperation
-from .operations.tile import TileOperation
-from .operations.intensityprojection import IntensityProjectionOperation
-from .operations.negative import NegativeOperation
-from .operations.deinterlace import DeinterlaceOperation
-from .operations.threshold import ThresholdOperation
-from .operations.pixelcount import PixelCounterOperation
-from .operations.histogram import HistogramOperation
-from .operations.levels import LevelsOperation
-from .operations.brightnesscontrast import BrightnessContrastOperation
-from .operations.textureatlas import TextureAtlasOperation
-from .operations.transform import TransformOperation
-from .operations.sampleframes import SampleFramesOperation
-from .operations.frames import FramesOperation
-from .operations.rotate import RotateOperation
-
 
 log = logging.getLogger('bq.image_service.server')
 
@@ -177,49 +147,13 @@ class ImageServer(object):
     def __init__(self, work_dir, run_dir):
         '''Start an image server, using local dir imagedir,
         and loading extensions as methods'''
-        #super(ImageServer, self).__init__(image_dir, server_url)
+
         self.workdir = work_dir
         self.rundir = run_dir
         self.base_url = "image_service"
+        self.basepath = os.path.dirname(inspect.getfile(inspect.currentframe()))
 
-        self.operations = {
-            'view'         : ViewOperation(self),
-            'operations'   : OperationsOperation(self),
-            'formats'      : FormatsOperation(self),
-            #'info'         : InfoOperation(self),
-            'dims'         : DimsOperation(self),
-            'meta'         : MetaOperation(self),
-            #'filename'     : FileNameOperation(self),
-            'localpath'    : LocalPathOperation(self),
-            'slice'        : SliceOperation(self),
-            'format'       : FormatOperation(self),
-            'resize'       : ResizeOperation(self),
-            'resize3d'     : Resize3DOperation(self),
-            'rearrange3d'  : Rearrange3DOperation(self),
-            'thumbnail'    : ThumbnailOperation(self),
-            'roi'          : RoiOperation(self),
-            'remap'        : RemapOperation(self),
-            'fuse'         : FuseOperation(self),
-            'depth'        : DepthOperation(self),
-            'rotate'       : RotateOperation(self),
-            'tile'         : TileOperation(self),
-            'intensityprojection'   : IntensityProjectionOperation(self),
-            #'projectmax'   : ProjectMaxOperation(self),
-            #'projectmin'   : ProjectMinOperation(self),
-            'negative'     : NegativeOperation(self),
-            'deinterlace'  : DeinterlaceOperation(self),
-            'threshold'    : ThresholdOperation(self),
-            'pixelcounter' : PixelCounterOperation(self),
-            'histogram'    : HistogramOperation(self),
-            'levels'       : LevelsOperation(self),
-            'brightnesscontrast' : BrightnessContrastOperation(self),
-            'textureatlas' : TextureAtlasOperation(self),
-            'transform'    : TransformOperation(self),
-            'sampleframes' : SampleFramesOperation(self),
-            'frames'       : FramesOperation(self),
-            'cleancache'   : CacheCleanOperation(self),
-        }
-
+        self.operations = PluginManager('operation', os.path.join(self.basepath, 'operations'), BaseOperation, server=self)
 
         # # test all the supported command line decoders and remove missing
         # missing = []
@@ -422,11 +356,11 @@ class ImageServer(object):
 
     def request(self, method, token, arguments):
         '''Apply an image request'''
-        if method not in self.operations:
+        if method not in self.operations.plugins:
             raise ImageServiceException(400, 'Requested operation does not exist: %s'%method)
-        return self.operations[method].action (token, arguments)
+        return self.operations.plugins[method].action (token, arguments)
         # try:
-        #     return self.operations[method].action (token, arguments)
+        #     return self.operations.plugins[method].action (token, arguments)
         # except Exception:
         #     log.exception('Exception running: %s', method)
         #     return token
@@ -451,7 +385,7 @@ class ImageServer(object):
                 token.init(resource_id=ident, ifnm=token.data, imagemeta=kw.get('imagemeta', None), timeout=kw.get('timeout', None), resource_name=resource.get('name'))
                 for action, args in query:
                     try:
-                        service = self.operations[action]
+                        service = self.operations.plugins[action]
                         # if the service has a dryrun function, some actions are same as dryrun
                         if callable( getattr(service, "dryrun", None) ):
                             token = service.dryrun(token, args)
