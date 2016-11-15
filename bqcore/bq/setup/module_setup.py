@@ -183,7 +183,7 @@ def python_setup_bbfreeze(scripts,  package_scripts =True, dependency_dir = 'pyd
         # THIS os.path.join needs to be replaced by pkg_resources or pkg_util
         # when the toplevel is packaged
         try:
-            filename=os.path.abspath(find_config_path('templates/python_launcher.tmpl'))
+            filename=os.path.abspath(defaults_path('templates/python_launcher.tmpl'))
             template = Template(filename=filename)
             with open(script_name, 'wb') as f:
                 f.write(template.render(script = data['script']))
@@ -214,13 +214,15 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
     check_call (cmd)
     data = dict(params or {})
 
+    # read default path from site.cfg (TG config not initialized yet when this runs)
+    site_config = read_config('site.cfg', "app:main")
+    filename = os.path.abspath(os.path.join(site_config['bisque.paths.default'], 'templates/python_launcher.tmpl').replace('\\', '/'))
     for script in scripts:
         script_name = os.path.splitext(script)[0]
         data['script'] = os.path.join('.', dependency_dir, script_name, script_name)
         # THIS os.path.join needs to be replaced by pkg_resources or pkg_util
         # when the toplevel is packaged
         try:
-            filename=os.path.abspath(find_config_path('templates/python_launcher.tmpl'))
             template = Template(filename=filename)
             with open(script_name, 'wb') as f:
                 f.write(template.render(script = data['script']))
@@ -228,7 +230,6 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
                 return 0
         except Exception,e:
             print ("Could not create python launcher script %s" % e)
-
 
 
 def ensure_binary(exe):

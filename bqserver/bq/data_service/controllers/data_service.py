@@ -377,7 +377,7 @@ class DataServerController(ServiceController):
         if view == 'count':
             count = resource_count (resource_tag,  parent=parent,**params)
             response = etree.Element ('resource')
-            etree.SubElement(response, resource_tag, count = str(count))
+            etree.SubElement(response, resource_tag or 'resource', count = str(count))
         else:
             nodelist = resource_query (resource_tag, parent=parent, **params)
             if view=='query':
