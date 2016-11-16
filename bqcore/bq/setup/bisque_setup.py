@@ -176,7 +176,7 @@ else:
 
 
 
-
+TRUE_RESPONSE = set (['true', 't', 'yes', 'y', '1'])
 
 ############################################
 # HELPER FUNCTIONS
@@ -1517,7 +1517,12 @@ def check_condor (params, cfg  = None):
     print "Condor job management software has been found on your system"
     print "Bisque can use condor facilities for some module execution"
 
-    if getanswer("Configure modules for condor", 'Y',
+    dval = check_env (None, 'condor.enabled') or 'true'
+    if dval.lower() in TRUE_RESPONSE:
+        dval = 'Y'
+    else:
+        dval = 'N'
+    if getanswer("Configure modules for condor", dval,
                  "Configure condor shared directories for better performance")=="Y":
         if 'condor' not in params['runtime.platforms']:
             params['runtime.platforms'] = ','.join (['condor', params['runtime.platforms']])
@@ -1532,7 +1537,7 @@ def check_condor (params, cfg  = None):
         """
 
         params = read_site_cfg(cfg=cfg, section='condor', )
-        params['condor.enabled'] = "True"
+        params['condor.enabled'] = "true"
         #print params
         if getanswer("Advanced Bisque-Condor configuration", "N",
                      "Change the condor templates used for submitting jobs")!='Y':
