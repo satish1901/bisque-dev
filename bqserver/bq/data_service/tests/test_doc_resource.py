@@ -20,6 +20,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.usefixtures ('testapp')
 class TestDocController():
+    app = None
     application_under_test = 'main'
 
     def test_services(self):

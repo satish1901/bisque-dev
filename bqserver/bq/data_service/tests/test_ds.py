@@ -13,8 +13,10 @@ from lxml import etree
 
 pytestmark = pytest.mark.unit
 
+
 @pytest.mark.usefixtures ('testapp')
 class TestDSController():
+    app = None
     def test_a_index(self):
         response = self.app.get('/data_service')
         assert response.status == '200 OK'
