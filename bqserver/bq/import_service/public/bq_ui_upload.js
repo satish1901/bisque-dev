@@ -1723,7 +1723,7 @@ Ext.define('BQ.upload.Panel', {
 //--------------------------------------------------------------------------------------
 
 Ext.define('BQ.upload.Dialog', {
-    extend : 'Ext.window.Window',
+    extend: 'Ext.window.Window',
     alias: 'widget.bq_upload_dialog',
     requires: ['BQ.upload.Panel'],
 
@@ -1734,6 +1734,10 @@ Ext.define('BQ.upload.Dialog', {
     border : false,
     width : '90%',
     height : '90%',
+
+    monitorResize: true,
+    closable : true,
+    closeAction: 'destroy',
 
     constructor : function(config) {
         var uploader_config = {

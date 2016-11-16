@@ -491,6 +491,10 @@ Ext.define('BQ.export.Dialog', {
     width : '90%',
     height : '90%',
 
+    monitorResize: true,
+    closable : true,
+    closeAction: 'destroy',
+
     initComponent : function() {
         this.items = {
             xtype: 'bq_export_panel',
