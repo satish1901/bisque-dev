@@ -158,40 +158,6 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
         return 0
     return 1
 
-def python_setup_bbfreeze(scripts,  package_scripts =True, dependency_dir = 'pydist', params = None ):
-    """compile python dependencies into a package
-
-    if package_script is true then a runner scripts will be generated
-    for each script
-    """
-    import bbfreeze
-
-    fr = bbfreeze.Freezer(dependency_dir)
-    fr.include_py = False
-    if not isinstance(scripts, list):
-        scripts = [ scripts ]
-    for script in scripts:
-        fr.addScript(script)
-    fr()
-    if not package_scripts:
-        return
-    data = dict(params or {})
-
-    for script in scripts:
-        script_name = os.path.splitext(script)[0]
-        data['script'] = os.path.join('.', dependency_dir, script_name)
-        # THIS os.path.join needs to be replaced by pkg_resources or pkg_util
-        # when the toplevel is packaged
-        try:
-            filename=os.path.abspath(defaults_path('templates/python_launcher.tmpl'))
-            template = Template(filename=filename)
-            with open(script_name, 'wb') as f:
-                f.write(template.render(script = data['script']))
-                os.chmod (script_name, 0744)
-                return 0
-        except Exception,e:
-            print ("Could not create python launcher script %s" % e)
-
 
 def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', params = None ):
     """compile python dependencies into a package using pyinstaller
