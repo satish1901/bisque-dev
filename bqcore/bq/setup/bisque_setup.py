@@ -1218,34 +1218,109 @@ def install_modules(params):
     install_runtime(params)
     return params
 
+
+def fetch_git (module_url, module_dir):
+    cmd = [ 'git' ]
+    mdir = '.'
+    if not os.path.exists (module_dir):
+        cmd.extend(['clone', module_url, module_dir])
+    else:
+        cmd.extend(['pull'])
+        mdir = module_dir
+    print "calling  %s in  %s" % (cmd, mdir)
+    call (cmd, cwd=mdir)
+    return module_dir
+def fetch_mercurial (module_url, module_dir):
+    cmd = [ 'hg' ]
+    mdir = '.'
+    if not os.path.exists (module_dir):
+        cmd.extend ([ 'clone', module_url, module_dir])
+    else:
+        cmd.extend (['pull', '-u'])
+        mdir = module_dir
+    print "calling %s in   %s" % (cmd, mdir)
+    call (cmd, cwd=mdir)
+    return module_dir
+def fetch_tar (module_url, module_dir):
+    return module_dir
+def fetch_zip (module_url, module_dir):
+    return module_dir
+def fetch_dir (module_url, module_dir):
+    if os.path.abspath (module_url) != os.path.abspath (module_dir):
+        if  os.path.exists (module_dir):
+            shutil.rmtree (module_dir)
+        shutil.copytree (module_url, module_dir)
+    return module_dir
+
+
+MODULE_FETCH = {
+    'tar' : fetch_tar,
+    'zip' : fetch_zip,
+    'dir' : fetch_dir,
+    }
+
+def check_fetchers ():
+    hg = which('hg')
+    if  hg:
+        MODULE_FETCH['hg'] = fetch_mercurial
+    else:
+        print "**No mercurial found**"
+    git = which('git')
+    if  git:
+        MODULE_FETCH['git'] = fetch_git
+    else:
+        print "**No git found**"
+
+
+
 def fetch_modules(params):
     """Get and install modules from remote and local sources
+
+    MOODULE file syntax
+    dir <dir> [ name  ]
+    git url   [ name ]
+    hg  url   [ name ]
+    tar url   [ name ]
+    zip url   [ name ]
+
     @params params: dictionay of loaded parameters
     @return list of directories with modules
     """
+    check_fetchers()
+
     if not os.path.exists(config_path ('MODULES')):
         shutil.copyfile(defaults_path('MODULES'), config_path('MODULES'))
-
     # Read list of modules trees from config/MODULES
     module_list = config_path('MODULES')
     if module_list is None:
         print "Can't find list of modules to install"
         return params
     module_locations = []
+    lineno = 0
     with open(module_list) as repos_list:
         for line in repos_list:
+            lineno += 1
             line = line.split ('#',1)[0].strip()
             if not line:
                 continue
-            module_locations.append(line)
+            module_locations.append( (line, lineno) )
     # Clone any remote repositories
     module_dirs = []
-    for module_url in module_locations + [ DIRS['modules'] ]:
-        print "Installing module(s) at %s" % module_url
-        module_dir = _fetch_update_module (module_url)
+    for module_line, lineno in module_locations:
+        module_type, module_url, name, _ = unpack ( [x.strip() for x in module_line.split ()], 3 )
+        if module_type not in MODULE_FETCH:
+            print "Illegal module type %s at line %s" % (module_type, lineno)
+            continue
+        if not name:
+            name = os.path.splitext(os.path.basename(module_url))[0]
+
+        print "Installing %s module(s) from %s to %s" % (module_type, module_url, name)
+        module_dir = os.path.join (DIRS['modules'], name)
         if module_dir in module_dirs:
             print "Skipping duplicated module", module_url
             continue
+        fetcher = MODULE_FETCH.get (module_type)
+        module_dir = fetcher (module_url, module_dir)
         if module_dir:
             module_dirs.append (module_dir)
     #params['bisque.engine_service.module_dirs'] = ", ".join(os.path.abspath (x) for x in module_dirs)
@@ -1253,13 +1328,19 @@ def fetch_modules(params):
     return params
 
 
-def _fetch_update_module (module_url):
+
+
+def _fetch_update_module (module_type, module_url, name):
     " Fetch or update module "
 
     hg = which('hg')
     git = which('git')
     mdir = '.'
     module_dir = None
+
+    fetcher = MODULE_FETCH.get (module_type)
+
+
     if git and ( module_url.endswith ('.git') or 'git@' in module_url):
         cmd =  [ git ]
         module_dir = os.path.join (DIRS['modules'], os.path.splitext(os.path.basename(module_url))[0])
