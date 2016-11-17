@@ -1223,8 +1223,11 @@ def fetch_modules(params):
     @params params: dictionay of loaded parameters
     @return list of directories with modules
     """
-    # Read list of modules trees from config-defaults/MODULES
-    module_list = defaults_path('MODULES')
+    if not os.path.exists(config_path ('MODULES')):
+        shutil.copyfile(defaults_path('MODULES'), config_path('MODULES'))
+
+    # Read list of modules trees from config/MODULES
+    module_list = config_path('MODULES')
     if module_list is None:
         print "Can't find list of modules to install"
         return params
