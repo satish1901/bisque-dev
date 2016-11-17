@@ -1,4 +1,14 @@
 # List of module directories or urls
+# Get a module and install to module directory
+# The installed directory name will default to the base of  repository name unless given as parameter
+#
+# Syntax:
+#   dir path [ name ]
+#   hg  url  [ name ]
+#   git url  [ name ]
+#   tar url  [ name ]  # NOT IMPLEMENTED
+#   zip url  [ name ]  # NOT IMPLEMENTED
 
-./modules
-#https://kgk@bitbucket.org/CBIucsb/metadata
+dir ./modules
+#hg https://kgk@bitbucket.org/CBIucsb/metadata
+#git https://github.com/phenotiki/BisQue.git Phidias
