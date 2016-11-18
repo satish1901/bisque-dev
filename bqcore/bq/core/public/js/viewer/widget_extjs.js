@@ -264,6 +264,10 @@ Ext.define('BQ.viewer.Image', {
                 if (t instanceof BQGObject && t.name) {
                     text += ': ' + t.name;
                 }
+                if (t instanceof BQGObject && t.type==='label' && t.value) {
+                    text += ': ' + t.value;
+                }
+
                 //text += t.value ? ': '+t.value : '';
                 found += '<p class="'+cls+'" style="margin-left: '+(i*10)+'px;">' + text + '</p>';
                 level -= 1;
@@ -279,7 +283,7 @@ Ext.define('BQ.viewer.Image', {
                 text = t.name + ': ' + t.value;
                 cls = 'tags';
                 if (t.type)
-                   cls += ' '+t.type; 
+                   cls += ' '+t.type;
                 found += Ext.String.format('<p class="{0}" style="margin-left: {1}px;">{2}</p>', cls, level*10, text);
             }
 
