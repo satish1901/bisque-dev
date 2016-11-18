@@ -284,6 +284,7 @@ class import_serviceController(ServiceController):
         self.filters['zip-proprietary']   = self.filter_zip_proprietary
         self.filters['zip-dicom']         = self.filter_zip_dicom
         self.filters['image/proprietary'] = self.filter_series_proprietary
+        self.filters['image-part-5D']     = self.filter_part_5d
         # extra filter for Dream3D pipeline files (JSON)
         self.filters['application/json']  = self.filter_json
 
@@ -715,6 +716,76 @@ class import_serviceController(ServiceController):
         return unpack_dir, resources
 
 #------------------------------------------------------------------------------
+# import an image part of 5D image
+#------------------------------------------------------------------------------
+
+    def process_part_5d(self, uf, **kw):
+        log.debug('process_part_5d: %s', kw)
+
+        #dima: find resource, add part
+
+        unpack_dir, members = self.unpackPackagedFile(uf)
+        members = [ m for m in members if is_filesystem_file(m) is not True ] # remove file system internal files
+        members = sorted(members, key=blocked_alpha_num_sort) # use alpha-numeric sort
+        members = [ '%s/%s'%(unpack_dir, m) for m in members ] # full paths
+        #members = [ m for m in members if os.path.exists(m) is True ] # remove missing files
+        members = [ m for m in members if os.path.isdir(m) is not True ] # remove directories
+
+        z = int(kw['number_z']) if 'number_z' in kw else None
+        t = int(kw['number_t']) if 'number_t' in kw else None
+        c = int(kw.get('number_c', 0))
+
+        # try to guess automatically the number of planes for only Z or only T series
+        num_pages = len(members)/c if c>1 else len(members)
+        if z==0 and t is None:
+            z=num_pages
+            t=1
+        elif t==0 and z is None:
+            t=num_pages
+            z=1
+
+        resource = etree.Element ('image', name='%s.series'%uf.resource.get('name'), resource_type='image')
+        for v in members:
+            val = etree.SubElement(resource, 'value' )
+            val.text = blob_service.local2url(v)
+
+        #find image meta in the input resource
+        image_meta = None
+        x = uf.resource.xpath('tag[@name="image_meta" and @type="image_meta"]')
+        if len(x)>0:
+            x = x[0]
+            resource.append(copy.deepcopy(x))
+            uf.resource.remove(x)
+            image_meta = resource.xpath('tag[@name="image_meta" and @type="image_meta"]')[0]
+        else:
+            image_meta = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta') #, resource_unid='image_meta' )
+
+        overwrite_xmlattr(image_meta, 'tag', name='storage', value='multi_file_series')
+        overwrite_xmlattr(image_meta, 'tag', name='image_num_z', value='%s'%z, type='number' )
+        overwrite_xmlattr(image_meta, 'tag', name='image_num_t', value='%s'%t, type='number' )
+        if c>1:
+            overwrite_xmlattr(image_meta, 'tag', name='image_num_c', value='%s'%c, type='number' )
+        overwrite_xmlattr(image_meta, 'tag', name='dimensions', value='XYCZT' )
+        if float(kw.get('resolution_x', 0))>0:
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_x', value='%s'%kw['resolution_x'], type='number' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_unit_x', value='microns' )
+        if float(kw.get('resolution_y', 0))>0:
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_y', value='%s'%kw['resolution_y'], type='number' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_unit_y', value='microns' )
+        if float(kw.get('resolution_z', 0))>0:
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_z', value='%s'%kw['resolution_z'], type='number' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_unit_z', value='microns' )
+        if float(kw.get('resolution_t', 0))>0:
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_t', value='%s'%kw['resolution_t'], type='number' )
+            overwrite_xmlattr(image_meta, 'tag', name='pixel_resolution_unit_t', value='seconds' )
+
+        # append all other input annotations
+        resource.extend (copy.deepcopy (list (uf.resource)))
+
+        # pass a temporary top directory where the sub-files are stored
+        return unpack_dir, blob_service.store_blob(resource=resource, rooturl = blob_service.local2url('%s/'%unpack_dir))
+
+#------------------------------------------------------------------------------
 # JSON files
 #------------------------------------------------------------------------------
 
@@ -886,6 +957,10 @@ class import_serviceController(ServiceController):
         unpack_dir, resources = self.process_packaged_dicom(f, intags)
         self.cleanup_packaging(unpack_dir)
         return resources
+
+    def filter_part_5d(self, f, intags):
+        unpack_dir, resource = self.process_part_5d(f, intags)
+        return [resource]
 
     def filter_json(self, f, intags):
         #unpack_dir, resources = self.process_json(f, intags)

@@ -132,15 +132,17 @@ class ResizeOperation(BaseOperation):
 
         # if the image is smaller and MX is used, skip resize
         dims = token.dims or {}
-        if maxBounding and dims.get('image_num_x',0)<=size[0] and dims.get('image_num_y',0)<=size[1]:
+        num_x = int(dims.get('image_num_x', 0))
+        num_y = int(dims.get('image_num_y', 0))
+        if maxBounding and num_x<=size[0] and num_y<=size[1]:
             log.debug('Resize: Max bounding resize requested on a smaller image, skipping...')
             return token
+        if (size[0]<=0 or size[1]<=0) and (num_x<=0 or num_y<=0):
+            raise ImageServiceException(400, 'Resize: image improperly decoded, has side of 0px' )
 
         ifile = token.first_input_file()
         ofile = '%s.size_%d,%d,%s,%s' % (token.data, size[0], size[1], method, textAddition)
         args = ['-resize', '%s,%s,%s%s'%(size[0], size[1], method,aspectRatio)]
-        num_x = int(dims.get('image_num_x', 0))
-        num_y = int(dims.get('image_num_y', 0))
         width, height = compute_new_size(num_x, num_y, size[0], size[1], aspectRatio!='', maxBounding)
         log.debug('Resize %s: [%sx%s] to [%sx%s] for [%s] to [%s]', token.resource_id, num_x, num_y, width, height, ifile, ofile)
 
