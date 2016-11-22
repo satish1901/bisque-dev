@@ -165,7 +165,6 @@ BQFactoryGraph.make = function(node, resource){
     var buffermap = {
         image            : ImageCard,
         table            : TableCard,
-        dream3d_pipeline : PipelineCard,
         pipeline_step    : PipelineStepCard,
     };
     if (node.label.startsWith("multi ")) {
@@ -176,6 +175,9 @@ BQFactoryGraph.make = function(node, resource){
     }
     else if (node.label.startsWith("dataset")) {
         card = DataSetCard;
+    }
+    else if (node.label.startsWith("dream3d_pipeline")) {
+        card = PipelineCard;
     }
     else {
         card = buffermap[node.label];
