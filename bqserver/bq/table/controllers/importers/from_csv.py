@@ -151,7 +151,8 @@ class TableCSV(TableBase):
         # TODO: rows set to maxint for now
         sizes = [sys.maxint, data.shape[1]] # pylint: disable=no-member
         startrows = [0]*2
-        endrows   = [min(50, sizes[i]) for i in range(2)]
+        endrows   = [1]*2
+        #endrows   = [min(50, sizes[i]) for i in range(2)]
         if rng is not None:
             for i in range(min(2, len(rng))):
                 row_range = rng[i]
