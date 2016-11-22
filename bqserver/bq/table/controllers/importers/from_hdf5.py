@@ -207,7 +207,8 @@ class TableHDF(TableBase):
 
         node = self.t.getNode(self.subpath or '/')
         startrows = [0]*node.ndim
-        endrows   = [min(50, node.shape[i]) for i in range(node.ndim)]
+        endrows   = [1]*node.ndim
+        #endrows   = [min(50, node.shape[i]) for i in range(node.ndim)]
         if rng is not None:
             for i in range(min(node.ndim, len(rng))):
                 row_range = rng[i]
