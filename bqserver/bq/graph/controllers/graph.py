@@ -40,7 +40,7 @@ def _summarize_nodes(query_node, nodes, edges, members, summ_by_types=False):
     """
     new_nodes = set()
     new_edges = set()
-    new_members = set()
+    new_members = set()    
     # map (sorted input IDs, sorted output IDs) -> set of nodes
     partitions = {}
     neighbors_of_query = [n1 for (n1,n2) in edges if n2==query_node[0]] + [n2 for (n1,n2) in edges if n1==query_node[0]]
@@ -175,6 +175,7 @@ class graphController(ServiceController):
             response = etree.Element('resource', uri=request_url)
             return etree.tostring (response)            
 
+        big_types=('table', 'image', 'file')   # types with many instances (treat as identical for collapsing)
         nodes = set()
         edges = set()
         resources = set()
@@ -198,6 +199,7 @@ class graphController(ServiceController):
                 node_type = xnode.get ('resource_type') or xnode.tag
             if node_type.startswith('mex') or node_type.startswith('dataset'):
                 xnode = data_service.resource_load (uniq=node,view='deep')   # TODO: this is too expensive... replace with 0.6 query!
+            if node_type not in big_types:
                 node_type = "%s(%s)" % (node_type, xnode.get('name', 'unknown')) 
 
             nodes.add( (node, node_type) )
