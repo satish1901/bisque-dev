@@ -9,6 +9,6 @@
 #   tar url  [ name ]  # NOT IMPLEMENTED
 #   zip url  [ name ]  # NOT IMPLEMENTED
 
-dir ./modules
+#dir ./modules  # default module location
 #hg https://kgk@bitbucket.org/CBIucsb/metadata
 #git https://github.com/phenotiki/BisQue.git Phidias

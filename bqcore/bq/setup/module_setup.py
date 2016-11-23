@@ -142,7 +142,7 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
     source = main_path + '.m'
     main = main_name + ext_map.get(os.name, '')
     ctf  = main_name + '.ctf'
-    if not needs_update (ctf, source):
+    if not (needs_update (ctf, source) or needs_update(main, source)):
         print "Skipping matlab compilation %s is newer than %s" % (ctf, source)
         return 0
 
@@ -260,9 +260,10 @@ def docker_setup (image, command, base, params):
 
     if not os.path.exists ('Dockerfile'):
         files = [ x.strip() for x in module_config.get ('files','').split (",") ]
-        dirs =    [ x for x in files if os.path.isdir(x)]
-        files =   [ x for x in files if os.path.isfile(x)]
+        dirs  = [ x for x in files if os.path.isdir(x) ]
+        files = [ x for x in files if os.path.isfile(x) ]
         copies = []
+        print "FILES", files
         if files:
             copies.append ( "COPY %s /module/" % " ".join (files) )
         for dr in dirs:
@@ -278,7 +279,7 @@ def docker_setup (image, command, base, params):
                                                                   copy = "\n".join (copies) ))
 
     print "Calling", " ".join (['docker', 'build', '-q', '-t', image , '.'])
-    check_call(['docker', 'build', '-q', '-t',  image, '.'])
+    check_call(['docker', 'build',  '-t',  image, '.'])
 
     if docker_hub:
         print "Pushing %s " % ( image )
