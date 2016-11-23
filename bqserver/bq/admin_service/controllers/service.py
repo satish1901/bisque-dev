@@ -50,39 +50,36 @@ DESCRIPTION
 ===========
 
 """
-import os
-import operator
-import logging
-import transaction
 import copy
+import json
+import logging
+import operator
+import os
 import string
-
 from datetime import datetime
-from lxml import etree
-from tg import expose, controllers, flash, url, response
-from repoze.what.predicates import is_user, in_group, Any
-from repoze.what.predicates import not_anonymous
-from sqlalchemy import func
 
+import transaction
+from lxml import etree
 from pylons.controllers.util import abort
-from tg import redirect, request, config
+from repoze.what.predicates import Any, in_group, is_user, not_anonymous
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
+from tg import (config, controllers, expose, flash, redirect, request,
+                response, url)
 
 import bq
 from bq import data_service
+from bq.client_service.controllers import notify_service
+from bq.core import identity, model
+from bq.core.identity import get_username, set_admin_mode, set_current_user
+from bq.core.model import DBSession, Group, User  # , Visit
 from bq.core.service import ServiceController
-from bq.core import identity
-from bq.core.identity import set_admin_mode, set_current_user, get_username
-from bq.util.paths import data_path
-from bq.core.model import  User, Group #, Visit
-from bq.core.model import DBSession
-from bq.data_service.model import  BQUser, Image, TaggableAcl
+from bq.data_service.model import BQUser, Image, TaggableAcl
 from bq.util.bisquik2db import bisquik2db, db2tree
-from sqlalchemy.exc import IntegrityError
+from bq.util.paths import data_path
+
 #from bq.image_service.model import  FileAcl
 
-from bq.client_service.controllers import notify_service
-from bq.core import model
-from bq.core.model import DBSession
 
 log = logging.getLogger('bq.admin')
 
@@ -171,6 +168,33 @@ class AdminController(ServiceController):
         user_node.attrib.pop('value', None)
 
         return user_node
+
+    @expose(content_type='text/json')
+    def loggers(self, *arg, **kw):
+        """
+        Set logging level dynamically
+
+
+
+        post /admin_servicfe/logging
+
+        """
+        view = kw.pop ('view', 'short')
+
+        if request.method == 'GET':
+            loggers = dict ([ (ln, logging.getLevelName (lv.level))
+                              for ln, lv in logging.Logger.manager.loggerDict.items()
+                              if hasattr (lv, 'level') #and lv.level != logging.NOTSET
+                          ])
+            return json.dumps (loggers)
+
+        elif request.method in ('POST', 'PUT'):
+            loggers = json.loads (request.body)
+            for ln, lv in loggers.items():
+                log.debug ("Changing log level of %s to %s", ln, lv)
+                lg = logger.getLogger(ln)
+                lg.setLevel (lv)
+            return ""
 
 
     @expose(content_type='text/xml')

@@ -53,30 +53,40 @@ DESCRIPTION
 
 """
 from __future__ import with_statement
-import traceback
-#import package_resources
-import os,sys,stat,platform, datetime
-import socket
-import shutil
+
+import datetime
 import fnmatch
-import subprocess
-import zipfile
-import tarfile
-import StringIO
-import textwrap
 import getpass
-import string
+import hashlib
+import logging
+import os
+import platform
+import posixpath
+import pprint
 import random
 import re
-import logging
+import shutil
+import socket
+import stat
+import string
+import StringIO
+import subprocess
+import sys
+import tarfile
+import textwrap
 import time
-import pprint
-import six
+import traceback
+import urllib2
+import urlparse
 import uuid
-import posixpath
+import zipfile
 
-import pkg_resources
-from setuptools.command import easy_install
+#import package_resources
+import pip
+import six
+
+#from setuptools.command import easy_install
+
 try:
     from marrow.mailer import  Mailer
     MAILER='marrow.mailer'
@@ -863,7 +873,8 @@ def install_driver(DBURL):
             print
             print 'Import failed, trying to install package %s...' % ei_drname
             try:
-                easy_install.main(['-U',ei_drname])
+                #easy_install.main(['-U',ei_drname])
+                pip.main(['install', '-U', ei_drname])
                 # The following line is needed to make installed module importable
                 pkg_resources.require(ei_drname)
                 print 'Package %s successfully installed.' % ei_drname
@@ -1246,6 +1257,8 @@ def fetch_tar (module_url, module_dir):
 def fetch_zip (module_url, module_dir):
     return module_dir
 def fetch_dir (module_url, module_dir):
+    if not os.path.exists (module_url):
+        return None
     if os.path.abspath (module_url) != os.path.abspath (module_dir):
         if  os.path.exists (module_dir):
             shutil.rmtree (module_dir)
@@ -1319,10 +1332,13 @@ def fetch_modules(params):
         if module_dir in module_dirs:
             print "Skipping duplicated module", module_url
             continue
-        fetcher = MODULE_FETCH.get (module_type)
-        module_dir = fetcher (module_url, module_dir)
-        if module_dir:
-            module_dirs.append (module_dir)
+        try:
+            fetcher = MODULE_FETCH.get (module_type)
+            module_dir = fetcher (module_url, module_dir)
+            if module_dir:
+                module_dirs.append (module_dir)
+        except Exception:
+            log.exception("Problem fetching module")
     #params['bisque.engine_service.module_dirs'] = ", ".join(os.path.abspath (x) for x in module_dirs)
     params['bisque.engine_service.module_dirs'] = DIRS['modules']
     return params
@@ -1337,8 +1353,6 @@ def _fetch_update_module (module_type, module_url, name):
     git = which('git')
     mdir = '.'
     module_dir = None
-
-    fetcher = MODULE_FETCH.get (module_type)
 
 
     if git and ( module_url.endswith ('.git') or 'git@' in module_url):
@@ -1768,7 +1782,8 @@ def setup_uwsgi(params, server_params):
                  "Uwsgi can act as backend server when utilized with web-front end (Nginx)") != 'Y':
         return params
     if which ('uwsgi') is None:
-        easy_install.main(['-U','uwsgi'])
+        #easy_install.main(['-U','uwsgi'])
+        pip.main (['install', '-U','uwsgi'])
 
     from bq.util.dotnested import parse_nested, unparse_nested
     servers = [ x.strip() for x in server_params['servers'].split(',') ]
@@ -1938,9 +1953,6 @@ def setup_stores(params):
 #######################################################
 #
 
-import urllib2
-import urlparse
-import hashlib
 def _sha1hash(data):
     return hashlib.sha1(data).hexdigest().upper()
 
@@ -2397,7 +2409,6 @@ def cleanup(params):
 #######################################################
 #  Send the installation report
 # http://stackoverflow.com/questions/92438/stripping-non-printable-characters-from-a-string-in-python
-import re
 unprintable = "".join(set(unichr(x) for x in range(0,255)) - set(string.printable))
 control_char_re = re.compile('[%s]' % re.escape(unprintable))
 def remove_control_chars(s):
@@ -2421,9 +2432,9 @@ def send_installation_report(params):
     """
     sender_email = params.get ('bisque.admin_email', 'YOUR EMAIL')
 
-    sender_email  = getanswer ("Enter the site administrator's email",
-                               sender_email,
-                               """This will us to contact you (very rarely) with updates""")
+    sender_email = getanswer ("Enter the site administrator's email",
+                              sender_email,
+                              """This will us to contact you (very rarely) with updates""")
 
     config  = { k:v for k,v in params.items() if k.startswith('mail.') }
     config['mail.on'] = True

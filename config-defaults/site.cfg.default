@@ -439,7 +439,7 @@ formatter = generic
 ## Install a SocketListener like python-loggingserver
 ## see contrib/logging and enable the logging server in the [servers] section.
 #class= handlers.SocketHandler
-#level=INFO
+#level=NOTSET
 #formatter=generic
 #args=('localhost', handlers.DEFAULT_TCP_LOGGING_PORT)
 
