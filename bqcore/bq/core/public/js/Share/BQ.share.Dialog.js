@@ -102,11 +102,13 @@ Ext.define('BQ.share.Dialog', {
 //    changePermission
 //--------------------------------------------------------------------------------------
 
-function getName(v, record) {
-    return BQ.util.xpath_string(record.raw, 'tag[@name="display_name"]/@value');
-}
+Ext.namespace('BQ.share');
 
-function getFull(v, record) {
+BQ.share.getName = function (v, record) {
+    return BQ.util.xpath_string(record.raw, 'tag[@name="display_name"]/@value');
+};
+
+BQ.share.getFull = function (v, record) {
     var username = BQ.util.xpath_string(record.raw, '@name');
     var email = BQ.util.xpath_string(record.raw, '@value');
     var name = BQ.util.xpath_string(record.raw, 'tag[@name="display_name"]/@value');
@@ -115,31 +117,21 @@ function getFull(v, record) {
 
 Ext.define('BQ.model.Auth', {
     extend : 'Ext.data.Model',
-    fields : [ {name: 'user', mapping: "@user" },
-               {name: 'email', mapping: '@email' },
-               {name: 'action', mapping: '@action' },
-             ],
-    /*associations: [{
-        type: 'hasOne',
-        model: 'BQ.model.Users',
-        name: 'username',
-        instanceName: 'username',
-        //associationKey: 'username',
-        primaryKey: 'uri',
-        foreignKey: 'user',
-        getterName: 'getUserName',
-    }],*/
-
+    fields : [
+        { name: 'user', mapping: "@user" },
+        { name: 'email', mapping: '@email' },
+        { name: 'action', mapping: '@action' },
+    ],
 });
 
 Ext.define('BQ.model.Users', {
     extend : 'Ext.data.Model',
     fields : [ {name: 'username', mapping: '@name' },
-               {name: 'name', convert: getName },
+               {name: 'name', convert: BQ.share.getName },
                {name: 'email', mapping: '@value' },
                {name: 'uri', mapping: '@uri' },
                {name: 'uniq', mapping: '@resource_uniq' },
-               {name: 'full', convert: getFull },
+               {name: 'full', convert: BQ.share.getFull },
                {name: 'mexs' },
              ],
     //belongsTo: 'BQ.model.Auth',

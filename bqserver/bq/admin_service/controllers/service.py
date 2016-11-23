@@ -169,30 +169,51 @@ class AdminController(ServiceController):
 
         return user_node
 
-    @expose(content_type='text/json')
+    #@expose(content_type='text/json')
+    @expose()
     def loggers(self, *arg, **kw):
         """
         Set logging level dynamically
-
-
-
-        post /admin_servicfe/logging
-
+        post /admin/loggers
         """
         view = kw.pop ('view', 'short')
+        fmt = kw.pop ('format', 'xml')
+        #filter = kw.pop ('filter', 'bq.')
+        if fmt == 'json':
+            response.headers['Content-Type']  = 'text/json'
+        elif fmt == 'xml':
+            response.headers['Content-Type']  = 'text/xml'
 
         if request.method == 'GET':
-            loggers = dict ([ (ln, logging.getLevelName (lv.level))
-                              for ln, lv in logging.Logger.manager.loggerDict.items()
-                              if hasattr (lv, 'level') #and lv.level != logging.NOTSET
-                          ])
-            return json.dumps (loggers)
+            loggers = [ {'name': ln, 'level': logging.getLevelName (lv.level)}
+                        for ln, lv in logging.Logger.manager.loggerDict.items()
+                        if hasattr (lv, 'level') #and lv.level != logging.NOTSET
+            ]
+
+            # filter and sort loggers
+            loggers.sort(key=lambda x: x['name'])
+
+            if fmt == 'json':
+                return json.dumps (loggers)
+            elif fmt == 'xml':
+                xml = etree.Element('resource', name='loggers', uri='/admin/loggers')
+                for l in loggers:
+                    etree.SubElement(xml, 'logger', name=l.get('name'), value=l.get('level'))
+                return etree.tostring(xml)
 
         elif request.method in ('POST', 'PUT'):
-            loggers = json.loads (request.body)
-            for ln, lv in loggers.items():
+
+            if request.headers['Content-Type'] == 'text/json':
+                loggers = json.loads (request.body)
+            else:
+                xml = etree.fromstring(request.body)
+                loggers = [{'name': l.get('name'), 'level': l.get('value')} for l in xml.xpath('logger')]
+
+            for l in loggers:
+                ln = l.get('name')
+                lv = l.get('level')
                 log.debug ("Changing log level of %s to %s", ln, lv)
-                lg = logger.getLogger(ln)
+                lg = logging.getLogger(ln)
                 lg.setLevel (lv)
             return ""
 

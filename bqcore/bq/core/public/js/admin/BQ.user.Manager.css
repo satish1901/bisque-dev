@@ -76,3 +76,61 @@
 .bq_notifications .block {
     margin-bottom: 10px !important;
 }
+
+
+.bq_loggers .bq_row {
+    padding-top: 6px;
+    height: 32px;
+    font-size: 16px;
+    font-weight: 300;
+    font-family: 'Roboto', sans-serif;
+}
+
+.bq_loggers .notset {
+    color: #666666;
+}
+
+.bq_loggers .debug {
+    color: #0000aa;
+}
+
+.bq_loggers .info {
+    color: #00aa00;
+}
+
+.bq_loggers .warning {
+    color: #aaaa00;
+}
+
+.bq_loggers .error {
+    color: #ff0000;
+    border-color: #ededed #d0d0d0 #ededed #d0d0d0 !important;
+}
+
+.bq_loggers .icon.refresh {
+    background-image: url('/core/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+    background-position: -0px -262px;
+}
+
+.bq_loggers .search_field input {
+    padding: 4px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    height: 26px;
+    background: rgb(211, 225, 241);
+    margin-right: 10px;
+}
+
+.bq_loggers .search_field input:hover {
+    -webkit-transition: border-color 0.3s ease-out, -webkit-box-shadow 0.3s ease-out;
+    -moz-transition: border-color 0.3s ease-out, -moz-box-shadow 0.3s ease-out;
+    -o-transition: border-color 0.3s ease-out, -o-box-shadow 0.3s ease-out;
+    transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+    border-color: #0099FF;
+    -webkit-box-shadow: 0px 0px 8px 0px rgba(0, 153, 255, 1);
+    -moz-box-shadow: 0px 0px 8px 0px rgba(0, 153, 255, 1);
+    box-shadow: 0px 0px 8px 0px rgba(0, 153, 255, 1);
+}
+

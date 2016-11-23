@@ -117,6 +117,10 @@ Ext.define('BQ.setting.Panel', {
             disabled: true,
             //items: Ext.create('BQ.admin.SystemManager'),
         }, {
+            xtype: 'bq_loggers_manager',
+            title: 'Loggers',
+            itemId: 'loggers_manager',
+        }, {
             title: 'Log Viewer',
             layout: 'fit',
             itemId: 'settings_log_viewer',
