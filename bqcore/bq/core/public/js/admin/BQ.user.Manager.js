@@ -1035,3 +1035,260 @@ Ext.define('BQ.admin.notifications.Manager', {
     },
 
 });
+
+//--------------------------------------------------------------------------------
+// Loggers
+//--------------------------------------------------------------------------------
+
+Ext.namespace('BQ.admin.loggers');
+
+BQ.admin.loggers.getName = function (v, record) {
+    //record.raw
+    return 'myname';
+};
+
+BQ.admin.loggers.getLevel = function (v, record) {
+    //record.raw
+    return 'DEBUG';
+};
+
+Ext.define('BQ.model.Loggers', {
+    extend : 'Ext.data.Model',
+    fields : [{
+        name: 'name',
+        mapping: '@name',
+        //convert: BQ.admin.loggers.getName,
+    }, {
+        name: 'level',
+        mapping: '@value',
+        //convert: BQ.admin.loggers.getLevel,
+    }],
+    proxy : {
+        type: 'ajax',
+        url : '/admin/loggers',
+
+        batchActions: true,
+        noCache : false,
+
+        limitParam : undefined,
+        pageParam: undefined,
+        startParam: undefined,
+        sortParam : undefined,
+        filterParam : undefined,
+
+        actionMethods: {
+            create : 'POST', // 'PUT'
+            read   : 'GET',
+            update : 'POST',
+            destroy: 'DELETE'
+        },
+
+        reader : {
+            type :  'xml',
+            root :  'resource',
+            record: '>logger',
+        },
+
+        writer : {
+            type : 'bq-logger',
+            root : 'resource',
+            record: '>logger',
+            writeAllFields : true,
+            writeRecordId: false,
+        },
+    },
+});
+
+Ext.define('BQ.admin.loggers.Manager', {
+    extend: 'Ext.container.Container',
+    alias: 'widget.bq_loggers_manager',
+
+    componentCls: 'bq_loggers',
+
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },
+
+    initComponent: function() {
+
+        this.store = Ext.create('Ext.data.Store', {
+            model : 'BQ.model.Loggers',
+            autoLoad : false,
+            autoSync : true,
+            listeners : {
+                scope: this,
+                //load: this.onUsersStoreLoaded,
+            },
+        });
+
+        this.cellEditing = new Ext.grid.plugin.CellEditing({
+            clicksToEdit: 1
+        });
+
+        this.items = [{
+            xtype: 'toolbar',
+            margin: false,
+            border: false,
+            defaults: {
+                scale: 'large',
+            },
+            items:[{
+                xtype: 'container',
+                html: '<h2>Loggers</h2>',
+            }, '->', {
+                xtype:'textfield',
+                itemId: 'search',
+                cls: 'search_field',
+                disabled: false,
+
+                flex: 2,
+                name: 'search',
+
+                default_string: 'Filter loggers',
+                value: 'Filter loggers',
+
+                //minWidth: 100,
+                //tooltip: 'Query for images using Bisque expressions',
+                enableKeyEvents: true,
+                listeners: {
+                    scope: this,
+                    afterrender: function() {},
+                    focus: function(c) {
+                        //c.flex = 2;
+                        //this.doLayout();
+                        if (c.value === c.default_string) {
+                            c.setValue('');
+                        }
+                    },
+                    // specialkey: function(f, e) {
+                    //     if (e.getKey()==e.ENTER && f.value!='' && f.value != c.default_string) {
+                    //         document.location = BQ.Server.url('/client_service/browser?tag_query='+escape(f.value));
+                    //     }
+                    // },
+                    blur: function(c) {
+                        //c.flex = 0;
+                        //this.doLayout();
+                    },
+                    change: function ( c, newValue, oldValue ) {
+                        if (newValue !== '' && newValue !== c.default_string) {
+                            this.store.clearFilter(true);
+                            var re = new RegExp(newValue, 'i');
+                            this.store.filter(new Ext.util.Filter({
+                                filterFn: function (object) {
+                                    var match = false;
+                                    Ext.Object.each(object.data, function (property, value) {
+                                        //match = match || re.test(String(value));
+                                        match = match || value.indexOf(newValue)===0;
+                                    });
+                                    return match;
+                                  }
+                            }));
+                        } else {
+                            this.store.clearFilter();
+                        }
+                    },
+                },
+            }, '', {
+                xtype: 'button',
+                //text: 'Refresh',
+                iconCls : 'icon refresh',
+                tooltip: 'Refresh information in the list',
+                disabled: false,
+                scope: this,
+                handler: function() {
+                    this.store.reload();
+                },
+            }],
+        }, {
+            xtype: 'gridpanel',
+            itemId  : 'grid_loggers',
+            cls: 'loggers',
+            autoScroll: true,
+            flex: 2,
+            store: this.store,
+            plugins: [this.cellEditing],
+            viewConfig: {
+                stripeRows: true,
+                forceFit: true,
+            },
+
+            /*listeners : {
+                scope: this,
+                cellclick: this.onCellClick,
+            },*/
+
+            columns: {
+                defaults: {
+                    tdCls: 'bq_row',
+                    cls: 'bq_row',
+                },
+                items: [{
+                    text: 'Name',
+                    flex: 3,
+                    dataIndex: 'name',
+                    sortable: true,
+                    renderer: this.renderer_logger,
+                }, {
+                    text: 'Level',
+                    flex: 1,
+                    //width : 100,
+                    //tdCls: 'bq_row permission',
+                    dataIndex: 'level',
+                    sortable: true,
+                    renderer: this.renderer_logger,
+                    editor: new Ext.form.field.ComboBox({
+                        triggerAction: 'all',
+                        editable: false,
+                        store: [
+                            ['NOTSET','NOTSET'],
+                            ['DEBUG','DEBUG'],
+                            ['INFO','INFO'],
+                            ['WARN','WARN'],
+                            ['ERROR','ERROR'],
+                        ]
+                    })
+                }],
+            },
+        }];
+        this.callParent();
+    },
+
+    afterRender: function() {
+        this.callParent();
+        this.store.load();
+        this.queryById('search').setValue('bq.');
+    },
+
+    renderer_logger: function(v, metadata, record, rowIndex, colIndex, store) {
+        metadata.css = record.data.level.toLowerCase();
+        return v;
+    },
+
+});
+
+//--------------------------------------------------------------------------------------
+// BQ.data.writer.Loggers
+// XML writer that writes logger levels
+//--------------------------------------------------------------------------------------
+
+Ext.define('BQ.data.writer.Loggers', {
+    extend: 'Ext.data.writer.Xml',
+    alias: 'writer.bq-logger',
+
+    writeRecords: function(request, data) {
+        var record = request.records[0],
+            item = null,
+            xml = ['<resource>'];
+
+        for (var i=0; (item=data[i]); ++i) {
+            xml.push(Ext.String.format('<logger name="{0}" value="{1}" />', item.name, item.level));
+        }
+        xml.push('</resource>');
+        request.xmlData = xml.join('');
+        return request;
+    }
+
+});
+
