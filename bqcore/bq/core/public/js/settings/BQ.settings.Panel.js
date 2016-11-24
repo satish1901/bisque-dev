@@ -71,7 +71,7 @@ Ext.define('BQ.setting.Panel', {
                 style: {left:'20px'},
                 handler: function() {this.clearCache();},
                 clearCache: function() {
-                     Ext.Ajax.request({
+                    Ext.Ajax.request({
                         url: '/admin/cache',
                         method: 'DELETE',
                         headers: { 'Content-Type': 'text/xml' },
@@ -121,11 +121,9 @@ Ext.define('BQ.setting.Panel', {
             title: 'Loggers',
             itemId: 'loggers_manager',
         }, {
-            title: 'Log Viewer',
-            layout: 'fit',
+            title: 'Logs',
+            xtype: 'bq_logs_manager',
             itemId: 'settings_log_viewer',
-            hidden: true,
-            disabled: true,
         }, {
             xtype: 'bq_notifications_manager',
             title: 'Notifications',

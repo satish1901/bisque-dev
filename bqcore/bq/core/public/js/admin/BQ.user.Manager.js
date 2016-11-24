@@ -266,6 +266,13 @@ Ext.define('BQ.admin.UserTable', {
             },
             items:[{
                 xtype: 'button',
+                text: 'Login as',
+                iconCls : 'icon login',
+                tooltip: 'Login as selected user',
+                handler: this.loginUserMessage,
+                scope: this,
+            }, ' ', {
+                xtype: 'button',
                 text: 'Add',
                 iconCls : 'icon add',
                 tooltip: 'Add new user',
@@ -279,21 +286,13 @@ Ext.define('BQ.admin.UserTable', {
                 iconCls : 'icon remove',
                 tooltip: 'Delete existing user',
                 handler: this.deleteUserWin,
-
                 scope: this,
-            },{
+            }, {
                 xtype: 'button',
                 text: 'Clear user data',
                 iconCls : 'icon clear',
                 tooltip: 'Removes all data from selected user',
                 handler: this.deleteUserImagesMessage,
-                scope: this,
-            },{
-                xtype: 'button',
-                text: 'Login as',
-                iconCls : 'icon login',
-                tooltip: 'Login as selected user',
-                handler: this.loginUserMessage,
                 scope: this,
             }, '->', {
                 xtype:'textfield',
@@ -1289,6 +1288,143 @@ Ext.define('BQ.data.writer.Loggers', {
         request.xmlData = xml.join('');
         return request;
     }
+
+});
+
+//--------------------------------------------------------------------------------
+// Logs
+// TODO: add timestamp based append of log lines
+//--------------------------------------------------------------------------------
+
+Ext.define('BQ.admin.logs.Manager', {
+    extend: 'Ext.container.Container',
+    alias: 'widget.bq_logs_manager',
+
+    componentCls: 'bq_logs',
+
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },
+
+    initComponent: function() {
+
+        this.items = [{
+            xtype: 'toolbar',
+            margin: false,
+            border: false,
+            defaults: {
+                scale: 'large',
+            },
+            items:[{
+                xtype: 'container',
+                html: '<h2>Logs</h2>',
+            }, '->', {
+                xtype: 'button',
+                //text: 'Refresh',
+                iconCls : 'icon refresh',
+                tooltip: 'Refresh logs',
+                disabled: false,
+                scope: this,
+                handler: function() {
+                    this.loadLogs();
+                },
+            }],
+        }, /*{
+            xtype: 'container',
+            itemId: 'log_text',
+            cls: 'editor',
+            flex: 2,
+            border : false,
+            layout: 'fit',
+            autoEl: {
+                tag: 'textarea',
+            },
+        }*/];
+        this.callParent();
+    },
+
+    afterRender: function() {
+        this.callParent();
+        this.loadConfig();
+    },
+
+    loadConfig: function() {
+        this.setLoading('Loading...');
+        Ext.Ajax.request({
+            url: '/admin/logs/config',
+            callback: function(opts, succsess, response) {
+                if (response.status>=400 || !succsess)
+                    BQ.ui.error(response.responseText);
+                else
+                    this.onConfig(response.responseXML);
+            },
+            scope: this,
+            disableCaching: false,
+        });
+    },
+
+    onConfig: function(xml) {
+        var node = xml.firstChild,
+            log_type = node.getAttribute('type'),
+            log_uri = node.getAttribute('uri');
+        if (log_type === 'local') {
+            this.add({
+                xtype: 'container',
+                itemId: 'log_text',
+                cls: 'editor',
+                flex: 2,
+                border : false,
+                layout: 'fit',
+                autoEl: {
+                    tag: 'textarea',
+                },
+            });
+            this.loadLogs();
+        } else {
+            this.add({
+                xtype: 'container',
+                itemId: 'log_iframe',
+                flex: 2,
+                border : false,
+                layout: 'fit',
+                autoEl: {
+                    tag: 'iframe',
+                    src: log_uri,
+                },
+            });
+            this.setLoading(false);
+        }
+    },
+
+    loadLogs: function() {
+        this.setLoading('Loading...');
+        Ext.Ajax.request({
+            url: '/admin/logs/read',
+            callback: function(opts, succsess, response) {
+                if (response.status>=400 || !succsess)
+                    BQ.ui.error(response.responseText);
+                else
+                    this.onLogs(response.responseText);
+            },
+            scope: this,
+            disableCaching: false,
+        });
+    },
+
+    onLogs: function(txt) {
+        this.setLoading(false);
+        var textarea = this.queryById('log_text'),
+            ta = textarea.el.dom;
+        //textarea.setValue(txt);
+        ta.value = txt;
+        ta.scrollTop = ta.scrollHeight;
+    },
+
+    appendLogs: function(ts) {
+
+    },
 
 });
 
