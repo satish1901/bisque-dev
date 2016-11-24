@@ -78,6 +78,8 @@
 }
 
 
+
+
 .bq_loggers .bq_row {
     padding-top: 6px;
     height: 32px;
@@ -134,3 +136,17 @@
     box-shadow: 0px 0px 8px 0px rgba(0, 153, 255, 1);
 }
 
+
+
+.bq_logs .editor {
+    font-family: monospace;
+    white-space: pre;
+    border: 0px;
+    padding: 15px;
+}
+
+.bq_logs .icon.refresh {
+    background-image: url('/core/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+    background-position: -0px -262px;
+}

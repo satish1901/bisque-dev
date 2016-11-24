@@ -57,6 +57,11 @@ import operator
 import os
 import string
 from datetime import datetime
+from urllib import quote, unquote
+from urlparse import urlparse
+import io
+import itertools
+import mmap
 
 import transaction
 from lxml import etree
@@ -87,6 +92,46 @@ log = logging.getLogger('bq.admin')
 #class BisqueAdminController(AdminController):
 #    'admin controller'
 #    allow_only = Any (in_group("admin"), in_group('admins'))
+
+# reading log file
+
+if os.name != 'nt':
+    def tail(fn, n=10):
+        cmd = 'tail -n {1} {0}'.format(fn, n)
+        return os.popen(cmd).readlines()
+
+elif os.name == 'nt':
+    def tail(fn, n=10, _buffer=4098):
+        """Tail a file and get X lines from the end"""
+        # place holder for the lines found
+        lines_found = []
+
+        with open(fn, 'rb') as f:
+            # block counter will be multiplied by buffer
+            # to get the block size from the end
+            block_counter = -1
+
+            # loop until we find X lines
+            while len(lines_found) < n:
+                try:
+                    f.seek(block_counter * _buffer, os.SEEK_END)
+                except IOError:  # either file is too small, or too many lines requested
+                    f.seek(0)
+                    lines_found = f.readlines()
+                    break
+
+                lines_found = f.readlines()
+
+                # we found enough lines, get out
+                if len(lines_found) > n:
+                    break
+
+                # decrement the block counter to get the
+                # next X bytes
+                block_counter -= 1
+
+            return lines_found[-n:]
+
 
 
 class AdminController(ServiceController):
@@ -217,6 +262,37 @@ class AdminController(ServiceController):
                 lg.setLevel (lv)
             return ""
 
+    @expose()
+    def logs(self, *arg, **kw):
+        """
+        get /admin/logs/config or /admin/logs - log config, this will return a local or a remote url
+        get /admin/logs/read - read local log lines, by default 1000 last lines
+        get /admin/logs/read/172444095 - read local log lines starting from a given time stamp
+        """
+
+        # TODO dima: add timestamp based read
+
+        #log.info ("STARTING table (%s): %s", datetime.now().isoformat(), request.url)
+        path = request.path_qs.split('/')
+        path = [unquote(p) for p in path if len(p)>0]
+        operation = path[2] if len(path)>2 else ''
+
+        if operation == 'config' or operation == '':
+            # dima: here we have to identify what kind of logs we are using
+            xml = etree.Element('log', name='log', uri='/admin/logs/read', type='local')
+            #xml = etree.Element('log', name='log', uri='http://localhost:8080/admin/logs/read', type='remote')
+            response.headers['Content-Type']  = 'text/xml'
+            return etree.tostring(xml)
+        elif operation == 'read':
+            # dima, this will only work for local logger
+            try:
+                fn = logging.getLoggerClass().root.handlers[0].stream.filename
+                logs = tail(fn, 1000)
+                response.headers['Content-Type']  = 'text/plain'
+                return ''.join(logs)
+            except Exception:
+                return ''
+        return ''
 
     @expose(content_type='text/xml')
     def cache(self, *arg, **kw):
