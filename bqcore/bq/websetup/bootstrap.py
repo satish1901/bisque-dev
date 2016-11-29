@@ -8,7 +8,7 @@ from beaker.session import  SessionObject
 from pylons.controllers.util import Request
 from bq.release import __VERSION__
 from bq.core import model
-from bq.util.paths import config_path
+from bq.util.paths import config_path, defaults_path
 from bq.util.bisquik2db import bisquik2db
 
 import transaction
@@ -88,7 +88,7 @@ def bootstrap(command, conf, vars):
 
         system = model.DBSession.query(Taggable).filter_by (resource_type='system').first()
         if system is None:
-            system_prefs = config_path('preferences.xml.default')
+            system_prefs = defaults_path('preferences.xml.default')
             if os.path.exists(system_prefs):
                 with open (system_prefs) as f:
                     system = bisquik2db (f)
