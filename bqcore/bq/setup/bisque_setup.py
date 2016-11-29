@@ -81,7 +81,7 @@ import urlparse
 import uuid
 import zipfile
 
-#import package_resources
+import pkg_resources
 import pip
 import six
 

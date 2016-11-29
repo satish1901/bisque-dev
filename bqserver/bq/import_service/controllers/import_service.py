@@ -959,7 +959,7 @@ class import_serviceController(ServiceController):
         return resources
 
     def filter_part_5d(self, f, intags):
-        unpack_dir, resource = self.process_part_5d(f, intags)
+        unpack_dir, resource = self.process_part_5d(f, **intags)
         return [resource]
 
     def filter_json(self, f, intags):
