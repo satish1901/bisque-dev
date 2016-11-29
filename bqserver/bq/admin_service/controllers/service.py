@@ -65,7 +65,7 @@ import mmap
 
 import transaction
 from lxml import etree
-from pylons.controllers.util import abort
+from pylons.controllers.util import abort, redirect
 from repoze.what.predicates import Any, in_group, is_user, not_anonymous
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -277,22 +277,28 @@ class AdminController(ServiceController):
         path = [unquote(p) for p in path if len(p)>0]
         operation = path[2] if len(path)>2 else ''
 
+        log_url = config.get ('bisque.logger')
+
         if operation == 'config' or operation == '':
             # dima: here we have to identify what kind of logs we are using
-            xml = etree.Element('log', name='log', uri='/admin/logs/read', type='local')
-            #xml = etree.Element('log', name='log', uri='http://localhost:8080/admin/logs/read', type='remote')
+            if log_url is not None:
+                xml = etree.Element('log', name='log', uri=log_url, type='remote')
+            else:
+                xml = etree.Element('log', name='log', uri='/admin/logs/read', type='local')
             response.headers['Content-Type']  = 'text/xml'
             return etree.tostring(xml)
         elif operation == 'read':
             # dima, this will only work for local logger
+            if log_url is not None:
+                redirect(log_url)
             try:
                 fn = logging.getLoggerClass().root.handlers[0].stream.filename
                 logs = tail(fn, 1000)
                 response.headers['Content-Type']  = 'text/plain'
                 return ''.join(logs)
             except Exception:
-                return ''
-        return ''
+                abort(500, 'Error while reading the log' )
+        abort(400, 'not a supported operation' )
 
     @expose(content_type='text/xml')
     def cache(self, *arg, **kw):

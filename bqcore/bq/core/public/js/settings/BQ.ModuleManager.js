@@ -786,7 +786,7 @@ Ext.define('BQ.module.RegisteredPanel', {
                     record.set('groups', '');
                     record.set('thumbnail_uri', getThumbnail(definition));
                     record.set('version', getVersion(definition));
-                   
+
                 } /*else {
                     BQ.ui.error('Failed to find module defintion at: '+ engine);
                 }
@@ -854,9 +854,10 @@ Ext.define('BQ.module.RegisteredPanel', {
 
 Ext.define('BQ.module.ModuleManagerMain', {
     extend : 'Ext.container.Container',
+    alias: 'widget.bq_module_manager',
+
     layout : 'border',
     border: false,
-    //renderTo: Ext.getBody(),
     initComponent: function(config) {
         var config = config || {};
         //items = [];

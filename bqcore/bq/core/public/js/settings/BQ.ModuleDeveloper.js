@@ -5,7 +5,7 @@ Ext.define('BQ.module.ModuleUIEditor', {
 Ext.define('BQ.module.MexInfoPreview', {
     extend: 'Ext.panel.Panel',
     border: false,
-    
+
 });
 
 
@@ -25,13 +25,13 @@ Ext.define('BQ.module.ModuleInputPreview', {
     initComponent: function(config) {
         var config = config || {};
         var me = this;
-        
+
         me.noModuleView = Ext.create('Ext.container.Container', {
             html: [
                 '<h1>No Module Selected.</h1>'
             ],
         });
-        
+
         me.previewBanner = Ext.create('Ext.container.Container', {
              html: [
                 '<h1>Generated Debug Inputs:</h1>',
@@ -45,9 +45,9 @@ Ext.define('BQ.module.ModuleInputPreview', {
               padding: '10px 10px 10px 10px',
               marginBottom: '20px',
               borderRadius: '5px',
-            },       
+            },
         });
-        
+
         me.moduleHeader = Ext.create('Ext.container.Container', {
             tpl: [
                 '<div style="position:relative">',
@@ -67,13 +67,13 @@ Ext.define('BQ.module.ModuleInputPreview', {
                 thumbnail: '',
             },
         });
-        
+
         me.resourceSelectorsTitle = Ext.create('Ext.container.Container', {
             tpl: ['<h1>{count}. Select data for processing</h1>'],
             data: {count:1},
             width: '100%',
         });
-        
+
         me.resourceSelectors = Ext.create('Ext.container.Container', {
             width: '100%',
             style: {
@@ -86,13 +86,13 @@ Ext.define('BQ.module.ModuleInputPreview', {
               borderRadius: '5px',
             },
         });
-        
+
         me.parameterSelectorTitle = Ext.create('Ext.container.Container', {
             tpl: ['<h1>{count}. Parameters</h1>'],
             data: {count:1},
             width: '100%',
         });
-        
+
         me.parameterSelector = Ext.create('Ext.container.Container', {
             width: '100%',
             style: {
@@ -105,13 +105,13 @@ Ext.define('BQ.module.ModuleInputPreview', {
               borderRadius: '5px',
             },
         });
-        
+
         me.startDebugTitle = Ext.create('Ext.container.Container', {
             tpl: ['<h1>{count}. Create Mex</h1>'],
             data: {count:1},
             width: '100%',
         });
-        
+
         me.startDebug = Ext.create('Ext.container.Container', {
             layout: 'hbox',
             width: '100%',
@@ -134,11 +134,11 @@ Ext.define('BQ.module.ModuleInputPreview', {
                 },
             }, {
                 xtype: 'container',
-                html: '<p>Mex will be initialized and shown below.</p>',     
+                html: '<p>Mex will be initialized and shown below.</p>',
                 padding: '0px 20px 0px 20px',
             }],
         });
-        
+
         var items = [
             me.noModuleView,
             me.previewBanner,
@@ -150,7 +150,7 @@ Ext.define('BQ.module.ModuleInputPreview', {
             me.startDebugTitle,
             me.startDebug,
         ];
-        
+
         Ext.apply(me, {
             items: [{
                 xtype: 'container',
@@ -167,9 +167,9 @@ Ext.define('BQ.module.ModuleInputPreview', {
 
         });
         me.noModuleViewMode(true);
-        this.callParent([config]);                
-    },    
-    
+        this.callParent([config]);
+    },
+
     noModuleViewMode: function(bool) { //switch between modes
         var me = this;
         if (bool) {
@@ -194,7 +194,7 @@ Ext.define('BQ.module.ModuleInputPreview', {
             me.startDebug.show();
         }
     },
-    
+
     loadModule: function(el, module_id) {
         var me = this;
         BQFactory.load(
@@ -206,7 +206,7 @@ Ext.define('BQ.module.ModuleInputPreview', {
             }
         )
     },
-    
+
     renderInputs: function(bqmodule) {
         var me = this;
         if (bqmodule.resource_type!='module') {
@@ -230,12 +230,12 @@ Ext.define('BQ.module.ModuleInputPreview', {
                 thumbnail: thumbnail_url,
         });
         me.moduleHeader.show();
-        
+
         me.inputRenderers = []
         //render components
         var bq_module_inputs = bqmodule.inputs;
         me.resourceSelectors.removeAll();
-        me.parameterSelector.removeAll();   
+        me.parameterSelector.removeAll();
         for (var i = 0; i<bq_module_inputs.length; i++) {
             if(bq_module_inputs[i].type != "system-input") { //if system-input skip
                 if (bq_module_inputs[i].type in BQ.selectors.resources) { //add to the resource selectors
@@ -250,20 +250,20 @@ Ext.define('BQ.module.ModuleInputPreview', {
                         resource: bq_module_inputs[i],
                         module: bqmodule,
                     })
-                    var inputRenderer = me.parameterSelector.add(parameterSelector);     
-                    me.inputRenderers.push(inputRenderer);                    
+                    var inputRenderer = me.parameterSelector.add(parameterSelector);
+                    me.inputRenderers.push(inputRenderer);
                 } else { //custom element, do not know how to render
                 }
             }
         }
-        
-        
+
+
         var elementCount = 0;
         if (me.resourceSelectors.items.length>0) {
             me.resourceSelectors.doLayout();
             elementCount += 1;
             me.resourceSelectorsTitle.update({count:elementCount});
-            me.resourceSelectorsTitle.show(); 
+            me.resourceSelectorsTitle.show();
             me.resourceSelectors.setVisible(true);
         } else { //hide resource elements
             me.resourceSelectorsTitle.setVisible(false);
@@ -284,7 +284,7 @@ Ext.define('BQ.module.ModuleInputPreview', {
         me.startDebugTitle.setVisible(true);
         me.module = bqmodule;
     },
-    
+
     createDebugMex: function(bqmodule) {
         var me = this;
         if (!BQSession.current_session || !BQSession.current_session.hasUser()) {
@@ -298,7 +298,7 @@ Ext.define('BQ.module.ModuleInputPreview', {
         mex.save_('/module_service/mex', function(mex) {
             me.fireEvent('afterCreated', me, mex)
         });
-        
+
     },
     isValid: function() {
         var me = this;
@@ -313,7 +313,7 @@ Ext.define('BQ.module.ModuleInputPreview', {
 
 Ext.define('BQ.module.MexLauncher', {
     extend: 'Ext.panel.Panel',
-    bodyStyle:{"background-color":"white"}, 
+    bodyStyle:{"background-color":"white"},
     border: false,
     layout: {
         // layout-specific configs go here
@@ -330,7 +330,7 @@ Ext.define('BQ.module.MexLauncher', {
     },
     initComponent: function(config) {
         var config = config || {};
-        var me = this;    
+        var me = this;
 
         var items = [];
         me.ModuleSelector = Ext.create('Ext.panel.Panel',{
@@ -367,7 +367,7 @@ Ext.define('BQ.module.MexLauncher', {
                         '</div>',
                     '</div>',
                 ],*/
-                
+
                 store: Ext.create('Ext.data.Store',{
                     noCache: false,
                     proxy:{
@@ -404,7 +404,7 @@ Ext.define('BQ.module.MexLauncher', {
                         mapping: "tag[@name='title']/@value",
                     }],
                 }),
-                
+
                 listeners: {
                     select: function(el, records, eOpts) {
                         var module_id = records[0].get('resource_uniq');
@@ -428,9 +428,9 @@ Ext.define('BQ.module.MexLauncher', {
                 }
             }
         }),
-        
+
         items.push(me.modulePage);
-        
+
         items.push({
             title: 'Mex Preview',
             border: false,
@@ -464,26 +464,29 @@ Ext.define('BQ.module.MexLauncher', {
                 }
             }
         });
-        
+
         Ext.apply(me, {
             items: items,
         });
-        this.callParent([config]);        
+        this.callParent([config]);
     },
 });
 
 Ext.define('BQ.module.ModuleDeveloperPage', {
     extend : 'Ext.panel.Panel',
+    alias: 'widget.bq_module_developer',
+
+
     layout : 'fit',
     height : '85%',
     width : '85%',
     modal : true,
     border: false,
-    
+
     initComponent: function(config) {
         var config = config || {};
         var me = this;
-        
+
         var items = [{
             region: 'center',
             xtype: 'tabpanel',
@@ -499,7 +502,7 @@ Ext.define('BQ.module.ModuleDeveloperPage', {
                 disabled: true,
             }]
         }];
-        
+
         Ext.apply(me, {
             items: items,
         });

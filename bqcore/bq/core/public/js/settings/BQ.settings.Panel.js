@@ -30,104 +30,59 @@ Ext.define('BQ.setting.Dialog', {
 Ext.define('BQ.setting.Panel', {
     extend : 'Ext.tab.Panel',
     alias: 'widget.bq_settings_panel',
-    //layout : 'fit',
-    //height : '85%',
-    //width : '85%',
-    //modal : true,
+
     border: false,
     plain: true,
     componentCls: 'bq_settings_panel',
 
-    tools_none:  [], //a none user has no settings
-    tools_user:  ['settings_module_manager', 'settings_module_developer', 'setting_preference'],
-    tools_admin: ['settings_user_manager', 'settings_cache_manager', 'settings_system', 'settings_log_viewer'],
-
     defaults: {
         border: false,
+        hidden: true,
     },
 
     initComponent: function() {
         var me = this;
         this.items = [{
-            title: 'User Manager',
-            layout: 'fit',
-            items: [Ext.create('BQ.admin.UserManager')],
+            xtype: 'bq_user_manager',
             itemId: 'settings_user_manager',
-            hidden: true,
-        },{
-            title: 'Cache Manager',
-            padding: '8px',
-            border: false,
+            title: 'Users',
+            users: { user: false, admin: true, },
+        }, {
+            xtype: 'bq_cache_manager',
             itemId: 'settings_cache_manager',
-            hidden: true,
-            items: [{
-                xtype: 'container',
-                padding: '8px',
-                html : '<h2>Cache Manager</h2><p>Select to clear all the cache for all the users.</p>',
-            },{
-                text: 'Clear Cache',
-                xtype: 'button',
-                padding: '8px',
-                style: {left:'20px'},
-                handler: function() {this.clearCache();},
-                clearCache: function() {
-                    Ext.Ajax.request({
-                        url: '/admin/cache',
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'text/xml' },
-                        success: function(response) {
-                            var xml = response.responseXML;
-                            BQ.ui.notification('Cache cleared!');
-                        },
-                        failure: function(response) {
-                            BQ.ui.error('Cache failed to be cleared!')
-                        },
-                        scope: this,
-                    });
-                },
-            }],
-        },{
-            title: 'Module Manager',
-            layout: 'fit',
-            border: false,
+            title: 'Cache',
+            users: { user: false, admin: true, },
+        }, {
+            xtype: 'bq_module_manager',
+            title: 'Modules',
             itemId: 'settings_module_manager',
-            hidden: true,
-            items: Ext.create('BQ.module.ModuleManagerMain'),
+            users: { user: true, admin: true, },
         },{
-            title: 'Module Developer',
-            layout: 'fit',
-            border: false,
+            xtype: 'bq_module_developer',
+            title: 'Module developer',
             itemId: 'settings_module_developer',
-            hidden: true,
-            items: Ext.create('BQ.module.ModuleDeveloperPage'),
+            users: { user: true, admin: true, },
         }, {
+            xtype: 'bq_preference_manager',
             title: 'Preferences',
-            layout: 'fit',
-            border: false,
             itemId: 'setting_preference',
-            hidden: true,
-            items: Ext.create('BQ.preference.PreferencePage',{
-                activeTab: 1,
-            }),
-        }, {
-            title: 'System',
-            layout: 'fit',
-            itemId: 'settings_system',
-            hidden: true,
-            disabled: true,
-            //items: Ext.create('BQ.admin.SystemManager'),
+            users: { user: true, admin: true, },
+            activeTab: 1,
         }, {
             xtype: 'bq_loggers_manager',
-            title: 'Loggers',
             itemId: 'loggers_manager',
+            title: 'Loggers',
+            users: { user: false, admin: true, },
         }, {
-            title: 'Logs',
             xtype: 'bq_logs_manager',
             itemId: 'settings_log_viewer',
+            title: 'Logs',
+            users: { user: false, admin: true, },
         }, {
             xtype: 'bq_notifications_manager',
-            title: 'Notifications',
             itemId: 'notifications_manager',
+            title: 'Notifications',
+            users: { user: false, admin: true, },
         }];
 
         this.on('beforerender', this.setVisibility);
@@ -135,24 +90,60 @@ Ext.define('BQ.setting.Panel', {
     },
 
     setVisibility : function() {
-        // hide no user menus
-        for (var i=0; (p=this.tools_none[i]); i++)
-            this.setSettingTabVisibility(p, false);
-        if (BQApp.user) {
-            // show user menus
-            for (var i=0; (p=this.tools_user[i]); i++)
-                this.setSettingTabVisibility(p, true);
-
-            // show admin menus
-            if (BQApp.user.is_admin() ) //needs to change
-            for (var i=0; (p=this.tools_admin[i]); i++)
-                this.setSettingTabVisibility(p, true);
+        var p = null,
+            is_admin = BQApp.user.is_admin(),
+            is_user = BQApp.user;
+        for (var i=0; (p=this.items.items[i]); ++i) {
+            if (p.users && p.users.user===true && is_user) {
+                p.tab.setVisible(true);
+            }
+            if (p.users && p.users.admin===true && is_admin) {
+                p.tab.setVisible(true);
+            }
         }
     },
 
-    setSettingTabVisibility: function(id, v) {
-        var m = this.queryById(id);
-        if (m) m.tab.setVisible(v);
-
-    },
 });
+
+//--------------------------------------------------------------------------------
+// Cache
+//--------------------------------------------------------------------------------
+
+Ext.define('BQ.admin.cache.Manager', {
+    extend: 'Ext.container.Container',
+    alias: 'widget.bq_cache_manager',
+
+    componentCls: 'bq_cache',
+
+    initComponent: function() {
+        this.items = [{
+            xtype: 'container',
+            padding: '8px',
+            html : '<h2>Cache Manager</h2><p>Select to clear all the cache for all the users.</p>',
+        }, {
+            text: 'Clear Cache',
+            xtype: 'button',
+            padding: '8px',
+            style: {left:'20px'},
+            handler: function() {this.clearCache();},
+            clearCache: function() {
+                Ext.Ajax.request({
+                    url: '/admin/cache',
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'text/xml' },
+                    success: function(response) {
+                        var xml = response.responseXML;
+                        BQ.ui.notification('Cache cleared!');
+                    },
+                    failure: function(response) {
+                        BQ.ui.error('Cache failed to be cleared!')
+                    },
+                    scope: this,
+                });
+            },
+        }];
+        this.callParent();
+    },
+
+});
+

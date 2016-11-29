@@ -194,6 +194,8 @@ Ext.define('BQ.preference.Tagger', {
 
 Ext.define('BQ.preference.PreferencePage', {
     extend : 'Ext.tab.Panel',
+    alias: 'widget.bq_preference_manager',
+
     layout : 'fit',
     border: false,
 
