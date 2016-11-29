@@ -736,6 +736,8 @@ Ext.define('BQ.admin.UserInfo', {
 
 Ext.define('BQ.admin.UserManager', {
     extend: 'Ext.container.Container',
+    alias: 'widget.bq_user_manager',
+
     layout: 'border',
     border: false,
     //renderTo: Ext.getBody(),
@@ -1257,7 +1259,7 @@ Ext.define('BQ.admin.loggers.Manager', {
     afterRender: function() {
         this.callParent();
         this.store.load();
-        this.queryById('search').setValue('bq.');
+        this.queryById('search').setValue('bq');
     },
 
     renderer_logger: function(v, metadata, record, rowIndex, colIndex, store) {

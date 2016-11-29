@@ -106,6 +106,8 @@ bisque.paths.bin = ./bqenv/bin
 bisque.paths.packages = ./bqenv/lib/python2.7/site-packages
 bisque.paths.jslocation = ./bqcore
 
+#bisque.logger = http://localhost:8888
+
 # Blobservice
 # Store paths all uploaded objects (into a store resource)
 #bisque.blob_service.store_paths = true
