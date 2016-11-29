@@ -1728,11 +1728,11 @@ def install_mail(params):
 def install_preferences(params):
     if params.get('new_database'): #already initialized
         return params
-    if getanswer ("Initialize Preferences ","N",
+    if getanswer ("Initialize Preferences ","Y",
                   """Initialize system preferences.. new systems will requires this while, upgraded system may depending on changes""")!="Y":
         return params
     cmd = [bin_path('bq-admin'), 'preferences', 'init', ]
-    if getanswer("Force initialization ", "Y", "Replace any existing preferences with new ones") == "Y":
+    if getanswer("Force initialization ", "N", "Replace any existing preferences with new ones") == "Y":
         cmd.append ('-f')
     r  = subprocess.call (cmd, stderr = None)
     if r!=0:
