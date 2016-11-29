@@ -446,6 +446,17 @@ def check_env (section, key):
     return os.environ.get (envkey)
 
 
+# stolen form pylons
+def asbool(obj):
+    if isinstance(obj, basestring):
+        obj = obj.strip().lower()
+        if obj in ['true', 'yes', 'on', 'y', 't', '1']:
+            return True
+        elif obj in ['false', 'no', 'off', 'n', 'f', '0']:
+            return False
+        else:
+            raise ValueError("String is not true/false: %r" % obj)
+    return bool(obj)
 
 
 #################################################
@@ -993,7 +1004,7 @@ def setup_database (params):
     # Step 3: find out whether the database needs initialization
     params = initialize_database(params, DBURL)
     # Step 4: migrate database (and project to latest version)"
-    if not params['new_database']:
+    if not asbool(params['new_database']):
         migrate_database(DBURL)
     return params
 
@@ -1056,7 +1067,7 @@ def initialize_database(params, DBURL=None):
     else:
         db_initialized = True
 
-    params['new_database'] = False
+    params['new_database'] = 'false'
     alembic_params = {
         'script_location' : share_path ('migrations'),
         'sqlalchemy.url'  : params.get ('sqlalchemy.url'),
@@ -1073,7 +1084,7 @@ def initialize_database(params, DBURL=None):
         """) == "Y":
         if call ([bin_path('paster'),'setup-app', config_path('site.cfg')]) != 0:
             raise SetupError("There was a problem initializing the Database")
-        params['new_database'] = True
+        params['new_database'] = 'true'
     return params
 
 
@@ -1703,6 +1714,7 @@ if MAILER=='turbomail':
     MAIL_QUESTIONS = [
         ('mail.smtp.server', "Enter mail transport", "Mail transport"),
     ]
+    SMTP_QS = []
 
 def install_mail(params):
     params['mail.smtp.server'] = os.getenv('MAIL_SERVER', params['mail.smtp.server'])
@@ -1726,7 +1738,7 @@ def install_mail(params):
 #######################################################
 
 def install_preferences(params):
-    if params.get('new_database'): #already initialized
+    if asbool(params.get('new_database')): #already initialized
         return params
     if getanswer ("Initialize Preferences ","Y",
                   """Initialize system preferences.. new systems will requires this while, upgraded system may depending on changes""")!="Y":
@@ -2650,6 +2662,7 @@ def bisque_installer(options, args):
             runtime_params = step_f(runtime_params)
 
     params['bisque.installed'] = "finished"
+    params['new_database'] = 'false'
     params = modify_site_cfg([], params,)
 
     if install_steps == install_options:
