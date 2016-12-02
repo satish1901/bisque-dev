@@ -813,7 +813,8 @@ def prepare_attributes (query, dbtype, attribs):
     # handle any legal attributes in kw
     for ky,v in attribs.items():
         #log.debug ("extra " + str(k) +'=' + str(v))
-        k = LEGAL_ATTRIBUTES.get(ky)
+        k = ky.lstrip('@')
+        k = LEGAL_ATTRIBUTES.get(k)
 
         # Check for special attributes
         if k in ( 'owner_id', 'mex_id'):
