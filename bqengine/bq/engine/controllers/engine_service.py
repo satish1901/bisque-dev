@@ -169,10 +169,6 @@ def load_module(module_dir, engines = None):
     except etree.XMLSyntaxError:
         log.exception ('while parsing %s' % module_path)
         return None
-    bisque_cfg = os.path.join(module_dir,'runtime-bisque.cfg')
-
-    # KGK Add during module run if needed
-    #copy_link (config_path('runtime-bisque.cfg'), bisque_cfg)
 
     ts = os.stat(module_path)
     # for elem in module_root:

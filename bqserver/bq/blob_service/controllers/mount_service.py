@@ -641,10 +641,10 @@ class MountServer(TGController):
         with  self._get_driver(store) as driver:
 
             refs = resource.get ('value')
-            if refs is not None:
+            if refs is not None:   # Single entity
                 refs = [ (resource, setval, split_subpath(refs), storepath) ]
                 rootpath = os.path.dirname(storepath) # dima: fix for stripping multi-file paths
-            else:
+            else:  # Multi-entity
                 refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
                 rootpath = storepath # dima: fix for stripping multi-file paths
             log.debug ("_save_storerefs refs: %s", str(refs))
@@ -880,8 +880,12 @@ class MountServer(TGController):
         # get a driver to use
         #KGK : maybe use a timeout cache here so the connection can be reused?
         log.debug ('making store driver %s: %s', store_name, driver_opts)
-        driver = blob_drivers.make_storage_driver(**driver_opts)
-        return driver
+        try:
+            driver = blob_drivers.make_storage_driver(**driver_opts)
+            return driver
+        except Exception:
+            log.exception ("While creating driver %s", driver_opts)
+        return None
 
 
     ##############################
