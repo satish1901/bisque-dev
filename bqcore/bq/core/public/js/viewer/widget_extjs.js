@@ -236,11 +236,11 @@ Ext.define('BQ.viewer.Image', {
 
     onhover : function(gob, e) {
         //this.fireEvent( 'hover', this, gob, e );
-        if (!gob) {
+        /*if (!gob) {
             if (this.hoverMenu)
                 this.hoverMenu.hide();
             return;
-        }
+        }*/
 
         tagData  = function(gob) {
             var g = gob,
@@ -280,7 +280,15 @@ Ext.define('BQ.viewer.Image', {
                 t = gob.tags[i];
                 if (t.type in BQ.annotations.types_ignore_user_presentation)
                     continue;
-                text = t.name + ': ' + t.value;
+                if (t.value.startsWith('http') || t.value.startsWith('/')) {
+                    if (t.type in BQ.resources.all)
+                        text = Ext.String.format('<a href="/client_service/view?resource={1}">{0}</a>', t.name, t.value);
+                    else
+                        text = Ext.String.format('<a href="{1}">{0}: {1}</a>', t.name, t.value);
+                } else {
+                    text = t.name + ': ' + t.value;
+                }
+
                 cls = 'tags';
                 if (t.type)
                    cls += ' '+t.type;
@@ -301,6 +309,7 @@ Ext.define('BQ.viewer.Image', {
                 hideDelay: 0,
                 dismissDelay: 10000,
                 trackMouse: false,
+                gob: gob,
 
                 //maxWidth : 200,
                 layout: 'fit',
@@ -311,11 +320,13 @@ Ext.define('BQ.viewer.Image', {
                 }],
             });
             this.hover_text = this.hoverMenu.queryById('text');
-        } else {
+            this.hoverMenu.showAt([e.clientX+15, e.clientY-10]);
+        } else if (this.hoverMenu.gob !== gob) {
             this.hover_text.setText(tagData(gob));
+            this.hoverMenu.showAt([e.clientX+15, e.clientY-10]);
         }
         //console.log(e.clientX, e.clientY);
-        this.hoverMenu.showAt([e.clientX+15, e.clientY-10]);
+        //this.hoverMenu.showAt([e.clientX+15, e.clientY-10]);
     },
 
 
