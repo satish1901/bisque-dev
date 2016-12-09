@@ -89,6 +89,8 @@ BQ.resources.known = {
     image: null,
 };
 
+BQ.resources.all = BQ.resources.known;
+
 //--------------------------------------------------------------------------------------
 // BQ.Application
 // Events:

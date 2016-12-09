@@ -850,6 +850,7 @@ Ext.define('BQ.Application.Toolbar', {
 
     addCreateResourceTypes : function(types) {
         var mytypes =  Ext.Object.merge(types, BQ.resources.preferred);
+        BQ.resources.all = Ext.Object.merge(types, BQ.resources.known);
         /*
         for (var name in mytypes) {
             if (!(name in BQ.resources.ignore))
