@@ -1451,6 +1451,16 @@ BQGObject.default_color_stroke = {
     a: 1.0
 };
 
+BQGObject.color_rgb2html = function(c) {
+    var h = Kinetic.Util._rgbToHex(c.r, c.g, c.b);
+    return '#'+h;
+};
+
+BQGObject.color_html2rgb = function(c) {
+    var rgb = Kinetic.Util._hexToRgb(c);
+    return rgb;
+};
+
 BQGObject.confidence_tag = 'confidence';
 BQGObject.confidence_cutoff = 0;
 BQGObject.color_gradient = [];

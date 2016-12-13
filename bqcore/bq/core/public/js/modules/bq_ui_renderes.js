@@ -786,6 +786,17 @@ Ext.define('BQ.selectors.Gobject', {
             editprimitives: editprimitives,
             no_semantic_types: true,
         };
+
+        if (template.color) {
+            var rgb = BQGObject.color_html2rgb(template.color);
+            BQGObject.default_color = {
+                r: rgb.r,
+                g: rgb.g,
+                b: rgb.b,
+                a: 0.5
+            };
+        }
+
         //if (this.selected_resource && this.selected_resource.gobjects) parameters.gobjects = this.selected_resource.gobjects;
         this.viewer = Ext.create('BQ.viewer.Image', {
             resource: this.selected_resource || resource.parent.value,
