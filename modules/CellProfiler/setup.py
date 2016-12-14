@@ -1,9 +1,11 @@
-# Install script for SeedSize
+# Install script for CellProfiler
 import sys
-from bq.setup.module_setup import matlab_setup, python_setup, read_config
+from bq.setup.module_setup import python_setup, require, read_config, docker_setup
+
 
 def setup(params, *args, **kw):
-    return python_setup('BQ.CellProfiler.Adapter.py', params=params)
+    python_setup('CellProfiler.py', params=params)
+    docker_setup('bisque_cellprofiler', 'CellProfiler', 'cellprofiler', params=params)
     
 if __name__ =="__main__":
     params = read_config('runtime-bisque.cfg')

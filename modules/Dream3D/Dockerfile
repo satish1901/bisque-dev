@@ -12,4 +12,5 @@ RUN ln -s /dream3d/Plugins /dream3d/bin
 WORKDIR /module
 COPY Dream3D /module/
 COPY pydist /module/pydist/
+ENV PATH /module:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CMD  [ "Dream3D" ]

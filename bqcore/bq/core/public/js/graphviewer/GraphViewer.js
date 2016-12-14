@@ -111,8 +111,8 @@ TableCard.prototype.populateFields = function (xnode) {
 
 function PipelineCard(node, resource) {
     ResourceCard.call(this, node, resource);
-    this.cardType = 'dream3d_pipeline';
-    this.cardTitle = 'dream3d_pipeline';
+    this.cardType = 'pipeline';
+    this.cardTitle = 'pipeline';
 };
 
 PipelineCard.prototype = new ResourceCard();
@@ -176,7 +176,8 @@ BQFactoryGraph.make = function(node, resource){
     else if (node.label.startsWith("dataset")) {
         card = DataSetCard;
     }
-    else if (node.label.startsWith("dream3d_pipeline")) {
+    else if (node.label.startsWith("dream3d_pipeline") ||
+             node.label.startsWith("cellprofiler_pipeline")) {
         card = PipelineCard;
     }
     else {
@@ -1012,7 +1013,7 @@ Ext.define('BQ.viewer.Pipeline.Panel', {
         me.callParent([context]);
 
         // now add edges between consecutively numbered nodes
-        var sorted_nodes = context['nodes'].sort(function(a,b) { return parseInt(a.value)-parseInt(b.value)});
+        var sorted_nodes = context['nodes'].sort(function(a,b) { return parseInt(a.value)-parseInt(b.value); });
         var previous_node = undefined;
         for (var i = 0; i < sorted_nodes.length; i++) {
             if (previous_node) {
