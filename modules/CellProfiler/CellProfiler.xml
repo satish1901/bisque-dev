@@ -3,84 +3,61 @@
 <module name="CellProfiler" type="runtime" >
 
     <tag name="inputs">
-
         <tag name="mex_url"      type="system-input" />
-
         <tag name="bisque_token" type="system-input" />
 
-        <tag name="resource_url" type="image">
+        <tag name="InputFile"  type="resource">
             <template>
                 <tag name="label" value="Select input image" />
                 <tag name="accepted_type" value="image" />
+                <tag name="accepted_type" value="dataset" />
+                <tag name="prohibit_upload" value="true" />
             </template>
         </tag>
 
-        <tag name="pipeline" value="Select a pipeline..." type="combo">
+        <tag name="pipeline_url"  type="resource">
             <template>
-                <tag name="label" value="pipeline"/>
-                <tag name="select">
-                    <value>Select a pipeline...</value>
-                    <value>Human cells</value>
-                    <value>Tissue neighbors</value>
-                    <value>Wound healing</value>
-                </tag>
-                <tag name="editable" value="false" type="boolean"/>
-                <tag name="fail_value" value="Select a pipeline..."/>
-                <tag name="description" value="Select one of the pre-built pipelines to run on your data." />
+                <tag name="label" value="Select a pipeline" />
+                <tag name="accepted_type" value="cellprofiler_pipeline" />
+                <tag name="prohibit_upload" value="true" />
             </template>
         </tag>
 
+        <tag name="pipeline_params" type="pipelineparams">
+            <template>
+                <tag name="label" value="Pipeline parameters" />
+                <tag name="reference" value="pipeline_url" />
+            </template>
+        </tag>
+
+        <tag name="OutputPrefix"   value="myoutput"  type="string">
+            <template>
+                <tag name="label" value="Name prefix for the output image resource(s)" />
+            </template>
+        </tag>
     </tag>
 
-
     <tag name="outputs">
-
-        <tag name="Summary">
+        <!--  Normal outputs  -->
+        <tag name="output_image" type="image">
             <template>
-                <tag name="label" value="Summary of all analyzed image(s)" />
+                <tag name="label" value="Resulting image resource" />
             </template>
         </tag>
-
-        <tag name="Output image" type="image">
+        <!--  Iterated outputs  -->
+        <tag name="output_table" type="multiparam">
             <template>
-                <tag name="label" value="Output image" />
+                <tag name="label" value="Select a row to see individual results"/>
             </template>
-
-            <gobject name="CellProfiler Annotations">
-                <template>
-                    <tag name="plot" value="true" type="boolean">
-                        <tag name="label" value="Distributions of cell areas, major and minor axis" />
-                        <tag name="title">
-                            <value>Distribution of cell areas</value>
-                            <value>Distribution of major axis</value>
-                            <value>Distribution of minor axis</value>
-                        </tag>
-                        <tag name="xmap" value="tag-value-number" />
-                        <tag name="xreduce" value="histogram" />
-                        <tag name="xpath">
-                            <value>//tag[@name="Area"]</value>
-                        </tag>
-                        <tag name="title">
-                            <value>Area</value>
-                        </tag>
-                        <tag name="args">
-                            <tag name="numbins" value="18" type="number" />
-                        </tag>
-                    </tag>
-                </template>
-            </gobject>
         </tag>
-
-
     </tag>
 
     <tag name="execute_options">
-        <tag name="argument_style" value="named" />
-        <tag name="iterable" value="resource_url" type="dataset" />
+        <tag name="iterable" value="InputFile" type="dataset" />
     </tag>
 
     <tag name="module_options" >
-        <tag name="version" value="0.1" />
+        <tag name="version" value="1" />
     </tag>
 
     <tag name="display_options" >
@@ -88,11 +65,14 @@
         <tag name="group" value="Cell Analysis" />
     </tag>
 
-    <tag name="title" value="CellProfiler" />
-    <tag name="authors" value="BROAD Institute, BISQUE: Utkarsh Gaur" />
-    <tag name="help" type="file" value="public/help.html" />
+    <tag name="interface">
+        <tag name="javascript" type="file" value="webapp.js" />
+    </tag>
 
+    <tag name="title" value="CellProfiler" />
+    <tag name="authors" value="BROAD Institute, BISQUE: UCSB" />
+    <tag name="help" type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />
     <tag name="description" type="string" value="CellProfiler enables biologists to quantitatively measure phenotypes from thousands of images automatically." />
-
+    <tag name="asynchronous" value="True"/>
 </module>

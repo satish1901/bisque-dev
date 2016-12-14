@@ -39,7 +39,7 @@ BQ.selectors.parameters = { 'tag'              : 'BQ.selectors.String',
                             'image_channel'    : 'BQ.selectors.ImageChannel',
                             'pixel_resolution' : 'BQ.selectors.PixelResolution',
                             'annotation_attr'  : 'BQ.selectors.AnnotationsAttributes',
-                            'dream3d_pipelineparams' : 'BQ.selectors.Dream3DPipelineParams',
+                            'pipelineparams'   : 'BQ.selectors.PipelineParams',
 
                             'group'            : 'BQ.selectors.Group', // special renderer that groups sub-renderers
                             'group_per_channel': 'BQ.selectors.GroupPerChannel', // special renderer that groups and inits per channel
@@ -1226,14 +1226,14 @@ Ext.define('BQ.selectors.PixelResolution', {
 
 
 /*******************************************************************************
-BQ.selectors.Dream3DPipelineParams relies on BQ.selectors.Resource and altough
+BQ.selectors.PipelineParams relies on BQ.selectors.Resource and altough
 it is instantiated directly it needs existing BQ.selectors.Resource to listen to
 and read data from!
 
 Creates sub-selectors for each pipeline parameter.
 *******************************************************************************/
 
-Ext.define('BQ.selectors.Dream3DPipelineParams', {
+Ext.define('BQ.selectors.PipelineParams', {
     alias: 'widget.selectorpipelineparams',
     extend: 'BQ.selectors.Selector',
     requires: ['Ext.form.field.Number'],
@@ -1353,7 +1353,7 @@ Ext.define('BQ.selectors.Dream3DPipelineParams', {
 
     },
 
-    // extract parameters from a dream3d pipeline JSON document
+    // extract parameters from a dream3d/cellprofiler/etc pipeline JSON document
     // and return them as list of {"name":..., "type":..., "value":..., "xtype":...} elements.
     extractParameters: function(node) {
         var fields = [];

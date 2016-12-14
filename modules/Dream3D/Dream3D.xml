@@ -22,7 +22,7 @@
             </template>
         </tag>
 
-        <tag name="pipeline_params" type="dream3d_pipelineparams">
+        <tag name="pipeline_params" type="pipelineparams">
             <template>
             	<tag name="label" value="Pipeline parameters" />
             	<tag name="reference" value="pipeline_url" />
