@@ -657,7 +657,7 @@ Ext.define('BQ.table.Panel', {
             this.needs_loading_first_child = true;
         }
 
-        if (this.groups && this.groups.length>1) {
+        if (this.groups && (this.groups.length>1 || (this.groups.length===1 && !json.headers))) {
             this.tabs = this.add({
                 xtype: 'tabpanel',
                 cls: 'tabs',

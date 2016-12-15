@@ -262,7 +262,7 @@ class TableController(ServiceController):
     def _default(self, *args, **kw):
         """find export plugin and run export"""
         log.info ("STARTING table (%s): %s", datetime.now().isoformat(), request.url)
-        path = request.path_qs.replace(self.baseuri, '').split('/')
+        path = request.path_qs.replace(self.baseuri, '', 1).split('/')
         path = [urllib.unquote(p) for p in path if len(p)>0]
         log.debug("Path: %s", path)
 
