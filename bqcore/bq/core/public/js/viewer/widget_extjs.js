@@ -251,7 +251,7 @@ Ext.define('BQ.viewer.Image', {
                 text = '',
                 t = null;
 
-            while (g.parent) {
+            while (g && g.parent) {
                 tree.push(g);
                 g = g.parent;
             }
@@ -275,29 +275,31 @@ Ext.define('BQ.viewer.Image', {
 
             // add sub-tags
             level = tree.length+1;
-            var N = Math.min(10, gob.tags.length);
-            for (var i=0; i<N; ++i) {
-                t = gob.tags[i];
-                if (t.type in BQ.annotations.types_ignore_user_presentation)
-                    continue;
-                if (t.value.startsWith('http') || t.value.startsWith('/')) {
-                    if (t.type in BQ.resources.all)
-                        text = Ext.String.format('<a href="/client_service/view?resource={1}">{0}</a>', t.name, t.value);
-                    else
-                        text = Ext.String.format('<a href="{1}">{0}: {1}</a>', t.name, t.value);
-                } else {
-                    text = t.name + ': ' + t.value;
-                }
+            if (gob && gob.tags) {
+                var N = Math.min(10, gob.tags.length);
+                for (var i=0; i<N; ++i) {
+                    t = gob.tags[i];
+                    if (t.type in BQ.annotations.types_ignore_user_presentation)
+                        continue;
+                    if (t.value && t.value.startsWith && (t.value.startsWith('http') || t.value.startsWith('/'))) {
+                        if (t.type in BQ.resources.all)
+                            text = Ext.String.format('<a href="/client_service/view?resource={1}">{0}</a>', t.name, t.value);
+                        else
+                            text = Ext.String.format('<a href="{1}">{0}: {1}</a>', t.name, t.value);
+                    } else {
+                        text = t.name + ': ' + t.value;
+                    }
 
-                cls = 'tags';
-                if (t.type)
-                   cls += ' '+t.type;
-                found += Ext.String.format('<p class="{0}" style="margin-left: {1}px;">{2}</p>', cls, level*10, text);
+                    cls = 'tags';
+                    if (t.type)
+                       cls += ' '+t.type;
+                    found += Ext.String.format('<p class="{0}" style="margin-left: {1}px;">{2}</p>', cls, level*10, text);
+                }
             }
 
             return found;
         }
-
+        if (!gob) return;
         if (!this.hoverMenu) {
             this.hoverMenu = Ext.create('Ext.tip.ToolTip', {
                 cls: 'viewer_tooltip',
