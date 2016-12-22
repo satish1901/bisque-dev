@@ -323,7 +323,7 @@ Ext.define('BQ.viewer.Image', {
             });
             this.hover_text = this.hoverMenu.queryById('text');
             this.hoverMenu.showAt([e.clientX+15, e.clientY-10]);
-        } else if (this.hoverMenu.gob !== gob) {
+        } else if (this.hoverMenu.gob !== gob || this.hoverMenu.isVisible() === false) {
             this.hover_text.setText(tagData(gob));
             this.hoverMenu.showAt([e.clientX+15, e.clientY-10]);
         }
