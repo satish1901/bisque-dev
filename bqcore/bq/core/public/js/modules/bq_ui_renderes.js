@@ -195,6 +195,23 @@ Ext.define('BQ.selectors.Selector', {
         this.fireEvent( 'changed', this, v );
     },
 
+    getValue: function() {
+        if (!this.resource) return;
+
+        if (this.resource.value) {
+            return this.resource.value;
+        } else {
+            var v = [],
+                vv = null;
+
+            for (var i=0; (vv=this.resource.values[i]); ++i) {
+                //if (!vv) continue;
+                v.push(vv.value);
+            }
+            return v;
+        }
+    },
+
     // reimplement: you need to provide a way to programmatically select a resource
     select: function(new_resource) {
         this.setValue(new_resource.value);
