@@ -13,6 +13,7 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 import os
 import sys
 import math
+import copy
 import logging
 import pkg_resources
 from lxml import etree
@@ -108,7 +109,8 @@ class TransformOperation(BaseOperation):
             if v != dims.get(n):
                 raise ImageServiceException(400, 'transform: input image is incompatible, %s must be %s but is %s'%(n, v, dims.get(n)) )
 
-        extra = transforms[transform]['command']
+        extra = copy.deepcopy(transforms[transform]['command'])
         if len(params)>0:
             extra.extend([','.join(params)])
-        return self.server.enqueue(token, 'transform', ofile, fmt=default_format, command=extra, dims=transforms[transform]['info'])
+        info = copy.deepcopy(transforms[transform]['info'])
+        return self.server.enqueue(token, 'transform', ofile, fmt=default_format, command=extra, dims=info)
