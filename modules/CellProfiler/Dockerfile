@@ -70,6 +70,4 @@ RUN mkdir /module/CellProfiler/workdir
 
 ENV PATH /module:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-#ENTRYPOINT ["python", "CellProfiler.py", "--run", "--run-headless"]
-#CMD ["--help"]
 CMD  [ "CellProfiler" ]
