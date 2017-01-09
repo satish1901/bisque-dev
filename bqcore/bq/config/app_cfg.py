@@ -110,11 +110,12 @@ class BisqueAppConfig(AppConfig):
         self.has_database = True
         if not sqlalchemy_url.startswith('sqlite://'):
             return super(BisqueAppConfig, self).setup_sqlalchemy()
+        log.info ("SQLLite special handling NullPool timoout")
         from sqlalchemy.pool import NullPool
         from sqlalchemy import engine_from_config
         engine = engine_from_config(config, 'sqlalchemy.',
                                     poolclass=NullPool,
-                                    connect_args = { 'timeout' : 300 } ,
+                                    connect_args = { 'timeout' : 3000 } ,
                                 )
         config['pylons.app_globals'].sa_engine = engine
         # Pass the engine to initmodel, to be able to introspect tables

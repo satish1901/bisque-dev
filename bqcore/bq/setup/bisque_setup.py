@@ -186,7 +186,7 @@ else:
 
 
 
-TRUE_RESPONSE = set (['true', 't', 'yes', 'y', '1'])
+TRUE_RESPONSE = { 'true': 'Y', 'y': 'Y', 't' : 'Y', 'yes' : 'Y', '1' : 'Y'}
 
 ############################################
 # HELPER FUNCTIONS
@@ -1626,11 +1626,9 @@ def check_condor (params, cfg  = None):
     print "Condor job management software has been found on your system"
     print "Bisque can use condor facilities for some module execution"
 
+    # Check BISQUE_CONDOR_ENABLED
     dval = check_env (None, 'condor.enabled') or 'true'
-    if dval.lower() in TRUE_RESPONSE:
-        dval = 'Y'
-    else:
-        dval = 'N'
+    dval = TRUE_RESPONSE.get (dval.lower(), 'N')
     if getanswer("Configure modules for condor", dval,
                  "Configure condor shared directories for better performance")=="Y":
         if 'condor' not in params['runtime.platforms']:

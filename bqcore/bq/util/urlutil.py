@@ -1,35 +1,40 @@
 import urlparse
-import posixpath
-import urllib
-import urlparse
 
-def urljoin(base, partialpath, **kw):
-    url = urlparse.urlparse(base)
-    path = posixpath.normpath(posixpath.join(url[2], partialpath))
-    #query = urlparse.parse_qs(url[4])
-    if url[4]:
-        query = dict ([ q.split('=')  for q in url[4].split('&')])
-    else:
-        query = {}
-    query.update ( urllib.urlencode(kw) )
-    return urlparse.urlunparse(
-        (url.scheme,url.netloc,path,url.params,query,url.fragment)
-        )
+import furl
 
-def update_url(url, params = {}):
+def urljoin(base, partial, **kw):
+    """ Join all components for a url overriding any components in base from partial
+
+    @param base: The base url
+    @param partial: The overriding url
+    @param kw :  extra url parameters
+    @return a new url string
+    """
+    updated = furl.furl (base)
+    partial = furl.furl (partial)
+
+    updated.scheme = partial.scheme or updated.scheme
+    updated.username = partial.username or updated.username
+    updated.password = partial.username or updated.username
+    updated.host     = partial.host or updated.host
+    updated.port     = partial.port or updated.port
+    updated.path = urlparse.urljoin (str(updated.path), str(partial.path))
+    updated.query.params  = partial.query.params or updated.query.params
+    updated.query.params.update (kw)
+    return updated.url
+
+
+def update_url(url, params = None):
     'construct a url with new params'
-
-    url_parts = list(urlparse.urlparse(url))
-    query = dict(urlparse.parse_qsl(url_parts[4]))
-    query.update(params)
-
-    url_parts[4] = urllib.urlencode(query)
-    return  urlparse.urlunparse(url_parts)
+    url = furl.furl (url)
+    if params :
+        url.query.params.update (params)
+    return url.url
 
 def strip_url_params(url):
     'strip url params returning clean url and param multidict '
 
-    url_parts = list(urlparse.urlparse(url))
-    query = dict(urlparse.parse_qsl(url_parts[4]))
-    url_parts[4] = None
-    return  urlparse.urlunparse(url_parts), query
+    url = furl.furl(url)
+    params = url.query.params.copy()
+    url.query.params = {}
+    return url.url, params

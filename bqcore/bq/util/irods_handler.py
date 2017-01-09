@@ -1,12 +1,11 @@
 import os
 import re
 import urlparse
-import shutil
-import atexit
 import logging
-import irods
 import subprocess
 import urllib
+
+import irods
 
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
@@ -21,7 +20,7 @@ class IrodsError(Exception):
 log = logging.getLogger('bq.irods')
 
 parse_net = re.compile('^((?P<user>[^:]+):(?P<password>[\w.#^!;]+)?@)?(?P<host>[^:]+)(?P<port>:\d+)?')
-irods_env, status = irods.getRodsEnv()
+irods_env, status = irods.getRodsEnv() # pylint: disable=no-member
 
 
 if not os.path.exists(IRODS_CACHE):
@@ -67,6 +66,7 @@ class IrodsConnection(object):
         self.conn = None
 
     def open(self):
+        # pylint: disable=no-member
         conn, err = irods.rcConnect(self.host, self.port, self.user, self.zone)
         if conn is None:
             raise IrodsError("Can't create connection to %s " % self.host)
@@ -138,7 +138,7 @@ def irods_fetch_file(url, **kw):
     if localname is None:
         with ic:
             log.debug( "irods_fetching %s -> %s" , url, ic.path)
-            f = irods.iRodsOpen(ic.conn, ic.path)
+            f = irods.iRodsOpen(ic.conn, ic.path) # pylint: disable=no-member
             if not f:
                 raise IrodsError("can't read from %s" , url)
             localname = irods_cache_save(f, ic.path)
@@ -166,9 +166,9 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
         # Hmm .. if an irodsEnv exists then it is used over our login name provided above,
         # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
         # irods.mkCollR(conn, basedir, os.path.dirname(path))
-        retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path))
+        retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path)) # pylint: disable=no-member
         log.debug( "irods-path %s" %  ic.path)
-        f = irods.iRodsOpen(ic.conn, ic.path, 'w')
+        f = irods.iRodsOpen(ic.conn, ic.path, 'w') # pylint: disable=no-member
         if f:
             localname = irods_cache_save(fileobj, ic.path, f)
             f.close()
@@ -180,7 +180,7 @@ def irods_push_file_IPUT(fileobj, url, savelocal=True, **kw):
         # Hmm .. if an irodsEnv exists then it is used over our login name provided above,
         # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
         # irods.mkCollR(conn, basedir, os.path.dirname(path))
-        retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path))
+        retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path)) # pylint: disable=no-member
         if retcode:
             raise IrodsError("can't write irods url %s" % url)
         log.debug( "irods-path %s" %  ic.path)
@@ -199,7 +199,7 @@ def irods_delete_file(url, **kw):
         os.remove (localname)
     with ic:
         log.debug( "irods_delete %s -> %s" % (url, ic.path))
-        f = irods.iRodsOpen(ic.conn, ic.path)
+        f = irods.iRodsOpen(ic.conn, ic.path) # pylint: disable=no-member
         if not f:
             raise IrodsError("can't read from %s" % url)
         f.close()
@@ -208,7 +208,7 @@ def irods_delete_file(url, **kw):
 def irods_isfile (url, **kw):
     with IrodsConnection(url, **kw) as ic:
         log.debug( "irods_delete %s -> %s" % (url, ic.path))
-        f = irods.iRodsOpen(ic.conn, ic.path, 'r')
+        f = irods.iRodsOpen(ic.conn, ic.path, 'r') # pylint: disable=no-member
         if f:
             f.close()
             return True
@@ -216,7 +216,7 @@ def irods_isfile (url, **kw):
 
 def irods_isdir (url, **kw):
     with IrodsConnection(url, **kw) as ic:
-        coll = irods.irodsCollection(ic.conn)
+        coll = irods.irodsCollection(ic.conn) # pylint: disable=no-member
         path = coll.openCollection(ic.path)
         # Bug in openCollection (appends \0)
         path = path.strip('\x00')
@@ -227,7 +227,7 @@ def irods_isdir (url, **kw):
 
 def irods_fetch_dir(url, **kw):
     with IrodsConnection(url, **kw) as ic:
-        coll = irods.irodsCollection(ic.conn)
+        coll = irods.irodsCollection(ic.conn) # pylint: disable=no-member
         path = coll.openCollection(ic.path)
         # Bug in openCollection (appends \0)
         path = path.strip('\x00')
@@ -244,12 +244,3 @@ def irods_fetch_dir(url, **kw):
         for nm, resource in  coll.getObjects():
             result.append( '/'.join([ic.base_url, ic.path[1:], nm]))
         return result
-
-
-
-
-
-
-
-
-
