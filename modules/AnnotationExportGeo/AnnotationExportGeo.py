@@ -29,13 +29,12 @@ class AnnotationGeo(object):
     """Example Python module
     Read tags from image server and store tags on image directly
     """
-    def main(self, mex_url=None, bisque_token=None, image_url=None, bq=None):
+    def main(self, mex_url=None, bisque_token=None, bq=None):
         #  Allow for testing by passing an alreay initialized session
         if bq is None:
             bq = BQSession().init_mex(mex_url, bisque_token)
         bq.update_mex('Starting')
-        if image_url is None:
-            image_url = bq.parameter_value(name='dataset_url')
+        image_url = bq.parameter_value(name='dataset_url')
         fmt = bq.parameter_value(name='format').lower()
 
         mex_id = mex_url.split('/')[-1]
@@ -84,7 +83,6 @@ if __name__ == "__main__":
     parser = optparse.OptionParser()
     parser.add_option("-c", "--credentials", dest="credentials",
                       help="credentials are in the form user:password")
-    #parser.add_option('--image_url')
     #parser.add_option('--mex_url')
     #parser.add_option('--auth_token')
 
@@ -92,18 +90,17 @@ if __name__ == "__main__":
 
     M = AnnotationGeo()
     if options.credentials is None:
-        mex_url, auth_token, image_url = args[:3]
+        mex_url, auth_token = args[:2]
         bq = BQSession().init_mex(mex_url, auth_token)
     else:
         mex_url = ''
-        image_url = args.pop(0)
         if not options.credentials:
             parser.error('need credentials')
         user,pwd = options.credentials.split(':')
         bq = BQSession().init_local(user, pwd)
 
     try:
-        M.main(mex_url=mex_url, image_url=image_url, bq=bq )
+        M.main(mex_url=mex_url, bq=bq )
     except Exception, e:
         bq.fail_mex(traceback.format_exc())
     sys.exit(0)

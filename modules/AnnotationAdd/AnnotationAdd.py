@@ -34,7 +34,7 @@ class AnnotationAdd(object):
     """Example Python module
     Read tags from image server and store tags on image directly
     """
-    def main(self, mex_url=None, bisque_token=None, image_url=None, bq=None):
+    def main(self, mex_url=None, bisque_token=None, bq=None):
         #  Allow for testing by passing an alreay initialized session
         if bq is None:
             bq = BQSession().init_mex(mex_url, bisque_token)
@@ -97,7 +97,6 @@ if __name__ == "__main__":
     parser = optparse.OptionParser()
     parser.add_option("-c", "--credentials", dest="credentials",
                       help="credentials are in the form user:password")
-    #parser.add_option('--image_url')
     #parser.add_option('--mex_url')
     #parser.add_option('--auth_token')
 
@@ -105,17 +104,15 @@ if __name__ == "__main__":
 
     M = AnnotationAdd()
     if options.credentials is None:
-        mex_url, auth_token, image_url = args[:3]
-        M.main(mex_url, auth_token, image_url)
+        mex_url, auth_token = args[:2]
+        M.main(mex_url, auth_token)
     else:
-        image_url = args.pop(0)
-
         if not options.credentials:
             parser.error('need credentials')
         user,pwd = options.credentials.split(':')
 
         bq = BQSession().init_local(user, pwd)
-        M.main(image_url, bq=bq)
+        M.main(bq=bq)
 
 
 
