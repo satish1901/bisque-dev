@@ -76,10 +76,10 @@ from bq.util.paths import data_path
 from bq.util.urlutil import strip_url_params
 from bq.util.hash import make_uniq_code, is_uniq_code
 
-from .bisquik_resource import BisquikResource, force_dbload, check_access
+from .bisquik_resource import BisquikResource, force_dbload
 from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types,  resource_permission
 from .resource_query import prepare_permissions, RESOURCE_READ, RESOURCE_EDIT
-from .resource_auth import resource_acl
+from .resource_auth import resource_acl, check_access
 from .resource import HierarchicalCache
 from .formats import find_formatter
 #from .doc_resource import XMLDocumentResource
