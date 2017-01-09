@@ -58,10 +58,10 @@ import os
 import string
 from datetime import datetime
 from urllib import quote, unquote
-from urlparse import urlparse
 import io
 import itertools
 import mmap
+
 
 import transaction
 from lxml import etree
@@ -82,6 +82,7 @@ from bq.core.service import ServiceController
 from bq.data_service.model import BQUser, Image, TaggableAcl
 from bq.util.bisquik2db import bisquik2db, db2tree
 from bq.util.paths import data_path
+from bq.util import urlutil
 
 #from bq.image_service.model import  FileAcl
 
@@ -282,6 +283,7 @@ class AdminController(ServiceController):
         if operation == 'config' or operation == '':
             # dima: here we have to identify what kind of logs we are using
             if log_url is not None:
+                log_url = urlutil.urljoin (request.url, log_url)
                 xml = etree.Element('log', name='log', uri=log_url, type='remote')
             else:
                 xml = etree.Element('log', name='log', uri='/admin/logs/read', type='local')

@@ -1,4 +1,6 @@
+import os
 from datetime import date
+
 __all__ = [
     '__VERSION__',
     '__COPYRIGHT__',
@@ -8,7 +10,7 @@ __all__ = [
     ]
 
 __PACKAGE_NAME__ = "Bisque"
-__VERSION__ = "0.5.9"
+__VERSION__ = "0.5.9-DEVELOPER-"
 __VERSION_STRING__ =  ".5.9"
 __VERSION_HASH__ = "20161010"
 __DB_VERSION__ = 6
