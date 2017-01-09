@@ -137,7 +137,7 @@ class BisquikResource(Resource):
         return self.resource_type
 
     def force_dbload(self, item):
-        if item and isinstance(item, sqlalchemy.Query): #pylint: disable=no-member
+        if item and isinstance(item, sqlalchemy.orm.Query): #pylint: disable=no-member
             item = item.first()
         return item
 
@@ -167,7 +167,7 @@ class BisquikResource(Resource):
 
         if query is None:
             return None
-        if  isinstance(query, sqlalchemy.Query): #pylint: disable=no-member
+        if  isinstance(query, sqlalchemy.orm.Query): #pylint: disable=no-member
             query = document_permission(query, action=action)
             log.debug ("PERMISSION:query %s" , str(query))
         else:
