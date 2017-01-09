@@ -52,36 +52,28 @@ DESCRIPTION
 
 """
 import logging
-import sqlalchemy
 import urllib
 
-import  pylons
-import transaction
+import sqlalchemy
 from pylons.controllers.util import abort
-from paste.deploy.converters import asbool
-from sqlalchemy import desc
-from sqlalchemy.orm import Query
 
 import tg
-from tg import controllers, redirect, expose, response, request
-from tg import require
-from tg.controllers import CUSTOM_CONTENT_TYPE
+from tg import  redirect, expose,  request
 from lxml import etree
-from repoze.what.predicates import not_anonymous
 from furl import furl
 
 from bq.core import identity
-from bq.core.model import metadata, DBSession
-from bq.data_service.model  import Taggable, Image, dbtype_from_tag, dbtype_from_name, all_resources
+from bq.core.model import DBSession
+from bq.data_service.model  import  dbtype_from_tag
 from bq.util.bisquik2db import bisquik2db, db2tree
-from bq.util.hash import make_uniq_code, is_uniq_code
+from bq.util.hash import is_uniq_code
 
 
 from .resource import Resource
-from .resource_query import resource_query, resource_load, resource_count, resource_permission, resource_delete, document_permission
+from .resource_query import resource_query, resource_load, resource_count, resource_delete, document_permission
 from .resource_query import RESOURCE_READ, RESOURCE_EDIT
 from .formats import find_formatter
-from .resource_auth import ResourceAuth, force_dbload, check_access
+from .resource_auth import ResourceAuth, force_dbload
 
 log = logging.getLogger("bq.data_service.bisquik_resource")
 
@@ -99,7 +91,7 @@ class PixelHandler (object):
     def _default(self, *path, **kw):
         r = force_dbload (tg.request.bisque.parent)
         url = furl ('/image_service/%s' % r.resource_uniq)
-        url.path.segments.extend (path)
+        url.path.segments.extend (path) # pylint: disable=no-member
         url.args = kw
         log.debug ('REDIRECT %s ' % url.url)
         redirect (base_url=url.url)
@@ -145,7 +137,7 @@ class BisquikResource(Resource):
         return self.resource_type
 
     def force_dbload(self, item):
-        if item and isinstance(item, Query):
+        if item and isinstance(item, sqlalchemy.Query): #pylint: disable=no-member
             item = item.first()
         return item
 
@@ -175,19 +167,19 @@ class BisquikResource(Resource):
 
         if query is None:
             return None
-        if  isinstance(query, Query):
+        if  isinstance(query, sqlalchemy.Query): #pylint: disable=no-member
             query = document_permission(query, action=action)
-            log.debug ("PERMISSION:query %s" % query)
+            log.debug ("PERMISSION:query %s" , str(query))
         else:
             #   Previously loaded resource .. recreate query but with
             #   permission check
-            log.debug ("PERMISSION: loaded object %s %s" % ((query.xmltag, query.__class__), query.id))
+            log.debug ("PERMISSION: loaded object %s %s" , (query.xmltag, query.__class__), query.id)
             query = resource_load ((query.xmltag, query.__class__), ident=query.id)
             query = document_permission (query, action=action)
 
         resource = self.force_dbload(query)
         if resource is None:
-            log.info ("Permission check failure %s = %s" % (query, resource))
+            log.info ("Permission check failure %s = %s" , str(query), str( resource))
             if identity.not_anonymous():
                 abort(403)
             else:
@@ -305,7 +297,7 @@ class BisquikResource(Resource):
         """
         view=kw.pop('view', None)
         format = kw.pop('format', None)
-        log.info ("NEW: %s %s " %(request.url, xml) )
+        log.info ("NEW: %s %s... " ,request.url, xml[:64])
 
         # Create a DB object from the document.
         #if  not identity.not_anonymous():
