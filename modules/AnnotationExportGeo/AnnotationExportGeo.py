@@ -34,8 +34,8 @@ class AnnotationGeo(object):
         if bq is None:
             bq = BQSession().init_mex(mex_url, bisque_token)
         bq.update_mex('Starting')
-        if image_url is None:
-            image_url = bq.parameter_value(name='dataset_url')
+        #if image_url is None:
+        image_url = bq.parameter_value(name='dataset_url')
         fmt = bq.parameter_value(name='format').lower()
 
         mex_id = mex_url.split('/')[-1]
@@ -107,5 +107,3 @@ if __name__ == "__main__":
     except Exception, e:
         bq.fail_mex(traceback.format_exc())
     sys.exit(0)
-
-
