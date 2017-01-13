@@ -366,7 +366,10 @@ class ExporterGeo():
 
         if meta is None:
             uniq = resource.get('resource_uniq')
-            meta = image_service.meta(uniq)
+            try:
+                meta = image_service.meta(uniq)
+            except Exception:
+                meta = etree.Element ('image')
 
         # get proj4
         q = meta.xpath('tag[@name="Geo"]/tag[@name="Model"]/tag[@name="proj4_definition"]')

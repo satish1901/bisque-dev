@@ -606,6 +606,36 @@ class ImageServiceTests(ImageServiceTestBase):
             'image_pixel_format': 'unsigned integer' }
         self.validate_image_variant(resource, filename, commands, meta_required)
 
+    def test_fuse_display_3d_2c_uint16(self):
+        resource = self.resource_3d_uint16
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
+        filename = 'im_3d_uint16.fuse.display.jpg'
+        commands = [('slice', ',,1,1'), ('tile', '0,0,0,512'), ('depth', '8,d'), ('fuse', 'display'), ('format', 'jpeg')]
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '512',
+            'image_num_y': '512',
+            'image_num_c': '3',
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' }
+        self.validate_image_variant(resource, filename, commands, meta_required)
+
+    def test_fuse_gray_3d_2c_uint16(self):
+        resource = self.resource_3d_uint16
+        self.assertIsNotNone(resource, 'Resource was not uploaded')
+        filename = 'im_3d_uint16.fuse.gray.jpg'
+        commands = [('slice', ',,1,1'), ('tile', '0,0,0,512'), ('depth', '8,d'), ('fuse', 'gray'), ('format', 'jpeg')]
+        meta_required = { 'format': 'JPEG',
+            'image_num_x': '512',
+            'image_num_y': '512',
+            'image_num_c': '1',
+            'image_num_z': '1',
+            'image_num_t': '1',
+            'image_pixel_depth': '8',
+            'image_pixel_format': 'unsigned integer' }
+        self.validate_image_variant(resource, filename, commands, meta_required)
+
     #################################
     # XML outputs
     #################################
