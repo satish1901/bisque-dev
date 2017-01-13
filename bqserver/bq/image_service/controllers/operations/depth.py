@@ -48,10 +48,10 @@ class DepthOperation(BaseOperation):
     def __str__(self):
         return 'depth: returns an image with converted depth per pixel, arg = depth,method[,format][,channelmode]'
 
-    def dryrun(self, token, arg):
-        arg = arg.lower()
-        ofile = '%s.depth_%s'%(token.data, arg)
-        return token.setImage(fname=ofile, fmt=default_format)
+    # def dryrun(self, token, arg):
+    #     arg = arg.lower()
+    #     ofile = '%s.depth_%s'%(token.data, arg)
+    #     return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
         ms = ['f', 'd', 't', 'e', 'c', 'n', 'hounsfield']

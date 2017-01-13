@@ -109,6 +109,8 @@ class ImageServiceController(ServiceController):
 
     def __do_process (self, url, **kw):
         ''' runs requested operation '''
+        log.info ("STARTING INTERNAL (%s): %s", datetime.now().isoformat(), url)
+
         m = re.search(r'(\/image_service\/(image[s]?\/|))(?P<id>[\w-]+)', url) #includes cases without image(s) in the url
         if m is None: #url did not match the regex
             return None
@@ -131,8 +133,12 @@ class ImageServiceController(ServiceController):
 
         # run processing
         try:
-            return self.srv.process(url, uniq, imagemeta=meta, resource=resource, user_name=user_name)
+            r = self.srv.process(url, uniq, imagemeta=meta, resource=resource, user_name=user_name)
+            log.info ("FINISHED INTERNAL (%s): %s", datetime.now().isoformat(), url)
+            return r
         except ImageServiceException, e:
+            log.error('Responce Code: %s for %s: %s ' % (e.code, uniq, e.message))
+            log.info ("FINISHED INTERNAL with ERROR (%s): %s", datetime.now().isoformat(), url)
             abort(e.code, e.message)
 
     @classmethod

@@ -28,17 +28,17 @@ class RemapOperation(BaseOperation):
        arg = channel,channel...
        output image will be constructed from channels 1 to n from input image, 0 means black channel
        remap=display - will use preferred mapping found in file's metadata
-       remap=gray - will return gray scale image with visual weighted mapping from RGB or equal weights for other nuber of channels
+       remap=gray - will return gray scale image with visual weighted mapping from RGB or equal weights for other number of channels
        ex: remap=3,2,1"""
     name = 'remap'
 
     def __str__(self):
         return 'remap: returns an image with the requested channel mapping, arg = [channel,channel...]|gray|display'
 
-    def dryrun(self, token, arg):
-        arg = arg.lower()
-        ofile = '%s.map_%s'%(token.data, arg)
-        return token.setImage(fname=ofile, fmt=default_format)
+    # def dryrun(self, token, arg):
+    #     arg = arg.lower()
+    #     ofile = '%s.map_%s'%(token.data, arg)
+    #     return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
         arg = arg.lower()
@@ -46,18 +46,18 @@ class RemapOperation(BaseOperation):
         ofile = '%s.map_%s'%(token.data, arg)
         log.debug('Remap %s: %s to %s with [%s]', token.resource_id, ifile, ofile, arg)
 
-        channels = 0
+        num_channels = 0
         if arg == 'display':
             args = ['-fusemeta']
-            channels = 3
+            num_channels = 3
         elif arg=='gray' or arg=='grey':
             args = ['-fusegrey']
-            channels = 1
+            num_channels = 1
         else:
             args = ['-remap', arg]
-            channels = len(arg.split(','))
+            num_channels = len(arg.split(','))
 
         info = {
-            'image_num_c': channels,
+            'image_num_c': num_channels,
         }
         return self.server.enqueue(token, 'remap', ofile, fmt=default_format, command=args, dims=info)
