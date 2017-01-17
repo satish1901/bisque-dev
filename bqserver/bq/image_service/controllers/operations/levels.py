@@ -34,10 +34,10 @@ class LevelsOperation(BaseOperation):
     def __str__(self):
         return 'levels: adjust levels in an image, levels=minvalue,maxvalue,gamma ex: levels=15,200,1.2'
 
-    def dryrun(self, token, arg):
-        arg = arg.lower()
-        ofile = '%s.levels_%s'%(token.data, arg)
-        return token.setImage(fname=ofile, fmt=default_format)
+    # def dryrun(self, token, arg):
+    #     arg = arg.lower()
+    #     ofile = '%s.levels_%s'%(token.data, arg)
+    #     return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
         arg = arg.lower()

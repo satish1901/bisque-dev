@@ -508,6 +508,9 @@ Ext.define('BQ.selectors.Resource', {
     },
 
     onerror: function(message) {
+        if (typeof message === 'object' && message.message) {
+            message = message.message;
+        }
         BQ.ui.error('Error fethnig resource:<br>' + message);
     },
 
@@ -525,6 +528,7 @@ Ext.define('BQ.selectors.Resource', {
                 });
             }
 
+            if (resource.value)
             BQFactory.request({
                 uri: resource.value,
                 cb: callback(this, 'onfetched'),

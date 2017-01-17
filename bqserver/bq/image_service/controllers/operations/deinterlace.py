@@ -32,12 +32,12 @@ class DeinterlaceOperation(BaseOperation):
     def __str__(self):
         return 'deinterlace: returns a deinterlaced image'
 
-    def dryrun(self, token, arg):
-        arg = arg.lower() or 'avg'
-        if arg not in ['odd', 'even', 'avg']:
-            raise ImageServiceException(400, 'Deinterlace: parameter must be either "odd", "even" or "avg"')
-        ofile = '%s.deinterlace_%s'%(token.data, arg)
-        return token.setImage(fname=ofile, fmt=default_format)
+    # def dryrun(self, token, arg):
+    #     arg = arg.lower() or 'avg'
+    #     if arg not in ['odd', 'even', 'avg']:
+    #         raise ImageServiceException(400, 'Deinterlace: parameter must be either "odd", "even" or "avg"')
+    #     ofile = '%s.deinterlace_%s'%(token.data, arg)
+    #     return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
         arg = arg.lower() or 'avg'

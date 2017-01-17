@@ -25,6 +25,11 @@ footers = {
     'geojson': ']}',
 }
 
+separators = {
+    'kml': '',
+    'geojson': ',',
+}
+
 class AnnotationGeo(object):
     """Example Python module
     Read tags from image server and store tags on image directly
@@ -45,7 +50,7 @@ class AnnotationGeo(object):
         else:
             datasets = [image_url]
 
-        output = headers[fmt]
+        output = []
         for ds_url in datasets:
             try:
                 _,uniq = ds_url.rsplit('/', 1)
@@ -55,15 +60,18 @@ class AnnotationGeo(object):
                 # strip header and footer from individual files
                 if len(o)>0 and o.startswith(headers[fmt]) and o.endswith(footers[fmt]):
                     o = o[len(headers[fmt]):-len(footers[fmt])]
-                output = '%s%s'%(output, o)
+
+                if o is not None and len(o)>0:
+                    output.append(o)
             except Exception:
                 pass
-        output = '%s%s'%(output, footers[fmt])
 
         #write into a file
         out_filename = 'annotations_%s_%s.%s'%(dt, mex_id, fmt)
         with open(out_filename, 'w') as f:
-            f.write(output)
+            f.write(headers[fmt])
+            f.write(separators[fmt].join(output))
+            f.write(footers[fmt])
 
         # need to save the CSV file and write its reference
         resource = etree.Element('file', name='ModuleExecutions/AnnotationExportGeo/%s'%(out_filename) )
@@ -104,3 +112,5 @@ if __name__ == "__main__":
     except Exception, e:
         bq.fail_mex(traceback.format_exc())
     sys.exit(0)
+
+

@@ -35,10 +35,10 @@ class BrightnessContrastOperation(BaseOperation):
     def __str__(self):
         return 'brightnesscontrast: Adjust brightness and contrast in an image, brightnesscontrast=brightness,contrast both in range [-100,100] ex: brightnesscontrast=0,30'
 
-    def dryrun(self, token, arg):
-        arg = arg.lower()
-        ofile = '%s.brightnesscontrast_%s'%(token.data, arg)
-        return token.setImage(fname=ofile, fmt=default_format)
+    # def dryrun(self, token, arg):
+    #     arg = arg.lower()
+    #     ofile = '%s.brightnesscontrast_%s'%(token.data, arg)
+    #     return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
         arg = arg.lower()
