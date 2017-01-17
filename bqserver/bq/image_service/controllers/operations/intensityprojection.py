@@ -34,12 +34,12 @@ class IntensityProjectionOperation(BaseOperation):
     def __str__(self):
         return 'intensityprojection: returns a maximum intensity projection image, intensityprojection=max|min'
 
-    def dryrun(self, token, arg):
-        arg = arg.lower()
-        if arg not in ['min', 'max']:
-            raise ImageServiceException(400, 'IntensityProjection: parameter must be either "max" or "min"')
-        ofile = '%s.iproject_%s'%(token.data, arg)
-        return token.setImage(fname=ofile, fmt=default_format)
+    # def dryrun(self, token, arg):
+    #     arg = arg.lower()
+    #     if arg not in ['min', 'max']:
+    #         raise ImageServiceException(400, 'IntensityProjection: parameter must be either "max" or "min"')
+    #     ofile = '%s.iproject_%s'%(token.data, arg)
+    #     return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
         arg = arg.lower()

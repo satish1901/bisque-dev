@@ -34,10 +34,10 @@ class FramesOperation(BaseOperation):
     def __str__(self):
         return 'frames: Returns an image composed of user defined frames form input, arg = frames'
 
-    def dryrun(self, token, arg):
-        arg = arg.lower()
-        ofile = '%s.frames_%s'%(token.data, arg)
-        return token.setImage(fname=ofile, fmt=default_format)
+    # def dryrun(self, token, arg):
+    #     arg = arg.lower()
+    #     ofile = '%s.frames_%s'%(token.data, arg)
+    #     return token.setImage(fname=ofile, fmt=default_format)
 
     def action(self, token, arg):
         if not arg:

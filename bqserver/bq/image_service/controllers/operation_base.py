@@ -21,7 +21,7 @@ class BaseOperation(object):
         return 'base: describe your service and its arguments'
 
     # optional method, used to generate the final file quickly
-    # defined if action does convertions and not only enques its arguments
+    # define if action does conversions and not only enqueues its arguments
     #def dryrun(self, token, arg):
     #    return token
 
