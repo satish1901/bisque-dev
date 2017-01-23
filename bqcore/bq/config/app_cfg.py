@@ -115,7 +115,7 @@ class BisqueAppConfig(AppConfig):
         from sqlalchemy import engine_from_config
         engine = engine_from_config(config, 'sqlalchemy.',
                                     poolclass=NullPool,
-                                    connect_args = { 'timeout' : 3000 } ,
+                                    connect_args = { 'timeout' : 30000 } ,
                                 )
         config['pylons.app_globals'].sa_engine = engine
         # Pass the engine to initmodel, to be able to introspect tables

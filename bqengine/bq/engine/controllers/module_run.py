@@ -35,9 +35,13 @@ class ModuleRunner(object):
         self.module_runners = []
 
     def choose_runner (self, **kw):
+        curdir = os.getcwd()
+        module_dir = kw.get ('module_dir', curdir)
+        log.debug('Choosing runner : cwd: %s module %s', curdir, module_dir)
         # Choose a runner
-        if os.path.exists('runtime-module.cfg'):
-            cfg = ConfigFile('runtime-module.cfg')
+        runtime_module_cfg = os.path.join (module_dir, 'runtime-module.cfg')
+        if os.path.exists(runtime_module_cfg):
+            cfg = ConfigFile(runtime_module_cfg)
             launcher = cfg.get (None, 'launcher')
             if launcher and os.path.abspath(sys.argv[0]) != os.path.abspath(launcher):
                 if os.path.exists (launcher):
@@ -47,18 +51,17 @@ class ModuleRunner(object):
                     log.debug( "Calling %s" % cmd )
                     subprocess.call (cmd)
                     return None
-                log.warn( "Missing launcher: %s" % launcher)
+                log.warn( "Missing launcher: %s" , launcher)
                 return None
         else:
-            log.error( "Missing runtime-module.cfg" )
+            log.error( "Missing %s", runtime_module_cfg )
             return None
 
-        log.debug('Path: %s'%os.getcwd())
 
         runners = cfg.get(None, 'runtime.platforms')
         if runners is None:
             raise ModuleEnvironmentError("Must define legal platforms:  runtime.platforms in module config")
-        log.debug('Module runners: %s'%runners)
+        log.debug('Module runners: %s', runners)
         self.module_runners = [r.strip() for r in runners.split(',')]  # pylint: disable=no-member
 
         runtime_bisque = 'runtime-bisque.cfg'
@@ -68,10 +71,10 @@ class ModuleRunner(object):
         if os.path.exists (runtime_bisque):
             cfg = ConfigFile(runtime_bisque)
             runners = cfg.get(None, 'runtime.platforms')
-            log.debug('System runners: %s'%runners)
+            log.debug('System runners: %s', runners)
             self.system_runners = [r.strip() for r in runners.split(',')]  # pylint: disable=no-member
         else:
-            log.warn ("Could not file runtime-bisque.cfg")
+            log.warn ("Could not file %s", runtime_bisque)
             # Default to module runners ?  They may not be availble
             self.system_runners = self.module_runners
 
@@ -80,12 +83,12 @@ class ModuleRunner(object):
         # of preference based on the system preferences
         for run_platform in self.system_runners:
             if run_platform in self.module_runners:
-                log.debug( "Choosing Runtime Platform: %s" % run_platform)
+                log.debug( "Choosing Runtime Platform: %s", run_platform)
                 return RUNNER_MAP[run_platform]
         return None
 
     def check(self, **kw):
-        runner_class = self.choose_runner()
+        runner_class = self.choose_runner(**kw)
         if runner_class:
             runner = runner_class(**kw)
             return runner.check(**kw)
@@ -94,13 +97,13 @@ class ModuleRunner(object):
     def main(self, **kw):
         """Called when module is launched.
         """
-        runner_class = self.choose_runner()
+        runner_class = self.choose_runner(**kw)
         if runner_class is not None:
             runner = runner_class(**kw)
             log.debug( "ModuleRunner.Main")
             return runner.main(**kw)
 
 if __name__ == "__main__":
-    log.info( "ModuleRunner: main %s" % " ".join(sys.argv) )
+    log.info( "ModuleRunner: main %s", " ".join(sys.argv) )
     ModuleRunner().main()
     sys.exit(0)

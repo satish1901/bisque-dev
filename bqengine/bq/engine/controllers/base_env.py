@@ -28,9 +28,12 @@ class ModuleEnvironment(object):
 
 
 def strtobool(x):
-    return {"true": True, "false": False}.get(x.lower())
+    return {"true": True, "false": False}.get(x.lower(), False)
+
 def strtolist(x, sep=','):
-    return [ s.strip() for s in x.split(sep)]
+    if isinstance(x, basestring):
+        return [ s.strip() for s in x.split(sep)]
+    return x
 
 class BaseEnvironment (ModuleEnvironment):
     """A BaseEnvironment is a helper script for running bisque modules.

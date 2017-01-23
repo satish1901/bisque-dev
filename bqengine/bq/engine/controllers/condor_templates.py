@@ -5,13 +5,13 @@ import logging
 log = logging.getLogger('bq.engine_service.condor_templates')
 
 
-# Variables (staging_id, post_exec, post_args)
+# Variables (mex_id, post_exec, post_args)
 templateDAG =\
-"""JOB ${staging_id}  ./${staging_id}.cmd
-CONFIG ./${staging_id}.dag.config
-SCRIPT POST ${staging_id} ${post_exec} ${post_args}
+"""JOB ${mex_id}  ./${mex_id}.cmd
+CONFIG ./${mex_id}.dag.config
+SCRIPT POST ${mex_id} ${post_exec} ${post_args}
 """
-#RETRY ${staging_id} 5
+#RETRY ${mex_id} 5
 
 templateDAGCONF = \
 """DAGMAN_LOG_ON_NFS_IS_ERROR = FALSE
@@ -45,7 +45,8 @@ ${condor_submit}
         continue
 %>
 initialdir = ${mex.staging_path}
-transfer_input_files  = ${','.join(mex.transfers)}
+#transfer_input_files  = ${','.join(mex.transfers)}
+#transfer_output_files = ${','.join(mex.transfers_out)}
 arguments  = ${' '.join(mex.executable[1:])}
 queue
 %endfor
@@ -58,6 +59,13 @@ from bq.engine.controllers.module_run import ModuleRunner
 if __name__ == "__main__":
     sys.exit(ModuleRunner().main())
 """
+
+
+##### KGK  docker + condor
+##### TODO
+##### transfer_output_files =  module
+##### transfer_input_files  =  matlab_launch or nothing...
+
 
 
 
@@ -174,31 +182,29 @@ class CondorTemplates(object):
 
             f.write(self.engine.render(template=template, info=mapping))
             f.close()
-        except KeyError, e:
-            log.exception('Bad template : %s dict=%s' % (template, mapping))
-            raise e
-
+            return output_path
+        except:
+            x = mako.exceptions.text_error_template().render()
+            log.exception('Bad template : %s' , x)
+        return None
 
     def construct_launcher(self, mapping):
-        try:
-            self.launch_path = self.mk_path('%(staging_id)s_launch.py', mapping)
-            self.create_file(self.launch_path, LAUNCHER_SCRIPT, mapping)
+        self.launch_path = self.mk_path('%(mex_id)s_launch.py', mapping)
+        if self.create_file(self.launch_path, LAUNCHER_SCRIPT, mapping):
             return self.launch_path
-        except KeyError, e:
-            log.exception('missing  mapping in %s' % mapping)
-            raise e
+        return None
 
 
     def prepare_submit(self, mapping):
         """Create the condor required files"""
-        self.dag_path = self.mk_path('%(staging_id)s.dag', mapping)
+        self.dag_path = self.mk_path('%(mex_id)s.dag', mapping)
         self.create_file(self.dag_path,
                          self.template['condor.dag_template'], mapping)
 
-        self.conf_path = self.mk_path('%(staging_id)s.dag.config', mapping)
+        self.conf_path = self.mk_path('%(mex_id)s.dag.config', mapping)
         self.create_file(self.conf_path,
                          self.template['condor.dag_config_template'], mapping)
 
-        self.submit_path = self.mk_path('%(staging_id)s.cmd', mapping)
+        self.submit_path = self.mk_path('%(mex_id)s.cmd', mapping)
         self.create_file(self.submit_path,
                          self.template['condor.submit_template'], mapping)

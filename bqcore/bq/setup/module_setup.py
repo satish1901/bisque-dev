@@ -10,7 +10,7 @@ import string
 from subprocess import call, check_call
 from bq.util.configfile import ConfigFile
 from bq.util.copylink import copy_link
-from bq.util.paths import find_config_path
+from bq.util.paths import find_config_path, defaults_path
 from bq.util.converters import asbool
 from mako.template import Template
 
@@ -170,9 +170,9 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
     #fr.include_py = False
     if not isinstance(scripts, list):
         scripts = [ scripts ]
-    if not any (needs_update (dependency_dir, x) for x in scripts):
-        print "Skippping python packaging step"
-        return
+#    if not any (needs_update (dependency_dir, x) for x in scripts):
+#        print "Skippping python packaging step"
+#        return
     for script in scripts:
         cmd.append (script)
     if os.path.exists (dependency_dir):
@@ -181,8 +181,10 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
     data = dict(params or {})
 
     # read default path from site.cfg (TG config not initialized yet when this runs)
-    site_config = read_config('site.cfg', "app:main")
-    filename = os.path.abspath(os.path.join(site_config['bisque.paths.default'], 'templates/python_launcher.tmpl').replace('\\', '/'))
+    #site_config = read_config('site.cfg', "app:main")
+    #filename = os.path.abspath(os.path.join(site_config['bisque.paths.default'], 'templates/python_launcher.tmpl').replace('\\', '/'))
+    filename = find_config_path ('templates/python_launcher.tmpl', config_dir='config-defaults').replace('\\', '/')
+    print "TEMPLATE", filename
     for script in scripts:
         script_name = os.path.splitext(script)[0]
         data['script'] = os.path.join('.', dependency_dir, script_name, script_name)
@@ -234,23 +236,44 @@ def require(expression, params, throws = True):
     return valid
 
 
-DOCKERFILE="""FROM ${base}
+DOCKERFILE="""FROM ${base_image}
 MAINTAINER ${maintainer}
 WORKDIR /module
 $copy
 CMD  [ "${command}" ]
 """
 
-def docker_setup (image, command, base, params):
+def docker_setup (image, command, base_image=None, params=None):
     #print "PARAMS:", params
-
     module_config = read_config('runtime-module.cfg', "command")
     docker_params = read_config('runtime-bisque.cfg', "docker")
     print "Docker ", docker_params
 
+    # Load and setup the the environment for storage in docker container
+    from bq.engine.controllers.command_run import BaseRunner
+
+    runner = BaseRunner()
+    runner.read_config() # loads runtime-module and runtime-bisuqe
+    runner.load_section ("command", runner.module_cfg)
+    runner.init_runstate(['staging_path=.', 'mex_id='])
+    runner.create_environments()
+    runner.process_config()
+    runner.setup_environments(build=True)
+    files = runner.mexes[0].files
+    files =  [ s.strip() for s in files.split(',')] if isinstance (files, basestring) else files
+    print "BUILDING", files
+    runner.mexes[0].files = files
+
+    docker_params =  runner.config
+    command       =  runner.mexes[0].executable[1:]
+    if base_image is None:
+        import platform
+        base_image = ":".join (platform.linux_distribution()[:2])
+
     # Must be lowercase
     if not asbool(docker_params.get('docker.enabled', False)):
         return
+    image = docker_params.get ('docker.image')
     docker_hub = docker_params.get('docker.hub', '')
     docker_user = docker_params.get ('docker.hub.user', '')
     docker_pass = docker_params.get('docker.hub.password', '')
@@ -258,8 +281,10 @@ def docker_setup (image, command, base, params):
 
     image = "/".join (filter (lambda x:x, [ docker_hub, docker_user, image.lower() ]))
 
+    created_docker = False
     if not os.path.exists ('Dockerfile'):
-        files = [ x.strip() for x in module_config.get ('files','').split (",") ]
+        #files = [ x.strip() for x in module_config.get ('files','').split (",") ]
+        files = runner.mexes[0].files
         dirs  = [ x for x in files if os.path.isdir(x) ]
         files = [ x for x in files if os.path.isfile(x) ]
         copies = []
@@ -269,11 +294,12 @@ def docker_setup (image, command, base, params):
         for dr in dirs:
             copies.append ( "COPY %s /module/%s/ " % (dr, dr) )
 
+        created_docker = True
         with open('Dockerfile', 'w') as f:
             maintainer = docker_params.get ('docker.maintainer', 'nobody@example.com')
             # check for configured base i.e docker.image.matlab_runtime
-            base = docker_params.get ('docker.image.%s' % base, base)
-            f.write (string.Template (DOCKERFILE).safe_substitute(base=base,
+            base = docker_params.get ('docker.image.%s' % base_image, base_image)
+            f.write (string.Template (DOCKERFILE).safe_substitute(base_image=base_image,
                                                                   command=command,
                                                                   maintainer=maintainer,
                                                                   copy = "\n".join (copies) ))
@@ -286,6 +312,8 @@ def docker_setup (image, command, base, params):
         if docker_user and docker_pass:
             check_call (['docker', 'login', '-u', docker_user, '-p', docker_pass, '-e', docker_email, docker_hub])
         check_call(['docker', 'push', image])
+    if created_docker:
+        os.unlink ('Dockerfile')
 
 
 def read_config(filename, section= None):
@@ -293,4 +321,32 @@ def read_config(filename, section= None):
         filename = find_config_path(filename)
 
     print "READING", filename
-    return ConfigFile(filename).get (section, asdict = True)
+    conf =  ConfigFile(filename).get (section, asdict = True)
+    config_dir = os.path.dirname (filename)
+    conf['bisque.path.config'] = config_dir
+    print "CONFIG", config_dir
+
+    return conf
+
+
+def load_config(filename, section= None):
+    if not os.path.exists (filename):
+        filename = find_config_path(filename)
+
+    print "LOADING", filename
+    return ConfigFile(filename)
+
+
+
+class BisqueBuilder(object):
+    def __init__(self, **kw):
+        pass
+
+    def python_setup (self, **kw):
+        python_setup (**kw)
+
+    def matlab_setup (self, **kw):
+        matlab_setup (**kw)
+
+    def docker_setup (self, **kw):
+        docker_setup(**kw)

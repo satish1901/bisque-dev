@@ -80,7 +80,7 @@ class BaseAdapter(object):
         '''
         return False
 
-    def execute(self, module, mex):
+    def execute(self, module, mex, pool):
         '''Execute the module given by the mex context.  The module
         will be the module definition parameter, the mex will contain
         the current values of all input parameters
