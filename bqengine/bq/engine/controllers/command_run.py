@@ -1,28 +1,74 @@
-import os, sys, shutil
+###############################################################################
+##  Bisque                                                                   ##
+##  Center for Bio-Image Informatics                                         ##
+##  University of California at Santa Barbara                                ##
+## ------------------------------------------------------------------------- ##
+##                                                                           ##
+##     Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014                 ##
+##     by the Regents of the University of California                        ##
+##                            All rights reserved                            ##
+##                                                                           ##
+## Redistribution and use in source and binary forms, with or without        ##
+## modification, are permitted provided that the following conditions are    ##
+## met:                                                                      ##
+##                                                                           ##
+##     1. Redistributions of source code must retain the above copyright     ##
+##        notice, this list of conditions, and the following disclaimer.     ##
+##                                                                           ##
+##     2. Redistributions in binary form must reproduce the above copyright  ##
+##        notice, this list of conditions, and the following disclaimer in   ##
+##        the documentation and/or other materials provided with the         ##
+##        distribution.                                                      ##
+##                                                                           ##
+##                                                                           ##
+## THIS SOFTWARE IS PROVIDED BY <COPYRIGHT HOLDER> ''AS IS'' AND ANY         ##
+## EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE         ##
+## IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR        ##
+## PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> OR           ##
+## CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,     ##
+## EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,       ##
+## PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR        ##
+## PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF    ##
+## LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING      ##
+## NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS        ##
+## SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.              ##
+##                                                                           ##
+## The views and conclusions contained in the software and documentation     ##
+## are those of the authors and should not be interpreted as representing    ##
+## official policies, either expressed or implied, of <copyright holder>.    ##
+###############################################################################
+"""
+SYNOPSIS
+========
+
+DESCRIPTION
+===========
+
+"""
+
 import logging
-import string
-import time
-import stat
-import urllib2
-import shlex
-import subprocess
-import optparse
+import os
 import pickle
+import shlex
+import optparse
 import tempfile
+
 try:
     from lxml import etree as et
 except Exception:
     from xml.etree import ElementTree as et
 from bq.util.configfile import ConfigFile
 from bq.util.paths import  find_config_path
-from bqapi import BQSession, BQTag
+from bqapi import BQSession
 
-from module_env import MODULE_ENVS, ModuleEnvironmentError
-from mexparser import MexParser
+from .base_env import strtobool, strtolist
+from .module_env import MODULE_ENVS, ModuleEnvironmentError
+from .mexparser import MexParser
 
 ENV_MAP = dict ([ (env.name, env) for env in MODULE_ENVS ])
+
 logging.basicConfig(level=logging.DEBUG, filename='module.log')
-log = logging.getLogger('bq.engine_service.command_run')
+#log = logging.getLogger('bq.engine_service.command_run')
 
 ####################
 # Helpers
@@ -32,14 +78,13 @@ def check_exec (path, fix = True):
     if fix:
         os.chmod (path, 0744)
 
-def strtobool(x):
-    return {"true": True, "false": False}.get(x.lower())
+#def strtobool(x):
+#    return {"true": True, "false": False}.get(x.lower(), False)
 
-def strtolist(x, sep=','):
-    return [ s.strip() for s in x.split(sep)]
+#def strtolist(x, sep=','):
+#    return [ s.strip() for s in x.split(sep)]
 
 def which(program):
-    import os
     def is_exe(fpath):
         return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
@@ -60,9 +105,9 @@ def which(program):
 # Local exception
 class RunnerException(Exception):
     """Exception in the runners"""
-    def __init__(self, msg =None, mex= {}):
+    def __init__(self, msg =None, mex= None):
         super( RunnerException, self).__init__(msg)
-        self.mex = mex
+        self.mex = mex or {}
     def __str__(self):
         #return "\n".join( [ str (super( RunnerException, self) ) ] +
         #                  [ "%s: %s" % (k, self.mex[k]) for k in sorted(self.mex.keys() )] )
@@ -145,10 +190,22 @@ class BaseRunner(object):
                                default=False)
         self.session = None
         self.process_environment = dict (os.environ)
+        self.log = logging.getLogger ("bq.engine_service.BaseRunner")
+        self.mexid = None
+        self.mexes =[]
+        self.prerun = None
+        self.postrun = None
+        self.entrypoint_executable = None
+        self.iterables = None
 
-    def log (self, msg, level = logging.INFO):
+
+    def debug (self, msg, *args):
         #if self.options.verbose:
-        log.log( level, msg )
+        self.log.debug( msg , *args)
+    def info (self, msg, *args):
+        self.log.info (msg, *args)
+    def error (self, msg, *args):
+        self.log.error (msg, *args)
 
     ###########################################
     # Config
@@ -160,7 +217,7 @@ class BaseRunner(object):
         """
         self.config = AttrDict(executable="", environments="")
         self.sections = {}
-        self.log("BaseRunner: read_config")
+        self.debug("BaseRunner: read_config")
         # Load any bisque related variable into this runner
         runtime_bisque_cfg = find_config_path ('runtime-bisque.cfg')
         if os.path.exists(runtime_bisque_cfg):
@@ -168,12 +225,14 @@ class BaseRunner(object):
             self.load_section(None, self.bisque_cfg)
             self.config['files'] = self.config.setdefault ('files', '') + ',' + runtime_bisque_cfg
         else:
-            self.log("BaseRunner: missing runtime-bisque.cfg")
+            self.info("BaseRunner: missing runtime-bisque.cfg")
 
-        if not os.path.exists('runtime-module.cfg'):
-            self.log ("BaseRunner: missing runtime-module.cfg")
+        module_dir = kw.get ('module_dir', os.getcwd())
+        runtime_module_cfg = os.path.join(module_dir, 'runtime-module.cfg')
+        if not os.path.exists(runtime_module_cfg):
+            self.info ("BaseRunner: missing %s", runtime_module_cfg)
             return
-        self.module_cfg = ConfigFile('runtime-module.cfg')
+        self.module_cfg = ConfigFile(runtime_module_cfg)
         # Process Command section
         self.load_section(None, self.module_cfg)      # Globals
 
@@ -189,17 +248,16 @@ class BaseRunner(object):
     # Helpers
     def create_environments(self,  **kw):
         """Build the set of environments listed by the module config"""
-        if isinstance(self.config.environments, basestring):
-            self.environments = strtolist(self.config.environments)
+        self.environments = strtolist(self.config.environments)
         envs = []
         for name in self.environments:
             env = ENV_MAP.get (name, None)
             if env is not None:
                 envs.append (env(runner = self))
                 continue
-            log.warn ('Unknown environment: %s ignoring' % name)
+            self.log.warn ('Unknown environment: %s ignoring' , name)
         self.environments = envs
-        log.info ('created environments %s' % envs)
+        self.info ('created environments %s' , envs)
 
 
     def process_config(self, **kw):
@@ -219,7 +277,7 @@ class BaseRunner(object):
         """Call setup_environment during "start" processing
            Prepares environment and returns defined environment variable to be passed to jobs
         """
-        log.debug ("setup_environments: %s", kw)
+        self.debug ("setup_environments: %s", kw)
         process_env = self.process_environment.copy ()
         for env in self.environments:
             env.setup_environment (self, **kw)
@@ -239,12 +297,13 @@ class BaseRunner(object):
         mex_tree = kw.pop('mex_tree', None)
         module_tree = kw.pop('module_tree', None)
         bisque_token = kw.pop('bisque_token', None)
+        module_dir =  kw.pop ('module_dir', os.getcwd())
 
         # ---- the next items are preserved across execution phases ----
         self.pool = kw.pop('pool', None)
         # list of dict representing each mex : variables and arguments
         self.mexes = []
-        self.rundir = os.getcwd()
+        self.rundir = module_dir
         self.outputs = []
         self.entrypoint_executable = []
         self.prerun = None
@@ -265,14 +324,18 @@ class BaseRunner(object):
 #                           arguments = [],
                            mex_url = mex_tree is not None and mex_tree.get('uri') or None,
                            bisque_token = bisque_token,
+                           staging_path = None,
                            rundir = self.rundir))
+        topmex.mex_id = topmex.mex_url.rsplit('/', 1)[1] if topmex.mex_url else ''
         self.mexes.append(topmex)
 
-        # Scan argument looking for named arguments
+        # Scan argument looking for named arguments (these are used by condor_dag to re-initialize mex vars)
         for arg in arguments:
             tag, sep, val = arg.partition('=')
             if sep == '=':
                 topmex.named_args[tag] = val
+                if tag in topmex:
+                    topmex[tag] = val
 
         # Pull out arguments from mex
         if mex_tree is not None and module_tree is not None:
@@ -291,7 +354,6 @@ class BaseRunner(object):
             topmex.rundir = self.rundir
             #topmex.options = module_options
             # remember topmex executable for pre/post runs
-            self.entrypoint_executable = topmex.executable
 
             # Create a nested list of  arguments  (in case of submex)
             submexes = mex_tree.xpath('/mex/mex')
@@ -302,7 +364,9 @@ class BaseRunner(object):
 #                                   arguments =list(topmex.arguments),
                                    executable=list(executable), #+ topmex.arguments,
                                    mex_url = mex.get('uri'),
+                                   mex_id  = mex.get('uri').rsplit('/', 1)[1],
                                    bisque_token = bisque_token,
+                                   staging_path = None,
                                    rundir = self.rundir))
                 #if argument_style == 'named':
                 #    submex.named_args.update ( [x.split('=') for x in sub_inputs] )
@@ -313,14 +377,12 @@ class BaseRunner(object):
             # We can set up some options here and remove any execution
             # for the top mex.
             topmex.iterables = len(self.mexes) > 1 and mexparser.process_iterables(module_tree, mex_tree)
-            if topmex.iterables:
-                topmex.executable = None
 
-        log.info("processing %d mexes -> %s" % (len(self.mexes), self.mexes))
+        self.info("processing %d mexes -> %s" % (len(self.mexes), self.mexes))
 
     def store_runstate(self):
         staging_path = self.mexes[0].get('staging_path', tempfile.gettempdir())
-        state_file = "state%s.bq" % self.mexes[0].get('staging_id', '')
+        state_file = "state%s.bq" % self.mexes[0].get('mex_id', '')
         # pickle the object variables
         with open('%s/%s' % (staging_path, state_file),'wb') as f:
             pickle.dump(self.mexes, f)
@@ -334,7 +396,7 @@ class BaseRunner(object):
 
     def load_runstate(self):
         staging_path = self.mexes[0].get('staging_path', tempfile.gettempdir())
-        state_file = "state%s.bq" % self.mexes[0].get('staging_id', '')
+        state_file = "state%s.bq" % self.mexes[0].get('mex_id', '')
         # entered in a later processing phase (e.g., Condor finish) => unpickle
         with open('%s/%s' % (staging_path, state_file),'rb') as f:
             self.pool = None   # not preserved for now
@@ -355,23 +417,21 @@ class BaseRunner(object):
     # Derived classes should overload these functions
 
     def command_start(self, **kw):
-        log.info("starting %d mexes -> %s" % (len(self.mexes), self.mexes))
-
-        # add empty "outputs" section in topmex
+        self.info("starting %d mexes -> %s" , len(self.mexes), self.mexes)
         if self.session is None:
             self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
-        self.session.update_mex(status='starting', tags=[{'name':'outputs'}])
-
+        status  = "starting"
         if self.mexes[0].iterables:
-            if self.session is None:
-                self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
-            self.session.update_mex('running parallel')
-
+            self.mexes[0].executable = None
+            status = 'running parallel'
+        # add empty "outputs" section in topmex
+        self.session.update_mex(status=status, tags=[{'name':'outputs'}])
+        self.entrypoint_executable = self.mexes[0].executable
         # if there is a prerun, run it now
         if self.prerun:
-            log.info("prerun starting")
-            self.command_single_entrypoint(self.prerun, **kw)
-            log.info("prerun completed")
+            self.info("prerun starting")
+            self.command_single_entrypoint(self.prerun, self.command_execute, **kw)
+            return None
 
         return self.command_execute
 
@@ -383,14 +443,17 @@ class BaseRunner(object):
         """Cleanup the environment and perform any needed actions
         after the module completion
         """
-        log.info("finishing %d mexes -> %s" % (len(self.mexes), self.mexes))
+        self.info("finishing %d mexes -> %s" , len(self.mexes), self.mexes)
 
         # if there is a postrun (aka "reduce phase"), run it now
         if self.postrun:
-            log.info("postrun starting")
-            self.command_single_entrypoint(self.postrun, **kw)
-            log.info("postrun completed")
+            self.info("postrun starting")
+            self.command_single_entrypoint(self.postrun, self.command_finish2, **kw)
+            return None
 
+        self.command_finish2(**kw)
+
+    def command_finish2(self, **kw):
         self.teardown_environments()
 
         if self.mexes[0].iterables:
@@ -437,7 +500,7 @@ class BaseRunner(object):
                     et.SubElement(coltypes, 'value', value="resource-uri")
                     et.SubElement(colxpaths, 'value', value='./mex')
                 else:
-                    log.warn("List or range parameters in Mex but no multiparam output tag in Module")
+                    self.log.warn("List or range parameters in Mex but no multiparam output tag in Module")
             else:
                 # no list/range params => add iterables as always
                 for iter_name, iter_val, iter_type in self.mexes[0].iterables:
@@ -447,7 +510,7 @@ class BaseRunner(object):
             self.session.finish_mex(tags = [outtag])
         return None
 
-    def command_single_entrypoint(self, entrypoint, **kw):
+    def command_single_entrypoint(self, entrypoint, callback, **kw):
         return None
 
     def command_kill(self, **kw):
@@ -464,7 +527,7 @@ class BaseRunner(object):
         # check for a disabled module
         enabled = self.config.get('module_enabled', 'true').lower() == "true"
         if not enabled :
-            log.info ('Module is disabled')
+            self.info ('Module is disabled')
             return False
         # Add remaining arguments to the executable line
         # Ensure the loaded executable is a list
@@ -474,7 +537,7 @@ class BaseRunner(object):
             return True
         canrun = executable and which(executable[0]) is not None
         if not canrun:
-            log.error ("Executable cannot be run %s" % executable)
+            self.error ("Executable cannot be run %s" % executable)
         return canrun
 
     def main(self, **kw):
@@ -503,7 +566,7 @@ class BaseRunner(object):
 
             command = getattr (self, 'command_%s' % command, None)
             while command:
-                log.info("COMMAND_RUNNER %s" % command)
+                self.info("COMMAND_RUNNER %s" % command)
                 command = command(**kw)
 
             # store run state since we may come back (e.g., condor finish)
@@ -511,12 +574,12 @@ class BaseRunner(object):
 
             return 0
         except ModuleEnvironmentError, e:
-            log.exception( "Problem occured in module")
+            self.log.exception( "Problem occured in module")
             raise RunnerException(str(e), self.mexes)
         except RunnerException, e:
             raise
         except Exception, e:
-            log.exception ("Unknown exeception: %s" % e)
+            self.log.exception ("Unknown exeception: %s" , str( e ))
             raise RunnerException(str(e), self.mexes)
 
         return 1
@@ -533,22 +596,23 @@ class CommandRunner(BaseRunner):
 
     def __init__(self, **kw):
         super(CommandRunner, self).__init__(**kw)
+        self.log = logging.getLogger ("bq.engine_service.command_run")
 
     def read_config (self, **kw):
         super(CommandRunner, self).read_config (**kw)
-        self.log("CommandRunner: read_config")
+        self.debug("CommandRunner: read_config")
         self.load_section('command', self.module_cfg) # Runner's name
 
 
-    def process_config(self, **kw):
-        super(CommandRunner, self).process_config(**kw)
+    def setup_environments(self, **kw):
+        super(CommandRunner, self).setup_environments(**kw)
         for mex in self.mexes:
             if not mex.executable:
                 mex.log_name = os.path.join(mex.rundir, "topmex.log")
             else:
                 mex.log_name = os.path.join(mex.rundir, "%s.log" % mex.executable[0])
 
-    def command_single_entrypoint(self, entrypoint, **kw):
+    def command_single_entrypoint(self, entrypoint, callback, **kw):
         "Execute specific entrypoint"
         mex = self.mexes[0]   # topmex
         command_line = list(self.entrypoint_executable)
@@ -558,17 +622,25 @@ class CommandRunner(BaseRunner):
         command_line = [ tok if tok.startswith('--') or not tok.startswith('-') else '"%s"'%tok for tok in command_line ]
         rundir = mex.get('rundir')
         if self.options.dryrun:
-            self.log( "DryRunning '%s' in %s" % (' '.join(command_line), rundir))
+            self.info( "DryRunning '%s' in %s" % (' '.join(command_line), rundir))
         else:
-            self.log( "running '%s' in %s" % (' '.join(command_line), rundir))
-            proc = dict(command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex, env=self.process_environment)
+            self.info( "running '%s' in %s" % (' '.join(command_line), rundir))
+            proc = dict(command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex, env=self.process_environment,
+                        entrypoint_callback = callback,
+                        entrypoint_kw = kw)
 
             #from bq.engine.controllers.execone import execone
             #retcode = execone (proc)
             #if retcode:
             #    self.command_failed(proc, retcode)
-            self.pool.schedule (proc, fail = self.command_fail)
+            self.pool.schedule (proc, success=self.entrypoint_success, fail = self.command_fail)
         return None
+
+    def entrypoint_success (self, proc):
+        self.info ("Entrypoint Success for %s", proc)
+        if 'entrypoint_callback' in proc:
+            proc['entrypoint_callback'] (**proc['entrypoint_kw'])
+
 
     def command_execute(self, **kw):
         "Execute the commands locally specified the mex list"
@@ -576,7 +648,7 @@ class CommandRunner(BaseRunner):
         self.processes = []
         for mex in self.mexes:
             if not mex.executable:
-                log.info ('skipping mex %s ' % mex)
+                self.info ('skipping mex %s ' % mex)
                 continue
             command_line = list(mex.executable)
             #command_line.extend (mex.arguments)
@@ -584,13 +656,14 @@ class CommandRunner(BaseRunner):
             command_line = [ tok if tok.startswith('--') or not tok.startswith('-') else '"%s"'%tok for tok in command_line ]
             rundir = mex.get('rundir')
             if  self.options.dryrun:
-                self.log( "DryRunning '%s' in %s" % (' '.join(command_line), rundir))
+                self.info( "DryRunning '%s' in %s" % (' '.join(command_line), rundir))
                 continue
 
-            self.log( "running '%s' in %s" % (' '.join(command_line), rundir))
-            log.info ('mex %s ' % mex)
+            self.info( "running '%s' in %s" % (' '.join(command_line), rundir))
+            self.info ('mex %s ' % mex)
 
-            self.processes.append(dict( command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex, env=self.process_environment))
+            self.processes.append(dict( command_line = command_line, logfile = mex.log_name, rundir = rundir, mex=mex,
+                                        status = 'waiting', env=self.process_environment))
 
 
 
@@ -614,27 +687,42 @@ class CommandRunner(BaseRunner):
         #     return self.command_finish
         #return None
 
-    def command_success(self, p):
+    def command_success(self, proc):
         "collect return values when mex was executed asynchronously "
-        log.info ("Command %s with %s" , " ".join (p.get ('command_line')), p.get ('return_code'))
-        self.command_finish(**self.execute_kw)
+        self.info ("SUCCESS Command %s with %s" , " ".join (proc.get ('command_line')), proc.get ('return_code'))
+        self.check_pool_status(proc, 'finished')
 
     def command_fail(self, process):
         """Update the bisque server  with a failed command for a mex"""
-        mex = process['mex']
         command = " ".join(process['command_line'])
         retcode = process['return_code']
-        msg = "%s: returned (non-zero) %s" %(command, retcode)
         exc  = process.get ('with_exception', None)
+        msg = "FAILED %s: returned %s" %(command, retcode)
         if exc is not None:
-            msg = "%s: %s" % (msg, repr(exc))
-        log.error(msg)
-        # update process mex
+            msg = "%s: exception %s" % (msg, repr(exc))
+        process['fail_message'] = msg
+        self.check_pool_status (process, 'failed')
+
+    def check_pool_status(self, p, status):
+        # Check that all have finished or failed
+        with self.pool.pool_lock:
+            p['status'] = status
+            all_status = [p['status'] for p in self.processes]
+            for status in all_status:
+                if status not in ('finished', 'failed'):
+                    return
+        self.info ("All processes have returned %s", all_status)
+        # all are done.. so check if we finished correctly
+        if 'failed' not in all_status:
+            self.command_finish(**self.execute_kw)
+            return
+        # there was a failue:
+        msg = '\n'.join ( p.get('fail_message') for p in self.processes if p['status'] == 'fail' )
+        self.error(msg)
         if self.session is None:
             self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
         if self.session.mex.value not in ('FAILED', 'FINISHED'):
             self.session.fail_mex (msg)
-
 
 
 #if __name__ == "__main__":

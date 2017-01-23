@@ -52,8 +52,8 @@ class ScriptEnvironment(BaseEnvironment):
             if mex.executable:
                 script = self.create_script(mex)
                 rundir = mex.get('rundir')
-                runner.log ("Execute setup '%s' in %s" % (" ".join (script + ['setup']), rundir))
-                runner.log ("logging to  %s " % mex.log_name)
+                runner.debug ("Execute setup '%s' in %s" % (" ".join (script + ['setup']), rundir))
+                runner.debug ("logging to  %s " % mex.log_name)
                 r =  subprocess.call(script + ['setup'],
                                      stdout=open(mex.log_name, 'a'),
                                      stderr = subprocess.STDOUT,
@@ -66,7 +66,7 @@ class ScriptEnvironment(BaseEnvironment):
             if mex.executable:
                 script = self.create_script(mex)
                 rundir = mex.get('rundir')
-                runner.log ("Execute teardown '%s' in %s" % (" ".join(script+['teardown']), rundir))
+                runner.debug ("Execute teardown '%s' in %s" % (" ".join(script+['teardown']), rundir))
                 r = subprocess.call(script + ['teardown'],
                                     stdout=open(mex.log_name, 'a'),
                                     stderr = subprocess.STDOUT,

@@ -53,19 +53,19 @@ DESCRIPTION
 import os
 import sys
 import logging
-import pkg_resources
 import traceback
 import urlparse
-import Queue
-import multiprocessing
+#import Queue
+#import multiprocessing
 from datetime import datetime
-from lxml import etree
-import tg
 
+import pkg_resources
+import tg
 from tg import config, controllers, expose, redirect, override_template
 from pylons.controllers.util import abort
-
 from repoze.what import predicates
+from lxml import etree
+
 
 from bq.core.service import ServiceController, BaseController
 from bq.exceptions import EngineError, RequestError
@@ -141,7 +141,7 @@ def load_module(module_dir, engines = None):
     #module_dir = os.path.dirname (module_path)
     cfg = os.path.join(module_dir, 'runtime-module.cfg')
     if not os.path.exists(cfg):
-        log.debug ("Skipping %s (%s) : no runtime-module.cfg" % (module_dir, cfg))
+        log.debug ("Skipping %s (%s) : no runtime-module.cfg" , module_dir, cfg)
         return None
     cfg = ConfigFile (cfg)
     mod_vars = cfg.get (None, asdict = True)
@@ -149,7 +149,7 @@ def load_module(module_dir, engines = None):
     enabled = mod_vars.get('module_enabled', 'true').lower() in [ "true", '1', 'yes', 'enabled' ]
     ### Check that there is a valid Module descriptor
     if not enabled:
-        log.debug ("Skipping %s : disabled" % module_dir)
+        log.debug ("Skipping %s : disabled" , module_dir)
         return None
 
     definition = mod_vars.get ('definition', None)
@@ -159,7 +159,7 @@ def load_module(module_dir, engines = None):
         module_path = os.path.join(module_dir, definition)
 
     if not os.path.exists(module_path):
-        log.debug ("Skipping %s : missing definition " % module_path)
+        log.debug ("Skipping %s : missing definition " , module_path)
         return None
 
     log.debug ("found module at %s" % module_path)
@@ -167,7 +167,7 @@ def load_module(module_dir, engines = None):
         with open(module_path) as xml:
             module_root = etree.parse (xml).getroot()
     except etree.XMLSyntaxError:
-        log.exception ('while parsing %s' % module_path)
+        log.exception ('while parsing %s' , module_path)
         return None
 
     ts = os.stat(module_path)
@@ -200,7 +200,7 @@ def initialize_available_modules(engines):
     available = []
     unavailable = []
     log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
-    log.debug ('examining %s ' % MODULE_PATH)
+    log.debug ('examining %s ' , MODULE_PATH)
     log.debug ("WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
     #for g in os.listdir(MODULE_PATH):
 
@@ -215,7 +215,7 @@ def initialize_available_modules(engines):
                         available.append(module_root)
                     else:
                         unavailable.append ( module_directory )
-                        log.debug("Skipping %s : module load failed" % module_directory)
+                        log.debug("Skipping %s : module load failed" , module_directory)
 
     return available, unavailable
 
@@ -228,7 +228,7 @@ class EngineServer(ServiceController):
 
     def __init__(self, server_url = None):
         super(EngineServer, self).__init__(server_url)
-        self.modules = {}
+        self.modules = []
         self.status = "free"
         self.jobs = 0
         self.running = {}
@@ -288,7 +288,7 @@ class EngineServer(ServiceController):
 
     @expose(content_type="text/xml")
     def _default(self, *path, **kw):
-        log.debug ('in default %s' % str( path) )
+        log.debug ('in default %s' ,  path)
         path = list(path)
         if len(path) > 0:
             module_name = path.pop(0)
@@ -329,7 +329,7 @@ class EngineModuleResource(BaseController):
         static_path = os.path.join ( self.path, 'public')
         if os.path.exists(static_path):
             url = "/engine_service/%s" % self.name
-            log.info ("Adding static path %s -> %s" %(url, static_path))
+            log.debug ("Adding static path %s -> %s" , url, static_path)
             public_file_filter.add_path(static_path,
                                         static_path,
                                         url)
@@ -461,9 +461,9 @@ class EngineModuleResource(BaseController):
         A default interface will be generate if not defined by the
         module itself.
         """
-        log.debug("index %s" % self.name)
+        log.debug("index %s" , self.name)
         node = self.module_xml.xpath('./tag[@name="interface"]')
-        log.debug('Interface node: %s '%node)
+        log.debug('Interface node: %s ', str(node))
         if not node or not node[0].get('value', None):
             override_template(self.index, "genshi:bq.engine.templates.default_module")
             return dict (module_uri  = self.module_uri(),
@@ -482,7 +482,7 @@ class EngineModuleResource(BaseController):
     def interface(self, **kw):
         """Provide Generate a module interface to be used"""
         node = self.module_xml.xpath('./tag[@name="interface"]')
-        log.debug('Interface node: %s'%node)
+        log.debug('Interface node: %s', str(node))
         if not node or not node[0].get('value', None):
             override_template(self.interface, "genshi:bq.engine.templates.default_module")
             return dict (module_uri  = self.module_uri(),
@@ -526,7 +526,7 @@ class EngineModuleResource(BaseController):
     @expose()
     def public(self, *path, **kw):
         """Deliver static content for the Module"""
-        log.debug ("in Static %s %s" % (str(path), str(kw)))
+        log.debug ("in Static path=%s kw=%s" ,  path, kw)
 
         static_path = os.path.join (self.path, 'public', *path)
         if os.path.exists(static_path):
@@ -561,13 +561,12 @@ class EngineModuleResource(BaseController):
     #You cannot require a valid login on the engine .. there are no users here!
     #@require(not_anonymous(msg='You need to log-in to run a module'))
     def execute(self, entrypoint = 'main'):
-        log.debug("execute %s" % self.name)
+        log.debug("execute %s" , self.name)
         mex = read_xml_body()
         if mex is not None:
-            log.debug ("New execution of %s" % etree.tostring(mex))
+            #log.info ("New execution of %s" , mex.get('name'))
             mex = self.start_execution(mex)
             response =  etree.tostring(mex)
-            log.debug ("return %s " % response)
             return response
         else:
             illegal_operation()
@@ -575,39 +574,37 @@ class EngineModuleResource(BaseController):
     def start_execution(self, mextree):
         """Start the execution of the mex for this module"""
         b, mexid = mextree.get ('uri').rsplit('/',1)
-        log.debug ('engine: execute %s' % (mexid))
+        #log.debug ('engine: execute %s' % (mexid))
         module = self.module_xml
         try:
-            try:
-                mex_moduleuri = mextree.get ('type')
-                log.debug ('moduleuri ' + str(mex_moduleuri))
-                #if mex_moduleuri != module.get ('uri'):
-                #    return None
-                adapter_type = module.get('type')
-                adapter = self.adapters.get(adapter_type, None)
-                if not adapter:
-                    log.debug ('No adaptor for type %s' % (adapter_type))
-                    raise EngineError ('No adaptor for type %s' % (adapter_type))
-                exec_id = adapter.execute(module, mextree, self.mpool)
-                mextree.append(etree.Element('tag', name='execution_id', value=str(exec_id)))
+            mex_moduleuri = mextree.get ('type')
+            log.debug ('mex %s moduleuri %s' , mexid, mex_moduleuri)
+            #if mex_moduleuri != module.get ('uri'):
+            #    return None
+            adapter_type = module.get('type')
+            adapter = self.adapters.get(adapter_type, None)
+            if not adapter:
+                log.debug ('No adaptor for type %s' , adapter_type)
+                raise EngineError ('No adaptor for type %s' % (adapter_type))
+            exec_id = adapter.execute(module, mextree, self.mpool)
+            mextree.append(etree.Element('tag', name='execution_id', value=str(exec_id)))
 
-                #if not mextree.get ('asynchronous'):
-                #    mextree.set('status', "FINISHED")
+            #if not mextree.get ('asynchronous'):
+            #    mextree.set('status', "FINISHED")
 
-            except EngineError, e:
-                log.exception ("EngineError")
-                mextree.set('value', 'FAILED')
-                mextree.append(etree.Element('tag', name='error_message', value=str(e)))
-                log.debug ('QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ' + str(e))
-                tg.response.status_int = 500
-            except Exception:
-                log.exception ("Execption in adaptor:" )
-                mextree.set('value', 'FAILED')
-                excType, excVal, excTrace  = sys.exc_info()
-                trace =  " ".join(traceback.format_exception(excType,excVal, excTrace))
-                mextree.append (etree.Element ('tag',name='error_message', value=str(trace)))
-                tg.response.status_int = 500
-
+        except EngineError, e:
+            log.exception ("EngineError")
+            mextree.set('value', 'FAILED')
+            mextree.append(etree.Element('tag', name='error_message', value=str(e)))
+            log.debug ('QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ' + str(e))
+            tg.response.status_int = 500
+        except Exception:
+            log.exception ("Execption in adaptor:" )
+            mextree.set('value', 'FAILED')
+            excType, excVal, excTrace  = sys.exc_info()
+            trace =  " ".join(traceback.format_exception(excType,excVal, excTrace))
+            mextree.append (etree.Element ('tag',name='error_message', value=str(trace)))
+            tg.response.status_int = 500
         finally:
             return mextree
 

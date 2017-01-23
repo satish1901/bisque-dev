@@ -1,6 +1,6 @@
 ## This is bisque condor_submit template written for the mako template engine.
 ## Variables are substitued from the runtime-bisque.cfg and from the executing mex
-## 
+##
 universe = vanilla
 executable=${executable}
 error = ./launcher.err
@@ -14,12 +14,14 @@ notification = never
 ${condor_submit}
 
 %for mex in mexes:
-<%   
-    if not mex.executable: 
+<%
+    if not mex.executable:
         continue
 %>
 initialdir = ${mex.staging_path}
-transfer_input_files  = ${','.join(mex.transfers)}
+#transfer_input_files  = ${','.join(mex.transfers)}
+#transfer_output_files = ${','.join(mex.transfers_out)}
+transfer_output_files = .
 arguments  = ${' '.join(mex.executable[1:])}
 queue
 %endfor

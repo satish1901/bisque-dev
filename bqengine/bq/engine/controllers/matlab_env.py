@@ -88,15 +88,16 @@ class MatlabEnvironment(BaseEnvironment):
         #if runner.named_args.has_key('matlab_home'):
         #    self.matlab_home = runner.named_args['matlab_home']
 
-    def setup_environment(self, runner):
+    def setup_environment(self, runner, **kw):
         # Construct a special environment script
-        runner.log ("matlab_env setup")
+        runner.info ("matlab_env setup")
         for mex in runner.mexes:
             #if mex.executable:
             condor_matlab = self.create_matlab_launcher(mex.rundir)
             condor_matlab = os.path.join('.', os.path.basename(condor_matlab))
             if mex.executable:
                 mex.executable.insert(0, condor_matlab)
+            mex.files.append (condor_matlab)
 
     def create_matlab_launcher(self, dest):
         matlab_launcher = MATLAB_LAUNCHER
@@ -117,7 +118,7 @@ class MatlabDebugEnvironment(MatlabEnvironment):
 
     name = "MatlabDebug"
 
-    def setup_environment(self, runner):
+    def setup_environment(self, runner, **kw):
         # Construct a special environment script
         for mex in runner.mexes:
             #if mex.executable:

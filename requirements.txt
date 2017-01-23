@@ -15,7 +15,7 @@ Pillow==2.3.0
 Pygments==1.6
 Pylons==1.0
 Routes==2.0
-SQLAlchemy==1.0.12
+SQLAlchemy==1.1.4
 PySqlite==2.8.2
 Tempita==0.5.3dev
 ToscaWidgets==0.9.12
@@ -61,7 +61,7 @@ git+git://github.com/irods/python-irodsclient.git
 pycrypto==2.6.1
 pytest==2.5.2
 python-dateutil==1.5
-pyinstaller==3.2
+pyinstaller==3.2.1
 pytz==2013.9
 recaptcha-client==1.0.6
 repoze.lru==0.6

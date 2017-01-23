@@ -52,24 +52,22 @@ DESCRIPTION
 """
 import os
 import logging
-import tempfile
-from tg import config
+#import tempfile
+#from StringIO import StringIO
+#from subprocess import call, PIPE, Popen, STDOUT
+
+#from tg import config
 from lxml import etree
-from StringIO import StringIO
-from subprocess import call, PIPE, Popen, STDOUT
 
 from bq.exceptions import EngineError
-from bq.util.paths import bisque_path, config_path
-from bq.util.copylink import copy_link
-
-
-from base_adapter import BaseAdapter
-
+#from bq.util.paths import bisque_path, config_path
+#from bq.util.copylink import copy_link
 from bq.core import identity
 
 from .module_run import ModuleRunner
+from .base_adapter import BaseAdapter
 
-MODULE_BASE = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
+#MODULE_BASE = config.get('bisque.engine_service.local_modules', bisque_path('modules'))
 log = logging.getLogger('bq.engine_service.adapters.runtime')
 
 
@@ -91,9 +89,9 @@ class RuntimeAdapter(BaseAdapter):
         try:
             module_dir = module.get ('path')
             #log.debug ("Currently in %s" % current_dir)
-            log.debug ("Checking %s in %s" % (module_name,  module_dir))
+            log.debug ("Checking %s in %s" , module_name,  module_dir)
 
-            os.chdir(module_dir)
+            #os.chdir(module_dir)
             m = ModuleRunner()
             if not m.check (module_tree = module):
                 return False
@@ -105,11 +103,11 @@ class RuntimeAdapter(BaseAdapter):
                 module.append(etree.Element('tag', name='asynchronous', value='True'))
             return True
         finally:
-            os.chdir(current_dir)
+            pass
+            #os.chdir(current_dir)
 
     def execute(self, module, mex, pool):
-        log.debug ("module : " + etree.tostring(module))
-        log.debug ("mex : " + etree.tostring(mex))
+        log.debug("Excecute module : %s mex %s", module.get('name'), mex.get('uri'))
         module_name = module.get('name')
         module_path = module.get('path')
         input_nodes = []
@@ -134,20 +132,17 @@ class RuntimeAdapter(BaseAdapter):
         command_line.extend (params)
 
         module_dir = module_path
-        current_dir = os.getcwd()
+        #current_dir = os.getcwd()
         try:
-            log.info ("Currently in %s" % os.getcwd())
-            log.info ("Exec of %s '%s' in %s " % (module_name, ' '.join(command_line), module_dir))
-            #copy_link ( config_path('runtime-bisque.cfg'), module_dir)
-
-            os.chdir(module_dir)
+            log.info ("Starting %s  in %s" , module_name,  module_dir)
+           # os.chdir(module_dir)
             m = ModuleRunner()
             m.main(arguments=command_line,
+                   module_dir = module_dir,
                    mex_tree=mex,
                    module_tree=module,
                    bisque_token = identity.mex_authorization_token(),
                    pool = pool)
-            os.chdir(current_dir)
             #process = Popen(command_line, cwd=module_dir, stdout=PIPE, stderr=PIPE)
             #stdout,stderr = process.communicate()
             #log.debug ("Process ID: %s " %(process.pid))
@@ -158,8 +153,7 @@ class RuntimeAdapter(BaseAdapter):
             #return process.pid
 
         except Exception, e:
-            os.chdir(current_dir)
-            log.exception ("During exec of %s: %s" % (command_line, e))
+            log.exception ("During exec of %s: %s" , command_line, e)
             mex.set ('value', 'FAILED')
             etree.SubElement(mex, 'tag',
                              name = "error_message",
@@ -171,3 +165,5 @@ class RuntimeAdapter(BaseAdapter):
                                   #stdout = stdout,
                                   #stderr = stderr,
                                   exc = e)
+        #finally:
+        #    os.chdir(current_dir)

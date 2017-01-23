@@ -1,6 +1,6 @@
 import os
 import subprocess
-from threading import Thread
+from threading import Thread, Lock
 import logging
 
 try: from queue import Queue
@@ -57,7 +57,7 @@ def worker(queue):
 
         current_dir = os.getcwd()
         command_line = request['command_line']
-        os.chdir(rundir)
+        #os.chdir(rundir)
         if os.name=='nt':
             exe = which(command_line[0])
             exe = exe or which(command_line[0] + '.exe')
@@ -68,7 +68,7 @@ def worker(queue):
                 return -1
             command_line[0] = exe
         logger.debug( 'CALLing %s in %s' , command_line,  rundir)
-        os.chdir(current_dir)
+        #os.chdir(current_dir)
         try:
             retcode = subprocess.call(command_line,
                                       stdout = open(request['logfile'], 'a'),
@@ -76,6 +76,7 @@ def worker(queue):
                                       shell  = (os.name == "nt"),
                                       cwd    = rundir,
                                       env    = env,)
+            logger.debug ("RET %s with %s", command_line, retcode)
             request ['return_code'] =retcode
             if retcode == 0:
                 callme = request.get('on_success')
@@ -92,10 +93,12 @@ class ProcessManager(object):
     "Manage a set of threads to execute limited subprocess"
     def __init__(self, limit=4):
         self.pool = Queue()
+        self.pool_lock = Lock()
         self.threads = [Thread(target=worker, args=(self.pool,)) for _ in range(limit)]
         for t in self.threads: # start workers
             t.daemon = True
             t.start()
+
 
     def schedule  (self, process, success=None, fail=None):
         """Schedule  a process to be run when a worker thread is available
