@@ -1216,17 +1216,25 @@ def build_modules (params):
                   "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly")
     if ans != 'Y':
         return params
-
     install_matlab(params)
 
-    module_dirs = params.get ('module_dirs', "")
+    module_dirs = params.get ('bisque.engine_service.module_dirs', "")
     module_dirs = [ x.strip() for x in module_dirs.split(",") ]
-
     # Walk any module trees installing modules found
+    skipped =[]
+    built   =[]
+    failed  =[]
     for module_dir in module_dirs:
         if not os.path.exists(module_dir):
             os.makedirs (module_dir)
-        install_module_tree(module_dir)
+        s,b,f = install_module_tree(module_dir)
+        skipped.extend(s)
+        built.extend(b)
+        failed.extend(f)
+
+    print "Skipped:", ",".join(skipped)
+    print "Built:", ",".join(built)
+    print "Failed:", ",".join(failed)
 
     return params
 
@@ -1431,16 +1439,28 @@ def install_module_tree(module_root):
     environ.pop ('DISPLAY', None) # Makes matlab hiccup
     environ['BISQUE_ROOT'] = os.getcwd()
 
+    failed    = []
+    completed = []
+    skipped   = []
+    print "Checking %s for modules" % module_root
     for root, dirs, files in os.walk(module_root):
         for module_file in files:
             if module_file == 'runtime-module.cfg':
                 module_directory = os.path.dirname (os.path.join (root,module_file))
                 if check_module_enabled (module_directory):
-                    setup_module(module_directory, environ)
+                    if setup_module(module_directory, environ):
+                        completed.append (module_directory)
+                    else:
+                        failed.append (module_directory)
+                    continue
+                skipped.append (module_directory)
+    return skipped, completed, failed
+
 
 def setup_module(module_dir, environ):
     "Find and setup a single bisque module:"
     if not os.path.exists(os.path.join(module_dir, 'setup.py')):
+        print "setup.py not found in %s" % module_dir
         return False
     cwd = os.getcwd()
     os.chdir (module_dir)

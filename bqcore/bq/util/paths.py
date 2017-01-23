@@ -36,7 +36,7 @@ def defaults_path(*names):
     conf = conf or os.path.join(bisque_root(), 'config-defaults')
     return os.path.join(conf, *names).replace('\\', '/')
 
-def find_config_path(config_file):
+def find_config_path(config_file, config_dir='config'):
     """find a config from the usual places: locally, config, or /etc or by search up from current
     position
 
@@ -61,7 +61,7 @@ def find_config_path(config_file):
     current = os.getcwd().split ("/")
     while current:
         current.pop ()
-        config_path = os.path.join ("/".join (current), 'config',  config_file)
+        config_path = os.path.join ("/".join (current), config_dir,  config_file)
         if os.path.exists (config_path):
             return config_path
     return None

@@ -53,6 +53,10 @@ class SeedSize(object):
 
         summary    = os.path.join(self.images, 'summary.csv')
 
+        if not os.path.exists (summary):
+            self.bq.fail_mex (msg = "did not find any seeds: missing %s" % summary)
+            return 0
+
         summary_tags = self._read_summary(summary)
 
         # Post all submex for files and return xml list of results
