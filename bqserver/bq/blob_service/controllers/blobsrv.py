@@ -156,9 +156,9 @@ class PathService (TGController):
 
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())
-    def list(self, path, *args,  **kwargs):
+    def list(self, path=None, *args,  **kwargs):
         'Find a resource identified by a path'
-        log.info("move() called %s" ,  path)
+        log.info("list( %s )" ,  path)
         resource = data_service.query('image|file', resource_value = path, wpublic='1', cache=False)
         return etree.tostring(resource)
 
@@ -215,6 +215,11 @@ class PathService (TGController):
             child.set('value',  destination)
             child.set('name', os.path.basename (destination))
             resource = data_service.update(child)
+            # Update the tag
+            q1 = data_service.query ('tag', parent = resource, name='filename')
+            if len(q1):
+                q1[0].set ('value', os.path.basename (destination))
+                data_service.update(q1[0])
             # update the links
             partial_path = destination.replace(driver.mount_url,'')
             self.mounts.insert_mount_path(store, partial_path, resource)
