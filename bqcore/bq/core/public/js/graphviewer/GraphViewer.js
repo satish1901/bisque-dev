@@ -148,7 +148,7 @@ function PipelineStepCard(node, resource) {
 PipelineStepCard.prototype = new ResourceCard();
 
 PipelineStepCard.prototype.populateFields = function (xnode) {
-    this.addField('name', xnode.getAttribute('name'), 'name');
+    //this.addField('name', xnode.getAttribute('name'), 'name');
     for (var i = 0; i < xnode.attributes.length; i++) {
         var attr = xnode.attributes[i];
         if (attr.name.startsWith('extra_attr_')) {
@@ -243,7 +243,7 @@ Ext.define('BQ.graphviewer', {
     	        var xnode = xmlDoc.createElement("tmpnode");
     	        for (var attr in gnode) {
     	            if (gnode.hasOwnProperty(attr)) {
-    	                xnode.setAttribute(attr, gnode[attr]);
+    	                xnode.setAttribute(attr.replace(/[^A-Za-z0-9_]/g,'_'), gnode[attr]);
     	            }
     	        }
                 gnode.card.populateFields(xnode);
@@ -751,9 +751,9 @@ Ext.define('BQ.viewer.Graph.Panel', {
         // resource_type can be
         //   - 'graph_url': fetch graph from graph service
         //   - 'dataservice_url': fetch graph from data service (as a doc)
-        //   - 'blobservice_url': fetch graph from blob service (as JSON doc)
+        //   - 'blobservice_url': fetch graph from pipeline service (as JSON doc)
         var resUniqueUrl = (this.hostName ? this.hostName : '') +
-            (this.resourceType === 'blobservice_url' ? '/blob_service/' : (this.resourceType === 'dataservice_url' ? '/data_service/' : '/graph/')) +
+            (this.resourceType === 'blobservice_url' ? '/pipeline/' : (this.resourceType === 'dataservice_url' ? '/data_service/' : '/graph/')) +
             this.resource.resource_uniq; // !!! .split('@')[0];
         var rparams = (this.resourceType === 'blobservice_url' ? {} : { view: 'deep' });
         Ext.Ajax.request({
@@ -863,7 +863,7 @@ Ext.define('BQ.viewer.Graph.Panel', {
                 new_node["type"] = (type_key ? root[key][type_key] : fixed_type);
                 new_node["value"] = ''+key;
                 for (var attr in root[key]) {
-                    if (root[key].hasOwnProperty(attr) && attr != "name" && attr != "type" && attr != "value") {
+                    if (root[key].hasOwnProperty(attr) && attr != "name" && attr != "type" && attr != "value" && !attr.startsWith("__") && !attr.endsWith("__")) {
                         new_node["extra_attr_"+attr] = String(root[key][attr]);
                     }
                 }
@@ -1004,10 +1004,9 @@ Ext.define('BQ.viewer.Pipeline.Panel', {
 
     extractNodesEdges: function(context) {
         // overwrite to handle pipeline files without (i.e., with implicit) edge information
-        // (right now, this is very specific to Dream.3D pipeline format!)
         var me = this;
 
-        context['name_key'] = 'Filter_Human_Label';
+        context['name_key'] = '__Label__';
         context['type_key'] = undefined;
         context['fixed_type'] = 'pipeline_step';
         me.callParent([context]);

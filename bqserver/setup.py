@@ -70,7 +70,7 @@ The bisque server
     graph            = bq.graph.controllers.graph
     preference       = bq.preference.controllers.service
     table            = bq.table.controllers.service
-
+    pipeline         = bq.pipeline.controllers.service
 
     [bq.commands]
     module = bq.module_service.commands.module_admin:module_admin
