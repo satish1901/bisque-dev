@@ -54,15 +54,15 @@ import pkg_resources
 from pylons.controllers.util import abort
 
 from bq import blob_service
+from bq.pipeline.controllers.pipeline_base import PipelineBase
 
 __all__ = [ 'PipelineCP' ]
 
 log = logging.getLogger("bq.pipeline.import.cellprofiler")
 
 
-from bq.pipeline.controllers.pipeline_base import PipelineBase
 
-            
+
 #---------------------------------------------------------------------------------------
 # Importer: CellProfiler
 #---------------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ class PipelineCP(PipelineBase):
         with open(self.filename, 'r') as pipeline_file:
             is_header = True
             indent = 0
-            step = None
+            step = {}
             step_id = 0
             header = { '__Type__': 'CellProfiler' }
             for line in pipeline_file:
@@ -91,7 +91,7 @@ class PipelineCP(PipelineBase):
                 if is_header and len(line) == 0:
                     # end of header reached
                     self.data['__Header__'] = header
-                    is_header = False                    
+                    is_header = False
                 elif is_header and not line.startswith('CellProfiler Pipeline'):
                     toks = line.split(':')
                     tag = toks[0]
@@ -100,7 +100,7 @@ class PipelineCP(PipelineBase):
                 elif not is_header and len(line) == 0 and step:
                     # end of step reached
                     self.data[str(step_id)] = step
-                    step = None
+                    step = {}
                     step_id += 1
                 elif not is_header and not line.startswith(' '):
                     # start of new pipeline step
@@ -122,4 +122,3 @@ class PipelineCP(PipelineBase):
                     tag = toks[0]
                     val = ':'.join(toks[1:])
                     step[tag] = val
-                    

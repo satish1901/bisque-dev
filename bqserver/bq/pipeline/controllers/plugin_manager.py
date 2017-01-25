@@ -95,10 +95,9 @@ class PluginManager(object):
                 for n,item in inspect.getmembers(o):
                     if inspect.isclass(item) and issubclass(item, NeededClass):
                         if item.name != '':
-                            log.debug('Adding plugin: %s'%item.name)
+                            log.debug('Adding plugin: %s', item.name)
                             self.plugins[item.name] = item
             except Exception:
-                log.exception('Could not load: %s'%module_name)
+                log.exception('Could not load: %s', module_name)
 
         log.info('Available %s plugins: %s', self.name, ','.join(self.plugins.keys()))
-

@@ -53,12 +53,13 @@ import datetime as dt
 
 import json
 
+from bq.pipeline.controllers.pipeline_exporter import PipelineExporter
+
 __all__ = [ 'ExporterJSON' ]
 
 log = logging.getLogger("bq.pipeline.export.json")
 
 
-from bq.pipeline.controllers.pipeline_exporter import PipelineExporter
 
 #---------------------------------------------------------------------------------------
 # Json serializer
