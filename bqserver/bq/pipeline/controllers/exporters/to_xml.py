@@ -50,13 +50,11 @@ XML pipeline exporter
 import os
 import logging
 
+from bq.pipeline.controllers.pipeline_exporter import PipelineExporter
+
 __all__ = [ 'ExporterXML' ]
 
 log = logging.getLogger("bq.pipeline.export.xml")
-
-
-from bq.pipeline.controllers.pipeline_exporter import PipelineExporter
-
 
 #---------------------------------------------------------------------------------------
 # exporters: XML
@@ -73,4 +71,3 @@ class ExporterXML (PipelineExporter):
     def format(self, pipeline):
         """ converts pipeline to XML """
         return '<pipeline/>'   #!!! TODO
-

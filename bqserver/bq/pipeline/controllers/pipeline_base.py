@@ -60,15 +60,15 @@ __all__ = [ 'PipelineBase' ]
 #
 # field "data" will store the pipeline as follows:
 #
-# { 
+# {
 #   "__Header__" :
 #    {
 #      <attr_name> : <attr_value>,
 #      ...
 #      <attr_name> : <attr_value>
 #    },
-#   <step_id> : 
-#    { 
+#   <step_id> :
+#    {
 #      "__Label__" : <label for step>,
 #      "__Meta__"  : <attr_value>,
 #      <attr_name> : <attr_value>,
@@ -89,10 +89,10 @@ class PipelineBase(object):
     version = '1.0'
     ext = ''
     mime_type = 'text/plain'
-    
+
     def isloaded(self):
         return self.data is not None
-    
+
     # functions to be defined in the individual drivers
 
     def __init__(self, uniq, resource, path, **kw):
@@ -100,3 +100,4 @@ class PipelineBase(object):
         self.resource = resource
         self.uniq = uniq
         self.url = kw['url'] if 'url' in kw else None
+        self.data = None
