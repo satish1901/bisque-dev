@@ -129,17 +129,23 @@ def bisque_list(session, args):
     session.log.info ("list %s", args)
 
     url = args.host +  "/blob_service/paths/list"
-    params = { 'path' : args.srcpath[0] }
+    if len(args.srcpath)>0:
+        params = { 'path' : args.srcpath[0] }
     if args.alias:
         params['user'] =  args.alias
     r = session.get(url,params=params)
     #six.print_( r.request.headers )
     if r.status_code == requests.codes.ok:
-        if args.compatible:
+        if args.compatible :
             for resource  in ET.fromstring (r.text):
                 six.print_( resource.get ('resource_uniq') )
+            return
         else:
-            six.print_(r.text)
+            if args.unique:
+                for resource  in ET.fromstring (r.text):
+                    six.print_( resource.get ('resource_uniq'), resource.get ('resource_value' ))
+                return
+        six.print_(r.text)
         #six.print_( r.text )
     r.raise_for_status()
 
@@ -168,12 +174,36 @@ def main():
     parser.add_argument('-d', '--debug', action="store_true", default=False, help="log debugging")
     parser.add_argument('-H', '--host', default=defaults['bisque_host'], help="bisque host")
     parser.add_argument('-c', '--credentials', default="%s:%s" % (defaults['bisque_admin_user'], defaults["bisque_admin_pass"]), help="user credentials")
-    parser.add_argument('-T', '--tag_file', default = None, help="tag document for insert")
     parser.add_argument('-C', '--compatible',  action="store_true", help="Make compatible with old script")
-    parser.add_argument('-P', '--permission',   default="private", help="Set resource permission (compatibility)")
-    parser.add_argument('--hidden',   default=None, help="Set resource visibility (hidden)")
-    parser.add_argument('command', help="one of ls, cp, mv, rm, ln" )
-    parser.add_argument('paths',  nargs='+')
+    #parser.add_argument('-P', '--permission',   default="private", help="Set resource permission (compatibility)")
+    #parser.add_argument('--hidden',   default=None, help="Set resource visibility (hidden)")
+    #parser.add_argument('command', help="one of ls, cp, mv, rm, ln" )
+    #parser.add_argument('paths',  nargs='+')
+
+    sp = parser.add_subparsers()
+    lsp = sp.add_parser ('ls')
+    lsp.add_argument('-u', '--unique', default=None, action="store_true", help="return unique codes")
+    lsp.add_argument('paths',  nargs='+')
+    lsp.set_defaults (func=bisque_list)
+    lnp = sp.add_parser ('ln')
+    lnp.add_argument('-T', '--tag_file', default = None, help="tag document for insert")
+    lnp.add_argument('-P', '--permission',   default="private", help="Set resource permission (compatibility)")
+    lnp.add_argument('--hidden',   default=None, help="Set resource visibility (hidden)")
+    lnp.add_argument('paths',  nargs='+')
+    lnp.set_defaults(func=bisque_link)
+    cpp = sp.add_parser ('cp')
+    cpp.add_argument('paths',  nargs='+')
+    cpp.add_argument('-T', '--tag_file', default = None, help="tag document for insert")
+    cpp.add_argument('-P', '--permission',   default="private", help="Set resource permission (compatibility)")
+    cpp.add_argument('--hidden',   default=None, help="Set resource visibility (hidden)")
+    cpp.set_defaults(func=bisque_copy)
+    mvp = sp.add_parser ('mv')
+    mvp.add_argument('paths',  nargs='+')
+    mvp.set_defaults(func=bisque_rename)
+    rmp = sp.add_parser ('rm')
+    rmp.add_argument('paths',  nargs='+')
+    rmp.set_defaults(func=bisque_delete)
+
 
 
     logging.basicConfig(filename=config.get ('bqpath', 'logfile'),
@@ -186,8 +216,8 @@ def main():
     if args.debug:
         logging.getLogger().setLevel (logging.DEBUG)
 
-    if args.command not in OPERATIONS:
-        parser.error("command %s must be one of 'ln', 'ls', 'cp', 'mv', 'rm'" % args.command)
+    #if args.command not in OPERATIONS:
+    #    parser.error("command %s must be one of 'ln', 'ls', 'cp', 'mv', 'rm'" % args.command)
 
     if len(args.paths) > 1:
         args.dstpath = args.paths.pop()
@@ -217,7 +247,8 @@ def main():
         #session.verify = False
         session.auth = tuple (args.credentials.split(':'))
         session.headers.update ( {'content-type': 'application/xml'} )
-        OPERATIONS[args.command] (session, args)
+        #OPERATIONS[args.command] (session, args)
+        args.func (session, args)
     except requests.exceptions.HTTPError,e:
         log.exception( "exception occurred %s : %s", e, e.response.text )
         six.print_("ERROR:",  e.response and e.response.status_code)
