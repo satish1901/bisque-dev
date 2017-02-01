@@ -27,6 +27,7 @@ class RootTip(object):
         #    os.makedirs(self.images)
         self.status = 0
         self.bq.update_mex('initializing')
+
         results = fetch_image_planes(self.bq, self.resource_url, '.')
 
 
@@ -78,7 +79,7 @@ class RootTip(object):
         parser.add_option('--image_url')
 
         (options, args) = parser.parse_args()
-        named = AttrDict (bisque_token=None, mex_url=None, staging_path=None)
+        named = AttrDict (bisque_token=None, mex_url=None, staging_path=None, image_url=None)
         for arg in list(args):
             tag, sep, val = arg.partition('=')
             if sep == '=':
@@ -87,17 +88,16 @@ class RootTip(object):
 
         if named.bisque_token:
             self.bq = BQSession().init_mex(named.mex_url, named.bisque_token)
-            self.resource_url =  named.image_url
+            self.resource_url = self.bq.parameter_value ('image_url')
         elif options.credentials:
             user,pwd = options.credentials.split(':')
             self.bq = BQSession().init_local(user,pwd)
-            self.resource_url =  options.image_url
+            self.resource_url =  named.image_url
         else:
             parser.error('need bisque_token or user credential')
 
         if self.resource_url is None:
             parser.error('Need a resource_url')
-
 
         if not args :
             commands = ['setup', 'start', 'teardown']
