@@ -4,6 +4,7 @@ import csv
 from operator import itemgetter
 import itertools
 from datetime import datetime
+import urllib
 
 try:
     from lxml import etree as etree
@@ -16,9 +17,15 @@ import logging
 logging.basicConfig(filename='AnnotationRename.log', level=logging.DEBUG)
 log = logging.getLogger('AnnotationRename')
 
+seps = {
+    'type': '::',
+    'name': ':',
+    'value': '',
+}
+
 def rename(image, text_old, text_new, ann_type='gobject', ann_attr='type'):
     modified = []
-    gobs = image.xpath('//%s[@%s="%s"]'%(ann_type, ann_attr, text_old))
+    gobs = image.xpath('//%s[@%s="%s"]'%(ann_type, ann_attr, text_old.replace('"', '""')))
     for g in gobs:
         if g.get(ann_attr) == text_old:
             g.set(ann_attr, text_new)
@@ -52,13 +59,25 @@ class AnnotationRename(object):
 
         # rename annotations for each element in the dataset
         for ds_url in datasets:
-            dataset = bq.fetchxml (ds_url, view='deep')
+            #dataset = bq.fetchxml (ds_url, view='full')
+
+            dataset = bq.fetchxml (ds_url, view='short')
             dataset_name = dataset.get('name')
             bq.update_mex('processing "%s"'%dataset_name)
 
-            refs = dataset.xpath('value[@type="object"]')
-            for r in refs:
-                url = r.text
+            # only fetch resources of interest
+            q = urllib.quote(value_old)
+            sep = seps[annotation_attribute]
+            qurl = '%s/value?tag_query=%%22%s%%22%s'%(ds_url, q, sep)
+            dataset = bq.fetchxml (qurl, view='short')
+
+            #refs = dataset.xpath('value[@type="object"]')
+            #for r in refs:
+            #    url = r.text
+            for r in dataset:
+                url = r.get('uri')
+                if url is None: continue
+
                 image = bq.fetchxml (url, view='deep')
                 uuid = image.get('resource_uniq')
                 modified = rename(image, value_old, value_new, ann_type=annotation_type, ann_attr=annotation_attribute)
@@ -106,6 +125,4 @@ if __name__ == "__main__":
 
         bq = BQSession().init_local(user, pwd)
         M.main(bq=bq)
-
-
 
