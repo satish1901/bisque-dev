@@ -1566,12 +1566,14 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
     },
 
     onNewType : function(el, sel) {
-        this.element = sel;
+        if (!sel) return;
+        this.element = sel || el.getValue();
         this.reload();
     },
 
     onNewAttribute : function(el, sel) {
-        this.attribute = sel;
+        if (!sel) return;
+        this.attribute = sel || el.getValue();
         this.reload();
     },
 
