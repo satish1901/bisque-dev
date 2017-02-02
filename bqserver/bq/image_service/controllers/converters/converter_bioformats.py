@@ -236,11 +236,11 @@ class ConverterBioformats(ConverterBase):
         rd['date_time'] = misc.xpathtextnode(mee, '%s/ome:AcquisitionDate'%imagenodepath, namespaces=namespaces).replace('T', ' ')
 
         pixels = mee.xpath('%s/ome:Pixels'%imagenodepath, namespaces=namespaces)[0]
-        rd['image_num_x'] = misc.safeint(pixels.get('SizeX', '0'))
-        rd['image_num_y'] = misc.safeint(pixels.get('SizeY', '0'))
-        rd['image_num_z'] = misc.safeint(pixels.get('SizeZ', '0'))
-        rd['image_num_c'] = misc.safeint(pixels.get('SizeC', '0'))
-        rd['image_num_t'] = misc.safeint(pixels.get('SizeT', '0'))
+        rd['image_num_x'] = misc.safeint(pixels.get('SizeX', '0').split(' ')[0])
+        rd['image_num_y'] = misc.safeint(pixels.get('SizeY', '0').split(' ')[0])
+        rd['image_num_z'] = misc.safeint(pixels.get('SizeZ', '0').split(' ')[0])
+        rd['image_num_c'] = misc.safeint(pixels.get('SizeC', '0').split(' ')[0]) # fix for '3 (effectively 1)' as number of channels
+        rd['image_num_t'] = misc.safeint(pixels.get('SizeT', '0').split(' ')[0])
 
         # pixel format
         pixeltypes = {
