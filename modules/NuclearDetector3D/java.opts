@@ -1,2 +1,2 @@
--Xmx4g
+-Xmx4g -Djavax.net.ssl.trustStore=cacerts_letsencrypt -Djavax.net.ssl.trustStorePassword=changeit
 
