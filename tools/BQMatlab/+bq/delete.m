@@ -35,7 +35,7 @@
 
 function [info] = delete(url, user, password)
 
-    error(nargchk(1,3,nargin));
+    narginchk(1,3);
     %if nargin<2 && isempty(strfind(url, '@')),
     %    error('bq.urread:InvalidInput', 'You must provede user credentials if the URL does not contain them.');
     %end
