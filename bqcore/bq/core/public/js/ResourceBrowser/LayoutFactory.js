@@ -511,20 +511,44 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid', {
                 }, {
                     text : this.layoutConfig.colNameText || 'Name',
                     dataIndex : 'name',
+                    sortable : false,
                     align : 'left',
-                    flex : 0.4
+                    flex : 0.4,
+                    attribute : 'name',
+                    listeners: {
+                        scope: this,
+                        headerclick: this.onHeaderClick,
+                    },
                 }, {
                     text : this.layoutConfig.colValueText || 'Owner',
                     dataIndex : 'value',
-                    flex : 0.6
+                    attribute : 'owner',
+                    sortable : false,
+                    flex : 0.6,
+                    listeners: {
+                        scope: this,
+                        headerclick: this.onHeaderClick,
+                    },
                 }, {
                     text : 'Type',
                     dataIndex : 'type',
+                    attribute : 'type',
+                    sortable : false,
                     hidden : true,
+                    listeners: {
+                        scope: this,
+                        headerclick: this.onHeaderClick,
+                    },
                 }, {
-                    text : this.layoutConfig.colDateText || 'Date created',
+                    text : this.layoutConfig.colDateText || 'Time modified',
+                    sortable : false,
                     dataIndex : 'ts',
-                    flex : 0.4
+                    attribute : 'ts',
+                    flex : 0.4,
+                    listeners: {
+                        scope: this,
+                        headerclick: this.onHeaderClick,
+                    },
                 }],
                 defaults : {
                     tdCls : 'align',
@@ -536,6 +560,24 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid', {
         });
 
         return this.resourceGrid;
+    },
+
+    onHeaderClick : function(header, column) {
+        var attr = column.attribute,
+            command_bar = this.browser.commandBar,
+            btn = command_bar.getComponent('btnTS'),
+            mnu = btn.menu.getComponent('btn_sort_'+attr);
+        if (mnu.checked === false) {
+            mnu.setChecked(true);
+        } else {
+            command_bar.onSortOrder(btn);
+        }
+
+        /*var my_grid = this.resourceGrid;;
+        setTimeout(function() {
+            var c = my_grid.columns[1];
+            c.addCls('bq_sorted');
+        }, 100);*/
     },
 
     getResourceStore : function() {
@@ -550,5 +592,5 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid', {
         });
 
         return this.resourceStore;
-    }
+    },
 });

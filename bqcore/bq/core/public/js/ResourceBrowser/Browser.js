@@ -228,6 +228,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             selType : (this.browserParams.selType || 'SINGLE').toUpperCase()
         });
 
+        this.browserParams.tagOrder = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Sorting', this.browserParams.tagOrder);
         this.browserState['offset'] = this.browserParams.offset;
         this.layoutKey = this.layoutKey || this.browserParams.layout;
         //this.showOrganizer = true;
@@ -292,9 +293,14 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             if (!uri.baseURL)
                 uri.baseURL = this.browserState.baseURL;
 
-            if (uri.tag_order == undefined || uri.tag_order.indexOf('@ts') == -1) {
-                var ts = this.commandBar.getComponent("btnTS").sortState;
-                uri.tag_order = (ts == 'ASC') ? '"@ts":asc' : '"@ts":desc';
+            if (uri.tag_order === undefined || uri.tag_order.indexOf('@') === -1) {
+                var btn = this.commandBar.getComponent("btnTS"),
+                    sorting = Ext.String.format('"{0}":{1}', btn.sortAttribute, btn.sortOrder.toLowerCase());
+                if (uri.tag_order && uri.tag_order != '') {
+                    uri.tag_order += ',' + sorting;
+                } else {
+                    uri.tag_order = sorting;
+                }
             }
 
             this.setBrowserState(uri);
@@ -302,18 +308,16 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             var uri = this.getURIFromState();
 
         if (uri.tag_order) {
-            var tagValuePair = uri.tag_order.split(','), tags = [], values = [], nextPair;
+            var order = uri.tag_order.split(','),
+                tags = [],
+                values = [],
+                p = null;
 
-            function unquote(string) {
-                return (string.length < 2) ? string : string.substring(1, string.length - 1);
-            }
-
-            for (var i = 0; i < tagValuePair.length; i++) {
-                nextPair = tagValuePair[i].split(':');
-
-                if (unquote(nextPair[0]) != "@ts") {
-                    tags.push(unquote(nextPair[0]));
-                    values.push(nextPair[1].toUpperCase());
+            for (var i=0; (p=order[i]); ++i) {
+                if (p.indexOf('@')<0) {
+                    p = p.split(':');
+                    tags.push(p[0].replace(/"/g, ''));
+                    values.push(p[1].toUpperCase());
                 }
             }
 
@@ -545,7 +549,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         btnRight.setDisabled(st.right || st.loading.right);
 
         this.commandBar.slider.slider.setDisabled(btnLeft.disabled && btnRight.disabled);
-        this.commandBar.btnTSSetState(this.browserState.tag_order.toLowerCase());
+        this.commandBar.btnTSSetState(this.browserState.tag_order);
         this.commandBar.btnSearchSetState(this.browserState.tag_query);
         this.commandBar.btnActivateSetState(this.selectState);
     },

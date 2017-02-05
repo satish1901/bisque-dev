@@ -115,8 +115,8 @@ Ext.define('BQ.data.proxy.OrganizerProxy', {
         };
     },
 
-    // dima: fix the absense of local filtering by replacing processResponse
-    // with our version with filering added, this may require updates for
+    // dima: fix the absence of local filtering by replacing processResponse
+    // with our version with filtering added, this may require updates for
     // extjs 5
     processResponse: function (success, operation, request, response, callback, scope) {
         if (Ext.getVersion().major>=5) {

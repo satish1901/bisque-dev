@@ -349,8 +349,7 @@ Ext.apply(Bisque.ResourceBrowser.ResourceQueue.prototype, {
 
             for (var i = 0; i < tagValuePair.length; i++) {
                 nextPair = tagValuePair[i].split(':');
-
-                if (unquote(nextPair[0]) != "@ts")
+                if (nextPair[0].indexOf('@')<0)
                     tags.push(unquote(nextPair[0]));
             }
 

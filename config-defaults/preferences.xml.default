@@ -47,6 +47,16 @@
                         <tag name="passedValues" value="owner,shared,public"/>
                     </template>
                 </tag>
+                <tag name="Sorting" value="&quot;@ts&quot;:desc">
+                    <template>
+                        <tag type="string" name="Type" value="ComboBox"/>
+                        <tag type="string" name="defaultValue" value="&quot;@ts&quot;:desc"/>
+                        <tag type="boolean" name="allowBlank" value="false"/>
+                        <tag type="boolean" name="Editable" value="true"/>
+                        <tag type="string" name="select" value="Name,Time created,Time modified,Permission,Owner,Type"/>
+                        <tag name="passedValues" value="&quot;@name&quot;:asc,&quot;@created&quot;:desc,&quot;@ts&quot;:desc,&quot;@permission&quot;:asc,&quot;@owner&quot;:asc,&quot;@type&quot;:asc"/>
+                    </template>
+                </tag>
             </tag>
             <tag name="Images">
                 <tag name="ImageParameters"/>
