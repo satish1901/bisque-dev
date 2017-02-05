@@ -133,14 +133,67 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 scope : this,
                 cls: 'bq-btn-edit',
             }, {
+                xtype: 'splitbutton',
                 itemId : 'btnTS',
                 icon : BQ.Server.url('/core/js/ResourceBrowser/Images/desc.png'),
-                tooltip : 'Sort data ascending by timestamp (current: descending)',
+                tooltip : 'Sorting by time modified in descending order',
                 hidden : this.viewMgr.cBar.btnTS,
-                sortState : 'DESC',
+                sortOrder : 'DESC',
+                sortAttribute : '@ts',
                 scale : 'large',
-                handler : this.btnTS,
-                scope : this
+                handler : this.onSortOrder,
+                scope : this,
+                menu : {
+                    items : [{
+                        text : 'Name',
+                        itemId : 'btn_sort_name',
+                        checked: false,
+                        group: 'sorting',
+                        sortAttribute : '@name',
+                        scope: this,
+                        checkHandler: this.onSortAttribute,
+                    }, {
+                        text : 'Time created',
+                        itemId : 'btn_sort_created',
+                        checked: false,
+                        group: 'sorting',
+                        sortAttribute : '@created',
+                        scope: this,
+                        checkHandler: this.onSortAttribute,
+                    }, {
+                        text : 'Time modified',
+                        itemId : 'btn_sort_ts',
+                        checked: true,
+                        group: 'sorting',
+                        sortAttribute : '@ts',
+                        scope: this,
+                        checkHandler: this.onSortAttribute,
+                    }, {
+                        text : 'Permission',
+                        itemId : 'btn_sort_permission',
+                        checked: false,
+                        group: 'sorting',
+                        sortAttribute : '@permission',
+                        scope: this,
+                        checkHandler: this.onSortAttribute,
+                    }, {
+                        text : 'Owner',
+                        itemId : 'btn_sort_owner',
+                        checked: false,
+                        group: 'sorting',
+                        sortAttribute : '@owner',
+                        scope: this,
+                        checkHandler: this.onSortAttribute,
+                    }, {
+                        text : 'Type',
+                        itemId : 'btn_sort_type',
+                        checked: false,
+                        group: 'sorting',
+                        sortAttribute : '@type',
+                        scope: this,
+                        checkHandler: this.onSortAttribute,
+                    }],
+                },
             }, {
                 xtype : 'tbseparator',
                 hidden : this.viewMgr.cBar.btnTS
@@ -331,39 +384,58 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         this.browser.fireEvent('SelectMode_Change', btn.state);
     },
 
-    btnTS : function(btn) {
-        var tagOrder = cleanTagOrder(this.browser.browserState.tag_order) || '';
+    btnTSSetState : function(tagOrder) {
+        var m = tagOrder.match(/"@(\w+)":(asc|desc|ASC|DESC)/),
+            attr = m[1] || 'ts',
+            ord = m[2].toUpperCase() || 'DESC',
+            btn = this.getComponent('btnTS'),
+            mnu = btn.menu.getComponent('btn_sort_'+attr);
 
-        function cleanTagOrder(tagOrder) {
-            var ind = tagOrder.lastIndexOf('"@ts":desc');
-            if (ind != -1)
-                return tagOrder.slice(0, ind);
-
-            ind = tagOrder.lastIndexOf('"@ts":asc');
-            if (ind != -1)
-                return tagOrder.slice(0, ind);
-
-            return tagOrder;
+        if (mnu) {
+            mnu.setChecked(true);
+            btn.sortAttribute = mnu.sortAttribute;
+            btn.sortAttributeText = mnu.text.toLowerCase();
         }
-
-
-        (tagOrder.length != 0) ? ((tagOrder[tagOrder.length - 1] != ',') ? tagOrder += ',' : "") : "";
-
-        if (btn.sortState == 'ASC') {
+        btn.sortOrder = ord;
+        if (ord === 'DESC')
             btn.setIcon(BQ.Server.url('/core/js/ResourceBrowser/Images/desc.png'));
-            btn.sortState = 'DESC';
-            btn.setTooltip('Sort data ascending by timestamp (current: descending)');
-            tagOrder += '"@ts":desc';
-        } else {
+        else
             btn.setIcon(BQ.Server.url('/core/js/ResourceBrowser/Images/asc.png'));
-            btn.sortState = 'ASC';
-            btn.setTooltip('Sort data descending by timestamp (current: ascending)');
-            tagOrder += '"@ts":asc';
-        }
+
+        btn.setTooltip(Ext.String.format('Sorting by {0} in {1}cending order', btn.sortAttributeText.toLowerCase(), btn.sortOrder.toLowerCase()));
+    },
+
+    onSortAttribute : function(m) {
+        var btn = this.getComponent('btnTS');
+        if (btn.sortAttribute === m.sortAttribute) return;
+        btn.sortAttribute = m.sortAttribute;
+        btn.sortAttributeText = m.text.toLowerCase();
+        this.updateSortOrder(btn);
+    },
+
+    onSortOrder : function(btn) {
+        if (btn.sortOrder === 'ASC')
+            btn.sortOrder = 'DESC';
+        else
+            btn.sortOrder = 'ASC';
+        this.updateSortOrder(btn);
+    },
+
+    updateSortOrder : function(btn) {
+        var tagOrder = (this.browser.browserState.tag_order || '').split(',');
+
+        // remove attributes
+        tagOrder = tagOrder.filter(function(item) {
+            return item.indexOf('@')<0;
+        });
+
+        tagOrder.push(Ext.String.format('"{0}":{1}', btn.sortAttribute, btn.sortOrder.toLowerCase()));
+        tagOrder = tagOrder.join(',');
+        this.btnTSSetState(tagOrder);
 
         this.msgBus.fireEvent('Browser_ReloadData', {
             offset : 0,
-            tag_order : tagOrder
+            tag_order : tagOrder,
         });
     },
 
@@ -388,46 +460,6 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         this.westPanel.add(this.datasetCt);
         this.westPanel.doComponentLayout(null, null, true);
     },
-
-    /*
-    btnOrganizerClickOriginal : function(reload) {
-        this.westPanel.setWidth(420).show().expand();
-        //this.westPanel.queryById('organizer').removeAll(false); //this.westPanel.removeAll(false);
-        this.organizerCt = ( reload ? undefined : this.organizerCt) || new Bisque.ResourceBrowser.Organizer({
-            border: 1,
-            itemId: 'organizer',
-            parentCt : this.westPanel,
-            dataset : this.browser.browserState['baseURL'],
-            wpublic : this.browser.browserParams.wpublic,
-            browser : this.browser,
-            msgBus : this.msgBus
-        });
-
-        //this.westPanel.setWidth(this.organizerCt.width).show().expand();
-        this.westPanel.add(this.organizerCt);
-        this.westPanel.doComponentLayout(null, null, true);
-    },
-
-    btnOrganizerClickTree : function(reload) {
-        this.westPanel.setWidth(420).show().expand();
-        //this.westPanel.queryById('organizer').removeAll(false);
-        this.organizerCt = ( reload ? undefined : this.organizerCt) || Ext.create('BQ.Organizer.Tree', {
-            itemId: 'organizer',
-            listeners : {
-                scope : this,
-                'QUERY_CHANGED' : function(uri) {
-                    this.msgBus.fireEvent('Browser_ReloadData', uri);
-                }
-            },
-            // state variables
-            tagList : ['habitat', 'Plant Structure', 'Genus', 'species'],
-            resourceType : '', //this.browser.browserState['baseURL'].split('/')[2],
-            resourceServer : this.browser.browserState['baseURL'], //.split('/')[1],
-            includePublic : this.browser.browserParams.wpublic,
-        });
-        this.westPanel.add(this.organizerCt);
-    },
-    */
 
     btnOrganizerClickTreeNew : function(reload) {
         this.westPanel.setWidth(420).show().expand();
@@ -526,22 +558,6 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
         var btn = this.getComponent('btnActivate');
         btn.state = (state == 'ACTIVATE') ? 'SELECT' : 'ACTIVATE';
         this.btnActivate(btn);
-    },
-
-    btnTSSetState : function(tagOrder) {
-        var sortState = (tagOrder.indexOf('"@ts":desc') != -1) ? 'DESC' : ((tagOrder.indexOf('"@ts":asc') != -1) ? 'ASC' : '');
-        var btn = this.getComponent('btnTS');
-
-        if (btn.sortState != sortState)
-            if (sortState == 'DESC') {
-                btn.setIcon(BQ.Server.url('/core/js/ResourceBrowser/Images/desc.png'));
-                btn.sortState = 'DESC';
-                btn.setTooltip('Sort data ascending by timestamp (current: descending)');
-            } else {
-                btn.setIcon(BQ.Server.url('/core/js/ResourceBrowser/Images/asc.png'));
-                btn.sortState = 'ASC';
-                btn.setTooltip('Sort data descending by timestamp (current: ascending)');
-            }
     },
 
     btnSearchSetState : function(tagQuery) {

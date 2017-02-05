@@ -5,7 +5,7 @@
     box-shadow: 1px 1px 6px 2px #999;*/
     -webkit-box-shadow: 0px 0px 8px 0px rgba(0, 153, 255, 1);
     -moz-box-shadow: 0px 0px 8px 0px rgba(0, 153, 255, 1);
-    box-shadow: 0px 0px 8px 0px rgba(0, 153, 255, 1);    
+    box-shadow: 0px 0px 8px 0px rgba(0, 153, 255, 1);
 }
 
 .resource-view-selected {
@@ -99,7 +99,7 @@
     padding: 5px;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;    
+    text-overflow: ellipsis;
 }
 
 .bq_resource .thumbnail {
@@ -162,7 +162,7 @@
     border: solid 0px #E0E0E0 !important;
     border-radius: 5px;
     -moz-border-radius: 5px;
-    -moz-box-shadow: 0px 0px 5px #ffcccc;    
+    -moz-box-shadow: 0px 0px 5px #ffcccc;
 }
 
 .ResourceList.LightShadow {
@@ -196,7 +196,7 @@
     background-position: 0px 0px;
     width : 30px;
     height : 30px;
-    padding: 0px 0px 0px 0px;    
+    padding: 0px 0px 0px 0px;
 }
 
 .LightShadow {
@@ -205,7 +205,7 @@
     box-shadow: 1px 1px 5px #999;*/
     -moz-box-shadow: none;
     -webkit-box-shadow: none;
-    box-shadow: none;    
+    box-shadow: none;
 }
 
 .Res-ImgMed {
@@ -372,7 +372,7 @@
     padding: 5px;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;    
+    text-overflow: ellipsis;
 }
 
 .compact .lblModuleName {
@@ -581,6 +581,24 @@
     margin: 2px 0px 2px 5px;
 }
 
+/*****************************************************************
+  Browser grid
+*****************************************************************/
+
+.bq_browser_grid .bq_sorted .x-column-header-text {
+    font-weight: bold;
+    color: #666666;
+}
+
+.bq_browser_grid .sorted_asc .x-column-header-text {
+    font-weight: bold;
+    color: #666666;
+}
+
+.bq_browser_grid .sorted_desc .x-column-header-text {
+    font-weight: bold;
+    color: #666666;
+}
 
 /*****************************************************************
   Resource renderers
