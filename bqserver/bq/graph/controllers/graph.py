@@ -102,7 +102,7 @@ def _add_resource_inputs_outputs(xnode, edges, checked, unchecked):
         points_from_list = []
         points_to_list = []
         # TODO: the following will be very slow on large DBs... change to new query in 0.6!
-        mexes_ref_node = data_service.query ('mex',tag_query='"http*/%s"' % node)
+        mexes_ref_node = data_service.query ('mex', tag_query='"http*/%s"' % node, cache=False)
         for mex_ref_node in mexes_ref_node:
             mex_deep = data_service.resource_load (uniq=mex_ref_node.get('resource_uniq'),view='deep')
             if mex_deep:
@@ -112,8 +112,6 @@ def _add_resource_inputs_outputs(xnode, edges, checked, unchecked):
                 elif len(mex_deep.xpath('./tag[@name="outputs"]/tag[@value="%s"]' % xnode.get("uri"))) > 0:
                     # found node in MEX's outputs
                     points_from_list.append(mex_ref_node.get('resource_uniq'))
-            else:
-                log.warn("Resource %s referenced in Mex %s but Mex not found (stale cache?)" % (node, mex_ref_node.get('resource_uniq')))
                 
     # add edge unless it points to mex recursively
     points_from_list = [ x for x in points_from_list if is_uniq_code(x) and x != node ]
