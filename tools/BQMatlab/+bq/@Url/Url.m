@@ -221,15 +221,17 @@ classdef Url < matlab.mixin.Copyable
         function urlOut = urlencode(urlIn)
         %URLENCODE Replace special characters with escape characters URLs need 
             urlOut = urlIn;
-            if ~isempty(urlIn),
+            if ~isempty(urlIn)
                 urlOut = char(java.net.URLEncoder.encode(urlIn,'UTF-8'));
+                % un-encode commas, cannot pass a list of ignored characters
+                urlOut = strrep(urlOut, '%2C', ',');
             end
         end % urlencode
         
         function urlOut = urldecode(urlIn)
         %URLDECODE Replace URL-escaped strings with their original characters
             urlOut = urlIn;
-            if ~isempty(urlIn),
+            if ~isempty(urlIn)
                 urlOut = char(java.net.URLDecoder.decode(urlIn,'UTF-8'));
             end
         end % urldecode
