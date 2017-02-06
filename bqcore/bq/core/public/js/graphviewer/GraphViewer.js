@@ -151,8 +151,12 @@ PipelineStepCard.prototype.populateFields = function (xnode) {
     //this.addField('name', xnode.getAttribute('name'), 'name');
     for (var i = 0; i < xnode.attributes.length; i++) {
         var attr = xnode.attributes[i];
-        if (attr.name.startsWith('extra_attr_')) {
-            this.addField(attr.name.replace(/^extra_attr_/, ''), attr.value, 'value');
+        if (attr.name.startsWith('attrname')) {
+            attr_name = attr.value;
+            attr_value = xnode.getAttribute(attr.name.replace(/^attrname/, 'attrval'));
+            if (attr_name.startsWith('extra_attr_')) {
+                this.addField(attr_name.replace(/^extra_attr_/, ''), attr_value, 'value');
+            }
         }
     }
 };
@@ -241,9 +245,12 @@ Ext.define('BQ.graphviewer', {
     	    if(gnode && gnode.card){
     	        var xmlDoc = document.implementation.createDocument(null, "tmpdoc");
     	        var xnode = xmlDoc.createElement("tmpnode");
+    	        var attr_id = 0;
     	        for (var attr in gnode) {
     	            if (gnode.hasOwnProperty(attr)) {
-    	                xnode.setAttribute(attr.replace(/[^A-Za-z0-9_]/g,'_'), gnode[attr]);
+    	                xnode.setAttribute("attrname"+attr_id, attr);
+    	                xnode.setAttribute("attrval"+attr_id, gnode[attr]);
+    	                attr_id += 1;
     	            }
     	        }
                 gnode.card.populateFields(xnode);
