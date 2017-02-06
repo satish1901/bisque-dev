@@ -82,6 +82,7 @@ class ProcessToken(object):
         self.dims        = dims or self.dims
         self.input       = ifnm or self.input
         self.initial_workpath = initial_workpath or self.initial_workpath
+        self.queue       = []
         if files is not None and self.meta is not None:
             if len(files)>1 and len(set(['image_num_z','image_num_t','image_num_c']).intersection(self.meta.keys()))>0:
                 self.input = files
