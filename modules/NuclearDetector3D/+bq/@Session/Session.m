@@ -71,7 +71,7 @@ classdef Session < handle
                 self.user = user_or_mex_url;
                 self.mex = [];
                 % if Bisque root isn't given, it's an error
-                if ~exist('bisque_root', 'var'),
+                if ~exist('bisque_root', 'var')
                     error('bq.Session:init', 'bisque_root is required when using user name and password');
                 else
                     self.bisque_root = bisque_root;
