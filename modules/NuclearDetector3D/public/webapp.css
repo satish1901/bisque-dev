@@ -29,10 +29,10 @@ body {
     text-shadow: #ffffff 0px 0px 6px;
 }
 
-.simplepicker {
+.webapp .simplepicker {
     min-width: 0px !important;
 }
 
-.simplepicker input[type='checkbox'] {
+.webapp .simplepicker input[type='checkbox'] {
     display: none;
 }

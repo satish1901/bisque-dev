@@ -62,10 +62,10 @@ from datetime import datetime
 import pkg_resources
 import tg
 from tg import config, controllers, expose, redirect, override_template
-from pylons.controllers.util import abort
+from pylons.controllers.util import abort, forward
+from paste.fileapp import FileApp
 from repoze.what import predicates
 from lxml import etree
-
 
 from bq.core.service import ServiceController, BaseController
 from bq.exceptions import EngineError, RequestError
@@ -337,9 +337,6 @@ class EngineModuleResource(BaseController):
     def serve_entry_point(self, node, default='Entry point was not found...', **kw):
         """Provide a general way to serve an entry point"""
 
-        from pylons.controllers.util import forward
-        from paste.fileapp import FileApp
-
         log.debug('Serving entry point: %s', node)
 
         if isinstance(node, str) is True:
@@ -530,8 +527,7 @@ class EngineModuleResource(BaseController):
 
         static_path = os.path.join (self.path, 'public', *path)
         if os.path.exists(static_path):
-            cont = open(static_path)
-            return cont.read()
+            return forward(FileApp(static_path).cache_control (max_age=60*60*24*7*6))
 
         raise abort(404)
 
