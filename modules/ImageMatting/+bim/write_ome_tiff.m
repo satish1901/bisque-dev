@@ -1,9 +1,9 @@
 % write_ome_tiff - writies 3-5D OME TIFF files
-% 
+%
 %   INPUT:
 %       im       - 3D-5D image matrix
 %                  requires XYCZT sequence of dimensions, allows skipping
-%                  dimensions with only 1 element, 
+%                  dimensions with only 1 element,
 %                  e.g. 3D image with 1 channel can be XYZ
 %       filename - string of file name to write
 %       dim      - struct with image dimension:
@@ -28,19 +28,19 @@
 
 function write_ome_tiff( data, filename, dim, res)
     if ~exist('dim', 'var'), dim=[]; end
-    if ~exist('res', 'var'), res=[]; end    
+    if ~exist('res', 'var'), res=[]; end
     dim = get_image_dims(data, dim);
     if exist('res', 'var') && ~isempty(res), res = ensure_res(res); end
     xml = get_ome_xml(dim, res);
-    tif = Tiff(filename, 'w');  
-    for t=1:dim.t,    
+    tif = Tiff(filename, 'w');
+    for t=1:dim.t,
         for z=1:dim.z,
             for c=1:dim.c,
                 if ndims(data)==2,
                     im = data;
                 elseif ndims(data)==3,
                     if dim.c>1,
-                       im = data(:,:,c); 
+                       im = data(:,:,c);
                     elseif dim.z>1,
                        im = data(:,:,z);
                     elseif dim.t>1,
@@ -48,16 +48,16 @@ function write_ome_tiff( data, filename, dim, res)
                     end
                 elseif ndims(data)==4,
                     if dim.c>1 && dim.z>1,
-                       im = data(:,:,c,z); 
+                       im = data(:,:,c,z);
                     elseif dim.c>1 && dim.t>1,
-                       im = data(:,:,c,t); 
+                       im = data(:,:,c,t);
                     elseif dim.z>1 && dim.t>1,
                        im = data(:,:,z,t);
-                    end                    
+                    end
                 elseif ndims(data)==5,
-                    im = data(:,:,c,z,t);                    
+                    im = data(:,:,c,z,t);
                 end
-                
+
                 tags = struct;
                 tags.ImageLength         = dim.x;
                 tags.ImageWidth          = dim.y;
@@ -68,12 +68,12 @@ function write_ome_tiff( data, filename, dim, res)
                 tags.RowsPerStrip        = 16;
                 tags.PlanarConfiguration = Tiff.PlanarConfiguration.Chunky;
                 tags.Compression         = Tiff.Compression.LZW;
-                
+
                 tags.Software            = 'bimwrite';
                 if c==1 && z==1 && t==1, % only write OME-XML for first page
                     tags.ImageDescription = xml;
                 end
-                tif.setTag(tags);   
+                tif.setTag(tags);
                 tif.write(im);
                 tif.writeDirectory();
             end
@@ -95,9 +95,9 @@ function [fmt] = pixel_format(image)
         fmt = Tiff.SampleFormat.IEEEFP;
     elseif isa(image, 'int8') || isa(image, 'int16') || ...
            isa(image, 'int32') || isa(image, 'int64'),
-        fmt = Tiff.SampleFormat.Int;        
+        fmt = Tiff.SampleFormat.Int;
     end
-    
+
 end
 
 function [dim] = get_image_dims(im, dim)
@@ -106,10 +106,10 @@ function [dim] = get_image_dims(im, dim)
     end
     dim.type = class(im);
     dim.x = size(im,1);
-    dim.y = size(im,2);    
-    if ~isfield(dim, 'c'), dim.c = 1; end    
-    if ~isfield(dim, 'z'), dim.z = 1; end    
-    if ~isfield(dim, 't'), dim.t = 1; end        
+    dim.y = size(im,2);
+    if ~isfield(dim, 'c'), dim.c = 1; end
+    if ~isfield(dim, 'z'), dim.z = 1; end
+    if ~isfield(dim, 't'), dim.t = 1; end
 
     if ndims(im)==5,
         dim.c = size(im,3);
@@ -153,20 +153,20 @@ function [xml] = get_ome_xml(dim, res)
     xml = [xml '<Image ID="openmicroscopy.org:Image:1" Name="libbioimage" DefaultPixels="openmicroscopy.org:Pixels:1-1">'];
     xml = [xml '<Pixels ID="openmicroscopy.org:Pixels:1-1" DimensionOrder="XYCZT" BigEndian="false"'];
 
-    d = sprintf(' PixelType="%s" SizeX="%d" SizeY="%d" SizeC="%d" SizeZ="%d" SizeT="%d"',... 
+    d = sprintf(' PixelType="%s" SizeX="%d" SizeY="%d" SizeC="%d" SizeZ="%d" SizeT="%d"',...
                 dim.type, dim.x, dim.y, dim.c, dim.z, dim.t);
     xml = [xml d];
-            
+
     if ~isempty(res),
-        r = sprintf(' PhysicalSizeX="%f" PhysicalSizeY="%f" PhysicalSizeZ="%f" TimeIncrement="%f"',... 
+        r = sprintf(' PhysicalSizeX="%f" PhysicalSizeY="%f" PhysicalSizeZ="%f" TimeIncrement="%f"',...
                     res.x, res.y, res.z, res.t);
-        xml = [xml r];                
+        xml = [xml r];
     end
-            
+
     xml = [xml ' >'];
     xml = [xml '<TiffData/>'];
     xml = [xml '</Pixels>'];
     xml = [xml '</Image>'];
-    xml = [xml '</OME>'];    
+    xml = [xml '</OME>'];
 end
 
