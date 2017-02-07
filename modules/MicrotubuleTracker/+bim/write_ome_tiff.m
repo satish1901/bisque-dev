@@ -67,6 +67,8 @@ function write_ome_tiff( data, filename, dim, res)
                 tags.SamplesPerPixel     = 1;
                 tags.RowsPerStrip        = 16;
                 tags.PlanarConfiguration = Tiff.PlanarConfiguration.Chunky;
+                tags.Compression         = Tiff.Compression.LZW;
+                
                 tags.Software            = 'bimwrite';
                 if c==1 && z==1 && t==1, % only write OME-XML for first page
                     tags.ImageDescription = xml;
