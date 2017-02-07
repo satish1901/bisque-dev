@@ -37,7 +37,7 @@
 
 function [output, info] = put(url, input, user, password)
 
-    error(nargchk(1,4,nargin));
+    narginchk(1,4);
     %if nargin<2 && isempty(strfind(url, '@')),
     %    error('bq.urread:InvalidInput', 'You must provede user credentials if the URL does not contain them.');
     %end

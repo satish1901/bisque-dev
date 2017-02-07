@@ -50,6 +50,11 @@ function [output, info] = connect(method, url, location, input, user, password)
        error(message('BQ.connect:NoJvm'));
     end
     
+    % set TSL 1.2 by default
+    java.lang.System.setProperty('https.protocols', 'TLSv1.2');
+    %java.lang.System.setProperty('javax.net.ssl.trustStore', 'cacerts_letsencrypt');
+    %java.lang.System.setProperty('javax.net.ssl.trustStorePassword', 'changeit');
+    
     % Be sure the proxy settings are set.
     %import com.mathworks.mlwidgets.io.InterruptibleStreamCopier;
     com.mathworks.mlwidgets.html.HTMLPrefs.setProxySettings;

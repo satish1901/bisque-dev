@@ -27,7 +27,7 @@
 %
 
 function [s, info] = urlread(url, user, password)
-    error(nargchk(1,3,nargin));
+    narginchk(1,3);
     if nargin==2,
         error('bq.urread:InvalidInput', 'You must provide both user name and password');
     end
