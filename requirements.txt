@@ -59,7 +59,7 @@ py==1.4.20
 psutil==4.3.0
 git+git://github.com/irods/python-irodsclient.git
 pycrypto==2.6.1
-pytest==2.5.2
+pytest==3.0.6
 python-dateutil==1.5
 pyinstaller==3.2.1
 pytz==2013.9

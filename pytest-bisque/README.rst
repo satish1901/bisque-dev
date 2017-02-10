@@ -39,7 +39,17 @@ You can install "pytest-bisque" via `pip`_ from `PyPI`_::
 Usage
 -----
 
-* TODO
+Before running pytest do::
+
+  $ paster setup-app config/test.ini
+
+
+py.test <directory or file>
+py.test <dotted.module.name>
+py.test -s will capture logging output and put it the stderr
+
+
+
 
 Contributing
 ------------

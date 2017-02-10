@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pytest
+import logging
 
 
 def pytest_addoption(parser):
@@ -39,17 +40,19 @@ def load_test_application(filename):
     from webtest import TestApp
     from paste.script.appinstall import SetupCommand
 
-    print "TEST APPL", filename
+    print "pytest_bisque:load_test_application:", filename
     wsgiapp = loadapp('config:' + os.path.abspath(filename))
     app = TestApp(wsgiapp)
-    #print app.config.get ('sqlalchemy.url')
     app.authorization = ('Basic', ('admin', 'admin'))
-    cmd = SetupCommand('setup-app')
-    cmd.run([filename])
-    #transaction.commit()
+    #KGK Following lines are required to create database tables.. but somehow turn off logging??
+    #KGKcmd = SetupCommand('setup-app')
+    #KGKcmd.run([filename])
+    #KGK Just run this command externally before tests:
+    #KGK   paster setup-app config/test.ini
+
     return app
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session") #once per run
 def application ():
     return load_test_application ('config/test.ini')
 
@@ -62,7 +65,7 @@ def load_api_config(filename):
     return cfg
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session") # once per run
 def config():
     "Load the bisque test config/test.ini"
     cfg =  load_api_config ("config/test.ini")
@@ -71,7 +74,7 @@ def config():
 
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="module") # once per module
 def session(config):
     "Create a BQApi BQSession object based on config"
     host = config.get ( 'host.root')
@@ -85,7 +88,7 @@ def session(config):
     bq.close()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="module") # once per module
 def mexsession(config):
     "Create a BQApi BQSession object based on config"
     host = config.get ( 'host.root')

@@ -1,7 +1,8 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+BisQue:
 
+An application for the management and analysis of complex multi-dimensional data including bio-imaging and other scientific data.
 
 
 ### What is this repository for? ###
