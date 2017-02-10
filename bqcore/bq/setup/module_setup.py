@@ -27,7 +27,9 @@ def verbose_call (*args, **kw):
 
 
 def needs_update (output, dependency):
-    return not os.path.exists (output) or os.path.getmtime (dependency) > os.path.getmtime (output)
+    """True when output doesn't exist or dependency does exists and is newer than output
+    """
+    return not os.path.exists (output) or (os.path.exists (dependency) and os.path.getmtime (dependency) > os.path.getmtime (output))
 
 
 def ensure_matlab(params):
@@ -142,7 +144,8 @@ def matlab_setup(main_path, files = [], bisque_deps = False, dependency_dir = "m
     source = main_path + '.m'
     main = main_name + ext_map.get(os.name, '')
     ctf  = main_name + '.ctf'
-    if not (needs_update (ctf, source) or needs_update(main, source)):
+    if not (needs_update (ctf, source) or needs_update(main, source)
+            or needs_update(ctf, "+bq") or needs_update(ctf, "+bim")):
         print "Skipping matlab compilation %s is newer than %s" % (ctf, source)
         return 0
 

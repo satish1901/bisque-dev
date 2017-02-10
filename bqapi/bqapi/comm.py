@@ -61,12 +61,6 @@ import mimetypes
 import warnings
 import posixpath
 
-log = logging.getLogger('bqapi.comm')
-
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -74,13 +68,11 @@ from requests.auth import AuthBase
 from requests import Session
 from requests_toolbelt import MultipartEncoder
 
-
-from .RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
 try:
-
-    from .casauth import caslogin
+    from collections import OrderedDict
 except ImportError:
-    log.warning ("CAS login not supported: may need to install BeautifulSoup4")
+    from ordereddict import OrderedDict
+
 
 try:
     from lxml import etree
@@ -89,7 +81,15 @@ except ImportError:
 
 from .types import BQMex, BQNode, BQFactory
 from .util import parse_qs, make_qs, xml2d, d2xml, normalize_unicode
+from .RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
+try:
+    from .casauth import caslogin
+    CAS_SUPPORT=True
+except ImportError:
+    CAS_SUPPORT = False
 
+
+log = logging.getLogger('bqapi.comm')
 
 #SERVICES = ['']
 
@@ -118,10 +118,11 @@ class BQCommError(BQException):
 
 
     def __str__(self):
+        content = "%s...%s" % (self.response.content[:64], self.response.content[-64:]) if len (self.response.content) > 64 else self.response.content
         return "BQCommError(%s, status=%s, req headers=%s)%s" % (self.response.url,
                                                                  self.response.status_code,
                                                                  self.response.request.headers,
-                                                                 self.content)
+                                                                 content )
 
 
 class MexAuth(AuthBase):
@@ -430,12 +431,14 @@ class BQSession(object):
         >>>s.init_cas (CASNAME, CASPASS, bisque_root='http://bisque.iplantcollaborative.org', create_mex=False)
         >>>s.fetchxml('/data_serice/image', limit=10)
         """
+        if not CAS_SUPPORT:
+            raise BQApiError ("CAS not support.. please check installation")
 
-        if bisque_root != None:
-            self.bisque_root = bisque_root
-            self.c.root = bisque_root
-        else:
+        if bisque_root == None:
             raise BQApiError ("cas login requires bisque_root")
+
+        self.bisque_root = bisque_root
+        self.c.root = bisque_root
 
         caslogin (self.c, bisque_root + "/auth_service/login", user, pwd)
         self._load_services()

@@ -1,32 +1,28 @@
 import os
+import inspect
+from datetime import datetime
+#from itertools import *
 import logging
-import pkg_resources
+
+#import pkg_resources
+from tg import expose, request
+#from repoze.what import predicates
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
-from tg import expose, request, response, require
-from repoze.what import predicates
-from bq.core.service import ServiceController
 from pylons.controllers.util import abort
 
 # imports for pipeline server
 from lxml import etree
-import sys
-import inspect
-import urllib
-from datetime import datetime
-from itertools import *
-from bqapi import *
+#from bqapi import *
 
+from bq.core.service import ServiceController
 from bq.core import identity
 from bq import data_service
-from bq import blob_service
-
-log = logging.getLogger("bq.pipeline")
-
 
 from .plugin_manager import PluginManager
 from .pipeline_base import PipelineBase
 from .pipeline_exporter import PipelineExporter
 
+log = logging.getLogger("bq.pipeline")
 
 ################################################################################
 # PipelineController
@@ -92,15 +88,15 @@ class PipelineController(ServiceController):
                 except Exception as ex:
                     log.debug("failed with error %s", str(ex))
                     pipeline = None
-                    pass # continue with next format
+                    pass # continue with next format # TODO: continue?
                 if pipeline is not None and pipeline.isloaded() == True:
-                    break;
+                    break
             if pipeline is None:
                 abort(500, 'Pipeline cannot be read')
             log.debug('Read pipeline: %s',str(pipeline))
 
             # export
-            out_format = kw.get('format', 'json') 
+            out_format = kw.get('format', 'json')
             log.debug('Format: %s', out_format)
             if out_format in self.exporters.plugins:
                 r = self.exporters.plugins[out_format]().export(pipeline)
