@@ -24,6 +24,7 @@ docker wait  $CONTAINER
 ${DOCKER_OUTPUTS}
 # docker will not copy to existing directory .. so create a new one and copy from that
 docker cp $CONTAINER:/module/ output_files
+rm -rf ./output_files/pydist/
 mv ./output_files/* .
 #docker rm $CONTAINER
 """
