@@ -121,6 +121,7 @@ setup(
       database  = bq.commands.admin:database
       stores    = bq.commands.admin:stores
       password    = bq.commands.admin:password
+      hosturl     = bq.commands.admin:hosturl
 
       [paste.paster_create_template]
       bisque_core = bq.commands.bisque_template:CoreServiceTemplate
