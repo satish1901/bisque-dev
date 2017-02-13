@@ -421,13 +421,13 @@ class BaseRunner(object):
         if self.session is None:
             self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)
         status  = "starting"
+        self.entrypoint_executable = self.mexes[0].executable
         if self.mexes[0].iterables:
             self.mexes[0].executable = None
             status = 'running parallel'
         # add empty "outputs" section in topmex
         #self.session.update_mex(status=status, tags=[{'name':'outputs'}])
-        self.session.update_mex(status=status) # dima: modules add outputs section and the empty one complicates module UI
-        self.entrypoint_executable = self.mexes[0].executable
+        self.session.update_mex(status=status) # dima: modules add outputs section and the empty one complicates module UI        
         # if there is a prerun, run it now
         if self.prerun:
             self.info("prerun starting")
