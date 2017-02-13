@@ -201,8 +201,12 @@ class RootController(BaseController):
             log.debug ('HEADERS: %s %s', request.url, dict(request.headers))
             log.debug ('PATH %s in DIR %s', request.path, os.getcwd())
         if service_type in oldnames:
-            log.warn ('found oldname( %s ) in request' % (service_type))
-            service_type = oldnames[service_type]
+            #service_type = oldnames[service_type]
+            newreq = request.path_qs[1:].replace (service_type,  oldnames[service_type])
+            log.warn ('found oldname( %s ) -> newreq %s' , service_type, newreq)
+
+            redirect(urlparse.urljoin(request.application_url, newreq))
+
 
         #log.debug ("find controller for %s  " % (str(service_type) ))
         #log.debug ("lookup for %s/%s" , service_type, rest )

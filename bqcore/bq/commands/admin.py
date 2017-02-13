@@ -8,6 +8,8 @@ import errno
 import logging
 import shutil
 
+from paste.deploy.converters import asbool
+
 from bq.release import __VERSION__
 from bq.util.io_misc import remove_safe
 from bq.util.paths import site_cfg_path, data_path, config_path, defaults_path
@@ -184,11 +186,14 @@ class setup(object):
 class deploy(object):
     desc = 'Advanced deployment options: public'
     def __init__(self, version):
+        from bq.util.copylink import copy_symlink, copy_link
         parser = optparse.OptionParser(usage="%prog deploy [public]", version="%prog " + version)
         parser.add_option("--packagedir",  help="Root package of install", default='bqcore' )
+        parser.add_option("--symlinks", default=True, help='use symlinks instead of copying' )
         options, args = parser.parse_args()
         self.args = args
         self.options = options
+        self.copy = copy_symlink if asbool(options.symlinks) else copy_link
 
     def run(self):
         #if 'public' in self.args:
@@ -200,7 +205,6 @@ class deploy(object):
 
     def deploy_public(self):
         ''
-        from bq.util.copylink import copy_symlink, copy_link
 
         # dima: deploy fails under windows with access denied, need to clean dir first
         if os.name == 'nt':
@@ -245,11 +249,11 @@ class deploy(object):
                     for name in names:
                         src = os.path.join (r, name)
                         dst = os.path.join (dest, name)
-                        if os.path.exists (dst):
-                            os.unlink(dst)
                         if os.path.isdir (dst):
                             shutil.rmtree(dst)
-                        copy_symlink (src, dst)
+                        if os.path.exists (dst):
+                            os.unlink(dst)
+                        self.copy (src, dst)
                         #print "%s->%s" % (src, dst)
 
             except Exception, e:
@@ -534,3 +538,65 @@ class password(object):
             user.password = password
         else:
             print "cannot find user %s" % user_name
+
+
+
+
+
+class hosturl(object):
+    desc = 'Find and replace host settings in bisuqe db:'
+
+    def __init__(self, version):
+        self.parser = optparse.OptionParser(
+            usage="%prog update old-host-url full-host-url] ",
+            version="%prog " + version)
+        self.parser.add_option('-c','--config', default=site_cfg_path(), help="Path to config file: %default")
+        self.parser.add_option('-f','--force', action="store_true", default=False)
+        self.parser.add_option('--dburl', default  = None, help='Override dburl from site.cfg')
+        options, args = self.parser.parse_args()
+
+        if len (args) > 0:
+            self.command = args.pop(0)
+        else:
+            self.parser.error("Need at least one command")
+
+        self.args = args
+        self.options = options
+        if self.command not in ('update'):
+            self.parser.error("illegal command")
+
+    def run(self):
+        from tg import config
+        from sqlalchemy import create_engine
+        from sqlalchemy.sql import func, update
+        import transaction
+
+        if self.options.dburl is  None:
+            load_config(self.options.config)
+            engine = config['pylons.app_globals'].sa_engine
+        else:
+            engine = create_engine (self.options.dburl)
+
+        print "updating ", engine
+
+        if self.command == 'update':
+            oldurl , newurl = self.args
+
+            if not (oldurl.endswith ('/') and newurl.endswith('/')):
+                self.parse.error ("Please end URLs with '/' for proper matching")
+            from bq.data_service.model.tag_model import taggable, values
+            #taggable.bind = engine
+
+            stmt = taggable.update ()\
+                   .values (resource_value = func.replace (taggable.c.resource_value, oldurl, newurl))\
+                   .where(taggable.c.resource_value.like (oldurl + '%'))
+            print stmt
+            engine.execute (stmt)
+            stmt = values.update() \
+                     .values (valstr = func.replace (values.c.valstr, oldurl, newurl))\
+                     .where(values.c.valstr.like (oldurl + '%'))
+            print stmt
+            engine.execute (stmt)
+
+            # Find all values
+            transaction.commit()
