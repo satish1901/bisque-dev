@@ -228,10 +228,15 @@ class Dream3D(object):
         """
         # collect submex output hdf urls and add them to top mex outputs section
         top_mex = self.bqSession.fetchxml(self.options.mexURL, view='deep')
-        outputTag = top_mex.xpath('/mex/tag[@name="outputs"]')[0]
+        outputTag = top_mex.xpath('/mex/tag[@name="outputs"]')
+        if not outputTag:
+            # no "outputs" tag in mex => add it now
+            etree.SubElement(top_mex, 'tag', name='outputs') 
+            top_mex = self.bqSession.postxml(url=top_mex.get('uri'), xml=top_mex, view='deep')
+            outputTag = top_mex.xpath('/mex/tag[@name="outputs"]')
+        outputTag = outputTag[0]
         output_hdfs = top_mex.xpath('/mex/mex/tag[@name="outputs"]/tag[@name="output_hdf"]/@value')
-        etree.SubElement(outputTag, 'tag', name='all_outputs', value=';'.join([id.split('/')[-1] for id in output_hdfs]))
-
+        etree.SubElement(outputTag, 'tag', name='all_outputs', value=';'.join([ohdf.split('/')[-1] for ohdf in output_hdfs]))
         self.bqSession.postxml(url=outputTag.get('uri'), xml=outputTag)
 
     def main(self):
