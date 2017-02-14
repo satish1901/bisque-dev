@@ -80,8 +80,8 @@ class CondorRunner (CommandRunner):
                            if k!='mex_id' and k!='staging_path'])
         postargs.append('mex_url=%s' % topmex.mex_url)
         postargs.append('bisque_token=%s' % topmex.bisque_token)
-        #postargs.append('job_return= $RETURN')
-        postargs.append('$RETURN')
+        postargs.append('condor_job_return=$RETURN')
+        #postargs.append('$RETURN')
         postargs.append ('finish')
 
         for mex in self.mexes:
@@ -134,8 +134,8 @@ class CondorRunner (CommandRunner):
         # Cleanup condor stuff and look for error files.
 
         topmex = self.mexes[0]
-        #job_return = int(self.mexes[0].named_args['job_return'])
-        job_return = int(topmex.arguments.pop())
+        job_return = int(topmex.named_args.get ('condor_job_return', 0))
+        #job_return = int(topmex.arguments.pop())
         if job_return != 0:
             if self.session is None:
                 mex_url = topmex.named_args['mex_url']

@@ -57,6 +57,8 @@ try:
     from lxml import etree as et
 except Exception:
     from xml.etree import ElementTree as et
+
+from tg import config
 from bq.util.configfile import ConfigFile
 from bq.util.paths import  find_config_path
 from bqapi import BQSession
@@ -64,8 +66,10 @@ from bqapi import BQSession
 from .base_env import strtobool, strtolist
 from .module_env import MODULE_ENVS, ModuleEnvironmentError
 from .mexparser import MexParser
+from .pool import ProcessManager
 
 ENV_MAP = dict ([ (env.name, env) for env in MODULE_ENVS ])
+POOL_SIZE   = int(config.get('bisque.engine_service.poolsize', 4))
 
 logging.basicConfig(level=logging.DEBUG, filename='module.log')
 #log = logging.getLogger('bq.engine_service.command_run')
@@ -300,7 +304,6 @@ class BaseRunner(object):
         module_dir =  kw.pop ('module_dir', os.getcwd())
 
         # ---- the next items are preserved across execution phases ----
-        self.pool = kw.pop('pool', None)
         # list of dict representing each mex : variables and arguments
         self.mexes = []
         self.rundir = module_dir
@@ -399,7 +402,7 @@ class BaseRunner(object):
         state_file = "state%s.bq" % self.mexes[0].get('mex_id', '')
         # entered in a later processing phase (e.g., Condor finish) => unpickle
         with open('%s/%s' % (staging_path, state_file),'rb') as f:
-            self.pool = None   # not preserved for now
+            #self.pool = None   # not preserved for now
             self.mexes = pickle.load(f)
             self.rundir = pickle.load(f)
             self.outputs = [et.fromstring(tree) for tree in pickle.load(f)]
@@ -427,7 +430,7 @@ class BaseRunner(object):
             status = 'running parallel'
         # add empty "outputs" section in topmex
         #self.session.update_mex(status=status, tags=[{'name':'outputs'}])
-        self.session.update_mex(status=status) # dima: modules add outputs section and the empty one complicates module UI        
+        self.session.update_mex(status=status) # dima: modules add outputs section and the empty one complicates module UI
         # if there is a prerun, run it now
         if self.prerun:
             self.info("prerun starting")
@@ -544,6 +547,12 @@ class BaseRunner(object):
     def main(self, **kw):
         # Find and read a config file for the module
         try:
+            self.pool = kw.pop('pool', None)
+            if self.pool is None:
+                self.pool =  ProcessManager (POOL_SIZE)
+
+
+
             self.read_config(**kw)
 
             args  = kw.pop('arguments', None)
