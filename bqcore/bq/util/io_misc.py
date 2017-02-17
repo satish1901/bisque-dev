@@ -101,10 +101,10 @@ def tounicode(s):
         except (UnicodeDecodeError, UnicodeEncodeError):
             return unicode(s.encode('ascii', 'replace'))
 
-def run_command(command):
+def run_command(command, cwd=None):
     '''returns a string of a successfully executed command, otherwise None'''
     try:
-        p = Popen (command, stdout=PIPE, stderr=PIPE)
+        p = Popen (command, stdout=PIPE, stderr=PIPE, cwd=cwd)
         o,e = p.communicate()
         if p.returncode!=0:
             log.info ("BAD non-0 return code for %s", command)
