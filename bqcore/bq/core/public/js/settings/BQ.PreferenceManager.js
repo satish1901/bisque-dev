@@ -1,3 +1,5 @@
+
+
 Ext.define('BQ.preference.Tagger', {
     extend : 'Bisque.ResourceTagger',
     level: 'user', //options system, user, resource, level
@@ -234,18 +236,23 @@ Ext.define('BQ.preference.PreferencePage', {
             border: false,
             hidden: systemPref?false:true,
             items: systemPref?systemPref:[],
-        },{ //if logged in
+        }, { //if logged in
             title: 'User',
             layout: 'fit',
             border: false,
             hidden: userPref?false:true,
             items: userPref?userPref:[],
-        },{ //if viewing a resource
+        }, { //if viewing a resource
             title: 'Resource',
             layout: 'fit',
             border: false,
             hidden: resourcePref?false:true,
             items: resourcePref?resourcePref:[],
+        }, {
+            title: 'Manager',
+            xtype: 'bq_preferences_manager',
+            border: false,
+            hidden: !BQApp.user.is_admin(),
         }];
         Ext.apply(me, {
             items: items,
@@ -253,3 +260,96 @@ Ext.define('BQ.preference.PreferencePage', {
         this.callParent([config]);
     }
 });
+
+
+//--------------------------------------------------------------------------------
+// Preferences Manager
+//--------------------------------------------------------------------------------
+
+Ext.define('BQ.preference.Manager', {
+    extend: 'Ext.container.Container',
+    alias: 'widget.bq_preferences_manager',
+
+    componentCls: 'bq_preferences_manager',
+
+    /*layout: {
+        type: 'vbox',
+        align: 'left',
+    },*/
+
+    initComponent: function() {
+        this.items = [{
+            xtype: 'container',
+            html : '<h2>Preferences manager</h2>',
+        }, {
+            text: 'Download system preferences',
+            xtype: 'button',
+            iconCls: 'icon-download',
+            scale: 'large',
+            scope: this,
+            handler: this.download_system_prefs,
+        }, {
+            xtype: 'filemultifield',
+            itemId: 'selector_files',
+            buttonOnly: true,
+            multiple: false,
+            handler: this.on_upload,
+            scope: this,
+            buttonConfig: {
+                scale: 'large',
+                iconCls: 'icon-upload',
+                text: 'Upload system preferences',
+                //tooltip: 'Upload system preferences',
+            },
+            listeners: {
+                change: this.on_upload,
+                scope: this,
+            },
+        }];
+        this.callParent();
+    },
+
+    download_system_prefs: function() {
+        window.open('/admin/preferences/');
+    },
+
+    on_upload: function(field, value, opts) {
+        var me = this,
+            files = field.fileInputEl.dom.files,
+            reader = new FileReader();
+
+        reader.onload = function(e) {
+            var text = e.target.result;
+            me.upload_system_prefs(text);
+        };
+        reader.onerror = function(e) {
+            BQ.ui.error('Failed to read the file...');
+        };
+
+        reader.readAsText(files[0]);
+    },
+
+    upload_system_prefs: function(text) {
+        this.setLoading('Uploading...');
+        Ext.Ajax.request({
+            url: Ext.String.format('/admin/preferences/'),
+            method: 'POST',
+            //xmlData:
+            rawData: text,
+            headers: {
+                'Content-Type': 'text/xml',
+            },
+            callback: function(opts, succsess, response) {
+                this.setLoading(false);
+                if (response.status>=400)
+                    BQ.ui.error(response.responseText);
+                else
+                    BQ.ui.notification('Successfully uploaded the preferences document');
+            },
+            scope: this,
+            disableCaching: false,
+        });
+    },
+
+});
+
