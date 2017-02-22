@@ -113,36 +113,38 @@ Ext.define('BQ.admin.cache.Manager', {
     extend: 'Ext.container.Container',
     alias: 'widget.bq_cache_manager',
 
-    componentCls: 'bq_cache',
+    componentCls: 'bq_cache_manager',
 
     initComponent: function() {
         this.items = [{
             xtype: 'container',
-            padding: '8px',
-            html : '<h2>Cache Manager</h2><p>Select to clear all the cache for all the users.</p>',
+            html : '<h2>Cache manager</h2><p>Select to clear all the cache for all the users.</p>',
         }, {
-            text: 'Clear Cache',
+            text: 'Clear cache',
             xtype: 'button',
-            padding: '8px',
-            style: {left:'20px'},
-            handler: function() {this.clearCache();},
-            clearCache: function() {
-                Ext.Ajax.request({
-                    url: '/admin/cache',
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'text/xml' },
-                    success: function(response) {
-                        var xml = response.responseXML;
-                        BQ.ui.notification('Cache cleared!');
-                    },
-                    failure: function(response) {
-                        BQ.ui.error('Cache failed to be cleared!')
-                    },
-                    scope: this,
-                });
-            },
+            scale: 'large',
+            scope: this,
+            handler: this.clearCache,
         }];
         this.callParent();
+    },
+
+    clearCache: function() {
+        Ext.Ajax.request({
+            url: '/admin/cache',
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'text/xml'
+            },
+            success: function(response) {
+                var xml = response.responseXML;
+                BQ.ui.notification('Cache cleared!');
+            },
+            failure: function(response) {
+                BQ.ui.error('Cache failed to be cleared!')
+            },
+            scope: this,
+        });
     },
 
 });
