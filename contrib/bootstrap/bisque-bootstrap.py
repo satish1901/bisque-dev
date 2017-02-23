@@ -13,9 +13,9 @@ PIP_SYS_INSTALL = [ 'pip', 'install', '-U' ]
 
 if os.name == 'nt':
     PIP_LIST=[
-        ('numpy-1.10.4+mkl-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/numpy-1.10.4+mkl-cp27-none-win_amd64.whl'),
-        ('numexpr-2.4.6-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/numexpr-2.4.6-cp27-none-win_amd64.whl'),
-        ('tables-3.2.2-cp27-none-win_amd64.whl', 'http://flour.ece.ucsb.edu:8080/~bisque/wheels/tables-3.2.2-cp27-none-win_amd64.whl'),
+        ('numpy-1.10.4+mkl-cp27-none-win_amd64.whl', 'https://biodev.ece.ucsb.edu/~bisque/wheels/numpy-1.10.4+mkl-cp27-none-win_amd64.whl'),
+        ('numexpr-2.4.6-cp27-none-win_amd64.whl', 'https://biodev.ece.ucsb.edu/~bisque/wheels/numexpr-2.4.6-cp27-none-win_amd64.whl'),
+        ('tables-3.2.2-cp27-none-win_amd64.whl', 'https://biodev.ece.ucsb.edu/~bisque/wheels/tables-3.2.2-cp27-none-win_amd64.whl'),
     ]
     PIP_INSTALL = [ 'pip', 'install', '-U' ]
 else:
@@ -136,7 +136,7 @@ def run_bootstrap():
         print 'Re-Installing pip and setuptools to fix virtualenv error under windows'
         print "----------------------------------------------------------\n"
         install_setup("get-pip.py", "https://bootstrap.pypa.io/get-pip.py")
-        install_easy('pywin32-219.win-amd64-py2.7.exe', "http://flour.ece.ucsb.edu:8080/~bisque/wheels/pywin32-219.win-amd64-py2.7.exe")
+        install_easy('pywin32-219.win-amd64-py2.7.exe', "https://biodev.ece.ucsb.edu/~bisque/wheels/pywin32-219.win-amd64-py2.7.exe")
     else:
         install_sys_pip('pip==8.0.3')
         install_sys_pip('setuptools')
@@ -156,7 +156,7 @@ def run_bootstrap():
        r = 1
     if r != 0:
         if os.name == 'nt':
-            install_pip('mercurial-3.7.1-cp27-none-win_amd64.whl', "http://flour.ece.ucsb.edu:8080/~bisque/wheels/mercurial-3.7.1-cp27-none-win_amd64.whl")
+            install_pip('mercurial-3.7.1-cp27-none-win_amd64.whl', "https://biodev.ece.ucsb.edu/~bisque/wheels/mercurial-3.7.1-cp27-none-win_amd64.whl")
         else:
             install_pip('mercurial')
 
