@@ -36,16 +36,6 @@ enable-threads = true
 #number of uwsgi threads per worker process
 threads=1
 
-fastrouter_keys =
-fastrouter_ip =
-fastrouter_port =
-
-# Subscribe this instance to a fastrouter
-if-env = BISQUE_FASTROUTER_KEYS
-subscribe-to=%(fastrouter_ip):%(fastrouter_port):%(fastrouter_keys)
-endif =
-
-
 #########
 #path to the uwsgi log file
 #daemonize =
@@ -63,8 +53,8 @@ virtualenv = $virtualenv
 #socket timeout
 socket-timeout = 600
 
-#brutally kill workers that will not terminate within 10 seconds during graceful reload
-reload-mercy = 10
+#brutally kill workers that will not terminate within 120 seconds during graceful reload
+reload-mercy = 120
 
 #recycle a worker every 10000 requests
 max-requests = 10000

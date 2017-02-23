@@ -2798,11 +2798,21 @@ BQSession.prototype.timeout_checker = function () {
     BQFactory.load (this.uri, callback(this, 'check_timeout'));
 };
 BQSession.prototype.check_timeout = function (newsession) {
-    newuser  = newsession.find_tags('user');
+    var newuser  = newsession.find_tags('user');
     if (! newuser) {
         // User logged out or session timed out
         this.end_session();
         return;
+    }
+    var expires = newsession.find_tags ('expires');
+    if (expires) {
+        // Check that we are not passed the expires..
+        var expiretime = Date.parse(expires.value);
+        var nowtime = Date.now()
+        //console.log ("now = " + nowtime + " expire=" + expiretime);
+        if (nowtime >  expiretime) {
+            window.location = "/auth_service/logout_handler";
+        }
     }
     this.reset_timeout();
 };

@@ -160,7 +160,15 @@ bisque.image_service.imgcnv.omp_num_threads = 4
 #
 # Login identification  systems
 # NOTE: you must also edit config/who.ini to enable these
-#bisque.login.timeout=0  # no session expire
+#bisque.login.timeout  = check session status every timeout period
+#  Browser windows will check every TIMEOUT seconds to see if you are still logged in
+#  0 == never check .. bad idea
+#  60    check every minute
+# bisque.login.session_length  = length in seconds of a session
+#  60480 7 days (60*60*24*7)
+#  1814400 30 days
+bisque.login.timeout=60
+bisque.login.session_length=60480
 bisque.login.providers =  local
 #bisque.login.providers =  iplant, local
 

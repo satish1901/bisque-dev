@@ -391,6 +391,7 @@ def base_permissions (user_id, with_public, action = RESOURCE_READ):
 def prepare_permissions (query, user_id, with_public, action = RESOURCE_READ):
     visibility = base_permissions(user_id, with_public, action = action)
     if  visibility is not None:
+        log.debug ("permission %s" , str (visibility))
         return query.filter(visibility)
     return query
 
@@ -890,9 +891,9 @@ def resource_query(resource_type,
     @param **kw: All other keyword args are used as attribute value to be matched
     '''
     name, dbtype, query = prepare_type(resource_type)
-    log.debug ("type (%s,%s) query =  %s", name, dbtype, str(query))
+    #log.debug ("type (%s,%s) query =  %s", name, dbtype, str(query))
 
-    log.debug ("query %s: %s order %s parent %s attributes %s" % (name, tag_query, tag_order, parent, str(kw)))
+    log.debug ("query type:%s tag_query:%s order:%s parent:%s attributes:%s" , str(dbtype), tag_query, tag_order, str(parent), str(kw))
     query = prepare_parent( (name, dbtype), query, parent)
 
     # This converts an request for values to the actual

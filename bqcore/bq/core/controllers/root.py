@@ -60,6 +60,7 @@ import logging
 import time
 import urlparse
 import pkg_resources
+from datetime import datetime, timedelta
 from paste.httpexceptions import HTTPNotFound
 
 #from turbogears import controllers, expose, config
@@ -67,7 +68,7 @@ from paste.httpexceptions import HTTPNotFound
 #from turbogears import identity as tgidentity
 import simplejson as json
 from lxml import etree
-from tg import expose,  request, redirect, config, response, abort
+from tg import expose,  request, redirect, config, response, abort, session
 from tg.controllers import CUSTOM_CONTENT_TYPE
 from tg.controllers import WSGIAppController
 #from tgext.admin import AdminController
@@ -105,6 +106,12 @@ class MDWrap(object):
         except KeyError:
             raise AttributeError(name)
 
+def session_update():
+    timeout = session.get ('timeout', 0)
+    length = session.get ('length', 0)
+    if timeout and length:
+        session['expires']  = (datetime.utcnow() + timedelta(seconds=length))
+        session.save()
 
 
 class ServiceRegistryController (ServiceController):
@@ -215,6 +222,8 @@ class RootController(BaseController):
         service = service_registry.find_service(service_type)
         if service is not None:
             #log.debug ('found %s ' ,  str(service))
+            if service.service_type != 'auth_service' and 'expires' in session:
+                session_update ()
             return service, rest
         if is_uniq_code(service_type):
             log.debug ("uniq code %s", request.path_qs)

@@ -94,6 +94,8 @@ except ImportError:
 
 
 
+
+
 class AuthenticationServer(ServiceController):
     service_type = "auth_service"
     providers = {}
@@ -181,10 +183,13 @@ class AuthenticationServer(ServiceController):
         userid = request.identity['repoze.who.userid']
         flash(_('Welcome back, %s!') % userid)
         self._begin_mex_session()
-        timeout = int (config.get ('bisque.login.timeout', 0))
+        timeout = int (config.get ('bisque.login.timeout', '0').split('#')[0].strip())
+        length = int (config.get ('bisque.login.session_length', '0').split('#')[0].strip())
         if timeout:
-            session['expires']  = (datetime.now() + timedelta(minutes=timeout))
-            session['timeout']  = timeout*60
+            session['timeout']  = timeout
+        if length:
+            session['expires']  = (datetime.utcnow() + timedelta(seconds=length))
+            session['length'] = length
 
         session.save()
         log.debug ("Current session %s" % session)
@@ -258,8 +263,8 @@ class AuthenticationServer(ServiceController):
             #visit = Visit.lookup_visit (vk)
             #expire =  (visit.expiry - datetime.now()).seconds
             timeout = int(session.get ('timeout', 0 ))
+            length  = int(session.get ('length', 0 ))
             expires = session.get ('expires', datetime(2100, 1,1))
-
             current_user = identity.get_user()
             if current_user:
                 # Pylint misses type of current_user
@@ -270,6 +275,7 @@ class AuthenticationServer(ServiceController):
 
             etree.SubElement (sess, 'tag', name='expires', value= expires.isoformat() )
             etree.SubElement (sess, 'tag', name='timeout', value= str(timeout) )
+            etree.SubElement (sess, 'tag', name='length', value= str(length) )
         return etree.tostring(sess)
 
 
