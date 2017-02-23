@@ -310,7 +310,7 @@ Ext.define('BQ.preference.Manager', {
     },
 
     download_system_prefs: function() {
-        window.open('/admin/preferences/');
+        window.open('/preference?view=deep');
     },
 
     on_upload: function(field, value, opts) {
@@ -332,8 +332,8 @@ Ext.define('BQ.preference.Manager', {
     upload_system_prefs: function(text) {
         this.setLoading('Uploading...');
         Ext.Ajax.request({
-            url: Ext.String.format('/admin/preferences/'),
-            method: 'POST',
+            url: Ext.String.format('/preference'),
+            method: 'PUT',
             //xmlData:
             rawData: text,
             headers: {
