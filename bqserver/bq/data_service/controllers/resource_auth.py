@@ -52,28 +52,25 @@ DESCRIPTION
    RESTful access to DoughDB resources
 
 """
-import re
 import logging
 import string
-import textwrap
 import posixpath
 import random
 
-from sqlalchemy.orm import Query, aliased
+import sqlalchemy
+from sqlalchemy.orm import Query
 
 from pylons.controllers.util import abort
 from paste.deploy.converters import asbool
 
 import tg
-from tg import config, url
-from tg import controllers, redirect, expose, response, request
-from tg import require
+from tg import  expose,  request
 from lxml import etree
 
 from bq.util.hash import is_uniq_code
 from bq.core import identity
-from bq.core.model import metadata, DBSession
-from bq.core.identity import get_user_id, is_admin, get_user
+from bq.core.model import DBSession
+from bq.core.identity import is_admin, get_user
 from bq.core.model import User
 from bq import data_service
 from bq.data_service.model  import Taggable, TaggableAcl, BQUser
@@ -140,7 +137,7 @@ def check_access(query, action=RESOURCE_READ):
 
     resource = force_dbload(query)
     if resource is None:
-        log.info ("Permission check failure %s" % query)
+        log.info ("Permission check failure %s" , str( query))
         if identity.not_anonymous():
             abort(403)
         else:
@@ -200,13 +197,13 @@ class ResourceAuth(Resource):
         @param token: A user uniq
         @return A triple (resource, user, acl) or None,None,None if not unable
         """
-        log.debug ("Load %s" % token)
+        log.debug ("Load %s" ,  str(token))
         # Can we read the ACLs at all?
         resource = check_access(request.bisque.parent, RESOURCE_READ)
         # token should be a resource_uniq of user .. so join Taggable(user) and  TaggableAcl
         if resource is  None:
             return (None, None,None)
-
+        DBSession.flush()
         acl, user = DBSession.query (TaggableAcl, Taggable).filter (TaggableAcl.taggable_id == resource.id,
                                                                     TaggableAcl.user_id == Taggable.id,
                                                                     Taggable.resource_uniq == token).first()
@@ -286,8 +283,6 @@ class ResourceAuth(Resource):
         tg.response.headers['Content-Type'] = content_type
         return formatter(response)
 
-
-        return self.new (None, xml, **kw)
     def modify(self, useracl, xml, notify=False, **kw):
         resource, user, acl  = useracl
         response = etree.Element('resource', uri=request.url)
@@ -322,7 +317,7 @@ class ResourceAuth(Resource):
         response = etree.Element('resource', uri=request.url)
         resource = check_access(request.bisque.parent, RESOURCE_EDIT)
         if resource is not None:
-            log.debug ("AUTH %s with %s" % (resource, xml))
+            log.debug ("AUTH %s with %s" , str(resource),  xml)
             DBSession.autoflush = False
             newauth=etree.XML(xml)
             acl = resource_acl (resource,  newauth,  notify=asbool(notify))
@@ -431,6 +426,7 @@ def resource_acl (resource,  newauth, user=None, acl=None, notify=False, invalid
                               user_uniq = newauth.get ('user'),
                               email     = newauth.get ('email'))
     if acl is None:
+        DBSession.flush() # autoflush is off so flush before query
         acl = DBSession.query(TaggableAcl).filter_by(taggable_id = resource.id, user_id = user.id).first()
         if acl is None:  # Check if newauth is not None or delete is true???
             acl = TaggableAcl()
@@ -451,7 +447,9 @@ def resource_acl (resource,  newauth, user=None, acl=None, notify=False, invalid
     else:
         log.debug ("Changing share on %s for %s action=%s", resource.resource_uniq, user.resource_uniq,  newauth.get ('action', RESOURCE_READ))
         acl.action = newauth.get ('action', RESOURCE_READ)
+    #
     # Special actions on sharing  specific resource types
+    #
     handler = SHARE_HANDLERS.get(resource.resource_type)
     if handler:
         log.info ("Special share handling with %s", handler)
@@ -469,7 +467,7 @@ def resource_acl (resource,  newauth, user=None, acl=None, notify=False, invalid
 
 
 def notify_user(action, resource, user, passwd):
-    """
+    """Send Notification to user of sharing event
     """
     if action == 'append':
         msg = INVITE_MSG if passwd is not None else SHARE_MSG
@@ -541,9 +539,13 @@ def invited_user (email):
     password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(6))
     log.debug('AUTH: tg_user name=%s email=%s display=%s' ,  name, email, email)
     tg_user = User(user_name=name, password=password, email_address=email, display_name=email)
-    DBSession.add(tg_user)
-    DBSession.flush()
-    log.debug ("AUTH: tg_user = %s" % tg_user)
+    try:
+        DBSession.add(tg_user)
+        DBSession.flush()
+        data_service.cache_invalidate("/data_service/user")
+    except sqlalchemy.exc.IntegrityError:
+        log.exception ('During user invitation')
+    log.debug ("AUTH: tg_user = %s" , str(tg_user))
 
     # we should have created the BQUser by now.
     user = DBSession.query(BQUser).filter_by(resource_name = name).first()

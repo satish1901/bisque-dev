@@ -1284,6 +1284,16 @@ def fetch_dir (module_url, module_dir):
         shutil.copytree (module_url, module_dir)
     return module_dir
 
+def fetch_svn (module_url, module_dir):
+    cmd = [ 'svn' ]
+    mdir = '.'
+    if not os.path.exists (module_dir):
+        cmd.extend(['checkout', module_url, module_dir])
+    else:
+        cmd.extend(['update', module_dir])
+    print "calling  %s in  %s" % (cmd, mdir)
+    call (cmd, cwd=mdir)
+    return module_dir
 
 MODULE_FETCH = {
     'tar' : fetch_tar,
@@ -1292,18 +1302,12 @@ MODULE_FETCH = {
     }
 
 def check_fetchers ():
-    hg = which('hg')
-    if  hg:
-        MODULE_FETCH['hg'] = fetch_mercurial
-    else:
-        print "**No mercurial found**"
-    git = which('git')
-    if  git:
-        MODULE_FETCH['git'] = fetch_git
-    else:
-        print "**No git found**"
-
-
+    for cmd, fetch in [ ('hg', fetch_mercurial), ('git', fetch_git), ('svn', fetch_svn), ]:
+        found = which (cmd)
+        if found:
+            MODULE_FETCH[cmd] = fetch
+        else:
+            print "WARN %% %s %% command not found "
 
 def fetch_modules(params):
     """Get and install modules from remote and local sources
