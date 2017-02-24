@@ -2798,10 +2798,16 @@ BQSession.prototype.timeout_checker = function () {
     BQFactory.load (this.uri, callback(this, 'check_timeout'));
 };
 BQSession.prototype.check_timeout = function (newsession) {
+
+
     var newuser  = newsession.find_tags('user');
     if (! newuser) {
         // User logged out or session timed out
         this.end_session();
+        return;
+    }
+    if (this.user_uri != newuser.value){
+        window.location = "/";
         return;
     }
     var expires = newsession.find_tags ('expires');
