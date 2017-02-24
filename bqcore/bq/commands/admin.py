@@ -583,10 +583,11 @@ class hosturl(object):
             oldurl , newurl = self.args
 
             if not (oldurl.endswith ('/') and newurl.endswith('/')):
-                self.parse.error ("Please end URLs with '/' for proper matching")
+                self.parser.error ("Please end URLs with '/' for proper matching")
             from bq.data_service.model.tag_model import taggable, values
             #taggable.bind = engine
 
+            # pylint: disable=no-value-for-parameter
             stmt = taggable.update ()\
                    .values (resource_value = func.replace (taggable.c.resource_value, oldurl, newurl))\
                    .where(taggable.c.resource_value.like (oldurl + '%'))
