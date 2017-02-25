@@ -150,8 +150,9 @@ Ext.define('BQ.Application', {
     onSignedOut: function() {
         this.session = undefined;
         this.fireEvent( 'signedout');
-        Ext.Msg.alert('Timeout', 'Your session has timed out', function() {
-            window.location = BQ.Server.url( "/client_service" );
+        Ext.Msg.alert('Timeout', 'Your session has timed out...', function() {
+            //window.location = BQ.Server.url( "/client_service" );
+            location.reload();
         });
     },
 

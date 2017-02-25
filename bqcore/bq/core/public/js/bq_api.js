@@ -2797,17 +2797,20 @@ BQSession.prototype.reset_timeout  = function (){
 BQSession.prototype.timeout_checker = function () {
     BQFactory.load (this.uri, callback(this, 'check_timeout'));
 };
+
 BQSession.prototype.check_timeout = function (newsession) {
-
-
     var newuser  = newsession.find_tags('user');
-    if (! newuser) {
+    if (!newuser) {
         // User logged out or session timed out
         this.end_session();
         return;
     }
-    if (this.user_uri != newuser.value){
-        window.location = "/";
+    if (this.user_uri != newuser.value) {
+        //window.location = "/";
+        //session.new_session (opts);
+        Ext.Msg.alert('New login', 'You logged-in as a different user and may not have access to this resource anymore...', function() {
+            location.reload();
+        });
         return;
     }
     var expires = newsession.find_tags ('expires');
