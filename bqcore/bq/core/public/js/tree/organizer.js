@@ -363,15 +363,13 @@ Ext.define('BQ.tree.organizer.Panel', {
     border : false,
     rootVisible : false,
     disableSelection: false,
-    allowDeselect: true,
+    allowDeselect: false,
     sortableColumns: false,
     draggable: false,
     enableColumnMove: false,
     defaults: {
         border : false,
     },
-
-
 
     viewConfig : {
         stripeRows : true,
@@ -398,15 +396,25 @@ Ext.define('BQ.tree.organizer.Panel', {
         flex: 2,
         dataIndex: 'value',
         sortable: true,
+        renderer: function(value, meta, record) {
+            if (record.data.negated)
+                meta.tdCls = 'negated';
+            return value;
+        },
     }, {
+        xtype: 'actioncolumn',
         text: 'Count',
         width: 50,
         dataIndex: 'count',
         sortable: true,
         tdCls: 'counts',
+        stopSelection : true,
         //align: 'center',
         align: 'right',
-        renderer: function(value) {
+        tooltip: 'Toggle to NOT find resources with this annotation',
+        renderer: function(value, meta, record) {
+            if (record.data.negated)
+                meta.tdCls = 'negated';
             if (value<Math.pow(10, 3))
                 return value;
             else if (value>=Math.pow(10, 3) && value<Math.pow(10, 6)) // K
@@ -416,15 +424,147 @@ Ext.define('BQ.tree.organizer.Panel', {
             else
                 return (value/Math.pow(10, 9)).toFixed(2)+'G';
         },
+        handler: function(view, rowIndex, colIndex, item, e, record, row) {
+            if (record.data.attribute === 'name') {
+                BQ.ui.notification('Not queries on "name" attributes are currently disabled' );
+                return;
+            }
+            if (record.data.negated)
+                record.data.negated = false;
+            else
+                record.data.negated = true;
+
+            var tree = record.store.ownerTree,
+                selection = tree.getSelectionModel(),
+                sel = selection.getSelection();
+
+            view.refreshNode(rowIndex);
+            if (sel[0] === record) {
+                tree.setActiveNode(record);
+            } else {
+                tree.getSelectionModel().select(record);
+            }
+        },
+
     }],
 
     initComponent : function () {
         this.url_selected = this.url;
 
+        var btn_sort = {
+            xtype: 'button',
+            itemId: 'btnSort',
+            //text: 'Sort',
+            iconCls: 'icon-sorting',
+            tooltip: 'Sort columns',
+            enableToggle: false,
+            pressed: false,
+            cls: 'sort_button',
+            width: 40,
+            height: 35,
+
+            menu: {
+                plain: true,
+                cls: 'organizer',
+                defaults: {
+                    iconCls: 'icon-sort',
+                    group: 'sort',
+                    scope: this,
+                },
+                items: [{
+                    xtype: 'tbtext',
+                    text: '<span class="menu-heading">Sort by:</span>',
+                }, {
+                    text: 'Text',
+                    //scope: this,
+                    checked: false,
+                    //group: 'sort',
+                    cls: 'DESC',
+                    direction: 'DESC',
+                    handler: function(item) {
+                        item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
+                        if (item.direction === 'DESC')
+                            item.addCls('DESC');
+                        else
+                            item.removeCls('DESC');
+                        //this.store.sort('value', item.direction);
+                        this.store.sort([{
+                            property : 'value',
+                            direction: item.direction
+                        }, {
+                            property : 'type',
+                            direction: item.direction
+                        }, {
+                            property : 'attribute',
+                            direction: item.direction
+                        }, {
+                            property : 'count',
+                            direction: item.direction
+                        }]);
+                    },
+                }, {
+                    text: 'Counts',
+                    //scope: this,
+                    checked: false,
+                    //group: 'sort',
+                    direction: 'ASC',
+                    handler: function(item) {
+                        item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
+                        if (item.direction === 'DESC')
+                            item.addCls('DESC');
+                        else
+                            item.removeCls('DESC');
+                        //this.store.sort('count', item.direction);
+                        this.store.sort([{
+                            property : 'count',
+                            direction: item.direction
+                        }, {
+                            property : 'type',
+                            direction: item.direction
+                        }, {
+                            property : 'attribute',
+                            direction: item.direction
+                        }, {
+                            property : 'value',
+                            direction: item.direction
+                        }]);
+                    },
+                }, {
+                    text: 'Type',
+                    //scope: this,
+                    checked: true,
+                    //group: 'sort',
+                    cls: 'DESC',
+                    direction: 'DESC',
+                    handler: function(item) {
+                        item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
+                        if (item.direction === 'DESC')
+                            item.addCls('DESC');
+                        else
+                            item.removeCls('DESC');
+                        this.store.sort([{
+                            property : 'type',
+                            direction: item.direction
+                        }, {
+                            property : 'attribute',
+                            direction: item.direction
+                        }, {
+                            property : 'value',
+                            direction: item.direction
+                        }, {
+                            property : 'count',
+                            direction: item.direction
+                        }]);
+                    },
+                }],
+            },
+        };
+
         this.dockedItems = [{
             xtype: 'toolbar',
             itemId: 'tool_bar',
             dock: 'top',
+            hidden: true,
             defaults: {
                 scale: 'medium',
                 enableToggle: true,
@@ -462,112 +602,9 @@ Ext.define('BQ.tree.organizer.Panel', {
                 iconCls: 'icon-values',
                 handler: this.updateVisibility,
                 tooltip: 'Use values for organization',
-            }, '->', {
-                itemId: 'btnSort',
-                //text: 'Sort',
-                iconCls: 'icon-sorting',
-                tooltip: 'Sort columns',
-                enableToggle: false,
-                pressed: false,
-                cls: undefined,
-
-                menu: {
-                    plain: true,
-                    cls: 'organizer',
-                    defaults: {
-                        iconCls: 'icon-sort',
-                        group: 'sort',
-                        scope: this,
-                    },
-                    items: [{
-                        xtype: 'tbtext',
-                        text: '<span class="menu-heading">Sort by:</span>',
-                    }, {
-                        text: 'Text',
-                        //scope: this,
-                        checked: false,
-                        //group: 'sort',
-                        cls: 'DESC',
-                        direction: 'DESC',
-                        handler: function(item) {
-                            item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
-                            if (item.direction === 'DESC')
-                                item.addCls('DESC');
-                            else
-                                item.removeCls('DESC');
-                            //this.store.sort('value', item.direction);
-                            this.store.sort([{
-                                property : 'value',
-                                direction: item.direction
-                            }, {
-                                property : 'type',
-                                direction: item.direction
-                            }, {
-                                property : 'attribute',
-                                direction: item.direction
-                            }, {
-                                property : 'count',
-                                direction: item.direction
-                            }]);
-                        },
-                    }, {
-                        text: 'Counts',
-                        //scope: this,
-                        checked: false,
-                        //group: 'sort',
-                        direction: 'ASC',
-                        handler: function(item) {
-                            item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
-                            if (item.direction === 'DESC')
-                                item.addCls('DESC');
-                            else
-                                item.removeCls('DESC');
-                            //this.store.sort('count', item.direction);
-                            this.store.sort([{
-                                property : 'count',
-                                direction: item.direction
-                            }, {
-                                property : 'type',
-                                direction: item.direction
-                            }, {
-                                property : 'attribute',
-                                direction: item.direction
-                            }, {
-                                property : 'value',
-                                direction: item.direction
-                            }]);
-                        },
-                    }, {
-                        text: 'Type',
-                        //scope: this,
-                        checked: true,
-                        //group: 'sort',
-                        cls: 'DESC',
-                        direction: 'DESC',
-                        handler: function(item) {
-                            item.direction = item.direction === 'DESC' ? 'ASC' : 'DESC';
-                            if (item.direction === 'DESC')
-                                item.addCls('DESC');
-                            else
-                                item.removeCls('DESC');
-                            this.store.sort([{
-                                property : 'type',
-                                direction: item.direction
-                            }, {
-                                property : 'attribute',
-                                direction: item.direction
-                            }, {
-                                property : 'value',
-                                direction: item.direction
-                            }, {
-                                property : 'count',
-                                direction: item.direction
-                            }]);
-                        },
-                    }],
-                },
-            }],
-        }, {
+            }/*, '->',
+            btn_sort*/],
+        }, /*{
             xtype:'bq-picker-path',
             itemId: 'path_bar',
             dock: 'top',
@@ -580,6 +617,30 @@ Ext.define('BQ.tree.organizer.Panel', {
                     this.setPath(path);
                 },
             },
+        },*/ {
+            xtype:'container',
+            dock: 'top',
+            height: 35,
+            cls: 'sort_bar',
+            layout: {
+                type: 'hbox',
+                //align: 'stretch',
+            },
+            items: [{
+                xtype:'bq-picker-path',
+                itemId: 'path_bar',
+                dock: 'top',
+                flex: 10,
+                height: 35,
+                path: '/',
+                listeners: {
+                    scope: this,
+                    //browse: this.browsePath,
+                    changed: function (el, path) {
+                        this.setPath(path);
+                    },
+                },
+            }, btn_sort],
         }];
 
         var me = this;
@@ -724,7 +785,7 @@ Ext.define('BQ.tree.organizer.Panel', {
         this.active_query = {};
         var path=[], query=[], order=[], i=0;
         for (i=0; (node=nodes[i]); ++i) {
-            var sep='', pt='';
+            var sep='', pt='', neg = '';
             if (node.data.type === 'tag') {
                 pt += 't:';
             } else {
@@ -739,13 +800,16 @@ Ext.define('BQ.tree.organizer.Panel', {
             } else {
                 pt += 'v:';
             }
+            if (node.data.negated === true) {
+                neg = '~';
+            }
             this.active_query[node.data.value] = node.data.type+':'+node.data.attribute;
 
             if ( (node.data.attribute==='value' && node.data.type==='tag')
                  || (node.data.attribute==='name' && node.data.type!=='tag') ) {
-                query[query.length-1] += encodeURIComponent('"'+node.data.value+'"' + sep);
+                query[query.length-1] += neg+encodeURIComponent('"'+node.data.value+'"' + sep);
             } else {
-                query.push(encodeURIComponent('"'+node.data.value+'"')+sep);
+                query.push(neg+encodeURIComponent('"'+node.data.value+'"')+sep);
                 if (node.data.type==='tag')
                     order.push( '"'+node.data.value+'":asc' );
             }
