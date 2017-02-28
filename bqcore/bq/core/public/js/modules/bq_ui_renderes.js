@@ -1283,7 +1283,7 @@ Ext.define('BQ.selectors.PipelineParams', {
 
     onNewResource : function(sel, res) {
         Ext.Ajax.request({
-            url: '/blob_service/' + res.resource_uniq,
+            url: '/pipeline/' + res.resource_uniq,
             callback: function(opts, succsess, response) {
                 if (response.status>=400 || !succsess)
                     BQ.ui.error(response.responseText);
@@ -1303,7 +1303,7 @@ Ext.define('BQ.selectors.PipelineParams', {
 
     onFileContents: function(txt) {
         var me = this;
-        if (this.mex_resource && this.mex_resource.tags && this.mex_resource.tags.length <1) {
+        if (this.mex_resource && !this.mex_resource.tags) {
             // have the module def but not the mex yet => get it now
             BQFactory.request({
                  uri: this.mex_resource.uri,
