@@ -33,6 +33,29 @@ from bqapi.comm import BQSession
 #from bq.util.mkdir import _mkdir
 
 
+# replace "@..." placeholders in pipeline based on provided params dict
+def _replace_placeholders(pipeline, params):
+    # TODO: improve this by adding transformation step from universal pipeline representation -> CellProfiler pipeline
+    pipeline_res = ''
+    for line in pipeline.splitlines():
+        indent = len(line) - len(line.lstrip())
+        toks = line.strip().split(':')
+        if len(toks) > 1:
+            tag = toks[0]
+            val = ':'.join(toks[1:])
+            try:
+                if val.startswith('@NUMPARAM'):
+                    val = float(params[tag])
+                elif val.startswith('@STRPARAM'):
+                    val = str(params[tag])                
+            except KeyError:
+                raise CPError("pipeline parameter '%s' not provided" % tag)
+            pipeline_res += "%s%s:%s\n" % (' '*indent, tag, val)
+        else:
+            pipeline_res += line + '\n'
+    return pipeline_res
+
+
 class CPError(Exception):
 
     def __init__(self, message):
@@ -152,7 +175,7 @@ class CellProfiler(object):
             pipeline = fi.read()
             # pipeline = json.load(fi)
             # replace all placeholders in pipeline template
-            #_replace_placeholders(pipeline, input_file, output_file, params)
+            pipeline = _replace_placeholders(pipeline, params)
             # write out pipeline to provided file
             with open(out_pipeline_file, 'w') as fo:
                 fo.write(pipeline)
