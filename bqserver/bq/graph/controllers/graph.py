@@ -104,14 +104,25 @@ def _add_resource_inputs_outputs(xnode, edges, checked, unchecked):
         # TODO: the following will be very slow on large DBs... change to new query in 0.6!
         mexes_ref_node = data_service.query ('mex', tag_query='"http*/%s"' % node, cache=False)
         for mex_ref_node in mexes_ref_node:
-            mex_deep = data_service.resource_load (uniq=mex_ref_node.get('resource_uniq'),view='deep')
+            mex_deep = data_service.resource_load (uniq=mex_ref_node.get('resource_uniq'),view='full')
             if mex_deep:
-                if len(mex_deep.xpath('./tag[@name="inputs"]/tag[@value="%s"]' % xnode.get("uri"))) > 0:
-                    # found node in MEX's inputs
-                    points_to_list.append(mex_ref_node.get('resource_uniq'))
-                elif len(mex_deep.xpath('./tag[@name="outputs"]/tag[@value="%s"]' % xnode.get("uri"))) > 0:
-                    # found node in MEX's outputs
-                    points_from_list.append(mex_ref_node.get('resource_uniq'))
+                found_in_inputs = False
+                inputs_tag = mex_deep.xpath('./tag[@name="inputs"]')
+                if inputs_tag:
+                    input_id = inputs_tag[0].get('uri')
+                    input_deep = data_service.get_resource(resource=input_id, view='full,clean')
+                    if input_deep and len(input_deep.xpath('./tag[@value="%s"]' % xnode.get("uri"))) > 0:
+                        # found node in MEX's inputs
+                        points_to_list.append(mex_ref_node.get('resource_uniq'))
+                        found_in_inputs = True
+                if not found_in_inputs:
+                    outputs_tag = mex_deep.xpath('./tag[@name="outputs"]')
+                    if outputs_tag:
+                        output_id = outputs_tag[0].get('uri')
+                        output_deep = data_service.get_resource(resource=output_id, view='full,clean')
+                        if output_deep and len(output_deep.xpath('./tag[@value="%s"]' % xnode.get("uri"))) > 0:
+                            # found node in MEX's outputs
+                            points_from_list.append(mex_ref_node.get('resource_uniq'))
                 
     # add edge unless it points to mex recursively
     points_from_list = [ x for x in points_from_list if is_uniq_code(x) and x != node ]
