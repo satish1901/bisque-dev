@@ -165,13 +165,15 @@ Ext.define('BQ.selectors.Selector', {
         } else {
             var vout = null,
                 vin=null;
+            this.resource.value = null;
+            this.resource.values = [];
 
-            for (var i=0; (vout=this.resource.values[i]); ++i) {
-                vin = v[i];
+            for (var i=0; (vin=v[i]); ++i) {
                 if (!vin) continue;
+                vout=this.resource.values[i];
 
                 if (vin instanceof BQValue) {
-                    vout = vin;
+                    this.resource.values[i] = vin;
                 } else if (typeof vin == "number") {
                     if (vout)
                         vout.value = vin;
@@ -1449,7 +1451,7 @@ Ext.define('BQ.selectors.PipelineParams', {
 
 
 /*******************************************************************************
-BQ.selectors.AnnotationsAttributes relies on BQ.selectors.Resource and altough
+BQ.selectors.AnnotationsAttributes relies on BQ.selectors.Resource and although
 it is instantiated directly it needs existing BQ.selectors.Resource to listen to
 and read data from!
 
@@ -1477,7 +1479,7 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
     requires: ['Ext.data.Store', 'Ext.form.field.ComboBox', 'Ext.tip.*'],
 
     height: 30,
-    layout: 'hbox',
+    layout: 'fit',
 
     initComponent : function() {
         var resource = this.resource;
@@ -1486,6 +1488,7 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
         this.attribute = template.attribute;
         this.dataset = template.dataset;
         this.editable = template.editable || false;
+        this.multiselect = template.multiselect || false;
 
         var reference_dataset = this.module.inputs_index[template.reference_dataset];
         if (reference_dataset && reference_dataset.renderer) {
@@ -1505,14 +1508,20 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
             this.reference_attribute.on( 'changed', this.onNewAttribute, this );
         }
 
-        this.items = [];
-
         // create combo box selector
         this.store = Ext.create('Ext.data.Store', {
             fields: ['Value', 'Element'],
         });
 
-        this.combo = Ext.create('Ext.form.field.ComboBox', {
+        var xtype = 'combobox',
+            v = this.getValue();
+        /*if (template.multiselect === true) {
+            xtype = 'multiselect';
+            this.height = 200;
+        }*/
+
+        this.items = [{
+            xtype: xtype,
             itemId: 'combobox',
             //flex: 1,
             name: resource.name+'_combo',
@@ -1521,8 +1530,7 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
             width: '100%',
 
             fieldLabel: template.label,
-            //value: resource.value,
-            multiSelect: false,
+            value: v,
             store: this.store,
             queryMode: 'local',
             displayField: 'Value',
@@ -1530,6 +1538,8 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
 
             forceSelection : !this.editable,
             editable : this.editable,
+
+            multiSelect: this.multiselect,
 
             listeners: {
                 scope: this,
@@ -1549,9 +1559,7 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
                     });
                 },
             },
-
-        });
-        this.items.push(this.combo);
+        }];
 
         this.callParent();
         this.reload();
@@ -1578,7 +1586,8 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
     },
 
     setValueUI : function(v) {
-        this.combo.setValue(v);
+        //this.combo.setValue(v);
+        this.queryById('combobox').setValue(v);
     },
 
     reload : function() {
@@ -1617,12 +1626,16 @@ Ext.define('BQ.selectors.AnnotationsAttributes', {
 
         this.store.loadData(types);
         if (!this.editable) {
-            this.setValueUI(undefined);
+            //this.setValueUI(undefined);
+            this.setValueUI(this.getValue());
         }
     },
 
     select: function(resource) {
-        this.setValueUI( resource.value );
+        this.resource.value = resource.value;
+        this.resource.values = resource.values;
+        //this.setValueUI(resource.value);
+        this.setValueUI(this.getValue());
     },
 
     isValid: function() {
