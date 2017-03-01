@@ -4,6 +4,7 @@
     <tag name="inputs">
         <tag name="mex_url"  type="system-input" />
         <tag name="bisque_token"  type="system-input" />
+
         <tag name="dataset_url" type="dataset">
             <template>
                 <tag name="accepted_type" value="dataset" />
@@ -19,6 +20,46 @@
                 <tag name="description" value="If selected, the annotation 'Anemone' located in 'Secondary' will be named: 'Secondary/Anemone'" />
             </template>
         </tag>
+
+        <tag name="ignore_tags" type="annotation_attr" >
+            <value>filename</value>
+            <value>upload_datetime</value>
+            <value>Viewer</value>
+            <value>Overlay</value>
+            <value>enable</value>
+            <value>position</value>
+            <value>shape</value>
+            <template>
+                <tag name="label" value="Ignore textual" />
+                <tag name="description" value="Allows to skip specific textual annotations and all their children" />
+                <tag name="allowBlank" value="true" type="boolean" />
+                <tag name="editable" value="false" type="boolean" />
+                <tag name="multiselect" value="true" type="boolean" />
+
+                <tag name="reference_dataset" value="dataset_url" />
+
+                <tag name="element" value="tag" />
+                <tag name="attribute" value="name" />
+                <tag name="dataset" value="/data_service/" />
+            </template>
+        </tag>
+
+        <tag name="ignore_gobs" type="annotation_attr" >
+            <template>
+                <tag name="label" value="Ignore graphical" />
+                <tag name="description" value="Allows to skip specific graphical annotations and all their children" />
+                <tag name="allowBlank" value="true" type="boolean" />
+                <tag name="editable" value="false" type="boolean" />
+                <tag name="multiselect" value="true" type="boolean" />
+
+                <tag name="reference_dataset" value="dataset_url" />
+
+                <tag name="element" value="gobject" />
+                <tag name="attribute" value="type" />
+                <tag name="dataset" value="/data_service/" />
+            </template>
+        </tag>
+
     </tag>
 
     <tag name="outputs">
@@ -30,7 +71,7 @@
     </tag>
 
     <tag name="module_options" >
-        <tag name="version" value="1" />
+        <tag name="version" value="2" />
     </tag>
 
     <tag name="display_options" >

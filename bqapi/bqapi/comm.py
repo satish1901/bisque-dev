@@ -460,14 +460,8 @@ class BQSession(object):
             return None
         return self.mex.xmltree.find('tag[@name="inputs"]//tag[@name="%s"]'%name)
 
-    def parameter_value(self, name=None, p=None):
-        if p is None:
-            p = self.parameter(name)
-        else:
-            name = p.get('name')
+    def get_value_safe(self, v, t):
         try:
-            v = p.get('value')
-            t = p.get('type', '').lower()
             if t == 'boolean':
                 return v.lower() == 'true'
             elif t == 'number':
@@ -475,6 +469,25 @@ class BQSession(object):
             return v
         except AttributeError:
             return None
+
+    def parameter_value(self, name=None, p=None):
+        if p is None:
+            p = self.parameter(name)
+        else:
+            name = p.get('name')
+
+        values = p.xpath('value')
+        if len(values)<1:
+            v = p.get('value')
+            t = p.get('type', '').lower()
+            return self.get_value_safe(v, t)
+
+        r = []
+        for vv in values:
+            v = vv.text
+            t = vv.get('type', '').lower()
+            r.append(self.get_value_safe(v, t))
+        return r
 
     def parameters(self):
         p = {}
