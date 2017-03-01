@@ -13,18 +13,20 @@ PIP_SYS_INSTALL = [ 'pip', 'install', '-U' ]
 
 if os.name == 'nt':
     PIP_LIST=[
-        ('numpy-1.10.4+mkl-cp27-none-win_amd64.whl', 'https://biodev.ece.ucsb.edu/~bisque/wheels/numpy-1.10.4+mkl-cp27-none-win_amd64.whl'),
-        ('numexpr-2.4.6-cp27-none-win_amd64.whl', 'https://biodev.ece.ucsb.edu/~bisque/wheels/numexpr-2.4.6-cp27-none-win_amd64.whl'),
-        ('tables-3.2.2-cp27-none-win_amd64.whl', 'https://biodev.ece.ucsb.edu/~bisque/wheels/tables-3.2.2-cp27-none-win_amd64.whl'),
+        #('numpy-1.10.4+mkl-cp27-none-win_amd64.whl', 'https://biodev.ece.ucsb.edu/~bisque/wheels/numpy-1.10.4+mkl-cp27-none-win_amd64.whl'),
+        #('numexpr-2.4.6-cp27-none-win_amd64.whl', 'https://biodev.ece.ucsb.edu/~bisque/wheels/numexpr-2.4.6-cp27-none-win_amd64.whl'),
+        #('tables-3.2.2-cp27-none-win_amd64.whl', 'https://biodev.ece.ucsb.edu/~bisque/wheels/tables-3.2.2-cp27-none-win_amd64.whl'),
     ]
-    PIP_INSTALL = [ 'pip', 'install', '-U' ]
+    PIP_INDEX = 'https://biodev.ece.ucsb.edu/py/bisque/win64/+simple/'
+    PIP_INSTALL = [ 'pip', 'install', '-U',  '-i', PIP_INDEX ]
 else:
     PIP_LIST = [
-        ('numpy', None),
-        ('numexpr', None),
-        ('tables', None),
+        #('numpy', None),
+        #('numexpr', None),
+        #('tables', None),
     ]
-    PIP_INSTALL = [ 'pip', 'install', '-U',  '-i', 'https://biodev.ece.ucsb.edu/py/bisque/dev/+simple' ]
+    PIP_INDEX = 'https://biodev.ece.ucsb.edu/py/bisque/dev/+simple/'
+    PIP_INSTALL = [ 'pip', 'install', '-U',  '-i', PIP_INDEX ]
 
 shell = False
 if os.name == 'nt':
@@ -138,7 +140,8 @@ def run_bootstrap():
         install_setup("get-pip.py", "https://bootstrap.pypa.io/get-pip.py")
         install_easy('pywin32-219.win-amd64-py2.7.exe', "https://biodev.ece.ucsb.edu/~bisque/wheels/pywin32-219.win-amd64-py2.7.exe")
     else:
-        install_sys_pip('pip==8.0.3')
+        #install_sys_pip('pip==8.0.3')
+        install_sys_pip('pip')
         install_sys_pip('setuptools')
 
     print "\n----------------------------------------------------------"
@@ -156,7 +159,8 @@ def run_bootstrap():
        r = 1
     if r != 0:
         if os.name == 'nt':
-            install_pip('mercurial-3.7.1-cp27-none-win_amd64.whl', "https://biodev.ece.ucsb.edu/~bisque/wheels/mercurial-3.7.1-cp27-none-win_amd64.whl")
+            #install_pip('mercurial-3.7.1-cp27-none-win_amd64.whl', "https://biodev.ece.ucsb.edu/~bisque/wheels/mercurial-3.7.1-cp27-none-win_amd64.whl")
+            install_pip('mercurial')
         else:
             install_pip('mercurial')
 
@@ -177,7 +181,8 @@ def run_bootstrap():
     print
     #subprocess.call(['pip', 'install', '--trusted-host', 'biodev.ece.ucsb.edu', '-i', 'http://biodev.ece.ucsb.edu/py/bisque/dev/+simple', 'Paste==1.7.5.1+bisque2'], shell=shell)
     #subprocess.call(['pip', 'install', '--trusted-host', 'biodev.ece.ucsb.edu', '-r', 'requirements.txt'], shell=shell)
-    subprocess.call(['pip', 'install',  '-r', 'requirements.txt', '--trusted-host=biodev.ece.ucsb.edu'], shell=shell)
+    #subprocess.call(['pip', 'install', '-r', 'requirements.txt', '--trusted-host=biodev.ece.ucsb.edu'], shell=shell)
+    subprocess.call(['pip', 'install', '-r', 'requirements.txt', '-i', PIP_INDEX], shell=shell)
 
     print "**************************************************************"
     print "To finish installation, please, execute the following commands"
