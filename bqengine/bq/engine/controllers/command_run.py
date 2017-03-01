@@ -51,7 +51,7 @@ import os
 import pickle
 import shlex
 import optparse
-import tempfile
+#import tempfile
 
 try:
     from lxml import etree as et
@@ -384,10 +384,10 @@ class BaseRunner(object):
         self.info("processing %d mexes -> %s" % (len(self.mexes), self.mexes))
 
     def store_runstate(self):
-        staging_path = self.mexes[0].get('staging_path', tempfile.gettempdir())
+        staging_path = self.mexes[0].get('staging_path') or '.'
         state_file = "state%s.bq" % self.mexes[0].get('mex_id', '')
         # pickle the object variables
-        with open('%s/%s' % (staging_path, state_file),'wb') as f:
+        with open(os.path.join(staging_path, state_file),'wb') as f:
             pickle.dump(self.mexes, f)
             pickle.dump(self.rundir, f)
             pickle.dump([et.tostring(tree) for tree in self.outputs if tree and tree.tag == 'tag'], f)
@@ -398,10 +398,10 @@ class BaseRunner(object):
             pickle.dump(self.options, f)
 
     def load_runstate(self):
-        staging_path = self.mexes[0].get('staging_path', tempfile.gettempdir())
+        staging_path = self.mexes[0].get('staging_path') or  '.'
         state_file = "state%s.bq" % self.mexes[0].get('mex_id', '')
         # entered in a later processing phase (e.g., Condor finish) => unpickle
-        with open('%s/%s' % (staging_path, state_file),'rb') as f:
+        with open(os.path.join(staging_path, state_file),'rb') as f:
             #self.pool = None   # not preserved for now
             self.mexes = pickle.load(f)
             self.rundir = pickle.load(f)
