@@ -294,7 +294,7 @@ class PureDistribution(Distribution):
 @task
 #@needs('setuptools.command.install')
 @consume_args
-def install():
+def install(options):
     python_setup(
         name='BisQue',
         version="0.5.9",
@@ -331,3 +331,7 @@ def install():
                     ])
             ),
         )
+    #print "PATH=", os.environ.get ('PATH')
+    #print "ARGS", options.args
+    #options.args[0] = 'server'
+    #setup(options)
