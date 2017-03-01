@@ -728,7 +728,7 @@ def parse_bisque_uri(uri):
         service = parts.pop(0)
     # first element may be a docid
     ida = None
-    if is_uniq_code (parts[0]):
+    if parts and is_uniq_code (parts[0]):
         ida = parts.pop(0)
     clname = None
     rest   = []
