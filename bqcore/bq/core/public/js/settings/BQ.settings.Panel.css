@@ -30,3 +30,11 @@
     background-position: 0px -65px;
 }
 
+.bq_preferences_manager .icon-reset {
+    width: 32px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-image: url('/core/images/viewer/icons_viewer.svg');
+    background-size: 200px;
+    background-position: 1px -261px;
+}

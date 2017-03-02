@@ -832,9 +832,47 @@ Ext.define('BQ.admin.notifications.Manager', {
     footer: '\n\nWe are sorry for the inconvenience and hope you will like the upgraded service! You are receiving this message because you are a registered user at $service_url.\n\nThe $service_url team.',
 
     initComponent: function(config) {
+        this.period = 30;
         this.items = [{
             xtype: 'container',
-            html: '<h2>Users mailing list</h2>',
+            cls: 'block',
+            layout: {
+                type: 'hbox',
+                align : 'stretch',
+                pack  : 'start',
+            },
+            defaults: {
+                xtype: 'button',
+                cls: 'button',
+                width: 150,
+                scale: 'medium',
+                enableToggle: true,
+                toggleGroup: 'users',
+                scope: this,
+                handler: this.setUsers,
+            },
+            items: [{
+                xtype: 'container',
+                width: 250,
+                html: '<h2>Users mailing list:</h2>',
+            }, {
+                itemId: 'users_all',
+                text: 'All',
+                period: 0,
+            }, {
+                itemId: 'users_30',
+                text: 'Active last month',
+                period: 30,
+                pressed: true,
+            }, {
+                itemId: 'users_7',
+                text: 'Active last week',
+                period: 7,
+            }, {
+                itemId: 'users_1',
+                text: 'Active last day',
+                period: 1,
+            }],
         }, {
             xtype: 'textareafield',
             itemId: 'mailinglist',
@@ -921,12 +959,24 @@ Ext.define('BQ.admin.notifications.Manager', {
         this.loadUsers();
     },
 
+    setUsers: function(btn) {
+        this.period = btn.period;
+        this.loadUsers();
+    },
+
     loadUsers: function() {
         var list_w = this.queryById('mailinglist'),
-            vars_w = this.queryById('variables');
+            vars_w = this.queryById('variables'),
+            url = '/data_service/user?view=full&tag_order="@ts":desc&wpublic=true',
+            dt = Ext.Date.subtract(new Date(), Ext.Date.DAY, this.period),
+            ts = Ext.Date.format(dt, 'Y-m-d\\TH:i:s');
+
         list_w.setLoading('Loading users...');
+        if (this.period>0) {
+            url = Ext.String.format('{0}&ts=>{1}', url, ts);
+        }
         Ext.Ajax.request({
-            url: '/data_service/user?view=full&tag_order="@ts":desc&wpublic=true',
+            url: url,
             callback: function(opts, succsess, response) {
                 list_w.setLoading(false);
                 if (response.status>=400)

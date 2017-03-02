@@ -68,6 +68,7 @@ from bq.core.service import ServiceController
 from bq.core import identity
 
 from bq.util.hash import is_uniq_code
+from bq.util.paths import defaults_path
 
 log = logging.getLogger('bq.preference')
 
@@ -288,7 +289,7 @@ class PreferenceController(ServiceController):
     """
         The preference controller is a central point for
         a special resource that cascades all the resource levels
-        meant as guidence for the bique UI
+        meant as guidance for the bisque UI
         (System -> User -> all other Resource) providing
 
 
@@ -314,34 +315,29 @@ class PreferenceController(ServiceController):
         """
             The entry point for the system level preferences
         """
-        admin_check = Any(in_group("admin"), in_group('admins')).is_met(request.environ)
-        http_method = request.method.upper()
-
-        xpath = None
-        if len(arg)>0:
-            xpath = []
-            for a in arg:
-                xpath.append('tag[@name="%s"]'%a)
-            xpath = '/'.join(xpath) or None #create xpath
-        if http_method == 'GET':
-            log.info('GET /preference -> fetching system level preference')
-            return self.get(resource_uniq=None, xpath=xpath, level=0, **kw)
-        elif http_method == 'PUT' and admin_check:
-            if request.body:
-                return self.system_put(request.body, xpath=xpath, **kw)
-        elif http_method == 'POST' and admin_check:
-            if request.body:
-                return self.system_post(request.body, xpath=xpath, **kw)
-        elif http_method == 'DELETE' and admin_check:
-            return self.system_delete(xpath=xpath, **kw)
-        abort(404)
-
+        self.log_start()
+        xp = '/'.join(['tag[@name="%s"]'%a for a in arg]) or None
+        method = request.method.upper()
+        try:
+            if method == 'GET':
+                return self.get(resource_uniq=None, xpath=xp, level=0, **kw)
+            self.ensure_admin()
+            if method == 'DELETE':
+                return self.system_delete(xpath=xp, **kw)
+            elif method == 'PUT' and request.body is not None:
+                return self.system_put(request.body, xpath=xp, **kw)
+            elif method == 'POST' and request.body is not None:
+                return self.system_post(request.body, xpath=xp, **kw)
+            abort(404)
+        finally:
+            self.log_finish()
 
     @expose(content_type='text/xml')
     def user(self, *arg, **kw):
         """
             The entry point for the user and resource level preferences
         """
+        self.log_start()
         not_annon = not_anonymous().is_met(request.environ)
         http_method = request.method.upper()
 
@@ -356,34 +352,62 @@ class PreferenceController(ServiceController):
                 xpath.append('tag[@name="%s"]'%a)
             xpath = '/'.join(xpath) or None #create xpath
 
-        if resource_uniq: #resource level
-            if http_method == 'GET':
-                log.info('GET /preference/user/%s -> fetching resource level preference for %s', resource_uniq, resource_uniq)
-                return self.get(resource_uniq=resource_uniq, xpath=xpath, level=2, **kw)
-            elif not_annon and http_method == 'POST' and request.body:
-                log.info('POST /preference/user/%s -> updating resource level preference for %s', resource_uniq, resource_uniq)
-                return self.resource_post(resource_uniq, request.body, xpath=xpath, **kw)
-            elif not_annon and http_method == 'PUT' and request.body:
-                log.info('PUT /preference/user/%s ->  over writing resource level preference for %s', resource_uniq, resource_uniq)
-                return self.resource_put(resource_uniq, xpath=xpath, body=request.body, **kw)
-            elif not_annon and http_method == 'DELETE':
-                log.info('DELETE /preference/user/%s -> removing resource level preference for %s', resource_uniq, resource_uniq)
-                return self.resource_delete(resource_uniq, xpath=xpath, **kw)
-        else: #user level
-            if http_method == 'GET':
-                log.info('GET /preference/user -> fetching user level preference')
-                return self.get(resource_uniq=resource_uniq, xpath=xpath, level=1, **kw)
-            elif  not_annon and http_method == 'POST' and request.body:
-                log.info('POST /preference/user -> updating user level preference')
-                return self.user_post(body=request.body, xpath=xpath, **kw)
-            elif  not_annon and http_method == 'PUT' and request.body:
-                log.info('PUT /preference/user ->  over writing user level preference')
-                return self.user_put(body=request.body, xpath=xpath, **kw)
-            elif not_annon and http_method == 'DELETE':
-                log.info('DELETE /preference/user -> removing user level preference')
-                return self.user_delete(xpath=xpath, **kw)
-        abort(404)
+        try:
+            if resource_uniq: #resource level
+                if http_method == 'GET':
+                    log.info('GET /preference/user/%s -> fetching resource level preference for %s', resource_uniq, resource_uniq)
+                    return self.get(resource_uniq=resource_uniq, xpath=xpath, level=2, **kw)
+                elif not_annon and http_method == 'POST' and request.body:
+                    log.info('POST /preference/user/%s -> updating resource level preference for %s', resource_uniq, resource_uniq)
+                    return self.resource_post(resource_uniq, request.body, xpath=xpath, **kw)
+                elif not_annon and http_method == 'PUT' and request.body:
+                    log.info('PUT /preference/user/%s ->  over writing resource level preference for %s', resource_uniq, resource_uniq)
+                    return self.resource_put(resource_uniq, xpath=xpath, body=request.body, **kw)
+                elif not_annon and http_method == 'DELETE':
+                    log.info('DELETE /preference/user/%s -> removing resource level preference for %s', resource_uniq, resource_uniq)
+                    return self.resource_delete(resource_uniq, xpath=xpath, **kw)
+            else: #user level
+                if http_method == 'GET':
+                    log.info('GET /preference/user -> fetching user level preference')
+                    return self.get(resource_uniq=resource_uniq, xpath=xpath, level=1, **kw)
+                elif  not_annon and http_method == 'POST' and request.body:
+                    log.info('POST /preference/user -> updating user level preference')
+                    return self.user_post(body=request.body, xpath=xpath, **kw)
+                elif  not_annon and http_method == 'PUT' and request.body:
+                    log.info('PUT /preference/user ->  over writing user level preference')
+                    return self.user_put(body=request.body, xpath=xpath, **kw)
+                elif not_annon and http_method == 'DELETE':
+                    log.info('DELETE /preference/user -> removing user level preference')
+                    return self.user_delete(xpath=xpath, **kw)
+            abort(404)
+        finally:
+            self.log_finish()
 
+    @expose(content_type='text/xml')
+    def reset(self, *arg, **kw):
+        """
+        replaces the system preferences with the default document
+        """
+        self.log_start()
+        try:
+            self.ensure_admin()
+            return self.system_reset(**kw)
+        finally:
+            self.log_finish()
+
+    def ensure_admin(self):
+        is_admin = Any(in_group('admin'), in_group('admins')).is_met(request.environ)
+        if is_admin is not True:
+            if identity.not_anonymous():
+                abort(403)
+            else:
+                abort(401)
+
+    def log_start(self):
+        log.info ("STARTING: %s", request.url)
+
+    def log_finish(self):
+        log.info ("FINISHED: %s", request.url)
 
     def get(self, resource_uniq=None, xpath=None, level=0, **kw):
         """
@@ -615,44 +639,46 @@ class PreferenceController(ServiceController):
             @param: body
         """
         try:
-            preference_doc = etree.fromstring(body)
+            new_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
             abort(400, 'XML parsing error')
 
-        #system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
         system = data_service.query(resource_type='system', view='full', wpublic=1)
-        system_preference_list = system.xpath('/resource/system/preference')
-        if len(system_preference_list)>0:
-            system_preference = data_service.get_resource(system_preference_list[0].attrib.get('uri'), wpublic=1, view='deep')
+        prefs = system.xpath('/resource/system/preference')
+        if len(prefs)>0:
+            old_doc = data_service.get_resource(prefs[0].get('uri'), wpublic=1, view='deep')
             if xpath:
                 tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]',xpath) #only alphanumeric tag names are allowed right now
-                if len(tagNames)>0 and preference_doc.attrib.get('name')==tagNames[-1]:
+                if len(tagNames)>0 and new_doc.attrib.get('name')==tagNames[-1]:
                     #parse xpath and form the xml doc to merge
                     preference = etree.Element('preference')
                     tagElement = preference
                     for t in tagNames[:-1]: #last element should already be included
                         tagElement = etree.SubElement(tagElement, 'tag', name = t)
-                    tagElement.append(preference_doc) #add path the preference doc
-                    current_preference_etree = update_level(preference, system_preference)
+                    tagElement.append(new_doc) #add path the preference doc
+                    current_preference_etree = update_level(preference, old_doc)
 
-                    data_service.update_resource(resource=system_preference, new_resource=current_preference_etree)
-                    #data_service.del_resource(system_preference.attrib.get('uri'))
+                    data_service.update_resource(resource=old_doc, new_resource=current_preference_etree)
+                    #data_service.del_resource(old_doc.attrib.get('uri'))
                     #data_service.new_resource(current_preference_etree, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'))
                     return self.get(xpath=xpath, **kw) #return the correct resource
                 else:
                     abort(400)
-            elif preference_doc.tag == 'preference': #merge the old with the new
-                current_preference_etree = update_level(preference_doc, system_preference)
-                resource = data_service.update_resource(resource=system_preference, new_resource=current_preference_etree, **kw)
-                #data_service.del_resource(system_preference.attrib.get('uri'))
-                #resource = data_service.new_resource(current_preference_etree, parent='/data_service/%s' % system[0].attrib.get('resource_uniq'), **kw)
+            elif new_doc.tag == 'preference': #merge the old with the new
+                #current_preference_etree = update_level(new_doc, old_doc)
+                #resource = data_service.update_resource(resource=old_doc, new_resource=current_preference_etree, **kw)
+
+                # dima: this is a PUT of a whole prefs document, merging is not supposed to happen
+                for el in new_doc.getiterator(tag=etree.Element):
+                    el.set ('permission', 'published')
+                resource = data_service.update_resource(old_doc.get('uri'), new_resource=new_doc)
             else:
                 abort(400)
         else:
-            if preference_doc.tag == 'preference': #creating a new preference
+            if new_doc.tag == 'preference': #creating a new preference
                 system_list = system.xpath('/resource/system')
                 if system_list>0:
-                    resource = data_service.new_resource(preference_doc, parent='/data_service/%s' % system_list.attrib.get('resource_uniq'), **kw)
+                    resource = data_service.new_resource(new_doc, parent='/data_service/%s' % system_list.attrib.get('resource_uniq'), **kw)
                 else: #system document is not there
                     abort(400)
             else: #not correct format and no xpath
@@ -660,6 +686,25 @@ class PreferenceController(ServiceController):
 
         return etree.tostring(resource)
 
+    def system_reset(self, xpath=None, **kw):
+        """
+
+        """
+        #self.system_delete() # deletes only preference section and not the whole doc
+        system = data_service.query(resource_type='system', view='full', wpublic=1)
+        prefs = system.xpath('system')
+        if len(prefs)<1:
+            abort(400)
+        data_service.del_resource(prefs[0].get('uri'))
+
+
+        # post a new document from config-defaults/preferences.xml.default
+        system = etree.parse(defaults_path('preferences.xml.default')).getroot()
+        for el in system.getiterator(tag=etree.Element):
+            el.set ('permission', 'published')
+        system = data_service.new_resource(system) #, view='deep')
+        log.debug('New system pref: %s', etree.tostring(system))
+        return system
 
     def system_delete(self, xpath=None, **kw):
         """
@@ -673,11 +718,10 @@ class PreferenceController(ServiceController):
         #requires admin privileges
         #system = data_service.get_resource('/data_service/system', view='full', wpublic=1)
         system = data_service.query(resource_type='system', view='full', wpublic=1)
-        system_preference_list = system.xpath('/resource/system/preference')
-        if len(system_preference_list)<1:
+        prefs = system.xpath('/resource/system/preference')
+        if len(prefs)<1:
             abort(400)
-        preference_uri = system_preference_list[0].attrib.get('uri')
-        self.delete(preference_uri, xpath=xpath)
+        self.delete(prefs[0].get('uri'), xpath=xpath)
 
 
     def user_post(self, body, xpath=None, **kw):
