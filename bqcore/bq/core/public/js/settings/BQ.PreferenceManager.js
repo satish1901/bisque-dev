@@ -2,6 +2,7 @@
 
 Ext.define('BQ.preference.Tagger', {
     extend : 'Bisque.ResourceTagger',
+    alias: 'widget.bq_preferences_tagger',
     level: 'user', //options system, user, resource, level
     full_load_on_creation: true,
     borders: false,
@@ -305,6 +306,13 @@ Ext.define('BQ.preference.Manager', {
                 change: this.on_upload,
                 scope: this,
             },
+        }, {
+            text: 'Reset preferences to default',
+            xtype: 'button',
+            iconCls: 'icon-reset',
+            scale: 'large',
+            scope: this,
+            handler: this.reset_system_prefs,
         }];
         this.callParent();
     },
@@ -345,6 +353,23 @@ Ext.define('BQ.preference.Manager', {
                     BQ.ui.error(response.responseText);
                 else
                     BQ.ui.notification('Successfully uploaded the preferences document');
+            },
+            scope: this,
+            disableCaching: false,
+        });
+    },
+
+    reset_system_prefs: function(text) {
+        this.setLoading('Uploading...');
+        Ext.Ajax.request({
+            url: Ext.String.format('/preference/reset'),
+            method: 'GET',
+            callback: function(opts, succsess, response) {
+                this.setLoading(false);
+                if (response.status>=400)
+                    BQ.ui.error(response.responseText);
+                else
+                    BQ.ui.notification('Successfully reset the preferences document');
             },
             scope: this,
             disableCaching: false,
