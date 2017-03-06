@@ -21,3 +21,14 @@ class CellprofilerPipelinePlugin (ResourcePlugin):
     
     def __init__(self):
         pass
+
+class CellprofilerPipeline2Plugin (ResourcePlugin):
+    '''Cellprofiler Pipeline resource''' 
+    name = "PipelinePlugin"  
+    version = '1.0'
+    ext = 'cppipe'
+    resource_type = 'cellprofiler_pipeline'
+    mime_type = 'text/plain'
+    
+    def __init__(self):
+        pass
