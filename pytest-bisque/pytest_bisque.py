@@ -40,8 +40,10 @@ def load_test_application(filename):
     from webtest import TestApp
     from paste.script.appinstall import SetupCommand
 
+
     print "pytest_bisque:load_test_application:", filename
     wsgiapp = loadapp('config:' + os.path.abspath(filename))
+    logging.config.fileConfig (filename)
     app = TestApp(wsgiapp)
     app.authorization = ('Basic', ('admin', 'admin'))
     #KGK Following lines are required to create database tables.. but somehow turn off logging??

@@ -123,9 +123,9 @@ def load_default_drivers():
             else:
                 log.error ('cannot configure %s without the mounturl parameter' , store)
                 continue
-        if 'top' not in params:
-            log.warn ("mounturl and top are required  for driver.  using mounturl")
-            params['top'] = params['mounturl'].split ('$user')[0]
+        #if 'top' not in params:
+        #    params['top'] = params['mounturl'].split ('$user')[0]
+        #    log.warn ("top for %s was not set.  Using %s", params['mounturl'], params['top'])
         log.debug("params = %s" , params)
         #driver = make_storage_driver(params.pop('path'), **params)
         #if driver is None:

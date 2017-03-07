@@ -230,16 +230,22 @@ class LocalDriver (StorageDriver):
         :param  top: allow old style (relatave path file paths)
         :param readonly: set repo readonly
         """
+        # posixpath.join '' force ending with /
         self.mount_url = posixpath.join(mount_url,'')
         self.mount_path = posixpath.join (url2localpath (self.mount_url),'')
         datadir = data_url_path()
         for key, value in kw.items():
             setattr(self, key, string.Template(value).safe_substitute(datadir=datadir))
-        self.top = posixpath.join(top, '')
+        #self.top = posixpath.join(top or self.mount_url, '')
         self.readonly = asbool(readonly)
         if top:
-            self.top = string.Template(self.top).safe_substitute(datadir=datadir)
-            self.top_path = url2localpath(self.top)
+            self.top = posixpath.join(string.Template(top).safe_substitute(datadir=datadir), '')
+            self.top_path = posixpath.join(url2localpath(self.top), '')
+        else:
+            self.top = None
+            self.top_path = ''
+
+
         self.options = kw
 
 
@@ -282,7 +288,7 @@ class LocalDriver (StorageDriver):
     def push(self, fp, storeurl, uniq=None):
         "Push a local file (file pointer)  to the store"
 
-        log.debug('local.push: %s', storeurl)
+        log.debug('local.push: url=%s', storeurl)
         origpath = localpath = url2localpath(storeurl)
         fpath,ext = os.path.splitext(origpath)
         _mkdir (os.path.dirname(localpath))
@@ -300,10 +306,10 @@ class LocalDriver (StorageDriver):
                     else:
                         log.error ("Problem moving file, but it seems to be there.. check permissions on store")
 
+                #log.debug ("local.push: top = %s  path= %s",self.top_path, localpath )
                 ident = localpath[len(self.top_path):]
-                if ident[0] == '/':
-                    ident = ident[1:]
-                #ident = "file://%s" % localpath
+                #if ident[0] == '/':
+                #    ident = ident[1:]
                 ident = localpath2url(ident)
                 log.info('local push  blob_id: %s -> %s',  tounicode(ident), tounicode(localpath))
                 return ident, localpath
