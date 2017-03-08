@@ -83,11 +83,15 @@ BQ.upload.annotators = {
     'application/x-gtar'           : 'BQ.upload.ZipAnnotator',
 };
 
-BQ.upload.mymime = {
+BQ.upload.mime_packages = {
     'zip' : 'application/zip',
     'tar' : 'application/x-tar',
     'gz'  : 'application/x-gzip',
     'tgz' : 'application/x-gzip',
+};
+
+BQ.upload.mime_images = {
+    'nii.gz' : 'image/gznii',
 };
 
 BQ.upload.view_resource = '/client_service/view?resource=';
@@ -342,7 +346,7 @@ BQ.upload.PERMISSIONS_STRINGS = {
     1: 'published',
 };
 
-var formatFileSize = function (sz) {
+BQ.upload.formatFileSize = function (sz) {
     if (typeof sz !== 'number')
         return '';
     if (sz >= 1000000000)
@@ -351,6 +355,48 @@ var formatFileSize = function (sz) {
         return '<b>'+((sz / 1000000).toFixed(2)) + '</b>MB';
     return '<b>'+((sz / 1000).toFixed(2)) + '</b>KB';
 };
+
+BQ.upload.get_file_mime = function (file) {
+    var file_type = file.type,
+        file_name = file.name;
+
+    //var ext = file.name.split('.').reverse()[0];
+    //if (ext in BQ.upload.mime_packages)
+    //    file_type = BQ.upload.mime_packages[ext];
+
+    for (var ext in BQ.upload.mime_images) {
+        if (file_name.endsWith(ext)) {
+            file_type = BQ.upload.mime_images[ext];
+            break;
+        }
+    }
+
+    if (file_type === file.type)
+    for (var ext in BQ.upload.mime_packages) {
+        if (file_name.endsWith(ext)) {
+            file_type = BQ.upload.mime_packages[ext];
+            break;
+        }
+    }
+    return file_type;
+}
+
+BQ.upload.match_extension = function (filename, formats) {
+    var exts = filename.split('.'),
+        ext = exts.pop().toLowerCase(),
+        exta = ext,
+        i = 0;
+    if (!formats) return ext;
+
+    for (i=exts.length-1; i>=0; --i) {
+        exta = exts[i].toLowerCase() + '.' + exta;
+        if (exta in formats) {
+            ext = exta;
+        }
+    }
+
+    return ext;
+}
 
 Ext.define('BQ.upload.Item', {
     extend: 'Ext.container.Container', // container is much faster to be insterted
@@ -383,8 +429,9 @@ Ext.define('BQ.upload.Item', {
             indent: true,
         });
 
-        var s = 'Size: ' + formatFileSize(this.file.size || this.file.fileSize);
-        var ext = fn.split('.').pop().toLowerCase();
+        var s = 'Size: ' + BQ.upload.formatFileSize(this.file.size || this.file.fileSize);
+        //var ext = fn.split('.').pop().toLowerCase();
+        var ext = BQ.upload.match_extension(fn, this.formats_extensions);
         if (this.formats_extensions && ext in this.formats_extensions) {
             var cls = this.formats_extensions[ext].confidence > 0.5 ? 'good' : 'uncertain';
             s += ' (<span class="'+cls+'">'+this.formats_extensions[ext].fullname+'</span>)';
@@ -426,10 +473,7 @@ Ext.define('BQ.upload.Item', {
         // try to update the mime type from what browser gives
         // all browsers on different systems give all kinds of things
         // try to safeguard this issue using the extension
-        var file_type = this.file.type;
-        var ext = this.file.name.split('.').reverse()[0];
-        if (ext in BQ.upload.mymime)
-            file_type = BQ.upload.mymime[ext];
+        var file_type = BQ.upload.get_file_mime (this.file);
 
         this.annotator = undefined;
         if (file_type in BQ.upload.annotators) {
@@ -573,7 +617,7 @@ Ext.define('BQ.upload.Item', {
         if (this.state != BQ.upload.STATES.UPLOADING) return;
         this.updateUi();
         var elapsed = (new Date() - this.time_started)/1000;
-        this.progress.updateProgress( e.loaded/e.total, 'Uploading at ' + formatFileSize(e.loaded/elapsed) +'/s' );
+        this.progress.updateProgress( e.loaded/e.total, 'Uploading at ' + BQ.upload.formatFileSize(e.loaded/elapsed) +'/s' );
     },
 
     onProgress : function(e) {
@@ -590,7 +634,7 @@ Ext.define('BQ.upload.Item', {
             this.time_finished_upload = this.time_finished;
 
         var elapsed = (this.time_finished_upload - this.time_started)/1000;
-        var speed = formatFileSize(this.file.size/elapsed)+'/s';
+        var speed = BQ.upload.formatFileSize(this.file.size/elapsed)+'/s';
         var timing = ' in '+ this.time_finished.diff(this.time_started).toString() +
                      ' at '+ speed;
 
