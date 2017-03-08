@@ -148,9 +148,18 @@ class ImageServiceController(ServiceController):
         """
         if cls.format_exts is None:
             cls.format_exts = set(ImageServer.converters.extensions()) - extensions_ignore
+        log.debug('is_image_type format extensions: %s', cls.format_exts)
 
-        ext = os.path.splitext(filename.strip())[1][1:].lower()
-        return ext in cls.format_exts
+        filename = filename.strip().lower()
+        exts = filename.split('.')
+        exts = ['.'.join(exts[i:]) for i,j in enumerate(reversed(exts))]
+        log.debug('is_image_type file extensions: %s', exts)
+        for ext in exts:
+            if ext in cls.format_exts:
+                return True
+        return False
+        #ext = os.path.splitext(filename.strip())[1][1:].lower()
+        #return ext in cls.format_exts
 
     @classmethod
     def proprietary_series_extensions (cls):
