@@ -88,6 +88,15 @@ text {
     fill: #99C299;
 }
 
+.pipelineStep rect {
+    fill: #A9D2C9;
+}
+
+.pipelineStepIncompat rect {
+    fill: #A9D2C9;
+    opacity: 0.25 !important;
+}
+
 .image rect {
     fill: #ADC2FF;
 }

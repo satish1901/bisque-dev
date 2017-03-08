@@ -70,7 +70,7 @@ log = logging.getLogger("bq.pipeline.import.cellprofiler")
 class PipelineCP(PipelineBase):
     name = 'cellprofiler'
     version = '1.0'
-    ext = ['cp']
+    ext = ['cp', 'cppipe']
 
     def __init__(self, uniq, resource, path, **kw):
         super(PipelineCP, self).__init__(uniq, resource, path, **kw)
@@ -87,7 +87,7 @@ class PipelineCP(PipelineBase):
             step_id = 0
             header = { '__Type__': 'CellProfiler' }
             for line in pipeline_file:
-                line = line.rstrip('\n')
+                line = line.rstrip('\r\n')
                 if is_header and len(line) == 0:
                     # end of header reached
                     self.data['__Header__'] = header
@@ -99,7 +99,8 @@ class PipelineCP(PipelineBase):
                     header[tag] = val
                 elif not is_header and len(line) == 0 and step:
                     # end of step reached
-                    self.data[str(step_id)] = step
+                    # check if step should be marked special (incompatible, modified)
+                    self.data[str(step_id)] = self._validate_step(step)
                     step = {}
                     step_id += 1
                 elif not is_header and not line.startswith(' '):
@@ -109,7 +110,7 @@ class PipelineCP(PipelineBase):
                     toks = line.split(':')
                     tag = toks[0]
                     val = ':'.join(toks[1:]).lstrip('[').rstrip(']')
-                    step = { "__Label__": tag, "__Meta__": {} }
+                    step = { "__Label__": tag, "__Meta__": {}, "Parameters": [] }
                     # TODO: use better parser that handles escapes ('\')
                     for metas in val.split('|'):
                         meta_toks = metas.split(':')
@@ -121,4 +122,14 @@ class PipelineCP(PipelineBase):
                     toks = line.strip().split(':')
                     tag = toks[0]
                     val = ':'.join(toks[1:])
-                    step[tag] = val
+                    step['Parameters'].append( {tag:val} )                    
+                    
+    def _validate_step(self, step):
+        # mark actions not compatible with BisQue
+        if step['__Label__'] in ['OverlayOutlines']:
+            step['__Meta__']['__compatibility__'] = 'incompatible'
+        return step
+
+    def __repr__(self):
+        return str(self.data)
+    
