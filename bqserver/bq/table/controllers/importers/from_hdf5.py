@@ -100,7 +100,7 @@ def _get_type(n):
         log.debug("UNKNOWN TABLE TYPE: %s", type(n))
         return '(unknown)'
 
-def _get_headers_types(node, startcol=None, endcol=None):                
+def _get_headers_types(node, startcol=None, endcol=None):
     if isinstance(node, tables.table.Table):
         headers = node.colnames[slice(startcol, endcol, None)]
         types = [node.coltypes[h] if h in node.coltypes else '(compound)' for h in node.colnames[slice(startcol, endcol, None)]]
@@ -153,12 +153,20 @@ class TableHDF(TableBase):
 
     def _collect_arrays(self, path='/'):
         try:
-            node = self.t.getNode(path)
+            try:
+                node = self.t.get_node(path) # v3 API
+            except AttributeError:
+                node = self.t.getNode(path) # pylint: disable=no-member
         except tables.exceptions.NoSuchNodeError:
             return []
         if not isinstance(node, tables.group.Group):
             return [ { 'path':path, 'type':_get_type(node) } ]
-        return [ { 'path':path.rstrip('/') + '/' + n._v_name, 'type':_get_type(n) } for n in self.t.iterNodes(path) ]
+
+        try:
+            r = [ { 'path':path.rstrip('/') + '/' + n._v_name, 'type':_get_type(n) } for n in self.t.iter_nodes(path) ] # v3 API
+        except AttributeError:
+            r = [ { 'path':path.rstrip('/') + '/' + n._v_name, 'type':_get_type(n) } for n in self.t.iterNodes(path) ] # pylint: disable=no-member
+        return r
 
     def close(self):
         """Close table"""
@@ -182,8 +190,14 @@ class TableHDF(TableBase):
         if self.tables is None:
             try:
                 log.debug("HDF FILENAME: %s", self.filename)   #!!!
-                self.t = tables.openFile(self.filename)    # TODO: could lead to problems when multiple workers open same file???
+                # TODO: could lead to problems when multiple workers open same file???
+                # dima: no problems when reading but will have issues when writing and will require file locking
+                try:
+                    self.t = tables.open_file(self.filename) # v3 API
+                except AttributeError:
+                    self.t = tables.openFile(self.filename) # pylint: disable=no-member
             except Exception:
+                log.exception('HDF file cannot be read')
                 raise RuntimeError("HDF file cannot be read")
             self.tables = self._collect_arrays(self.subpath)
 
@@ -193,11 +207,15 @@ class TableHDF(TableBase):
 
         log.debug('HDF subpath: %s, path: %s', self.subpath, str(self.path))
 
-        node = self.t.getNode(self.subpath or '/')
+        try:
+            node = self.t.get_node(self.subpath or '/') # v3 API
+        except AttributeError:
+            node = self.t.getNode(self.subpath or '/') # pylint: disable=no-member
+
         self.headers, self.types = _get_headers_types(node)
         self.sizes = list(node.shape) if isinstance(node, tables.array.Array) else None
         log.debug('HDF types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
-        return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }   
+        return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }
 
     def read(self, **kw):
         """ Read table cells and return """
@@ -205,7 +223,11 @@ class TableHDF(TableBase):
         rng = kw.get('rng')
         log.debug('rng %s', str(rng))
 
-        node = self.t.getNode(self.subpath or '/')
+        try:
+            node = self.t.get_node(self.subpath or '/') # v3 API
+        except AttributeError:
+            node = self.t.getNode(self.subpath or '/') # pylint: disable=no-member
+
         startrows = [0]*node.ndim
         endrows   = [1]*node.ndim
         #endrows   = [min(50, node.shape[i]) for i in range(node.ndim)]
@@ -220,7 +242,7 @@ class TableHDF(TableBase):
                     if startrows[i] > endrows[i]:
                         endrows[i] = startrows[i]
         log.debug('startrows %s, endrows %s', startrows, endrows)
-        
+
         if isinstance(node, tables.table.Table):
             self.data = node.read(startrows[0], endrows[0])   # ignore higher dims
             self.sizes = [endrows[0]-startrows[0], 1]
@@ -230,7 +252,7 @@ class TableHDF(TableBase):
                 self.sizes = [endrows[i]-startrows[i] for i in range(node.ndim)]
             else:
                 slice_ranges = None
-                self.sizes = []         
+                self.sizes = []
             self.data = node.__getitem__(slice_ranges) if slice_ranges else node.read()
         else:
             self.data = np.empty((), dtype=unicode)   # empty array
