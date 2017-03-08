@@ -53,10 +53,12 @@ DESCRIPTION
 """
 import logging
 from StringIO import StringIO
-from lxml import etree
-import simplejson
 import csv
 
+from lxml import etree
+import  simplejson as json
+
+from bq.util.xmldict import xml2d
 
 log = logging.getLogger ("bq.data_service.formats")
 
@@ -67,7 +69,7 @@ def format_xml(tree, view=None):
     pretty = True if  view and 'pretty' in view else False
     return etree.tounicode(tree, pretty_print=pretty).encode('utf-8')
 def format_json(tree, view=None):
-    return ""
+    return json.dumps(xml2d(tree),indent=' ')
 
 
 def format_csv (tree, view=None):
@@ -139,6 +141,7 @@ def format_csv (tree, view=None):
 formatters = { 'xml' : (format_xml, 'text/xml' ),
                'csv' : (format_csv, 'text/csv'), #text/csv application/vnd.ms-excel or text/plain
                'tree': (format_tree, 'application'),
+               'json': (format_json, 'application/json'),
              }
 
 def find_formatter (format, **kw):

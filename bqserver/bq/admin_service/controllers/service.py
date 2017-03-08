@@ -53,34 +53,31 @@ DESCRIPTION
 import copy
 import json
 import logging
-import operator
+#import operator
 import os
 import string
-from datetime import datetime
-from urllib import quote, unquote
-import io
-import itertools
-import mmap
+#from datetime import datetime
+from urllib import  unquote
+#import io
+#import itertools
+#import mmap
 
 
 import transaction
 from lxml import etree
 from pylons.controllers.util import abort, redirect
-from repoze.what.predicates import Any, in_group, is_user, not_anonymous
-from sqlalchemy import func
+from repoze.what.predicates import Any, in_group
+#from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from tg import (config, controllers, expose, flash, redirect, request,
-                response, url)
+from tg import (config,  expose,   request, response)
 
-import bq
 from bq import data_service
 from bq.client_service.controllers import notify_service
-from bq.core import identity, model
-from bq.core.identity import get_username, set_admin_mode, set_current_user
+from bq.core.identity import get_username, set_current_user
 from bq.core.model import DBSession, Group, User  # , Visit
 from bq.core.service import ServiceController
 from bq.data_service.model import BQUser, Image, TaggableAcl
-from bq.util.bisquik2db import bisquik2db, db2tree
+#from bq.util.bisquik2db import bisquik2db, db2tree
 from bq.util.paths import data_path
 from bq.util import urlutil
 
@@ -133,7 +130,8 @@ elif os.name == 'nt':
 
             return lines_found[-n:]
 
-
+# Tags that used but not be stored as part of the BQUser record
+REMOVE_TAGS = [ 'password', 'email', 'groups' ]
 
 class AdminController(ServiceController):
     """
@@ -192,23 +190,26 @@ class AdminController(ServiceController):
         """
         log.info("message_variables")
         variables = self.get_variables()
-        response = etree.Element('resource', name='message_variables')
+        resp = etree.Element('resource', name='message_variables')
         for n,v in variables.iteritems():
-            etree.SubElement(response, 'tag', name=n, value=v)
-        return etree.tostring(response)
+            etree.SubElement(resp, 'tag', name=n, value=v)
+        return etree.tostring(resp)
 
-    def add_admin_info2node(self, user_node, view=[]):
+    def add_admin_info2node(self, user_node, view=None):
         """
             adds email and password tags and remove the email value
         """
         if view and 'short' not in view:
+            tg_user = User.by_user_name (user_node.get('name'))
             email = user_node.attrib.get('value', '')
             etree.SubElement(user_node, 'tag', name='email', value=email)
             if 'password' in view:
-                password = User.by_user_name (user_node.get('name')).password
+                password = tg_user.password
             else:
                 password ='******'
             etree.SubElement(user_node, 'tag', name='password', value=password)
+            etree.SubElement(user_node, 'tag', name="groups", value=",".join (g.group_name for g in tg_user.groups))
+
 
         #try to remove value from user node
         user_node.attrib.pop('value', None)
@@ -424,6 +425,22 @@ class AdminController(ServiceController):
         else:
             abort(403)
 
+    def _update_groups(self, tg_user, groups):
+        """
+        @param tg_user : a tg User
+        @param a list of group names
+        """
+        tg_user.groups = []
+        for grp_name in groups:
+            if not grp_name:
+                continue
+            grp  = DBSession.query (Group).filter_by (group_name = grp_name).first()
+            if grp is None:
+                log.error ("Unknown group %s used ", grp_name)
+                continue
+            tg_user.groups.append(grp)
+        log.debug ("updated groups %s", tg_user.groups)
+
 
     def post_user(self, doc, **kw):
         """
@@ -444,15 +461,17 @@ class AdminController(ServiceController):
             if user_name:
                 tags['user_name'] = user_name
                 for t in userxml.xpath('tag'):
-                    tags[t.attrib['name']] = t.attrib['value']
-                    if (t.attrib['name']=='password') or (t.attrib['name']=='email'):
+                    tags[t.get('name')] = t.get('value')
+                    #if (t.attrib['name']=='password') or (t.attrib['name']=='email'):
+                    if t.get('name') in REMOVE_TAGS:
                         t.getparent().remove(t) #removes email and password
                         if t.attrib['name'] == 'email':
                             userxml.attrib['value'] = t.attrib['value'] #set it as value of the user
                 if all(k in tags for k in required_tags):
-                    log.debug("ADMIN: Adding user: " + str(user_name))
+                    log.debug("ADMIN: Adding user: %s" , str(user_name))
                     u = User(user_name=tags['user_name'], password=tags['password'], email_address=tags['email'], display_name=tags['display_name'])
                     DBSession.add(u)
+                    self._update_groups(u, tags.get ('groups', '').split (','))
                     try:
                         transaction.commit()
                     except IntegrityError:
@@ -492,8 +511,9 @@ class AdminController(ServiceController):
             if user_name:
                 tags['user_name'] = user_name
                 for t in userxml.xpath('tag'):
-                    tags[t.attrib['name']] = t.attrib.get('value')
-                    if t.attrib['name'] == 'password' or t.attrib['name']=='email':
+                    tags[t.get ('name')] = t.get('value')
+                    #if t.attrib['name'] == 'password' or t.attrib['name']=='email':
+                    if t.get('name') in REMOVE_TAGS:
                         t.getparent().remove(t) #removes email and password
                         if t.attrib['name'] == 'email':
                             userxml.attrib['value'] = t.attrib.get('value') #set it as value of the user
@@ -503,7 +523,7 @@ class AdminController(ServiceController):
                     #tg_user = DBSession.query(User).filter(User.user_name == tags.get('user_name')).first()
                     tg_user = User.by_user_name(tags.get('user_name'))
                     if not tg_user:
-                        log.debug('No user was found with name of ' + user_name + '. Please check core tables?')
+                        log.debug('No user was found with name of %s. Please check core tables?',  user_name)
                         abort(404)
                     #reset values on tg user
                     tg_user.email_address = tags.get("email", tg_user.email_address)
@@ -514,7 +534,9 @@ class AdminController(ServiceController):
                     #    tags.pop("password", None) #remove the invalid password
 
                     tg_user.display_name = tags.get("display_name", tg_user.display_name)
-                    log.debug("ADMIN: Updated user: " + str(user_name))
+                    self._update_groups(tg_user, tags.get ('groups', '').split(','))
+
+                    log.debug("ADMIN: Updated user: %s" , str(user_name))
                     transaction.commit()
 
                     #userxml.attrib['resource_uniq'] = r.attrib['resource_uniq']
@@ -538,15 +560,15 @@ class AdminController(ServiceController):
         # leave the id for statistics purposes.
         bquser = DBSession.query(BQUser).filter(BQUser.resource_uniq == uniq).first()
         if bquser:
-            log.debug("ADMIN: Deleting user: " + str(bquser) )
+            log.debug("ADMIN: Deleting user: %s" , str(bquser) )
             user = DBSession.query(User).filter (User.user_name == bquser.resource_name).first()
-            log.debug ("Renaming internal user %s" % user)
+            log.debug ("Renaming internal user %s" , str(user))
 
             if user:
                 DBSession.delete(user)
                 # delete the access permission
                 for p in DBSession.query(TaggableAcl).filter_by(user_id=bquser.id):
-                    log.debug ("KILL ACL %s" % p)
+                    log.debug ("KILL ACL %s" ,  str(p))
                     DBSession.delete(p)
                 self.deleteimages(bquser.resource_name, will_redirect=False)
                 #DBSession.delete(bquser)
@@ -559,7 +581,7 @@ class AdminController(ServiceController):
 
 
     def deleteimage(self, imageid=None, **kw):
-        log.debug("image: " + str(imageid) )
+        log.debug("image: %s " , str(imageid) )
         image = DBSession.query(Image).filter(Image.id == imageid).first()
         DBSession.delete(image)
         transaction.commit()
@@ -572,7 +594,7 @@ class AdminController(ServiceController):
         # Remove the user from the system for most purposes, but
         # leave the id for statistics purposes.
         user = DBSession.query(User).filter (User.user_name == username).first()
-        log.debug ("Renaming internal user %s" % user)
+        log.debug ("Renaming internal user %s" , str( user))
         if user:
             DBSession.delete(user)
             #user.display_name = ("(R)" + user.display_name)[:255]
@@ -580,10 +602,10 @@ class AdminController(ServiceController):
             #user.email_address = ("(R)" + user.email_address)[:16]
 
         user = DBSession.query(BQUser).filter(BQUser.resource_name == username).first()
-        log.debug("ADMIN: Deleting user: " + str(user) )
+        log.debug("ADMIN: Deleting user: %s",  str(user) )
         # delete the access permission
         for p in DBSession.query(TaggableAcl).filter_by(user_id=user.id):
-            log.debug ("KILL ACL %s" % p)
+            log.debug ("KILL ACL %s" , str( p))
             DBSession.delete(p)
         #DBSession.flush()
 
@@ -595,10 +617,10 @@ class AdminController(ServiceController):
 
     def deleteimages(self, username=None,  will_redirect=True, **kw):
         user = DBSession.query(BQUser).filter(BQUser.resource_name == username).first()
-        log.debug("ADMIN: Deleting all images of: " + str(user) )
+        log.debug("ADMIN: Deleting all images of: %s" , str(user) )
         images = DBSession.query(Image).filter( Image.owner_id == user.id).all()
         for i in images:
-            log.debug("ADMIN: Deleting image: " + str(i) )
+            log.debug("ADMIN: Deleting image: %s" , str(i) )
             DBSession.delete(i)
         if will_redirect:
             transaction.commit()
@@ -682,7 +704,7 @@ class AdminController(ServiceController):
 
 def initialize(url):
     """ Initialize the top level server for this microapp"""
-    log.debug ("initialize " + url)
+    log.debug ("initialize %s" , url)
     return AdminController(url)
 
 

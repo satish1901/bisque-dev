@@ -57,8 +57,8 @@ def bisque_link(session, args):
     if args.srcpath:
         el_args = {}
         for fld in ('permission', 'hidden'):
-            if args[fld] is not None:
-                el_args [fld] = args[fld]
+            if getattr(args, fld) is not None:
+                el_args [fld] = getattr (args, fld)
         resource = ET.Element ('resource', value=args.srcpath[0], **el_args)
         if args.tag_file:
             # Load file into resource
