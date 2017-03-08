@@ -129,7 +129,11 @@ class CellProfiler(object):
         if image_resource.tag != 'image':
             raise CPError("trying to run CellProfiler on non-image resource")
 
-        fetch_image_pixels(self.bqSession, image_resource.get('uri'), self.options.stagingPath)
+        image_uri = image_resource.get('uri')
+        image_file = fetch_image_pixels(self.bqSession, image_uri, self.options.stagingPath)[image_uri]
+        filelist_file = os.path.join(self.options.stagingPath, 'filelist.txt')
+        with open(filelist_file, 'w') as fo:
+            fo.write(image_file+'\n')
         
         # create pipeline with correct parameters
         pipeline_params = self.bqSession.mex.xmltree.xpath('tag[@name="inputs"]/tag[@name="pipeline_params"]/tag')
@@ -149,7 +153,8 @@ class CellProfiler(object):
                                    '-r',
                                    '-i', self.options.stagingPath,
                                    '-o', self.options.stagingPath,
-                                   '-p', pipeline_file],
+                                   '-p', pipeline_file,
+                                   '--file-list', filelist_file],
                                   stderr=fo, stdout=fo)
             log.debug("CellProfiler returned: %s", str(res))
 
