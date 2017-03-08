@@ -94,10 +94,10 @@ class PipelineDream3D(PipelineBase):
                 self.data['__Header__'] = header
             else:
                 # store pipeline steps as they are except for label
-                step = { "__Label__": pipeline[key]['Filter_Human_Label'], "__Meta__": {} }
+                step = { "__Label__": pipeline[key]['Filter_Human_Label'], "__Meta__": {}, "Parameters": [] }
                 for step_key in pipeline[key]:
                     if step_key in ['Filter_Name', 'FilterVersion']:
                         step['__Meta__'][step_key] = pipeline[key][step_key]
                     elif step_key != 'Filter_Human_Label':
-                        step[step_key] = pipeline[key][step_key]
+                        step['Parameters'].append({ step_key: pipeline[key][step_key] })
                 self.data[key] = step

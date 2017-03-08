@@ -1,8 +1,8 @@
 
-function ResourceCard(node, resource) {
+function ResourceCard(node, resource, flags) {
     this.resource = resource;
     this.node = node;
-    this.fields = {};
+    this.fields = [];
     this.cardType = 'mex';   // TODO: change to some generic graph node style
     this.cardTitle = node ? node.name : 'node';
 };
@@ -11,11 +11,21 @@ function ResourceCard(node, resource) {
 ResourceCard.prototype.populateFields = function (xnode) {};
 
 ResourceCard.prototype.addField = function (field, attribute, className) {
-    this.fields[field] = {attribute: attribute, className:className};
+    this.fields.push({fieldName:field, attribute: attribute, className:className});
+};
+
+ResourceCard.prototype.findField = function (fieldName) {
+    for (var i = 0; i < this.fields.size(); i++) {
+        if (this.fields[i].fieldName == fieldName) {
+            return this.fields[i];
+        }
+    }
+    return null;
 };
 
 ResourceCard.prototype.getSpan = function (field) {
     var cname = this.fields[field].className;
+    var fname = this.fields[field].fieldName;
     var attr  = this.fields[field].attribute;
     var max = 15;
     if(attr.length > max){
@@ -23,7 +33,7 @@ ResourceCard.prototype.getSpan = function (field) {
         sub += '...';
         var attr = sub;
     }
-    return "<span>"+field+ ":  <em class="+cname+">"  + attr + "</em></span>";
+    return "<span>"+fname+ ":  <em class="+cname+">"  + attr + "</em></span>";
 };
 
 ResourceCard.prototype.buildHtml = function () {
@@ -31,8 +41,8 @@ ResourceCard.prototype.buildHtml = function () {
     //html += "<span class=status></span>";
 
     html += "<span class=resource>"  + this.cardTitle + "</span>";
-    for(var field in this.fields){
-        html += this.getSpan(field);
+    for(var i = 0; i < this.fields.length; i++){
+        html += this.getSpan(i);
     }
     /*
     html += "<span> module:   <em class=name>"  + this.fields['name'] + "</em></span>";
@@ -52,7 +62,7 @@ ResourceCard.prototype.getUrl = function (resource_uniq) {
 };
 
 
-function MexCard(node, resource) {
+function MexCard(node, resource, flags) {
     ResourceCard.call(this, node, resource);
     this.cardType = 'mex';
     this.cardTitle = 'mex';
@@ -67,10 +77,10 @@ MexCard.prototype.populateFields = function (xnode) {
 };
 
 MexCard.prototype.getUrl = function (resource_uniq) {
-	return '/module_service/' + this.fields['module']['attribute'] + '/?mex=/data_service/' + resource_uniq;
+	return '/module_service/' + this.findField('module')['attribute'] + '/?mex=/data_service/' + resource_uniq;
 };
 
-function DataSetCard(node, resource) {
+function DataSetCard(node, resource, flags) {
     ResourceCard.call(this, node, resource);
     this.cardType = 'dataset';
     this.cardTitle = 'dataset';
@@ -83,7 +93,7 @@ DataSetCard.prototype.populateFields = function (xnode) {
 };
 
 
-function ImageCard(node, resource) {
+function ImageCard(node, resource, flags) {
     ResourceCard.call(this, node, resource);
     this.cardType = 'image';
     this.cardTitle = 'image';
@@ -96,7 +106,7 @@ ImageCard.prototype.populateFields = function (xnode) {
 };
 
 
-function TableCard(node, resource) {
+function TableCard(node, resource, flags) {
     ResourceCard.call(this, node, resource);
     this.cardType = 'table';
     this.cardTitle = 'table';
@@ -109,7 +119,7 @@ TableCard.prototype.populateFields = function (xnode) {
 };
 
 
-function PipelineCard(node, resource) {
+function PipelineCard(node, resource, flags) {
     ResourceCard.call(this, node, resource);
     this.cardType = 'pipeline';
     this.cardTitle = 'pipeline';
@@ -122,7 +132,7 @@ PipelineCard.prototype.populateFields = function (xnode) {
 };
 
 
-function SummaryCard(node, resource) {
+function SummaryCard(node, resource, flags) {
     ResourceCard.call(this, node, resource);
     this.cardType = 'multi';
     this.cardTitle = node.label;
@@ -139,25 +149,25 @@ SummaryCard.prototype.getUrl = function (resource_uniq) {
 };
 
 
-function PipelineStepCard(node, resource) {
+function PipelineStepCard(node, resource, flags) {
     ResourceCard.call(this, node, resource);
-    this.cardType = 'mex';   // TODO: change to new style
+    this.cardType = (flags['compatibility'] == 'incomp' ? 'pipelineStepIncompat' : 'pipelineStep');
     this.cardTitle = node ? node.name : 'Unknown action';
 };
 
 PipelineStepCard.prototype = new ResourceCard();
 
 PipelineStepCard.prototype.populateFields = function (xnode) {
-    //this.addField('name', xnode.getAttribute('name'), 'name');
-    for (var i = 0; i < xnode.attributes.length; i++) {
-        var attr = xnode.attributes[i];
-        if (attr.name.startsWith('attrname')) {
-            attr_name = attr.value;
-            attr_value = xnode.getAttribute(attr.name.replace(/^attrname/, 'attrval'));
-            if (attr_name.startsWith('extra_attr_')) {
-                this.addField(attr_name.replace(/^extra_attr_/, ''), attr_value, 'value');
-            }
-        }
+    // For pipeline step, assume this xnode structure:
+    // <tmpnode>
+    //   <attribute name='attr_name' value='attr_value' />
+    //   <attribute name='attr_name' value='attr_value' />
+    //   ...
+    // </tmpnode>
+    for (var i = 0; i < xnode.children.length; i++) {
+        attr_name = xnode.children[i].getAttribute('name');
+        attr_value = xnode.children[i].getAttribute('value');
+        this.addField(attr_name, attr_value, 'value');
     }
 };
 
@@ -169,8 +179,8 @@ BQFactoryGraph.make = function(node, resource){
     var buffermap = {
         image            : ImageCard,
         table            : TableCard,
-        pipeline_step    : PipelineStepCard,
     };
+    flags = {};
     if (node.label.startsWith("multi ")) {
         card = SummaryCard;
     }
@@ -184,6 +194,13 @@ BQFactoryGraph.make = function(node, resource){
              node.label.startsWith("cellprofiler_pipeline")) {
         card = PipelineCard;
     }
+    else if (node.label.startsWith("pipeline_step")) {
+        card = PipelineStepCard;
+        var toks = node.label.split("_");
+        if (toks.length > 2) {
+            flags["compatibility"] = toks[2];
+        };
+    }
     else {
         card = buffermap[node.label];
     }
@@ -191,7 +208,7 @@ BQFactoryGraph.make = function(node, resource){
         // for all other types, use ResourceCard
         card = ResourceCard;
     }
-    return new card(node,resource);
+    return new card(node, resource, flags);
 };
 
 
@@ -245,12 +262,17 @@ Ext.define('BQ.graphviewer', {
     	    if(gnode && gnode.card){
     	        var xmlDoc = document.implementation.createDocument(null, "tmpdoc");
     	        var xnode = xmlDoc.createElement("tmpnode");
-    	        var attr_id = 0;
-    	        for (var attr in gnode) {
-    	            if (gnode.hasOwnProperty(attr)) {
-    	                xnode.setAttribute("attrname"+attr_id, attr);
-    	                xnode.setAttribute("attrval"+attr_id, gnode[attr]);
-    	                attr_id += 1;
+    	        // add node attributes as children (because we may have duplicate attr names and order may matter)
+    	        if ('extra_attr_Parameters' in gnode) {
+    	            for (var attr in gnode['extra_attr_Parameters']) {
+    	                if (gnode['extra_attr_Parameters'].hasOwnProperty(attr)) {
+        	                var subnode = xmlDoc.createElement("attribute");
+        	                // assume each attribute is a singleton hashtable {name:value}
+        	                var name = Object.keys(gnode['extra_attr_Parameters'][attr])[0];
+        	                subnode.setAttribute("name", name);
+        	                subnode.setAttribute("value", gnode['extra_attr_Parameters'][attr][name]);
+        	                xnode.appendChild(subnode);
+    	                }
     	            }
     	        }
                 gnode.card.populateFields(xnode);
@@ -784,7 +806,7 @@ Ext.define('BQ.viewer.Graph.Panel', {
                     var members = [];
 
 					if (this.resourceType === 'blobservice_url') {
-                        // Extract nodes/edges from a JSON pipeline document
+                        // Extract nodes/edges from a JSON document
                         // Assumes this structure:
                         // {
                         //     <node_id> : { <key>:<value>, ..., <key>:<value> },
@@ -871,7 +893,8 @@ Ext.define('BQ.viewer.Graph.Panel', {
                 new_node["value"] = ''+key;
                 for (var attr in root[key]) {
                     if (root[key].hasOwnProperty(attr) && attr != "name" && attr != "type" && attr != "value" && !attr.startsWith("__") && !attr.endsWith("__")) {
-                        new_node["extra_attr_"+attr] = String(root[key][attr]);
+                        //new_node["extra_attr_"+attr] = String(root[key][attr]);
+                        new_node["extra_attr_"+attr] = root[key][attr];
                     }
                 }
                 nodes.push(new_node);
@@ -1026,6 +1049,10 @@ Ext.define('BQ.viewer.Pipeline.Panel', {
                 context['edges'].push({value: previous_node.value + ':' + sorted_nodes[i].value});
             }
             previous_node = sorted_nodes[i];
+            // mark incompatible steps
+            if ('__compatibility__' in context['root'][parseInt(sorted_nodes[i].value)]['__Meta__']) {
+                sorted_nodes[i].type = 'pipeline_step_incomp';
+            }
         }
     },
 });
