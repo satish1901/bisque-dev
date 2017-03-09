@@ -54,7 +54,7 @@ Ext.define('BQ.ResourceTagger.User', {
     updateQueryTagValues: function(tag_name) {
         //var proxy = this.store_values.getProxy();
         //proxy.url = '/data_service/'+this.resource.resource_type+'?tag_values=' + encodeURIComponent(tag_name);
-        this.store_values.load();
+        //this.store_values.load(); // dima: why???
     },
 
     importMenu: function (btn, e) {

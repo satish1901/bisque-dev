@@ -610,8 +610,13 @@ Ext.define('BQ.module.RegisteredPanel', {
             me.getPlugin('modulerowexpander').collapeRow(index);
         });
 
-        this.initTable();
+        //this.initTable();
         this.callParent([config]);
+    },
+
+    afterRender: function() {
+        this.callParent();
+        this.initTable();
     },
 
     plugins: [{

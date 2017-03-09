@@ -21,11 +21,11 @@ Ext.define('BQ.TagRenderer.Base', {
             if (Ext.ClassManager.get(className))
                 return Ext.create(className).getRenderer(config);
             else {
-                Ext.log({
+                /*Ext.log({
                     msg : Ext.String.format('TagRenderer: Unknown class: {0}, type: {1}. Initializing with default tag renderer.', className, tplType),
                     level : 'warn',
                     stack : true
-                });
+                });*/
                 return Ext.create(BQ.TagRenderer.Base.baseClass + '.' + 'String').getRenderer(config);
             }
         },
