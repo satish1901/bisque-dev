@@ -131,7 +131,7 @@ elif os.name == 'nt':
             return lines_found[-n:]
 
 # Tags that used but not be stored as part of the BQUser record
-REMOVE_TAGS = [ 'password', 'email', 'groups' ]
+REMOVE_TAGS = [ 'user_name', 'password', 'email', 'groups' ]
 
 class AdminController(ServiceController):
     """
@@ -203,12 +203,16 @@ class AdminController(ServiceController):
             tg_user = User.by_user_name (user_node.get('name'))
             email = user_node.attrib.get('value', '')
             etree.SubElement(user_node, 'tag', name='email', value=email)
-            if 'password' in view:
-                password = tg_user.password
+            if tg_user is None:
+                log.error ("No tg_user was found for %s", user_node.get ('name'))
             else:
-                password ='******'
-            etree.SubElement(user_node, 'tag', name='password', value=password)
-            etree.SubElement(user_node, 'tag', name="groups", value=",".join (g.group_name for g in tg_user.groups))
+                if 'password' in view:
+                    password = tg_user.password
+                else:
+                    password ='******'
+                    etree.SubElement(user_node, 'tag', name='password', value=password)
+                    etree.SubElement(user_node, 'tag', name="groups", value=",".join (g.group_name for g in tg_user.groups if tg_user))
+                    etree.SubElement(user_node, 'tag', name='user_name', value=tg_user.user_name)
 
 
         #try to remove value from user node
@@ -509,7 +513,7 @@ class AdminController(ServiceController):
         if userxml.tag == 'user':
             user_name = userxml.attrib.get('name')
             if user_name:
-                tags['user_name'] = user_name
+                #tags['user_name'] = user_name
                 for t in userxml.xpath('tag'):
                     tags[t.get ('name')] = t.get('value')
                     #if t.attrib['name'] == 'password' or t.attrib['name']=='email':
@@ -521,7 +525,8 @@ class AdminController(ServiceController):
                 if all(k in tags for k in required_tags): #checks to see if all required tags are present
                     #update tg_user
                     #tg_user = DBSession.query(User).filter(User.user_name == tags.get('user_name')).first()
-                    tg_user = User.by_user_name(tags.get('user_name'))
+                    #tg_user = User.by_user_name(tags.get('user_name'))
+                    tg_user = User.by_user_name(user_name)
                     if not tg_user:
                         log.debug('No user was found with name of %s. Please check core tables?',  user_name)
                         abort(404)
@@ -535,16 +540,23 @@ class AdminController(ServiceController):
 
                     tg_user.display_name = tags.get("display_name", tg_user.display_name)
                     self._update_groups(tg_user, tags.get ('groups', '').split(','))
+                    if tags.get ('user_name') != user_name:
+                        tg_user.user_name = tags.get ('user_name')
+                        userxml.set ('name' , tags['user_name'])
+                    #del tags['user_name']
 
                     log.debug("ADMIN: Updated user: %s" , str(user_name))
                     transaction.commit()
+                    ### ALL loaded variables are detached
 
                     #userxml.attrib['resource_uniq'] = r.attrib['resource_uniq']
                     #reset BQUser
                     admin = get_username() #get admin user
                     set_current_user(tags['user_name']) #change document as user so that all changes are owned by the new user
-                    r = data_service.update_resource('/data_service/%s'%uniq, new_resource=userxml)
+                    r = data_service.update_resource(resource=userxml, new_resource=userxml, replace=True)
+                    log.debug ("Sent XML %s", etree.tostring (userxml))
                     set_current_user(admin) #set back to admin user
+                    #DBSession.flush()
                     return self.get_user(r.attrib['resource_uniq'], **kw)
         abort(400)
 

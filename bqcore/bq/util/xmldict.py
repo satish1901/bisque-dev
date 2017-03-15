@@ -13,6 +13,8 @@ def xml2d(e):
     """
     def _xml2d(e):
         kids = dict(e.attrib)
+        #if e.text and not e.text.isspace():
+        #    kids['__text__'] = e.text
         for k, g in groupby(e, lambda x: x.tag):
             g = [ _xml2d(x) for x in g ]
             kids[k]=  g
@@ -57,6 +59,10 @@ def d2xml(d):
                     node = etree.SubElement(p, k)
                     _d2xml(item, node)
             else:
+                #if k == '__text__':
+                #    p.text = v
+                #else:
+                #    p.set(k, v)
                 p.set(k, v)
 
     k,v = d.items()[0]
@@ -75,4 +81,3 @@ if __name__=="__main__":
     Z = etree.tostring (d2xml(Y) )
     print Z
     assert X == Z
-
