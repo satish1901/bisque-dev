@@ -233,7 +233,7 @@ Ext.define('BQ.Application.Toolbar', {
             }, '-', '-', {
                 text    : 'Create a new resource',
                 itemId  : 'menu_create_resource',
-                handler : function() { this.createResource(); },
+                handler : this.createResource,
                 scope   : this,
             }/*, {
                 itemId  : 'menu_create_from_template',

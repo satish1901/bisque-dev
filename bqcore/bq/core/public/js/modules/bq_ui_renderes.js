@@ -338,7 +338,8 @@ Ext.define('BQ.selectors.Resource', {
                 scale: 'large',
                 //cls: 'x-btn-default-large',
                 //tooltip: 'Start the upload of all queued files',
-                handler: Ext.Function.bind( this.selectDataset, this ),
+                scope: this,
+                handler: this.selectDataset,
             });
             btns.push(this.btn_select_dataset);
         }
