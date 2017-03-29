@@ -24,6 +24,25 @@ from .pipeline_exporter import PipelineExporter
 
 log = logging.getLogger("bq.pipeline")
 
+
+
+# replace "@..." placeholders in json structure based on provided params dict
+def _replace_placeholders(myjson, tag, val):
+    if type(myjson) is dict:
+        for jsonkey in myjson:
+            if type(myjson[jsonkey]) in (list, dict):
+                _replace_placeholders(myjson[jsonkey], tag, val)
+            elif jsonkey == tag and isinstance(myjson[jsonkey], basestring):
+                if myjson[jsonkey].startswith('@NUMPARAM'):
+                    myjson[jsonkey] = str(val)
+                elif myjson[jsonkey].startswith('@STRPARAM'):
+                    myjson[jsonkey] = str(val)
+    elif type(myjson) is list:
+        for item in myjson:
+            if type(item) in (list, dict):
+                _replace_placeholders(item, tag, val)
+    return myjson
+                
 ################################################################################
 # PipelineController
 ################################################################################
@@ -94,6 +113,22 @@ class PipelineController(ServiceController):
             if pipeline is None:
                 abort(500, 'Pipeline cannot be read')
             log.debug('Read pipeline: %s',str(pipeline))
+
+            # perform other operations specified in path
+            # e.g.:
+            # /setvar:id|value           replace placeholder "@XYZPARAM@abc" of tag "id" with value
+            # /exbsteps:pipeline_type    expand BisQue specific pipeline steps (e.g., "BisQueLoadImages")
+            # /ppops:pipeline_type     get pre/post operations based on BisQue specific pipeline steps
+            for segment in path:
+                op, args = segment.split(':', 1)
+                if op == 'setvar':
+                    tag, val = args.split('|', 1)
+                    log.debug("replacing placeholder for %s with %s" % (tag, val))
+                    pipeline.data = _replace_placeholders(pipeline.data, tag, val)
+                elif op == 'exbsteps':
+                    pipeline.data = self.exporters.plugins[args]().bisque_to_native(pipeline.data)
+                elif op == 'ppops':
+                    pipeline.data = self.exporters.plugins[args]().get_pre_post_ops(pipeline.data)
 
             # export
             out_format = kw.get('format', 'json')

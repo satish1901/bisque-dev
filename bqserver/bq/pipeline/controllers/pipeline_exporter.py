@@ -76,6 +76,12 @@ class PipelineExporter(object):
     def format(self, pipeline):
         pass
 
+    def bisque_to_native(self, pipeline):
+        pass
+
+    def get_pre_post_ops(self, pipeline):
+        pass
+
     def export(self, pipeline):
         response.headers['Content-Type'] = self.mime_type
         return self.format(pipeline)

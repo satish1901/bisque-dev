@@ -75,6 +75,12 @@ class PipelineCP(PipelineBase):
     def __init__(self, uniq, resource, path, **kw):
         super(PipelineCP, self).__init__(uniq, resource, path, **kw)
 
+        # allow to initialize with JSON directly 
+        self.filename = None
+        self.data = kw.get('data', None)
+        if self.data:
+            return
+
         # try to load the resource binary
         b = blob_service.localpath(uniq, resource=resource) or abort (404, 'File not available from blob service')
         self.filename = b.path
@@ -123,10 +129,17 @@ class PipelineCP(PipelineBase):
                     tag = toks[0]
                     val = ':'.join(toks[1:])
                     step['Parameters'].append( {tag:val} )                    
-                    
+            # add last step                    
+            if step:
+                self.data[str(step_id)] = self._validate_step(step)
+                
     def _validate_step(self, step):
         # mark actions not compatible with BisQue
-        if step['__Label__'] in ['OverlayOutlines']:
+        if step['__Label__'].startswith('BisQue'):
+            step['__Meta__']['__compatibility__'] = 'bisque'
+        elif step['__Label__'] in ['Crop']:  #TODO: check for other ignored steps
+            step['__Meta__']['__compatibility__'] = 'ignored'
+        elif step['__Label__'] in ['Images', 'LoadImages', 'Metadata', 'NamesAndTypes', 'Groups', 'SaveImages', 'ExportToSpreadsheet']:  #TODO: check for other incompatible steps
             step['__Meta__']['__compatibility__'] = 'incompatible'
         return step
 
