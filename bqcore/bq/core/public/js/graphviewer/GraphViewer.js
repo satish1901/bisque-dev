@@ -151,8 +151,9 @@ SummaryCard.prototype.getUrl = function (resource_uniq) {
 
 function PipelineStepCard(node, resource, flags) {
     ResourceCard.call(this, node, resource);
-    this.cardType = (flags['compatibility'] == 'incomp' ? 'pipelineStepIncompat' : 'pipelineStep');
-    this.cardTitle = node ? node.name : 'Unknown action';
+    this.cardType = flags['type'];
+    suffix = (flags['type'].endsWith('_ignored') ? ' (inactive)' : (flags['type'].endsWith('_incompatible') ? ' (incompatible)' : ''))
+    this.cardTitle = node ? node.name + suffix : 'Unknown action';
 };
 
 PipelineStepCard.prototype = new ResourceCard();
@@ -196,10 +197,7 @@ BQFactoryGraph.make = function(node, resource){
     }
     else if (node.label.startsWith("pipeline_step")) {
         card = PipelineStepCard;
-        var toks = node.label.split("_");
-        if (toks.length > 2) {
-            flags["compatibility"] = toks[2];
-        };
+        flags["type"] = node.label;
     }
     else {
         card = buffermap[node.label];
@@ -1049,9 +1047,10 @@ Ext.define('BQ.viewer.Pipeline.Panel', {
                 context['edges'].push({value: previous_node.value + ':' + sorted_nodes[i].value});
             }
             previous_node = sorted_nodes[i];
-            // mark incompatible steps
-            if ('__compatibility__' in context['root'][parseInt(sorted_nodes[i].value)]['__Meta__']) {
-                sorted_nodes[i].type = 'pipeline_step_incomp';
+            // mark special steps
+            meta = context['root'][parseInt(sorted_nodes[i].value)]['__Meta__'];
+            if ('__compatibility__' in meta) {
+                sorted_nodes[i].type = 'pipeline_step_' +  meta['__compatibility__'];
             }
         }
     },

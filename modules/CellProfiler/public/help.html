@@ -2,34 +2,16 @@
 <html  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
 <body>
-    
-    Process your image/dataset with one of the pre-built CellProfiler pipelines. For details see the link:
-    http://www.cellprofiler.org/examples.shtml
-    
-    <br><br>
-    <b>Human cells</b>
-    <br>
-    <br>
-    Human HT29 cells are fairly smooth and elliptical. This pipeline demonstrates how to accurately identify these cells and how to measurements cellular parameters such as morphology, count, intensity and texture.
-    <br>
-    <img src="HumanNuclei.jpg" />
-    
-    <br><br>
-    <b>Tissue neighbors</b>
-    <br>
-    <br>
-    Tissue samples often have irregularly shaped cells with adjacent edges. This pipeline shows how to input a color tissue image, split it into its component channels, and then identify individual cells from a particular stain and record the number of neighbors that each cell has.
-    <br>
-    <img src="TissueNeighbors.jpg" />
-    
-    <br><br>
-    <b>Wound healing</b>
-    <br>
-    <br>
-    In this example, cells are grown as a tissue monolayer. Rather than identifying individual cells, this pipeline quantifies the area occupied by the tissue sample.
-    <br>
-    <img src="WOUND-IMG.gif" />
 
-    
+    Process any image/dataset with a CellProfiler pipeline.
+
+    <br><br>
+    <ul>
+    <li>Note that certain CellProfiler pipeline modules (e.g., '<b>Images</b>', '<b>StoreImages</b>', '<b>ExportToSpreadsheet</b>') are not allowed and need to be replaced with
+    BisQue-specific modules (e.g., '<b>BisQueLoadImages</b>', '<b>BisQueSaveImages</b>').</li>
+    <li>Certain other CellProfiler pipeline modules (e.g., '<b>Crop</b>') are not compatible with BisQue and will be ignored. Image service offers analogous functionality
+    and should be used for any pre-processing.</li>
+    </ul>
+
 </body>
 </html>

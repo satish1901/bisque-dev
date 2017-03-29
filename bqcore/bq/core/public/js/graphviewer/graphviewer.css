@@ -88,13 +88,21 @@ text {
     fill: #99C299;
 }
 
-.pipelineStep rect {
+.pipeline_step rect {
     fill: #A9D2C9;
 }
 
-.pipelineStepIncompat rect {
+.pipeline_step_bisque rect {
+    fill: #A9D2FF;
+}
+
+.pipeline_step_ignored rect {
     fill: #A9D2C9;
     opacity: 0.25 !important;
+}
+
+.pipeline_step_incompatible rect {
+    fill: #F9D2C9;
 }
 
 .image rect {
