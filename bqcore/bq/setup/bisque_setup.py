@@ -616,6 +616,12 @@ TEST_QUESTIONS = [
     ('host.password', 'Testing user password', ''),
     ]
 
+
+LOGIN_QUESTIONS = [
+    ('bisque.login.local.text', 'Displayed text for login  button', ''),
+    ('bisque.login.password', "use hashed password (hashed, freetext)", ''),
+    ]
+
 #####################################################
 # Installer routines
 def unpack(seq, nfirst):
@@ -1984,6 +1990,15 @@ def setup_stores(params):
 
 
 
+def setup_logins (params):
+    if getanswer("Change login options", 'Y',
+                 "Setup local login option  ") != 'Y':
+        return params
+
+    params = modify_site_cfg (LOGIN_QUESTIONS, params,  append=False)
+
+    return params
+
 #######################################################
 #
 
@@ -2573,6 +2588,7 @@ other_options = [
     'createdb',
     'stores',
     'testing',
+    'logins',
 ]
 
 all_options = list (set (install_options + engine_options + other_options))
@@ -2595,6 +2611,7 @@ SETUP_COMMANDS = {
     "stores": [ setup_stores ],
     "modules" : [ fetch_modules ],
     "testing" : [ setup_testing ],
+    "logins"  : [ setup_logins ],
     }
 
 # Special procedures that modify runtime-bisque.cfg (for the engine)

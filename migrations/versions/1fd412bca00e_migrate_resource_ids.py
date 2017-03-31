@@ -25,6 +25,9 @@ import sys
 reload(sys)
 sys.setdefaultencoding ('utf8')
 
+from bq.util.paths import find_config_path
+
+
 def upgrade():
     "Find resource references in string and migrate to new resource_uniq id's"
 
@@ -33,7 +36,7 @@ def upgrade():
     logfile = open ('migratelog.txt', 'wb')
 
     parser = ConfigParser ()
-    parser.read ("config/site.cfg")
+    parser.read (find_config_path ("site.cfg"))
     bisque_root = parser.get ('servers', 'h1.url')
     print ("Using new bisque root  %s" % bisque_root)
     print ("ROOT", bisque_root, file = logfile)
@@ -101,7 +104,3 @@ def upgrade():
 
 def downgrade():
     pass
-
-
-
-

@@ -159,7 +159,6 @@ bisque.image_service.imgcnv.omp_num_threads = 4
 
 #
 # Login identification  systems
-# NOTE: you must also edit config/who.ini to enable these
 #bisque.login.timeout  = check session status every timeout period
 #  Browser windows will check every TIMEOUT seconds to see if you are still logged in
 #  0 == never check .. bad idea
@@ -169,6 +168,10 @@ bisque.image_service.imgcnv.omp_num_threads = 4
 #  1814400 30 days
 bisque.login.timeout=60
 bisque.login.session_length=60480
+# password can be hashed or freetext
+bisque.login.password=hashed
+# list of login providers
+# NOTE: you must also edit config/who.ini to enable these openid, ldap etc
 bisque.login.providers =  local
 #bisque.login.providers =  iplant, local
 
@@ -187,7 +190,6 @@ bisque.login.providers =  local
 bisque.login.local.text = Local Login
 bisque.login.local.url = /auth_service/login
 bisque.login.local.icon = /core/images/signin/signin_bisque.png
-bisque.local.password = hashed
 
 # User traffic tracking
 # You can use google (http://www.google.com/analytics/)  or piwik (http://piwik.org/), etc.
