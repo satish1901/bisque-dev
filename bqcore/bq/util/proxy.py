@@ -113,6 +113,14 @@ class Proxy(object):
         else:
             body = ''
 
+        # x-forward-scheme was breaking in the proxy when https://bisque-site/ was fetch engine_service/_service over http
+        # The address was always coming back as https://bisque-engine/_services
+        # This code removes any mention of the forwards which seems to be the correct thing/
+        for k in headers.keys():
+            if k.startswith('x-forwarded'):
+                del headers[k]
+
+
         #log.debug('environ: %s', str(environ))
         path_info = urllib.quote(environ['PATH_INFO'])
         if self.path:
