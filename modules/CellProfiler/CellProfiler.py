@@ -12,6 +12,7 @@ import logging
 import itertools
 import subprocess
 import json
+import urlparse
 from datetime import datetime
 
 from lxml import etree
@@ -31,6 +32,7 @@ log = logging.getLogger('bq.modules')
 
 from bqapi.comm import BQSession
 #from bq.util.mkdir import _mkdir
+from bq.util.hash import is_uniq_code
 
 
 class CPError(Exception):
@@ -151,8 +153,9 @@ class CellProfiler(object):
 
     def _cache_ppops(self, pipeline_url):
         if not self.ppops or self.ppops_url != pipeline_url:
-            url = self.bqSession.service_url('pipeline', path = '/'.join([pipeline_url]+['ppops:cellprofiler']))
-            url = url.replace('data_service', 'pipeline')   #????????!!!!????
+            pipeline_path = urlparse.urlsplit(pipeline_url).path.split('/')
+            pipeline_uid = pipeline_path[1] if is_uniq_code(pipeline_path[1]) else pipeline_path[2]
+            url = self.bqSession.service_url('pipeline', path = '/'.join([pipeline_uid]+['ppops:cellprofiler']))
             self.ppops = json.loads(self.bqSession.c.fetch(url))
             self.ppops_url = pipeline_url
 
@@ -194,9 +197,7 @@ class CellProfiler(object):
         if op['service'] == 'image_service':
             # perform image_service operation
             log.debug("RUNOP %s" % str(op))            
-            url = self.bqSession.service_url('image_service', path='/'+op['id']+op['ops'])
-            log.debug("URL: %s" % str(url))  #TODO!!!
-            url = "http://arkady.ece.ucsb.edu:8080/image_service"+'/'+op['id']+op['ops']   #TODO!!!
+            url = self.bqSession.service_url('image_service', path=op['id']+op['ops'])
             # TODO: don't read image into memory!!!
             image_data = self.bqSession.c.fetch(url)
             image_file = os.path.join(self.options.stagingPath, op['filename'])
@@ -213,9 +214,9 @@ class CellProfiler(object):
         """
         instantiate cellprofiler pipeline file with provided parameters
         """
-        url = self.bqSession.service_url('pipeline', path = '/'.join([pipeline_url]+["setvar:%s|%s"%(tag,params[tag]) for tag in params]+['exbsteps:cellprofiler']), query={'format':'cellprofiler'})
-        log.debug("INST PIPELINE URL: %s" % str(url))  #!!!
-        url = url.replace('data_service', 'pipeline')   #????????!!!!????
+        pipeline_path = urlparse.urlsplit(pipeline_url).path.split('/')
+        pipeline_uid = pipeline_path[1] if is_uniq_code(pipeline_path[1]) else pipeline_path[2]
+        url = self.bqSession.service_url('pipeline', path = '/'.join([pipeline_uid]+["setvar:%s|%s"%(tag,params[tag]) for tag in params]+['exbsteps:cellprofiler']), query={'format':'cellprofiler'})
         pipeline = self.bqSession.c.fetch(url)
         if not pipeline:
             # bad pipeline
