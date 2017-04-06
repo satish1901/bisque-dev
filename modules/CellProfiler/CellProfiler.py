@@ -92,7 +92,7 @@ class CellProfiler(object):
         """
         self.bqSession.update_mex('Initializing...')
         self.mex_parameter_parser(self.bqSession.mex.xmltree)
-        self.output_file = None
+        self.output_resources = []
         self.ppops = None
         self.ppops_url = None
         
@@ -147,12 +147,10 @@ class CellProfiler(object):
             raise CPError(err_msg)
 
         # run postrun operations
-        self._run_postrun_ops(pipeline_url=self.options.pipeline_url)
-
-        self.output_file = os.path.join(self.options.stagingPath, 'Objects.csv')   #!!! TODO: extract from pipeline
+        self.output_resources = self._run_postrun_ops(pipeline_url=self.options.pipeline_url)
 
     def _cache_ppops(self, pipeline_url):
-        if not self.ppops or self.ppops_url != pipeline_url:
+        if not self.ppops or self.ppops_url != pipeline_url:            
             pipeline_path = urlparse.urlsplit(pipeline_url).path.split('/')
             pipeline_uid = pipeline_path[1] if is_uniq_code(pipeline_path[1]) else pipeline_path[2]
             url = self.bqSession.service_url('pipeline', path = '/'.join([pipeline_uid]+['ppops:cellprofiler']))
@@ -180,14 +178,14 @@ class CellProfiler(object):
         """
         self._cache_ppops(pipeline_url)
         post_ops = self.ppops['PostOps']
-        for op in post_ops:
-            self._run_single_op(op)
-        # TODO: finish
-        return []
+        created_resources = []
+        for op in post_ops:            
+            created_resources += self._run_single_op(op)
+        return created_resources
             
     def _run_single_op(self, op, input_xml=None):
         """
-        Perform single pre/post operation and return list of files generated
+        Perform single pre/post operation and return list of files or resources generated
         """        
         # replace special placeholders
         if 'id' in op and op['id'] == '@INPUT':
@@ -205,9 +203,21 @@ class CellProfiler(object):
                 fo.write(image_data)
             res += [image_file]
         elif op['service'] == 'postblob':
-            # upload image or table (check op['type'])
-            # TODO!!!
-            pass
+            # upload image or table (check op['type'])            
+            dt = datetime.now().strftime('%Y%m%dT%H%M%S')
+            final_output_file = "ModuleExecutions/CellProfiler/%s/%s"%(dt,op['name'])
+            cl_model = etree.Element('resource', resource_type=op['type'], name=final_output_file)
+            # module identifier (a descriptor to be found by the CellProfiler model)
+            etree.SubElement(cl_model, 'tag', name='module_identifier', value='CellProfiler')
+            # hdf filename            
+            etree.SubElement(cl_model, 'tag', name='OutputFile', value=final_output_file)
+            #description
+            etree.SubElement(cl_model, 'tag', name='description', value = 'output from CellProfiler Module')
+            # post blob
+            output_file = os.path.join(self.options.stagingPath, op['filename'])
+            resource = self.bqSession.postblob(output_file, xml = cl_model)
+            resource_xml = etree.fromstring(resource)
+            res += [resource_xml]
         return res
 
     def _instantiate_pipeline(self, pipeline_url, params):
@@ -231,56 +241,27 @@ class CellProfiler(object):
         """
             Post the results to the mex xml.
         """
-        #save the image output and upload it with all the meta data
         self.bqSession.update_mex( 'Returning results')
-        log.debug('Storing image output')
-
-        #constructing and storing image file
-        mex_id = self.bqSession.mex.uri.split('/')[-1]
-        dt = datetime.now().strftime('%Y%m%dT%H%M%S')
-        final_output_file = "ModuleExecutions/CellProfiler/%s_%s_%s"%(self.options.OutputPrefix, dt, mex_id)
-
-        #does not accept no name on the resource
-        cl_model = etree.Element('resource', resource_type='table', name=final_output_file)
-
-        #module identifier (a descriptor to be found by the CellProfiler model)
-        etree.SubElement(cl_model, 'tag', name='module_identifier', value='CellProfiler')
-
-        #hdf filename
-        etree.SubElement(cl_model, 'tag', name='OutputFile', value=final_output_file)
-
-        #pipeline param
-        #etree.SubElement(cl_model, 'tag', name='RefFrameZDir', value=self.options.RefFrameZDir)
-
-        #input hdf url
-        #etree.SubElement(cl_model, 'tag', name='InputFile', type='link', value=self.options.InputFile)
-
-        #input pipeline
-        #etree.SubElement(cl_model, 'tag', name='pipeline_url', type='link', value=self.options.pipeline_url)
-
-        #description
-        etree.SubElement(cl_model, 'tag', name='description', value = 'output from CellProfiler Module')
-
-        #storing the table in blobservice
-        log.debug('before postblob')   #!!!
-        r = self.bqSession.postblob(self.output_file, xml = cl_model)
-        r_xml = etree.fromstring(r)
 
         outputTag = etree.Element('tag', name ='outputs')
-        etree.SubElement(outputTag, 'tag', name='output_table', type='table', value=r_xml[0].get('uri',''))
+        for r_xml in self.output_resources:
+            res_type = r_xml[0].get('resource_type', 'image')
+            etree.SubElement(outputTag, 'tag', name='output_table' if res_type=='table' else 'output_image', type=res_type, value=r_xml[0].get('uri',''))
 
-        # Read object measurements from csv and write to gobjects
-        (header, records) = self._readCSV(os.path.join(self.output_file))
- 
-        if header is not None:
-            # create a new parent tag 'CellProfiler' to be placed on the mex
-            image_resource = self.bqSession.fetchxml(self.options.InputFile)
-            image_elem = etree.SubElement(outputTag, 'tag', type='image', name=image_resource.get('name'), value=image_resource.get('uri'))
-            if 'AreaShape_Center_X' in header:
-                parentGObject = etree.SubElement(image_elem, 'gobject', type='detected shapes', name='detected shapes')
-                for i in range(len(records)):
-                    shape = self._get_ellipse_elem(name=str(i), header=header, record=records[i])
-                    parentGObject.append(shape)
+        # TODO: support table to gobject!!!
+
+#         # Read object measurements from csv and write to gobjects
+#         (header, records) = self._readCSV(os.path.join(self.output_file))
+#  
+#         if header is not None:
+#             # create a new parent tag 'CellProfiler' to be placed on the mex
+#             image_resource = self.bqSession.fetchxml(self.options.InputFile)
+#             image_elem = etree.SubElement(outputTag, 'tag', type='image', name=image_resource.get('name'), value=image_resource.get('uri'))
+#             if 'AreaShape_Center_X' in header:
+#                 parentGObject = etree.SubElement(image_elem, 'gobject', type='detected shapes', name='detected shapes')
+#                 for i in range(len(records)):
+#                     shape = self._get_ellipse_elem(name=str(i), header=header, record=records[i])
+#                     parentGObject.append(shape)
 
         self.bqSession.finish_mex(tags=[outputTag])
 
