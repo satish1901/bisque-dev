@@ -178,10 +178,14 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
 #        return
     for script in scripts:
         cmd.append (script)
-    if os.path.exists (dependency_dir):
-        shutil.rmtree (dependency_dir)
     check_call (cmd)
     data = dict(params or {})
+    if not any  (needs_update(dependency_dir, x) for x in scripts):
+        print "Skipping python  compilation %s is newer than %s" % (dependency_dir, scripts)
+        return 0
+
+    if os.path.exists (dependency_dir):
+        shutil.rmtree (dependency_dir)
 
     # read default path from site.cfg (TG config not initialized yet when this runs)
     #site_config = read_config('site.cfg', "app:main")
