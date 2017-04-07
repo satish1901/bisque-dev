@@ -173,19 +173,20 @@ def python_setup(scripts,  package_scripts =True, dependency_dir = 'pydist', par
     #fr.include_py = False
     if not isinstance(scripts, list):
         scripts = [ scripts ]
-#    if not any (needs_update (dependency_dir, x) for x in scripts):
-#        print "Skippping python packaging step"
-#        return
-    for script in scripts:
-        cmd.append (script)
-    check_call (cmd)
-    data = dict(params or {})
-    if not any  (needs_update(dependency_dir, x) for x in scripts):
-        print "Skipping python  compilation %s is newer than %s" % (dependency_dir, scripts)
-        return 0
 
+    # check if python code is newer than dependency_dir (pydist)
+    #if not any  (needs_update(dependency_dir, x) for x in scripts):
+    #    print "Skipping python  compilation %s is newer than %s" % (dependency_dir, scripts)
+    #    return 0
+    # if we need to compile, then compile cleanly
     if os.path.exists (dependency_dir):
         shutil.rmtree (dependency_dir)
+
+    data = dict(params or {})
+    for script in scripts:
+        cmd.append (script)
+
+    check_call (cmd)
 
     # read default path from site.cfg (TG config not initialized yet when this runs)
     #site_config = read_config('site.cfg', "app:main")
