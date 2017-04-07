@@ -81,12 +81,32 @@ class ExporterCellProfiler (PipelineExporter):
                         res['PreOps'] += [ {'service':'image_service', 'id':'@INPUT', 'ops':'/remap:%s/format:tiff'%channel_id, 'filename':'part%s.tif'%channel_id} ]
                     else:
                         res['PreOps'] += [ {'service':'image_service', 'id':'@INPUT', 'ops':'/format:tiff', 'filename':'part%s.tif'%channel_id} ]
-            elif step_name == 'BisQueSaveImages':
-                prefixes = self._get_parameters(pipeline[str(step_id)], 'Prefix')
+            elif step_name == 'BisQueSaveImage':
+                prefixes = self._get_parameters(pipeline[str(step_id)], 'Name')
                 res['PostOps'] += [ {'service':'postblob', 'type':'image', 'name':prefixes[0],  'filename':'%s.tiff'%prefixes[0]} ]
-            elif step_name == 'BisQueSaveTable':
-                prefixes = self._get_parameters(pipeline[str(step_id)], 'Prefix')                
+            elif step_name == 'BisQueSaveTables':
+                prefixes = self._get_parameters(pipeline[str(step_id)], 'Name')                
                 res['PostOps'] += [ {'service':'postblob', 'type':'table', 'name':prefix,  'filename':'%s.csv'%prefix} for prefix in prefixes ]
+            elif step_name == 'BisQueExtractGObjects':
+                table_name = self._get_parameters(pipeline[str(step_id)], 'Data to extract')
+                gobject_type = self._get_parameters(pipeline[str(step_id)], 'GObject type')
+                gobject_label = self._get_parameters(pipeline[str(step_id)], 'GObject label')
+                gobject_color = self._get_parameters(pipeline[str(step_id)], 'GObject color')
+                if gobject_type[0].lower() == 'ellipse':
+                    x_coord = self._get_parameters(pipeline[str(step_id)], 'XCoord column')
+                    y_coord = self._get_parameters(pipeline[str(step_id)], 'YCoord column')
+                    orientation = self._get_parameters(pipeline[str(step_id)], 'Orientation column')
+                    major_axis = self._get_parameters(pipeline[str(step_id)], 'MajorAxis column')
+                    minor_axis = self._get_parameters(pipeline[str(step_id)], 'MinorAxis column')
+                    res['PostOps'] += [ {'service':'postellipse',
+                                         'label':gobject_label[0],
+                                         'color':gobject_color[0],
+                                         'x_coord':x_coord[0],
+                                         'y_coord':y_coord[0], 
+                                         'orientation':orientation[0], 
+                                         'major_axis':major_axis[0], 
+                                         'minor_axis':minor_axis[0], 
+                                         'filename':'gobjects_%s.csv'%table_name[0]} ]
         return res
         
     def bisque_to_native(self, pipeline):
@@ -200,23 +220,23 @@ class ExporterCellProfiler (PipelineExporter):
                                                                    { 'grouping metadata count':'1' },
                                                                    { 'Metadata category':'None' } ] }
                 new_step_id += 1
-            elif step_name == 'BisQueSaveImages':
+            elif step_name == 'BisQueSaveImage':
                 """
                 Example:
                 ---------------------------------------------
-                BisQueSaveImages:[module_num:...]
+                BisQueSaveImage:[module_num:...]
                     Select the image to save:RGBImage
                     Image bit depth:8
                     Save as grayscale or color image?:Grayscale
                     Select colormap:gray
-                    Prefix:OutputImage
+                    Name:OutputImage
                 ---------------------------------------------
                 """                
                 img_names = self._get_parameters(pipeline[str(step_id)], 'Select the image to save')
                 bit_depths = self._get_parameters(pipeline[str(step_id)], 'Image bit depth')
                 img_types = self._get_parameters(pipeline[str(step_id)], 'Save as grayscale or color image?')
                 colormaps = self._get_parameters(pipeline[str(step_id)], 'Select colormap')
-                prefixes = self._get_parameters(pipeline[str(step_id)], 'Prefix')
+                prefixes = self._get_parameters(pipeline[str(step_id)], 'Name')
                 pipeline_res[str(new_step_id)] = { '__Meta__': { 'module_num':str(new_step_id+1), \
                                                                  'svn_version':r'\'Unknown\'', \
                                                                  'variable_revision_number':'11', \
@@ -249,25 +269,25 @@ class ExporterCellProfiler (PipelineExporter):
                                                                   { 'Base image folder':r"""/module/CellProfiler/workdir""" },
                                                                   { 'Saved movie format':'avi' } ] }
                 new_step_id += 1
-            elif step_name == 'BisQueSaveTable':
+            elif step_name == 'BisQueSaveTables':
                 """ 
                 Example:
                 ---------------------------------------------
-                BisQueSaveTable:[module_num:...]
+                BisQueSaveTables:[module_num:...]
                     Select the column delimiter:Comma (",")
                     Data to export:Image
-                    Prefix:Image
+                    Name:Image
                     Data to export:Nuclei
-                    Prefix:Objects
+                    Name:Objects
                     Data to export:Cells
-                    Prefix:Cells
+                    Name:Cells
                     Data to export:Cytoplasm
-                    Prefix:Cytoplasm
+                    Name:Cytoplasm
                 ---------------------------------------------
                 """                
                 delimiters = self._get_parameters(pipeline[str(step_id)], 'Select the column delimiter')
                 export_datas = self._get_parameters(pipeline[str(step_id)], 'Data to export')
-                export_prefixes = self._get_parameters(pipeline[str(step_id)], 'Prefix')
+                export_prefixes = self._get_parameters(pipeline[str(step_id)], 'Name')
                 parameters = [ { 'Select the column delimiter':delimiters[0] },
                                { 'Add image metadata columns to your object data file?':'No' },
                                { 'Limit output to a size that is allowed in Excel?':'No' },
@@ -307,8 +327,9 @@ class ExporterCellProfiler (PipelineExporter):
                 Example:
                 ---------------------------------------------
                 BisQueExtractGObjects:[module_num:...]
-                    Table name:Cells
+                    Data to extract:Cells
                     GObject type:Ellipse
+                    GObject label:cell
                     GObject color:255,0,0
                     XCoord column:AreaShape_Center_X
                     YCoord column:AreaShape_Center_Y
@@ -317,11 +338,42 @@ class ExporterCellProfiler (PipelineExporter):
                     MinorAxis column:AreaShape_MinorAxisLength
                 ---------------------------------------------
                 """                
-                # TODO!!!
-                pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
-                pipeline_res[str(new_step_id)]['__Meta__']['module_num'] = str(new_step_id+1)
+                export_datas = self._get_parameters(pipeline[str(step_id)], 'Data to extract')
+                parameters = [ { 'Select the column delimiter':'Comma (",")' },
+                               { 'Add image metadata columns to your object data file?':'No' },
+                               { 'Limit output to a size that is allowed in Excel?':'No' },
+                               { 'Select the measurements to export':'No' },
+                               { 'Calculate the per-image mean values for object measurements?':'No' },
+                               { 'Calculate the per-image median values for object measurements?':'No' },
+                               { 'Calculate the per-image standard deviation values for object measurements?':'No' },
+                               { 'Output file location':r"""Default Output Folder\x7C.""" },
+                               { 'Create a GenePattern GCT file?':'No' },
+                               { 'Select source of sample row name':'Metadata' },
+                               { 'Select the image to use as the identifier':'None' },
+                               { 'Select the metadata to use as the identifier':'None' },
+                               { 'Export all measurement types?':'No' },
+                               { 'Press button to select measurements to export':r'None\x7CNone' },
+                               { 'Representation of Nan/Inf':'NaN' },
+                               { 'Add a prefix to file names?':'No' },
+                               { r"""Filename prefix\x3A""":'None' },
+                               { 'Overwrite without warning?':'Yes' } ]
+                for export_idx in range(0, len(export_datas)):
+                    parameters += [ { 'Data to export':export_datas[export_idx] },
+                                    { 'Combine these object measurements with those of the previous object?':'No' },
+                                    { 'File name':'gobjects_%s.csv'%export_datas[export_idx] },
+                                    { 'Use the object name for the file name?':'No' } ]
+                pipeline_res[str(new_step_id)] = { '__Meta__': { 'module_num':str(new_step_id+1), \
+                                                                 'svn_version':r'\'Unknown\'', \
+                                                                 'variable_revision_number':'11', \
+                                                                 'show_window':'False', \
+                                                                 'notes':'None', \
+                                                                 'batch_state':r'array(\x5B\x5D, dtype=uint8)', \
+                                                                 'enabled':'True', \
+                                                                 'wants_pause':'False' }, \
+                                                  '__Label__': 'ExportToSpreadsheet', \
+                                                  'Parameters': parameters }
                 new_step_id += 1
-            elif step_name == 'Crop (inactive)':
+            elif step_name == 'Crop':
                 # Ignore crops for now (but keep Crop operation because it creates new ids)
                 pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
                 self._set_parameter(pipeline_res[str(new_step_id)], 'Select the cropping shape', 'Rectangle')

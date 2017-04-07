@@ -217,7 +217,18 @@ class CellProfiler(object):
             output_file = os.path.join(self.options.stagingPath, op['filename'])
             resource = self.bqSession.postblob(output_file, xml = cl_model)
             resource_xml = etree.fromstring(resource)
-            res += [resource_xml]
+            res += [resource_xml[0]]
+        elif op['service'] == 'postellipse':
+            # add ellipse gobject to mex
+            # Read object measurements from csv and write to gobjects
+            (header, records) = self._readCSV(os.path.join(self.options.stagingPath, op['filename']))
+            if header is not None:
+                parentGObject = etree.Element('gobject', type='detected shapes', name='detected shapes')
+                for i in range(len(records)):
+                    shape = self._get_ellipse_elem(name=str(i), header=header, record=records[i], x=op['x_coord'], y=op['y_coord'], label=op['label'], color=op['color'],
+                                                   orientation=op['orientation'], major_axis=op['major_axis'], minor_axis=op['minor_axis'])
+                    parentGObject.append(shape)
+                res += [parentGObject]
         return res
 
     def _instantiate_pipeline(self, pipeline_url, params):
@@ -245,23 +256,15 @@ class CellProfiler(object):
 
         outputTag = etree.Element('tag', name ='outputs')
         for r_xml in self.output_resources:
-            res_type = r_xml[0].get('resource_type', 'image')
-            etree.SubElement(outputTag, 'tag', name='output_table' if res_type=='table' else 'output_image', type=res_type, value=r_xml[0].get('uri',''))
-
-        # TODO: support table to gobject!!!
-
-#         # Read object measurements from csv and write to gobjects
-#         (header, records) = self._readCSV(os.path.join(self.output_file))
-#  
-#         if header is not None:
-#             # create a new parent tag 'CellProfiler' to be placed on the mex
-#             image_resource = self.bqSession.fetchxml(self.options.InputFile)
-#             image_elem = etree.SubElement(outputTag, 'tag', type='image', name=image_resource.get('name'), value=image_resource.get('uri'))
-#             if 'AreaShape_Center_X' in header:
-#                 parentGObject = etree.SubElement(image_elem, 'gobject', type='detected shapes', name='detected shapes')
-#                 for i in range(len(records)):
-#                     shape = self._get_ellipse_elem(name=str(i), header=header, record=records[i])
-#                     parentGObject.append(shape)
+            res_type = r_xml.get('type', None) or r_xml.get('resource_type', None) or r_xml.tag
+            if res_type == 'detected shapes':
+                # r_xml is a set of gobjects => append to output inside image tag 
+                image_resource = self.bqSession.fetchxml(self.options.InputFile)
+                image_elem = etree.SubElement(outputTag, 'tag', name=image_resource.get('name'), type='image', value=image_resource.get('uri'))
+                image_elem.append(r_xml)
+            else:
+                # r_xml is some other resource (e.g., image or table) => append reference to output
+                etree.SubElement(outputTag, 'tag', name='output_table' if res_type=='table' else 'output_image', type=res_type, value=r_xml.get('uri',''))
 
         self.bqSession.finish_mex(tags=[outputTag])
 
@@ -270,19 +273,19 @@ class CellProfiler(object):
         record = params.get('record')
         getValue = lambda x: float(record[header.index(x)])
 
-        shape = etree.Element('gobject', name=name, type='detected shape')
+        shape = etree.Element('gobject', name=name, type=params.get('label'))
         res = etree.SubElement(shape, 'ellipse')
 
         # centroid
-        x = getValue('AreaShape_Center_X')
-        y = getValue('AreaShape_Center_Y')
-        theta = math.radians(getValue('AreaShape_Orientation'))
+        x = getValue(params.get('x'))
+        y = getValue(params.get('y'))
+        theta = math.radians(getValue(params.get('orientation')))
 
         etree.SubElement(res, 'vertex', x=str(x), y=str(y))
  
         # major axis/minor axis endpoint coordinates
-        a = 0.5 * getValue('AreaShape_MajorAxisLength')
-        b = 0.5 * getValue('AreaShape_MinorAxisLength')
+        a = 0.5 * getValue(params.get('major_axis'))
+        b = 0.5 * getValue(params.get('minor_axis'))
  
         bX = round(x - b*math.sin(theta))
         bY = round(y + b*math.cos(theta))
@@ -292,11 +295,14 @@ class CellProfiler(object):
         aY = round(y + a*math.sin(theta))        
         etree.SubElement(res, 'vertex', x=str(aX), y=str(aY))
         
-        # area of ellipse as tag        
-        etree.SubElement(res, 'tag', name="Compactness", value=str(getValue('AreaShape_Compactness')))
-        etree.SubElement(res, 'tag', name="Eccentricity", value=str(getValue('AreaShape_Eccentricity')))
-        etree.SubElement(res, 'tag', name="FormFactor", value=str(getValue('AreaShape_FormFactor')))
-        etree.SubElement(res, 'tag', name="Solidity", value=str(getValue('AreaShape_Solidity')))
+        # other statistics
+        #etree.SubElement(res, 'tag', name="Compactness", value=str(getValue('AreaShape_Compactness')))
+        #etree.SubElement(res, 'tag', name="Eccentricity", value=str(getValue('AreaShape_Eccentricity')))
+        #etree.SubElement(res, 'tag', name="FormFactor", value=str(getValue('AreaShape_FormFactor')))
+        #etree.SubElement(res, 'tag', name="Solidity", value=str(getValue('AreaShape_Solidity')))
+        
+        etree.SubElement(res, 'tag', name='color', value=params.get('color', '#FF0000'), type='color')
+        
         return shape
         
     def _readCSV(self, fileName):
