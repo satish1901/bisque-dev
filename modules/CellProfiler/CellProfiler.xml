@@ -29,12 +29,6 @@
                 <tag name="reference" value="pipeline_url" />
             </template>
         </tag>
-
-        <tag name="OutputPrefix"   value="myoutput"  type="string">
-            <template>
-                <tag name="label" value="Name prefix for the output image resource(s)" />
-            </template>
-        </tag>
     </tag>
 
     <tag name="outputs">
