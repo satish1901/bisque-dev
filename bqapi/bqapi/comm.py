@@ -162,7 +162,8 @@ class BQServer(Session):
 
     def __init__(self):
         super(BQServer, self).__init__()
-        self.verify = False
+        # Disable https session authentication..
+        #self.verify = False
         self.root = None
 
 
