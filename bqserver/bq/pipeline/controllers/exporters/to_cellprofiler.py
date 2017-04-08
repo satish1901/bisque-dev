@@ -53,7 +53,7 @@ import logging
 
 from bq.pipeline.controllers.pipeline_exporter import PipelineExporter
 
-__all__ = [ 'ExporterXML' ]
+__all__ = [ 'ExporterCellProfiler' ]
 
 log = logging.getLogger("bq.pipeline.export.cellprofiler")
 
