@@ -265,6 +265,24 @@ class Resize3DOperation(BaseOperation):
         log.debug('Resize3D %s: %s to %s', token.resource_id, ifile, ofile)
 
         width, height = compute_new_size(w, h, size[0], size[1], aspectRatio!='', maxBounding)
+
+        # if image has multiple resolution levels find the closest one and request it
+        num_l = dims.get('image_num_resolution_levels', 1)
+        if num_l>1 and '-res-level' not in token.getQueue():
+            try:
+                scales = [float(i) for i in dims.get('image_resolution_level_scales', '').split(',')]
+                #log.debug('scales: %s',  scales)
+                sizes = [(round(w*i),round(h*i)) for i in scales]
+                #log.debug('scales: %s',  sizes)
+                relatives = [max(size[0]/float(sz[0]), size[1]/float(sz[1])) for sz in sizes]
+                #log.debug('relatives: %s',  relatives)
+                relatives = [i if i<=1 else 0 for i in relatives]
+                #log.debug('relatives: %s',  relatives)
+                level = relatives.index(max(relatives))
+                args.extend(['-res-level', str(level)])
+            except (Exception):
+                pass
+
         zrestag = 'pixel_resolution_z' if z>1 else 'pixel_resolution_t'
         info = {
             'image_num_x': width,

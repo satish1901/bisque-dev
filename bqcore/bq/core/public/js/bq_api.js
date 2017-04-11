@@ -761,7 +761,7 @@ BQObject.prototype.testAuth = function(user, cb, loaded, authRecord)
 
         for (var i=0;i<authRecord.length;i++)
         {
-            if (authRecord[i].user == user)
+            if (user.endsWith(authRecord[i].user))
             {
                 if (authRecord[i].action=='edit' || authRecord[i].action=='owner')
                     cb(true);
