@@ -300,6 +300,14 @@ SVGRenderer.render_defaults = {
         y_end: 99,
         y_step: 6,
     },
+    dots_12: {
+        x_beg: 12,
+        x_end: 95,
+        x_step: 25,
+        y_beg: 20,
+        y_end: 95,
+        y_step: 30,
+    },
 };
 
 SVGRenderer.prototype.populate_overlay = function () {

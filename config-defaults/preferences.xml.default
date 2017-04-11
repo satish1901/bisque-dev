@@ -187,8 +187,8 @@
                         <tag type="string" name="defaultValue" value="false"/>
                         <tag type="boolean" name="allowBlank" value="false"/>
                         <tag type="boolean" name="Editable" value="true"/>
-                        <tag type="string" name="select" value="Dots,Dots (Medium),Dots (Narrow),Dots (Custom Rotation),Dots (Dense),Grid"/>
-                        <tag type="string" name="passedValues" value="dots,dots_medium,dots_narrow,dots_custom,dots_dense,grid"/>
+                        <tag type="string" name="select" value="Dots,Dots (Medium),Dots (Narrow),Dots (Custom Rotation),Dots (Dense),Dots (12),Grid"/>
+                        <tag type="string" name="passedValues" value="dots,dots_medium,dots_narrow,dots_custom,dots_dense,dots_12,grid"/>
                     </template>
                 </tag>
             </tag>

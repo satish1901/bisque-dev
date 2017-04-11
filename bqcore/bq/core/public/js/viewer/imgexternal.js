@@ -305,6 +305,7 @@ ImgExternal.prototype.onPreferences = function () {
         this.annotation_status = this.viewer.addMenu({
             xtype: 'bqannotationstatus',
             itemId: 'annotation_status',
+            needsAuth: true,
             resource : this.viewer.image,
         });
     }
