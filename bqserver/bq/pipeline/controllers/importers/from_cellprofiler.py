@@ -89,19 +89,33 @@ def upload_cellprofiler_pipeline(uf, intags):
     old_step_id = 0
     # TODO: handle more cases...
     if pipeline['0']['__Label__'] == 'Images' and        \
+       _get_parameters(pipeline['0'], 'Filter images?')[0] == 'Images only' and \
        pipeline['1']['__Label__'] == 'Metadata' and      \
        pipeline['2']['__Label__'] == 'NamesAndTypes' and \
-       pipeline['3']['__Label__'] == 'Groups':
-        img_name = _get_parameters(pipeline['2'], 'Name to assign these images')[0]
-        obj_name = _get_parameters(pipeline['2'], 'Name to assign these objects')[0]
-        img_type = _get_parameters(pipeline['2'], 'Select the image type')[0]
+       _get_parameters(pipeline['2'], 'Assign a name to')[0] == 'Images matching rules' and \
+       int(_get_parameters(pipeline['2'], 'Single images count')[0]) == 0 and \
+       int(_get_parameters(pipeline['2'], 'Assignments count')[0]) > 0 and \
+       pipeline['3']['__Label__'] == 'Groups' and \
+       _get_parameters(pipeline['3'], 'Do you want to group your images?')[0] == 'No':
+        assign_cnt = int(_get_parameters(pipeline['2'], 'Assignments count')[0])
+        channel_id = [ str(channel) for channel in range(1,assign_cnt+1) ] if assign_cnt > 1 else ['all']
+        img_name = _get_parameters(pipeline['2'], 'Name to assign these images')
+        obj_name = _get_parameters(pipeline['2'], 'Name to assign these objects')
+        img_type = _get_parameters(pipeline['2'], 'Select the image type')
+        intens_range = _get_parameters(pipeline['2'], 'Set intensity range from')
+        ret_outlines = _get_parameters(pipeline['2'], 'Retain outlines of loaded objects?')
+        params = [ {'Assignments count':str(assign_cnt)} ]
+        for assign in range(assign_cnt,0,-1):
+            params += [ {'Channel': channel_id[-assign]},
+                        {'Name to assign these images': img_name[-assign]},
+                        {'Name to assign these objects': obj_name[-assign]},
+                        {'Select the image type': img_type[-assign]},
+                        {'Set intensity range from': intens_range[-assign]},
+                        {'Retain outlines of loaded objects?': ret_outlines[-assign]}
+                      ]
         new_pipeline[str(new_step_id)] = { '__Label__': 'BisQueLoadImages', 
                                            '__Meta__': { 'module_num': str(new_step_id+1) }, 
-                                           'Parameters': [ {'Assignments count':'1'},
-                                                           {'Channel':'all'},
-                                                           {'Name to assign these images':img_name},
-                                                           {'Name to assign these objects':obj_name},
-                                                           {'Select the image type':img_type} ] }
+                                           'Parameters': params }
         new_step_id += 1
         old_step_id += 4
     for step_id in range(old_step_id, len(pipeline)-1):
