@@ -19,13 +19,13 @@ setup(name='bqapi',
       ###packages= ['bqapi' ],
 #      namespace_packages = ['bq'],
       install_requires=[
-        "requests >=2.4.1, <=2.10.0"
+          "requests >=2.4.1"
         ],
       extras_require = {
-        'lxml' : [ 'lxml'],
-        'CAS'  : ['BeautifulSoup4' ],
-        'bqfeature' : ['tables'],
-        },
+          'lxml' : [ 'lxml'],
+          'CAS'  : ['BeautifulSoup4' ],
+          'bqfeature' : ['tables'],
+      },
 
       zip_safe= True,
-      )
+  )
