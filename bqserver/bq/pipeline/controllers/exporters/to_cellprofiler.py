@@ -61,6 +61,26 @@ log = logging.getLogger("bq.pipeline.export.cellprofiler")
 # exporters: CellProfiler
 #---------------------------------------------------------------------------------------
 
+def json_to_cellprofiler(pipeline):
+    res = 'CellProfiler Pipeline: http://www.cellprofiler.org\n' + \
+          'Version:'+pipeline['__Header__']['Version']+'\n' + \
+          'DateRevision:'+pipeline['__Header__'].get('DateRevision', '')+'\n' + \
+          'GitHash:'+pipeline['__Header__'].get('GitHash', '')+'\n' + \
+          'ModuleCount:'+str(len(pipeline)-1)+'\n' + \
+          'HasImagePlaneDetails:'+pipeline['__Header__'].get('HasImagePlaneDetails', '')+'\n' + \
+          'MessageForUser:'+pipeline['__Header__'].get('MessageForUser', '')+'\n\n'
+    
+    for step_id in range(0,len(pipeline)-1):
+        flags = pipeline[str(step_id)]['__Meta__']
+        flags['module_num'] = str(step_id+1)
+        res += pipeline[str(step_id)]['__Label__']+':['+'|'.join([tag+':'+flags[tag] for tag in flags if not tag.startswith('__')])+']\n'
+        log.debug("HEADERR: %s" % res)   #!!!
+        for param in pipeline[str(step_id)]['Parameters']:
+            tag = param.keys()[0]
+            res += '    '+tag+':'+param[tag]+'\n'
+        res += '\n'
+    return res
+
 class ExporterCellProfiler (PipelineExporter):
     '''Formats pipelines in CellProfiler format'''
 
@@ -407,24 +427,5 @@ class ExporterCellProfiler (PipelineExporter):
         pipeline = pipeline.data
         if not pipeline or '__Header__' not in pipeline or pipeline['__Header__']['__Type__'] != 'CellProfiler':
             # wrong pipeline type
-            return None
-        
-        res = 'CellProfiler Pipeline: http://www.cellprofiler.org\n' + \
-              'Version:'+pipeline['__Header__']['Version']+'\n' + \
-              'DateRevision:'+pipeline['__Header__'].get('DateRevision', '')+'\n' + \
-              'GitHash:'+pipeline['__Header__'].get('GitHash', '')+'\n' + \
-              'ModuleCount:'+str(len(pipeline)-1)+'\n' + \
-              'HasImagePlaneDetails:'+pipeline['__Header__'].get('HasImagePlaneDetails', '')+'\n' + \
-              'MessageForUser:'+pipeline['__Header__'].get('MessageForUser', '')+'\n\n'
-        
-        for step_id in range(0,len(pipeline)-1):
-            flags = pipeline[str(step_id)]['__Meta__']
-            flags['module_num'] = str(step_id+1)
-            res += pipeline[str(step_id)]['__Label__']+':['+'|'.join([tag+':'+flags[tag] for tag in flags if not tag.startswith('__')])+']\n'
-            log.debug("HEADERR: %s" % res)   #!!!
-            for param in pipeline[str(step_id)]['Parameters']:
-                tag = param.keys()[0]
-                res += '    '+tag+':'+param[tag]+'\n'
-            res += '\n'
-        return res
-        
+            return None        
+        return json_to_cellprofiler(pipeline)

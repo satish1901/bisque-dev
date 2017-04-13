@@ -51,10 +51,12 @@ CellProfiler pipeline importer
 import os
 import logging
 import pkg_resources
+import tempfile
 from pylons.controllers.util import abort
 
 from bq import blob_service
 from bq.pipeline.controllers.pipeline_base import PipelineBase
+from bq.pipeline.controllers.exporters.to_cellprofiler import json_to_cellprofiler
 
 __all__ = [ 'PipelineCP' ]
 
@@ -66,6 +68,115 @@ log = logging.getLogger("bq.pipeline.import.cellprofiler")
 #---------------------------------------------------------------------------------------
 # Importer: CellProfiler
 #---------------------------------------------------------------------------------------
+
+def _get_parameters(step, param_name):
+    res = []
+    for param in step['Parameters']:
+        if param.keys()[0] == param_name:
+            res.append(param[param_name])
+    return res
+    
+def upload_cellprofiler_pipeline(uf, intags):
+    # analyze cellprofiler pipeline and replace illegal operations with BisQue operations
+    pipeline = {}
+    with open(uf.localpath(), 'r') as fo:
+        pipeline = cellprofiler_to_json(fo)
+    uf.close()
+    # walk the pipeline and replace any incompatible steps with BisQue steps as well as possible
+    # TODO: improve the quality of replacement and add BisQueExtractGObjects step generation
+    new_pipeline = { '__Header__': pipeline['__Header__'] }
+    new_step_id = 0
+    old_step_id = 0
+    # TODO: handle more cases...
+    if pipeline['0']['__Label__'] == 'Images' and        \
+       pipeline['1']['__Label__'] == 'Metadata' and      \
+       pipeline['2']['__Label__'] == 'NamesAndTypes' and \
+       pipeline['3']['__Label__'] == 'Groups':
+        img_name = _get_parameters(pipeline['2'], 'Name to assign these images')[0]
+        obj_name = _get_parameters(pipeline['2'], 'Name to assign these objects')[0]
+        img_type = _get_parameters(pipeline['2'], 'Select the image type')[0]
+        new_pipeline[str(new_step_id)] = { '__Label__': 'BisQueLoadImages', 
+                                           '__Meta__': { 'module_num': str(new_step_id+1) }, 
+                                           'Parameters': [ {'Assignments count':'1'},
+                                                           {'Channel':'all'},
+                                                           {'Name to assign these images':img_name},
+                                                           {'Name to assign these objects':obj_name},
+                                                           {'Select the image type':img_type} ] }
+        new_step_id += 1
+        old_step_id += 4
+    for step_id in range(old_step_id, len(pipeline)-1):
+        new_pipeline[str(new_step_id)] = pipeline[str(step_id)]
+        new_pipeline[str(new_step_id)]['__Meta__']['module_num'] = str(new_step_id+1)
+        new_step_id += 1
+    new_pipeline['__Header__']['ModuleCount'] = str(len(new_pipeline)-1)
+    # write modified pipeline back for ingest
+    ftmp = tempfile.NamedTemporaryFile(delete=False)
+    ftmp.write(json_to_cellprofiler(new_pipeline))
+    ftmp.close()
+    # ingest modified pipeline
+    res = []
+    with open(ftmp.name, 'rb') as fo:
+        res = [blob_service.store_blob(resource=uf.resource, fileobj=fo)]
+    return res
+
+def cellprofiler_to_json(pipeline_file):
+    data = {}
+    is_header = True
+    indent = 0
+    step = {}
+    step_id = 0
+    header = { '__Type__': 'CellProfiler' }
+    for line in pipeline_file:
+        line = line.rstrip('\r\n')
+        if is_header and len(line) == 0:
+            # end of header reached
+            data['__Header__'] = header
+            is_header = False
+        elif is_header and not line.startswith('CellProfiler Pipeline'):
+            toks = line.split(':')
+            tag = toks[0]
+            val = ':'.join(toks[1:])
+            header[tag] = val
+        elif not is_header and len(line) == 0 and step:
+            # end of step reached
+            # check if step should be marked special (incompatible, modified)
+            data[str(step_id)] = _validate_step(step)
+            step = {}
+            step_id += 1
+        elif not is_header and not line.startswith(' '):
+            # start of new pipeline step
+            # format of line is:
+            # <Step Label>:[<meta_tag>:<meta_val>|<meta_tag>:<meta_val>| ... |<meta_tag>:<meta_val>]
+            toks = line.split(':')
+            tag = toks[0]
+            val = ':'.join(toks[1:]).lstrip('[').rstrip(']')
+            step = { "__Label__": tag, "__Meta__": {}, "Parameters": [] }
+            # TODO: use better parser that handles escapes ('\')
+            for metas in val.split('|'):
+                meta_toks = metas.split(':')
+                meta_tag = meta_toks[0]
+                meta_val = ':'.join(meta_toks[1:])
+                step['__Meta__'][meta_tag] = meta_val
+        elif not is_header and line.startswith(' '):
+            # step parameter
+            toks = line.strip().split(':')
+            tag = toks[0]
+            val = ':'.join(toks[1:])
+            step['Parameters'].append( {tag:val} )                    
+    # add last step                    
+    if step:
+        data[str(step_id)] = _validate_step(step)
+    return data
+
+def _validate_step(step):
+    # mark actions not compatible with BisQue
+    if step['__Label__'].startswith('BisQue'):
+        step['__Meta__']['__compatibility__'] = 'bisque'
+    elif step['__Label__'] in ['Crop']:  #TODO: check for other ignored steps
+        step['__Meta__']['__compatibility__'] = 'ignored'
+    elif step['__Label__'] in ['Images', 'LoadImages', 'Metadata', 'NamesAndTypes', 'Groups', 'SaveImages', 'ExportToSpreadsheet']:  #TODO: check for other incompatible steps
+        step['__Meta__']['__compatibility__'] = 'incompatible'
+    return step
 
 class PipelineCP(PipelineBase):
     name = 'cellprofiler'
@@ -87,62 +198,8 @@ class PipelineCP(PipelineBase):
         self.data = {}
         raw_pipeline = []
         with open(self.filename, 'r') as pipeline_file:
-            is_header = True
-            indent = 0
-            step = {}
-            step_id = 0
-            header = { '__Type__': 'CellProfiler' }
-            for line in pipeline_file:
-                line = line.rstrip('\r\n')
-                if is_header and len(line) == 0:
-                    # end of header reached
-                    self.data['__Header__'] = header
-                    is_header = False
-                elif is_header and not line.startswith('CellProfiler Pipeline'):
-                    toks = line.split(':')
-                    tag = toks[0]
-                    val = ':'.join(toks[1:])
-                    header[tag] = val
-                elif not is_header and len(line) == 0 and step:
-                    # end of step reached
-                    # check if step should be marked special (incompatible, modified)
-                    self.data[str(step_id)] = self._validate_step(step)
-                    step = {}
-                    step_id += 1
-                elif not is_header and not line.startswith(' '):
-                    # start of new pipeline step
-                    # format of line is:
-                    # <Step Label>:[<meta_tag>:<meta_val>|<meta_tag>:<meta_val>| ... |<meta_tag>:<meta_val>]
-                    toks = line.split(':')
-                    tag = toks[0]
-                    val = ':'.join(toks[1:]).lstrip('[').rstrip(']')
-                    step = { "__Label__": tag, "__Meta__": {}, "Parameters": [] }
-                    # TODO: use better parser that handles escapes ('\')
-                    for metas in val.split('|'):
-                        meta_toks = metas.split(':')
-                        meta_tag = meta_toks[0]
-                        meta_val = ':'.join(meta_toks[1:])
-                        step['__Meta__'][meta_tag] = meta_val
-                elif not is_header and line.startswith(' '):
-                    # step parameter
-                    toks = line.strip().split(':')
-                    tag = toks[0]
-                    val = ':'.join(toks[1:])
-                    step['Parameters'].append( {tag:val} )                    
-            # add last step                    
-            if step:
-                self.data[str(step_id)] = self._validate_step(step)
-                
-    def _validate_step(self, step):
-        # mark actions not compatible with BisQue
-        if step['__Label__'].startswith('BisQue'):
-            step['__Meta__']['__compatibility__'] = 'bisque'
-        elif step['__Label__'] in ['Crop']:  #TODO: check for other ignored steps
-            step['__Meta__']['__compatibility__'] = 'ignored'
-        elif step['__Label__'] in ['Images', 'LoadImages', 'Metadata', 'NamesAndTypes', 'Groups', 'SaveImages', 'ExportToSpreadsheet']:  #TODO: check for other incompatible steps
-            step['__Meta__']['__compatibility__'] = 'incompatible'
-        return step
-
+            self.data = cellprofiler_to_json(pipeline_file)
+            
     def __repr__(self):
         return str(self.data)
     
