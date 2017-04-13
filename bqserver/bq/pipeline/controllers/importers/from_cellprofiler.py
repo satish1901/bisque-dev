@@ -102,26 +102,42 @@ def upload_cellprofiler_pipeline(uf, intags):
         img_name = _get_parameters(pipeline['2'], 'Name to assign these images')
         obj_name = _get_parameters(pipeline['2'], 'Name to assign these objects')
         img_type = _get_parameters(pipeline['2'], 'Select the image type')
-        intens_range = _get_parameters(pipeline['2'], 'Set intensity range from')
-        ret_outlines = _get_parameters(pipeline['2'], 'Retain outlines of loaded objects?')
         params = [ {'Assignments count':str(assign_cnt)} ]
         for assign in range(assign_cnt,0,-1):
             params += [ {'Channel': channel_id[-assign]},
                         {'Name to assign these images': img_name[-assign]},
                         {'Name to assign these objects': obj_name[-assign]},
-                        {'Select the image type': img_type[-assign]},
-                        {'Set intensity range from': intens_range[-assign]},
-                        {'Retain outlines of loaded objects?': ret_outlines[-assign]}
+                        {'Select the image type': img_type[-assign]}
                       ]
         new_pipeline[str(new_step_id)] = { '__Label__': 'BisQueLoadImages', 
                                            '__Meta__': { 'module_num': str(new_step_id+1) }, 
                                            'Parameters': params }
         new_step_id += 1
         old_step_id += 4
+    elif pipeline['0']['__Label__'] == 'LoadImages':
+        # TODO
+        pass
     for step_id in range(old_step_id, len(pipeline)-1):
-        new_pipeline[str(new_step_id)] = pipeline[str(step_id)]
-        new_pipeline[str(new_step_id)]['__Meta__']['module_num'] = str(new_step_id+1)
-        new_step_id += 1
+        if pipeline[str(step_id)]['__Label__'] == 'SaveImages' and \
+           _get_parameters(pipeline[str(step_id)], 'Select the type of image to save') == 'Image':
+            img_name = _get_parameters(pipeline[str(step_id)], 'Select the image to save')[0]
+            bit_depth = _get_parameters(pipeline[str(step_id)], 'Image bit depth')[0]
+            img_type = _get_parameters(pipeline[str(step_id)], 'Save as grayscale or color image?')[0]
+            colormap = _get_parameters(pipeline[str(step_id)], 'Select colormap')[0]
+            filename = _get_parameters(pipeline[str(step_id)], 'Enter single file name')[0]
+            new_pipeline[str(new_step_id)] = { '__Label__': 'BisQueSaveImage', 
+                                               '__Meta__': { 'module_num': str(new_step_id+1) }, 
+                                               'Parameters': [ {'Select the image to save':img_name},
+                                                               {'Image bit depth': bit_depth},
+                                                               {'Save as grayscale or color image?': img_type},
+                                                               {'Select colormap': colormap},
+                                                               {'Name': filename} ] }
+            new_step_id += 1
+        else:
+            # keep all others unchanged
+            new_pipeline[str(new_step_id)] = pipeline[str(step_id)]
+            new_pipeline[str(new_step_id)]['__Meta__']['module_num'] = str(new_step_id+1)
+            new_step_id += 1
     new_pipeline['__Header__']['ModuleCount'] = str(len(new_pipeline)-1)
     # write modified pipeline back for ingest
     ftmp = tempfile.NamedTemporaryFile(delete=False)
