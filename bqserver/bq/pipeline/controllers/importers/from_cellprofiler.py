@@ -119,7 +119,7 @@ def upload_cellprofiler_pipeline(uf, intags):
         pass
     for step_id in range(old_step_id, len(pipeline)-1):
         if pipeline[str(step_id)]['__Label__'] == 'SaveImages' and \
-           _get_parameters(pipeline[str(step_id)], 'Select the type of image to save') == 'Image':
+           _get_parameters(pipeline[str(step_id)], 'Select the type of image to save')[0] == 'Image':
             img_name = _get_parameters(pipeline[str(step_id)], 'Select the image to save')[0]
             bit_depth = _get_parameters(pipeline[str(step_id)], 'Image bit depth')[0]
             img_type = _get_parameters(pipeline[str(step_id)], 'Save as grayscale or color image?')[0]
