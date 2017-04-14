@@ -133,6 +133,16 @@ def upload_cellprofiler_pipeline(uf, intags):
                                                                {'Select colormap': colormap},
                                                                {'Name': filename} ] }
             new_step_id += 1
+        elif pipeline[str(step_id)]['__Label__'] == 'ExportToSpreadsheet' and \
+             all([comb == 'No' for comb in _get_parameters(pipeline[str(step_id)], 'Combine these object measurements with those of the previous object?')]):
+            data_exports = _get_parameters(pipeline[str(step_id)], 'Data to export')
+            params = []
+            for data_export in data_exports:
+                params += [ {'Data to export':data_export}, {'Name':data_export} ]
+            new_pipeline[str(new_step_id)] = { '__Label__': 'BisQueSaveTables', 
+                                               '__Meta__': { 'module_num': str(new_step_id+1) }, 
+                                               'Parameters': params }
+            new_step_id += 1
         else:
             # keep all others unchanged
             new_pipeline[str(new_step_id)] = pipeline[str(step_id)]
