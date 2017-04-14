@@ -294,7 +294,6 @@ class ExporterCellProfiler (PipelineExporter):
                 Example:
                 ---------------------------------------------
                 BisQueSaveTables:[module_num:...]
-                    Select the column delimiter:Comma (",")
                     Data to export:Image
                     Name:Image
                     Data to export:Nuclei
@@ -305,10 +304,9 @@ class ExporterCellProfiler (PipelineExporter):
                     Name:Cytoplasm
                 ---------------------------------------------
                 """                
-                delimiters = self._get_parameters(pipeline[str(step_id)], 'Select the column delimiter')
                 export_datas = self._get_parameters(pipeline[str(step_id)], 'Data to export')
                 export_prefixes = self._get_parameters(pipeline[str(step_id)], 'Name')
-                parameters = [ { 'Select the column delimiter':delimiters[0] },
+                parameters = [ { 'Select the column delimiter':'Comma (",")' },
                                { 'Add image metadata columns to your object data file?':'No' },
                                { 'Limit output to a size that is allowed in Excel?':'No' },
                                { 'Select the measurements to export':'No' },
