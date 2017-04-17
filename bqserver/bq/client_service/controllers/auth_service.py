@@ -53,25 +53,25 @@ DESCRIPTION
 """
 import logging
 #import cherrypy
-import base64
-import transaction
+#import base64
 import json
 import posixpath
-
 from datetime import datetime, timedelta
+
 from lxml import etree
+import transaction
 
 import tg
-from tg import request, response, session, flash, require
+from tg import request, session, flash, require
 from tg import  expose, redirect, url
-from tg import config, validate
+from tg import config
 from pylons.i18n import ugettext as  _
 from repoze.what import predicates
 
 from bq.core.service import ServiceController
 from bq.core import identity
 from bq.core.model import DBSession
-from bq.data_service.model import  BQUser, User
+from bq.data_service.model import   User
 from bq import module_service
 from bq.util.urlutil import update_url
 from bq.exceptions import ConfigurationError
@@ -120,7 +120,7 @@ class AuthenticationServer(ServiceController):
 
     @expose()
     def login_check(self, came_from='/', login='', **kw):
-        log.debug ("login_check %s from=%s other=%s" % (login, came_from, kw))
+        log.debug ("login_check %s from=%s " , login, came_from)
         login_urls = self.login_map()
         default_login = login_urls.values()[-1]
         if login:
@@ -134,17 +134,17 @@ class AuthenticationServer(ServiceController):
             for identifier in login_urls.keys():
                 if  identifier in login_identifiers:
                     login_url  = login_urls[identifier]['url']
-                    log.debug ("redirecting to %s handler" % identifier)
+                    log.debug ("redirecting to %s handler" , identifier)
                     redirect(update_url(login_url, dict(username=login, came_from=came_from)))
 
-        log.debug ("using default login handler %s" % default_login)
+        log.debug ("using default login handler %s" , default_login)
         redirect(update_url(default_login, dict(username=login, came_from=came_from)))
 
 
     @expose('bq.client_service.templates.login')
     def login(self, came_from='/', username = '', **kw):
         """Start the user login."""
-        login_counter = request.environ['repoze.who.logins']
+        login_counter = int (request.environ.get ('repoze.who.logins', 0))
         if login_counter > 0:
             flash(_('Wrong credentials'), 'warning')
 
@@ -170,7 +170,7 @@ class AuthenticationServer(ServiceController):
 
 
     @expose()
-    def post_login(self, came_from='/'):
+    def post_login(self, came_from='/', **kw):
         """
         Redirect the user to the initially requested page on successful
         authentication or redirect her back to the login page if login failed.
@@ -178,7 +178,7 @@ class AuthenticationServer(ServiceController):
         """
         log.debug ('POST_LOGIN')
         if not request.identity:
-            login_counter = request.environ['repoze.who.logins'] + 1
+            login_counter = int (request.environ.get('repoze.who.logins',0)) + 1
             redirect(url('/auth_service/login',params=dict(came_from=came_from, __logins=login_counter)))
         userid = request.identity['repoze.who.userid']
         flash(_('Welcome back, %s!') % userid)
@@ -192,7 +192,7 @@ class AuthenticationServer(ServiceController):
             session['length'] = length
 
         session.save()
-        log.debug ("Current session %s" % session)
+        log.debug ("Current session %s" , str( session))
         transaction.commit()
         redirect(came_from)
 
@@ -217,7 +217,7 @@ class AuthenticationServer(ServiceController):
 
 
     @expose()
-    def post_logout(self, came_from='/'):
+    def post_logout(self, came_from='/', **kw):
         """
         Redirect the user to the initially requested page on logout and say
         goodbye as well.
@@ -262,6 +262,10 @@ class AuthenticationServer(ServiceController):
             #log.debug ("session_timout for visit %s" % str(vk))
             #visit = Visit.lookup_visit (vk)
             #expire =  (visit.expiry - datetime.now()).seconds
+            if 'mex_auth' not in session:
+                log.warn ("INVALID Session or session deleted")
+                #redirect ('/auth_service/logout_handler')
+
             timeout = int(session.get ('timeout', 0 ))
             length  = int(session.get ('length', 0 ))
             expires = session.get ('expires', datetime(2100, 1,1))
@@ -297,7 +301,7 @@ class AuthenticationServer(ServiceController):
         session['mex_uniq']  = mex_uniq
         session['mex_uri'] =  mex_uri
         session['mex_auth'] = "%s:%s" % (identity.get_username(), mex_uniq)
-        log.info ("MEX Session %s ( %s ) " % (mex_uri, mex_uniq))
+        log.info ("MEX Session %s ( %s ) " , mex_uri, mex_uniq)
         #v = Visit.lookup_visit (tgidentity.current.visit_link.visit_key)
         #v.mexid = mexid
         #session.flush()
