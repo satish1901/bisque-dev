@@ -227,7 +227,8 @@ class CellProfiler(object):
                 for i in range(len(records)):
                     shape = self._get_ellipse_elem(name=str(i), header=header, record=records[i], x=op['x_coord'], y=op['y_coord'], label=op['label'], color=op['color'],
                                                    orientation=op['orientation'], major_axis=op['major_axis'], minor_axis=op['minor_axis'])
-                    parentGObject.append(shape)
+                    if shape:
+                        parentGObject.append(shape)
                 res += [parentGObject]
         return res
 
@@ -276,32 +277,38 @@ class CellProfiler(object):
         shape = etree.Element('gobject', name=name, type=params.get('label'))
         res = etree.SubElement(shape, 'ellipse')
 
-        # centroid
-        x = getValue(params.get('x'))
-        y = getValue(params.get('y'))
-        theta = math.radians(getValue(params.get('orientation')))
-
-        etree.SubElement(res, 'vertex', x=str(x), y=str(y))
- 
-        # major axis/minor axis endpoint coordinates
-        a = 0.5 * getValue(params.get('major_axis'))
-        b = 0.5 * getValue(params.get('minor_axis'))
- 
-        bX = round(x - b*math.sin(theta))
-        bY = round(y + b*math.cos(theta))
-        etree.SubElement(res, 'vertex', x=str(bX), y=str(bY))
- 
-        aX = round(x + a*math.cos(theta))
-        aY = round(y + a*math.sin(theta))        
-        etree.SubElement(res, 'vertex', x=str(aX), y=str(aY))
+        try:
+            # centroid
+            x = getValue(params.get('x'))
+            y = getValue(params.get('y'))
+            theta = math.radians(getValue(params.get('orientation')))
+    
+            etree.SubElement(res, 'vertex', x=str(x), y=str(y))
+     
+            # major axis/minor axis endpoint coordinates
+            a = 0.5 * getValue(params.get('major_axis'))
+            b = 0.5 * getValue(params.get('minor_axis'))
+     
+            bX = round(x - b*math.sin(theta))
+            bY = round(y + b*math.cos(theta))
+            etree.SubElement(res, 'vertex', x=str(bX), y=str(bY))
+     
+            aX = round(x + a*math.cos(theta))
+            aY = round(y + a*math.sin(theta))        
+            etree.SubElement(res, 'vertex', x=str(aX), y=str(aY))
+            
+            # other statistics
+            #etree.SubElement(res, 'tag', name="Compactness", value=str(getValue('AreaShape_Compactness')))
+            #etree.SubElement(res, 'tag', name="Eccentricity", value=str(getValue('AreaShape_Eccentricity')))
+            #etree.SubElement(res, 'tag', name="FormFactor", value=str(getValue('AreaShape_FormFactor')))
+            #etree.SubElement(res, 'tag', name="Solidity", value=str(getValue('AreaShape_Solidity')))
+            
+            etree.SubElement(res, 'tag', name='color', value=params.get('color', '#FF0000'), type='color')
         
-        # other statistics
-        #etree.SubElement(res, 'tag', name="Compactness", value=str(getValue('AreaShape_Compactness')))
-        #etree.SubElement(res, 'tag', name="Eccentricity", value=str(getValue('AreaShape_Eccentricity')))
-        #etree.SubElement(res, 'tag', name="FormFactor", value=str(getValue('AreaShape_FormFactor')))
-        #etree.SubElement(res, 'tag', name="Solidity", value=str(getValue('AreaShape_Solidity')))
-        
-        etree.SubElement(res, 'tag', name='color', value=params.get('color', '#FF0000'), type='color')
+        except KeyError:
+            return None
+        except ValueError:
+            return None
         
         return shape
         

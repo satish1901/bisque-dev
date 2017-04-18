@@ -114,9 +114,27 @@ def upload_cellprofiler_pipeline(uf, intags):
                                            'Parameters': params }
         new_step_id += 1
         old_step_id += 4
-    elif pipeline['0']['__Label__'] == 'LoadImages':
-        # TODO
-        pass
+    elif pipeline['0']['__Label__'] == 'LoadImages' and \
+         _get_parameters(pipeline['0'], 'File type to be loaded')[0] == 'individual images' and \
+         _get_parameters(pipeline['0'], 'Group images by metadata?')[0] == 'No':
+        channel_id = 'all'
+        img_name = _get_parameters(pipeline['0'], 'Name this loaded image')[0]
+        obj_name = _get_parameters(pipeline['0'], 'Name this loaded object')[0]
+        img_type = _get_parameters(pipeline['0'], 'Load the input as images or objects?')[0]
+        img_type = 'Color image' if img_type == 'Images' else 'Objects'
+        new_pipeline[str(new_step_id)] = { '__Label__': 'BisQueLoadImages', 
+                                           '__Meta__': { 'module_num': str(new_step_id+1) }, 
+                                           'Parameters': [ {'Channel': channel_id},
+                                                           {'Name to assign these images': img_name},
+                                                           {'Name to assign these objects': obj_name},
+                                                           {'Select the image type': img_type}
+                                                         ] }
+        new_step_id += 1
+        old_step_id += 1
+    # now the rest of the pipeline...
+    geo_objects = []
+    colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
+    color_idx = 0
     for step_id in range(old_step_id, len(pipeline)-1):
         if pipeline[str(step_id)]['__Label__'] == 'SaveImages' and \
            _get_parameters(pipeline[str(step_id)], 'Select the type of image to save')[0] == 'Image':
@@ -148,6 +166,32 @@ def upload_cellprofiler_pipeline(uf, intags):
             new_pipeline[str(new_step_id)] = pipeline[str(step_id)]
             new_pipeline[str(new_step_id)]['__Meta__']['module_num'] = str(new_step_id+1)
             new_step_id += 1
+        if pipeline[str(step_id)]['__Label__'] == 'IdentifyPrimaryObjects':
+            obj_name = _get_parameters(pipeline[str(step_id)], 'Name the primary objects to be identified')[0]
+            geo_objects.append( {'name':obj_name, 'color':colors[color_idx % len(colors)]} )
+            color_idx += 1
+        elif pipeline[str(step_id)]['__Label__'] == 'IdentifySecondaryObjects':
+            obj_name = _get_parameters(pipeline[str(step_id)], 'Name the objects to be identified')[0]
+            geo_objects.append( {'name':obj_name, 'color':colors[color_idx % len(colors)]} )
+            color_idx += 1
+        elif pipeline[str(step_id)]['__Label__'] == 'IdentifyTertiaryObjects':
+            obj_name = _get_parameters(pipeline[str(step_id)], 'Name the tertiary objects to be identified')[0]
+            geo_objects.append( {'name':obj_name, 'color':colors[color_idx % len(colors)]} )
+            color_idx += 1
+    # if there were any "IdentifyXXXObjects", add BisQueExportGObjects step(s) at the end
+    for geo_object in geo_objects:
+        new_pipeline[str(new_step_id)] = { '__Label__': 'BisQueExtractGObjects', 
+                                           '__Meta__': { 'module_num': str(new_step_id+1) },
+                                           'Parameters': [ {'Data to extract':geo_object['name']},
+                                                           {'GObject type':'Ellipse'},
+                                                           {'GObject label':geo_object['name']},
+                                                           {'GObject color':geo_object['color']},                                                            
+                                                           {'XCoord column':'AreaShape_Center_X'},
+                                                           {'YCoord column':'AreaShape_Center_Y'},
+                                                           {'Orientation column':'AreaShape_Orientation'},
+                                                           {'MajorAxis column':'AreaShape_MajorAxisLength'},
+                                                           {'MinorAxis column':'AreaShape_MinorAxisLength'} ] }
+        new_step_id += 1
     new_pipeline['__Header__']['ModuleCount'] = str(len(new_pipeline)-1)
     # write modified pipeline back for ingest
     ftmp = tempfile.NamedTemporaryFile(delete=False)

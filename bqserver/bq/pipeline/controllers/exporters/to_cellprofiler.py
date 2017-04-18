@@ -63,12 +63,12 @@ log = logging.getLogger("bq.pipeline.export.cellprofiler")
 
 def json_to_cellprofiler(pipeline):
     res = 'CellProfiler Pipeline: http://www.cellprofiler.org\n' + \
-          'Version:'+pipeline['__Header__']['Version']+'\n' + \
-          'DateRevision:'+pipeline['__Header__'].get('DateRevision', '')+'\n' + \
-          'GitHash:'+pipeline['__Header__'].get('GitHash', '')+'\n' + \
+          'Version:'+(pipeline['__Header__'].get('Version', '') or '1')+'\n' + \
+          'DateRevision:'+(pipeline['__Header__'].get('DateRevision', '') or '20140723174500')+'\n' + \
+          'GitHash:'+(pipeline['__Header__'].get('GitHash', '') or '6c2d896')+'\n' + \
           'ModuleCount:'+str(len(pipeline)-1)+'\n' + \
-          'HasImagePlaneDetails:'+pipeline['__Header__'].get('HasImagePlaneDetails', '')+'\n' + \
-          'MessageForUser:'+pipeline['__Header__'].get('MessageForUser', '')+'\n\n'
+          'HasImagePlaneDetails:'+(pipeline['__Header__'].get('HasImagePlaneDetails', '') or 'False')+'\n' + \
+          'MessageForUser:'+(pipeline['__Header__'].get('MessageForUser', '') or '|Generated pipeline.')+'\n\n'
     
     for step_id in range(0,len(pipeline)-1):
         flags = pipeline[str(step_id)]['__Meta__']
