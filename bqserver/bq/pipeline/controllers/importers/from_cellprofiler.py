@@ -135,6 +135,7 @@ def upload_cellprofiler_pipeline(uf, intags):
     geo_objects = []
     colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
     color_idx = 0
+    converted_cnt = 0   # TODO: only keep up to 10 interactive params... URL gets too big otherwise
     for step_id in range(old_step_id, len(pipeline)-1):
         if pipeline[str(step_id)]['__Label__'] == 'SaveImages' and \
            _get_parameters(pipeline[str(step_id)], 'Select the type of image to save')[0] == 'Image':
@@ -163,8 +164,21 @@ def upload_cellprofiler_pipeline(uf, intags):
             new_step_id += 1
         else:
             # keep all others unchanged
+            # but check if some parameters could be treated as "interactive"
             new_pipeline[str(new_step_id)] = pipeline[str(step_id)]
             new_pipeline[str(new_step_id)]['__Meta__']['module_num'] = str(new_step_id+1)
+            new_parameters = []            
+            for param in new_pipeline[str(new_step_id)]['Parameters']:
+                param_key, param_val = param.items()[0]
+                if converted_cnt < 10 and any([phrase in param_key.lower() for phrase in ['threshold', 'size', 'diameter', 'distance', 'smoothing', 'bound', 'difference', 'intensity']]):
+                    try:
+                        float(param_val)    # is this a number?
+                        param_val = "@STRPARAM@%s" % str(param_val)
+                        converted_cnt += 1
+                    except ValueError:
+                        pass   # skip non-numerical parameters for now
+                new_parameters.append({param_key:param_val})
+            new_pipeline[str(new_step_id)]['Parameters'] = new_parameters
             new_step_id += 1
         if pipeline[str(step_id)]['__Label__'] == 'IdentifyPrimaryObjects':
             obj_name = _get_parameters(pipeline[str(step_id)], 'Name the primary objects to be identified')[0]
