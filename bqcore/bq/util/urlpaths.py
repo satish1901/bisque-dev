@@ -102,7 +102,7 @@ if os.name == 'nt':
             return s
 else:
     def move_file (fp, newpath):
-        if os.path.exists(fp.name):
+        if hasattr(fp, 'name') and os.path.exists(fp.name):
             oldpath = os.path.abspath(fp.name)
             shutil.move (oldpath, newpath)
         else:

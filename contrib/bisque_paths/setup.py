@@ -1,6 +1,6 @@
 
 from setuptools import setup
-setup(name='bisque_ops',
+setup(name='bisque_paths',
       version='1.0',
       install_requires = [
         'requests',
@@ -8,11 +8,11 @@ setup(name='bisque_ops',
         'six',
         ],
 
-      py_modules = ['bisque_ops' ],
+      py_modules = ['bisque_paths' ],
 
       entry_points = {
         'console_scripts' : [
-            'bqpath = bisque_ops:main',
+            'bqpath = bisque_paths:main',
             ]
         }
 
