@@ -12,7 +12,7 @@ class ZipArchiver(zipfile.ZipFile, AbstractArchiver):
     def __init__(self):
         self.buffer = StringIO()
         self.position = 0
-        zipfile.ZipFile.__init__(self, self.buffer, mode='w')
+        zipfile.ZipFile.__init__(self, self.buffer, mode='w', allowZip64=True)
 
     def beginFile(self, file):
         AbstractArchiver.beginFile(self, file)
@@ -21,26 +21,26 @@ class ZipArchiver(zipfile.ZipFile, AbstractArchiver):
             ftime = time.localtime();
         else:
             ftime = time.localtime(os.path.getctime(file.get('path')))
-            
+
         self.zipInfo = zipfile.ZipInfo(self.destinationPath(file), ftime[:6]);
         self.reader.seek(0, 2)
         self.zipInfo.file_size = self.zipInfo.compress_size = self.reader.tell()
-        
+
         self.reader.seek(0)
         self.zipInfo.flag_bits = 0x00
         self.zipInfo.header_offset = self.position
         self.zipInfo.CRC = self.CRC32()
-        
+
         self._writecheck(self.zipInfo)
         self._didModify = True
-        
+
         self.fp.write(self.zipInfo.FileHeader())
 
         self.filelist.append(self.zipInfo)
         self.NameToInfo[self.zipInfo.filename] = self.zipInfo
 
         return
-    
+
     def readBlock(self, block_size):
         self.fp.write(self.reader.read(block_size))
         block = self.buffer.getvalue()
@@ -48,7 +48,7 @@ class ZipArchiver(zipfile.ZipFile, AbstractArchiver):
         self.position += len(block)
 
         return block
-    
+
     def readEnding(self):
         self.buffer.seek(self.position)
         self.close()
@@ -62,7 +62,7 @@ class ZipArchiver(zipfile.ZipFile, AbstractArchiver):
         if self.reader.tell()>=self.zipInfo.file_size:
             return True
         return False
-    
+
     def CRC32(self):
         block = 1; CRC = 0
         self.reader.seek(0)
