@@ -76,7 +76,7 @@ from bq.util.paths import data_path
 from bq.util.urlutil import strip_url_params
 from bq.util.hash import make_uniq_code, is_uniq_code
 
-from .bisquik_resource import BisquikResource, force_dbload, RESOURCE_HANDLERS
+from .bisquik_resource import BisquikResource, force_dbload
 from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types,  resource_permission
 from .resource_query import prepare_permissions, RESOURCE_READ, RESOURCE_EDIT
 from .resource_auth import resource_acl, check_access
@@ -130,13 +130,8 @@ class DataServerController(ServiceController):
             resource_controller = self.get_child_resource('resource')
             path.insert(0,token)
         else:
-            handler =  RESOURCE_HANDLERS.get (token, None)
-            if handler:
-                resource_controller = handler (self.url)
-            else:
-                resource_controller = self.get_child_resource (token)
+            resource_controller = self.get_child_resource (token)
         return resource_controller._default (*path, **kw)
-
 
 
     #################################################################
