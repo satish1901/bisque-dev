@@ -31,7 +31,7 @@ class AutoRegister (object):
             model.DBSession.add(g)
         return g
 
-    def validate_user(self, user_name, values ):
+    def validate_user(self, user_name ):
         name_match = model.User.by_user_name( user_name )
         if name_match is not None:
             log.info("found existing user: name %s by user %s " ,  user_name, str(name_match))
