@@ -46,9 +46,12 @@ SITE_CFG = 'site.cfg'
 #         return False
 
 def kill_process(pid):
-    p = psutil.Process(pid)
-    p.terminate()
-    p.wait()
+    try:
+        p = psutil.Process(pid)
+        p.terminate()
+        p.wait()
+    except psutil.NoSuchProcess:
+        pass
 
 #####################################################################
 # utils
