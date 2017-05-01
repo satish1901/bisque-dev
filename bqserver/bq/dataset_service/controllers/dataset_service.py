@@ -11,7 +11,9 @@ from bq.dataset_service import model
 
 from bq import data_service
 from bq import module_service
-from bq.data_service.controllers.resource_auth import  append_share_handler
+from bq.data_service.controllers.bisquik_resource import BisquikResource, RESOURCE_HANDLERS
+from bq.data_service.controllers.resource_auth import  append_share_handler, resource_acl_query
+from bq.data_service.controllers.resource_query import RESOURCE_READ, RESOURCE_EDIT
 
 
 log = logging.getLogger('bq.dataset')
@@ -166,7 +168,7 @@ def iterate(duri=None, operation='idem', dataset=None, members = None, last= Fal
 
     log.debug ("%s on  members %s" , str( op ),  [ x.text for x in members ] )
     results = etree.Element('resource', uri=request.url)
-    if last:
+    if last and len(members):
         last_member = members[-1]
         members = members[:-1]
 
@@ -186,7 +188,8 @@ def iterate(duri=None, operation='idem', dataset=None, members = None, last= Fal
 
 
 
-class DatasetServer(ServiceController):
+#class DatasetServer(ServiceController):
+class DatasetServer(BisquikResource):
     """Server side actions on datasets
     """
     service_type = "dataset_service"
@@ -201,7 +204,7 @@ class DatasetServer(ServiceController):
         }
 
     def __init__(self, server_url):
-        super(DatasetServer, self).__init__(server_url)
+        super(DatasetServer, self).__init__(table="dataset", url = server_url)
 
     def iterate(self, duri=None, operation='idem', dataset=None, members = None, last= False, **kw):
         return iterate(duri,operation,dataset, members, last, **kw)
@@ -280,6 +283,30 @@ class DatasetServer(ServiceController):
         return "<resource/>"
 
 
+    @expose(content_type='text/xml') #, format='xml')
+    def modify(self, resource, xml, **kw):
+        log.info ("DATASET MODIFY")
+        super(DatasetServer, self).modify (resource, xml, **kw)
+
+
+    @expose(content_type='text/xml') #, format='xml')
+    def append(self, resource, xml, **kw):
+        log.info ("DATASET APPEND")
+        oldview = kw.pop('view', None)
+        dataset = super(DatasetServer, self).modify (resource, xml, view='tree', **kw)
+        resource = self.check_access (resource, RESOURCE_EDIT)
+        new_element = dataset [-1]
+        log.debug ("NEW EL %s", str(new_element))
+        acls = etree.Element ('acls')
+        acl_list = resource_acl_query (resource, False, acls)
+        #resource_acl ()
+
+
+
+
+
+# This line will allow data_service to redirect all HTTP request to this server (Disabled for now)
+#RESOURCE_HANDLERS['dataset'] = DatasetServer
 
 
 #---------------------------------------------------------------------------------------
