@@ -249,7 +249,9 @@ ignore-mixin-members=yes
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=repoze.what,repoze.who,numpy,cv2
+#ignored-modules=repoze.what,repoze.who,numpy,cv2
+ignored-modules=repoze,numpy,cv2
+
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set). This supports can work
