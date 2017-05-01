@@ -57,7 +57,6 @@ import logging
 import string
 import urllib
 import posixpath
-import time
 
 from lxml import etree
 from sqlalchemy.exc import IntegrityError
@@ -279,22 +278,19 @@ class MountServer(TGController):
     # Core
     def _create_root_mount(self):
         'create/find hidden root store for each user'
-        for x in range(2):
-            found_root = None
-            root = data_service.query('store', resource_unid='(root)', view='full')
-            if len(root) == 0:
-                found_root=  self._create_default_mounts()
-            elif len(root) == 1:
-                found_root =  self._create_default_mounts(root[0])
-            elif len(root) > 1:
-                log.error("Root store created more than once: %s ", etree.tostring(root))
-                return None
-            #
-            if found_root:
-                self.mapuris(found_root)
-                return found_root
-        log.error ("Could not find/create root mount")
-        return None
+
+        root = data_service.query('store', resource_unid='(root)', view='full')
+        #root = data_service.query('store', resource_unid='(root)', view='short')
+        if len(root) == 0:
+            found_root=  self._create_default_mounts()
+        if len(root) == 1:
+            found_root =  self._create_default_mounts(root[0])
+        elif len(root) > 1:
+            log.error("Root store created more than once: %s ", etree.tostring(root))
+            return None
+
+        self.mapuris(found_root)
+        return found_root
 
     def mapuris (self, store_resource, top="/blob_service/store"):
         log.debug ("STORE RESOURCE -> %s", etree.tostring (store_resource))
@@ -357,14 +353,7 @@ class MountServer(TGController):
 
         if update:
             log.debug ("updating %s", etree.tostring(root))
-            for x in range (2):
-                try:
-                    return data_service.update(root, new_resource=root, replace=False, view='full')
-                except IntegrityError:
-                    time.sleep (1)
-            log.warn ("Integrity errors while creating root mount")
-            return None
-
+            return data_service.update(root, new_resource=root, replace=False, view='full')
         return root
 
 
@@ -410,20 +399,13 @@ class MountServer(TGController):
     def _load_root_mount(self):
         "fetch the root mount and submounts"
         #root = data_service.query('store', resource_unid='(root)', view='full', cache=False)
-        for x in range(2):
-            root = data_service.query('store', resource_unid='(root)', view='full')
-            #root = data_service.query('store', resource_unid='(root)', view='short', cache=False)
-            if len(root) == 1:
-                root =  self._create_default_mounts(root[0])
-            elif len(root) == 0:
-                raise IllegalOperation ("No root store not valid %s", etree.tostring (root))
-            else:
-                root =  root[0]
-            if root is not None:
-                return root
-        log.error ("Could not load root store")
-        return None
-
+        root = data_service.query('store', resource_unid='(root)', view='full')
+        #root = data_service.query('store', resource_unid='(root)', view='short', cache=False)
+        if len(root) == 1:
+            return self._create_default_mounts(root[0])
+        elif len(root) == 0:
+            raise IllegalOperation ("No root store not valid %s", etree.tostring (root))
+        return root[0]
 
     def _load_store(self, store_name):
         'Simply load the store named by parameter.. will return short version'
@@ -541,8 +523,8 @@ class MountServer(TGController):
             # KGK: TEMPORARY .. this should check readability by the driver
             try:
                 driver = self._get_driver(store)
-            except IllegalOperation, e:
-                log.warn ("Skipping store %s : %s", store_name, str(e))
+            except IllegalOperation:
+                log.warn ("Skipping store %s", store_name)
                 continue
             if  driver.valid (storeurls[0]):
                 # All *must* be valid for the same store

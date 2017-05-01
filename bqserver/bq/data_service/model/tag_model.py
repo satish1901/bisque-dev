@@ -552,7 +552,6 @@ class Value(object):
         elif isinstance(v, Taggable):
             self.objref = v
             self.valnum = None
-            #self.valstr = str(v)  # This works and stores the resource_uniq in the valstr
             self.valstr = None
 
     def remvalue(self):
