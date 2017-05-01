@@ -89,13 +89,13 @@ use = bq.core.lib.autoreg:AutoRegister
 # dependency:
 # [plugin:cas_auth]
 # use = bq.core.lib.cas_auth:make_plugin
-# cas_base_url = https://auth.iplantcollaborative.org/cas
-# login_form = /auth_service/login
+# cas_base_url = https://auth.iplantcollaborative.org/cas4
 # login_path  = /auth_service/login_handler
 # logout_path =/auth_service/logout_handler
 # post_logout = /auth_service/post_logout
 # remember_name = auth_tkt
-# auto_register=autoregister
+# validate_plugin=autoregister:register_user
+# validate_plugin=autoregister:validate_user
 
 
 ################  Configuration  ########################
@@ -143,4 +143,3 @@ plugins =
     bq.core.lib.sqlauth:md_plugin
     bq.core.lib.sqlauth:md_group_plugin
 #    autoregister
-

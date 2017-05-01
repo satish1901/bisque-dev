@@ -1,29 +1,26 @@
-from urllib import quote_plus, urlencode
-import requests
+from urllib import quote_plus  #, urlencode
 import logging
 
+import requests
 from webob import Request, Response
-from webob.exc import HTTPFound, HTTPUnauthorized
+from webob.exc import HTTPFound  #, HTTPUnauthorized
 
 from zope.interface import implements
 from repoze.who.interfaces import IChallenger, IIdentifier, IAuthenticator
-from repoze.who.interfaces import IRequestClassifier, IChallengeDecider
+#from repoze.who.interfaces import IRequestClassifier, IChallengeDecider
 
 log = logging.getLogger('bq.auth.cas')
 
 def make_plugin(cas_base_url,
                 saml_validate = None,
-                login_form="/login",
                 login_path="/login_handler",
                 logout_path="/logout_handler",
                 post_logout = "/post_logout",
                 remember_name="auth_tkt",
-                auto_register = None,
+                validate_plugin = None,
                 ):
-    return CASPlugin (cas_base_url,  saml_validate,
-                      login_form, login_path,
-                      logout_path, post_logout,
-                      remember_name, auto_register)
+    return CASPlugin (cas_base_url,  saml_validate, login_path, logout_path, post_logout,
+                      remember_name, validate_plugin)
 
 
 class CASPlugin(object):
@@ -32,19 +29,27 @@ class CASPlugin(object):
     def __init__(self,
                  cas_base_url,
                  saml_validate,
-                 login_form,
                  login_path,
                  logout_path,
                  post_logout,
                  rememberer_name,
-                 auto_register):
+                 validate_plugin):
+        """
+
+        @param cas_base_url : a cas provider url
+        @param saml_validate : saml endpoint or None (will be cas_base_ur/samlValidate
+        @param login_path : filter to redirect to cas login
+        @param logout_path : filter to redirect to cas on logout
+        @param post_logout : an application path to visit after logout
+        @param rememberer_name: who plugin name for the remember (auth_tk)
+        @param validate_plugin : A pluginname : method i.e. autoreg:validate or autoreg:register
+        """
         if cas_base_url[-1] == '/':
             cas_base_url = cas_base_url[0:-1]
         self.cas_login_url = "%s/login" % cas_base_url
         self.cas_logout_url = "%s/logout" % cas_base_url
         self.cas_validate_url = "%s/validate" % cas_base_url
         self.cas_saml_validate = saml_validate or ("%s/samlValidate" % cas_base_url)
-        self.login_form = login_form
         self.logout_path = logout_path
         self.login_path = login_path
         self.post_logout = post_logout
@@ -52,7 +57,9 @@ class CASPlugin(object):
         # implements IIdentifier, to handle remember and forget duties
         # (ala a cookie plugin or a session plugin)
         self.rememberer_name = rememberer_name
-        self.auto_register = auto_register
+        # validate_plugin is atring "pluginname:[register:validate]"
+        if validate_plugin:
+            self.validate_plugin, self.validate_method  = validate_plugin.split (':')
         self.http = requests.Session()
         self.http.verify = False
 
@@ -63,7 +70,7 @@ class CASPlugin(object):
         request = Request(environ, charset="utf8")
         service_url = request.url
 
-        login_type = request.params.get ('login_type', '')
+        #login_type = request.params.get ('login_type', '')
         # if environ['PATH_INFO'] == self.logout_path:
         #     # Let's log the user out without challenging.
         #     came_from = environ.get('came_from', '')
@@ -77,7 +84,7 @@ class CASPlugin(object):
         # else:
         #if login_type == 'cas':
         if request.path == self.login_path and environ.get('repoze.who.plugins.cas'): #  and request.params.get('login_type', None)=='cas':
-            log.debug ('CAS challenge redirect to %s' % self.cas_login_url)
+            log.debug ('CAS challenge redirect to %s', self.cas_login_url)
             destination =  "%s?service=%s" % (self.cas_login_url, quote_plus(service_url))
             return HTTPFound(location=destination)
 
@@ -109,13 +116,13 @@ class CASPlugin(object):
 
         # first test for logout as we then don't need the rest
         if request.path == self.logout_path:
-            log.debug ("cas logout:  %s " % environ)
+            #log.debug ("cas logout:  %s " , environ)
             tokens = environ.get('REMOTE_USER_TOKENS', '')
             cas_ticket = None
             for token in tokens:
                 cas_ticket = token.startswith('cas:') and token[4:]
                 break
-            log.debug ("logout cas ticket %s" % cas_ticket)
+            log.debug ("logout cas ticket %s" , cas_ticket)
             if cas_ticket:
                 res = Response()
                 # set forget headers
@@ -141,10 +148,10 @@ class CASPlugin(object):
         # when the openid provider redirects the user back.
         if request.path == self.login_path: #  and request.params.get('login_type', None)=='cas':
             ticket = request.params.get('ticket', None)
-            log.debug ("login_path ticket=%s" % ticket)
+            log.debug ("login_path ticket=%s" , ticket)
             if ticket is None:
                 res = Response()
-                log.debug ('CAS challenge redirect to %s' % self.cas_login_url)
+                log.debug ('CAS challenge redirect to %s', self.cas_login_url)
                 res.location =  "%s?service=%s" % (self.cas_login_url, quote_plus(request.url))
                 res.status = 302
                 environ['repoze.who.application'] = res
@@ -180,14 +187,14 @@ class CASPlugin(object):
             response = self.http.get (validate_url)
             if response.status_code == requests.codes.ok: #pylint: disable=no-member
                 okayed, username = response.content.split("\n")[:2]
-                log.debug ('validate got %s %s' % (okayed, username))
+                log.debug ('validate got %s user %s' ,  okayed, username)
                 if okayed == 'yes':
                     return username
         return None
 
 
     def _validate_saml(self, environ, identity):
-        from cas_saml import create_soap_saml, parse_soap_saml
+        from .cas_saml import create_soap_saml, parse_soap_saml
 
         request = Request(environ)
         if identity.has_key('repoze.who.plugins.cas.ticket'):
@@ -214,16 +221,17 @@ class CASPlugin(object):
 
     #IAuthenticator
     def authenticate(self, environ, identity):
-        ''
+        """ Authenticate the identified user.
+        """
         user_id = None
         if identity.get ('repoze.who.plugins.cas.ticket'):
             if self.cas_saml_validate:
                 user_id =  self._validate_saml(environ, identity)
-                log.debug ('CAS authenticate : %s' % user_id)
+                log.debug ('CAS authenticate : %s' , user_id)
             # CAS validate the ticket and found the user so check if there is a local user.
-            if self.auto_register and user_id:
+            if self.validate_plugin and user_id:
                 log.debug ('CAS autoregister')
-                user_id = self._auto_register(environ, identity, user_id)
+                user_id = self._validate_register(environ, identity, user_id)
             del identity['repoze.who.plugins.cas.ticket']
             if user_id :
                 self._redirect_to_loggedin(environ)
@@ -231,11 +239,11 @@ class CASPlugin(object):
         return user_id
 
 
-    def _auto_register(self, environ, identity, user_id):
-        registration = environ['repoze.who.plugins'].get(self.auto_register)
-        log.debug('looking for %s found %s ' % (self.auto_register, registration))
+    def _validate_register(self, environ, identity, user_id):
+        plugin = environ['repoze.who.plugins'].get(self.validate_plugin)
+        log.debug('looking for plugin %s found %s '  , self.validate_plugin, plugin)
 
-        if registration:
+        if plugin:
             user_name = identity["repoze.who.plugins.cas.user_id"]
             name  = user_name
             email = '%s@nowhere.org' % name
@@ -248,12 +256,19 @@ class CASPlugin(object):
 
             if identity.has_key('repoze.who.plugins.cas.email'):
                 email =  identity["repoze.who.plugins.cas.email"]
-            return registration.register_user(user_name, values = {
+
+            validate_method = getattr (plugin, self.validate_method)
+            if validate_method is None or not callable(validate_method):
+                log.error ("%s is not a callable method on plugin %s", self.validate_method, self.validate_plugin)
+                return None
+
+            return validate_method(user_name, values = {
                     'display_name' : name,
                     'email_address' : email,
                     'identifier'    : 'cas',
                     #password =  illegal password so all authentication goes through openid
                     })
-        else:
-            log.debug('%s not found in %s. Ensure autoreg is enabled' % (self.auto_register, environ['repoze.who.plugins']))
-        return user_id
+
+        log.debug('%s not found in %s. Ensure autoreg is enabled in who.ini',
+                  self.validate_plugin, environ['repoze.who.plugins'])
+        return None
