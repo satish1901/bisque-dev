@@ -117,12 +117,8 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
             model: 'BQ.SpreadsheetMatching.Model',
             proxy: {
                 type: 'memory',
-                reader: {
-                    type: 'json',
-                },
-                writer: {
-                    type: 'json',
-                },
+                reader: 'json',
+                writer: 'json',
             },
 
         });
@@ -140,6 +136,12 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
                         return false;
                 },
                 edit: function( editor, context ) {
+                    // dima: update original vector
+                    // seems i'm doing something wrong but writes do not propagate back to the original array
+                    var record = context.record;
+                    record.raw.header = this.copyStringNonEmpty(record.data.header);
+                    record.raw.tag = this.copyStringNonEmpty(record.data.tag);
+                    record.raw.value = this.copyStringNonEmpty(record.data.value);
                     this.update_resource();
                 },
             },
@@ -240,6 +242,11 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
             scope: this,
             disableCaching: false,
         });
+    },
+
+    copyStringNonEmpty: function(v) {
+        if (v==='') return undefined;
+        return v;
     },
 
     setValueUI : function(v) {
@@ -360,6 +367,10 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
             record.set('ignored', false);
         else
             record.set('ignored', true);
+
+        // dima: update original vector
+        // seems i'm doing something wrong but writes do not propagate back to the original array
+        record.raw.ignored = record.data.ignored;
 
         this.update_resource();
     },
