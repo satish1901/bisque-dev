@@ -765,7 +765,10 @@ ImgViewer.prototype.newPhys = function (phys) {
 
 ImgViewer.prototype.is_geo_enabeled = function() {
     var phys = this.imagephys;
-    return (!this.disable_geo && phys && phys.geo && phys.geo.proj4 && phys.geo.res && phys.geo.top_left);
+    if (this.disable_geo) return false;
+    if (!phys || !phys.geo) return false;
+    if (phys.geo.center) return true;
+    return (phys.geo.proj4 && phys.geo.res && phys.geo.top_left);
 };
 
 ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
@@ -790,7 +793,7 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
     }
 
     // print geo coordinates if available
-    if (this.is_geo_enabeled()) {
+    if (this.is_geo_enabeled() && phys.geo.proj4 && phys.geo.res && phys.geo.top_left) {
         var c = phys.coordinate_to_phys(pt, true);
         if (c)
             text += ' Geo:('+BQ.util.formatFloat(c[0], 4, 6, sep)+','+BQ.util.formatFloat(c[1], 4, 6, sep)+')';
