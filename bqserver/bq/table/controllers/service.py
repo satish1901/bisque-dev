@@ -241,6 +241,10 @@ class TableController(ServiceController):
 
         log.info('Table service started...')
 
+    #-----------------------------------------------------------------------------------------
+    # Exposed RESTful API
+    #-----------------------------------------------------------------------------------------
+
     #@expose('bq.table.templates.index')
     @expose(content_type='text/xml')
     def index(self, **kw):
@@ -248,6 +252,15 @@ class TableController(ServiceController):
         response = etree.Element ('resource', uri=self.baseuri)
         etree.SubElement(response, 'method', name='%s/ID[/PATH1/PATH2/...][/RANGE][/COMMAND:PARS]'%self.baseuri, value='Executes operations for a given table ID.')
         return etree.tostring(response)
+
+    @expose()
+    def _default(self, *args, **kw):
+        """find export plugin and run export"""
+        return self.get_table(request.path_qs.replace(self.baseuri, '', 1), **kw)
+
+    #-----------------------------------------------------------------------------------------
+    # Internal API
+    #-----------------------------------------------------------------------------------------
 
     def check_access(self, uniq):
         resource = data_service.resource_load (uniq = uniq)
@@ -258,26 +271,25 @@ class TableController(ServiceController):
                 abort(401)
         return resource
 
-    @expose()
-    def _default(self, *args, **kw):
+    def get_table(self, path, **kw):
         """find export plugin and run export"""
         log.info ("STARTING table (%s): %s", datetime.now().isoformat(), request.url)
-        path = request.path_qs.replace(self.baseuri, '', 1).split('/')
+        path = path.split('/')
         path = [urllib.unquote(p) for p in path if len(p)>0]
         log.debug("Path: %s", path)
-
-        # /table/ID[/PATH1/PATH2/...][/RANGE][/COMMAND:PARS]
-        if len(path)<1:
-            abort(400, 'Element ID is required as a first parameter, ex: /table/00-XXXXX/format:xml' )
-        uniq = path.pop(0)
-
-        # check permissions
-        resource = self.check_access(uniq)
-        log.debug('Resource: %s', etree.tostring(resource))
 
         # load table
         table = None
         try:
+            # /table/ID[/PATH1/PATH2/...][/RANGE][/COMMAND:PARS]
+            if len(path)<1:
+                abort(400, 'Element ID is required as a first parameter, ex: /table/00-XXXXX/format:xml' )
+            uniq = path.pop(0)
+
+            # check permissions
+            resource = self.check_access(uniq)
+            log.debug('Resource: %s', etree.tostring(resource))
+
             for n, r in self.importers.plugins.iteritems():
                 if '.' in resource.get('value', '') and resource.get('value').split('.')[-1].lower() not in r.ext:
                     # resource has filename with extension and extension does not match plugins supported extensions
@@ -341,6 +353,7 @@ class TableController(ServiceController):
             if table is not None:
                 table.close()
             log.info ("FINISHED (%s): %s", datetime.now().isoformat(), request.url)
+
 
 
 #---------------------------------------------------------------------------------------
