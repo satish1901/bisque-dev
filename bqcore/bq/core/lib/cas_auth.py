@@ -18,9 +18,10 @@ def make_plugin(cas_base_url,
                 post_logout = "/post_logout",
                 remember_name="auth_tkt",
                 validate_plugin = None,
+                registration_url = None,
                 ):
     return CASPlugin (cas_base_url,  saml_validate, login_path, logout_path, post_logout,
-                      remember_name, validate_plugin)
+                      remember_name, validate_plugin, registration_url)
 
 
 class CASPlugin(object):
@@ -33,7 +34,8 @@ class CASPlugin(object):
                  logout_path,
                  post_logout,
                  rememberer_name,
-                 validate_plugin):
+                 validate_plugin,
+                 registration_url,):
         """
 
         @param cas_base_url : a cas provider url
@@ -53,6 +55,7 @@ class CASPlugin(object):
         self.logout_path = logout_path
         self.login_path = login_path
         self.post_logout = post_logout
+        self.registration_url = registration_url or self.cas_login_url
         # rememberer_name is the name of another configured plugin which
         # implements IIdentifier, to handle remember and forget duties
         # (ala a cookie plugin or a session plugin)
@@ -173,6 +176,19 @@ class CASPlugin(object):
         res.location = came_from
         environ['repoze.who.application'] = res
 
+    def _redirect_invalid (self,environ):
+
+        BODY = """
+<h1>Invalid User</h1>
+<b>The user is invalid or not recognized for this service. Please check your authorizations or credentials </b>
+<br> <a href="%s">Logout</a>
+<br><a href="%s">Registration management</a>
+"""  % (self.cas_logout_url, self.registration_url)
+
+        res = Response(BODY)
+        res.status = 200
+        environ['repoze.who.application'] = res
+
 
     def _validate_simple(self, environ, identity):
         request = Request(environ)
@@ -235,6 +251,8 @@ class CASPlugin(object):
             del identity['repoze.who.plugins.cas.ticket']
             if user_id :
                 self._redirect_to_loggedin(environ)
+            else:
+                self._redirect_invalid(environ)
 
         return user_id
 
