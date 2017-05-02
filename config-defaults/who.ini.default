@@ -96,7 +96,7 @@ use = bq.core.lib.autoreg:AutoRegister
 # remember_name = auth_tkt
 # validate_plugin=autoregister:register_user
 # validate_plugin=autoregister:validate_user
-
+# registration_url = https://user.cyverse.org
 
 ################  Configuration  ########################
 # organized into sections see repoze.who docs for real explanation
