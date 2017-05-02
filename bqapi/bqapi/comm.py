@@ -477,6 +477,7 @@ class BQSession(object):
         else:
             name = p.get('name')
 
+        if p is None: return None
         values = p.xpath('value')
         if len(values)<1:
             v = p.get('value')
