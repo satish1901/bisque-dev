@@ -2072,7 +2072,7 @@ BQImagePhys.prototype.onloadIS = function (image, xml) {
           this.geo.res = res || this.geo.res;
           this.geo.center = center || this.geo.center;
       } else {
-          this.geo = undefined;
+          //this.geo = undefined;
       }
   }
 
