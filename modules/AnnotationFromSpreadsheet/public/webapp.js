@@ -58,7 +58,7 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
     layout: 'fit',
 
     system_tags: [{
-        search: '',
+        search: null,
         tag: 'file.name',
         system: true,
         readonly: true,
@@ -88,6 +88,11 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
         tag: 'res.height',
         system: true,
         description: 'System interpretable annotation defining image resolution',
+    }, {
+        search: null,
+        tag: 'res.units',
+        system: true,
+        description: 'System interpretable annotation defining image resolution',
     }],
 
     initComponent : function() {
@@ -104,14 +109,20 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
         this.tag_matches = resource.find_tags('matches');
         this.tag_spreadsheet_uuid = resource.find_tags('spreadsheet_uuid');
 
+        this.matches = [];
         this.store = Ext.create('Ext.data.Store', {
             autoLoad: false,
+            autoSync: true,
+            data: this.matches,
             model: 'BQ.SpreadsheetMatching.Model',
             proxy: {
                 type: 'memory',
                 reader: {
                     type: 'json',
-                }
+                },
+                writer: {
+                    type: 'json',
+                },
             },
 
         });
@@ -270,7 +281,8 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
 
     parseHeaders : function() {
         var i=0, j=0, h=null, tag=null, resolution_width=null, ignored=false, s=null;
-        this.matches = [];
+        //this.matches = [];
+        this.matches.length = 0;
 
         // define the file name column
         this.system_tags[0].search = this.headers[0];
@@ -320,7 +332,8 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
             }
         }
 
-        this.store.loadData( this.matches );
+        //this.store.loadData( this.matches );
+        this.store.reload();
         this.update_resource();
     },
 
@@ -331,7 +344,6 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
         if (record.get('ignored') === true)
             cls += ' ignored';
         meta.tdCls = cls;
-
 
         if (record.get('description'))
             meta.tdAttr = Ext.String.format('data-qtip="{0}"', record.get('description'));
@@ -360,8 +372,9 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
             if (m.ignored === true) continue;
 
             this.tag_matches.addtag({
-                name: m.value ? m.tag : m.header,
-                value: m.value ? m.value : m.tag,
+                type: m.tag,
+                name: m.header,
+                value: m.value,
             });
         }
     },
@@ -374,7 +387,7 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
     },
 
     isValid: function() {
-        if (!this.resource.value) {
+        if (this.tag_matches.tags.length === 0) {
             var template = this.resource.template || {},
                 msg = template.fail_message || 'You need to select an option!';
             if (template.allowBlank) return true;

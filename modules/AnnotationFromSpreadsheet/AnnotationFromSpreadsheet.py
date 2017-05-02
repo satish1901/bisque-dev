@@ -5,6 +5,7 @@ from operator import itemgetter
 import itertools
 from datetime import datetime
 import copy
+import json
 
 try:
     from lxml import etree as etree
@@ -21,136 +22,55 @@ log = logging.getLogger('AnnotationFromSpreadsheet')
 # utils
 #------------------------------------------------------------------
 
-def find_matches(image, preferred='secondary'):
-    gobs = image.xpath('//gobject')
-    if len(gobs)<1:
-        return []
+system_tags = [
+    'file.name',
+    'geo.latitude',
+    'geo.longitude',
+    'geo.altitude',
+    'res.width',
+    'res.height',
+    'res.units',
+]
 
-    uuid = image.get('resource_uniq')
-    filename = image.get('name')
-    uri = image.get('uri')
+def get_value_by_type(t, matches_by_type, headers, row):
+    if t not in matches_by_type:
+        return None
+    k = matches_by_type[t]['name']
+    try:
+        return row[headers[k]]
+    except KeyError:
+        return matches_by_type[t]['value']
 
-    points = []
-    for g in gobs:
-        try:
-            t = g.get('type')
-            v = g.xpath('*/vertex')[0]
-            x = float(v.get('x'))
-            y = float(v.get('y'))
-            points.append({'g': g, 'coord': (x,y), 'type': t})
-        except IndexError:
-            print 'IndexError in %s'%g
-            pass
-    points = sorted(points, key=itemgetter('coord'))
+def get_image_meta(resource):
+    tag = resource.find('tag[@name="image_meta"]')
+    if tag is None:
+        tag = etree.SubElement(resource, 'tag', name='image_meta', type='image_meta')
+    return tag
 
-    delta = 150
-    filtered = []
-    surveyed = []
-    i = 0
-    for p in reversed(points):
-        i=i+1
-        matched = [p]
-        points.remove(p)
-        if p in surveyed:
-            continue
+def set_value(tag, value):
+    if value is not None:
+        tag.set('value', str(value))
 
-        x1,y1 = p['coord']
-        points2 = points
-        for pp in reversed(points2):
-            x2,y2 = pp['coord']
-            if abs(x1-x2)<delta and abs(y1-y2)<delta:
-                matched.append(pp)
-                surveyed.append(pp)
+def set_tag(parent, name, value, path=None, overwrite=False):
+    #print 'Adding %s: %s'%(name, value)
+    if path is not None:
+        pp = path.split('/')
+        for p in pp:
+            parent = set_tag(parent, p, value=None, path=None, overwrite=True)
 
-        selected = None
-        if len(matched) == 1:
-            selected = p
-        else:
-            for pp in matched:
-                if pp['type'].lower().startswith(preferred):
-                    selected = pp
-                    break
+    if overwrite is False:
+        tag = etree.SubElement(parent, 'tag', name=name)
+        set_value(tag, value)
+        return tag
 
-        if selected is None:
-            selected = matched[0]
-            print 'In %s (%s) could not select from matched points'%(filename, uri)
-            for m in matched:
-                print 'matched: %s, %s'%(m['type'], m['coord'])
-            print 'Selected: %s, %s'%(selected['type'], selected['coord'])
+    tag = parent.find('tag[@name="%s"]'%name)
+    if tag is None:
+        tag = etree.SubElement(parent, 'tag', name=name)
+        set_value(tag, value)
+        return tag
 
-        filtered.append(selected)
-
-
-    filtered = list(reversed(filtered))
-
-    if len(filtered)!=100 and len(filtered) != len(gobs):
-        print '%s (%s) found %s preferred of %s'%(filename, uri, len(filtered), len(gobs))
-    elif len(gobs)<100:
-        print '%s (%s) has only %s annotations'%(filename, uri, len(gobs))
-    return filtered
-
-def find_tags (node, unique_tags, ignore_tags, use_full_path=False, path=None):
-    path = path or []
-    # get unique tag names
-    T = {}
-    tags = node.xpath('tag')
-    for t in tags:
-        np = None
-        n = t.get('name')
-        v = t.get('value')
-        c = n
-        if n in ignore_tags:
-            continue
-
-        if n is not None:
-            if use_full_path is True:
-                np = copy.deepcopy(path)
-                np.append(n)
-                c = '/'.join(np)
-            unique_tags.add(c)
-
-            if v is not None:
-                T[c] = v
-
-            TT = find_tags (t, unique_tags, ignore_tags, use_full_path=use_full_path, path=np or path)
-            T.update(TT)
-
-    return T
-
-def compute_occurrences (image, matches, unique_gobs, ignore_gobs, use_full_path=False):
-    # get gob histogram
-    h = {}
-    for m in matches:
-        c = m['type']
-        if c in ignore_gobs:
-            continue
-        c = c.replace('Primary - ', '').replace('Secondary - ', '')
-
-        if use_full_path is True:
-            # get path
-            path = []
-            g = m['g'].getparent()
-            while g is not None:
-                if g.tag != 'gobject':
-                    break
-                path.append(g.get('type'))
-                g = g.getparent()
-
-            # skip gob if any path part is ignored
-            pint = set(path).intersection(ignore_gobs)
-            if len(pint)>0:
-                continue
-            # get type
-            path.append(c)
-            c = '/'.join(path)
-
-        unique_gobs.add(c)
-        try:
-            h[c] = h[c] + 1
-        except KeyError:
-            h[c] = 1
-
-    return h
+    set_value(tag, value)
+    return tag
 
 #------------------------------------------------------------------
 # module class
@@ -164,23 +84,52 @@ class AnnotationHistograms(object):
         bq.update_mex('Starting')
 
         image_url = bq.parameter_value(name='dataset_url')
-        resource_type = bq.parameter_value(name='resource_type').lower()
+        #resource_type = bq.parameter_value(name='resource_type').lower()
         overwrite_values = bq.parameter_value(name='overwrite_values') or True
         mex = bq.mex.xmltree
 
-        # fetch spreadsheet mapping
-        # spreadsheet_uuid
-        # matches
-        # geographical_longitude
-        # geographical_latitude
-        # image_resolution_width
-        # image_resolution_height
-        # image_resolution_units
+        tag_matching = mex.xpath('tag[@name="inputs"]/tag[@name="tag_matching"]')[0]
+        spreadsheet_uuid = tag_matching.xpath('tag[@name="spreadsheet_uuid"]')[0].get('value')
+        tag_matches = tag_matching.xpath('tag[@name="matches"]')[0]
+        matches = {}
+        matches_by_type = {}
+        for m in tag_matches:
+            t = m.get('type')
+            n = m.get('name')
+            v = m.get('value')
+            k = n or t
+            if k not in matches:
+                matches[k] = []
+            mm = {
+                'type': t,
+                'name': n,
+                'value': v,
+            }
+            matches[k].append(mm)
+            matches_by_type[t] = mm
 
-        # Geo.Coordinates.center = 'x,y,z'
-        # pixel_resolution_x = x
-        # pixel_resolution_unit_x = x
+        print '\n\nmatches'
+        for k,m in matches.iteritems():
+            print '%s: %s'%(k, m)
 
+        print '\n\nmatches_by_type'
+        for k,m in matches_by_type.iteritems():
+            print '%s: %s'%(k, m)
+
+        # fetch spreadsheet and load
+        #url = '%s/table/%s/0;100000,/format:json'%(bq.bisque_root, spreadsheet_uuid)
+        json_data = bq.fetchblob('/table/%s/0;100000,/format:json'%spreadsheet_uuid)
+        table = json.loads(json_data)
+        data = table['data']
+
+        # index columns by header title
+        headers = dict([(h, i) for i,h in enumerate(table['headers'])])
+        print '\n\nheaders: ',headers
+
+        # index rows by file name
+        n = headers[matches_by_type['file.name']['name']]
+        files = dict([ (r[n].strip(), i) for i,r in enumerate(data)])
+        #print '\n\nFiles: ',files
 
         # fetch datasets
         mex_id = mex_url.split('/')[-1]
@@ -191,10 +140,9 @@ class AnnotationHistograms(object):
         else:
             datasets = [image_url]
 
-        # compute histograms per image
-        unique_gobs = set()
-        unique_tags = set()
-        images = []
+        # annotate resources
+        print '\n\nAnnotating\n'
+        resources = {}
         for ds_url in datasets:
             dataset = bq.fetchxml (ds_url, view='full')
             dataset_name = dataset.get('name')
@@ -202,52 +150,82 @@ class AnnotationHistograms(object):
 
             refs = dataset.xpath('value[@type="object"]')
             for r in refs:
-                resource = bq.fetchxml (r.text, view='deep')
-                #matches = find_matches(image, preferred='secondary')
-                #if len(matches)<1:
-                #    continue
+                image_meta = None
+                uri = r.text
+                resource = bq.fetchxml (uri, view='deep')
+                name = resource.get('name', '').strip()
+                print '>>> Filename: ', name
+                try:
+                    n = files[name]
+                    row = data[n]
+                except KeyError:
+                    resources[name] = ''
+                    continue
 
-                # i = Occurrences()
-                # i.dataset_name = dataset.get('name')
-                # i.image_name = image.get('name')
-                # i.tags = find_tags (image, unique_tags, ignore_tags, use_full_path)
-                # i.hist = compute_occurrences(image, matches, unique_gobs, ignore_gobs, use_full_path)
-                # images.append(i)
+                resources[name] = 'Annotated'
+                #print 'Row: ', row
 
-        # write complete histogram to a CSV
-        unique_tags = sorted(unique_tags)
-        unique_gobs = sorted(unique_gobs)
+                # iterate over headers and create annotations
+                for k,m in matches.iteritems():
+                    if k not in headers: continue # if key not found in spreadsheet headers
+                    v = str(row[headers[k]])
+                    #print '%s: %s'%(k, v)
+                    for mm in m:
+                        tag = mm['type']
+                        if tag in system_tags: continue # skip system tags, we'll use them later creating specific organization
+                        set_tag(resource, name=tag, value=v, path=None, overwrite=overwrite_values)
 
-        header = ['dataset', 'filename']
-        header.extend(unique_tags)
-        header.extend(unique_gobs)
+                # Geo tags
+                lat = get_value_by_type('geo.latitude', matches_by_type, headers, row)
+                lon = get_value_by_type('geo.longitude', matches_by_type, headers, row)
+                alt = get_value_by_type('geo.altitude', matches_by_type, headers, row)
+                if lat is not None and lon is not None:
+                    #if image_meta is None:
+                    #    image_meta = get_image_meta(resource)
+                    v = '%s,%s'%(lat,lon)
+                    if alt is not None:
+                        v = '%s,%s'%(v, alt)
+                    #set_tag(image_meta, 'center', v, path='Geo/Coordinates', overwrite=True)
+                    set_tag(resource, 'center', v, path='Geo/Coordinates', overwrite=True)
 
-        csv_filename = 'histograms_one_layer_%s_%s.csv'%(dt, mex_id)
-        with open(csv_filename, 'wb') as csvfile:
-            w = csv.writer(csvfile, delimiter=',')
-            w.writerow(header)
+                # res tags
+                w = get_value_by_type('res.width', matches_by_type, headers, row)
+                h = get_value_by_type('res.height', matches_by_type, headers, row)
+                u = get_value_by_type('res.units', matches_by_type, headers, row)
+                if w is not None and h is not None:
+                    if image_meta is None:
+                        image_meta = get_image_meta(resource)
+                    # get image width in pixels
+                    try:
+                        img = bq.load(uri)
+                        W,H,_,_,_ = img.geometry()
+                        rx = float(w)/float(W)
+                        ry = float(h)/float(H)
 
-            # write frequencies per image
-            for i in images:
-                row = [i.dataset_name, i.image_name]
-                for t in unique_tags:
-                    row.append(i.tags.get(t, ''))
-                for g in unique_gobs:
-                    row.append(i.hist.get(g, 0))
-                w.writerow(row)
+                        set_tag(image_meta, 'pixel_resolution_x', rx, path=None, overwrite=True)
+                        set_tag(image_meta, 'pixel_resolution_y', ry, path=None, overwrite=True)
+                        if u is not None:
+                            set_tag(image_meta, 'pixel_resolution_unit_x', u, path=None, overwrite=True)
+                            set_tag(image_meta, 'pixel_resolution_unit_y', u, path=None, overwrite=True)
+                    except Exception:
+                        pass
 
-        # store the CSV file and write its reference into the MEX
-        resource = etree.Element('resource', type='table', name='ModuleExecutions/AnnotationHistograms/%s'%(csv_filename), hidden='true' )
-        blob = etree.XML(bq.postblob(csv_filename, xml=resource))
-        #print etree.tostring(blob)
-        blob = blob.find('./')
-        #print blob
-        if blob is None or blob.get('uri') is None:
-            bq.fail_mex('Could not store the histogram file')
-            return
+                # save resource
+                #print '\n\n\n'
+                #print etree.tostring(resource, pretty_print=True)
+                bq.postxml(uri, resource, method='PUT')
+
+                # clear IS cache if needed
+                if image_meta is not None:
+                   url = '%s?cleancache'%uri.replace('/data_service/', '/image_service/')
+                   bq.c.webreq (method='get', url=url)
+
 
         outputs = etree.Element('tag', name='outputs')
-        etree.SubElement(outputs, 'tag', name='histogram', type='table', value=blob.get('uri'))
+        summary = etree.SubElement(outputs, 'tag', name='summary')
+        for r,v in resources.iteritems():
+            etree.SubElement(summary, 'tag', name=r, value=v)
+
         bq.finish_mex(tags=[outputs])
 
 if __name__ == "__main__":
