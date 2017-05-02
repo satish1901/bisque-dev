@@ -2062,11 +2062,15 @@ BQImagePhys.prototype.onloadIS = function (image, xml) {
           v = BQ.util.xpath_nodes(geo, "tag[@name='Tags']/tag[@name='ModelPixelScaleTag']/@value");
           var res = v && v.length>0 ? BQ.util.parseStringArrayFloat(v[0].value) : undefined;
 
-          this.geo = {
-              proj4: proj4_defn,
-              top_left: top_left,
-              res: res,
-          };
+          // fetch center for simple exif type geo information
+          v = BQ.util.xpath_nodes(geo, "tag[@name='Coordinates']/tag[@name='center']/@value");
+          var center = v && v.length>0 ? BQ.util.parseStringArrayFloat(v[0].value) : undefined;
+
+          this.geo = this.geo || {};
+          this.geo.proj4 = proj4_defn || this.geo.proj4;
+          this.geo.top_left = top_left || this.geo.top_left;
+          this.geo.res = res || this.geo.res;
+          this.geo.center = center || this.geo.center;
       } else {
           this.geo = undefined;
       }
@@ -2144,6 +2148,42 @@ BQImagePhys.prototype.onloadDS = function ( ) {
     for (var i=0; i<this.num_channels; i++) {
       var tag_name = 'channel_' + i + '_name';
       this.channel_names_ds[i] = ht[tag_name];
+    }
+
+    // -------------------------------------------------------
+    // parse geo info
+    var geo = image.find_tags('Geo');
+    if (geo) {
+        var center=null, top_left=null, res=null, proj4_defn=null, t=null,
+            coords = geo.find_tags('Coordinates'),
+            model = geo.find_tags('Model'),
+            tags = geo.find_tags('Tags');
+
+        if (coords) {
+            t = coords.find_tags('center');
+            center = t && t.value ? BQ.util.parseStringArrayFloat(t.value) : undefined;
+
+            t = coords.find_tags('upper_left');
+            top_left = t && t.value ? BQ.util.parseStringArrayFloat(t.value) : undefined;
+        }
+
+        if (model) {
+            t = model.find_tags('proj4_definition');
+            proj4_defn = t && t.value ? t.value : undefined;
+        }
+
+        if (tags) {
+            t = tags.find_tags('ModelPixelScaleTag');
+            res = t && t.value ? BQ.util.parseStringArrayFloat(t.value) : undefined;
+        }
+
+        if (center || top_left || res || proj4_defn) {
+            this.geo = this.geo || {};
+            this.geo.proj4 = proj4_defn || this.geo.proj4;
+            this.geo.top_left = top_left || this.geo.top_left;
+            this.geo.res = res || this.geo.res;
+            this.geo.center = center || this.geo.center;
+        }
     }
 
     this.ds_done = true;
