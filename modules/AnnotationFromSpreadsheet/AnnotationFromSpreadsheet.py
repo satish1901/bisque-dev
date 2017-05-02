@@ -185,8 +185,9 @@ class AnnotationHistograms(object):
                     v = '%s,%s'%(lat,lon)
                     if alt is not None:
                         v = '%s,%s'%(v, alt)
-                    #set_tag(image_meta, 'center', v, path='Geo/Coordinates', overwrite=True)
                     set_tag(resource, 'center', v, path='Geo/Coordinates', overwrite=True)
+                    # dima: proper way of storing this info in the image meta, can't be used due to IS inability to copy sub-tags as deep
+                    #set_tag(image_meta, 'center', v, path='Geo/Coordinates', overwrite=True)
 
                 # res tags
                 w = get_value_by_type('res.width', matches_by_type, headers, row)
