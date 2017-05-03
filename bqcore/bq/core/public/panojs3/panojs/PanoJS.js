@@ -319,7 +319,10 @@ PanoJS.prototype.imageSize = function() {
 
 PanoJS.prototype.currentImageSize = function() {
     var scale = this.currentScale();
-    return { width: this.image_size.width * scale, height: this.image_size.height * scale };
+    return {
+      width: Math.floor(this.image_size.width * scale),
+      height: Math.floor(this.image_size.height * scale),
+    };
 };
 
 PanoJS.prototype.prepareTiles = function() {
