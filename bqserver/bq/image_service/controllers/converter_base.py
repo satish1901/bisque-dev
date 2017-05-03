@@ -61,6 +61,7 @@ class ConverterBase(object):
     version = None
     installed_formats = None # OrderedDict containing Format and keyed by format name
     CONVERTERCOMMAND = 'convert' if os.name != 'nt' else 'convert.exe'
+    MINIMUM_FILE_SIZE = 16
 
     #######################################
     # Init
@@ -248,8 +249,8 @@ class ConverterBase(object):
 
         # safeguard for incorrectly converted files, sometimes only the tiff header can be written
         # empty lock files are automatically removed before by lock code
-        if os.path.exists(ofnm) and os.path.getsize(ofnm) < 16:
-            log.error ('Run: output file is smaller than 16 bytes, probably an error, removing [%s]', ofnm)
+        if os.path.exists(ofnm) and os.path.getsize(ofnm) < cls.MINIMUM_FILE_SIZE:
+            log.error ('Run: output file is smaller than %s bytes, probably an error, removing [%s]', cls.MINIMUM_FILE_SIZE, ofnm)
             os.remove(ofnm)
             return None
         return ofnm

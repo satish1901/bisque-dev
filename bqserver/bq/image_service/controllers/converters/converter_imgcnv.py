@@ -360,8 +360,8 @@ class ConverterImgcnv(ConverterBase):
 
         # safeguard for incorrectly converted files, sometimes only the tiff header can be written
         # empty lock files are automatically removed before by lock code
-        if os.path.exists(ofnm) and os.path.getsize(ofnm) < 16:
-            log.error ('Run: output file is smaller than 16 bytes, probably an error, removing [%s]', ofnm)
+        if os.path.exists(ofnm) and os.path.getsize(ofnm) < cls.MINIMUM_FILE_SIZE:
+            log.error ('Run: output file is smaller than %s bytes, probably an error, removing [%s]', cls.MINIMUM_FILE_SIZE, ofnm)
             os.remove(ofnm)
             return None
         return ofnm
