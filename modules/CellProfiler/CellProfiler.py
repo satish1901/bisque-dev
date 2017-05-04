@@ -102,6 +102,8 @@ class CellProfiler(object):
             The core of the CellProfiler runner
         """
 
+        module_time = datetime.now()
+
         #retrieve tags
         self.bqSession.update_mex('Extracting properties')
 
@@ -111,7 +113,7 @@ class CellProfiler(object):
             raise CPError("trying to run CellProfiler on non-image resource")
 
         # run prerun operations
-        filelist_file = self._run_prerun_ops(pipeline_url=self.options.pipeline_url, input_xml=image_resource)    
+        filelist_file = self._run_prerun_ops(module_time, pipeline_url=self.options.pipeline_url, input_xml=image_resource)    
     
         # create pipeline with correct parameters
         pipeline_params = self.bqSession.mex.xmltree.xpath('tag[@name="inputs"]/tag[@name="pipeline_params"]/tag')
@@ -147,7 +149,7 @@ class CellProfiler(object):
             raise CPError(err_msg)
 
         # run postrun operations
-        self.output_resources = self._run_postrun_ops(pipeline_url=self.options.pipeline_url)
+        self.output_resources = self._run_postrun_ops(module_time, pipeline_url=self.options.pipeline_url)
 
     def _cache_ppops(self, pipeline_url):
         if not self.ppops or self.ppops_url != pipeline_url:            
@@ -157,7 +159,7 @@ class CellProfiler(object):
             self.ppops = json.loads(self.bqSession.c.fetch(url))
             self.ppops_url = pipeline_url
 
-    def _run_prerun_ops(self, pipeline_url, input_xml):
+    def _run_prerun_ops(self, module_time, pipeline_url, input_xml):
         """
         Perform any operations necessary before the pipeline runs (e.g., extract image channels) and return filelist file
         """
@@ -165,14 +167,14 @@ class CellProfiler(object):
         post_ops = self.ppops['PreOps']
         input_files = []
         for op in post_ops:
-            input_files += self._run_single_op(op, input_xml)
+            input_files += self._run_single_op(module_time, op, input_xml)
         filelist_file = os.path.join(self.options.stagingPath, 'filelist.txt')
         with open(filelist_file, 'w') as fo:
             for input_file in input_files:
                 fo.write(input_file+'\n')
         return filelist_file
         
-    def _run_postrun_ops(self, pipeline_url):
+    def _run_postrun_ops(self, module_time, pipeline_url):
         """
         Perform any operations necessary after the pipeline finished (e.g., upload result tables) and return created resources
         """
@@ -180,10 +182,10 @@ class CellProfiler(object):
         post_ops = self.ppops['PostOps']
         created_resources = []
         for op in post_ops:            
-            created_resources += self._run_single_op(op)
+            created_resources += self._run_single_op(module_time, op)
         return created_resources
             
-    def _run_single_op(self, op, input_xml=None):
+    def _run_single_op(self, module_time, op, input_xml=None):
         """
         Perform single pre/post operation and return list of files or resources generated
         """        
@@ -204,7 +206,7 @@ class CellProfiler(object):
             res += [image_file]
         elif op['service'] == 'postblob':
             # upload image or table (check op['type'])            
-            dt = datetime.now().strftime('%Y%m%dT%H%M%S')
+            dt = module_time.strftime('%Y%m%dT%H%M%S')
             final_output_file = "ModuleExecutions/CellProfiler/%s/%s"%(dt,op['name'])
             cl_model = etree.Element('resource', resource_type=op['type'], name=final_output_file)
             # module identifier (a descriptor to be found by the CellProfiler model)
