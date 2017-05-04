@@ -151,53 +151,44 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 
 # default imports
 import os
-import logging
-import pkg_resources
-from pylons.i18n import ugettext as _, lazy_ugettext as l_
-from tg import expose, request, response, require
-from repoze.what import predicates
-from bq.core.service import ServiceController
-from pylons.controllers.util import abort
-
-# imports for table server
-from lxml import etree
 import sys
+import logging
 import inspect
 from datetime import datetime
 import urllib
-import cStringIO as StringIO
-from urllib import quote
-from urllib import unquote
-import inspect
-from itertools import *
-from bqapi import *
+#import cStringIO as StringIO
+#from urllib import quote
+#from urllib import unquote
+#import inspect
+#from itertools import *
+#import csv
 
+from lxml import etree
+import pkg_resources
+#from pylons.i18n import ugettext as _, lazy_ugettext as l_
+from tg import expose, request#, response, require
+#from repoze.what import predicates
+from pylons.controllers.util import abort
+
+
+#import numpy as np
+#import pandas as pd
+#import json
+
+# imports for table server
+#from bqapi import *
 from bq.core import identity
+from bq.core.service import ServiceController
 from bq import data_service
-from bq import blob_service
-
-log = logging.getLogger("bq.table")
-
-import csv
-try:
-    import numpy as np
-except ImportError:
-    log.info('Numpy was not found but required for table service!')
-
-try:
-    import pandas as pd
-except ImportError:
-    log.info('Pandas was not found but required for table service!')
-
-try:
-    import json
-except ImportError:
-    log.info('Json was not found but needed for JSON output...')
+#from bq import blob_service
 
 from .plugin_manager import PluginManager
 from .table_base import TableBase
 from .table_exporter import TableExporter
 from .table_operation import TableOperation
+
+log = logging.getLogger("bq.table")
+
 
 ################################################################################
 # misc
@@ -291,7 +282,9 @@ class TableController(ServiceController):
             log.debug('Resource: %s', etree.tostring(resource))
 
             for n, r in self.importers.plugins.iteritems():
-                if '.' in resource.get('value', '') and resource.get('value').split('.')[-1].lower() not in r.ext:
+                #if '.' in resource.get('value', '') and resource.get('value').split('.')[-1].lower() not in r.ext:
+                ext =  os.path.splitext (resource.get('value', ''))[-1].lstrip('.').lower()
+                if ext and ext not in r.ext:
                     # resource has filename with extension and extension does not match plugins supported extensions
                     # (this is to prevent trying to read some binary format with CSV for example)
                     # TODO: better try CSV at the end for this reason
@@ -302,11 +295,12 @@ class TableController(ServiceController):
                 except Exception as ex:
                     log.debug("failed with error %s", str(ex))
                     table = None
-                    pass # continue with next format
-                if table is not None and table.isloaded() == True:
+                    continue # continue with next format
+                if table is not None and table.isloaded():
                     break;
             if table is None:
-                abort(500, 'Table cannot be read')
+                log.error ("Table %s could not be read. Format not recognized", uniq)
+                abort(501, 'Table cannot be read. Format not recognized')
             log.debug('Inited table: %s',str(table))
 
             # range read
@@ -348,6 +342,7 @@ class TableController(ServiceController):
                     r = self.exporters.plugins[out_format]().export(table)
                 return r
             abort(400, 'Requested export format (%s) is not supported'%out_format )
+
         finally:
             # close any open table
             if table is not None:

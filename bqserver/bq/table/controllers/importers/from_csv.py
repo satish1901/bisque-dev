@@ -54,27 +54,29 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 import os
 import sys
 import logging
-import pkg_resources
+import csv
+
 from pylons.controllers.util import abort
 
-from bq import blob_service
 
-__all__ = [ 'TableCSV' ]
-
-log = logging.getLogger("bq.table.import.csv")
-
-import csv
-try:
-    import numpy as np
-except ImportError:
-    log.info('Numpy was not found but required for table service!')
-
+#try:
+#    import numpy as np
+#except ImportError:
+#    log.info('Numpy was not found but required for table service!')
 try:
     import pandas as pd
 except ImportError:
     log.info('Pandas was not found but required for table service!')
 
+
+from bq import blob_service
 from bq.table.controllers.table_base import TableBase
+
+__all__ = [ 'TableCSV' ]
+
+log = logging.getLogger("bq.table.import.csv")
+
+
 
 ################################################################################
 # misc
@@ -102,7 +104,7 @@ class TableCSV(TableBase):
 
     name = 'csv'
     version = '1.0'
-    ext = 'csv'
+    ext = ['csv']
     mime_type = 'text/csv'
 
     def __init__(self, uniq, resource, path, **kw):
@@ -186,4 +188,3 @@ class TableCSV(TableBase):
     def delete(self, **kw):
         """ Delete cells from a table"""
         abort(501, 'CSV delete not implemented')
-
