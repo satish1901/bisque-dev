@@ -64,9 +64,11 @@ RUN  echo "def fetch_external_dependencies(overwrite=False): \n\
 COPY CellProfiler /module/CellProfiler/
 COPY pydist /module/CellProfiler/pydist/
 
-RUN mv /module/CellProfiler/pydist/CellProfiler/libxml2.so.2 /module/CellProfiler/pydist/CellProfiler/libxml2.so.2.bak
+#RUN mv /module/CellProfiler/pydist/CellProfiler/libxml2.so.2 /module/CellProfiler/pydist/CellProfiler/libxml2.so.2.bak
 RUN ln -s /usr/lib/x86_64-linux-gnu/libxml2.so.2 /module/CellProfiler/pydist/CellProfiler
 RUN mkdir /module/CellProfiler/workdir
+
+RUN rm -rf /module/CellProfiler/.git
 
 ENV PATH /module:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
