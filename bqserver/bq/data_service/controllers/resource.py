@@ -665,14 +665,14 @@ class Resource(ServiceController):
                 self.add_cache_header(resource)
                 return value
             elif http_method == 'put':
-                resource = bisque.parent
+                resource = getattr(bisque,'parent', None)
                 method_name = 'replace_all'
             elif http_method == 'delete':
-                resource = bisque.parent
+                resource = getattr(bisque,'parent', None)
                 method_name = 'delete_all'
             elif http_method == 'head':
                 # Determine whether the collection has changed
-                resource = bisque.parent
+                resource = getattr(bisque,'parent', None)
                 method_name = "check"
             else:
                 #Any other methods get rejected.
@@ -681,8 +681,9 @@ class Resource(ServiceController):
         if resource is None:
             #if we don't have a resource by now, (it wasn't created)
             #then try and load one.
-            token = path.pop(0)
-            resource = self.load(token)
+            if path:
+                token = path.pop(0)
+                resource = self.load(token)
             if resource is None:
                 #No resource found?
                 if user_id is None:
