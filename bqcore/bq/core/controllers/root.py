@@ -175,7 +175,7 @@ class RootController(BaseController):
 
     proxy = ProxyCache()
     error  = ErrorController()
-    root = config.get ('bisque.root', '')
+    #root = config.get ('bisque.root', '')
 
     @classmethod
     def mount_local_services(cls, root, wanted = None, unwanted=None):
