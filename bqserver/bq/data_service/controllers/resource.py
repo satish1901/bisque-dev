@@ -58,6 +58,7 @@ import re
 #import md5
 import hashlib
 import logging
+import json
 
 from urlparse import urlparse
 from datetime import datetime
@@ -76,6 +77,7 @@ from bq.core.service import ServiceController
 #from bq.exceptions import RequestError
 from bq.util.paths import data_path
 from bq.util.converters import asbool
+from bq.util.xmldict import d2xml
 
 log = logging.getLogger("bq.data_service.resource")
 
@@ -332,7 +334,7 @@ class HierarchicalCache(ResponseCache):
            This is overkill as we do not need to invalidate
              /ds/images/1/gobjects/3
         """
-        log.info ("CACHE invalidate %s for %s " % (url , user))
+        log.info ("CACHE invalidate %s for %s " ,url , user)
         files = os.listdir(self.cachepath)
         (scheme, authority, path, query, fragment) = parse_uri(url)
         splitpath = path.split('/')
@@ -628,8 +630,8 @@ class Resource(ServiceController):
         user_id  = identity.get_user_id()
         usecache = asbool(kw.pop('cache', True))
         http_method = request.method.lower()
-        log.info ('Request "%s" with %s?%s'%(http_method,str(request.path),str(kw)))
-        log.debug ('Request "%s" '%(path))
+        log.info ('Request "%s" with %s?%s' , http_method, request.path,str(kw))
+        log.debug ('Request "%s" ', path)
 
         #check the http method is supported.
         try:
@@ -698,7 +700,7 @@ class Resource(ServiceController):
             child = self.get_child_resource(token)
             if child is not None:
                 bisque.parent = resource
-                log.debug ("parent = %s" % resource)
+                log.debug ("parent = %s" , str(resource))
                 #call down into the child resource.
                 return child._default(*path, **kw)
 
@@ -726,10 +728,18 @@ class Resource(ServiceController):
                     #log.debug('POST '+ data)
                     #kw['xml_text'] = data
                     value = method(resource, xml=data, **kw)
+                elif content.startswith("application/json"):
+                    try:
+                        #data = request.body_file.read(clen)
+                        data = d2xml (json.load (request.body_file))
+                        value = method(resource, xml=data, **kw)
+                    except Exception as e:
+                        log.exception ("while reading json content")
+                        abort(415, "Bad media type in post/put:%s" % content )
                 else:
                     #response = method(resource, doc = None, **kw)
                     # Raise illegal operation (you should provide XML)
-                    log.debug ("Bad media type in post/put:%s" % content)
+                    log.debug ("Bad media type in post/put:%s" ,  content)
                     abort(415, "Bad media type in post/put:%s" % content )
                 #self.server_cache.invalidate(request.url, user=user_id)
                 self.server_cache.invalidate_resource(resource, user=user_id)
