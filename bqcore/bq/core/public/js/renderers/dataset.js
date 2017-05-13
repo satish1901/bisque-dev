@@ -466,10 +466,10 @@ Ext.define('BQ.renderers.dataset', {
     shareResource : function() {
         var shareDialog = Ext.create('BQ.share.Dialog', {
             resource: this.resource,
-            listeners : {
-                'changedShare': this.onChangeShare,
+            /*listeners : {
+                changedShare: this.onChangeShare,
                 scope: this,
-            },
+            },*/
         });
     },
 
