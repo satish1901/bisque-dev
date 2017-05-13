@@ -89,7 +89,7 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
         system: true,
         description: 'System interpretable annotation defining image resolution',
     }, {
-        search: null,
+        search: /unit/ig,
         tag: 'res.units',
         system: true,
         description: 'System interpretable annotation defining image resolution',
@@ -209,10 +209,12 @@ Ext.define('BQ.selectors.SpreadsheetMatching', {
             viewConfig: {
                 stripeRows: true,
                 forceFit: true,
+                preserveScrollOnRefresh: true,
             },
             plugins: [this.cellEditing],
             store: this.store,
             columns: this.columns,
+
             /*listeners: {
                 scope: this,
                 select : function(o, record, index ) {

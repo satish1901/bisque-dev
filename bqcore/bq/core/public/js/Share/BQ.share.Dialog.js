@@ -215,6 +215,7 @@ Ext.define('BQ.share.Panel', {
             viewConfig: {
                 stripeRows: true,
                 forceFit: true,
+                preserveScrollOnRefresh: true,
             },
 
             listeners : {
