@@ -100,15 +100,15 @@ except ImportError:
 
 #logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger('bisque-setup')
-log.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+#log.setLevel(logging.DEBUG)
+#ch = logging.StreamHandler()
+#ch.setLevel(logging.DEBUG)
 
 #formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-formatter = logging.Formatter("%(name)s:%(levelname)s:%(message)s")
+#formatter = logging.Formatter("%(name)s:%(levelname)s:%(message)s")
 # add formatter to ch
-ch.setFormatter(formatter)
-log.addHandler(ch)
+#ch.setFormatter(formatter)
+#log.addHandler(ch)
 
 
 ## ENSURE setup.py has been run before..
@@ -830,7 +830,7 @@ def create_mysql_cmd(dburl):
 
     six.print_( "PLEASE ignore 'ERROR (...)Unknown database ..' ")
     if call (command+[dburl.database, '-e', 'quit'], echo=True) == 0:
-        print "Database exists, not creating"
+        six.print_( "Database exists, not creating")
         return False
 
     if call (command+['-e', 'create database %s' % dburl.database], echo=True) != 0:
@@ -882,13 +882,12 @@ def install_driver(DBURL):
 
     else:
         try:
-            print 'Trying to import driver %s...' % py_drname,
+            six.print_( 'Trying to import driver %s...' % py_drname)
             __import__(py_drname)
-            print 'Driver successfully imported.'
+            six.print_( 'Driver successfully imported.')
             return True
         except ImportError:
-            print
-            print 'Import failed, trying to install package %s...' % ei_drname
+            six.print_ ('\nImport failed, trying to install package %s...' % ei_drname)
             try:
                 #easy_install.main(['-U',ei_drname])
                 pip.main(['install', '-U', ei_drname])
@@ -921,14 +920,14 @@ def test_db_existance(DBURL):
     Returns True if database exists and is accessible, False otherwise.
     """
     try:
-        print 'Checking whether database "%s" already exists...' % DBURL.database,
+        six.print_( 'Checking whether database "%s" already exists...' % DBURL.database)
         d = sa.create_engine(DBURL)
         try:
             c = d.connect()
             c.close()
         finally:
             d.dispose()
-        print 'Yes, it exists.'
+        six.print_( 'Yes, it exists.')
         return True
     except Exception:
         log.warn("Could not contact database %s. It may not exist yet", str(DBURL))
@@ -988,7 +987,7 @@ def install_database(params):
 
     # Step 1: check whether database driver is available (install it if needed)
     if not install_driver(DBURL):
-        print("""Database   driver was bit installed.  Missing packages?
+        six.print_("""Database   driver was bit installed.  Missing packages?
 Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
         return params
 
@@ -1005,7 +1004,7 @@ def setup_database (params):
         return params
     # Step 2: check whether the database exists and is accessible
     if not create_database(DBURL):
-        print "database not created"
+        six.print_( "database not created")
         return params
     # Step 3: find out whether the database needs initialization
     params = initialize_database(params, DBURL)
@@ -1037,7 +1036,7 @@ def create_database(DBURL):
                     log.exception('Could not create database')
 
     if not db_exists:
-        print( """
+        six.print_( """
         Database was NOT prepared -- either server has no database '%s'
         or user "%s" has no rights to access this database.
         Please fix the problem(s) and re-run 'bq-admin setup createdb'
@@ -1102,7 +1101,7 @@ def migrate_database(DBURL=None):
     #    call ([PYTHON, to_sys_path ('bqcore/migration/manage.py'), 'upgrade'])
 
     #if not params['new_database'] : #and test_db_alembic(DBURL):
-    print "Upgrading database version (alembic)"
+    six.print_( "Upgrading database version (alembic)")
     if call ([bin_path("alembic"), '-c', config_path('alembic.ini'), 'upgrade', 'head']) != 0:
         raise SetupError("There was a problem initializing the Database")
 
@@ -1832,7 +1831,7 @@ def setup_uwsgi(params, server_params):
         questions = [ (server+'.'+q[0], server+': '+q[1], q[2]) for q in UWSGI_QUESTIONS ]
         server_params = modify_site_cfg (questions, server_params, section="servers", append=False)
     servers =  parse_nested (server_params, servers)
-    print "AFTER Q", servers
+    log.debug ( "AFTER Q %s", servers)
     for server, sv in servers.items():
         cfg = config_path ("%s_uwsgi.cfg" % server)
 
@@ -1910,8 +1909,8 @@ def setup_paster(params, server_params):
 
         for k,v in unparse_nested (bisque_vars):
             svars["bisque.%s" % k] = str(v)
-        print "BVARS", bisque_vars
-        print "SVARS", svars
+        log.debug ( "BVARS %s", bisque_vars)
+        log.debug ( "SVARS %s", svars)
 
         #svars.update (bisque_vars)
 
@@ -2850,6 +2849,13 @@ def setup(options, args):
     update_globals (options, args)
 
     begin_install = datetime.datetime.now()
+    if options.debug:
+        chout = logging.StreamHandler(sys.stdout)
+        root = logging.getLogger()
+        #root.addHandler(chout)
+        root.setLevel (logging.DEBUG)
+        log.debug ("TESTING")
+
     if options.read:
         print "Reading answers from %s" % options.read
         answer_file = open (options.read)
@@ -2859,7 +2865,7 @@ def setup(options, args):
         save_answers = True
     elif options.yes:
         use_defaults = True
-    elif has_script and not options.inscript:
+    elif has_script and not options.inscript and not options.debug:
         script = ['bq-admin', 'setup', '--inscript']
         script.extend (args)
         r = typescript(script, 'bisque-install.log')

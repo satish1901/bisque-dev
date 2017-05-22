@@ -146,8 +146,8 @@ class DockerEnvironment(BaseEnvironment):
             DOCKER_IMAGE = docker_image,
             DOCKER_LOGIN = docker_login,
             DOCKER_PULL  = docker_pull,
-            DOCKER_INPUTS="\n".join("docker cp %s %s:/module/%s" % (f, mex_id, f) for f in docker_inputs),
-            DOCKER_OUTPUTS="\n".join("docker cp %s:/module/%s %s" % (mex_id, f,f) for f in docker_outputs),
+            DOCKER_INPUTS="\n".join("docker cp %s %s:/module/%s" % (f, "$CONTAINER", f) for f in docker_inputs),
+            DOCKER_OUTPUTS="\n".join("docker cp %s:/module/%s %s" % ("$CONTAINER", f,f) for f in docker_outputs),
         )
         if os.name == 'nt':
             path = os.path.join(dest, 'docker_run.bat' )

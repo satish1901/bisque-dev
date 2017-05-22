@@ -426,7 +426,11 @@ def resource_acl (resource,  newauth, user=None, acl=None, notify=False, invalid
                               user_uniq = newauth.get ('user'),
                               email     = newauth.get ('email'))
     if acl is None:
-        DBSession.flush() # autoflush is off so flush before query
+        try:
+            DBSession.flush() # autoflush is off so flush before query
+        except sqlalchemy.exc.IntegrityError:
+            log.exception ("while preparing for query")
+
         acl = DBSession.query(TaggableAcl).filter_by(taggable_id = resource.id, user_id = user.id).first()
         if acl is None:  # Check if newauth is not None or delete is true???
             acl = TaggableAcl()
