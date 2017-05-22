@@ -16,7 +16,7 @@ from bq.util.paths import site_cfg_path, data_path, config_path, defaults_path
 
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, formatter="%(name)s:%(levelname)s:%(message)s")
 #logging.basicConfig(level=logging.DEBUG)
 
 def load_config(filename):
@@ -77,6 +77,7 @@ Commands:""" % (__VERSION__, sys.argv[0])
         sys.exit()
 
     if options.debug:
+        logging.info ("setting debug")
         logging.getLogger().setLevel(logging.DEBUG)
 
     commandname = args[0]
@@ -168,6 +169,7 @@ class setup(object):
         parser.add_option("-w", "--write", action="store", help="Write answers from given file" )
         parser.add_option("-y", "--yes", action="store_true", help="Use default answers for all questions" )
         parser.add_option("-c", "--config",  help="Set config directory locations"  )
+        parser.add_option("-d", "--debug", action="store_true", default=False)
         options, args = parser.parse_args()
         for arg in args:
             if arg not in all_options + ['bisque', 'server', 'engine', 'developer', 'full']:
@@ -249,7 +251,7 @@ class deploy(object):
                     for name in names:
                         src = os.path.join (r, name)
                         dst = os.path.join (dest, name)
-                        if os.path.isdir (dst):
+                        if os.path.isdir (dst) and not os.path.islink (dst):
                             shutil.rmtree(dst)
                         if os.path.exists (dst):
                             os.unlink(dst)
