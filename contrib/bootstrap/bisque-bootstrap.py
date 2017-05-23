@@ -164,15 +164,19 @@ def run_bootstrap():
         else:
             install_pip('mercurial')
 
-    print "********************************"
-    print "**     Fetching BisQue        **"
-    print "********************************"
-    print "Cloning: ", args.repo
-    print
-    subprocess.call(['hg', 'clone', args.repo, 'tmp'], shell=shell)
-    for df in glob.glob('tmp/*') + glob.glob('tmp/.hg*'):
-        if not os.path.exists(os.path.basename(df)):
-            shutil.move (df, os.path.basename(df))
+    # check if we need to fetch the source-code
+    fn = 'requirements.txt'
+    if os.path.exists(fn) is not True:
+        print "********************************"
+        print "**     Fetching BisQue        **"
+        print "********************************"
+        print "Cloning: ", args.repo
+        print
+        subprocess.call(['hg', 'clone', args.repo, 'tmp'], shell=shell)
+        for df in glob.glob('tmp/*') + glob.glob('tmp/.hg*'):
+            if not os.path.exists(os.path.basename(df)):
+                shutil.move (df, os.path.basename(df))
+
 
     print "********************************"
     print "**  Installing requirements   **"
