@@ -67,14 +67,6 @@ if os.name == 'nt':
             path = '/%s'%path
         return path
 
-    def url2localpath(url):
-        path = posixpath.normpath(urlparse.urlparse(url).path)
-        if len(path)>0 and path[0] == '/':
-            path = path[1:]
-        path = urllib.unquote(path)
-        path = force_filesys(path)
-        return path
-
     def localpath2url(path):
         # posixpath.normpath will not work well with smb mounts //share/dir/file.ext
         path = path.replace('\\', '/')
@@ -111,15 +103,6 @@ else:
 
     data_url_path = data_path
 
-    def url2localpath(url):
-        "url should be utf8 encoded (but may actually be unicode from db)"
-        if url.startswith('file://'):
-            url = url[7:]
-        path = posixpath.normpath(urlparse.urlparse(url).path)
-        path = urllib.unquote(path)
-        path = force_filesys(path)
-        return path
-
     def localpath2url(path):
         "convert a filespec to a utf8 %-encoded url"
         try:
@@ -148,7 +131,14 @@ else:
         return s
 
 
-
+def url2localpath(url):
+    "url should be utf8 encoded (but may actually be unicode from db)"
+    if url.startswith('file://'):
+        url = url[7:]
+    path = posixpath.normpath(urlparse.urlparse(url).path)
+    path = urllib.unquote(path)
+    path = force_filesys(path)
+    return path
 
 def config2url(conf):
     "Make entries read from config with corrent encoding.. check for things that look like path urls"
