@@ -241,7 +241,9 @@ class RootController(BaseController):
     def index(self, **kw):
         redirect (config.get('bisque.root', request.application_url) + "/client_service/")
 
-
+    @expose()
+    def check(self, **kw):
+        return "OK"
 
 #def register_proxy_services (proxy):
 #    '''Registers all local services with the requested
