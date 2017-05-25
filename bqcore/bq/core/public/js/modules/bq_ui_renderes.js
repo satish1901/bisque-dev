@@ -168,7 +168,8 @@ Ext.define('BQ.selectors.Selector', {
             this.resource.value = null;
             this.resource.values = [];
 
-            for (var i=0; (vin=v[i]); ++i) {
+            for (var i=0; i<v.length; ++i) {
+                vin = v[i];
                 if (!vin) continue;
                 vout=this.resource.values[i];
 
@@ -1137,10 +1138,10 @@ Ext.define('BQ.selectors.PixelResolution', {
                 listeners: {
                     scope: this,
                     change: function(field, value) {
-                        //resource.values[field.value_index] = new BQValue ('number', value, field.value_index);
-                        var vals = [undefined, undefined, undefined, undefined];
+                        this.resource.values[field.value_index] = new BQValue ('number', value, field.value_index);
+                        /*var vals = [undefined, undefined, undefined, undefined];
                         vals[field.value_index] = value;
-                        this.setValue(vals);
+                        this.setValue(vals);*/
                     },
                     afterrender : function(o) {
                         if (template.description)
