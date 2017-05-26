@@ -458,6 +458,10 @@ def asbool(obj):
             raise ValueError("String is not true/false: %r" % obj)
     return bool(obj)
 
+def remove_prefix(text, prefix):
+    return re.sub(r'^{0}'.format(re.escape(prefix)), '', text)
+
+
 
 #################################################
 ## Initial values
@@ -1517,6 +1521,7 @@ def install_server_defaults(params):
         for k, v  in DIRS.items():
             params["bisque.paths.%s" % k] = v
 
+    params = update_environment (params, "BQ__")
 
     print "Top level site variables are:"
     for k in sorted(SITE_VARS.keys()):
@@ -1632,6 +1637,24 @@ def install_proxy(params):
         print ("See site.cfg comments and contrib/apache/proxy-{http,ssl} "
                "for details. Also see the website "
                "http://biodev.ece.ucsb.edu/projects/bisquik/wiki/AdvancedInstalls")
+
+
+
+def update_environment(params, prefix, section = BQ_SECTION):
+    """Process the environments parameters listed by PREFIX i.e. BQ__
+    and update the params
+    """
+    # Process env
+    newenv = False
+    for k,v in os.environ.items():
+        if k.startswith (prefix):
+            k = remove_prefix(k, prefix).replace('__', '.').lower()
+            print k,v
+            newenv = True
+            params [k] = v
+    if newenv:
+        update_site_cfg(params, section=section)
+    return params
 
 
 
@@ -2552,35 +2575,37 @@ which will register any module with
 ########################################################
 # User visible command line packages to be run in order i.e. during a
 # default steps for a server install
-install_options= [
+configuration_steps= [
     'server_cfg',
     # 'mercurial',
     'binaries',
-    'database',
     'features',
     'mail',
-    'preferences',
     'production',
     ]
 
+setup_steps = [
+    'database',
+    'preferences',
+]
+
 # default steps for an engine install
-engine_options= [
+engine_steps= [
     # 'binaries',
     'engine_cfg',
     'engine_runtime_cfg', # Special creator for runtime-bisque.cfg
     'matlab',
-    'docker',
     'runtime',
     'modules',
 #    'fetch-modules',
     'build-modules',
     ]
 
-full_options = list (install_options + engine_options)
-full_options.remove ('engine_cfg')
+full_steps = list (configuration_steps + engine_steps)
+full_steps.remove ('engine_cfg')
 
 # other unrelated admin actions
-other_options = [
+other_steps = [
     "upgrade",
     'admin',
     'configuration',
@@ -2590,7 +2615,17 @@ other_options = [
     'logins',
 ]
 
-all_options = list (set (install_options + engine_options + other_options))
+
+COMMAND_STEP_GROUP = {
+    'configuration' : configuration_steps,
+    'bisque' : configuration_steps + setup_steps,
+    'developer' : configuration_steps + setup_steps,
+    'server': configuration_steps + setup_steps,
+    'full' : full_steps,
+    'engine' : engine_steps,
+    'setup' : setup_steps,
+}
+
 
 
 ######################################################################
@@ -2605,7 +2640,7 @@ SETUP_COMMANDS = {
     'preferences' : [ install_preferences ],
     'production' : [ install_public_static, install_secrets ],
     'upgrade' : [ kill_server, fetch_stable, fetch_external_binaries, install_dependencies, migrate, cleanup ],
-    "configuration" : [ setup_server_cfg ],
+    "webservers" : [ setup_server_cfg ],
     "createdb" : [ setup_database ],
     "stores": [ setup_stores ],
     "modules" : [ fetch_modules ],
@@ -2620,14 +2655,13 @@ RUNTIME_COMMANDS = {
     'runtime' : [ install_runtime ],
     'docker'  : [ install_docker ],
     'modules' : [ install_modules ],
-#    'fetch-modules'   : [ fetch_modules ] ,
+    'fetch-modules'   : [ fetch_modules ] ,
     'build-modules'   : [ fetch_modules, build_modules ] ,
-#    'install-modules' : [ fetch_modules, install_modules ]
     }
 
 
-
-usage = " usage: bq-admin setup [%s] " % ' '.join(all_options)
+ALL_OPTIONS = list (set ( SETUP_COMMANDS.keys() + RUNTIME_COMMANDS.keys()))
+USAGE = " usage: bq-admin setup [%s] " % ' '.join(ALL_OPTIONS)
 
 
 def bisque_installer(options, args):
@@ -2659,19 +2693,13 @@ def bisque_installer(options, args):
     system_type = ['bisque', 'engine']
     install_steps = []
     if len(args) == 0: # Default install is 'full' both bisque and engine
-        args = [ 'bisque' ]
+        args = [ 'server' ]
 
-    if args[0] in  ( 'bisque', 'developer', 'server' ):
-        install_steps.extend ( install_options)
-    elif args[0] == 'engine':
-        install_steps.extend ( engine_options )
-    elif args[0] == 'full':
-        install_steps.extend ( full_options )
-    else:
-        install_steps.extend (args)
+    # Read group of steps or just execute steps on command line
+    install_steps = COMMAND_STEP_GROUP.get (args[0], args)
 
     if 'help' in install_steps:
-        print usage
+        print USAGE
         return
 
     print "Beginning install of %s with %s " % (system_type, args)
@@ -2703,11 +2731,11 @@ def bisque_installer(options, args):
     params['new_database'] = 'false'
     params = modify_site_cfg([], params,)
 
-    if install_steps == install_options:
+    if install_steps == install_steps:
         print STemplate(start_msg).substitute(params)
         return 0
 
-    if install_steps == engine_options:
+    if install_steps == engine_steps:
         print STemplate(engine_msg).substitute(params)
         return 0
 
