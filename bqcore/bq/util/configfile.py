@@ -86,16 +86,16 @@ class ConfigFile(object):
             section.append (l)
 
 
-    def edit_config (self, section, key, line, env = {}, append=True):
+    def edit_config (self, section, key, line, env = None, append=True):
         """Edit a single config file entry
 
         @param section: required section title. It will be created if required
         @param key:  The entry key i.e. the key in key = value
         @param line: The enture replacement line i.e. 'key = value'
-        @param env: A dictionary of possible variables in the line. For example
+        @param env: None or A dictionary of possible variables in the line. For example
         if the line root=%(local_path), then the env = { 'local_path' : '/home/' }
         """
-        if line is not None:
+        if line is not None and env is not None:
             for k,v in env.items():
                 line = line.replace ("%%(%s)" % k, v)
 
@@ -114,7 +114,7 @@ class ConfigFile(object):
                     self.section_order.append(section)
                     self.sections[section] = [ line ]
                 return
-
+            # append a line to section if no key
             if key is None:
                 self.sections[section].append(line)
                 return
@@ -129,19 +129,21 @@ class ConfigFile(object):
                     continue
                 # match the key looked for
                 k,p,v = l.partition('=')
-                if k.strip() == key:
+                if (k.strip() == key    # Match lines
+                    or k.strip('#').strip() == key) :  # OR commented lines
                     if line is not None:
                         n.append(line)
                     found = True
                     continue
                 # append all other lines
                 n.append (l)
+            # At end of section
             if not found and append:
                 if line is not None:
                     n.append (line)
             self.sections[section] = n
 
-    def edit_update (self, section, dic, env={}):
+    def edit_update (self, section, dic, env=None):
         """Update the section given the key value pairs of a dictionary
         @type section: string
         @param section: The section name or None
@@ -255,5 +257,3 @@ def test_edit():
     c.edit_config ('advanced', 'options3', 'options3 = 2', {})
     c.edit_config ('test', 'options1', 'options1 = 2', {})
     print c
-
-
