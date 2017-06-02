@@ -1,5 +1,6 @@
 
-import os
+#import os
+import posixpath
 
 from bq.core.service import service_registry
 
@@ -13,8 +14,7 @@ def find_server():
 def get_table(uuid, path):
     "return table of resource by uniq and path"
     server = find_server()
-    url = os.posixpath.join('/table/%s'%uuid, path)
+    url = posixpath.join('/table/%s'%uuid, path)
     if 'format:' not in url:
-        url = os.posixpath.join(url, 'format:table')
+        url = posixpath.join(url, 'format:table')
     return server.get_table(url)
-

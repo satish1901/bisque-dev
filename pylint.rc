@@ -250,7 +250,7 @@ ignore-mixin-members=yes
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
 #ignored-modules=repoze.what,repoze.who,numpy,cv2
-ignored-modules=repoze,repoze.who,repoze.what,numpy,cv2
+ignored-modules=repoze.who,repoze.what,numpy,cv2
 
 
 # List of classes names for which member attributes should not be checked
