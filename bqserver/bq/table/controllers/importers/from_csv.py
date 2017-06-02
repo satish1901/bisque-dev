@@ -57,16 +57,7 @@ import logging
 import csv
 
 from pylons.controllers.util import abort
-
-
-#try:
-#    import numpy as np
-#except ImportError:
-#    log.info('Numpy was not found but required for table service!')
-try:
-    import pandas as pd
-except ImportError:
-    log.info('Pandas was not found but required for table service!')
+import pandas as pd
 
 
 from bq import blob_service

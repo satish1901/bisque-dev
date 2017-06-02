@@ -13,6 +13,7 @@ setup(name='bisque_paths',
       entry_points = {
         'console_scripts' : [
             'bqpath = bisque_paths:main',
+            'bq-path = bisque_paths:main',
             ]
         }
 

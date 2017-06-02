@@ -80,6 +80,7 @@ import urllib2
 import urlparse
 import uuid
 import zipfile
+from collections import OrderedDict
 
 import pkg_resources
 import pip
@@ -963,7 +964,7 @@ def test_db_initialized(DBURL):
     return r == 0
 
 
-def install_database(params):
+def install_database(params, runtime_params):
     """Main database configuration routine.
     To succeed, database server should run, be accessible using the specified
     dburi, and have the specified database.
@@ -993,14 +994,14 @@ def install_database(params):
     if not install_driver(DBURL):
         six.print_("""Database   driver was bit installed.  Missing packages?
 Please resolve the problem(s) and re-run 'bisque-setup --database'.""")
-        return params
+        return params, runtime_params
 
     if getanswer("Create and initialize database", "Y", "Create, initialize or upgrade database") == "Y":
-        params = setup_database (params)
-    return params
+        params, runtime_params = setup_database (params, runtime_params)
+    return params, runtime_params
 
 
-def setup_database (params):
+def setup_database (params, runtime_params):
     try:
         params, DBURL = get_dburi(params)
     except sa.exc.ArgumentError:
@@ -1015,7 +1016,7 @@ def setup_database (params):
     # Step 4: migrate database (and project to latest version)"
     if not asbool(params['new_database']):
         migrate_database(DBURL)
-    return params
+    return params, runtime_params
 
 def create_database(DBURL):
     "Create a database based on the DB URL"
@@ -1051,7 +1052,7 @@ def create_database(DBURL):
 
 
 
-def setup_testing(params):
+def setup_testing(params, runtime_params):
     "ensure test.ini is created and loaded"
 
     TEST_CFG = config_path ('test.ini')
@@ -1114,31 +1115,31 @@ def migrate_database(DBURL=None):
 
 #######################################################
 # Matlab
-def install_matlab(params, cfg = None):
+def install_matlab(params, runtime_params, cfg = None):
 
     if cfg is None:
         cfg = RUNTIME_CFG
     #print params
     matlab_home = which('matlab')
     if matlab_home:
-        params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
+        runtime_params['runtime.matlab_home'] = os.path.abspath(os.path.join (matlab_home, '../..'))
 
     print "CONFIG", cfg
-    params = modify_site_cfg(MATLAB_QUESTIONS, params, section=None, cfg=cfg)
-    if params.get ('runtime.matlab_launcher') == 'config-defaults/templates/matlab_launcher_SYS.tmpl':
+    runtime_params = modify_site_cfg(MATLAB_QUESTIONS, runtime_params, section=None, cfg=cfg)
+    if runtime_params.get ('runtime.matlab_launcher') == 'config-defaults/templates/matlab_launcher_SYS.tmpl':
         if os.name == 'nt':
-            params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher_win.tmpl'))
+            runtime_params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher_win.tmpl'))
         else:
-            params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher.tmpl'))
+            runtime_params['runtime.matlab_launcher'] = os.path.abspath(defaults_path ('templates/matlab_launcher.tmpl'))
     else:
-        print "using matlab_launcher ", params.get ('runtime.matlab_launcher')
+        print "using matlab_launcher ", runtime_params.get ('runtime.matlab_launcher')
 
-    if  not os.path.exists(params['runtime.matlab_home']):
+    if  not os.path.exists(runtime_params['runtime.matlab_home']):
         print "WARNING: Matlab is required for many modules"
-        params['matlab_installed'] = False
+        runtime_params['matlab_installed'] = False
 
-    #install_matlabwrap(params)
-    return params
+    #install_matlabwrap(runtime_params)
+    return params, runtime_params
 
 
 def install_matlabwrap(params):
@@ -1174,26 +1175,26 @@ def install_matlabwrap(params):
     os.chdir (cwd)
 
 
-def install_docker (params, cfg = None):
+def install_docker (params, runtime_params, cfg = None):
     """Setup docker runners for modules on system
     """
     if os.name == 'nt':
-        return params
+        return params, runtime_params
     if cfg is None:
         cfg = RUNTIME_CFG
 
     has_docker = which('docker')
     if getanswer( "Enable docker modules", 'Y' if has_docker else 'N',
                   "Use docker to build and run modules") != 'Y':
-        return params
+        return params, runtime_params
     docker_params = read_site_cfg (cfg, 'docker')
     docker_params['docker.enabled'] = 'true'
     docker_params = modify_site_cfg(DOCKER_QUESTIONS, docker_params, section='docker', cfg=cfg)
 
 
-    return params
+    return params, runtime_params
 
-def install_docker_base_images(params, cfg=None):
+def install_docker_base_images(params, runtime_params, cfg=None):
     if cfg is None:
         cfg = RUNTIME_CFG
     # Ensure base docker images are available
@@ -1211,7 +1212,7 @@ def install_docker_base_images(params, cfg=None):
                 print "Could not pull " , image
                 print "Please check contrib/docker-base-images", image
 
-    return params
+    return params, runtime_params
 
 
 
@@ -1219,13 +1220,13 @@ def install_docker_base_images(params, cfg=None):
 #######################################################
 # Modules
 
-def build_modules (params):
+def setup_build_modules (params, runtime_params):
     "Build the local set of modules"
     ans =  getanswer( "Try to Build modules", 'N',
                   "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly")
     if ans != 'Y':
-        return params
-    install_matlab(params)
+        return params, runtime_params
+    install_matlab(params, runtime_params)
 
     module_dirs = params.get ('bisque.engine_service.module_dirs', "")
     module_dirs = [ x.strip() for x in module_dirs.split(",") ]
@@ -1245,17 +1246,18 @@ def build_modules (params):
     print "Built:", ",".join(built)
     print "Failed:", ",".join(failed)
 
-    return params
+    return params, runtime_params
 
 
-def install_modules(params):
+def install_modules(params, runtime_params):
     # Check each module for an install script and run it.
     ans =  getanswer( "Try to install precompiled modules", 'Y', "Setup docker to run precompiled modules")
     if ans != 'Y':
-        return params
-    install_docker(params)
-    install_runtime(params)
-    return params
+        return params, runtime_params
+    fetch_modules (params)
+    install_docker(params, runtime_params)
+    install_runtime(params, runtime_params)
+    return params, runtime_params
 
 
 def fetch_git (module_url, module_dir):
@@ -1495,7 +1497,7 @@ def setup_module(module_dir, environ):
 #######################################################
 # initial configuration files
 
-def install_server_defaults(params):
+def install_server_defaults(params, runtime_params):
     "Install initial configuration for a bisque server"
     print "Server config"
     new_install = False
@@ -1546,12 +1548,12 @@ def install_server_defaults(params):
 
     if getanswer ('Do you want to create new server configuations', 'Y',
                   "Use an editor to edit the server section (see http://biodev.ece.ucsb.edu/projects/bisquik/wiki/Installation/ParsingSiteCfg )") == 'Y':
-        setup_server_cfg(params)
+        setup_server_cfg(params, runtime_params)
 
-    return params
+    return params, runtime_params
 
 
-def setup_server_cfg (params):
+def setup_server_cfg (params, runtime_params):
     'Edit the server section of the site.cfg'
 
     server_params = read_site_cfg (SITE_CFG, 'servers')
@@ -1578,11 +1580,11 @@ def setup_server_cfg (params):
         params, server_params = setup_uwsgi(params, server_params)
     if server_params['backend'] == 'paster':
         params, server_params = setup_paster(params, server_params)
-    return params
+    return params, runtime_params
 
 
 
-def install_engine_defaults(params):
+def install_engine_defaults(params, runtime_params):
     "Install initial configuration for a bisque engine"
     print "Engine config"
     new_install = False
@@ -1619,16 +1621,16 @@ def install_engine_defaults(params):
         params.update(server_params)
     else:
         print "Warning: Please review the [server] section of site.cfg after modifying site variables"
-    return params
+    return params, runtime_params
 
-def install_runtime_cfg(runtime_params):
+def install_runtime_cfg(params, runtime_params):
     "ensure runtime-bisque.cfg is created and loaded"
     if not   os.path.exists(RUNTIME_CFG):
         runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=defaults_path('runtime-bisque.default'))
-    return runtime_params
+    return params, runtime_params
 
 
-def install_proxy(params):
+def install_proxy(params, runtime_params):
     if getanswer('Configure bisque with proxy', 'N',
                  ("Multiple bisque servers can be configure behind a proxy "
                   "providing enhanced performance.  As this an advanced "
@@ -1637,7 +1639,7 @@ def install_proxy(params):
         print ("See site.cfg comments and contrib/apache/proxy-{http,ssl} "
                "for details. Also see the website "
                "http://biodev.ece.ucsb.edu/projects/bisquik/wiki/AdvancedInstalls")
-
+    return params, runtime_params
 
 
 def update_environment(params, prefix, section = BQ_SECTION):
@@ -1660,7 +1662,7 @@ def update_environment(params, prefix, section = BQ_SECTION):
 
 #######################################################
 #
-def check_condor (params, cfg  = None):
+def check_condor (params, runtime_params, cfg  = None):
     if cfg is None:
         cfg = RUNTIME_CFG
     try:
@@ -1674,7 +1676,7 @@ def check_condor (params, cfg  = None):
         retcode = call ([ 'condor_status' ], stdout=devnull, stderr=devnull )
     except OSError:
         print "No condor was found. See bisque website for details on using condor"
-        return params
+        return params, runtime_params
     print "Condor job management software has been found on your system"
     print "Bisque can use condor facilities for some module execution"
 
@@ -1683,8 +1685,8 @@ def check_condor (params, cfg  = None):
     dval = TRUE_RESPONSE.get (dval.lower(), 'N')
     if getanswer("Configure modules for condor", dval,
                  "Configure condor shared directories for better performance")=="Y":
-        if 'condor' not in params['runtime.platforms']:
-            params['runtime.platforms'] = ','.join (['condor', params['runtime.platforms']])
+        if 'condor' not in runtime_params['runtime.platforms']:
+            runtime_params['runtime.platforms'] = ','.join (['condor', runtime_params['runtime.platforms']])
 
         print """
         NOTE: condor configuration is complex and must be tuned to
@@ -1695,43 +1697,43 @@ def check_condor (params, cfg  = None):
         Please check the wiki at biodev.ece.ucsb.edu/projects/bisquik/wiki/AdvancedInstalls#CondorConfiguration
         """
 
-        params = read_site_cfg(cfg=cfg, section='condor', )
-        params['condor.enabled'] = "true"
+        runtime_params = read_site_cfg(cfg=cfg, section='condor', )
+        runtime_params['condor.enabled'] = "true"
         #print params
         if getanswer("Advanced Bisque-Condor configuration", "N",
                      "Change the condor templates used for submitting jobs")!='Y':
             for f in ['condor.dag_template', 'condor.submit_template', 'condor.dag_config_template']:
-                if os.path.exists(params[f]):
-                    params[f] = os.path.abspath(params[f])
+                if os.path.exists(runtime_params[f]):
+                    runtime_params[f] = os.path.abspath(runtime_params[f])
 
-            update_site_cfg(params, section="condor", cfg=cfg)
-            return params
+            update_site_cfg(runtime_params, section="condor", cfg=cfg)
+            return params, runtime_params
 
-        params = modify_site_cfg(CONDOR_QUESTIONS, params, section='condor', cfg=cfg)
+        runtime_params = modify_site_cfg(CONDOR_QUESTIONS, runtime_params, section='condor', cfg=cfg)
         for v, d, h in CONDOR_QUESTIONS:
-            if params[v]:
-                params[v] = os.path.abspath(os.path.expanduser(params[v]))
-                print "CONDOR", v, params[v]
-        update_site_cfg(params, section="condor", cfg=cfg)
+            if runtime_params[v]:
+                runtime_params[v] = os.path.abspath(os.path.expanduser(runtime_params[v]))
+                print "CONDOR", v, runtime_params[v]
+        update_site_cfg(runtime_params, section="condor", cfg=cfg)
 
-    return params
+    return params, runtime_params
 
 
 
-def install_runtime(params, cfg = None):
+def install_runtime(params, runtime_params, cfg = None):
     """Check and install runtime control files"""
 
     if cfg is None:
         cfg = RUNTIME_CFG
 
-    params['runtime.platforms'] = "command"
-    check_condor(params, cfg=cfg)
+    runtime_params['runtime.platforms'] = "command"
+    check_condor(params, runtime_params, cfg=cfg)
 
-    params['runtime.staging_base'] = run_path('staging')
-    params = modify_site_cfg(RUNTIME_QUESTIONS, params, section=None, cfg=cfg)
-    staging=params['runtime.staging_base'] = os.path.abspath(os.path.expanduser(params['runtime.staging_base']))
+    runtime_params['runtime.staging_base'] = run_path('staging')
+    runtime_params = modify_site_cfg(RUNTIME_QUESTIONS, runtime_params, section=None, cfg=cfg)
+    staging=runtime_params['runtime.staging_base'] = os.path.abspath(os.path.expanduser(runtime_params['runtime.staging_base']))
 
-    update_site_cfg(params, section=None, cfg=cfg)
+    update_site_cfg(runtime_params, section=None, cfg=cfg)
 
     # for bm in os.listdir (bisque_path('modules')):
     #     modpath = bisque_path('modules', bm)
@@ -1744,7 +1746,7 @@ def install_runtime(params, cfg = None):
     except OSError,e:
         print "%s does not exist and cannot create: %s" % (staging, e)
 
-    return params
+    return params, runtime_params
 
 
 #######################################################
@@ -1766,7 +1768,7 @@ if MAILER=='turbomail':
     ]
     SMTP_QS = []
 
-def install_mail(params):
+def install_mail(params, runtime_params):
     params['mail.smtp.server'] = os.getenv('MAIL_SERVER', params['mail.smtp.server'])
 
 
@@ -1776,35 +1778,37 @@ def install_mail(params):
                   including user registration and sharing notifications.
                   This section allows you to configure the mail system""" )!="Y":
         params['mail.on'] =  'False'
-        return params
+        return params, runtime_params
     params['mail.on'] = 'True'
     params = modify_site_cfg (MAIL_QUESTIONS, params)
     if params.get ('mail.transport.use') == 'smtp':
         params = modify_site_cfg (SMTP_QS, params)
 
     print "Please review/edit the mail.* settings in site.cfg for you site"""
-    return params
+    return params, runtime_params
 
 #######################################################
 
-def install_preferences(params):
+def install_preferences(params, runtime_params):
     if asbool(params.get('new_database')): #already initialized
-        return params
+        return params, runtime_params
+
     if getanswer ("Initialize Preferences ","Y",
                   """Initialize system preferences.. new systems will requires this while, upgraded system may depending on changes""")!="Y":
-        return params
+        return params, runtime_params
+
     cmd = [bin_path('bq-admin'), 'preferences', 'init', ]
     if getanswer("Force initialization ", "N", "Replace any existing preferences with new ones") == "Y":
         cmd.append ('-f')
     r  = subprocess.call (cmd, stderr = None)
     if r!=0:
         print "Problem initializing preferences.. please use bq-admin preferences"
-    return params
+    return params, runtime_params
 
 
 #######################################################
 
-def install_public_static(params):
+def install_public_static(params, runtime_params):
     "Setup up public JS area with all static resources"
 
     if getanswer("Deploy all static resources to public directory", "Y",
@@ -1815,11 +1819,11 @@ def install_public_static(params):
         if r!=0:
             print 'Problem deploying static resources... run "bq-admin deploy public" manually'
 
-    return params
+    return params, runtime_params
 
 #######################################################
 
-def install_secrets(params):
+def install_secrets(params, runtime_params):
     "Ensure cookies are unique across sites"
 
     def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
@@ -1834,7 +1838,7 @@ def install_secrets(params):
     # Update the beaker session secret also
     update_site_cfg(bisque_vars= { 'beaker.session.secret' : secrets }, append=False)
     params ['beaker.session.secret'] = secrets
-    return params
+    return params, runtime_params
 
 
 #######################################################
@@ -1971,11 +1975,11 @@ DRIVER_QS =  {
 }
 
 
-def setup_stores(params):
+def setup_stores(params, runtime_params):
     """Stores """
     if getanswer("Install Stores", 'Y',
                  "Setup Stores use of external storage ") != 'Y':
-        return params
+        return params, runtime_params
 
     #print params
 
@@ -2008,18 +2012,18 @@ def setup_stores(params):
     #for store, sv in stores.items():
     #    print store, sv
 
-    return params
+    return params, runtime_params
 
 
 
-def setup_logins (params):
+def setup_logins (params, runtime_params):
     if getanswer("Change login options", 'Y',
                  "Setup local login option  ") != 'Y':
-        return params
+        return params, runtime_params
 
     params = modify_site_cfg (LOGIN_QUESTIONS, params,  append=False)
 
-    return params
+    return params, runtime_params
 
 #######################################################
 #
@@ -2027,7 +2031,7 @@ def setup_logins (params):
 def _sha1hash(data):
     return hashlib.sha1(data).hexdigest().upper()
 
-def fetch_external_binaries (params):
+def install_external_binaries (params, runtime_params):
     """Read EXTERNAL_FILES for binary file names (with prepended hash)
     and download from external site.  Allows binary files to be distributed
     with source code
@@ -2077,7 +2081,7 @@ def fetch_external_binaries (params):
     if getanswer ("Fetch external binary files from Bisque development server",
                   "Y",
                   "This action is required only on first download") != 'Y':
-        return params
+        return params, runtime_params
 
     if not os.path.exists(DIRS['depot']):
         os.makedirs (DIRS['depot'])
@@ -2101,7 +2105,7 @@ def fetch_external_binaries (params):
                 log.exception ("Problem in fetch")
                 print "Failed to fetch '%s' with %s" % (fname,e)
 
-    return params
+    return params, runtime_params
 
 #######################################################
 #
@@ -2138,7 +2142,7 @@ def uncompress_extjs (extzip, public, extjs):
                               "Will rename whater top level dir to extjs")
     shutil.move (unpackdir, extjs)
 
-def install_dependencies (params):
+def install_dependencies (params, runtime_params):
     """Install dependencies that aren't handled by setup.py"""
 
     # install ExtJS
@@ -2156,7 +2160,7 @@ def install_dependencies (params):
     install_openslide()
     install_bioformats()
 
-    return params
+    return params, runtime_params
 
 
 #######################################################
@@ -2271,7 +2275,7 @@ def install_imarisconvert ():
 # Features server deps
 
 
-def install_features (params):
+def install_features (params, runtime_params):
     """Install dependencies that aren't handled by setup.py"""
 
     if getanswer ("Install feature extractors (Feature Server)", "Y",
@@ -2286,7 +2290,7 @@ def install_features (params):
         install_libtiff()
         install_opencv()
 
-    return params
+    return params, runtime_params
 
 
 def install_features_source ():
@@ -2389,7 +2393,7 @@ def install_opencv():
 
 #######################################################
 #
-def setup_admin(params):
+def setup_admin(params, runtime_params):
     try:
         params, DBURL = get_dburi(params)
     except sa.exc.ArgumentError:
@@ -2402,18 +2406,19 @@ def setup_admin(params):
     # Returns "[(pass, )]"
     if r!= 0:
         print("There was a problem fetching the initial admin password")
-        return
+        return params, runtime_params
 
     #admin_pass = eval(admin_pass)[0][0]
     new_pass = getpass.getpass ("Please set the bisque admin password >")
 
     #sql(DBURL, "update tg_user set password='%s' where user_name='admin';" % (new_pass))
     print "Set new admin password"
+    return params, runtime_params
 
 
 ############################################
 # Upgrade scripts
-def kill_server(params):
+def kill_server(params, runtime_params):
     "Attempt to kill the server"
 
     if getanswer ("Stop server for upgrade", "Y",
@@ -2423,19 +2428,19 @@ def kill_server(params):
     else:
         print "Proceeding with upgrade with (possibly) running server (dangerous)"
 
-    return params
+    return params, runtime_params
 
 
 
-def fetch_stable (params):
+def fetch_stable (params, runtime_params):
     hg = which ('hg')
     r = call ([hg, 'pull', '-u'])
     if r!= 0:
         print("There was a problem fetching new version")
         return
-    return params
+    return params, runtime_params
 
-def migrate(params):
+def setup_migrate(params, runtime_params):
     "migrate db, site.cfg, and preferences "
 
     # Step 1: migrate db
@@ -2447,7 +2452,9 @@ def migrate(params):
     #Step 3: migrate preferences
     print "No Automatic way to migrate system preferences.. please check config/preferences.xml.default"
 
-    return params
+    return params, runtime_params
+
+
 
 
 def cleanup(params):
@@ -2474,7 +2481,10 @@ def cleanup(params):
 
     return params
 
-
+def setup_upgrade (params, runtime_params):
+    #'upgrade' : [ kill_server, fetch_stable, install_external_binaries, install_dependencies, setup_migrate,
+    #             cleanup ],
+    return params , runtime_params
 
 
 #######################################################
@@ -2575,92 +2585,118 @@ which will register any module with
 ########################################################
 # User visible command line packages to be run in order i.e. during a
 # default steps for a server install
-configuration_steps= [
-    'server_cfg',
-    # 'mercurial',
-    'binaries',
-    'features',
-    'mail',
-    'production',
-    ]
+INSTALL_STEPS = OrderedDict([
+    ('binaries', [ install_external_binaries, install_dependencies ]),
+    ('features' , [ install_features ]),
+    ('statics' , [ install_public_static]),
+])
 
-setup_steps = [
-    'database',
-    'preferences',
-]
+CONFIGURATION_STEPS= OrderedDict ([
+    ('server_cfg', [ install_server_defaults]),
+    ('mail', [ install_mail ]),
+    ('secrets', [ install_secrets ]),
+])
+
+
+DATABASE_STEPS = OrderedDict([
+    ('database' , [ install_database ]),
+    ('preferences' , [ install_preferences ]),
+])
+
+#SERVER_STEPS = OrderedDict (INSTALL_STEPS)
+#SERVER_STEPS.update(CONFIGURATION_STEPS)
+#SERVER_STEPS.update(DATABASE_STEPS)
 
 # default steps for an engine install
-engine_steps= [
-    # 'binaries',
-    'engine_cfg',
-    'engine_runtime_cfg', # Special creator for runtime-bisque.cfg
-    'matlab',
-    'runtime',
-    'modules',
-#    'fetch-modules',
-    'build-modules',
-    ]
+ENGINE_STEPS= OrderedDict ([
+    ('engine_runtime_cfg' , [ install_runtime_cfg ]),
+    ('engine_cfg' , [install_engine_defaults]),
+#    ('runtime' , [ install_runtime ]),
+#    ('fetch-modules' , [ fetch_modules ]) ,
+    ('modules' , [ install_modules ]),
+    ])
 
-full_steps = list (configuration_steps + engine_steps)
-full_steps.remove ('engine_cfg')
+#FULL_STEPS = OrderedDict (server_steps)
+#FULL_STEPs.update ( engine_steps)
+#FULL_STEPS.remove ('engine_cfg')
 
 # other unrelated admin actions
-other_steps = [
-    "upgrade",
-    'admin',
-    'configuration',
-    'createdb',
-    'stores',
-    'testing',
-    'logins',
-]
-
-
-COMMAND_STEP_GROUP = {
-    'configuration' : configuration_steps,
-    'bisque' : configuration_steps + setup_steps,
-    'developer' : configuration_steps + setup_steps,
-    'server': configuration_steps + setup_steps,
-    'full' : full_steps,
-    'engine' : engine_steps,
-    'setup' : setup_steps,
+OTHER_STEPS = {
+    'admin' : [  setup_admin ],
+    'upgrade' : [setup_upgrade ],
+    "webservers" : [ setup_server_cfg ],
+    "createdb" : [ setup_database ],
+    "stores": [ setup_stores ],
+    "testing" : [ setup_testing ],
+    "logins"  : [ setup_logins ],
+    "testing" : [ setup_testing ],
+    'docker'  : [ install_docker ],
+    'matlab' : [ install_matlab ],
+    'build-modules'   : [ install_modules, setup_build_modules ] ,
 }
+
+def merge_lists (*dicts ):
+    return [ x  for d in dicts for l in d.values() for x in l ]
+
+server_steps = merge_lists (INSTALL_STEPS, CONFIGURATION_STEPS, DATABASE_STEPS)
+full_steps = merge_lists (INSTALL_STEPS, CONFIGURATION_STEPS, DATABASE_STEPS)
+
+
+COMMAND_STEPS = OrderedDict ([
+    ("install",  merge_lists (INSTALL_STEPS)),
+    ('configure' , merge_lists (CONFIGURATION_STEPS , DATABASE_STEPS)),
+    ('fullconfig', merge_lists (CONFIGURATION_STEPS , DATABASE_STEPS, ENGINE_STEPS)),
+# Backward compatible
+    ('bisque' , server_steps),
+    ('developer' , server_steps),
+    ('server', server_steps),
+    ('full' , full_steps),
+    ('engine' , merge_lists (ENGINE_STEPS)),
+])
+COMMAND_STEPS.update (INSTALL_STEPS)
+COMMAND_STEPS.update (CONFIGURATION_STEPS)
+COMMAND_STEPS.update (DATABASE_STEPS)
+COMMAND_STEPS.update (DATABASE_STEPS)
+COMMAND_STEPS.update (OTHER_STEPS)
+
 
 
 
 ######################################################################
 # List of user visible commands and their corresponding internal actions
-SETUP_COMMANDS = {
-    'server_cfg' : [ install_server_defaults],
-    'engine_cfg' : [install_engine_defaults],
-    'binaries': [ fetch_external_binaries, install_dependencies ],
-    'features' : [ install_features ],
-    'database' : [ install_database ],
-    'mail' : [ install_mail ],
-    'preferences' : [ install_preferences ],
-    'production' : [ install_public_static, install_secrets ],
-    'upgrade' : [ kill_server, fetch_stable, fetch_external_binaries, install_dependencies, migrate, cleanup ],
-    "webservers" : [ setup_server_cfg ],
-    "createdb" : [ setup_database ],
-    "stores": [ setup_stores ],
-    "modules" : [ fetch_modules ],
-    "testing" : [ setup_testing ],
-    "logins"  : [ setup_logins ],
-    }
+SETUP_COMMANDS = set ([
+    'server_cfg',
+    'engine_cfg' ,
+    'binaries',
+    'features' ,
+    'database' ,
+    'mail'
+    'preferences' ,
+    'statics'  ,
+    'secrets'  ,
+    'upgrade' ,
+    "webservers",
+    "createdb" ,
+    "stores",
+    "modules" ,
+    "testing" ,
+    "logins"  ,
+])
 
 # Special procedures that modify runtime-bisque.cfg (for the engine)
-RUNTIME_COMMANDS = {
-    'engine_runtime_cfg' : [ install_runtime_cfg ],
-    'matlab' : [ install_matlab ],
-    'runtime' : [ install_runtime ],
-    'docker'  : [ install_docker ],
-    'modules' : [ install_modules ],
-    'fetch-modules'   : [ fetch_modules ] ,
-    'build-modules'   : [ fetch_modules, build_modules ] ,
-    }
+RUNTIME_COMMANDS = set ([
+    'engine_runtime_cfg' ,
+    'matlab'
+    'runtime'
+    'docker'
+    'modules'
+    'fetch-modules'
+    'build-modules'
+])
 
 
-ALL_OPTIONS = list (set ( SETUP_COMMANDS.keys() + RUNTIME_COMMANDS.keys()))
+
+ALL_OPTIONS =   COMMAND_STEPS.keys()
 USAGE = " usage: bq-admin setup [%s] " % ' '.join(ALL_OPTIONS)
 
 
@@ -2696,9 +2732,9 @@ def bisque_installer(options, args):
         args = [ 'server' ]
 
     # Read group of steps or just execute steps on command line
-    install_steps = COMMAND_STEP_GROUP.get (args[0], args)
+    install_steps = COMMAND_STEPS.get (args[0])
 
-    if 'help' in install_steps:
+    if install_steps is None:
         print USAGE
         return
 
@@ -2716,16 +2752,18 @@ def bisque_installer(options, args):
 
     params['bisque.installed'] = "inprogress"
 
-    print "STEPS", install_steps
+    #print "STEPS", install_steps
     for step in install_steps:
         # Normal commands that modify site.cfg
-        flist  =  SETUP_COMMANDS.get(step, [])
-        for step_f in flist:
-            params = step_f(params)
-        # Special commands that modify runtime-bisque.cfg
-        flist  =  RUNTIME_COMMANDS.get(step, [])
-        for step_f in flist:
-            runtime_params = step_f(runtime_params)
+        print "CALLING ", step
+        params, runtime_params = step (params, runtime_params)
+        #flist  =  SETUP_COMMANDS.get(step, [])
+        #for step_f in flist:
+        #    params = step_f(params)
+        ## Special commands that modify runtime-bisque.cfg
+        #flist  =  RUNTIME_COMMANDS.get(step, [])
+        #for step_f in flist:
+        #    runtime_params = step_f(runtime_params)
 
     params['bisque.installed'] = "finished"
     params['new_database'] = 'false'

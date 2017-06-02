@@ -150,8 +150,6 @@ bisque.stores.local.top = file://$datadir/imagedir/
 
 # Image Service
 #bisque.image_service.work_dir  = ./data/workdir
-#bisque.image_service.upload_dir  = ./data/uploads
-#bisque.image_service.remove_uploads = False
 bisque.image_service.imgcnv.omp_num_threads = 4
 
 # HTTP client
