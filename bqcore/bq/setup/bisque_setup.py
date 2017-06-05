@@ -869,7 +869,7 @@ def install_driver(DBURL):
     py_drname, ei_drname, create = known_db_types.get(DBURL.drivername,
                                                       (None,None,None))
     if py_drname is None:
-        return 'Y' == getanswer(
+        return getanswer(
             """
             This database type is not known to Bisque.
             Make sure that you have installed appropriate driver
@@ -883,7 +883,7 @@ def install_driver(DBURL):
             For other databases, you have to install driver manually.
             It is also recommended that you create empty database manually,
             as some databases may use proprietary syntax for database creation.
-            """)
+            """) == "Y"
 
     else:
         try:
@@ -1647,14 +1647,15 @@ def update_environment(params, prefix, section = BQ_SECTION):
     and update the params
     """
     # Process env
-    newenv = False
+    newenv = {}
     for k,v in os.environ.items():
         if k.startswith (prefix):
             k = remove_prefix(k, prefix).replace('__', '.').lower()
             print k,v
-            newenv = True
+            newenv[k] = v
             params [k] = v
     if newenv:
+        print "ENV REPLACED", newenv
         update_site_cfg(params, section=section)
     return params
 
@@ -2477,7 +2478,7 @@ def cleanup(params):
     # Kill the bisque.js minified file
     b_js = os.path.realpath('public/js/b.js')
     if os.path.exists (b_js):
-          os.remove (b_js)
+        os.remove (b_js)
 
     return params
 
@@ -2769,11 +2770,11 @@ def bisque_installer(options, args):
     params['new_database'] = 'false'
     params = modify_site_cfg([], params,)
 
-    if install_steps == install_steps:
+    if args[0]  in ('server', 'bisque'):
         print STemplate(start_msg).substitute(params)
         return 0
 
-    if install_steps == engine_steps:
+    if args[0] == 'engine':
         print STemplate(engine_msg).substitute(params)
         return 0
 
