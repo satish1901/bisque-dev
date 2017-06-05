@@ -269,7 +269,7 @@ class ArchiveStreamer():
             #httpReader = requests
             # This hack gets around bisque internal authentication mechanisms
             # please refer to http://biodev.ece.ucsb.edu/projects/bisquik/ticket/597
-            headers  = dict ( (name, request.headers.get(name)) for name in ['Authorization', 'Mex', 'Cookie' ]
+            headers  = dict ( (name, request.headers.get(name,'')) for name in ['Authorization', 'Mex', 'Cookie' ]
                               if name in request.headers)
 
             # test if URL is relative, httplib2 does not fetch relative
@@ -283,7 +283,7 @@ class ArchiveStreamer():
             if not response.status_code == requests.codes.ok:
                 log.error("URL request returned %s" , response.status_code)
                 return None
-            items = response.headers.get('content-disposition').split(';')
+            items = response.headers.get('content-disposition','').split(';')
             fileName = str(index) + '.'
 
             log.debug('Respose headers: %s', response.headers)
