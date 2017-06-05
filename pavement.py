@@ -262,7 +262,7 @@ def pylint(options):
         args = [ modname for importer, modname, ispkg in pkgutil.iter_modules(package.__path__, prefix) ]
         args = " ".join(args)
     opts = " ".join(opts)
-    sh('pylint --rcfile=%s --load-plugins=bq_pylint %s %s' % (os.path.join(share_path, 'pylint.rc'), opts, args))
+    sh('pylint --rcfile=%s --load-plugins=bq_pylint %s %s' % (os.path.join(share_path, '.pylintrc'), opts, args))
 
 @task
 @consume_args
