@@ -1,14 +1,17 @@
+#import shutil
+#import urlparse
 import os
 import sys
-import tarfile
-import urllib2
-import glob
-from urlparse import urlparse
+#import tarfile
+#import urllib2
+#import glob
+#from urlparse import urlparse
 
 import paver
-from paver.easy import *
+from paver.easy import path, Bunch, options, sh, task, needs, consume_args
 import paver.misctasks
 from paver.setuputils import setup as python_setup
+from setuptools.dist import Distribution
 
 paver.setuputils.install_distutils_tasks()
 
@@ -71,27 +74,23 @@ def getanswer(question, default, help=None):
     if "\n" in question:
         question = textwrap.dedent (question)
     while 1:
-        a =  raw_input ("%s [%s]? " % (question, default))
+        ans =  raw_input ("%s [%s]? " % (question, default))
 
-        if a=='?':
+        if ans=='?':
             if help is not None:
                 print textwrap.dedent(help)
             else:
                 print "Sorry no help available currently."
             continue
         y_n = ['Y', 'y', 'N', 'n']
-        if default in y_n and a in y_n:
-            a = a.upper()
+        if default in y_n and ans in y_n:
+            ans = ans.upper()
 
-        if a == '': a = default
+        if ans == '': ans = default
         break
-    return a
+    return ans
 
 ########################################################
-import urllib2
-import shutil
-import urlparse
-import os
 
 
 def process_options(options):
@@ -116,7 +115,8 @@ all will install everything including the feature service""")
     preinstalls = PREINSTALLS.get (installing, [])
 
     for package in preinstalls:
-        sh ("pip install -i https://biodev.ece.ucsb.edu/py/bisque/dev/+simple %s" % package)
+        #sh ("pip install -i https://biodev.ece.ucsb.edu/py/bisque/dev/+simple %s" % package)
+        sh ("pip install %s" % package)
 
     subdirs  = dict (engine = engine_subdirs,
                      server = server_subdirs,
@@ -156,11 +156,12 @@ def setup(options):
 @consume_args
 def setup_developer(options):
     process_options(options)
-    top = os.getcwd()
-    for d in options.subdirs:
-        app_dir = path('.') / d
+    #top = os.getcwd()
+    for dr in options.subdirs:
+        app_dir = path('.') / dr
         if os.path.exists(app_dir):
-	    sh('pip install -i https://biodev.ece.ucsb.edu/py/bisque/dev/+simple -e %s' % app_dir)
+            #sh('pip install -i https://biodev.ece.ucsb.edu/py/bisque/dev/+simple -e %s' % app_dir)
+            sh('pip install -e %s' % app_dir)
             #os.chdir(app_dir)
             #sh('python setup.py develop')
             #os.chdir(top)
@@ -284,7 +285,6 @@ def pyfind(options):
 
 
 
-from setuptools.dist import Distribution
 class PureDistribution(Distribution):
     def is_pure(self):
         return True

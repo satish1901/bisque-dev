@@ -1006,11 +1006,11 @@ def setup_database (params, runtime_params):
         params, DBURL = get_dburi(params)
     except sa.exc.ArgumentError:
         log.exception( "Unable to understand DB url. Please see SqlAlchemy" )
-        return params
+        return params, runtime_params
     # Step 2: check whether the database exists and is accessible
     if not create_database(DBURL):
         six.print_( "database not created")
-        return params
+        return params, runtime_params
     # Step 3: find out whether the database needs initialization
     params = initialize_database(params, DBURL)
     # Step 4: migrate database (and project to latest version)"
