@@ -223,7 +223,13 @@ class UploadedResource(object):
         'retrieve a local path for this uploaded resource'
         if self.fileobj is None:
             return self.path
-        return getattr(self.fileobj, 'name', None) or getattr(self.fileobj, 'filename', None) or self.path
+        filename = getattr(self.fileobj, 'name', None)
+        if len(filename) > 1 and filename[0] == '<' and filename[-1] == '>':
+            # special case: file was not created using open();
+            # in this case 'name' attribute is some string that indicates the source of the file object, of the form '<...>'.
+            # (see https://docs.python.org/2.7/library/stdtypes.html#file-objects) 
+            filename = None
+        return filename or getattr(self.fileobj, 'filename', None) or self.path
 
     def ensurelocal(self, localpath):
         '''retrieve a local path for this uploaded resource'''
@@ -803,25 +809,33 @@ class import_serviceController(ServiceController):
         #    filepath = uf.ensurelocal( os.path.join(unpack_dir, os.path.basename(uf.resource.get('name'))))
 
         resources = []
-        with open(filepath, 'r') as fo:
-            doc = json.load(fo)
-            # This is a poor man's detector for Dream3D pipeline files; other JSON types could be added later.
-            if 'PipelineBuilder' in doc and 'Version' in doc['PipelineBuilder'] and 'Number_Filters' in doc['PipelineBuilder']:
-                # Dream3D pipeline file
-                #resource = etree.Element ('resource', name=doc['PipelineBuilder']['Name'], value= blob_service.local2url(filepath), resource_type='dream3d_pipeline', ts=uf.ts)
-                #etree.SubElement(resource, 'tag', name='Version', value=doc['PipelineBuilder']['Version'])
-                #etree.SubElement(resource, 'tag', name='Number Filters', value=str(doc['PipelineBuilder']['Number_Filters']), type='number')
-                #resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('file://%s/'%unpack_dir))
-                #resources.append(resource)
-                #uf.resource.set ('name', doc['PipelineBuilder']['Name'])
-                #uf.resource.set ('value', blob_service.local2url(filepath))
-                uf.resource.set ('resource_type', 'dream3d_pipeline')
+        doc = {}
+        if filepath is not None:
+            with open(filepath, 'r') as fo:
+                doc = json.load(fo)
+        elif uf.fileobj is not None:
+            doc = json.load(uf.fileobj)
+            uf.fileobj.seek(0)   # rewind for later reading
+        else:
+            log.error("No filename or fileobj for JSON file")
+            
+        # This is a poor man's detector for Dream3D pipeline files; other JSON types could be added later.
+        if 'PipelineBuilder' in doc and 'Version' in doc['PipelineBuilder'] and 'Number_Filters' in doc['PipelineBuilder']:
+            # Dream3D pipeline file
+            #resource = etree.Element ('resource', name=doc['PipelineBuilder']['Name'], value= blob_service.local2url(filepath), resource_type='dream3d_pipeline', ts=uf.ts)
+            #etree.SubElement(resource, 'tag', name='Version', value=doc['PipelineBuilder']['Version'])
+            #etree.SubElement(resource, 'tag', name='Number Filters', value=str(doc['PipelineBuilder']['Number_Filters']), type='number')
+            #resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('file://%s/'%unpack_dir))
+            #resources.append(resource)
+            #uf.resource.set ('name', doc['PipelineBuilder']['Name'])
+            #uf.resource.set ('value', blob_service.local2url(filepath))
+            uf.resource.set ('resource_type', 'dream3d_pipeline')
 
-                etree.SubElement(uf.resource, 'tag', name='Version', value=doc['PipelineBuilder']['Version'])
-                etree.SubElement(uf.resource, 'tag', name='Number Filters', value=str(doc['PipelineBuilder']['Number_Filters']), type='number')
-                #resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('file://%s/'%unpack_dir))
-                #resources.append(resource)
-
+            etree.SubElement(uf.resource, 'tag', name='Version', value=doc['PipelineBuilder']['Version'])
+            etree.SubElement(uf.resource, 'tag', name='Number Filters', value=str(doc['PipelineBuilder']['Number_Filters']), type='number')
+            #resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('file://%s/'%unpack_dir))
+            #resources.append(resource)
+            
         #if len(resources) == 0:
         #    return unpack_dir, [self.insert_resource(uf)]   # fall back to default
         #else:
