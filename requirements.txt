@@ -55,7 +55,6 @@ pbr==0.6
 pkginfo==1.2b1
 ply==3.4
 poster==0.8.1
-py==1.4.20
 psutil==4.3.0
 python_irodsclient==0.5.0
 pycrypto==2.6.1
@@ -81,7 +80,6 @@ simplejson==3.3.3
 six==1.10
 #sqlalchemy-migrate==0.9
 tgext.registration2==0.5.2
-#tox==1.7.1
 transaction==1.4.1
 tw.forms==0.9.9
 tw.output==0.5.0dev-20110906
@@ -122,6 +120,15 @@ libtiff==0.4.0
 
 # Databases
 psycopg2==2.6.1
+
+#DEVELOPER REQS
+pylint==1.6.3
+py==1.4.20
+mccabe=0.6.1
+astroid==1.4.9
+lazy-object-proxy==1.2.2
+wrapt==1.10.10
+pytest==3.0.6
 
 
 # list all Bisque Dirs:  DO NOT REMOVE/UNCOMMENT
