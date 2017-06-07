@@ -123,7 +123,7 @@ psycopg2==2.6.1
 
 #DEVELOPER REQS
 pylint==1.6.3
-py==1.4.20
+py==1.4.34
 mccabe==0.6.1
 astroid==1.4.9
 lazy-object-proxy==1.2.2
