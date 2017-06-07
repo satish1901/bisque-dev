@@ -33,16 +33,13 @@ class IrodsError(Exception):
 
 #log.setLevel (logging.DEBUG)
 
-parse_net = re.compile('^((?P<user>[^:]+):(?P<password>[\w.#^!;]+)?@)?(?P<host>[^:]+)(?P<port>:\d+)?')
+PARSE_NET = re.compile(r'^((?P<user>[^:]+):(?P<password>[\w.#^!;]+)?@)?(?P<host>[^:]+)(?P<port>:\d+)?')
 
-if not os.path.exists(IRODS_CACHE):
-    _mkdir (IRODS_CACHE)
-
-class IrodsConnection():
+class IrodsConnection(object):
     def __init__(self, url, user=None, host=None, port=None, password = None, zone=None):
         irods_url = urlparse.urlparse(url)
         assert irods_url.scheme == 'irods'
-        env = parse_net.match(irods_url.netloc).groupdict()
+        env = PARSE_NET.match(irods_url.netloc).groupdict()
         args = dict(
             user = user or env['user'], #or irods_env.getRodsUserName()
             host  = host or env['host'], #or irods_env.getRodsHost()
@@ -118,6 +115,12 @@ def copyfile(f1, *dest):
             fw.write(buf)
         if len(buf) < BLOCK_SZ:
             break
+
+def chk_cache():
+    if not os.path.exists(IRODS_CACHE):
+        _mkdir (IRODS_CACHE)
+
+
 #####################
 # iRods CACHE
 def irods_cache_name(path):
@@ -138,6 +141,7 @@ def irods_cache_save(f, path, *dest):
     return cache_filename
 
 def irods_fetch_file(url, **kw):
+    chk_cache()
     try:
         with IrodsConnection(url, **kw) as ic:
             log.debug( "irods_fetching %s -> %s" , url, ic.path)
@@ -147,7 +151,7 @@ def irods_fetch_file(url, **kw):
                 with obj.open ('r') as f:
                     localname = irods_cache_save(f, ic.path)
             return localname
-    except Exception, e:
+    except Exception as e:
         log.exception ("fetch of %s", url)
         raise IrodsError("can't read irods url %s" % url)
 
@@ -178,6 +182,7 @@ def irods_mkdirs (session, dirpath):
     return collection
 
 def irods_push_file(fileobj, url, savelocal=True, **kw):
+    chk_cache()
     try:
         with IrodsConnection(url, **kw) as ic:
             # Hmm .. if an irodsEnv exists then it is used over our login name provided above,
@@ -186,7 +191,7 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
             #retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path))
             #ic.makedirs (os.path.dirname (ic.path))
             irods_mkdirs (ic.session, posixpath.dirname (ic.path))
-            log.debug( "irods-path %s" %  ic.path)
+            log.debug( "irods-path %s" ,  ic.path)
             obj = ic.session.data_objects.create (ic.path)
             with obj.open('w') as f:
                 localname = irods_cache_save(fileobj, ic.path, f)
@@ -196,13 +201,14 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
         raise IrodsError("can't write irods url %s" % url)
 
 def irods_delete_file(url, **kw):
+    chk_cache()
     try:
         with IrodsConnection(url, **kw) as ic:
-            log.debug( "irods-path %s" %  ic.path)
+            log.debug( "irods-path %s" ,  ic.path)
             localname = irods_cache_fetch(ic.path)
             if localname is not None:
                 os.remove (localname)
-            log.debug( "irods_delete %s -> %s" % (url, ic.path))
+            log.debug( "irods_delete %s -> %s" , url, ic.path)
             ic.session.data_objects.unlink (ic.path)
     except Exception, e:
         log.exception ("during delete %s", url)
@@ -211,7 +217,7 @@ def irods_delete_file(url, **kw):
 def irods_isfile (url, **kw):
     try:
         with IrodsConnection(url, **kw) as ic:
-            log.debug( "irods_isfile %s -> %s" % (url, ic.path))
+            log.debug( "irods_isfile %s -> %s" , url, ic.path)
             obj = ic.session.data_objects.get (ic.path)
             return hasattr (obj, 'path')
     except DataObjectDoesNotExist:
