@@ -19,7 +19,7 @@ class IrodsError(Exception):
 
 log = logging.getLogger('bq.irods')
 
-parse_net = re.compile('^((?P<user>[^:]+):(?P<password>[\w.#^!;]+)?@)?(?P<host>[^:]+)(?P<port>:\d+)?')
+PARSE_NET = re.compile(r'^((?P<user>[^:]+):(?P<password>[\w.#^!;]+)?@)?(?P<host>[^:]+)(?P<port>:\d+)?')
 irods_env, status = irods.getRodsEnv() # pylint: disable=no-member
 
 
@@ -36,7 +36,7 @@ class IrodsConnection(object):
     def __init__(self, url, user=None, host=None, port=None, password = None):
         irods_url = urlparse.urlparse(url)
         assert irods_url.scheme == 'irods'
-        env = parse_net.match(irods_url.netloc).groupdict()
+        env = PARSE_NET.match(irods_url.netloc).groupdict()
 
         self.user  = user or env['user'] or irods_env.getRodsUserName()
         self.host  = host or env['host'] or irods_env.getRodsHost()
@@ -64,9 +64,9 @@ class IrodsConnection(object):
 
     def open(self):
         # pylint: disable=no-member
-        conn, err = irods.rcConnect(self.host, self.port, self.user, self.zone)
+        conn, _err = irods.rcConnect(self.host, self.port, self.user, self.zone)
         if conn is None:
-            raise IrodsError("Can't create connection to %s " % self.host)
+            raise IrodsError("Can't create connection to %s:%s " % ( self.host , _err))
         if self.password:
             irods.clientLoginWithPassword(conn, self.password)
         else:
@@ -173,7 +173,7 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
         # meaning even though we have logged in as user X we may be the homedir of user Y (in .irodsEnv)
         # irods.mkCollR(conn, basedir, os.path.dirname(path))
         retcode = irods.mkCollR(ic.conn, '/', os.path.dirname(ic.path)) # pylint: disable=no-member
-        log.debug( "irods-path %s" %  ic.path)
+        log.debug( "irods-path %s" ,  ic.path)
         f = irods.iRodsOpen(ic.conn, ic.path, 'w') # pylint: disable=no-member
         if f:
             localname = irods_cache_save(fileobj, ic.path, f)
@@ -192,7 +192,7 @@ def irods_push_file_IPUT(fileobj, url, savelocal=True, **kw):
             raise IrodsError("can't write irods url %s" % url)
         log.debug( "irods-path %s" ,  ic.path)
         localname = irods_cache_save(fileobj, ic.path)
-        log.info ('iput %s %s' , (localname, ic.path))
+        log.info ('iput %s %s' , localname, ic.path)
         retcode = subprocess.call(['iput', localname, ic.path])
         if retcode:
             raise IrodsError("can't write irods url %s" % url)
@@ -216,7 +216,7 @@ def irods_delete_file(url, **kw):
 def irods_isfile (url, **kw):
     chk_cache()
     with IrodsConnection(url, **kw) as ic:
-        log.debug( "irods_delete %s -> %s"  url, ic.path)
+        log.debug( "irods_delete %s -> %s",  url, ic.path)
         f = irods.iRodsOpen(ic.conn, ic.path, 'r') # pylint: disable=no-member
         if f:
             f.close()
