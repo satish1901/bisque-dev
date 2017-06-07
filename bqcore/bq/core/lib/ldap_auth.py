@@ -1,8 +1,11 @@
 import logging
-from repoze.who.plugins.ldap import LDAPSearchAuthenticatorPlugin, LDAPAttributesPlugin
-import ldap
 import re
-from base64 import b64encode, b64decode
+from base64 import b64decode #b64encode
+
+from repoze.who.plugins.ldap import LDAPSearchAuthenticatorPlugin#, LDAPAttributesPlugin
+
+# Optional dependency
+import ldap #pylint: disable=import-error
 
 bqlog = logging.getLogger('bq.ldap')
 
@@ -11,7 +14,7 @@ def retry(fn, args = (), kw = {}, count=2, exc=Exception, recover = int):
     for tries in range(count):
         try:
             return fn (*args, **kw)
-        except exc, e:
+        except exc as e:
             if tries == count:
                 raise
             recover(*args, **kw)

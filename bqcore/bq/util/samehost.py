@@ -52,10 +52,10 @@ DESCRIPTION
 
 """
 
+import socket
 
 from tg import config
 
-import socket
 
 def fqdn(h=None):
     ''' return the fqdn and port'''
@@ -82,19 +82,19 @@ def same_host(h1, h2=None):
     return same
 
 
-def whataremyips():
-    """
-    Get the machine's ip addresses
-    :returns: list of Strings of ip addresses
-    """
-    import netifaces
-    addresses = []
-    for interface in netifaces.interfaces():
-        iface_data = netifaces.ifaddresses(interface)
-        for family in iface_data:
-            if family not in (netifaces.AF_INET, netifaces.AF_INET6):
-                continue
-            for address in iface_data[family]:
-                addresses.append(address['addr'])
-    return addresses
-
+# UNUSED
+# def whataremyips():
+#     """
+#     Get the machine's ip addresses
+#     :returns: list of Strings of ip addresses
+#     """
+#     import netifaces
+#     addresses = []
+#     for interface in netifaces.interfaces():
+#         iface_data = netifaces.ifaddresses(interface)
+#         for family in iface_data:
+#             if family not in (netifaces.AF_INET, netifaces.AF_INET6):
+#                 continue
+#             for address in iface_data[family]:
+#                 addresses.append(address['addr'])
+#     return addresses
