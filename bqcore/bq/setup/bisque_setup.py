@@ -1318,7 +1318,7 @@ def check_fetchers ():
         if found:
             MODULE_FETCH[cmd] = fetch
         else:
-            print "WARN %% %s %% command not found: cannot fetch modules using this " % cmd
+            print "INFO '%s'not found: cannot fetch modules with %s " % (cmd,cmd)
 
 def fetch_modules(params):
     """Get and install modules from remote and local sources
