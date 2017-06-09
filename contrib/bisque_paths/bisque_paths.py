@@ -10,11 +10,11 @@ import argparse
 import os
 import sys
 import logging
-import six
-from six.moves.configparser import SafeConfigParser, ConfigParser
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
+import six
+from six.moves.configparser import SafeConfigParser
 import requests
 
 ############################
@@ -35,6 +35,27 @@ DEFAULTS  = dict(
 ############################
 
 
+def resource_element (args):
+    """Check the args and create a compatible resource element  for posting or linking
+    """
+    if args.tag_file:
+        # Load file into resource
+        try:
+            resource = ET.parse (args.tag_file).getroot()
+        except ParseError as pe:
+            six.print_('Parse failure: aborting: ', pe)
+            return
+    else:
+        resource = ET.Element (args.resource or 'resource')
+
+    for fld in ('permission', 'hidden'):
+        if getattr(args, fld) is not None:
+            resource.set (fld,  getattr (args, fld))
+    if args.srcpath:
+        resource.set('value', args.srcpath[0])
+        resource.set('name', os.path.basename (args.srcpath[0]))
+    return resource
+
 def bisque_delete(session, args):
     """delete a file based on the irods path"""
     session.log.info ("delete %s", args)
@@ -47,6 +68,8 @@ def bisque_delete(session, args):
         six.print_ (  r.text )
     r.raise_for_status()
 
+
+
 def bisque_link(session, args):
     """insert  a file based on the irods path"""
     session.log.info ("link %s", args)
@@ -55,25 +78,11 @@ def bisque_link(session, args):
     payload = None
     params = {}
 
-    if args.srcpath:
-        el_args = {}
-        for fld in ('permission', 'hidden'):
-            if getattr(args, fld) is not None:
-                el_args [fld] = getattr (args, fld)
-        resource = ET.Element (args.resource or 'resource', value=args.srcpath[0], **el_args)
-        if args.tag_file:
-            # Load file into resource
-            try:
-                resource_tags = ET.parse (args.tag_file).getroot()
-                resource.extend (resource_tags)
-            except ParseError as pe:
-                six.print_('Parse failure: aborting: ', pe)
-                return
-
-        payload = ET.tostring (resource)
+    resource = resource_element(args)
+    payload = ET.tostring (resource)
     if args.alias:
         params['user'] =  args.alias
-    r  =  session.post (url, data=payload, params=params)
+    r  =  session.post (url, data=payload, params=params, headers={'content-type': 'application/xml'} )
     if r.status_code == requests.codes.ok:
         if args.compatible:
             response = ET.fromstring(r.text)
@@ -91,25 +100,15 @@ def bisque_copy(session, args):
 
 
     #url = urlparse.urljoin(args.host, "/blob_service/paths/insert_path?path=%s" % args.srcpath)
-    url = args.host +  "/import_service/transfer"
+    url = args.host +  "/import/transfer"
     #payload = None
     params = {}
+    resource = resource_element(args)
+    del resource.attrib['value']
 
-    if args.srcpath:
-        resource = ET.Element ('resource', value=args.srcpath[0], permission=args.permission)
-        #resource = "<resource  value='%s' />" % (os.path.basename(args.srcpath[0]), args.srcpath[0])
-        if args.tag_file:
-            # Load file into resource
-            try:
-                resource_tags = ET.parse (args.tag_file).getroot()
-                resource.extend (resource_tags)
-            except ParseError as pe:
-                six.print_('Parse failure: aborting: ', pe)
-                return
+    files  = { 'file': ( os.path.basename(args.srcpath[0]), open(args.srcpath[0], 'rb')),
+               'file_resource' : ( None, ET.tostring(resource), 'text/xml')  }
 
-        files  = { 'file': ( os.path.basename(args.srcpath[0]), open(args.srcpath[0], 'rb')),
-                   'file_resource' : ( None, ET.tostring (resource), 'text/xml'),
-        }
     if args.alias:
         params['user'] =  args.alias
     r  =  session.post (url, files=files, params=params)
@@ -188,8 +187,8 @@ class _HelpAction(argparse._HelpAction):
         for subparsers_action in subparsers_actions:
             # get all subparsers and print help
             for choice, subparser in subparsers_action.choices.items():
-                print("Subparser '{}'".format(choice))
-                print(subparser.format_help())
+                six.print_("Subparser '{}'".format(choice))
+                six.print_(subparser.format_help())
 
         parser.exit()
 
@@ -287,7 +286,7 @@ def main():
         session.log = logging.getLogger('rods2bq')
         #session.verify = False
         session.auth = tuple (args.credentials.split(':'))
-        session.headers.update ( {'content-type': 'application/xml'} )
+        #session.headers.update ( {'content-type': 'application/xml'} )
         #OPERATIONS[args.command] (session, args)
         args.func (session, args)
     except requests.exceptions.HTTPError as e:
