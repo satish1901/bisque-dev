@@ -523,6 +523,8 @@ class MountServer(TGController):
             # KGK: TEMPORARY .. this should check readability by the driver
             try:
                 driver = self._get_driver(store)
+                if driver is None:
+                    continue
             except IllegalOperation:
                 log.warn ("Skipping store %s", store_name)
                 continue
