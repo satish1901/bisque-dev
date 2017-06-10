@@ -227,7 +227,7 @@ class UploadedResource(object):
         if len(filename) > 1 and filename[0] == '<' and filename[-1] == '>':
             # special case: file was not created using open();
             # in this case 'name' attribute is some string that indicates the source of the file object, of the form '<...>'.
-            # (see https://docs.python.org/2.7/library/stdtypes.html#file-objects) 
+            # (see https://docs.python.org/2.7/library/stdtypes.html#file-objects)
             filename = None
         return filename or getattr(self.fileobj, 'filename', None) or self.path
 
@@ -818,7 +818,7 @@ class import_serviceController(ServiceController):
             uf.fileobj.seek(0)   # rewind for later reading
         else:
             log.error("No filename or fileobj for JSON file")
-            
+
         # This is a poor man's detector for Dream3D pipeline files; other JSON types could be added later.
         if 'PipelineBuilder' in doc and 'Version' in doc['PipelineBuilder'] and 'Number_Filters' in doc['PipelineBuilder']:
             # Dream3D pipeline file
@@ -835,7 +835,7 @@ class import_serviceController(ServiceController):
             etree.SubElement(uf.resource, 'tag', name='Number Filters', value=str(doc['PipelineBuilder']['Number_Filters']), type='number')
             #resource = blob_service.store_blob(resource=resource, rooturl=blob_service.local2url('file://%s/'%unpack_dir))
             #resources.append(resource)
-            
+
         #if len(resources) == 0:
         #    return unpack_dir, [self.insert_resource(uf)]   # fall back to default
         #else:
@@ -1243,8 +1243,9 @@ class import_serviceController(ServiceController):
 
         class g(object):
             resource = None
-            fileobj = None
-            filename = None
+            fileobj = None  # A file descriptor to the tmp file
+            filename = None # Original filename
+            filepath = None # local path to the file
 
         def on_field (field):
             log.debug ("FIELD %s=%s", field.field_name, field.value)
