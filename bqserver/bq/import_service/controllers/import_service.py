@@ -72,7 +72,7 @@ import logging
 import pkg_resources
 #from pylons.i18n import ugettext as _, lazy_ugettext as l_
 from pylons.controllers.util import abort
-from tg import config
+import  tg
 from repoze.what import predicates
 from bq.core.service import ServiceController
 
@@ -115,7 +115,7 @@ from bq.util.mkdir import _mkdir
 log = logging.getLogger("bq.import_service")
 
 
-UPLOAD_DIR = config.get('bisque.import_service.upload_dir', data_path('uploads'))
+UPLOAD_DIR = tg.config.get('bisque.import_service.upload_dir', data_path('uploads'))
 
 FS_FILES_IGNORE = ['.', '..', 'Thumbs.db', '.DS_Store', '.Trashes']
 
@@ -1232,6 +1232,61 @@ class import_serviceController(ServiceController):
         except Exception, e:
             log.exception("During transfer: %s" , str(kw))
             abort(500, 'Internal error during upload')
+
+
+    @expose(content_type="text/xml")
+    @require(predicates.not_anonymous())
+    def transfer_x_file (self):
+        log.info ("X_file %s ", tg.request.headers) # ,  tg.request.body_file.read())
+        import multipart
+
+
+        class g(object):
+            resource = None
+            fileobj = None
+            filename = None
+
+        def on_field (field):
+            log.debug ("FIELD %s=%s", field.field_name, field.value)
+            g.resource = field.value
+
+        def on_file(fle):
+            log.debug ("FILE %s %s %s", fle.actual_file_name, fle.field_name, fle.size)
+            g.filepath = fle.actual_file_name
+            g.filename = fle.file_name
+            g.fileobj = open (fle.actual_file_name, 'rb')  # tmp File will be deleted unless we open it.
+
+        uploaded  = tg.request.headers['X-File']
+        name      = g.filename or tg.request.headers.get ('X-Filename', 'upload')
+
+        try:
+            if os.path.exists (uploaded):
+                with open (uploaded) as f:
+                    multipart.multipart.parse_form (tg.request.headers, f, on_field, on_file, config={'MAX_MEMORY_FILE_SIZE' : 0})
+                os.remove (uploaded)
+
+            if g.resource is None:
+                g.resource = "<resource/>"
+            log.debug ("reading XML %s" ,  g.resource)
+            try:
+                g.resource = etree.fromstring(g.resource)
+                #pylint: disable=maybe-no-member
+                if g.filename and g.resource.attrib.get ('name', None) is None:
+                    g.resource.set ('name', g.filename)
+                if g.filepath:
+                    g.resource.set ('value', "file://%s" % g.filepath)
+            except etree.XMLSyntaxError:
+                log.exception ("while parsing %s" , g.resource)
+                abort (400, "illegal xml")
+
+            response =  self.ingest ([UploadedResource (fileobj = g.fileobj, resource=g.resource)])
+            return etree.tostring (response)
+        except Exception as e:
+            log.exception ("During upload")
+            abort (400, "Unable to complete upload")
+        finally:
+            if g.fileobj:
+                g.fileobj.close()
 
 
     def transfer_internal(self, **kw):
