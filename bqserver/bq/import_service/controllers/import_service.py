@@ -1263,7 +1263,9 @@ class import_serviceController(ServiceController):
         try:
             if os.path.exists (uploaded):
                 with open (uploaded) as f:
-                    multipart.multipart.parse_form (tg.request.headers, f, on_field, on_file, config={'MAX_MEMORY_FILE_SIZE' : 0})
+                    multipart.multipart.parse_form (tg.request.headers, f, on_field, on_file,
+                                                    config={'MAX_MEMORY_FILE_SIZE' : 0,
+                                                            'UPLOAD_DIR' : UPLOAD_DIR})
                 os.remove (uploaded)
 
             if g.resource is None:
@@ -1273,7 +1275,7 @@ class import_serviceController(ServiceController):
                 g.resource = etree.fromstring(g.resource)
                 #pylint: disable=maybe-no-member
                 if g.filename and g.resource.attrib.get ('name', None) is None:
-                    g.resource.set ('name', g.filename)
+                    g.resource.set ('name', os.path.base(g.filename))
                 if g.filepath:
                     g.resource.set ('value', "file://%s" % g.filepath)
             except etree.XMLSyntaxError:
