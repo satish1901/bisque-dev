@@ -140,6 +140,15 @@ def find_matches(image, preferred='secondary'):
         print '%s (%s) has only %s annotations'%(filename, uri, len(gobs))
     return filtered
 
+def find_gobjects (xml):
+    gobs = []
+    nodes = xml.xpath('//gobject/*/vertex/../..')
+    for n in nodes:
+        t = n.get('type')
+        gobs.append({'g': n, 'type': t})
+
+    return gobs
+
 def find_tags (node, unique_tags, ignore_tags, use_full_path=False, path=None):
     path = path or []
     # get unique tag names
@@ -246,9 +255,12 @@ class AnnotationHistograms(object):
             refs = dataset.xpath('value[@type="object"]')
             for r in refs:
                 image = bq.fetchxml (r.text, view='deep')
-                matches = find_matches(image, preferred='secondary')
+                #matches = find_matches(image, preferred='secondary')
+                matches = find_gobjects (image)
                 #if len(matches)<1:
                 #    continue
+                print 'Image %s found %s gobjects'%(image.get('resource_uniq'), len(matches))
+
 
                 i = Occurrences()
                 i.dataset_name = dataset.get('name')
