@@ -71,7 +71,7 @@
     </tag>
 
     <tag name="module_options" >
-        <tag name="version" value="2" />
+        <tag name="version" value="3" />
     </tag>
 
     <tag name="display_options" >
