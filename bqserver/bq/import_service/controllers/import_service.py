@@ -1255,10 +1255,10 @@ class import_serviceController(ServiceController):
             log.debug ("FILE %s %s %s", fle.actual_file_name, fle.field_name, fle.size)
             g.filepath = fle.actual_file_name
             g.filename = fle.file_name
-            g.fileobj = open (fle.actual_file_name, 'rb')  # tmp File will be deleted unless we open it.
+            g.fileobj = g.filepath and open (g.filepath, 'rb') #tmp File will be deleted unless we open it.
 
         uploaded  = tg.request.headers['X-File']
-        name      = g.filename or tg.request.headers.get ('X-Filename', 'upload')
+        #name      = g.filename or tg.request.headers.get ('X-Filename', 'upload')
 
         try:
             if os.path.exists (uploaded):
