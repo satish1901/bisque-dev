@@ -1262,12 +1262,39 @@ class import_serviceController(ServiceController):
 
         try:
             if os.path.exists (uploaded):
-                with open (uploaded) as f:
-                    multipart.multipart.parse_form (tg.request.headers, f, on_field, on_file,
-                        config={'MAX_MEMORY_FILE_SIZE' : 0,
-                                #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
-                        })
-                os.remove (uploaded)
+                with open (uploaded) as input_stream:
+                    #multipart.multipart.parse_form (tg.request.headers, f, on_field, on_file,
+                    #    config={'MAX_MEMORY_FILE_SIZE' : 0,
+                    #            #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
+                    #    })
+                    parser = multipart.multipart.create_form_parser(tg.request.headers, on_field,on_file,
+                                                                    config={'MAX_MEMORY_FILE_SIZE' : 0,
+                                                                            #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
+                                                                        })
+                    content_length = tg.request.headers.get('Content-Length')
+                    if content_length is not None:
+                        content_length = int(content_length)
+                    else:
+                        content_length = float('inf')
+                    bytes_read = 0
+
+                    while True:
+                        # Read only up to the Content-Length given.
+                        max_readable = min(content_length - bytes_read, 1048576)
+                        buff = input_stream.read(max_readable)
+
+                        # Write to the parser and update our length.
+                        parser.write(buff)
+                        bytes_read += len(buff)
+
+                        # If we get a buffer that's smaller than the size requested, or if we
+                        # have read up to our content length, we're done.
+                        if len(buff) != max_readable or bytes_read == content_length:
+                            break
+
+                    # Tell our parser that we're done writing data.
+                    parser.finalize()
+                    os.remove (uploaded)
 
             if g.resource is None:
                 g.resource = "<resource/>"
@@ -1276,7 +1303,7 @@ class import_serviceController(ServiceController):
                 g.resource = etree.fromstring(g.resource)
                 #pylint: disable=maybe-no-member
                 if g.filename and g.resource.attrib.get ('name', None) is None:
-                    g.resource.set ('name', os.path.base(g.filename))
+                    g.resource.set ('name', os.path.basename (g.filename))
                 if g.filepath:
                     g.resource.set ('value', "file://%s" % g.filepath)
             except etree.XMLSyntaxError:
