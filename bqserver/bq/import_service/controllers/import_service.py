@@ -1264,8 +1264,9 @@ class import_serviceController(ServiceController):
             if os.path.exists (uploaded):
                 with open (uploaded) as f:
                     multipart.multipart.parse_form (tg.request.headers, f, on_field, on_file,
-                                                    config={'MAX_MEMORY_FILE_SIZE' : 0,
-                                                            'UPLOAD_DIR' : UPLOAD_DIR})
+                        config={'MAX_MEMORY_FILE_SIZE' : 0,
+                                #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
+                        })
                 os.remove (uploaded)
 
             if g.resource is None:
