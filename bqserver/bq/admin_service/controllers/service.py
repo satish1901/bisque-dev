@@ -210,9 +210,9 @@ class AdminController(ServiceController):
                     password = tg_user.password
                 else:
                     password ='******'
-                    etree.SubElement(user_node, 'tag', name='password', value=password)
-                    etree.SubElement(user_node, 'tag', name="groups", value=",".join (g.group_name for g in tg_user.groups if tg_user))
-                    etree.SubElement(user_node, 'tag', name='user_name', value=tg_user.user_name)
+                etree.SubElement(user_node, 'tag', name='password', value=password)
+                etree.SubElement(user_node, 'tag', name="groups", value=",".join (g.group_name for g in tg_user.groups if tg_user))
+                etree.SubElement(user_node, 'tag', name='user_name', value=tg_user.user_name)
 
 
         #try to remove value from user node
