@@ -112,7 +112,7 @@ def run_command(command, cwd=None, shell=False):
         # Qt reports an error: 'Qt: Untested Windows version 6.2 detected!\r\n'
         #if e is not None and len(e)>0:
         #    return None
-        return o
+        return o or e
     except OSError:
         log.warning ('Command not found [%s]', command[0])
     except Exception:
