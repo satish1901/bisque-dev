@@ -1873,19 +1873,25 @@ def setup_uwsgi(params, server_params):
         install_cfg (cfg, section="*", default_cfg=defaults_path ('uwsgi.cfg.default'))
         print "Created uwsgi config: ", cfg
 
-        uwsgi_vars = sv.get ('uwsgi', {})
-        bisque_vars = sv.get ('bisque', {})
+        uwsgi_vars = sv.pop ('uwsgi', {})
+        bisque_vars = sv.pop ('bisque', {})
+        paster_vars = sv.pop ('paster', {})
+        url = sv.pop ('url')
 
         if 'socket' in uwsgi_vars:
             uwsgi_vars['socket'] =  uwsgi_vars['socket'].replace('unix://','').strip()
 
         svars = { #'bisque.root' : sv['url'],
-                  'bisque.server' : sv['url'],
-                  'bisque.services_disabled' : sv.get ('services_disabled', ''),
-                  'bisque.services_enabled'  : sv.get ('services_enabled', ''),
+                  'bisque.server' : url,
+                  'bisque.services_disabled' : sv.pop ('services_disabled', ''),
+                  'bisque.services_enabled'  : sv.pop ('services_enabled', ''),
                 }
+
         for k,v in unparse_nested (bisque_vars):
             svars["bisque.%s" % k] = v
+
+        # put other vars backinto bisque area
+        svars.update ( unparse_nested(sv) )
 
         uwsgi_vars ['virtualenv'] = DIRS['virtualenv']
         uwsgi_vars ['procname-prefix'] = "bisque_%s_" % server
@@ -1926,23 +1932,29 @@ def setup_paster(params, server_params):
         install_cfg (cfg, section="*", default_cfg=defaults_path('server.ini.default'))
         print "Created paster config: ", cfg
 
-        paster_vars = sv.get ('paster', {})
-        bisque_vars = sv.get ('bisque', {})
+        uwsgi_vars = sv.pop ('uwsgi', {})
+        paster_vars = sv.pop ('paster', {})
+        bisque_vars = sv.pop ('bisque', {})
+        url = sv.pop ('url')
 
         svars = { #'bisque.root' : sv['url'],
-                  'bisque.server' : sv['url'],
-                  'bisque.services_disabled' : sv.get ('services_disabled', ''),
-                  'bisque.services_enabled'  : sv.get ('services_enabled', ''),
+                  'bisque.server' : url,
+                  'bisque.services_disabled' : sv.pop ('services_disabled', ''),
+                  'bisque.services_enabled'  : sv.pop ('services_enabled', ''),
                 }
 
         for k,v in unparse_nested (bisque_vars):
             svars["bisque.%s" % k] = str(v)
+
+        # put other vars backinto bisque area
+        svars.update ( unparse_nested(sv) )
+
         log.debug ( "BVARS %s", bisque_vars)
         log.debug ( "SVARS %s", svars)
 
         #svars.update (bisque_vars)
 
-        fullurl = urlparse.urlparse (sv['url'])
+        fullurl = urlparse.urlparse (url)
         if 'host' not in paster_vars:
             paster_vars['host'] = fullurl[1].split(':')[0]
         if 'port' not in paster_vars:

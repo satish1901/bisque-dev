@@ -130,7 +130,7 @@ class ConfigFile(object):
                 # match the key looked for
                 k,p,v = l.partition('=')
                 if (k.strip() == key    # Match lines
-                    or k.strip('#').strip() == key) :  # OR commented lines
+                    or (k.strip('#').strip() == key) and not any (ll.startswith(key) for ll in s)) :  # OR commented lines
                     if line is not None:
                         n.append(line)
                     found = True
