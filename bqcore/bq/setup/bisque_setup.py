@@ -2626,6 +2626,7 @@ ENGINE_STEPS= OrderedDict ([
     ('engine_cfg' , [install_engine_defaults]),
 #    ('runtime' , [ install_runtime ]),
 #    ('fetch-modules' , [ fetch_modules ]) ,
+    ('matlab' , [ install_matlab ]),
     ('modules' , [ install_modules ]),
     ])
 
@@ -2644,7 +2645,6 @@ OTHER_STEPS = {
     "logins"  : [ setup_logins ],
     "testing" : [ setup_testing ],
     'docker'  : [ install_docker ],
-    'matlab' : [ install_matlab ],
     'build-modules'   : [ install_modules, setup_build_modules ] ,
 }
 
