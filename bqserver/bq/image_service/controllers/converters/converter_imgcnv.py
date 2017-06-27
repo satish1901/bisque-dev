@@ -582,7 +582,8 @@ class ConverterImgcnv(ConverterBase):
         if token.is_multifile_series() is False:
             if '-i' in queue:
                 command.extend(['-i', ifnm])
-            command.extend(['-page', str(page+1)])
+            if '-page' not in queue:
+                command.extend(['-page', str(page+1)])
         else:
             # use first image of the series, need to check for separate channels here
             files = token.input
