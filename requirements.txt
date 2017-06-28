@@ -56,7 +56,7 @@ pkginfo==1.2b1
 ply==3.4
 poster==0.8.1
 psutil==4.3.0
-python_irodsclient==0.5.0
+python_irodsclient==0.6.0
 python_multipart==0.0.4
 pycrypto==2.6.1
 python-dateutil==1.5
@@ -89,6 +89,7 @@ unittest2==0.5.1
 #virtualenv==1.11.4
 waitress==0.8.8
 wsgiref==0.1.2
+xmlrunner==1.7.7
 zope.interface==4.1.0
 zope.sqlalchemy==0.7.7
 
