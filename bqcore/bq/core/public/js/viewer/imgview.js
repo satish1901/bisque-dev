@@ -671,6 +671,13 @@ ImgViewer.prototype.highlight_gobject = function(gob, selection) {
     // highlight the selected object
     this.renderer.highlight(gob, selection);
 };
+
+ImgViewer.prototype.select_plane = function(z, t) {
+    this.slicer.setPosition(z, t);
+    if (this.tiles.cur_z != z || this.tiles.cur_t != t)
+        this.doUpdateImage();
+};
+
 /*
 ImgViewer.prototype.color_gobject = function(gob, color) {
     this.renderer.setcolor(gob, color);

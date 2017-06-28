@@ -137,7 +137,7 @@ Ext.define('BQ.viewer.Movie', {
         var logo = this.queryById('logo');
         if (logo) {
             logo.getEl().dom.href = '/client_service/view?resource='+resource.uri;
-        }        
+        }
 
         if (!this.phys) {
             var phys = new BQImagePhys (this.resource);
@@ -183,6 +183,13 @@ Ext.define('BQ.viewer.Movie', {
 
     onResize: function(me, width, height) {
         if (me.viewer) me.viewer.resize();
+    },
+
+    onHide: function() {
+        if (this.viewer) {
+           this.viewer.pause();
+        }
+        this.callParent();
     },
 
     constructUrl: function(opts) {
@@ -276,7 +283,7 @@ Ext.define('BQ.viewer.Movie', {
             value: def,
             listConfig : {
                 minWidth: min_width || 70,
-            },            
+            },
             listeners:{
                 scope: scope,
                 select: cb,

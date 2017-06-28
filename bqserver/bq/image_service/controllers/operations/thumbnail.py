@@ -93,7 +93,8 @@ class ThumbnailOperation(BaseOperation):
         }
         ext = self.server.converters.defaultExtension(fmt)
         ofile = '%s.thumb_%s,%s,%s%s.%s'%(token.data, size[0], size[1], method, preprocc, ext)
-        return token.setImage(ofile, fmt=fmt, dims=info)
+        #log.debug('Dryrun thumbnail [%s]', ofile)
+        return token.setImage(ofile, fmt=fmt, dims=info, input=ofile)
 
     def action(self, token, arg):
         ss = arg.split(',')
