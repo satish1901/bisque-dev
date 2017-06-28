@@ -388,11 +388,14 @@ class ImageServer(object):
                         service = self.operations.plugins[action]
                         # if the service has a dryrun function, some actions are same as dryrun
                         if callable( getattr(service, "dryrun", None) ):
+                            #log.debug ('DRY run: %s calling dryrun', action)
                             token = service.dryrun(token, args)
                         else:
+                            #log.debug ('DRY run: %s calling action', action)
                             token = service.action(token, args)
                         log.debug ('DRY run: %s producing: %s', action, token.data)
                     except Exception:
+                        log.exception('Exception during dryrun')
                         pass
                     if token.isHttpError():
                         break

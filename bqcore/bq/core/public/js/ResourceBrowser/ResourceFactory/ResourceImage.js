@@ -532,6 +532,51 @@ Ext.define('Bisque.Resource.Image.Grid', {
 // Page view for an image
 //-----------------------------------------------------------------------
 
+Ext.namespace('BQ.image_viewers');
+BQ.image_viewers.available = BQ.image_viewers.available || [];
+
+BQ.image_viewers.available.push({
+    class: 'BQ.viewer.Image',
+    xtype: 'imageviewer',
+
+    text: '2D',
+    icon_class: 'view2d',
+    item_id: 'main_view_2d',
+    tooltip: 'View current image in 2D tiled viewer',
+
+    need_destruction: false,
+    container: null,
+    creator: null,
+});
+
+BQ.image_viewers.available.push({
+    class: 'BQ.viewer.Volume.Panel',
+    xtype: 'bq_volume_panel',
+
+    text: '3D',
+    icon_class: 'view3d',
+    item_id: 'main_view_3d',
+    tooltip: 'View current image in 3D volume renderer',
+
+    need_destruction: true,
+    container: null,
+    creator: null,
+});
+
+BQ.image_viewers.available.push({
+    class: 'BQ.viewer.Movie',
+    xtype: 'bq_movie_viewer',
+
+    text: 'Movie',
+    icon_class: 'movie',
+    item_id: 'main_view_movie',
+    tooltip: 'View current image as a movie',
+
+    need_destruction: false,
+    container: null,
+    creator: null,
+});
+
 Ext.define('Bisque.Resource.Image.Page', {
     extend : 'Bisque.Resource.Page',
 
@@ -670,6 +715,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                 scope   : this,
             }
         });
+
 
         this.gobjectTagger = Ext.create('Bisque.GObjectTagger', {
             resource : this.resource,
@@ -913,6 +959,24 @@ Ext.define('Bisque.Resource.Image.Page', {
             }]);
         };
 
+
+        BQ.image_viewers.available[0].container = this.viewerContainer;
+        BQ.image_viewers.available[1].creator = this.show3D;
+        BQ.image_viewers.available[2].creator = this.showMovie;
+
+        var viewer_menu_items = [],
+            v=null;
+        for (var i=0; (v=BQ.image_viewers.available[i]); ++i) {
+            viewer_menu_items.push({
+                xtype  : 'menuitem',
+                itemId : 'menu_view_'+v.text.toLowerCase(),
+                text   : v.text,
+                iconCls: v.icon_class,
+                handler: this.onViewerMenu,
+                tooltip: v.tooltip,
+            });
+        }
+
         this.toolbar.insert(5, [{
             itemId: 'button_view',
             xtype:'button',
@@ -925,30 +989,7 @@ Ext.define('Bisque.Resource.Image.Page', {
                 defaults: {
                     scope: this,
                 },
-                items: [{
-                    xtype  : 'menuitem',
-                    itemId : 'menu_view_2d',
-                    text   : '2D',
-                    iconCls: 'view2d',
-                    handler: this.show2D,
-                    tooltip: 'View current image in 2D tiled viewer',
-                }, {
-                    xtype  : 'menuitem',
-                    itemId : 'menu_view_3d',
-                    text   : '3D',
-                    disabled: true,
-                    iconCls: 'view3d',
-                    tooltip: 'View current image in 3D volume renderer',
-                    handler: this.show3D,
-                }, {
-                    xtype  : 'menuitem',
-                    itemId : 'menu_view_movie',
-                    text   : 'movie',
-                    disabled: true,
-                    iconCls: 'movie',
-                    tooltip: 'View current image as a movie',
-                    handler: this.showMovie,
-                }]
+                items: viewer_menu_items,
             },
         }, '-']);
 
@@ -1041,51 +1082,79 @@ Ext.define('Bisque.Resource.Image.Page', {
 
     },
 
-    show2D : function() {
+    onViewerMenu: function(m) {
+        var me = this,
+            selected = null,
+            v = null;
+        for (var i=0; (v=BQ.image_viewers.available[i]); ++i) {
+            if (m.text === v.text) {
+                selected = v;
+                continue;
+            }
+            if (v.container) {
+                //v.container.stop();
+                v.container.setVisible(false);
+                if (v.need_destruction) {
+                    v.container.destroy();
+                    v.container = null;
+                }
+            }
+        }
+        if (!selected) return;
+        if (selected.container && selected.container.isVisible()) return;
+
         var btn = this.queryById('button_view');
-        btn.setText('View: 2D');
-        btn.setIconCls('view2d');
+        btn.setText('View: '+selected.text);
+        btn.setIconCls(selected.icon_class);
 
-        var image2d = this.queryById('main_view_2d');
-        if (image2d && image2d.isVisible()) return;
-
-        var movie = this.queryById('main_view_movie');
-        if (movie) {
-            movie.setVisible(false);
-            movie.destroy();
+        if (!selected.container) {
+            if (selected.creator) {
+                selected.container = selected.creator.call(this);
+                //selected.container = this.queryById(selected.item_id);
+            } else {
+                var cnt = this.queryById('main_container');
+                selected.container = cnt.add({
+                    xtype: selected.xtype,
+                    itemId: selected.item_id,
+                    resource: this.resource,
+                    toolbar: this.toolbar,
+                    phys: this.viewerContainer.viewer.imagephys,
+                    preferences: this.viewerContainer.viewer.preferences,
+                    listeners: {
+                        select_gobject : function(viewer, gob) {
+                            var node = me.gobjectTagger.findNodeByGob(gob);
+                            if (!node) {
+                                console.log('No node found!');
+                                return;
+                            }
+                            // dima: here expand to expose the selected node
+                            var parent = node;
+                            for (var i=0; i<node.getDepth()-1; i++)
+                                parent = parent.parentNode;
+                            me.gobjectTagger.tree.expandNode( parent, true );
+                            me.gobjectTagger.tree.getSelectionModel().select(node);
+                        },
+                        select_plane : function(viewer, z, t) {
+                            me.viewerContainer.select_plane(z, t);
+                            me.show2D();
+                        },
+                    },
+                });
+            }
         }
+        selected.container.setVisible(true);
+    },
 
-        var image3d = this.queryById('main_view_3d');
-        if (image3d) {
-            image3d.setVisible(false);
-            image3d.destroy();
-        }
-
-        image2d.setVisible(true);
+    show2D : function() {
+        this.onViewerMenu({
+            text: '2D',
+        });
+        return this.viewerContainer;
     },
 
     showMovie : function() {
-        var btn = this.queryById('button_view');
-        btn.setText('View: Movie');
-        btn.setIconCls('movie');
-
-        var movie = this.queryById('main_view_movie');
-        if (movie && movie.isVisible()) return;
-
-        var image2d = this.queryById('main_view_2d');
-        if (image2d) {
-            image2d.setVisible(false);
-            //image2d.destroy(); // do not destroy to really fast return
-        }
-
-        var image3d = this.queryById('main_view_3d');
-        if (image3d) {
-            image3d.setVisible(false);
-            image3d.destroy();
-        }
-
         var cnt = this.queryById('main_container');
-        cnt.add({
+        var movie = cnt.add({
             //region : 'center',
             xtype: 'bq_movie_viewer',
             itemId: 'main_view_movie',
@@ -1094,8 +1163,6 @@ Ext.define('Bisque.Resource.Image.Page', {
             phys: this.viewerContainer.viewer.imagephys,
             preferences: this.viewerContainer.viewer.preferences,
         });
-        var movie = cnt.queryById('main_view_movie');
-        //var download = this.toolbar.queryById('btnDownload');
         var download = BQApp.getToolbar().queryById('button_download');
         var qt = download.menu.queryById('download_movie_qt');
         if (!qt) {
@@ -1126,90 +1193,64 @@ Ext.define('Bisque.Resource.Image.Page', {
                 text: 'Adobe Flash Video',
                 handler: function() { movie.export('flv'); },
             }]);
-
         }
+        return movie;
     },
 
     show3D : function() {
         var me = this;
-        if(!BQ.util.isWebGlAvailable()) return;
-
-        //try{
-            var btn = this.queryById('button_view');
-            btn.setText('View: 3D');
-            btn.setIconCls('view3d');
-
-            var image3d = this.queryById('main_view_3d');
-            if (image3d && image3d.isVisible()) return;
-
-            var image2d = this.queryById('main_view_2d');
-            if (image2d) {
-                image2d.setVisible(false);
-                //image2d.destroy(); // do not destroy to really fast return
-            }
-
-            var movie = this.queryById('main_view_movie');
-            if (movie) {
-                movie.setVisible(false);
-                movie.destroy();
-            }
-
-            var cnt = this.queryById('main_container');
-
-            cnt.add({
-                //region : 'center',
-                xtype: 'bq_volume_panel',
-                itemId: 'main_view_3d',
-                resource: this.resource,
-                toolbar: this.toolbar,
-                phys: this.viewerContainer.viewer.imagephys,
-                preferences: this.viewerContainer.viewer.preferences,
-                listeners: {
-                    select_gobject : function(viewer, gob) {
-                        var node = me.gobjectTagger.findNodeByGob(gob);
-                        if (!node) {
-                            console.log('No node found!');
-                            return;
-                        }
-                        // dima: here expand to expose the selected node
-                        var parent = node;
-                        for (var i=0; i<node.getDepth()-1; i++)
-                            parent = parent.parentNode;
-                        me.gobjectTagger.tree.expandNode( parent, true );
-                        me.gobjectTagger.tree.getSelectionModel().select(node);
-                    },
-
-                    glcontextlost: function(event){
-                        var msgText = " ";
-                        var link = " mailto:me@example.com"
-                            + "?cc=myCCaddress@example.com"
-                            + "&subject=" + escape("This is my subject")
-                            + "&body=" + msgText + "";
-
-                        BQ.ui.error("Hmmm... WebGL seems to hit a snag: <BR/> " +
-                                    "error: " + event.statusMessage +
-                                    "<BR/>Do you want to report this problem?" +
-                                    "<a href = " + link + "> send mail </a>");
-
-                        var image3d = me.queryById('main_view_3d');
-                        var toolMenu = image3d.toolMenu;
-                        toolMenu.destroy();
-                        image3d.destroy();
-                        //this should destroy the 3D viewer
-                        me.show2D();
-                    },
-
-                }
-            });
-    //}
-    /*
-        catch(err){
-            BQ.ui.error("This is strange, the volume renderer failed to load. <BR/>" +
-                        "The reported error is: <BR/> " +
-                        err.message);
-            me.show2D();
+        if (!BQ.util.isWebGlAvailable()) {
+            BQ.ui.error('WebGL is not available in your browser, sorry...');
+            return;
         }
-    */
+
+        var cnt = this.queryById('main_container');
+        var view3d = cnt.add({
+            //region : 'center',
+            xtype: 'bq_volume_panel',
+            itemId: 'main_view_3d',
+            resource: this.resource,
+            toolbar: this.toolbar,
+            phys: this.viewerContainer.viewer.imagephys,
+            preferences: this.viewerContainer.viewer.preferences,
+            listeners: {
+                select_gobject : function(viewer, gob) {
+                    var node = me.gobjectTagger.findNodeByGob(gob);
+                    if (!node) {
+                        console.log('No node found!');
+                        return;
+                    }
+                    // dima: here expand to expose the selected node
+                    var parent = node;
+                    for (var i=0; i<node.getDepth()-1; i++)
+                        parent = parent.parentNode;
+                    me.gobjectTagger.tree.expandNode( parent, true );
+                    me.gobjectTagger.tree.getSelectionModel().select(node);
+                },
+
+                glcontextlost: function(event){
+                    var msgText = " ";
+                    var link = " mailto:me@example.com"
+                        + "?cc=myCCaddress@example.com"
+                        + "&subject=" + escape("This is my subject")
+                        + "&body=" + msgText + "";
+
+                    BQ.ui.error("Hmmm... WebGL seems to hit a snag: <BR/> " +
+                                "error: " + event.statusMessage +
+                                "<BR/>Do you want to report this problem?" +
+                                "<a href = " + link + "> send mail </a>");
+
+                    var image3d = me.queryById('main_view_3d');
+                    var toolMenu = image3d.toolMenu;
+                    toolMenu.destroy();
+                    image3d.destroy();
+                    //this should destroy the 3D viewer
+                    me.show2D();
+                },
+
+            }
+        });
+        return view3d;
     },
 
     getEmbedCode : function() {

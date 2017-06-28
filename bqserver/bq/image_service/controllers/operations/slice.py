@@ -45,6 +45,7 @@ class SliceOperation(BaseOperation):
 
     def dryrun(self, token, arg):
         # parse arguments
+        #log.debug('Dryrun Slice')
         vs = [ [safeint(i, 0) for i in vs.split('-', 1)] for vs in arg.split(',')]
         for v in vs:
             if len(v)<2: v.append(0)
@@ -54,6 +55,7 @@ class SliceOperation(BaseOperation):
 
         # in case slices request an exact copy, skip
         if x1==0 and x2==0 and y1==0 and y2==0 and z1==0 and z2==0 and t1==0 and t2==0:
+            #log.debug('Dryrun Slice: skipping due to pars==0')
             return token
 
         dims = token.dims or {}
@@ -62,29 +64,29 @@ class SliceOperation(BaseOperation):
         if z1<=1 and z2>=dims.get('image_num_z', 1): z1=0; z2=0
         if t1<=1 and t2>=dims.get('image_num_t', 1): t1=0; t2=0
 
-        # check image bounds
-        if z1>dims.get('image_num_z', 1):
-            raise ImageServiceException(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z1 )
-        if z2>dims.get('image_num_z', 1):
-            raise ImageServiceException(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z2 )
-        if t1>dims.get('image_num_t', 1):
-            raise ImageServiceException(400, 'Slice: requested T plane outside of image bounds: [%s]'%t1 )
-        if t2>dims.get('image_num_t', 1):
-            raise ImageServiceException(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
+        # check image bounds - dima: comment since dryrun may not contain proper dimensions
+        # if z1>dims.get('image_num_z', 1):
+        #     raise ImageServiceException(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z1 )
+        # if z2>dims.get('image_num_z', 1):
+        #     raise ImageServiceException(400, 'Slice: requested Z slice outside of image bounds: [%s]'%z2 )
+        # if t1>dims.get('image_num_t', 1):
+        #     raise ImageServiceException(400, 'Slice: requested T plane outside of image bounds: [%s]'%t1 )
+        # if t2>dims.get('image_num_t', 1):
+        #     raise ImageServiceException(400, 'Slice: requested T plane outside of image bounds: [%s]'%t2 )
 
         # shortcuts are only possible with no ROIs are requested
         if x1==x2==0 and y1==y2==0 and len(dims)>0:
             # shortcut if input image has only one T and Z
             if dims.get('image_num_z', 1)<=1 and dims.get('image_num_t', 1)<=1:
-                #log.debug('Slice: plane requested on image with no T or Z planes, skipping...')
+                #log.debug('Dryrun Slice: plane requested on image with no T or Z planes, skipping...')
                 return token
             # shortcut if asking for all slices with only a specific time point in an image with only one time pont
             if z1==z2==0 and t1<=1 and dims.get('image_num_t', 1)<=1:
-                #log.debug('Slice: T plane requested on image with no T planes, skipping...')
+                #log.debug('Dryrun Slice: T plane requested on image with no T planes, skipping...')
                 return token
             # shortcut if asking for all time points with only a specific z slice in an image with only one z slice
             if t1==t2==0 and z1<=1 and dims.get('image_num_z', 1)<=1:
-                #log.debug('Slice: Z plane requested on image with no Z planes, skipping...')
+                #log.debug('Dryrun Slice: Z plane requested on image with no Z planes, skipping...')
                 return token
 
         if z1==z2==0: z1=1; z2=dims.get('image_num_z', 1)
@@ -102,6 +104,7 @@ class SliceOperation(BaseOperation):
         if new_h>0: info['image_num_y'] = new_h+1
 
         ofname = '%s.%d-%d,%d-%d,%d-%d,%d-%d.ome.tif' % (token.data, x1,x2,y1,y2,z1,z2,t1,t2)
+        #log.debug('Dryrun Slice [%s]', ofname)
         return token.setImage(ofname, fmt=default_format, dims=info, input=ofname)
 
     def action(self, token, arg):

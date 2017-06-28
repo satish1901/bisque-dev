@@ -174,8 +174,6 @@ Ext.define('BQ.viewer.Image', {
 
     },
 
-
-
     onchanged : function(gobs) {
         this.fireEvent( 'changed', this, gobs );
     },
@@ -207,6 +205,10 @@ Ext.define('BQ.viewer.Image', {
     setGobjects : function(g) {
         if (!this.viewer) return;
         this.viewer.loadGObjects(g);
+    },
+
+    select_plane: function(z, t)  {
+        this.viewer.select_plane(z, t);
     },
 
     rerender : function() {
@@ -330,7 +332,6 @@ Ext.define('BQ.viewer.Image', {
         //console.log(e.clientX, e.clientY);
         //this.hoverMenu.showAt([e.clientX+15, e.clientY-10]);
     },
-
 
     onmodechange : function(type) {
         //console.log(gob,e);
