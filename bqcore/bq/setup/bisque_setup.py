@@ -76,12 +76,14 @@ import tarfile
 import textwrap
 import time
 import traceback
-import urllib2
 import urlparse
 import uuid
 import zipfile
 from collections import OrderedDict
 
+from dateutil.parser import parse
+from dateutil import tz
+import requests
 import pkg_resources
 import pip
 import six
@@ -328,23 +330,23 @@ def sql(DBURI, statement, verbose = False):
 
     six.print_ ( "SQL: NOT IMPLEMEMENT %s" % statement )
     return 0, ''
+    # OLD SHell out version
+    # command = ["psql"]
+    # if DBURI.username:
+    #     command.extend (['-U', DBURI.username])
+    # if DBURI.host:
+    #     command.extend (['-h', DBURI.host])
+    # if DBURI.port:
+    #     command.extend (['-p', str(DBURI.port)])
+    # stdin = None
+    # if DBURI.password:
+    #     stdin = StringIO.StringIO(DBURI.password)
 
-    command = ["psql"]
-    if DBURI.username:
-        command.extend (['-U', DBURI.username])
-    if DBURI.host:
-        command.extend (['-h', DBURI.host])
-    if DBURI.port:
-        command.extend (['-p', str(DBURI.port)])
-    stdin = None
-    if DBURI.password:
-        stdin = StringIO.StringIO(DBURI.password)
-
-    p =subprocess.Popen(command + ['-d',str(DBURI.database), '-c', statement],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT)
-    out, err = p.communicate()
-    return p.returncode, out
+    # p =subprocess.Popen(command + ['-d',str(DBURI.database), '-c', statement],
+    #                     stdout=subprocess.PIPE,
+    #                     stderr=subprocess.STDOUT)
+    # out, err = p.communicate()
+    # return p.returncode, out
 
 
 class STemplate (string.Template):
@@ -2044,6 +2046,33 @@ def setup_logins (params, runtime_params):
 def _sha1hash(data):
     return hashlib.sha1(data).hexdigest().upper()
 
+def fileretrieve(fetch_url, dest, sha1=None):
+
+    filehash = sha1 and hashlib.sha1()
+    r = requests.get (fetch_url, stream=True)
+    if r.status_code != 200:
+        raise Exception ("Could not read file from %s", fetch_url)
+    with open (dest, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=64*1024):
+            if chunk:
+                f.write(chunk)
+                if sha1:
+                    filehash.update (chunk)
+        if sha1 and sha1 != filehash.hexdigest().upper():
+            os.remove (dest)
+            raise Exception('hash mismatch in %s' % dest)
+
+    # Set the time to Server File  time.
+        try:
+            mtime = parse (r.headers['Last-Modified']).astimezone(tz.tzlocal())
+            srv_lastmodified = time.mktime(mtime.timetuple())
+            touch (dest, (srv_lastmodified, srv_lastmodified))
+        except (KeyError, ValueError) as e:
+            pass
+
+    return dest
+
+
 def install_external_binaries (params, runtime_params):
     """Read EXTERNAL_FILES for binary file names (with prepended hash)
     and download from external site.  Allows binary files to be distributed
@@ -2069,27 +2098,8 @@ def install_external_binaries (params, runtime_params):
 
         fetch_url = urlparse.urljoin(EXT_SERVER,  hash_name)
         print "Fetching %s" % fetch_url
-        handle = urllib2.urlopen (fetch_url)
-        data   = handle.read()
-        info   = handle.info()
-        handle.close()
+        fileretrieve (fetch_url, dest, sha1)
 
-        if sha1 != _sha1hash(data):
-            raise Exception('hash mismatch in %s' % name)
-        handle = open(dest, 'wb')
-        handle.write(data)
-        print "Wrote %s in %s" % (name, where)
-        handle.close()
-
-        # Set the time to Server File  time.
-        from dateutil.parser import parse
-        from dateutil import tz
-        try:
-            mtime = parse (info['Last-Modified']).astimezone(tz.tzlocal())
-            srvLastModified = time.mktime(mtime.timetuple())
-            touch (dest, (srvLastModified, srvLastModified))
-        except (ValueError):
-            pass
 
     if getanswer ("Fetch external binary files from Bisque development server",
                   "Y",
@@ -2313,8 +2323,7 @@ def install_features_source ():
                   "Feature descriptors source code will allow recompiling external feature extractors on unsupported platforms") == "Y":
 
         filename_zip = os.path.join(DIRS['depot'], 'feature_extractors_source.zip')
-        import urllib
-        urllib.urlretrieve ('https://bitbucket.org/bisque/featureextractors/get/default.zip', filename_zip)
+        fileretrieve('https://bitbucket.org/CBIucsb/featureextractors/get/default.zip', filename_zip)
         filename_dest = to_sys_path('bqfeature/bq/src')
         filename_check = ''
         uncompress_dependencies (filename_zip, filename_dest, filename_check, strip_root=True)
@@ -2331,7 +2340,6 @@ def install_libtiff():
 
         Only for Windows, for debian linux use apt-get
     """
-    import urllib
     src = 'https://bitbucket.org/CBIucsb/pylibtiff/downloads/LibTiff-4.0.3-Windows-64bit.zip'
     filename_zip = os.path.join(DIRS['depot'], 'LibTiff-4.0.3-Windows-64bit.zip')
     #filename_dest = bisque_path(os.path.join('bqenv','Scripts'))
@@ -2342,7 +2350,7 @@ def install_libtiff():
                       "Enables reading OME-bigtiff for feature extraction") == "Y":
             print 'Fetching from %s'%src
 
-            urllib.urlretrieve ( src, filename_zip)
+            fileretrieve (src, filename_zip)
             uncompress_dependencies ( filename_zip, DIRS['bin'], filename_check, strip_root=True)
             print 'Installed libtiff-4.0.3 in %s'% DIRS['bin']
     else:
