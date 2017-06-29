@@ -2063,12 +2063,12 @@ def fileretrieve(fetch_url, dest, sha1=None):
             raise Exception('hash mismatch in %s' % dest)
 
     # Set the time to Server File  time.
-        try:
-            mtime = parse (r.headers['Last-Modified']).astimezone(tz.tzlocal())
-            srv_lastmodified = time.mktime(mtime.timetuple())
-            touch (dest, (srv_lastmodified, srv_lastmodified))
-        except (KeyError, ValueError) as e:
-            pass
+    try:
+        mtime = parse (r.headers['Last-Modified']).astimezone(tz.tzlocal())
+        srv_lastmodified = time.mktime(mtime.timetuple())
+        touch (dest, (srv_lastmodified, srv_lastmodified))
+    except (KeyError, ValueError) as _:
+        pass
 
     return dest
 
