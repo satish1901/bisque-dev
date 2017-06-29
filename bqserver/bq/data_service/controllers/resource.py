@@ -204,7 +204,8 @@ class ResponseCache(object):
             names.append ( '0,%s' % resource.resource_uniq if resource else '' )
         return names
     def _resource_query_names(self, resource, user, *args):
-        base = "%s,%s" % (user if user else '', resource.resource_type if resource else '')
+        resource_type = getattr(resource, 'resource_type', None) or (isinstance (resource, basestring) and resource) or ''
+        base = "%s,%s" % (user if user else '', resource_type)
         top = "%s#" % (user if user else 0)
         return [ top, base ] + [ "#".join ([base, arg]) for arg in args ]
 
@@ -442,7 +443,7 @@ class HierarchicalCache(ResponseCache):
         files = os.listdir(self.cachepath)
         cache_names = self._resource_cache_names(resource, user)
         query_names = self._resource_query_names(resource, user, 'tag_values', 'tag_query', 'tag_names', 'gob_types')
-        log.info ("CACHE invalidate %s for %s %s:%s" , resource and resource.resource_uniq , user, cache_names, query_names)
+        # Datasets are in the form USER,UNIQ#extract so build a special list
         # invalidate cached resource varients
         def delete_matches (files, names, mangle = lambda x:x):
             for f in list(files):
@@ -455,22 +456,25 @@ class HierarchicalCache(ResponseCache):
                         # File was removed by other process
                         pass
                     files.remove (f)
-                    log.debug ('cache  remove %s' % f)
+                    log.debug ('cache  remove %s' ,  f)
 
         names  = list( cache_names )
         names.extend (query_names)
+        #names.extend (dataset_names)
+        log.info ("CACHE invalidate %s for %s %s" , resource and resource.resource_uniq , user, names)
         # Delete user matches
         try:
             log.debug ('cache delete for user')
-            delete_matches ( files, names)
-
+            #delete_matches ( files, names)  Since True below will catch all these just skip this step.
             # Split off user and remove global queries
             # NOTE: we may only need to do this when resource invalidated was "published"
             # # value queries of shared datasets are a problem
             if True: # resource.permission == 'published':
                 log.debug ('cache delete for all')
                 #names = [ qnames.split(',',1)[-1] for qnames in names]
-                delete_matches ( files, names, lambda x: x.split(',', 1)[-1])
+                delete_matches (files, names, lambda x: x.split(',', 1)[-1])
+                log.debug ("cache delete extract ", )
+                delete_matches (files, [ "#extract" ], lambda x: x.split ('#', 1)[-1])
         except Exception:
             log.exception ("Problem while deleting files")
 
