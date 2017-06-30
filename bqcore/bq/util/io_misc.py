@@ -50,7 +50,7 @@ def xpathtextnode(doc, path, default='', namespaces=None):
 def safeint(s, default=0):
     try:
         v = int(s)
-    except ValueError:
+    except (ValueError, TypeError) as e:
         v = default
     return v
 

@@ -172,6 +172,10 @@ Ext.define('BQ.Application', {
         return (this.session && this.user);
     },
 
+    getUser: function() {
+        return this.user;
+    },
+
     // UI elements --------------------------------------------------
 
     getCenterComponent: function() {
@@ -182,6 +186,7 @@ Ext.define('BQ.Application', {
     setCenterComponent: function(c) {
         if (!this.main) return;
         this.main.setCenterComponent(c);
+        this.fireEvent( 'center_component', c);
     },
 
     getToolbar: function() {
