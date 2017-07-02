@@ -547,6 +547,12 @@ BQ.image_viewers.available.push({
     need_destruction: false,
     container: null,
     creator: null,
+
+    min_p: 1,
+    min_z: 1,
+    min_t: 1,
+    max_x: null,
+    max_y: null,
 });
 
 BQ.image_viewers.available.push({
@@ -561,6 +567,12 @@ BQ.image_viewers.available.push({
     need_destruction: true,
     container: null,
     creator: null,
+
+    min_p: 2,
+    min_z: 1,
+    min_t: 1,
+    max_x: null,
+    max_y: null,
 });
 
 BQ.image_viewers.available.push({
@@ -575,6 +587,12 @@ BQ.image_viewers.available.push({
     need_destruction: false,
     container: null,
     creator: null,
+
+    min_p: 2,
+    min_z: 1,
+    min_t: 1,
+    max_x: null,
+    max_y: null,
 });
 
 Ext.define('Bisque.Resource.Image.Page', {
@@ -968,30 +986,25 @@ Ext.define('Bisque.Resource.Image.Page', {
             v=null;
         for (var i=0; (v=BQ.image_viewers.available[i]); ++i) {
             viewer_menu_items.push({
-                xtype  : 'menuitem',
-                itemId : 'menu_view_'+v.text.toLowerCase(),
-                text   : v.text,
+                xtype  : 'button',
+                itemId: 'menu_view_'+v.text.toLowerCase(),
+
+                //text: v.text,
+                pressed: i==0 ? true : false,
+                mode: v.text,
                 iconCls: v.icon_class,
-                handler: this.onViewerMenu,
                 tooltip: v.tooltip,
+                toggleGroup: 'viewers',
+                frame: false,
+                scope: this,
+                //handler: this.onViewerMenu,
+                toggleHandler: this.onViewerMenu,
+                focusCls: '',
             });
         }
 
-        this.toolbar.insert(5, [{
-            itemId: 'button_view',
-            xtype:'button',
-            text: 'View: 2D',
-            iconCls: 'view2d',
-            needsAuth: false,
-            tooltip: 'Change the view for the current image',
-            scope: this,
-            menu: {
-                defaults: {
-                    scope: this,
-                },
-                items: viewer_menu_items,
-            },
-        }, '-']);
+        this.toolbar.insert(5, ['-']);
+        this.toolbar.insert(5, viewer_menu_items);
 
         this.toolbar.doLayout();
 
@@ -1058,36 +1071,58 @@ Ext.define('Bisque.Resource.Image.Page', {
         }
 
         this.dims = dims;
-        if (dims.t>1 || dims.z>1)
-            this.toolbar.queryById('menu_view_movie').setDisabled( false );
-        if (dims.t>1 || dims.z>1)
-            this.toolbar.queryById('menu_view_3d').setDisabled( false );
+        var me = this;
+        setTimeout(function(){
+            me.doCheckLimits();
+        }, 50);
+    },
 
-        if (dims.x>10000 && dims.y>10000) {
-            this.toolbar.queryById('menu_view_movie').setDisabled( true );
-            this.toolbar.queryById('menu_view_3d').setDisabled( true );
+    doCheckLimits : function() {
+        var x = this.dims.x,
+            y = this.dims.y,
+            t = this.dims.t,
+            z = this.dims.z,
+            p = t*z,
+            v=null,
+            dis=false,
+            cnt=null;
+
+        for (var i=0; (v=BQ.image_viewers.available[i]); ++i) {
+            dis=false;
+
+            if (v.max_x && v.max_x<x) dis=true;
+            if (v.max_y && v.max_y<y) dis=true;
+            if (v.min_p>p) dis=true;
+            if (v.min_t>t) dis=true;
+            if (v.min_z>z) dis=true;
+
+            cnt = this.toolbar.queryById('menu_view_'+v.text.toLowerCase());
+            if (cnt)
+                cnt.setDisabled(dis);
         }
 
-        if (dims.x>15000 && dims.y>15000) {
+        if (x>15000 && y>15000) {
             BQApp.getToolbar().queryById('download_as_ometiff').setDisabled( true );
             BQApp.getToolbar().queryById('download_as_omebigtiff').setDisabled( true );
         }
 
-        if (!BQ.util.isWebGlAvailable()) {//if webgl isn't available then we'll disable the command.
+        if (!BQ.util.isWebGlAvailable()) {
+            //if webgl isn't available then we'll disable the command.
             var button3D = this.toolbar.queryById('menu_view_3d');
-            button3D.setText('3D (WebGl not available)');
-            button3D.setTooltip('Enable WebGl to access viewer.');
+            //button3D.setText('3D (WebGl not available)');
+            button3D.setTooltip('WebGL is not available');
             button3D.setDisabled( true );
         }
-
     },
+
 
     onViewerMenu: function(m) {
         var me = this,
             selected = null,
             v = null;
+
         for (var i=0; (v=BQ.image_viewers.available[i]); ++i) {
-            if (m.text === v.text) {
+            if (m.mode === v.text) {
                 selected = v;
                 continue;
             }
@@ -1102,10 +1137,7 @@ Ext.define('Bisque.Resource.Image.Page', {
         }
         if (!selected) return;
         if (selected.container && selected.container.isVisible()) return;
-
-        var btn = this.queryById('button_view');
-        btn.setText('View: '+selected.text);
-        btn.setIconCls(selected.icon_class);
+        m.toggle(true);
 
         if (!selected.container) {
             if (selected.creator) {
@@ -1146,9 +1178,8 @@ Ext.define('Bisque.Resource.Image.Page', {
     },
 
     show2D : function() {
-        this.onViewerMenu({
-            text: '2D',
-        });
+        var m = this.toolbar.queryById('menu_view_2d');
+        m.toggle();
         return this.viewerContainer;
     },
 

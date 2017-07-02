@@ -473,6 +473,23 @@
 }
 
 /*******************************************************************************
+ viewer surface
+*******************************************************************************/
+
+.viewer .ol-viewport {
+    z-index: 20;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: auto;
+}
+
+/*******************************************************************************
  gobjects_surface
 *******************************************************************************/
 
@@ -1060,25 +1077,28 @@ table.x-form-color {
  toolbar
 *******************************************************************************/
 
-.movie {
-    background-image: url('/core/images/viewer/movie.png');
-    background-size: 16px;
+.bq_resource_page .view2d {
+    background-image: url(/core/images/viewer/icons_viewers.svg);
+    background-size: 65px;
     background-color: transparent;
     background-repeat: no-repeat;
+    background-position: 5px 1px;
 }
 
-.view2d {
-    background-image: url('/core/images/viewer/2d.png');
-    background-size: 16px;
+.bq_resource_page .view3d {
+    background-image: url(/core/images/viewer/icons_viewers.svg);
+    background-size: 65px;
     background-color: transparent;
     background-repeat: no-repeat;
+    background-position: -17px 2px;
 }
 
-.view3d {
-    background-image: url('/core/images/viewer/3d.png');
-    background-size: 16px;
+.bq_resource_page .movie {
+    background-image: url(/core/images/viewer/icons_viewers.svg);
+    background-size: 65px;
     background-color: transparent;
     background-repeat: no-repeat;
+    background-position: -41px 2px;
 }
 
 .external {
