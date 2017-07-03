@@ -71,6 +71,7 @@ from sqlalchemy import exc
 from sqlalchemy.sql import and_, case
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
+from sqlalchemy.ext.orderinglist import ordering_list
 
 from tg import config, session, request
 
@@ -552,6 +553,7 @@ class Value(object):
         elif isinstance(v, Taggable):
             self.objref = v
             self.valnum = None
+            #self.valstr = str(v)  # This works and stores the resource_uniq in the valstr
             self.valstr = None
 
     def remvalue(self):
@@ -831,13 +833,18 @@ mapper( Taggable, taggable,
     'children' : relation(Taggable, lazy=True, cascade="all, delete-orphan", passive_deletes=True,
                           enable_typechecks = False,
                           backref = backref('parent', enable_typechecks=False, remote_side = [taggable.c.id]),
-                          primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)
+                          primaryjoin = (taggable.c.id == taggable.c.resource_parent_id),
+                          order_by = taggable.c.resource_index,
+                          collection_class = ordering_list ('resource_index')
                           ),
 
     'childrenq' : relation(Taggable, lazy='dynamic',
                           enable_typechecks = False,
                           remote_side = [taggable.c.resource_parent_id],
-                          primaryjoin = (taggable.c.id == taggable.c.resource_parent_id)),
+                          primaryjoin = (taggable.c.id == taggable.c.resource_parent_id),
+                          order_by = taggable.c.resource_index,
+                          collection_class = ordering_list ('resource_index')
+                       ),
 
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan", passive_deletes=True,
                         order_by=[values.c.indx],
@@ -852,10 +859,10 @@ mapper( Taggable, taggable,
                         #foreign_keys=[vertices.c.resource_parent_id]
                         ),
 
-    'tagq' : relation(Taggable, lazy='dynamic',
-                      remote_side=[taggable.c.resource_parent_id, taggable.c.resource_type],
-                      primaryjoin= and_(remote(taggable.c.resource_parent_id)==taggable.c.id,
-                                        remote(taggable.c.resource_type) == 'tag')),
+    # 'tagq' : relation(Taggable, lazy='dynamic',
+    #                   remote_side=[taggable.c.resource_parent_id, taggable.c.resource_type],
+    #                   primaryjoin= and_(remote(taggable.c.resource_parent_id)==taggable.c.id,
+    #                                     remote(taggable.c.resource_type) == 'tag')),
 
     #'document' : relation(Taggable, uselist=False,
     #                      primaryjoin=(taggable.c.document_id==taggable.c.id),
