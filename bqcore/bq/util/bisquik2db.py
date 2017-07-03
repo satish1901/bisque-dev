@@ -334,7 +334,8 @@ mapping_fields = {
     'resource_type' : None,
     'resource_user_type' : 'type',
     'resource_hidden' : 'hidden',
-    'resource_index' : 'index',
+#    'resource_index' : 'index',
+    'resource_index' : None,
     'module_type_id':None,
     'mex' : None,
     'mex_id' : None,
@@ -485,8 +486,9 @@ def resource2nodes(dbo, parent=None, view=[], baseuri=None,  qfilter=None, **kw)
 
     for node in docnodes:
         nodes[node.id]   = xmlnode(node, None, baseuri, view)
-        parents[node.id] = node.resource_parent_id
-    for node_id, parent_id in parents.items():
+        parents[node.id] = (node.resource_parent_id, node.resource_index)
+    # pull out items sorted by resource_index (k, (parent, index) )
+    for node_id, (parent_id, _) in sorted (parents.items(), key=lambda x : x[1][1]):
         try:
             # attached xml nodes in position
             if parent_id is not None:

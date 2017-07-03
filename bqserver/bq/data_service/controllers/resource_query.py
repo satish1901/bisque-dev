@@ -1245,7 +1245,10 @@ def resource_delete(resource, user_id=None):
         except Exception:
             log.exception ("While deleting blob %s", resource_uniq)
 
-    DBSession.delete(resource)
+    if resource.resource_parent_id:
+        resource.parent.children.remove(resource)
+    else:
+        DBSession.delete(resource)
     #DBSession.flush()
 
     log.info('resource_delete %s:end' % resource)
