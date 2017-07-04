@@ -564,7 +564,7 @@ BQ.image_viewers.available.push({
     item_id: 'main_view_3d',
     tooltip: 'View current image in 3D volume renderer',
 
-    need_destruction: true,
+    need_destruction: false,
     container: null,
     creator: null,
 
