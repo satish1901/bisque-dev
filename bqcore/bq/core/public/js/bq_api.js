@@ -1941,7 +1941,12 @@ BQImagePhys.prototype.coordinate_to_phys = function(pt, use_geo) {
 
     // print physical coordinates
     if (!use_geo && this.pixel_size[0]>0 && this.pixel_size[1]>0) {
-        return [pt.x*(this.pixel_size[0]), pt.y*(this.pixel_size[1])];
+        v = [pt.x*(this.pixel_size[0]), pt.y*(this.pixel_size[1])];
+        if (pt.z)
+            v[2] = pt.z*(this.pixel_size[2]);
+        if (pt.t)
+            v[3] = pt.t*(this.pixel_size[3]);
+        return v;
     }
 
     // print geo coordinates if available
