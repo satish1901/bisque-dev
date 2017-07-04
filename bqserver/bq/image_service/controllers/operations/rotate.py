@@ -39,7 +39,7 @@ class RotateOperation(BaseOperation):
     name = 'rotate'
 
     def __str__(self):
-        return 'rotate: returns an image rotated as requested, arg = 0|90|-90|180|270|guess'
+        return 'rotate: returns an image rotated as requested, arg = 0|90|-90|180|270|flip_ud|mirror_lr|guess'
 
     def dryrun(self, token, arg):
         ang = arg.lower()
@@ -50,7 +50,7 @@ class RotateOperation(BaseOperation):
 
     def action(self, token, arg):
         ang = arg.lower()
-        angles = ['0', '90', '-90', '270', '180', 'guess']
+        angles = ['0', '90', '-90', '270', '180', 'guess', 'flip_ud', 'mirror_lr']
         if ang=='270':
             ang='-90'
         if ang not in angles:
@@ -68,4 +68,9 @@ class RotateOperation(BaseOperation):
             'image_num_x': w,
             'image_num_y': h,
         }
-        return self.server.enqueue(token, 'rotate', ofile, fmt=default_format, command=['-rotate', ang], dims=info)
+        command=['-rotate', ang]
+        if ang == 'flip_ud':
+            command=['-flip']
+        if ang == 'mirror_lr':
+            command=['-mirror']
+        return self.server.enqueue(token, 'rotate', ofile, fmt=default_format, command=command, dims=info)

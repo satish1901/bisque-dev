@@ -74,6 +74,9 @@ class Rearrange3DOperation(BaseOperation):
         command = token.drainQueue()
         if not os.path.exists(ofile):
             command.extend(['-rearrange3d', '%s'%arg])
+            # dima: fix the case of a fliped output for
+            if arg == 'yzx':
+                command.extend(['-flip'])
             self.server.imageconvert(token, ifile, ofile, fmt=default_format, extra=command)
 
         return token.setImage(ofile, fmt=default_format, dims=info, input=ofile)
