@@ -77,7 +77,8 @@ from bq.core.service import ServiceController
 #from bq.exceptions import RequestError
 from bq.util.paths import data_path
 from bq.util.converters import asbool
-from bq.util.xmldict import d2xml
+#from bq.util.xmldict import d2xml
+from .formats import find_inputer, find_formatter
 
 log = logging.getLogger("bq.data_service.resource")
 
@@ -209,7 +210,7 @@ class ResponseCache(object):
         top = "%s#" % (user if user else 0)
         return [ top, base ] + [ "#".join ([base, arg]) for arg in args ]
 
-    def save(self, url, headers, value,user):
+    def save(self, url, headers, value, user):
         cachename = os.path.join(self.cachepath, self._cache_name(url, user))
         headers = dict ([ (k,v) for k,v in headers.items() if k in self.known_headers])
         log.debug (u'cache write %s to %s', url, cachename )
@@ -656,11 +657,14 @@ class Resource(ServiceController):
             elif http_method == 'get':
                 #If the method is a get, call the self.index method, which
                 #should list the contents of the collection.
-                headers = value = None
+                accept_header = headers = value = None
                 if usecache:
                     headers, value = self.server_cache.fetch(request.url, user=user_id)
+                    if headers:
+                        _, accept_header = find_formatter (accept_header=request.headers.get ('accept'))
+                        content_type  = headers.get ('Content-Type')
 
-                if value:
+                if value and accept_header == content_type:
                     response.headers.update(headers) # cherrypy.response.headers.update (headers)
                 else:
                     #self.add_cache_header(None)
@@ -725,37 +729,48 @@ class Resource(ServiceController):
         try:
             if http_method in ('post', 'put'):
                 clen = int(request.headers.get('Content-Length', 0))
-                content = request.headers.get('Content-Type')
-                if content.startswith('text/xml') or \
-                       content.startswith('application/xml'):
-                    data = request.body_file.read(clen)
-                    #log.debug('POST '+ data)
-                    #kw['xml_text'] = data
-                    value = method(resource, xml=data, **kw)
-                elif content.startswith("application/json"):
-                    try:
-                        #data = request.body_file.read(clen)
-                        data = d2xml (json.load (request.body_file))
-                        value = method(resource, xml=data, **kw)
-                    except Exception as e:
-                        log.exception ("while reading json content")
-                        abort(415, "Bad media type in post/put:%s" % content )
-                else:
-                    #response = method(resource, doc = None, **kw)
-                    # Raise illegal operation (you should provide XML)
-                    log.debug ("Bad media type in post/put:%s" ,  content)
-                    abort(415, "Bad media type in post/put:%s" % content )
-                #self.server_cache.invalidate(request.url, user=user_id)
+                content_type = request.headers.get('Content-Type')
+
+                inputer = find_inputer (content_type)
+                if not inputer:
+                    log.debug ("Bad media type in post/put:%s" ,  content_type)
+                    abort(415, "Bad media type in post/put:%s" % content_type )
+
+                value = method (resource, data=inputer(request.body_file, clen), **kw)
+
+                # if content.startswith('text/xml') or \
+                #        content.startswith('application/xml'):
+                #     data = request.body_file.read(clen)
+                #     #log.debug('POST '+ data)
+                #     #kw['xml_text'] = data
+                #     value = method(resource, xml=data, **kw)
+                # elif content.startswith("application/json"):
+                #     try:
+                #         #data = request.body_file.read(clen)
+                #         data = d2xml (json.load (request.body_file))
+                #         value = method(resource, xml=data, **kw)
+                #     except Exception as e:
+                #         log.exception ("while reading json content")
+                #         abort(415, "Bad media type in post/put:%s" % content )
+                # else:
+                #     #response = method(resource, doc = None, **kw)
+                #     # Raise illegal operation (you should provide XML)
+                #     log.debug ("Bad media type in post/put:%s" ,  content)
+                #     abort(415, "Bad media type in post/put:%s" % content )
+                # #self.server_cache.invalidate(request.url, user=user_id)
                 self.server_cache.invalidate_resource(resource, user=user_id)
             elif http_method == 'delete':
                 self.server_cache.invalidate_resource(resource, user=user_id)
                 value = method(resource, **kw)
                 #self.server_cache.invalidate(request.url, user=user_id)
             elif  http_method == 'get':
-                headers = value = None
+                accept_header = headers = value = None
                 if usecache:
                     headers, value = self.server_cache.fetch(request.url, user=user_id)
-                if value:
+                    if headers:
+                        content_type  = headers.get ('Content-Type')
+                        _, accept_header = find_formatter (accept_header=request.headers.get ('accept'))
+                if value and accept_header == content_type:
                     response.headers.update (headers)
                 else:
                     #run the requested method, passing it the resource

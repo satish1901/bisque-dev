@@ -54,22 +54,32 @@ DESCRIPTION
 import logging
 from StringIO import StringIO
 import csv
+import mimeparse
 
 from lxml import etree
 import  simplejson as json
 
-from bq.util.xmldict import xml2d
+from bq.util.xmldict import xml2d, d2xml
 
 log = logging.getLogger ("bq.data_service.formats")
 
 def format_tree(tree, view=None):
     "For internal use.. just return the tree"
     return tree
+def input_tree (inpf):
+    return inpf
+
 def format_xml(tree, view=None):
     pretty = True if  view and 'pretty' in view else False
     return etree.tounicode(tree, pretty_print=pretty).encode('utf-8')
-def format_json(tree, view=None):
+
+def input_xml (inpf, inplen=None):
+    return etree.parse (inpf)
+
+def format_json(tree, **kw):
     return json.dumps(xml2d(tree),indent=' ')
+def input_json (inpf, **kw):
+    return  d2xml (json.load (inpf))
 
 
 def format_csv (tree, view=None):
@@ -135,14 +145,42 @@ def format_csv (tree, view=None):
                 stack.append ( (sub, element) )
     return buffer.getvalue()
 
+def input_csv (inpf, **kw):
+    pass
 
 
-
-formatters = { 'xml' : (format_xml, 'text/xml' ),
+FORMATTERS = { 'xml' : (format_xml, 'text/xml' ),
                'csv' : (format_csv, 'text/csv'), #text/csv application/vnd.ms-excel or text/plain
                'tree': (format_tree, 'application'),
                'json': (format_json, 'application/json'),
              }
 
-def find_formatter (format, **kw):
-    return formatters.get(format, (format_xml, 'text/xml' ))
+
+CONTENT_TYPE_CONVERTERS = {
+    'text/xml' : (format_xml, input_xml, 'xml'),
+    'text/csv' : (format_csv, input_csv, 'csv'),
+    'appication/tree' : (format_tree, input_tree, 'tree'),
+    'application/json' : (format_json, input_json, 'json'),
+    'application/xml' : (format_xml, input_xml, 'xml'),
+}
+NO_CONV=(None,None,None)
+
+def find_formatter (format=None, accept_header=None, **kw):
+    if format is not None:
+        return FORMATTERS.get(format, (format_xml, 'text/xml' ))
+    # Parse accept header until acceptable is found
+    if accept_header is None:
+        accept_header = "application/xml"
+    accept_header  = mimeparse.best_match (CONTENT_TYPE_CONVERTERS.keys(), accept_header)
+    converter =  CONTENT_TYPE_CONVERTERS.get (accept_header, NO_CONV)[0]
+    return (converter, accept_header)
+
+def find_formatter_type (accept_header=None, **kw):
+    if accept_header is None:
+        accept_header = "application/xml"
+    accept_header  = mimeparse.best_match (CONTENT_TYPE_CONVERTERS.keys(), accept_header)
+    type_ =  CONTENT_TYPE_CONVERTERS.get (accept_header, NO_CONV)[2]
+    return type_
+
+def find_inputer  (content_type):
+    return CONTENT_TYPE_CONVERTERS.get (content_type, NO_CONV)[1]
