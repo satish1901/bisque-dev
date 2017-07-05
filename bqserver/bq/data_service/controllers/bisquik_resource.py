@@ -199,7 +199,8 @@ class BisquikResource(Resource):
         elif resource is not None:
             response = db2tree (resource, view = view, parent = response, baseuri=self.uri, **kw)
         #transaction.commit()
-        formatter, content_type  = find_formatter (format)
+        accept_header = tg.request.headers.get ('accept')
+        formatter, content_type  = find_formatter (format, accept_header)
         tg.response.headers['Content-Type'] = content_type
         return formatter(response,view=view)
 
@@ -282,7 +283,8 @@ class BisquikResource(Resource):
                      **kw)
 
 
-        formatter, content_type  = find_formatter (format)
+        accept_header = tg.request.headers.get ('accept')
+        formatter, content_type  = find_formatter (format, accept_header)
         tg.response.headers['Content-Type'] = content_type
         text_response =  formatter(response, view=view)
         #ex = etree.XML (text_response)
