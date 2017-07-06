@@ -74,7 +74,7 @@ def format_xml(tree, view=None):
     return etree.tounicode(tree, pretty_print=pretty).encode('utf-8')
 
 def input_xml (inpf, inplen=None):
-    return etree.parse (inpf)
+    return etree.parse (inpf).getroot()
 
 def format_json(tree, **kw):
     return json.dumps(xml2d(tree),indent=' ')
@@ -183,4 +183,5 @@ def find_formatter_type (accept_header=None, **kw):
     return type_
 
 def find_inputer  (content_type):
+    content_type = content_type.split(';')[0].strip()
     return CONTENT_TYPE_CONVERTERS.get (content_type, NO_CONV)[1]

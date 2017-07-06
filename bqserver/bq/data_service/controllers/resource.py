@@ -736,7 +736,8 @@ class Resource(ServiceController):
                     log.debug ("Bad media type in post/put:%s" ,  content_type)
                     abort(415, "Bad media type in post/put:%s" % content_type )
 
-                value = method (resource, data=inputer(request.body_file, clen), **kw)
+                # xml arg is for backward compat
+                value = method (resource, xml=inputer(request.body_file, clen), **kw)
 
                 # if content.startswith('text/xml') or \
                 #        content.startswith('application/xml'):

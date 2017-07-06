@@ -299,7 +299,7 @@ class BisquikResource(Resource):
         """
         view=kw.pop('view', None)
         format = kw.pop('format', None)
-        log.info ("NEW: %s %s... " ,request.url, xml[:64])
+        log.info ("NEW: %s ... %s" ,request.url, xml.tag)
 
         # Create a DB object from the document.
         #if  not identity.not_anonymous():
@@ -321,14 +321,14 @@ class BisquikResource(Resource):
     def replace_all(self, resource,  xml, **kw):
         '''PUT /ds/image/1/gobjects  --> Replace contents of gobjects with doc
         '''
-        log.info ('REPLACE_ALL %s %s' % (request.url, xml))
+        log.info ('REPLACE_ALL %s %s' , request.url, xml.tag)
         parent = self.load_parent()
         resource = None
         if parent:
             resource = self.check_access(parent, RESOURCE_EDIT)
             DBSession.autoflush = False
-            log.info('REPLACE %s in %s' % (self.resource_name , parent))
-            log.debug ("replace: %s => %s" %(xml, resource))
+            log.info('REPLACE %s in %s' , self.resource_name , str(parent))
+            log.debug ("replace: %s => %s" , xml.tag , str(resource))
             # Here we clear the specific type (tag,gobject) etc. and
 
             parent.clear([ self.resource_name ])
@@ -345,7 +345,7 @@ class BisquikResource(Resource):
         DELETE /ds/images/1/gobjects
         """
         parent = self.load_parent()
-        log.info ('DELETE_ALL %s' % (request.url))
+        log.info ('DELETE_ALL %s' , request.url)
         resource = self.check_access(parent, RESOURCE_EDIT)
         parent.clear([self.resource_name])
         #transaction.commit()
@@ -371,14 +371,14 @@ class BisquikResource(Resource):
         '''PUT /ds/image/1  --> Replace all contents with doc
         '''
         view=kw.pop('view', None)
-        log.info ('MODIFY %s %s' % (request.url, xml))
+        log.info ('MODIFY %s %s' , request.url, xml.tag)
         resource = self.check_access(resource, RESOURCE_EDIT)
         parent = self.load_parent()
         DBSession.autoflush = False
         old = resource.clear()
-        log.debug ("MODIFY: parent=%s resource=%s" % (parent, resource))
+        log.debug ("MODIFY: parent=%s resource=%s" ,  str(parent), str(resource))
         resource = bisquik2db (doc=xml, resource=resource, parent=parent, replace=True)
-        log.info ('MODIFIED: ==> %s ' %(resource))
+        log.info ('MODIFIED: ==> %s ' , str(resource))
         return self.resource_output (resource, view=view)
 
     @expose(content_type='text/xml') #, format='xml')
@@ -389,11 +389,11 @@ class BisquikResource(Resource):
         '''
 
         view=kw.pop('view', None)
-        log.info ('APPEND %s %s' % (request.url, xml))
+        log.info ('APPEND %s %s' , request.url, xml.tag)
         resource = self.check_access(resource, RESOURCE_EDIT)
         #parent = self.load_parent()
         resource = bisquik2db (doc=xml, parent=resource) #, resource = resource)
-        log.info ('APPEND/update: ==> %s ' % (resource))
+        log.info ('APPEND/update: ==> %s ' , str (resource))
         return self.resource_output (resource, view=view)
 
     @expose(content_type="text/xml")
@@ -415,10 +415,10 @@ class BisquikResource(Resource):
     def check(self, resource, **kw):
         """HEAD /ds/images/1 : Check ability to read resource
         """
-        log.info ('HEAD  %s' % (request.url))
+        log.info ('HEAD  %s' , request.url)
         view=kw.pop('view', 'short')
         format = kw.pop('format', None)
         resource = self.check_access(resource)
-        log.info ("HEAD ==>%s" % resource)
+        log.info ("HEAD ==>%s" , str(resource))
         resource = etree.Element ('resource')
         return self.resource_output(resource, **kw)
