@@ -189,6 +189,7 @@ class MexDelegate (Resource):
     @require(not_anonymous())
     def new(self, factory, xml, **kw):
         log.info ("MEX NEW")
+        mex = xml
         if isinstance (xml, basestring):
             mex = etree.XML (xml)
         if mex.tag == "request":
@@ -225,6 +226,7 @@ class MexDelegate (Resource):
         """
         #return self.delegate.modify (resource, xml, **kw)
         log.info('MEX MODIFY %s', tg.request.url)
+        mex = xml
         if isinstance (xml, basestring):
             mex = etree.XML (xml)
         mex = check_mex(mex)
@@ -257,6 +259,7 @@ class MexDelegate (Resource):
         Append a value to the mex
         """
         log.info('MEX APPEND %s', tg.request.url)
+        mex = xml
         if isinstance (xml, basestring):
             mex = etree.XML(xml)
         mex = check_mex(mex)
