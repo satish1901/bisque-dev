@@ -189,7 +189,8 @@ class MexDelegate (Resource):
     @require(not_anonymous())
     def new(self, factory, xml, **kw):
         log.info ("MEX NEW")
-        mex = etree.XML (xml)
+        if isinstance (xml, basestring):
+            mex = etree.XML (xml)
         if mex.tag == "request":
             mex = mex[0]
         mex = self.create_mex(mex)
@@ -224,7 +225,8 @@ class MexDelegate (Resource):
         """
         #return self.delegate.modify (resource, xml, **kw)
         log.info('MEX MODIFY %s', tg.request.url)
-        mex = etree.XML (xml)
+        if isinstance (xml, basestring):
+            mex = etree.XML (xml)
         mex = check_mex(mex)
         mex = data_service.update(mex, view=view)
         self.remap_uri (mex)
@@ -255,7 +257,8 @@ class MexDelegate (Resource):
         Append a value to the mex
         """
         log.info('MEX APPEND %s', tg.request.url)
-        mex = etree.XML(xml)
+        if isinstance (xml, basestring):
+            mex = etree.XML(xml)
         mex = check_mex(mex)
         mex = data_service.update(mex, view=view)
         #mex =  data_service.append_resource (resource, xml, **kw)
