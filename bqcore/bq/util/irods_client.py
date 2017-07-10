@@ -23,7 +23,7 @@ try:
 except ImportError:
     log.warn ("Irods not available: unable to import irods")
 
-IRODS_CACHE = data_path('irods_cache')
+#IRODS_CACHE = data_path('irods_cache')
 
 CONNECTION_POOL = {}
 
@@ -116,40 +116,40 @@ def copyfile(f1, *dest):
         if len(buf) < BLOCK_SZ:
             break
 
-def chk_cache():
-    if not os.path.exists(IRODS_CACHE):
-        _mkdir (IRODS_CACHE)
+def chk_cache(cache):
+    if not os.path.exists(cache):
+        _mkdir (cache)
 
 
 #####################
 # iRods CACHE
-def irods_cache_name(path):
-    cache_filename = os.path.join(IRODS_CACHE, path[1:])
-    return cache_filename
-def irods_cache_fetch(path):
-    cache_filename = os.path.join(IRODS_CACHE, path[1:])
+#def irods_cache_name(path):
+#    cache_filename = os.path.join(IRODS_CACHE, path[1:])
+#    return cache_filename
+def irods_cache_fetch(path, cache):
+    cache_filename = os.path.join(cache, path[1:])
     if os.path.exists(cache_filename):
         return cache_filename
     return None
 
-def irods_cache_save(f, path, *dest):
-    cache_filename = os.path.join(IRODS_CACHE, path[1:])
+def irods_cache_save(f, path, cache, *dest):
+    cache_filename = os.path.join(cache, path[1:])
     _mkdir(os.path.dirname(cache_filename))
     with open(cache_filename, 'wb') as fw:
         copyfile(f, fw, *dest)
 
     return cache_filename
 
-def irods_fetch_file(url, **kw):
-    chk_cache()
+def irods_fetch_file(url, cache, **kw):
+    chk_cache(cache)
     try:
         with IrodsConnection(url, **kw) as ic:
             log.debug( "irods_fetching %s -> %s" , url, ic.path)
-            localname = irods_cache_fetch(ic.path)
+            localname = irods_cache_fetch(ic.path, cache)
             if localname is None:
                 obj = ic.session.data_objects.get (ic.path)
                 with obj.open ('r') as f:
-                    localname = irods_cache_save(f, ic.path)
+                    localname = irods_cache_save(f, ic.path, cache)
             return localname
     except Exception as e:
         log.exception ("fetch of %s", url)
@@ -181,8 +181,8 @@ def irods_mkdirs (session, dirpath):
         collection = session.collections.create ("/".join (dirpath))
     return collection
 
-def irods_push_file(fileobj, url, savelocal=True, **kw):
-    chk_cache()
+def irods_push_file(fileobj, url, cache, savelocal=True, **kw):
+    chk_cache(cache)
     try:
         with IrodsConnection(url, **kw) as ic:
             # Hmm .. if an irodsEnv exists then it is used over our login name provided above,
@@ -194,18 +194,18 @@ def irods_push_file(fileobj, url, savelocal=True, **kw):
             log.debug( "irods-path %s" ,  ic.path)
             obj = ic.session.data_objects.create (ic.path)
             with obj.open('w') as f:
-                localname = irods_cache_save(fileobj, ic.path, f)
+                localname = irods_cache_save(fileobj, ic.path, cache, f )
             return localname
     except Exception, e:
         log.exception ("during push %s", url)
         raise IrodsError("can't write irods url %s" % url)
 
-def irods_delete_file(url, **kw):
+def irods_delete_file(url, cache, **kw):
     chk_cache()
     try:
         with IrodsConnection(url, **kw) as ic:
             log.debug( "irods-path %s" ,  ic.path)
-            localname = irods_cache_fetch(ic.path)
+            localname = irods_cache_fetch(ic.path, cache=cache)
             if localname is not None:
                 os.remove (localname)
             log.debug( "irods_delete %s -> %s" , url, ic.path)
