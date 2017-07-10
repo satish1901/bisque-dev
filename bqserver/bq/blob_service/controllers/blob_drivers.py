@@ -394,7 +394,7 @@ class IrodsDriver(StorageDriver):
     MAYBE TO BE REDONE to reuse connection.
     """
 
-    def __init__(self, mount_url, readonly=False, credentials=None, **kw):
+    def __init__(self, mount_url, readonly=False, credentials=None, cache = None, **kw):
         """Create a iRods storage driver:
 
         :param path: irods:// url format_path for where to store files
@@ -416,8 +416,10 @@ class IrodsDriver(StorageDriver):
         #self.password = kw.pop('credentials.password', None) or kw.pop('password', None)
         self.readonly = asbool(readonly)
         self.options = kw
-	self.user  = self.user.strip ('"\'')
-	self.password  = self.password.strip ('"\'')
+        self.user  = self.user.strip ('"\'')
+        self.password  = self.password.strip ('"\'')
+        cache = cache or data_path ('irods_cache')
+        self.cache = string.Template(cache).safe_substitute(datadir=data_url_path())
         log.debug('irods.user: %s irods.password: %s' , self.user, self.password)
         # Get the constant portion of the path
         log.info("created irods store %s " , self.mount_url)
@@ -436,7 +438,7 @@ class IrodsDriver(StorageDriver):
                 if not irods.irods_isfile (storeurl, user=self.user, password = self.password):
                     break
                 storeurl = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
-            flocal = irods.irods_push_file(fp, storeurl, user=self.user, password=self.password)
+            flocal = irods.irods_push_file(fp, storeurl, user=self.user, password=self.password, cache=self.cache)
         except irods.IrodsError:
             log.exception ("During Irods Push")
             raise IllegalOperation ("irods push failed")
@@ -449,7 +451,7 @@ class IrodsDriver(StorageDriver):
         try:
             # if irods will provide extraction of sub files from compressed (zip, tar, ...) ask for it and return sub as None
             irods_ident,sub = split_subpath(storeurl)
-            path = irods.irods_fetch_file(storeurl, user=self.user, password=self.password)
+            path = irods.irods_fetch_file(storeurl, user=self.user, password=self.password, cache=self.cache)
             # dima: if path is a directory, list contents
             return Blobs(path=path, sub=sub, files=None)
         except irods.IrodsError:
@@ -463,7 +465,7 @@ class IrodsDriver(StorageDriver):
     def delete(self, irods_ident):
         log.info('irods.delete: %s' , irods_ident)
         try:
-            irods.irods_delete_file(irods_ident, user=self.user, password=self.password)
+            irods.irods_delete_file(irods_ident, user=self.user, password=self.password, cache=self.cache)
         except irods.IrodsError, e:
             log.exception ("Error deleteing %s :%s", irods_ident, e)
         return None
@@ -477,7 +479,7 @@ class S3Driver(StorageDriver):
 
     def __init__(self, mount_url=None, credentials = None,
                  bucket_id=None, location=None,
-                 readonly = False, **kw):
+                 readonly = False, cache=None, **kw):
         """Create a iRods storage driver:
 
         :param path: s3:// url format_path for where to store files
@@ -501,6 +503,9 @@ class S3Driver(StorageDriver):
         self.top = mount_url.split('$')[0]
         self.options = kw
         self.mount ()
+        cache = cache or data_path ('s3_cache')
+        self.cache = string.Template(cache).safe_substitute(datadir=data_url_path())
+
 
 
     def mount(self):
@@ -546,7 +551,7 @@ class S3Driver(StorageDriver):
                 break
             s3_ident = "%s-%s%s" % (s3_base , uniq[3:7+x] , ext)
 
-        flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key)
+        flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key, self.cache)
         return s3_ident, flocal
 
     def pull(self, storeurl, locapath=None):
@@ -558,7 +563,7 @@ class S3Driver(StorageDriver):
         storeurl,sub = split_subpath(storeurl)
         s3_key = storeurl.replace("s3://","")
         try:
-            path = s3_handler.s3_fetch_file(self.bucket, s3_key)
+            path = s3_handler.s3_fetch_file(self.bucket, s3_key, self.cache)
             # dima: if path is a directory, list contents
             return Blobs(path=path, sub=sub, files=None)
         except boto.exception.S3ResponseError:
@@ -568,7 +573,7 @@ class S3Driver(StorageDriver):
     def delete(self, storeurl):
         log.info('s3.delete: %s ' , storeurl)
         s3_key = storeurl.replace("s3://","")
-        s3_handler.s3_delete_file(self.bucket, s3_key)
+        s3_handler.s3_delete_file(self.bucket, s3_key, self.cache)
     def isdir (self, storeurl):
         "Check if a url is a container/directory"
     def status(self, storeurl):

@@ -8,23 +8,20 @@ from filechunkio import FileChunkIO
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 from bq.util.copylink import copy_link
-S3_CACHE = data_path('s3_cache')
 
 class S3Error(Exception):
     pass
 
 log = logging.getLogger('bq.blobs.storage.s3')
 
-def s3_parse_url(url):
-    "Read an s3 url, return a bucket and key"
+#def s3_parse_url(url):
+#    "Read an s3 url, return a bucket and key"
+#    pass
 
 
+def s3_cache_fetch(bucket, key, cache):
 
-def s3_cache_fetch(bucket, key):
-    if not os.path.exists(S3_CACHE):
-        _mkdir (S3_CACHE)
-
-    cache_filename = os.path.join(S3_CACHE, key)
+    cache_filename = os.path.join(cache, key)
     if not os.path.exists(cache_filename):
         k = Key(bucket)
         k.key = key
@@ -32,10 +29,8 @@ def s3_cache_fetch(bucket, key):
         k.get_contents_to_filename(cache_filename)
     return cache_filename
 
-def s3_cache_save(f, bucket, key):
-    if not os.path.exists(S3_CACHE):
-        _mkdir (S3_CACHE)
-    cache_filename = os.path.join(S3_CACHE, key)
+def s3_cache_save(f, bucket, key, cache):
+    cache_filename = os.path.join(cache, key)
     _mkdir(os.path.dirname(cache_filename))
 
     #patch for no copy file uploads - check for regular file or file like object
@@ -68,32 +63,30 @@ def s3_cache_save(f, bucket, key):
 
     return cache_filename
 
-def s3_cache_delete(bucket, key):
-    if not os.path.exists(S3_CACHE):
-        _mkdir (S3_CACHE)
-    cache_filename = os.path.join(S3_CACHE, key)
+def s3_cache_delete(bucket, key, cache):
+    cache_filename = os.path.join(cache, key)
     if os.path.exists(cache_filename):
         os.remove (cache_filename)
     k = Key(bucket)
     k.key = key
     k.delete()
 
-def s3_fetch_file(bucket, key):
-    if not os.path.exists(S3_CACHE):
-        _mkdir (S3_CACHE)
-    localname = s3_cache_fetch(bucket, key)
+def s3_fetch_file(bucket, key, cache):
+    if not os.path.exists(cache):
+        _mkdir (cache)
+    localname = s3_cache_fetch(bucket, key, cache=cache)
     return localname
 
 def s3_isfile(bucket, key):
     key = bucket.get_key (key)
     return key is not None
 
-def s3_push_file(fileobj, bucket , key):
-    localname = s3_cache_save(fileobj, bucket, key)
+def s3_push_file(fileobj, bucket , key, cache):
+    localname = s3_cache_save(fileobj, bucket, key, cache=cache)
     return localname
 
-def s3_delete_file(bucket, key):
-    s3_cache_delete(bucket, key)
+def s3_delete_file(bucket, key, cache):
+    s3_cache_delete(bucket, key, cache=cache)
 
 def s3_list(bucket, key):
     return bucket.list(prefix=key, delimiter='/')
