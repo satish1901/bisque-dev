@@ -201,7 +201,7 @@ def irods_push_file(fileobj, url, cache, savelocal=True, **kw):
         raise IrodsError("can't write irods url %s" % url)
 
 def irods_delete_file(url, cache, **kw):
-    chk_cache()
+    chk_cache(cache)
     try:
         with IrodsConnection(url, **kw) as ic:
             log.debug( "irods-path %s" ,  ic.path)

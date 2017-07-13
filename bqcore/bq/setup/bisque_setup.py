@@ -1382,41 +1382,37 @@ def fetch_modules(params):
 
 
 
-def _fetch_update_module (module_type, module_url, name):
-    " Fetch or update module "
-
-    hg = which('hg')
-    git = which('git')
-    mdir = '.'
-    module_dir = None
-
-
-    if git and ( module_url.endswith ('.git') or 'git@' in module_url):
-        cmd =  [ git ]
-        module_dir = os.path.join (DIRS['modules'], os.path.splitext(os.path.basename(module_url))[0])
-        if not os.path.exists (module_dir):
-            cmd.extend(['clone', module_url, module_dir])
-        else:
-            cmd.extend(['pull'])
-            mdir = module_dir
-        print "calling  %s in  %s" % (cmd, mdir)
-        call (cmd, cwd=mdir)
-    elif hg and ( module_url.startswith ('https') or 'hg@' in module_url):
-        cmd = [hg]
-        module_dir = os.path.join (DIRS['modules'], os.path.basename(module_url))
-        if not os.path.exists (module_dir):
-            cmd.extend ([ 'clone', module_url, module_dir])
-        else:
-            cmd.extend (['pull', '-u'])
-            mdir = module_dir
-        print "calling %s in   %s" % (cmd, mdir)
-        call (cmd, cwd=mdir)
-    elif os.path.exists (module_url):
-        module_dir = module_url
-    else:
-        print "Could not determine fetch method for module %s " % module_url
-
-    return module_dir
+# def _fetch_update_module (module_type, module_url, name):
+#     " Fetch or update module "
+#     hg = which('hg')
+#     git = which('git')
+#     mdir = '.'
+#     module_dir = None
+#     if git and ( module_url.endswith ('.git') or 'git@' in module_url):
+#         cmd =  [ git ]
+#         module_dir = os.path.join (DIRS['modules'], os.path.splitext(os.path.basename(module_url))[0])
+#         if not os.path.exists (module_dir):
+#             cmd.extend(['clone', module_url, module_dir])
+#         else:
+#             cmd.extend(['pull'])
+#             mdir = module_dir
+#         print "calling  %s in  %s" % (cmd, mdir)
+#         call (cmd, cwd=mdir)
+#     elif hg and ( module_url.startswith ('https') or 'hg@' in module_url):
+#         cmd = [hg]
+#         module_dir = os.path.join (DIRS['modules'], os.path.basename(module_url))
+#         if not os.path.exists (module_dir):
+#             cmd.extend ([ 'clone', module_url, module_dir])
+#         else:
+#             cmd.extend (['pull', '-u'])
+#             mdir = module_dir
+#         print "calling %s in   %s" % (cmd, mdir)
+#         call (cmd, cwd=mdir)
+#     elif os.path.exists (module_url):
+#         module_dir = module_url
+#     else:
+#         print "Could not determine fetch method for module %s " % module_url
+#     return module_dir
 
 
 def identify_repository_url(url):
@@ -2634,8 +2630,14 @@ ENGINE_STEPS= OrderedDict ([
     ('engine_cfg' , [install_engine_defaults]),
 #    ('runtime' , [ install_runtime ]),
 #    ('fetch-modules' , [ fetch_modules ]) ,
-    ('matlab' , [ install_matlab ]),
     ('modules' , [ install_modules ]),
+    ])
+MODULE_INSTALL_STEPS = OrderedDict ([
+    ('modules' , [ install_modules ]),
+    ])
+
+MODULE_DEVELOPER_STEPS = OrderedDict ([
+    ('matlab' , [ install_matlab ]),
     ])
 
 #FULL_STEPS = OrderedDict (server_steps)
@@ -2661,12 +2663,14 @@ def merge_lists (*dicts ):
 
 server_steps = merge_lists (INSTALL_STEPS, CONFIGURATION_STEPS, DATABASE_STEPS)
 full_steps = merge_lists (INSTALL_STEPS, CONFIGURATION_STEPS, DATABASE_STEPS)
-
+developer_steps = merge_lists (INSTALL_STEPS, CONFIGURATION_STEPS, DATABASE_STEPS)
 
 COMMAND_STEPS = OrderedDict ([
     ("install",  merge_lists (INSTALL_STEPS)),
     ('configure' , merge_lists (CONFIGURATION_STEPS , DATABASE_STEPS)),
     ('fullconfig', merge_lists (CONFIGURATION_STEPS , DATABASE_STEPS, ENGINE_STEPS)),
+    ('module-install', merge_lists(MODULE_INSTALL_STEPS)),
+    ('developer', merge_lists (CONFIGURATION_STEPS , DATABASE_STEPS, MODULE_INSTALL_STEPS)),
 # Backward compatible
     ('bisque' , server_steps),
     ('developer' , server_steps),
