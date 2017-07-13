@@ -18,13 +18,14 @@ BQPATH="bq-path"
 
 #class  BQEventHamdler(FileSystemEventHandler):
 class  BQEventHandler(PatternMatchingEventHandler):
-    def __init__(self, prefix, strip, use_link, deletes=False):
+    def __init__(self, prefix, strip, use_link, deletes=False, auth=None):
         super(BQEventHandler, self).__init__(patterns=None, ignore_patterns=None, ignore_directories=True, case_sensitive=False)
         self.logger = logging.getLogger (__name__)
         self.prefix = prefix
         self.cmd  = "ln" if use_link else "cp"
         self.deletes = deletes
         self.strip  = strip
+        self.auth   = auth
 
     def on_created (self, event):
         path = event.src_path
@@ -58,6 +59,14 @@ dir    : the directory to watch
 strip  : left strip this portion from the filenames of the dir to watch
 
 prefix + (file in dir) . replace (^strip, '')
+
+The easiest way to construct this is with absolute paths.
+i.e. bq-watch <absolute-dir> <strip> <prefix>
+
+
+bq-watch /data/files/incoming /data/files/ file:///
+
+
 """
 def main():
     logging.basicConfig(level=logging.INFO,
@@ -75,13 +84,14 @@ def main():
     parser = argparse.ArgumentParser(USAGE)
     parser.add_argument("--link", '-l', default=False, action="store_true", help="use linking")
     parser.add_argument("pairs", nargs="*", default=["file:///", ".", "./"], help = "store pairs  file:// dir strip" )
+    parser.add_argument("--auth", "-a", help="basic auth credentials to pass", default=None)
     args = parser.parse_args()
     print args.pairs
 
     observer = Observer()
 
     for prefix,path,strip in  tri_iter(args.pairs):
-        event_handler = BQEventHandler (prefix, strip=strip, use_link=args.link)
+        event_handler = BQEventHandler (prefix, strip=strip, use_link=args.link, auth=args.auth)
         observer.schedule(event_handler, path, recursive=True)
 
 
