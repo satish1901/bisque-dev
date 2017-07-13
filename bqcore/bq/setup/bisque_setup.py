@@ -1257,8 +1257,6 @@ def install_modules(params, runtime_params):
     if ans != 'Y':
         return params, runtime_params
     fetch_modules (params)
-    install_docker(params, runtime_params)
-    install_runtime(params, runtime_params)
     return params, runtime_params
 
 
@@ -1601,6 +1599,8 @@ def install_engine_defaults(params, runtime_params):
         params.update(ENGINE_VARS)
         new_install = True
 
+    if not os.path.exists(RUNTIME_CFG):
+        runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=defaults_path('runtime-bisque.default'))
 
     print "Top level site variables are:"
     for k in sorted(ENGINE_VARS.keys()):
@@ -1621,11 +1621,6 @@ def install_engine_defaults(params, runtime_params):
         print "Warning: Please review the [server] section of site.cfg after modifying site variables"
     return params, runtime_params
 
-def install_runtime_cfg(params, runtime_params):
-    "ensure runtime-bisque.cfg is created and loaded"
-    if not   os.path.exists(RUNTIME_CFG):
-        runtime_params = install_cfg(RUNTIME_CFG, section=None, default_cfg=defaults_path('runtime-bisque.default'))
-    return params, runtime_params
 
 
 def install_proxy(params, runtime_params):
@@ -2624,19 +2619,22 @@ DATABASE_STEPS = OrderedDict([
 #SERVER_STEPS.update(CONFIGURATION_STEPS)
 #SERVER_STEPS.update(DATABASE_STEPS)
 
+
 # default steps for an engine install
-ENGINE_STEPS= OrderedDict ([
-    ('engine_runtime_cfg' , [ install_runtime_cfg ]),
+CONFIG_ENGINE_STEPS= OrderedDict ([
     ('engine_cfg' , [install_engine_defaults]),
+    ('docker', [ install_docker] ),
+    ('runtime', [ install_runtime]),
 #    ('runtime' , [ install_runtime ]),
 #    ('fetch-modules' , [ fetch_modules ]) ,
-    ('modules' , [ install_modules ]),
+
     ])
+
 MODULE_INSTALL_STEPS = OrderedDict ([
     ('modules' , [ install_modules ]),
     ])
 
-MODULE_DEVELOPER_STEPS = OrderedDict ([
+DEVELOPER_STEPS = OrderedDict ([
     ('matlab' , [ install_matlab ]),
     ])
 
@@ -2663,20 +2661,21 @@ def merge_lists (*dicts ):
 
 server_steps = merge_lists (INSTALL_STEPS, CONFIGURATION_STEPS, DATABASE_STEPS)
 full_steps = merge_lists (INSTALL_STEPS, CONFIGURATION_STEPS, DATABASE_STEPS)
-developer_steps = merge_lists (INSTALL_STEPS, CONFIGURATION_STEPS, DATABASE_STEPS)
+developer_steps = merge_lists (INSTALL_STEPS, CONFIGURATION_STEPS, DATABASE_STEPS,
+                               MODULE_INSTALL_STEPS, CONFIG_ENGINE_STEPS)
 
 COMMAND_STEPS = OrderedDict ([
     ("install",  merge_lists (INSTALL_STEPS)),
-    ('configure' , merge_lists (CONFIGURATION_STEPS , DATABASE_STEPS)),
-    ('fullconfig', merge_lists (CONFIGURATION_STEPS , DATABASE_STEPS, ENGINE_STEPS)),
     ('module-install', merge_lists(MODULE_INSTALL_STEPS)),
-    ('developer', merge_lists (CONFIGURATION_STEPS , DATABASE_STEPS, MODULE_INSTALL_STEPS)),
+    ('configure' , merge_lists (CONFIGURATION_STEPS , DATABASE_STEPS)),
+    ('fullconfig', merge_lists (CONFIGURATION_STEPS , DATABASE_STEPS, CONFIG_ENGINE_STEPS)),
+    ('developer', developer_steps),
 # Backward compatible
     ('bisque' , server_steps),
     ('developer' , server_steps),
     ('server', server_steps),
     ('full' , full_steps),
-    ('engine' , merge_lists (ENGINE_STEPS)),
+    ('engine' , merge_lists (CONFIG_ENGINE_STEPS)),
 ])
 COMMAND_STEPS.update (INSTALL_STEPS)
 COMMAND_STEPS.update (CONFIGURATION_STEPS)
