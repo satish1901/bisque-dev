@@ -261,7 +261,8 @@ class ResourceAuth(Resource):
         if resource is not None:
             DBSession.autoflush = False
             newacls = []
-            auth_list=etree.XML(xml)
+            #auth_list=etree.XML(xml)
+            auth_list=xml
             # Update or add any that are listed in xml
             oldauths = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id).all()
             for newauth in auth_list:
@@ -290,7 +291,8 @@ class ResourceAuth(Resource):
         resource = check_access(resource, RESOURCE_EDIT)
         if resource is not None:
             DBSession.autoflush = False
-            newauth=etree.XML(xml)
+            #newauth=etree.XML(xml)
+            newauth=xml
             acl = resource_acl (resource, newauth, user, acl, notify=asbool(notify))
             response.append (acl)
         formatter, content_type  = find_formatter ('xml')
@@ -319,7 +321,8 @@ class ResourceAuth(Resource):
         if resource is not None:
             log.debug ("AUTH %s with %s" , str(resource),  xml)
             DBSession.autoflush = False
-            newauth=etree.XML(xml)
+            #newauth=etree.XML(xml)
+            newauth=xml
             acl = resource_acl (resource,  newauth,  notify=asbool(notify))
             response.append (acl)
         formatter, content_type  = find_formatter ('xml')
@@ -338,7 +341,8 @@ class ResourceAuth(Resource):
         DBSession.autoflush = False
         if acl:
             DBSession.autoflush = False
-            newauth=etree.XML(xml)
+            #newauth=etree.XML(xml)
+            newauth=xml
             acl = resource_acl (resource, newauth, user, acl, notify=asbool(notify))
         formatter, content_type  = find_formatter ('xml')
         tg.response.headers['Content-Type'] = content_type
