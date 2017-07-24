@@ -27,7 +27,7 @@ docker cp $CONTAINER:/module/ output_files
 mv -fuv ./output_files/* .
 #rsync -av ./output_files/ .
 rm -rf ./output_files/*/
-#docker rm $CONTAINER
+docker rm $CONTAINER
 """
 
 class DockerEnvironment(BaseEnvironment):
