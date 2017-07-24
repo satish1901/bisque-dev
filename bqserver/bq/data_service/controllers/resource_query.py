@@ -340,7 +340,8 @@ def p_error(p):
 #############################################################
 OS="owner,shared"
 OSP="owner,shared,public"
-PUBLIC_VALS = { 'false': OS, '0': OS, 'private':'owner', 0:OS, False: OS, None:OS,
+PUBLIC_VALS = {  'private':'owner', None: 'owner', '': 'owner',
+                 0:OS, '0': OS, False: OS,  'false': OS,
                 'true': OSP, '1': OSP, 1:OSP, True: OSP }
 # owner, shared, public or true-> owner,shared,public, false = owner,shared
 # wpublic, viewset
