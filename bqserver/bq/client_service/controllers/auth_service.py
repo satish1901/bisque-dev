@@ -62,7 +62,7 @@ from lxml import etree
 import transaction
 
 import tg
-from tg import request, session, flash, require
+from tg import request, session, flash, require, response
 from tg import  expose, redirect, url
 from tg import config
 from pylons.i18n import ugettext as  _
@@ -263,7 +263,8 @@ class AuthenticationServer(ServiceController):
             #visit = Visit.lookup_visit (vk)
             #expire =  (visit.expiry - datetime.now()).seconds
             if 'mex_auth' not in session:
-                log.warn ("INVALID Session or session deleted")
+                log.warn ("INVALID Session or session deleted: forcing logout on client")
+                return etree.tostring (sess)
                 #redirect ('/auth_service/logout_handler')
 
             timeout = int(session.get ('timeout', 0 ))
@@ -335,6 +336,26 @@ class AuthenticationServer(ServiceController):
         log.error ("Could not set basicauth password for %s", username)
         return "<error msg='Failed to set password'/>"
 
+
+    @expose()
+    def login_app(self):
+        """Allow  json/xml logins.. core functionality in bq/core/lib/app_auth.py
+        This is to a place holder
+        """
+        if identity.not_anonymous():
+            response.body = "{'status':'OK'}"
+            return
+        response.status = 401
+        response.body = "{'status':'FAIL'}"
+
+
+    @expose()
+    # @require(predicates.not_anonymous())
+    def logout_app(self):
+        """Allow  json/xml logins.. core functionality in bq/core/lib/app_auth.py
+        This is to a place holder
+        """
+        pass
 
 
 

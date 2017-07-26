@@ -98,6 +98,17 @@ use = bq.core.lib.autoreg:AutoRegister
 # validate_plugin=autoregister:validate_user
 # registration_url = https://user.cyverse.org
 
+
+#[plugin:appauth]
+## An app authorization plugin for ajax
+#use = bq.core.lib.app_auth:make_plugin
+#login_path = /auth_service/login_app
+#logout_path = /auth_service/logout_app
+#post_logout =/auth_service/post_logout
+#rememberer_name = auth_tkt
+
+
+
 ################  Configuration  ########################
 # organized into sections see repoze.who docs for real explanation
 #
@@ -106,8 +117,6 @@ use = bq.core.lib.autoreg:AutoRegister
 
 
 [general]
-#request_classifier = repoze.who.classifiers:default_request_classifier
-#challenge_decider = repoze.who.classifiers:default_challenge_decider
 request_classifier = bq.core.lib.challenge_decider:bisque_request_classifier
 challenge_decider = bq.core.lib.challenge_decider:bisque_challenge_decider
 
@@ -118,6 +127,7 @@ plugins =
     auth_tkt
     basicauth
     mexauth
+#    appauth;json
 #    openid
 #    cas_auth
 # Cas must be last because openid replaces logout with redirect /post_logout
@@ -127,8 +137,9 @@ plugins =
 # Cas must be first challenger (as openid always send challenge to google)
 #    cas_auth
 #    openid
+#    appauth;json
     friendlyform;browser
-
+    basicauth
 
 [authenticators]
 plugins =

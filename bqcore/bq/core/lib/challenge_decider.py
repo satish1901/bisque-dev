@@ -16,6 +16,12 @@ from repoze.who.classifiers import default_request_classifier
 
 log = logging.getLogger('bq.auth.challenge')
 
+NO_CHALLENGE = [
+    "application/xml", "text/xml"
+    "application/json"
+]
+
+
 def bisque_challenge_decider(environ, status, headers):
 
     #log.info ('challange_decider')
@@ -35,11 +41,14 @@ def bisque_challenge_decider(environ, status, headers):
         if accept and 'text/xml' in accept: #or 'application/xml' in accept:
             return False
 
-        if content_type and 'text/xml' in content_type \
-            or 'application/xml' in content_type \
-            or 'text/xml' in req_content \
-            or 'application/xml' in req_content:
+        if content_type in NO_CHALLENGE:
+            log.info ("CHALLENGE FALSE")
             return False
+        #if content_type and 'text/xml' in content_type \
+        #    or 'application/xml' in content_type \
+        #    or 'text/xml' in req_content \
+        #    or 'application/xml' in req_content:
+        #    return False
         log.debug ('challange requested')
         log.debug ('req %s resp %s' % (req_content, content_type))
         return True
@@ -57,10 +66,12 @@ zope.interface.directlyProvides(bisque_challenge_decider, IChallengeDecider)
 
 
 def bisque_request_classifier(environ):
+    request_method = REQUEST_METHOD(environ)
     content_type = CONTENT_TYPE(environ)
-    if content_type in ('text/xml', 'application/xml'):
-        environ['CLIENT_APP'] = 'clientapp'
-    else:
-        environ['CLIENT_APP'] = default_request_classifier(environ)
-    return environ['CLIENT_APP']
+    if request_method == "POST" and content_type.startswith ("application/json"):
+        return "json"
+    if content_type.startswith ("application/xml"):
+        return "xml"
+    return  default_request_classifier(environ)
+
 zope.interface.directlyProvides(bisque_request_classifier, IRequestClassifier)
