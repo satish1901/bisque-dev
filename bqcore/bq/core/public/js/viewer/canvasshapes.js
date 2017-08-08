@@ -810,7 +810,7 @@ CanvasShape.prototype.getColorString = function (c, alpha) {
 };
 
 CanvasShape.prototype.getColor = function () {
-    return this.gob.getColor(255, 0, 0, 0.5);
+    return this.gob.getColor();
 };
 
 

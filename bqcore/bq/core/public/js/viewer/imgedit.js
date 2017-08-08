@@ -607,25 +607,13 @@ ImgEdit.prototype.on_selected = function (gobs) {
 ImgEdit.prototype.color_gobject = function(gob, color) {
     this.renderer.setcolor(gob, color);
 
-
     if (!this.test_save_permission(this.viewer.image.uri + '/gobject')) {
         if (this.viewer.parameters.gobjectschanged)
             this.viewer.parameters.gobjectschanged(gob);
         return;
     }
 
-    /*
-    // dima: not sure what this is, but saving color into objects may not be exactly what we want
-    var xml = gob.xmlNode();
-    var tagColor = BQ.util.xpath_nodes(xml,'tag[@name="color"]');
-    var uri = null;
-    if(tagColor.length > 0){
-        uri = tagColor[0].getAttribute('uri');
-    }
-
-    var t = gob.addtag(new BQTag(uri, 'color', color, 'color'));
-    t.save_reload(gob.uri);
-    */
+    gob.setColor(color);
 
     this.renderer.rerender([gob], [this.current_view, true]);
     console.log(gob.uri + '?view=deep');
