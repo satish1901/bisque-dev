@@ -1441,7 +1441,7 @@ BQGObject.default_color = {
     r: 255,
     g: 0,
     b: 0,
-    a: 0.5
+    a: 0.6
 };
 
 BQGObject.default_color_stroke = {
@@ -1501,7 +1501,7 @@ BQGObject.prototype.isPrimitive = function () {
     return (this.resource_type in BQGObject.primitives || this.type in BQGObject.primitives);
 };
 
-BQGObject.prototype.getColor = function (r,g,b,a) {
+BQGObject.prototype.getColor = function (r,g,b,a,no_default) {
     if (this.color_override) {
         return Kinetic.Util._hexToRgb('#' + this.color_override);
     } else if (typeof(this.confidence) !== 'undefined') {
@@ -1511,10 +1511,43 @@ BQGObject.prototype.getColor = function (r,g,b,a) {
         var c = BQGObject.color_gradient[cc];
         return {r: c.r, g: c.g, b: c.b, a: c.a};
     } else if (this.color) {
-        return Kinetic.Util._hexToRgb('#' + this.color);
+        var c = Kinetic.Util._hexToRgb('#' + this.color);
+        c.a = BQGObject.default_color.a;
+        return c;
+    } else if (r && g && b && a) {
+        return {r: r, g: g, b: b, a: a};
+    } else if (no_default===true) {
+        return;
     }
-    return {r: r, g: g, b: b, a: a};
+
+    // none of the overrides worked, try waling up the parent chain to get the color or use default
+    var c = BQGObject.default_color,
+        p = this,
+        cc = null;
+    while (p.parent && p.parent.getColor) {
+        p = p.parent;
+        cc = p.getColor(null,null,null,null,true);
+        if (cc) {
+           c = cc;
+           break;
+        }
+    }
+
+    return {r: c.r, g: c.g, b: c.b, a: c.a};
 };
+
+BQGObject.prototype.setColor = function (c) {
+    this.color = c;
+    var t = this.find_tags('color');
+    if (!t) {
+        t = this.addtag(new BQTag(null, 'color', '#'+this.color, 'color'));
+    } else {
+        t.value = '#' + this.color;
+    }
+
+    // dima: save the user set color back to the DB
+    t.save_(this.uri);
+},
 
 BQGObject.prototype.getConfidence = function () {
     //if (this.confidence) {
