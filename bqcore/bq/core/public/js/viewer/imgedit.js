@@ -32,7 +32,7 @@ function ImgEdit (viewer,name){
   this.zindex_low  = 15;
 
   //parse input parameters
-  var primitives = 'Point,Rectangle,Square,Polyline,Line,Polygon,freehand,Circle,Ellipse,Label'.toLowerCase().split(',');
+  var primitives = 'Point,Rectangle,Square,Polyline,Line,Polygon,freehand_line,freehand_shape,Circle,Ellipse,Label'.toLowerCase().split(',');
   if ('editprimitives' in this.viewer.parameters && this.viewer.parameters.editprimitives)
     primitives = this.viewer.parameters.editprimitives.toLowerCase().split(',');
   this.editprimitives = {};
