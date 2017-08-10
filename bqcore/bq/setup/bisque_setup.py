@@ -2624,6 +2624,7 @@ DATABASE_STEPS = OrderedDict([
 CONFIG_ENGINE_STEPS= OrderedDict ([
     ('engine_cfg' , [install_engine_defaults]),
     ('docker', [ install_docker] ),
+    ('matlab', [ install_matlab ]),  # needde for Matlab ENV
     ('runtime', [ install_runtime]),
 #    ('runtime' , [ install_runtime ]),
 #    ('fetch-modules' , [ fetch_modules ]) ,
