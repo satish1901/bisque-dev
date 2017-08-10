@@ -262,10 +262,10 @@ class AuthenticationServer(ServiceController):
             #log.debug ("session_timout for visit %s" % str(vk))
             #visit = Visit.lookup_visit (vk)
             #expire =  (visit.expiry - datetime.now()).seconds
-            if 'mex_auth' not in session:
-                log.warn ("INVALID Session or session deleted: forcing logout on client")
-                return etree.tostring (sess)
-                #redirect ('/auth_service/logout_handler')
+            #KGKif 'mex_auth' not in session:
+            #KGKlog.warn ("INVALID Session or session deleted: forcing logout on client")
+            #KGK    return etree.tostring (sess)
+            #KGK    #redirect ('/auth_service/logout_handler')
 
             timeout = int(session.get ('timeout', 0 ))
             length  = int(session.get ('length', 0 ))
