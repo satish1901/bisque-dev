@@ -19,7 +19,8 @@ setup(name='bqapi',
       ###packages= ['bqapi' ],
 #      namespace_packages = ['bq'],
       install_requires=[
-          "requests >=2.4.1"
+          "requests >=2.4.1",
+          "requests_toolbelt >= 0.6.2",
         ],
       extras_require = {
           'lxml' : [ 'lxml'],
