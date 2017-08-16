@@ -63,8 +63,8 @@ if os.name == 'nt':
 
     def data_url_path (*names):
         path = data_path(*names)
-        if len(path)>1 and path[1]==':': #file:// url requires / for drive lettered path like c: -> file:///c:/path
-            path = '/%s'%path
+        #if len(path)>1 and path[1]==':': #file:// url requires / for drive lettered path like c: -> file:///c:/path
+        #    path = '/%s'%path
         return path
 
     def localpath2url(path):
@@ -83,6 +83,17 @@ if os.name == 'nt':
             # path is a relative path
             url = 'file://%s'%url
         return url
+
+    def url2localpath(url):
+        "url should be utf8 encoded (but may actually be unicode from db)"
+        if url.startswith('file://'):
+            url = url[7:]
+        path = posixpath.normpath(urlparse.urlparse(url).path)
+        path = urllib.unquote(path)
+        if len(path)>3 and path[0] == '/' and path[2] == ':':
+            path = path[1:]
+        path = force_filesys(path)
+        return path
 
     def force_filesys(s):
         """Force s to be a unicode string
@@ -130,15 +141,14 @@ else:
         # We should have an 8bit utf8 string or  a unciode that we can encode as utf8
         return s
 
-
-def url2localpath(url):
-    "url should be utf8 encoded (but may actually be unicode from db)"
-    if url.startswith('file://'):
-        url = url[7:]
-    path = posixpath.normpath(urlparse.urlparse(url).path)
-    path = urllib.unquote(path)
-    path = force_filesys(path)
-    return path
+    def url2localpath(url):
+        "url should be utf8 encoded (but may actually be unicode from db)"
+        if url.startswith('file://'):
+            url = url[7:]
+        path = posixpath.normpath(urlparse.urlparse(url).path)
+        path = urllib.unquote(path)
+        path = force_filesys(path)
+        return path
 
 def config2url(conf):
     "Make entries read from config with corrent encoding.. check for things that look like path urls"
