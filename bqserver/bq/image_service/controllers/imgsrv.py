@@ -348,8 +348,13 @@ class ImageServer(object):
         workpath = os.path.realpath(self.workdir)
         if image_id and not path.startswith (workpath):
             path = self.initialWorkPath(image_id, user_name)
+
         # keep paths relative to running dir to reduce file name size
-        path = os.path.relpath(path, self.rundir)
+        try:
+            path = os.path.relpath(path, self.rundir)
+        except ValueError:
+            pass
+
         # make sure that the path directory exists
         _mkdir( os.path.dirname(path) )
         return path
