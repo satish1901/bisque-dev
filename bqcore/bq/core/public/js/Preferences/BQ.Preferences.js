@@ -229,6 +229,14 @@ Ext.define('BQ.Preferences', {
                 tag.setAttribute('name', name);
                 tag.setAttribute('value', value);
                 value = tag.outerHTML;
+            } else if (typeof(value) === 'number') {
+                // actual value
+                var tag = document.createElement('tag'),
+                    name = path.split('/').slice(-1)[0];
+                tag.setAttribute('name', name);
+                tag.setAttribute('value', value);
+                tag.setAttribute('type', 'number');
+                value = tag.outerHTML;
             }
             BQ.Preferences.update(lvl, path, value, cb, errorcb);
         }

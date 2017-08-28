@@ -258,6 +258,9 @@ def update_level(new_doc, current_doc, attrib={}):
                         attrib = current.sub_node_dict[nk].node_attrib
                         #add value and maybe type
                         attrib['value'] = new.sub_node_dict[nk].node_attrib.get('value', '')
+                        tt = new.sub_node_dict[nk].node_attrib.get('type', None)
+                        if tt is not None:
+                            attrib['type'] = tt
                     current.sub_node_dict[nk] = TagValueNode(
                         value = new.sub_node_dict[nk].value,
                         node_attrib = attrib,
@@ -269,6 +272,9 @@ def update_level(new_doc, current_doc, attrib={}):
                     #add value and name; type always cascades
                     attrib['name'] = new.sub_node_dict[nk].node_attrib.get('name', '')
                     attrib['value'] = new.sub_node_dict[nk].node_attrib.get('value', '')
+                    tt = new.sub_node_dict[nk].node_attrib.get('type', None)
+                    if tt is not None:
+                        attrib['type'] = tt
                     current.sub_node_dict[nk] = TagValueNode(
                         value = new.sub_node_dict[nk].value,
                         node_attrib = attrib,
