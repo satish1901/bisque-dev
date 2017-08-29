@@ -369,6 +369,7 @@ ImgSlicer.prototype.doUpdate = function () {
 
 ImgSlicer.prototype.changed = function () {
   //if (!this.update_check || (this.update_check && this.update_check.checked) )
+    BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/projection', this.projection_combo.value);
     this.viewer.need_update();
 };
 
@@ -421,3 +422,9 @@ ImgSlicer.prototype.loadPreferences = function (p) {
     if (!p) return;
     this.default_projection  = 'projection'  in p ? p.projection  : this.default_projection;
 };
+
+ImgSlicer.prototype.onPreferences = function () {
+    var resource_uniq = this.viewer.image.resource_uniq;
+    this.default_projection  = BQ.Preferences.get(resource_uniq, 'Viewer/projection', this.default_projection);
+};
+
