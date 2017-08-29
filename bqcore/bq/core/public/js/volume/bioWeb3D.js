@@ -2403,20 +2403,23 @@ VolumeAtlas.prototype.addCommand = function (command, pars) {
 function VolumeDisplay(volume) {
 	this.base = VolumePlugin;
 	this.base(volume);
+    this.uuid = this.volume.resource.resource_uniq;
 };
 
 VolumeDisplay.prototype = new VolumePlugin();
 
 VolumeDisplay.prototype.init = function () {
-	var p = this.volume.preferences || {};
-	this.def = {
-		enhancement : p.enhancement || 'd', // values: 'd', 'f', 't', 'e'
-		enhancement_8bit : p.enhancement8bit || 'f',
-		negative : p.negative || '', // values: '', 'negative'
-		fusion : p.fusion || 'm', // values: 'a', 'm'
-		rotate : p.rotate || 0, // values: 0, 270, 90, 180
-		autoupdate : false,
-	};
+    this.def = {
+        enhancement      : BQ.Preferences.get(this.uuid, 'Viewer/enhancement') || 'd', // values: 'd', 'f', 't', 'e'
+        enhancement_8bit : BQ.Preferences.get(this.uuid, 'Viewer/enhancement-8bit') || 'f',
+        negative         : BQ.Preferences.get(this.uuid, 'Viewer/negative') || '',  // values: '', 'negative'
+        rotate           : BQ.Preferences.get(this.uuid, 'Viewer/rotate') || 0,   // values: 0, 270, 90, 180
+        fusion           : BQ.Preferences.get(this.uuid, 'Viewer/fusion'),
+        fusion_method    : BQ.Preferences.get(this.uuid, 'Viewer/fusion_method') || 'm', // values: 'a', 'm'
+        brightness       : BQ.Preferences.get(this.uuid, 'Viewer/brightness') || 0, // values: [-100, 100]
+        contrast         : BQ.Preferences.get(this.uuid, 'Viewer/contrast') || 0, // values: [-100, 100]
+        autoupdate       : false,
+    };
 	if (!this.menu)
 		this.createMenu();
 };
@@ -2434,19 +2437,7 @@ VolumeDisplay.prototype.addCommand = function (command, pars) {
         command.push ('depth=8,hounsfield,u,,'+a[1]);
     }
 
-	var fusion = '';
-	for (var i = 0; i < this.channel_colors.length; i++) {
-		if(!this.channel_colors[i]) continue;
-        fusion += this.channel_colors[i].getRed() + ',';
-		fusion += this.channel_colors[i].getGreen() + ',';
-		fusion += this.channel_colors[i].getBlue() + ';';
-	}
-	fusion += ':' + this.combo_fusion.getValue();
-	command.push('fuse=' + fusion);
-
-	/*var ang = this.combo_rotation.getValue();
-	if (ang && ang !== '' && ang !== 0)
-		command.push('rotate=' + ang);*/
+    command.push('fuse='+this.computeFusion());
 
 	if (this.combo_negative.getValue()) {
 		command.push(this.combo_negative.getValue());
@@ -2469,47 +2460,62 @@ VolumeDisplay.prototype.createMenu = function () {
 		cls : 'heading',
 	});
 
-	this.combo_fusion = this.volume.createCombo('Fusion', [{
-					"value" : "a",
-					"text" : "Average"
-				}, {
-					"value" : "m",
-					"text" : "Maximum"
-				},
-			], this.def.fusion, this, this.changed);
+    // fusion
+    this.combo_fusion = this.volume.createCombo( 'Fusion', [
+        {"value":"a", "text":"Average"},
+        {"value":"m", "text":"Maximum"},
+    ], this.def.fusion_method, this, function() {
+        BQ.Preferences.set(this.uuid, 'Viewer/fusion_method', this.combo_fusion.value);
+        this.changed();
+    });
 
+    // enhancement
     var enhancement_options = phys.getEnhancementOptions();
     enhancement = enhancement_options.prefferred || enhancement;
-	this.combo_enhancement = this.volume.createCombo('Enhancement', enhancement_options, enhancement, this, this.changed, undefined, 300);
+    this.combo_enhancement = this.volume.createCombo( 'Enhancement', enhancement_options, enhancement, this, function() {
+        BQ.Preferences.set(this.uuid, 'Viewer/enhancement', this.combo_enhancement.value);
+        this.changed();
+    }, undefined, 300);
 
-	this.combo_negative = this.volume.createCombo('Negative', [{
-					"value" : "",
-					"text" : "No"
-				}, {
-					"value" : "negative",
-					"text" : "Negative"
-				},
-			], this.def.negative, this, this.changed);
+    // negative
+    this.combo_negative = this.volume.createCombo( 'Negative', [
+        {"value":"", "text":"No"},
+        {"value":"negative", "text":"Negative"},
+    ], this.def.negative, this, function() {
+        BQ.Preferences.set(this.uuid, 'Viewer/negative', this.combo_negative.value);
+        this.changed();
+    });
 
-	/*this.combo_rotation = this.volume.createCombo('Rotation', [{
-					"value" : 0,
-					"text" : "No"
-				}, {
-					"value" : 90,
-					"text" : "Right 90deg"
-				}, {
-					"value" : -90,
-					"text" : "Left 90deg"
-				}, {
-					"value" : 180,
-					"text" : "180deg"
-				},
-			], this.def.rotate, this, this.changed);*/
+};
+
+VolumeDisplay.prototype.computeFusion = function () {
+    var fusion='';
+    for (var i=0; i<this.channel_colors.length; i++) {
+        fusion += this.channel_colors[i].getRed() + ',';
+        fusion += this.channel_colors[i].getGreen() + ',';
+        fusion += this.channel_colors[i].getBlue() + ';';
+    }
+    fusion += ':'+this.combo_fusion.getValue();
+    return fusion;
+};
+
+VolumeDisplay.prototype.parseFusion = function (cmd) {
+    if (cmd.indexOf(',')===-1) return;
+
+    var fusion = cmd.split(':')[0],
+        channels = fusion.split(';'),
+        value = null;
+
+    this.channel_colors = this.channel_colors || [];
+    for (var i=0; i<channels.length; ++i) {
+        if (channels[i] && channels[i].indexOf(',')>=0) {
+            this.channel_colors[i] = Ext.draw.Color.fromString('rgb('+channels[i]+')');
+        }
+    }
 };
 
 VolumeDisplay.prototype.createChannelMap = function () {
 	var phys = this.volume.phys;
-	var channel_count = parseInt(phys.ch);
 
 	this.menu.add({
 		xtype : 'displayfield',
@@ -2517,8 +2523,8 @@ VolumeDisplay.prototype.createChannelMap = function () {
 		cls : 'heading',
 	});
 
-	this.channel_colors = phys.channel_colors;
-	for (var ch = 0; ch < channel_count; ch++) {
+	this.parseFusion (this.def.fusion);
+	for (var ch = 0; ch < phys.ch; ch++) {
 		this.menu.add({
 			xtype : 'colorfield',
 			fieldLabel : '' + phys.channel_names[ch],
@@ -2529,6 +2535,8 @@ VolumeDisplay.prototype.createChannelMap = function () {
 				scope : this,
 				change : function (field, value) {
 					this.channel_colors[field.channel] = Ext.draw.Color.fromString('#' + value);
+                    var fusion = this.computeFusion();
+                    BQ.Preferences.set(this.uuid, 'Viewer/fusion', fusion);
 					this.changed();
 				},
 			},

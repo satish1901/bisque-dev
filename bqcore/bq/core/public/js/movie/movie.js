@@ -429,7 +429,7 @@ PlayerPlugin.prototype.changed = function () {
 function PlayerSlice (player) {
     this.base = PlayerPlugin;
     this.base (player);
-
+    this.uuid = this.player.resource.resource_uniq;
     // do stuff
 };
 PlayerSlice.prototype = new PlayerPlugin();
