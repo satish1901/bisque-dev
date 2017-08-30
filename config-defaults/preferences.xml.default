@@ -208,6 +208,18 @@
                     <tag name="Editable" value="true" type="boolean"/>
                 </template>
             </tag>
+            <tag name="preferred_color_per_channel_name" value="">
+                <template>
+                    <tag name="description" value="Semicolon separated pairs of name=R,G,B; example: DAPI=0,0,255;Alexa Fluor 488=255,0,0;"/>
+                    <tag name="Editable" value="true" type="boolean"/>
+                </template>
+            </tag>
+            <tag name="preferred_text_per_channel_name" value="">
+                <template>
+                    <tag name="description" value="Semicolon separated pairs of name=TEXT; example: DAPI=Nuclear;Alexa Fluor 488=Membrane;"/>
+                    <tag name="Editable" value="true" type="boolean"/>
+                </template>
+            </tag>
         </tag>
 
         <tag name="Viewer3D" >
