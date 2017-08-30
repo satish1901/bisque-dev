@@ -53,7 +53,8 @@ ImgOperations.prototype.updateView = function (view) {
             if (b!==0 || c!==0) view.addParams  ('brightnesscontrast='+b+','+c);
         }
 
-        view.addParams  ('fuse='+this.computeFusion());
+        var fusion = this.phys.fusion2string() + ':'+this.combo_fusion.getValue();
+        view.addParams  ('fuse='+fusion);
 
 /*
         cb = this.menu_elements['Rotate'];
@@ -82,15 +83,15 @@ ImgOperations.prototype.changed = function () {
 ImgOperations.prototype.createMenu = function () {
     if (this.menu) return;
     this.menu = this.viewer.createViewMenu();
+    this.uuid = this.viewer.image.resource_uniq;
+    this.phys = this.viewer.imagephys;
 
-
-    var dim = this.viewer.imagedim;
+    var dim = this.viewer.imagedim,
+        phys = this.viewer.imagephys,
+        enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.default_enhancement_8bit : this.default_enhancement,
+        fusion_method = phys && parseInt(phys.ch)>3 ? this.default_fusion_method_4plus : this.default_fusion_method;
 
     this.createChannelMap();
-
-    var phys = this.viewer.imagephys;
-    var enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.default_enhancement_8bit : this.default_enhancement;
-    var fusion_method = phys && parseInt(phys.ch)>3 ? this.default_fusion_method_4plus : this.default_fusion_method;
 
     this.menu.add({
         xtype: 'displayfield',
@@ -111,9 +112,8 @@ ImgOperations.prototype.createMenu = function () {
         zeroBasedSnapping: true,
         listeners: {
             scope: this,
-            //change: this.changed,
             change: function(slider, v) {
-                BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/brightness', v);
+                BQ.Preferences.set(this.uuid, 'Viewer/brightness', v);
                 this.changed();
             },
         },
@@ -133,9 +133,8 @@ ImgOperations.prototype.createMenu = function () {
         zeroBasedSnapping: true,
         listeners: {
             scope: this,
-            //change: this.changed,
             change: function(slider, v) {
-                BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/contrast', v);
+                BQ.Preferences.set(this.uuid, 'Viewer/contrast', v);
                 this.changed();
             },
         },
@@ -146,7 +145,7 @@ ImgOperations.prototype.createMenu = function () {
         {"value":"m", "text":"Maximum"},
     ], fusion_method, this,
     function() {
-        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/fusion_method', this.combo_fusion.value);
+        BQ.Preferences.set(this.uuid, 'Viewer/fusion_method', this.combo_fusion.value);
         this.changed();
     });
 
@@ -155,7 +154,7 @@ ImgOperations.prototype.createMenu = function () {
     this.combo_enhancement = this.viewer.createCombo( 'Enhancement', enhancement_options, enhancement, this,
     function() {
         var enhancementVer = phys && parseInt(phys.pixel_depth)===8 ? 'enhancement-8bit' : 'enhancement';
-        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/'+enhancementVer, this.combo_enhancement.value);
+        BQ.Preferences.set(this.uuid, 'Viewer/'+enhancementVer, this.combo_enhancement.value);
         this.changed();
     },
     300);
@@ -165,39 +164,15 @@ ImgOperations.prototype.createMenu = function () {
         {"value":"", "text":"No"},
     ], this.default_negative, this,
     function() {
-        BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/negative', this.combo_negative.value);
+        BQ.Preferences.set(this.uuid, 'Viewer/negative', this.combo_negative.value);
         this.changed();
     });
 };
 
-ImgOperations.prototype.computeFusion = function () {
-    var fusion='';
-    for (var i=0; i<this.channel_colors.length; i++) {
-        fusion += this.channel_colors[i].getRed() + ',';
-        fusion += this.channel_colors[i].getGreen() + ',';
-        fusion += this.channel_colors[i].getBlue() + ';';
-    }
-    fusion += ':'+this.combo_fusion.getValue();
-    return fusion;
-};
-
-ImgOperations.prototype.parseFusion = function (cmd) {
-    if (cmd.indexOf(',')===-1) return;
-
-    var fusion = cmd.split(':')[0],
-        channels = fusion.split(';'),
-        value = null;
-
-    this.channel_colors = this.channel_colors || [];
-    for (var i=0; i<channels.length; ++i) {
-        if (channels[i] && channels[i].indexOf(',')>=0) {
-            this.channel_colors[i] = Ext.draw.Color.fromString('rgb('+channels[i]+')');
-        }
-    }
-};
-
 ImgOperations.prototype.createChannelMap = function ( ) {
-    var phys = this.viewer.imagephys;
+    var phys = this.viewer.imagephys,
+        channel_names = phys.getDisplayNames(this.uuid),
+        channel_colors = phys.getDisplayColors(this.uuid);
 
     this.menu.add({
         xtype: 'displayfield',
@@ -205,24 +180,18 @@ ImgOperations.prototype.createChannelMap = function ( ) {
         cls: 'heading',
     });
 
-    this.channel_colors = this.channel_colors || [];
-    for (var i=0; i<phys.ch; ++i) {
-        this.channel_colors[i] = this.channel_colors[i] || phys.channel_colors[i];
-    }
-
     for (var ch=0; ch<phys.ch; ch++) {
         this.menu.add({
             xtype: 'colorfield',
-            fieldLabel: ''+phys.channel_names[ch],
+            fieldLabel: ''+channel_names[ch],
             name: 'channel_color_'+ch,
             channel: ch,
-            value: this.channel_colors[ch].toString().replace('#', ''),
+            value: channel_colors[ch].toString().replace('#', ''),
             listeners: {
                 scope: this,
                 change: function(field, value) {
-                    this.channel_colors[field.channel] = Ext.draw.Color.fromString('#'+value);
-                    var fusion = this.computeFusion();
-                    BQ.Preferences.set(this.viewer.image.resource_uniq, 'Viewer/fusion', fusion);
+                    channel_colors[field.channel] = Ext.draw.Color.fromString('#'+value);
+                    phys.prefsSetFusion (this.uuid);
                     this.changed();
                 },
             },
@@ -241,9 +210,6 @@ ImgOperations.prototype.onPreferences = function () {
     this.default_fusion_method_4plus     = BQ.Preferences.get(resource_uniq, 'Viewer/fusion_method_4plus',  this.default_fusion_method_4plus) || this.default_fusion_method_4plus;
     this.default_brightness       = BQ.Preferences.get(resource_uniq, 'Viewer/brightness',       this.default_brightness) || this.default_brightness;
     this.default_contrast         = BQ.Preferences.get(resource_uniq, 'Viewer/contrast',         this.default_contrast) || this.default_contrast;
-
-    var fusion = BQ.Preferences.get(resource_uniq, 'Viewer/fusion');
-    this.parseFusion (fusion);
 };
 
 //-----------------------------------------------------------------------

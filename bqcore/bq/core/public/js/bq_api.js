@@ -2308,6 +2308,117 @@ BQImagePhys.prototype.getEnhancementOptions = function () {
     return enhancement_options;
 };
 
+// Display channel colors, mix metadata, system and object preferences
+
+BQImagePhys.prototype.fusion2string = function () {
+    var colors = this.channel_colors_display || this.channel_colors,
+        fusion='';
+    for (var i=0; i<colors.length; i++) {
+        fusion += colors[i].getRed() + ',';
+        fusion += colors[i].getGreen() + ',';
+        fusion += colors[i].getBlue() + ';';
+    }
+    return fusion;
+};
+
+BQImagePhys.prototype.prefsSetFusion = function (resource_uniq) {
+    var fusion = this.fusion2string();
+    BQ.Preferences.set(resource_uniq, 'Viewer/fusion', fusion);
+};
+
+BQImagePhys.prototype.prefsGetFusion = function (resource_uniq) {
+    var fusion = BQ.Preferences.get(resource_uniq, 'Viewer/fusion', '').split(':')[0],
+        channels = fusion.split(';'),
+        value = null;
+    if (fusion.indexOf(',')===-1) return;
+
+    this.channel_colors = this.channel_colors || [];
+    for (var i=0; i<channels.length; ++i) {
+        if (channels[i] && channels[i].indexOf(',')>=0) {
+            this.channel_colors[i] = Ext.draw.Color.fromString('rgb('+channels[i]+')');
+        }
+    }
+    return this.channel_colors;
+};
+
+
+BQImagePhys.prototype.prefsGetChannelColorMapping = function (resource_uniq) {
+    // DAPI=0,0,255;Alexa Fluor 488=255,0,0;
+    var p = BQ.Preferences.get(resource_uniq, 'Viewer/preferred_color_per_channel_name', ''),
+        pp = p.split(';'),
+        v = null,
+        map = [];
+
+    for (var i=0; i<pp.length; ++i) {
+        v = pp[i].split('=');
+        if (v.length !== 2) continue;
+        map[v[0].trim()] = Ext.draw.Color.fromString('rgb('+v[1].trim()+')');
+    }
+
+    return map;
+};
+
+BQImagePhys.prototype.getDisplayColors = function (resource_uniq) {
+    if (this.channel_colors_display) return this.channel_colors_display;
+
+    // fetch preferences mapping for channel names
+    var map = this.prefsGetChannelColorMapping (resource_uniq),
+        n = null;
+
+    // update from object preferences
+    this.prefsGetFusion(resource_uniq);
+
+    // first clone metadata based channel names, color objects are not really cloned, we'll replace them later
+    this.channel_colors_display = this.channel_colors.slice(0);
+
+    // update final display values
+    for (var i = 0; i < this.channel_names.length; i++) {
+        n = this.channel_names[i];
+        if (n in map) {
+            this.channel_colors_display[i] = map[n];
+        }
+    }
+    return this.channel_colors_display;
+};
+
+// Display channel names, mix metadata, system and object preferences
+
+BQImagePhys.prototype.prefsGetChannelNameMapping = function (resource_uniq) {
+    // DAPI=Nuclear;Alexa Fluor 488=Membrane;
+    var p = BQ.Preferences.get(resource_uniq, 'Viewer/preferred_text_per_channel_name', ''),
+        pp = p.split(';'),
+        v = null,
+        map = [];
+
+    for (var i=0; i<pp.length; ++i) {
+        v = pp[i].split('=');
+        if (v.length !== 2) continue;
+        map[v[0].trim()] = v[1].trim();
+    }
+
+    return map;
+};
+
+BQImagePhys.prototype.getDisplayNames = function (resource_uniq) {
+    if (this.channel_names_display) return this.channel_names_display;
+
+    // fetch preferences mapping for channel names
+    var map = this.prefsGetChannelNameMapping (resource_uniq),
+        n = null;
+
+    // first clone metadata based channel names
+    this.channel_names_display = this.channel_names.slice(0);
+
+    // update final display values
+    for (var i = 0; i < this.channel_names.length; i++) {
+        n = this.channel_names[i];
+        if (n in map) {
+            this.channel_names_display[i] = map[n];
+        }
+    }
+    return this.channel_names_display;
+};
+
 //-------------------------------------------------------------------------------
 // parseUri
 //-------------------------------------------------------------------------------

@@ -564,6 +564,7 @@ function PlayerDisplay (player) {
     this.base = PlayerPlugin;
     this.base (player);
     this.uuid = this.player.resource.resource_uniq;
+    this.phys = this.player.phys;
 };
 PlayerDisplay.prototype = new PlayerPlugin();
 
@@ -602,7 +603,8 @@ PlayerDisplay.prototype.addCommand = function (command, pars) {
     if (b!==0 || c!==0)
         command.push('brightnesscontrast='+b+','+c);
 
-    command.push('fuse='+this.computeFusion());
+    var fusion = this.phys.fusion2string() + ':'+this.combo_fusion.getValue();
+    command.push ('fuse='+fusion);
 
     var ang = this.combo_rotation.getValue();
     if (ang && ang!==''&& ang!==0)
@@ -620,8 +622,9 @@ PlayerDisplay.prototype.createMenu = function () {
 
     this.createChannelMap();
 
-    var phys = this.player.phys;
-    var enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.def.enhancement_8bit : this.def.enhancement;
+    var phys = this.player.phys,
+        enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.def.enhancement_8bit : this.def.enhancement;
+
     this.menu.add({
         xtype: 'displayfield',
         fieldLabel: 'View',
@@ -705,34 +708,10 @@ PlayerDisplay.prototype.createMenu = function () {
 
 };
 
-PlayerDisplay.prototype.computeFusion = function () {
-    var fusion='';
-    for (var i=0; i<this.channel_colors.length; i++) {
-        fusion += this.channel_colors[i].getRed() + ',';
-        fusion += this.channel_colors[i].getGreen() + ',';
-        fusion += this.channel_colors[i].getBlue() + ';';
-    }
-    fusion += ':'+this.combo_fusion.getValue();
-    return fusion;
-};
-
-PlayerDisplay.prototype.parseFusion = function (cmd) {
-    if (cmd.indexOf(',')===-1) return;
-
-    var fusion = cmd.split(':')[0],
-        channels = fusion.split(';'),
-        value = null;
-
-    this.channel_colors = this.channel_colors || [];
-    for (var i=0; i<channels.length; ++i) {
-        if (channels[i] && channels[i].indexOf(',')>=0) {
-            this.channel_colors[i] = Ext.draw.Color.fromString('rgb('+channels[i]+')');
-        }
-    }
-};
-
 PlayerDisplay.prototype.createChannelMap = function() {
-    var phys = this.player.phys;
+    var phys = this.player.phys,
+        channel_names = phys.getDisplayNames(this.uuid),
+        channel_colors = phys.getDisplayColors(this.uuid);
 
     this.menu.add({
         xtype: 'displayfield',
@@ -740,20 +719,18 @@ PlayerDisplay.prototype.createChannelMap = function() {
         cls: 'heading',
     });
 
-    this.parseFusion (this.def.fusion);
     for (var ch=0; ch<phys.ch; ch++) {
         this.menu.add({
             xtype: 'colorfield',
-            fieldLabel: ''+phys.channel_names[ch],
+            fieldLabel: ''+channel_names[ch],
             name: 'channel_color_'+ch,
             channel: ch,
-            value: this.channel_colors[ch].toString().replace('#', ''),
+            value: channel_colors[ch].toString().replace('#', ''),
             listeners: {
                 scope: this,
                 change: function(field, value) {
-                    this.channel_colors[field.channel] = Ext.draw.Color.fromString('#'+value);
-                    var fusion = this.computeFusion();
-                    BQ.Preferences.set(this.uuid, 'Viewer/fusion', fusion);
+                    channel_colors[field.channel] = Ext.draw.Color.fromString('#'+value);
+                    phys.prefsSetFusion (this.uuid);
                     this.changed();
                 },
             },

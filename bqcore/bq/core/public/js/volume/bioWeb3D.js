@@ -2404,6 +2404,7 @@ function VolumeDisplay(volume) {
 	this.base = VolumePlugin;
 	this.base(volume);
     this.uuid = this.volume.resource.resource_uniq;
+    this.phys = this.volume.phys;
 };
 
 VolumeDisplay.prototype = new VolumePlugin();
@@ -2437,7 +2438,8 @@ VolumeDisplay.prototype.addCommand = function (command, pars) {
         command.push ('depth=8,hounsfield,u,,'+a[1]);
     }
 
-    command.push('fuse='+this.computeFusion());
+    var fusion = this.phys.fusion2string() + ':'+this.combo_fusion.getValue();
+    command.push ('fuse='+fusion);
 
 	if (this.combo_negative.getValue()) {
 		command.push(this.combo_negative.getValue());
@@ -2451,8 +2453,8 @@ VolumeDisplay.prototype.createMenu = function () {
 	this.menu = this.volume.menu;
 
 	this.createChannelMap();
-	var phys = this.volume.phys;
-    var enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.def.enhancement_8bit : this.def.enhancement;
+	var phys = this.volume.phys,
+        enhancement = phys && parseInt(phys.pixel_depth)===8 ? this.def.enhancement_8bit : this.def.enhancement;
 
     this.menu.add({
 		xtype : 'displayfield',
@@ -2488,34 +2490,10 @@ VolumeDisplay.prototype.createMenu = function () {
 
 };
 
-VolumeDisplay.prototype.computeFusion = function () {
-    var fusion='';
-    for (var i=0; i<this.channel_colors.length; i++) {
-        fusion += this.channel_colors[i].getRed() + ',';
-        fusion += this.channel_colors[i].getGreen() + ',';
-        fusion += this.channel_colors[i].getBlue() + ';';
-    }
-    fusion += ':'+this.combo_fusion.getValue();
-    return fusion;
-};
-
-VolumeDisplay.prototype.parseFusion = function (cmd) {
-    if (cmd.indexOf(',')===-1) return;
-
-    var fusion = cmd.split(':')[0],
-        channels = fusion.split(';'),
-        value = null;
-
-    this.channel_colors = this.channel_colors || [];
-    for (var i=0; i<channels.length; ++i) {
-        if (channels[i] && channels[i].indexOf(',')>=0) {
-            this.channel_colors[i] = Ext.draw.Color.fromString('rgb('+channels[i]+')');
-        }
-    }
-};
-
 VolumeDisplay.prototype.createChannelMap = function () {
-	var phys = this.volume.phys;
+	var phys = this.volume.phys,
+        channel_names = phys.getDisplayNames(this.uuid),
+        channel_colors = phys.getDisplayColors(this.uuid);
 
 	this.menu.add({
 		xtype : 'displayfield',
@@ -2523,20 +2501,18 @@ VolumeDisplay.prototype.createChannelMap = function () {
 		cls : 'heading',
 	});
 
-	this.parseFusion (this.def.fusion);
 	for (var ch = 0; ch < phys.ch; ch++) {
 		this.menu.add({
 			xtype : 'colorfield',
-			fieldLabel : '' + phys.channel_names[ch],
+			fieldLabel : '' + channel_names[ch],
 			name : 'channel_color_' + ch,
 			channel : ch,
-			value : this.channel_colors[ch].toString().replace('#', ''),
+			value : channel_colors[ch].toString().replace('#', ''),
 			listeners : {
 				scope : this,
 				change : function (field, value) {
-					this.channel_colors[field.channel] = Ext.draw.Color.fromString('#' + value);
-                    var fusion = this.computeFusion();
-                    BQ.Preferences.set(this.uuid, 'Viewer/fusion', fusion);
+					channel_colors[field.channel] = Ext.draw.Color.fromString('#' + value);
+                    phys.prefsSetFusion (this.uuid);
 					this.changed();
 				},
 			},
