@@ -1342,7 +1342,9 @@ Ext.define('BQ.selectors.PipelineParams', {
         }
         resource.tags.length = 0;
 
-        var total_height = 0;
+        this.coupled_box = this.add({xtype: "checkbox", checked: false, boxLabel: "Couple parameters"});
+
+        var total_height = this.coupled_box.getHeight();
         this.field_res.length = 0;
         for (var i = 0; i < params.length; i++) {
             var param = params[i];
@@ -1411,12 +1413,21 @@ Ext.define('BQ.selectors.PipelineParams', {
         for (var i = 0; i < resource.tags.length; i++) {
             var tag = resource.tags[i];
             var vals = this.CSVtoArray(tag.value);
+            var saw_dots = false;
             for (var validx = 0; validx < vals.length; validx++) {
-                if (tag.type == "number" && isNaN(vals[validx])) {
+                // allow parameter to be:
+                // (1) single number/string
+                // (2) list of numbers/strings
+                // (3) "a, ..., z"
+                // (4) "a, b, ..., z"
+                if (tag.type == "number" && isNaN(vals[validx]) && (saw_dots || validx == 0 || validx == vals.length-1 || validx > 2 || vals[validx] != "...")) {
                     var template = resource.template || {};
-                    var msg = template.fail_message || 'List for numeric parameter contains non-numeric value!';
+                    var msg = template.fail_message || 'List for numeric parameter contains non-numeric value or incorrect enumeration!';
                     BQ.ui.tip(this.getId(), msg, {anchor:'left',});
                     return false;
+                }
+                if (vals[validx] == "...") {
+                    saw_dots = true;
                 }
             }
             if (vals.length > 1) {
@@ -1424,6 +1435,10 @@ Ext.define('BQ.selectors.PipelineParams', {
                 tag.type = "list";
                 this.module.iterables.push(tag.name);
                 this.module.inputs_index[tag.name] = tag;
+            }
+            if (this.coupled_box.getValue()) {
+                // user wants coupled lists => add "coupled" to execute_options
+                this.module.coupled_iter = true;
             }
         }
         return true;

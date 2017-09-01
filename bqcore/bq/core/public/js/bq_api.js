@@ -2691,6 +2691,9 @@ BQModule.prototype.createMEX = function( ) {
                 }
             }
         }
+        if (this.coupled_iter) {
+            tag_execute.addtag({ name:'coupled_iter', value:true, });
+        }
     }
 
     return mex;
