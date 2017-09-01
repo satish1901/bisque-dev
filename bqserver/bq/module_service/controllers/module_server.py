@@ -83,6 +83,8 @@ import urlparse
 import urllib
 import itertools
 import csv
+import numbers
+from operator import mul
 from bqapi import BQServer
 from lxml import etree
 from datetime import datetime
@@ -322,18 +324,25 @@ def create_mex(module, name, mex = None, **kw):
     #   <tag name="iterable" value="resource_url" type="dataset">
     #        <tag name="xpath" value="./value/@text'/>
     #   </tag>
-    #   <tag name="iterable" value="RefFrameZDir" type="list" />     PROPOSED NEW ITERABLE
-    #   <tag name="iterable" value="RefFrameZDir" type="range" />    PROPOSED NEW ITERABLE
+    #   <tag name="iterable" value="RefFrameZDir" type="list" />     comma-separated list of values or '...'
+    #   <tag name="coupled_iter" value="true" />                     couple both 
     # </tag> </mex>
     iterables = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
     if len(iterables)==0:
         return mex
+
+    # check for "coupled_iter" execution option
+    coupled_iter = False
+    coupled_iters = mex.xpath('./tag[@name="execute_options"]/tag[@name="coupled_iter"]')
+    if len(coupled_iters) > 0:
+        coupled_iter = (coupled_iters[0].get('value', 'false').lower() == 'true')
+
     # Build dict of iterable input names ->   dict of iterable types -> iter expressions
     iters = {}
     for itr in iterables:
         resource_tag = itr.get('value')
         resource_type = itr.get('type')
-        resource_iterexpr = './value/text()' if resource_type not in ['list', 'range'] else '@'+resource_type
+        resource_iterexpr = './value/text()' if resource_type not in ['list'] else '@'+resource_type
         if len(itr):
             # Children of iterable allow overide of extraction expression
             if itr[0].get('name') == 'xpath':
@@ -364,6 +373,55 @@ def create_mex(module, name, mex = None, **kw):
         if resource_type == 'list':
             # list type: value is comma-separated list itself
             members = csv.reader([resource_value], skipinitialspace=True).next()
+            if '...' in members:
+                if members[0] != '...' and members[1] == '...' and members[2] != '...':
+                    # case "a, ..., z"
+                    try:
+                        start = int(members[0])
+                        end = int(members[2])
+                        step = 1 if start<end else -1
+                    except ValueError:
+                        try:
+                            start = float(members[0])
+                            end = float(members[2])
+                            step = 1.0 if start<=end else -1.0
+                        except ValueError:
+                            log.error("illegal list enumeration")
+                            return mex                    
+                elif members[0] != '...' and members[1] != '...' and members[2] == '...' and members[3] != '...':
+                    # case "a, b, ..., z"
+                    try:
+                        start = int(members[0])
+                        end = int(members[3])
+                        step = int(members[1])-int(members[0])
+                        if step == 0:
+                            step = 1
+                    except ValueError:
+                        try:
+                            start = float(members[0])
+                            end = float(members[3])
+                            step = float(members[1])-float(members[0])
+                        except ValueError:
+                            log.error("illegal list enumeration")
+                            return mex
+                else:
+                    log.error("illegal list enumeration")
+                    return mex
+                if (start < end and step < 0) or (start > end and step > 0):
+                    log.error("illegal list enumeration")
+                    return mex
+                members = []
+                val = start
+                while True:
+                    members.append(str(val))
+                    if len(members) > 100:
+                        log.error("too many combinations (>100)")
+                        return mex
+                    valold = val
+                    val += step
+                    if val == valold or not((start < end and val <= end) or (start > end and val >= end)):   # step may be too small to affect val
+                        break
+                log.debug ('enumeration "%s" expanded to "%s"' % (resource_value, str(members)))
         else:
             # must be dataset, assume resource_iterexpr is xpath
             resource = data_service.get_resource(resource_value, view='deep')
@@ -376,22 +434,48 @@ def create_mex(module, name, mex = None, **kw):
 
     log.debug("all iterable values: %s", str(all_iterables))
 
-    # Generate a "matrix" of iterable values:
-    # tag1:val1, tag2:valx, tag3:vala
-    # tag1:val2, tag2:valx, tag3:vala
-    # ...
-    # tag1:val1, tag2:valy, tag3:vala
-    # ...
-    for iter_combo in itertools.product(*all_iterables):
-        # Create SubMex section with original parameters replaced with iterated members
-        subinputs = copy.deepcopy(mex_inputs)
-        for iter_tag, value in iter_combo:
-            resource_tag = subinputs.xpath('.//tag[@name="%s"]' % iter_tag)[0]
-            etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=value)
-            resource_tag.getparent().remove (resource_tag)
-        submex = etree.Element('mex', name=name, type=module.get ('uri'))
-        submex.append(subinputs)
-        mex.append(submex)
+    if coupled_iter:
+        # Generate coupled list of values:
+        # tag1:val1, tag2:valx, tag3:vala
+        # tag1:val2, tag2:valy, tag3:valb
+        # ...
+        if max([len(sublist) for sublist in all_iterables]) > 100:   # safety check
+            log.error("too many combinations (>100)")
+            return mex
+        list_lengths = [len(sublist) for sublist in all_iterables]
+        max_list_length = max(list_lengths)
+        for step in range(0, max_list_length):
+            # Create SubMex section with original parameters replaced with iterated members
+            subinputs = copy.deepcopy(mex_inputs)
+            for sublist in all_iterables:
+                iter_tag, value = sublist[int(step*len(sublist)/max_list_length)]
+                resource_tag = subinputs.xpath('.//tag[@name="%s"]' % iter_tag)[0]
+                etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=value)
+                resource_tag.getparent().remove (resource_tag)
+            submex = etree.Element('mex', name=name, type=module.get ('uri'))
+            submex.append(subinputs)
+            mex.append(submex)
+    else:
+        # Generate a "matrix" of iterable values:
+        # tag1:val1, tag2:valx, tag3:vala
+        # tag1:val2, tag2:valx, tag3:vala
+        # ...
+        # tag1:val1, tag2:valy, tag3:vala
+        # ...
+        if reduce(mul, [len(sublist) for sublist in all_iterables], 1) > 100:   # safety check
+            log.error("too many combinations (>100)")
+            return mex
+        for iter_combo in itertools.product(*all_iterables):
+            # Create SubMex section with original parameters replaced with iterated members
+            subinputs = copy.deepcopy(mex_inputs)
+            for iter_tag, value in iter_combo:
+                resource_tag = subinputs.xpath('.//tag[@name="%s"]' % iter_tag)[0]
+                etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=value)
+                resource_tag.getparent().remove (resource_tag)
+            submex = etree.Element('mex', name=name, type=module.get ('uri'))
+            submex.append(subinputs)
+            mex.append(submex)
+            
     log.debug('mex rewritten-> %s' , etree.tostring(mex))
     return mex
 
