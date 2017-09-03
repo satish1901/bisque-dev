@@ -2326,21 +2326,19 @@ BQImagePhys.prototype.prefsSetFusion = function (resource_uniq) {
     BQ.Preferences.set(resource_uniq, 'Viewer/fusion', fusion);
 };
 
-BQImagePhys.prototype.prefsGetFusion = function (resource_uniq) {
+BQImagePhys.prototype.prefsGetFusion = function (resource_uniq, channel_colors) {
     var fusion = BQ.Preferences.get(resource_uniq, 'Viewer/fusion', '').split(':')[0],
         channels = fusion.split(';'),
         value = null;
     if (fusion.indexOf(',')===-1) return;
 
-    this.channel_colors = this.channel_colors || [];
     for (var i=0; i<channels.length; ++i) {
         if (channels[i] && channels[i].indexOf(',')>=0) {
-            this.channel_colors[i] = Ext.draw.Color.fromString('rgb('+channels[i]+')');
+            channel_colors[i] = Ext.draw.Color.fromString('rgb('+channels[i]+')');
         }
     }
-    return this.channel_colors;
+    return channel_colors;
 };
-
 
 BQImagePhys.prototype.prefsGetChannelColorMapping = function (resource_uniq) {
     // DAPI=0,0,255;Alexa Fluor 488=255,0,0;
@@ -2365,19 +2363,26 @@ BQImagePhys.prototype.getDisplayColors = function (resource_uniq) {
     var map = this.prefsGetChannelColorMapping (resource_uniq),
         n = null;
 
-    // update from object preferences
-    this.prefsGetFusion(resource_uniq);
+    // ensure channel_colors parsed from metadata and then create a display variant
+    this.channel_colors = this.channel_colors || [];
 
-    // first clone metadata based channel names, color objects are not really cloned, we'll replace them later
+    // update from object preferences
+    this.prefsGetFusion(resource_uniq, this.channel_colors);
+
+    // clone metadata based channel names, color objects are not really cloned, we'll replace them later
     this.channel_colors_display = this.channel_colors.slice(0);
 
-    // update final display values
+    // update from preferred mapping per channel name
     for (var i = 0; i < this.channel_names.length; i++) {
         n = this.channel_names[i];
         if (n in map) {
             this.channel_colors_display[i] = map[n];
         }
     }
+
+    // finally, update from object preferences
+    this.prefsGetFusion(resource_uniq, this.channel_colors_display);
+
     return this.channel_colors_display;
 };
 
@@ -2690,9 +2695,6 @@ BQModule.prototype.createMEX = function( ) {
                     iter_tag.addtag(iterable_kids[kid_idx]);
                 }
             }
-        }
-        if (this.coupled_iter) {
-            tag_execute.addtag({ name:'coupled_iter', value:true, });
         }
     }
 
