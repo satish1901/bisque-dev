@@ -1,6 +1,6 @@
 
 
-
+/*
 function test_visible_dim(pos, pos_view, tolerance ) {
     return !(pos!==undefined && pos!==null && !isNaN(pos) && Math.abs(pos-pos_view)>=tolerance);
 }
@@ -25,7 +25,7 @@ function test_visible (pos, viewstate, tolerance_z ) {
     }
     return true;
 }
-
+*/
 
 
 
@@ -175,6 +175,9 @@ function visvalingamSimplify(points, scale){
     return pointsNew;
 };
 
+///////////////////////////////////////////////
+// CanvasShape:
+///////////////////////////////////////////////
 
 function CanvasShape(gob, renderer) {
 	this.renderer = renderer;
@@ -254,6 +257,7 @@ CanvasShape.prototype.isVisible = function (z,t, tolerance_z) {
 
     var test_visible_dim = function(min, max,  pos_view, tolerance ) {
         return (pos_view >= min - 0.5*tolerance && pos_view <= max + 0.5*tolerance);
+        //return !(pos!==undefined && pos!==null && !isNaN(pos) && Math.abs(pos-pos_view)>=tolerance);
     }
 
     var viewstate = this.renderer.viewer.current_view;
@@ -261,10 +265,9 @@ CanvasShape.prototype.isVisible = function (z,t, tolerance_z) {
     //if(!pos) return false;
     var proj = viewstate.imagedim.project,
         proj_gob = viewstate.gob_projection,
-
-    tolerance_z = tolerance_z || viewstate.gob_tolerance.z || 1.0;
-    var tolerance_t = viewstate.gob_tolerance.t || 1.0;
-    if(!this.bbox)
+        tolerance_z = tolerance_z || viewstate.gob_tolerance.z || 1.0,
+        tolerance_t = viewstate.gob_tolerance.t || 1.0;
+    if (!this.bbox)
         this.bbox = this.caclBbox();
     var bbox = this.bbox;
     var min = bbox.min;
@@ -813,6 +816,38 @@ CanvasShape.prototype.getColor = function () {
     return this.gob.getColor();
 };
 
+CanvasShape.prototype.calcBboxTZ = function () {
+    var min = [ 999999999, 999999999, 999999999, 999999999];
+    var max = [-999999999,-999999999,-999999999,-999999999];
+
+    for(var z = 0; z < this.gob.vertices.length; z++){
+        var pz = this.gob.vertices[z].z;
+        if (pz == null) {
+            min[2] = -999999999; // dima: null
+            max[2] = 999999999; // dima: null
+            break;
+        }
+        min[2] = Math.min(min[2], pz);
+        max[2] = Math.max(max[2], pz);
+    }
+
+    for(var t = 0; t < this.gob.vertices.length; t++){
+        var pt = this.gob.vertices[t].t;
+        if (pt == null) {
+            min[3] = -999999999; // dima: null
+            max[3] = 999999999; // dima: null
+            break;
+        }
+        min[3] = Math.min(min[3], pt);
+        max[3] = Math.max(max[3], pt);
+    }
+
+    return {min: min, max: max};
+};
+
+///////////////////////////////////////////////
+// polyline:
+///////////////////////////////////////////////
 
 function CanvasPolyLine(gob, renderer) {
 	this.renderer = renderer;
@@ -833,41 +868,26 @@ CanvasPolyLine.prototype.cacheOffset = function(){
 }
 
 CanvasPolyLine.prototype.calcBbox = function () {
-    var min = [ 9999999, 9999999, 9999999, 9999999];
-    var max = [-9999999,-9999999,-9999999,-9999999];
+    var mm = this.calcBboxTZ(),
+        sprite = this.sprite,
+        x = this.x(),
+        y = this.y(),
+        sx = sprite.scaleX(),
+        sy = sprite.scaleY(),
+        points = sprite.points();
 
-    var points = this.sprite.points();
+    if (points.length === 0) return mm;
 
-    if(points.length === 0) return {min: min, max: max};
-
-    var x = this.x();
-    var y = this.y();
-
-    var sx = this.sprite.scaleX();
-    var sy = this.sprite.scaleY();
-
-    for(var xy = 0; xy < points.length; xy+=2){
+    for (var xy = 0; xy < points.length; xy+=2){
         var px = x + sx*points[xy + 0];
         var py = y + sy*points[xy + 1];
-        min[0] = min[0] < px ? min[0] : px;
-        min[1] = min[1] < py ? min[1] : py;
-        max[0] = max[0] > px ? max[0] : px;
-        max[1] = max[1] > py ? max[1] : py;
+        mm.min[0] = mm.min[0] < px ? mm.min[0] : px;
+        mm.min[1] = mm.min[1] < py ? mm.min[1] : py;
+        mm.max[0] = mm.max[0] > px ? mm.max[0] : px;
+        mm.max[1] = mm.max[1] > py ? mm.max[1] : py;
     }
 
-    for(var z = 0; z < this.gob.vertices.length; z++){
-        var pz = this.gob.vertices[z].z;
-        min[2] = Math.min(min[2], pz);
-        max[2] = Math.max(max[2], pz);
-    }
-
-    for(var t = 0; t < this.gob.vertices.length; t++){
-        var pt = this.gob.vertices[t].t;
-        min[3] = Math.min(min[3], pt);
-        max[3] = Math.max(max[3], pt);
-    }
-
-    return {min: min, max: max};
+    return mm;
 };
 
 CanvasPolyLine.prototype.isInside  = function(point){
@@ -1122,7 +1142,10 @@ CanvasPolyLine.prototype.onDragFree = function(e, start){
     //console.log(g);
 };
 
-CanvasPolyLine.prototype.visvalingamSimplify = function(){
+CanvasPolyLine.prototype.visvalingamSimplify = function() {
+    // dima: unfortunately this algorithm is way to simple and is loosing object's shape
+    // even after various fixes, removing it for now
+    /*
     var points = this.sprite.points();
     var heap = new minHeap(function(x,y){
         if(x === undefined) debugger;
@@ -1150,57 +1173,63 @@ CanvasPolyLine.prototype.visvalingamSimplify = function(){
     //we create a linked list of triangles so that we can efficiently remove them
     //without
     var triangles = [];
-    for(var i = 0; i < points.length; i+=2){
-        var tri = {index: i/2, prev: i/2-1, next: i/2+1};
+    triangles.push({index: 0, prev: -1, next: 1, area: 999999999999}); // ensure the first point is always preserved
+    for (var i=2, ii=1; i<points.length-2; i+=2, ++ii){
+        var tri = {index: ii, prev: ii-1, next: ii+1};
         tri.area = triArea(tri);
         triangles.push(tri);
     };
+    triangles.push({index: ii, prev: ii-1, next: ii+1, area: 999999999999}); // ensure the last point is always preserved
 
-    for(var i = 1; i < triangles.length-1; i++){
-        heap.push(triangles[i]);
-    };
 
-    while(heap.size() > 3){
-        var tri = heap.pop();
-        var index = tri.index;
+    // for(var i = 1; i < triangles.length-1; i++){
+    //     heap.push(triangles[i]);
+    // };
 
-        var next = tri.next;
-        var prev = tri.prev;
-        var hSize = heap.size();
+    // while(heap.size() > 3){
+    //     var tri = heap.pop();
+    //     var index = tri.index;
 
-        //if(triN === undefined || triP === undefined) debugger;
-        //console.log(index,triN.index, triP.index, triN.heapIndex, triP.heapIndex);
-        console.log(tri);
-        if(next < points.length/2-1){
-            var triN = triangles[next];
+    //     var next = tri.next;
+    //     var prev = tri.prev;
+    //     var hSize = heap.size();
 
-            var nArea = triArea(triN);
-            triP.area = nArea > triArea(triN) ? nArea : triArea(triN);
+    //     //if(triN === undefined || triP === undefined) debugger;
+    //     //console.log(index,triN.index, triP.index, triN.heapIndex, triP.heapIndex);
+    //     console.log(tri);
+    //     if(next < points.length/2-1){
+    //         var triN = triangles[next];
 
-            heap.sinkDown(triN.heapIndex);
-            triN.prev = prev;
-        }
+    //         var nArea = triArea(triN);
+    //         triP.area = nArea > triArea(triN) ? nArea : triArea(triN);
 
-        if(prev - 1 > 0){
-            var triP = triangles[prev];
-            var nArea = triArea(triP);
-            triP.area = nArea > triArea(triP) ? nArea : triArea(triP);
-            heap.down(triP.heapIndex);
-            //if(triN.prev === next) debugger;
-            triP.next = next;
-        }
+    //         heap.sinkDown(triN.heapIndex);
+    //         triN.prev = prev;
+    //     }
 
-    }
+    //     if(prev - 1 > 0){
+    //         var triP = triangles[prev];
+    //         var nArea = triArea(triP);
+    //         triP.area = nArea > triArea(triP) ? nArea : triArea(triP);
+    //         heap.down(triP.heapIndex);
+    //         //if(triN.prev === next) debugger;
+    //         triP.next = next;
+    //     }
+
+    // }
+
+
     var thresh = 1.0/this.renderer.stage.scale().x;
     var pointsNew = [points[0], points[1]];
-    for(var i = 1; i < triangles.length-1; i++){
-        if(triangles[i].area > thresh){
-            var id = triangles[i].index;
-            pointsNew.push(points[2*id + 0]);
-            pointsNew.push(points[2*id + 1]);
+    for(var i=1; i<triangles.length; ++i) {
+        if (triangles[i].area >= thresh) {
+            var id = triangles[i].index * 2;
+            pointsNew.push(points[id + 0]);
+            pointsNew.push(points[id + 1]);
         };
     }
     this.sprite.points(pointsNew);
+    */
 };
 
 
@@ -1212,18 +1241,10 @@ CanvasPolyLine.prototype.moveLocal = function(){
     var sy = this.sprite.scaleY();
     var z = this.gob.vertices[0].z;
     var t = this.gob.vertices[0].t;
-    for(var i=0;i<points.length-1;i+=2){
+    for (var i=0, ii=0; i<points.length-1; i+=2, ++ii){
         var x = points[i];
         var y = points[i+1];
-        if (i % 2 == 0) {
-            //var np = view.inverseTransformPoint (x, y);
-            if (i/2 >= this.gob.vertices.length)
-                this.gob.vertices[i/2] = new BQVertex();
-            this.gob.vertices[i/2].x = sx*x + offx;
-            this.gob.vertices[i/2].y = sy*y + offy;
-            this.gob.vertices[i/2].z = this.gob.vertices[i/2].z;
-            this.gob.vertices[i/2].t = this.gob.vertices[i/2].t;
-        }
+        this.gob.vertices[ii] = new BQVertex (sx*x + offx, sy*y + offy, z, t, null, ii);
     }
 }
 
@@ -1354,42 +1375,25 @@ CanvasEllipse.prototype.init = function(gob){
 }
 
 CanvasEllipse.prototype.calcBbox = function () {
-    var ellipse = this.sprite;
-    var px = this.x();
-    var py = this.y();
-    var rx = ellipse.radiusX();
-    var ry = ellipse.radiusY();
-    var phi = Math.PI/180*ellipse.rotation();
+    var mm = this.calcBboxTZ(),
+        ellipse = this.sprite,
+        px = this.x(),
+        py = this.y(),
+        rx = ellipse.radiusX(),
+        ry = ellipse.radiusY(),
+        phi = Math.PI/180*ellipse.rotation(),
+        ux = rx*Math.cos(phi),
+        uy = rx*Math.sin(phi),
+        vx = ry*Math.cos(phi + Math.PI/2),
+        vy = ry*Math.sin(phi + Math.PI/2),
+        bbhw = Math.sqrt(ux*ux + vx*vx);
+        bbhh = Math.sqrt(uy*uy + vy*vy);
 
-    var ux = rx*Math.cos(phi);
-    var uy = rx*Math.sin(phi);
-
-    var vx = ry*Math.cos(phi + Math.PI/2);
-    var vy = ry*Math.sin(phi + Math.PI/2);
-
-    var bbhw = Math.sqrt(ux*ux + vx*vx);
-    var bbhh = Math.sqrt(uy*uy + vy*vy);
-
-    var
-    minz =  99999999999,
-    maxz = -99999999999,
-    mint  = 99999999999,
-    maxt = -99999999999;
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pz = this.gob.vertices[i].z;
-        minz = Math.min(minz, pz);
-        maxz = Math.max(maxz, pz);
-    }
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pt = this.gob.vertices[i].t;
-        mint = Math.min(mint, pt);
-        maxt = Math.max(maxt, pt);
-    }
-
-    return {min: [px - bbhw, py - bbhh, minz, mint],
-            max: [px + bbhw, py + bbhh, maxz, maxt]};
+    mm.min[0] = px - bbhw;
+    mm.min[1] = py - bbhh;
+    mm.max[0] = px + bbhw;
+    mm.max[1] = py + bbhh;
+    return mm;
 };
 
 
@@ -1647,32 +1651,17 @@ CanvasCircle.prototype.init = function(gob){
 }
 
 CanvasCircle.prototype.calcBbox = function () {
-    var sprite = this.sprite;
-    var px = this.x();
-    var py = this.y();
-    var r = sprite.radius();
+    var mm = this.calcBboxTZ(),
+        sprite = this.sprite,
+        px = this.x(),
+        py = this.y(),
+        r = sprite.radius();
 
-
-    var
-    minz =  99999999999,
-    maxz = -99999999999,
-    mint  = 99999999999,
-    maxt = -99999999999;
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pz = this.gob.vertices[i].z;
-        minz = Math.min(minz, pz);
-        maxz = Math.max(maxz, pz);
-    }
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pt = this.gob.vertices[i].t;
-        mint = Math.min(mint, pt);
-        maxt = Math.max(maxt, pt);
-    }
-
-    return {min: [px - r, py - r, minz, mint],
-            max: [px + r, py + r, maxz, maxt]};
+    mm.min[0] = px - r;
+    mm.min[1] = py - r;
+    mm.max[0] = px + r;
+    mm.max[1] = py + r;
+    return mm;
 };
 
 CanvasCircle.prototype.isInside  = function(point){
@@ -1888,33 +1877,18 @@ CanvasPoint.prototype.clearCache = function(){};
 CanvasPoint.prototype.cacheSprite = function(){};
 
 CanvasPoint.prototype.calcBbox = function (scaleIn) {
-    var sprite = this.sprite;
-    var px = this.x();
-    var py = this.y();
-    var scale = scaleIn ? scaleIn : this.renderer.scale();
+    var mm = this.calcBboxTZ(),
+        sprite = this.sprite,
+        px = this.x(),
+        py = this.y(),
+        scale = scaleIn ? scaleIn : this.renderer.scale(),
+        buffer = this.pointSize/scale;
 
-    var buffer = this.pointSize/scale;
-
-    minz =  99999999999,
-    maxz = -99999999999,
-    mint  = 99999999999,
-    maxt = -99999999999;
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pz = this.gob.vertices[i].z;
-        minz = Math.min(minz, pz);
-        maxz = Math.max(maxz, pz);
-    }
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pt = this.gob.vertices[i].t;
-        mint = Math.min(mint, pt);
-        maxt = Math.max(maxt, pt);
-    }
-
-
-    return {min: [px - buffer, py - buffer, minz, mint],
-            max: [px + buffer, py + buffer, maxz, maxt]};
+    mm.min[0] = px - buffer;
+    mm.min[1] = py - buffer;
+    mm.max[0] = px + buffer;
+    mm.max[1] = py + buffer;
+    return mm;
 };
 
 
@@ -2060,32 +2034,17 @@ CanvasImagePoint.prototype.clearCache = function(){};
 CanvasImagePoint.prototype.cacheSprite = function(){};
 
 CanvasImagePoint.prototype.calcBbox = function () {
-    var sprite = this.sprite;
-    var px = this.x();
-    var py = this.y();
+    var mm = this.calcBboxTZ(),
+        sprite = this.sprite,
+        px = this.x(),
+        py = this.y(),
+        r = 3;
 
-
-    var
-    minz =  99999999999,
-    maxz = -99999999999,
-    mint  = 99999999999,
-    maxt = -99999999999;
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pz = this.gob.vertices[i].z;
-        minz = Math.min(minz, pz);
-        maxz = Math.max(maxz, pz);
-    }
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pt = this.gob.vertices[i].t;
-        mint = Math.min(mint, pt);
-        maxt = Math.max(maxt, pt);
-    }
-
-
-    return {min: [px+3, py+3, minz, mint],
-            max: [px+3, py+3, maxz, maxt]};
+    mm.min[0] = px - r;
+    mm.min[1] = py - r;
+    mm.max[0] = px + r;
+    mm.max[1] = py + r;
+    return mm;
 };
 
 CanvasImagePoint.prototype.updateLocal = function () {
@@ -2253,51 +2212,27 @@ CanvasLabel.prototype.getRenderableSprites = function (collection) {
 };
 
 CanvasLabel.prototype.calcBbox = function (scaleIn) {
-    var sprite = this.sprite;
-    var px = this.x();
-    var py = this.y();
-    var r = 2.0/this.renderer.scale();
+    var mm = this.calcBboxTZ(),
+        sprite = this.sprite,
+        px = this.x(),
+        py = this.y(),
+        r = 2.0/this.renderer.scale(),
+        h = this.text.height(),
+        w = this.text.width(),
+        scale = scaleIn ? scaleIn : this.renderer.scale(),
+        w = this.text.text().length/scale*6,
+        x0 = px,
+        x1 = px + this.offset.x,
+        x2 = px + this.offset.x + w,
+        y0 = py,
+        y1 = py + this.offset.y,
+        y2 = py + this.offset.y + h;
 
-    var h = this.text.height();
-    var w = this.text.width();
-
-    var scale = scaleIn ? scaleIn : this.renderer.scale();
-    w = this.text.text().length/scale*6;
-
-    var x0 = px;
-    var x1 = px + this.offset.x;
-    var x2 = px + this.offset.x + w;
-    var xmin = Math.min(x0, Math.min(x1, x2));
-    var xmax = Math.max(x0, Math.max(x1, x2));
-
-    var y0 = py;
-    var y1 = py + this.offset.y;
-    var y2 = py + this.offset.y + h;
-    var ymin = Math.min(y0, Math.min(y1, y2));
-    var ymax = Math.max(y0, Math.max(y1, y2));
-
-
-    var
-    minz =  99999999999,
-    maxz = -99999999999,
-    mint  = 99999999999,
-    maxt = -99999999999;
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pz = this.gob.vertices[i].z;
-        minz = Math.min(minz, pz);
-        maxz = Math.max(maxz, pz);
-    }
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pt = this.gob.vertices[i].t;
-        mint = Math.min(mint, pt);
-        maxt = Math.max(maxt, pt);
-    }
-
-
-    return {min: [xmin, ymin, minz, mint],
-            max: [xmax, ymax, maxz, maxt]};
+    mm.min[0] = Math.min(x0, Math.min(x1, x2));
+    mm.min[1] = Math.min(y0, Math.min(y1, y2));
+    mm.max[0] = Math.max(x0, Math.max(x1, x2));
+    mm.max[1] = Math.max(y0, Math.max(y1, y2));
+    return mm;
 };
 
 CanvasLabel.prototype.clearCache = function(){};
@@ -2564,36 +2499,18 @@ CanvasRectangle.prototype.init = function(gob){
 }
 
 CanvasRectangle.prototype.calcBbox = function () {
-    var rect = this.sprite;
-    var px = this.x();
-    var py = this.y();
-    var w = rect.width();
-    var h = rect.height();
-    var xmin = Math.min(px, px + w);
-    var xmax = Math.max(px, px + w);
-    var ymin = Math.min(py, py + h);
-    var ymax = Math.max(py, py + h);
+    var mm = this.calcBboxTZ(),
+        rect = this.sprite,
+        px = this.x(),
+        py = this.y(),
+        w = rect.width(),
+        h = rect.height();
 
-    var
-    minz =  99999999999,
-    maxz = -99999999999,
-    mint  = 99999999999,
-    maxt = -99999999999;
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pz = this.gob.vertices[i].z;
-        minz = Math.min(minz, pz);
-        maxz = Math.max(maxz, pz);
-    }
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pt = this.gob.vertices[i].t;
-        mint = Math.min(mint, pt);
-        maxt = Math.max(maxt, pt);
-    }
-
-    return {min: [xmin, ymin, minz, mint],
-            max: [xmax, ymax, maxz, maxt]};
+    mm.min[0] = Math.min(px, px + w);
+    mm.min[1] = Math.min(py, py + h);
+    mm.max[0] = Math.max(px, px + w);
+    mm.max[1] = Math.max(py, py + h);
+    return mm;
 };
 
 CanvasRectangle.prototype.clearCache = function(){};
@@ -2756,37 +2673,18 @@ CanvasSquare.prototype.init = function(gob){
 }
 
 CanvasSquare.prototype.calcBbox = function () {
-    var rect = this.sprite
-    var px = this.x();
-    var py = this.y();
-    var w = rect.width();
-    var h = rect.height();
-    var xmin = Math.min(px, px + w);
-    var xmax = Math.max(px, px + w);
-    var ymin = Math.min(py, py + h);
-    var ymax = Math.max(py, py + h);
+    var mm = this.calcBboxTZ(),
+        rect = this.sprite,
+        px = this.x(),
+        py = this.y(),
+        w = rect.width(),
+        h = rect.height();
 
-    var
-    minz =  99999999999,
-    maxz = -99999999999,
-    mint  = 99999999999,
-    maxt = -99999999999;
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pz = this.gob.vertices[i].z;
-        minz = Math.min(minz, pz);
-        maxz = Math.max(maxz, pz);
-    }
-
-    for(var i = 0; i < this.gob.vertices.length; i++){
-        var pt = this.gob.vertices[i].t;
-        mint = Math.min(mint, pt);
-        maxt = Math.max(maxt, pt);
-    }
-
-    return {min: [xmin, ymin, minz, mint],
-            max: [xmax, ymax, maxz, maxt]};
-
+    mm.min[0] = Math.min(px, px + w);
+    mm.min[1] = Math.min(py, py + h);
+    mm.max[0] = Math.max(px, px + w);
+    mm.max[1] = Math.max(py, py + h);
+    return mm;
 };
 
 CanvasSquare.prototype.clearCache = function(){};
