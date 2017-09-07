@@ -1342,7 +1342,7 @@ Ext.define('BQ.selectors.PipelineParams', {
         }
         resource.tags.length = 0;
 
-        this.coupled_box = this.add({xtype: "checkbox", checked: false, boxLabel: "Couple parameters"});
+        this.coupled_box = this.add({xtype: "checkbox", itemId: "coupled_box", checked: false, boxLabel: "Couple parameters"});
 
         var total_height = this.coupled_box.getHeight();
         this.field_res.length = 0;
@@ -1357,7 +1357,7 @@ Ext.define('BQ.selectors.PipelineParams', {
             new_tag.template = {'label': name, 'prohibit_upload': true, 'accepted_type': type};
             this.field_res[i] = this.add({
                     xtype: xtype,
-                    itemId: name,
+                    itemId: name.replace(/ /g, '_'),
                     resource: tag,
                   });
             total_height += this.field_res[i].getHeight();
@@ -1374,7 +1374,25 @@ Ext.define('BQ.selectors.PipelineParams', {
             // have full mex => set values of sub elements from a previously run mex
             var t = null;
             for (var i=0; (t=this.mex_resource.tags[i]); ++i) {
-                this.queryById(t.name).select(t);
+                this.queryById(t.name.replace(/ /g, '_')).select(t);
+            }
+            // find enclosing mex (that has "execute_options") to set checkbox
+            var top_mex = this.mex_resource;
+            while( top_mex.parent ) {
+                top_mex = top_mex.parent;
+            }
+            var execute_options = top_mex.find_tags('execute_options')
+            if (execute_options instanceof Array) {
+                execute_options = execute_options[0];
+            }
+            if (execute_options) {
+                var coupled_iter = execute_options.find_tags('coupled_iter')
+                if (coupled_iter instanceof Array) {
+                    coupled_iter = coupled_iter[0];
+                }
+                if (coupled_iter) {
+                    this.queryById("coupled_box").setValue(coupled_iter.value == 'true');
+                }
             }
         }
 

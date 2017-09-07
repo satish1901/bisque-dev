@@ -286,7 +286,7 @@ BQWebApp.prototype.inputs_from_mex = function (mex) {
 
     if (!inputs && mex.inputs_index && Object.keys(mex.inputs_index).length<1) {
         BQApp.setLoading('Fetching inputs...');
-        BQFactory.request({ 
+        BQFactory.request({
             uri: mex.uri,
             cb: callback(this, this.inputs_from_mex),
             errorcb: callback(this, 'onerror'),
@@ -294,7 +294,7 @@ BQWebApp.prototype.inputs_from_mex = function (mex) {
         });
         return;
     }
-    
+
     // unfortunately we can't fetch inputs deep via view=, refetch
     if (inputs && mex.inputs_index && Object.keys(mex.inputs_index).length<1 && !mex.fetched_inputs) {
         BQApp.setLoading('Fetching inputs...');
@@ -310,6 +310,23 @@ BQWebApp.prototype.inputs_from_mex = function (mex) {
                 mex.afterInitialized();
                 this.inputs_from_mex(mex);
             }),
+        });
+        return;
+    }
+
+    // ensure we fetched execution options (e.g., to render 'coupled' option in inputs)
+    var execute_options = mex.find_tags('execute_options');
+    if (execute_options && !mex.fetched_execute_options ) {
+        BQFactory.request({
+            uri : execute_options.uri,
+            uri_params : { view: 'deep'},
+            cb : callback(this, function(doc) {
+                mex.fetched_execute_options = true;
+                execute_options.tags = doc.tags;
+                this.inputs_from_mex(mex);
+            }),
+            errorcb: callback(this, 'onerror'),
+            cache : false
         });
         return;
     }
@@ -510,7 +527,7 @@ BQWebApp.prototype.setupUI_outputs = function (key, mex) {
         mex.fetched_outputs = true;
         //var t = new BQTag(undefined, 'mex_renderer', mex.uri, 'mex');
         //outputs.tags.push(t);
-    }      
+    }
 
     // ensure outputs
     if ((!outputs || (outputs && outputs.tags && outputs.tags.length<1)) && !mex.fetched_outputs) {
