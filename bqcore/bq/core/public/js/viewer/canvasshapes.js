@@ -817,14 +817,15 @@ CanvasShape.prototype.getColor = function () {
 };
 
 CanvasShape.prototype.calcBboxTZ = function () {
-    var min = [ 999999999, 999999999, 999999999, 999999999];
-    var max = [-999999999,-999999999,-999999999,-999999999];
+    var v = this.renderer.viewer.current_view,
+        min = [ 999999999, 999999999, 999999999, 999999999],
+        max = [-999999999,-999999999,-999999999,-999999999];
 
     for(var z = 0; z < this.gob.vertices.length; z++){
         var pz = this.gob.vertices[z].z;
         if (pz == null) {
-            min[2] = -999999999; // dima: null
-            max[2] = 999999999; // dima: null
+            min[2] = 0; // dima: image extent
+            max[2] = v.imagedim.z; // dima: image extent
             break;
         }
         min[2] = Math.min(min[2], pz);
@@ -834,8 +835,8 @@ CanvasShape.prototype.calcBboxTZ = function () {
     for(var t = 0; t < this.gob.vertices.length; t++){
         var pt = this.gob.vertices[t].t;
         if (pt == null) {
-            min[3] = -999999999; // dima: null
-            max[3] = 999999999; // dima: null
+            min[3] = 0; // dima: image extent
+            max[3] = v.imagedim.t; // dima: image extent
             break;
         }
         min[3] = Math.min(min[3], pt);
@@ -997,9 +998,9 @@ CanvasPolyLine.prototype.updateLocal = function () {
         vertices.push(pnt.x, pnt.y);
     }
 
-  var min = [ 9999999, 9999999];
+    var min = [ 9999999, 9999999];
     var max = [-9999999,-9999999];
-  for(var xy = 0; xy < vertices.length; xy+=2){
+    for(var xy = 0; xy < vertices.length; xy+=2){
         var px = vertices[xy + 0];
         var py = vertices[xy + 1];
         min[0] = min[0] < px ? min[0] : px;
@@ -1101,9 +1102,6 @@ CanvasPolyLine.prototype.onDragFree = function(e, start){
     var start = start;
 
     var me = this;
-
-    var v = me.renderer.viewer.current_view;
-
     var g = me.gob;
     var v = me.renderer.viewer.current_view;
     var cx = me.x();

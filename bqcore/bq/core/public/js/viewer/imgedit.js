@@ -605,18 +605,20 @@ ImgEdit.prototype.on_selected = function (gobs) {
 
 
 ImgEdit.prototype.color_gobject = function(gob, color) {
-    this.renderer.setcolor(gob, color);
+    //gob.color_override = color; //this.renderer.setcolor(gob, color);
 
+    var skip_save = false;
     if (!this.test_save_permission(this.viewer.image.uri + '/gobject')) {
         if (this.viewer.parameters.gobjectschanged)
             this.viewer.parameters.gobjectschanged(gob);
-        return;
+        //return;
+        skip_save = true;
     }
 
-    gob.setColor(color);
+    gob.setColor(color, skip_save);
 
     this.renderer.rerender([gob], [this.current_view, true]);
-    console.log(gob.uri + '?view=deep');
+    //console.log(gob.uri + '?view=deep');
 };
 
 

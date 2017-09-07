@@ -1520,7 +1520,7 @@ BQGObject.prototype.getColor = function (r,g,b,a,no_default) {
         return;
     }
 
-    // none of the overrides worked, try waling up the parent chain to get the color or use default
+    // none of the overrides worked, try walking up the parent chain to get the color or use default
     var c = BQGObject.default_color,
         p = this,
         cc = null;
@@ -1536,7 +1536,7 @@ BQGObject.prototype.getColor = function (r,g,b,a,no_default) {
     return {r: c.r, g: c.g, b: c.b, a: c.a};
 };
 
-BQGObject.prototype.setColor = function (c) {
+BQGObject.prototype.setColor = function (c, skip_save) {
     this.color = c;
     var t = this.find_tags('color');
     if (!t) {
@@ -1546,6 +1546,7 @@ BQGObject.prototype.setColor = function (c) {
     }
 
     // dima: save the user set color back to the DB
+    if (skip_save) return;
     t.save_(this.uri);
 },
 
