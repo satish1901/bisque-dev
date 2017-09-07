@@ -546,12 +546,12 @@ class BaseRunner(object):
 
     def main(self, **kw):
         # Find and read a config file for the module
+        created_pool = False
         try:
             self.pool = kw.pop('pool', None)
             if self.pool is None:
                 self.pool =  ProcessManager (POOL_SIZE)
-
-
+                created_pool = True
 
             self.read_config(**kw)
 
@@ -581,6 +581,9 @@ class BaseRunner(object):
 
             # store run state since we may come back (e.g., condor finish)
             self.store_runstate()
+
+            if created_pool:
+                self.pool.stop()
 
             return 0
         except ModuleEnvironmentError, e:

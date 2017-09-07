@@ -50,6 +50,8 @@ def worker(queue):
     }
     """
     for request in iter(queue.get, None):
+        if request is None:
+            return
         rundir = request['rundir']
         env    = request['env']
         callme = request.get ('on_fail') # Default to fail
