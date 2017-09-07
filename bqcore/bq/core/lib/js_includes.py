@@ -239,6 +239,7 @@ def generate_js_files(root=None, public=None):
         '/core/js/viewer/imgpixelcounter.js',
         '/core/js/viewer/imgcurrentview.js',
         '/core/js/viewer/imgcalibration.js',
+        '/core/js/viewer/simplify.js',
 
 
         #-- Movie player --
