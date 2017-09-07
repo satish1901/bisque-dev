@@ -1141,95 +1141,25 @@ CanvasPolyLine.prototype.onDragFree = function(e, start){
 };
 
 CanvasPolyLine.prototype.visvalingamSimplify = function() {
-    // dima: unfortunately this algorithm is way to simple and is loosing object's shape
-    // even after various fixes, removing it for now
-    /*
-    var points = this.sprite.points();
-    var heap = new minHeap(function(x,y){
-        if(x === undefined) debugger;
-        return x.area - y.area;
-    });
-
-    var areas = [];
-    //the goal is to calculate the area of each point prior to its removal as the minimal area in the set
-    //we'll use a min heap to keep the current smallest triangle at the top.  Once we're done we can choose
-    //a threshold and pull only triangles that are above that threshold for display.
-    var area = function(A,B,C){
-        return Math.abs((B[0] - A[0])*(C[1] - A[1]) - (C[0] - A[0])*(B[1] - A[1]));
+    var pp = [],
+        p = null,
+        points = this.sprite.points(),
+        //thresh = this.renderer.stage.scale().x;
+        thresh = 0.6;
+    for (var i=0; i<points.length-1; i+=2) {
+        pp.push({x: points[i], y: points[i+1]});
     };
 
-    var triArea = function(tri){
-        var i = tri.index;
-        var p = tri.prev;
-        var n = tri.next;
-        var a = points.slice(2*p, 2*p + 2);
-        var b = points.slice(2*i, 2*i + 2);
-        var c = points.slice(2*n, 2*n + 2);
-        return area(a,b,c);
-    };
+    pp = simplify(pp, thresh);
 
-    //we create a linked list of triangles so that we can efficiently remove them
-    //without
-    var triangles = [];
-    triangles.push({index: 0, prev: -1, next: 1, area: 999999999999}); // ensure the first point is always preserved
-    for (var i=2, ii=1; i<points.length-2; i+=2, ++ii){
-        var tri = {index: ii, prev: ii-1, next: ii+1};
-        tri.area = triArea(tri);
-        triangles.push(tri);
-    };
-    triangles.push({index: ii, prev: ii-1, next: ii+1, area: 999999999999}); // ensure the last point is always preserved
-
-
-    // for(var i = 1; i < triangles.length-1; i++){
-    //     heap.push(triangles[i]);
-    // };
-
-    // while(heap.size() > 3){
-    //     var tri = heap.pop();
-    //     var index = tri.index;
-
-    //     var next = tri.next;
-    //     var prev = tri.prev;
-    //     var hSize = heap.size();
-
-    //     //if(triN === undefined || triP === undefined) debugger;
-    //     //console.log(index,triN.index, triP.index, triN.heapIndex, triP.heapIndex);
-    //     console.log(tri);
-    //     if(next < points.length/2-1){
-    //         var triN = triangles[next];
-
-    //         var nArea = triArea(triN);
-    //         triP.area = nArea > triArea(triN) ? nArea : triArea(triN);
-
-    //         heap.sinkDown(triN.heapIndex);
-    //         triN.prev = prev;
-    //     }
-
-    //     if(prev - 1 > 0){
-    //         var triP = triangles[prev];
-    //         var nArea = triArea(triP);
-    //         triP.area = nArea > triArea(triP) ? nArea : triArea(triP);
-    //         heap.down(triP.heapIndex);
-    //         //if(triN.prev === next) debugger;
-    //         triP.next = next;
-    //     }
-
-    // }
-
-
-    var thresh = 1.0/this.renderer.stage.scale().x;
-    var pointsNew = [points[0], points[1]];
-    for(var i=1; i<triangles.length; ++i) {
-        if (triangles[i].area >= thresh) {
-            var id = triangles[i].index * 2;
-            pointsNew.push(points[id + 0]);
-            pointsNew.push(points[id + 1]);
-        };
+    points = [];
+    for(var i=0; i<pp.length; ++i) {
+        p = pp[i];
+        points.push(p.x);
+        points.push(p.y);
     }
-    this.sprite.points(pointsNew);
-    */
+    this.sprite.points(points);
 };
-
 
 CanvasPolyLine.prototype.moveLocal = function(){
     var points = this.sprite.points();
