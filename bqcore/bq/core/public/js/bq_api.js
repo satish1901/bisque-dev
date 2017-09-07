@@ -2593,12 +2593,20 @@ BQModule.prototype.afterInitialized = function () {
     if (inputs && inputs.tags) {
         this.inputs = inputs.tags; // dima - this should be children in the future
         this.inputs_index  = inputs.create_flat_index();
+        // fix parent links
+        for (var p=0; (t=inputs.tags[p]); p++) {
+            t.parent = inputs;
+        }
     }
 
     var outputs = this.find_tags('outputs');
     if (outputs && outputs.tags) {
         this.outputs = outputs.tags; // dima - this should be children in the future
         this.outputs_index  = outputs.create_flat_index();
+        // fix parent links
+        for (var p=0; (t=outputs.tags[p]); p++) {
+            t.parent = outputs;
+        }
     }
 
     // create sorted iterable resource names
@@ -2697,6 +2705,9 @@ BQModule.prototype.createMEX = function( ) {
                 }
             }
         }
+        if (this.coupled_iter) {
+            tag_execute.addtag({ name:'coupled_iter', value:true, });
+        }
     }
 
     return mex;
@@ -2755,6 +2766,10 @@ BQMex.prototype.afterInitialized = function () {
     if (inputs && inputs.tags) {
         this.inputs = inputs.tags; // dima - this should be children in the future
         this.inputs_index  = inputs.create_flat_index();
+        // fix parent links
+        for (var p=0; (t=inputs.tags[p]); p++) {
+            t.parent = inputs;
+        }
     }
 
     var outputs = this.find_tags('outputs');
@@ -2763,6 +2778,10 @@ BQMex.prototype.afterInitialized = function () {
     if (outputs && outputs.tags) {
         this.outputs = outputs.tags; // dima - this should be children in the future
         this.outputs_index  = outputs.create_flat_index();
+        // fix parent links
+        for (var p=0; (t=outputs.tags[p]); p++) {
+            t.parent = outputs;
+        }
     }
 
     // check if the mex has iterables
