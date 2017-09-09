@@ -9,6 +9,10 @@
 
 }
 
+.viewer .well, .viewer .surface {
+  color: transparent;
+}
+
 .image_viewer_display {
   /*max-width: 80%; */
 
@@ -595,7 +599,13 @@
     background-position: -34px -97px;
     background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
+    color: transparent;
 }
+
+.viewer .control {
+    color: transparent;
+}
+
 /*
 .viewer .viewoptions-phone {
     width: 96px;
@@ -628,6 +638,7 @@
     background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: -134px -163px;
+    color: transparent;
 }
 
 .viewer .editmenu.phone {
@@ -672,6 +683,7 @@
     background-image: url('/core/images/viewer/icons_viewer.svg');
     background-size: 200px;
     background-position: -134px 0px;
+    color: transparent;
 }
 
 .viewer .btn-navigate {
@@ -712,6 +724,7 @@
   height: 120px;
   right: 60px;
   top: 10px;
+  display: none;
 }
 
 /*******************************************************************************
@@ -845,8 +858,12 @@ table.x-form-color {
  edit menu
 *******************************************************************************/
 
-.bq-editor-menu {
+.x-tip {
     z-index: 2147483647 !important;
+}
+
+.bq-editor-menu {
+    z-index: 2147483646 !important;
 }
 
 .bq-editor-menu .x-tool img {
@@ -868,6 +885,10 @@ table.x-form-color {
 .bq-editor-menu .x-toolbar {
     background-color: transparent;
     background-image: none;
+}
+
+.bq-editor-menu .primitives {
+  height: 40px !important;
 }
 
 .bq-editor-menu .x-btn .add {
@@ -892,93 +913,93 @@ table.x-form-color {
 }
 
 .bq-editor-menu .x-btn.point {
-    background-position: -101px -197px;
+    background-position: -101px -198px;
 }
 
 .bq-editor-menu .x-btn.line {
-    background-position: -101px -229px;
+    background-position: -101px -230px;
 }
 
 .bq-editor-menu .x-btn.polygon {
-    background-position: -101px -295px;
+    background-position: -101px -296px;
 }
 
 .bq-editor-menu .x-btn.polyline {
-    background-position: -101px -262px;
+    background-position: -101px -263px;
 }
 
 .bq-editor-menu .x-btn.freehand_line {
-    background-position: -101px -328px;
+    background-position: -101px -329px;
 }
 
 .bq-editor-menu .x-btn.freehand_shape {
-    background-position: -101px -361px;
+    background-position: -101px -362px;
 }
 
 .bq-editor-menu .x-btn.circle {
-    background-position: -101px -394px;
+    background-position: -101px -395px;
 }
 
 .bq-editor-menu .x-btn.ellipse {
-    background-position: -101px -426px;
+    background-position: -101px -427px;
 }
 
 .bq-editor-menu .x-btn.rectangle {
-    background-position: -101px -459px;
+    background-position: -101px -460px;
 }
 
 .bq-editor-menu .x-btn.square {
-    background-position: -101px -491px;
+    background-position: -101px -492px;
 }
 
 .bq-editor-menu .x-btn.label {
-    background-position: -101px -524px;
+    background-position: -101px -525px;
 }
 
 /* pressed */
 
 .bq-editor-menu .x-btn.point.x-pressed {
-    background-position: -168px -197px;
+    background-position: -168px -198px;
 }
 
 .bq-editor-menu .x-btn.line.x-pressed {
-    background-position: -168px -229px;
+    background-position: -168px -230px;
 }
 
 .bq-editor-menu .x-btn.polygon.x-pressed {
-    background-position: -168px -295px;
+    background-position: -168px -296px;
 }
 
 .bq-editor-menu .x-btn.polyline.x-pressed {
-    background-position: -168px -262px;
+    background-position: -168px -263px;
 }
 
 .bq-editor-menu .x-btn.freehand_line.x-pressed {
-    background-position: -168px -328px;
+    background-position: -168px -329px;
 }
 
 .bq-editor-menu .x-btn.freehand_shape.x-pressed {
-    background-position: -168px -361px;
+    background-position: -168px -362px;
 }
 
 .bq-editor-menu .x-btn.circle.x-pressed {
-    background-position: -168px -394px;
+    background-position: -168px -395px;
 }
 
 .bq-editor-menu .x-btn.ellipse.x-pressed {
-    background-position: -168px -426px;
+    background-position: -168px -427px;
 }
 
 .bq-editor-menu .x-btn.rectangle.x-pressed {
-    background-position: -168px -459px;
+    background-position: -168px -460px;
 }
 
 .bq-editor-menu .x-btn.square.x-pressed {
-    background-position: -168px -491px;
+    background-position: -168px -492px;
 }
 
 .bq-editor-menu .x-btn.label.x-pressed {
-    background-position: -168px -524px;
+    background-position: -168px -525px;
 }
 
 /* main button */

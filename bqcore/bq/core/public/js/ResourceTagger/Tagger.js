@@ -305,6 +305,12 @@ Ext.define('Bisque.ResourceTagger', {
                     if (this.onmenucontext) this.onmenucontext(me, record, item, index, e, eOpts);
                         //this.menu_context.showAt(e.getXY());
                 },
+                cellkeydown : function(me, td, cellIndex, record, tr, rowIndex, e) {
+                    if (e.keyCode === 46) {
+                        console.log('hit delete');
+                        this.onDeleteElement();
+                    }
+                },
             }
         });
 
@@ -700,6 +706,10 @@ Ext.define('Bisque.ResourceTagger', {
         me.view.refresh();
 
         this.editing = false;
+    },
+
+    onDeleteElement: function () {
+        this.deleteTags();
     },
 
     deleteTags: function () {
@@ -1174,6 +1184,10 @@ Ext.define('Bisque.GObjectTagger', {
             type: 'bool',
             defaultValue: true
         };
+    },
+
+    onDeleteElement: function () {
+        this.deleteSelectedGobs();
     },
 
     getToolbar: function () {

@@ -76,6 +76,11 @@ TilesRenderer.prototype.updateImage = function (){
       //Ext.EventManager.addListener( window, 'resize', callback(this.tiled_viewer, this.tiled_viewer.resize) );
       this.tiled_viewer.init();
       this.viewer.viewer_controls_surface = this.div;
+
+      this.div.contentEditable=true;
+      this.div.focus();
+      this.div.addEventListener('keydown', callback(this, this.onkeyboard), false);
+
     } else {
       // only update all the tiles in the viewer
       this.tiled_viewer.tileUrlProvider = this.myTileProvider;
@@ -115,12 +120,17 @@ TilesRenderer.prototype.mousemove = function (e) {
     //      e.target===this.renderer.svggobs ||
     //      (this.current_gob && e.target===this.current_gob.shape.svgNode))) return;
 
+    this.div.focus();
     var view = this.viewer.current_view,
         p = this.renderer.getUserCoord(e),
         pt = view.inverseTransformPoint(p.x, p.y);
     this.viewer.print_coordinate(pt, true, true);
 };
 
+TilesRenderer.prototype.onkeyboard = function (e) {
+    if (e.target !== this.div) return;
+    this.tiled_viewer.keyboardHandler(e);
+};
 
 // Cursor Move Listner
 function CursorListner(viewer, parent) {
@@ -130,6 +140,7 @@ function CursorListner(viewer, parent) {
 }
 
 CursorListner.prototype.cursorMoved = function(e) {
+    this.parent.viewer_controls_surface.focus();
     this.parent.print_coordinate(e, true, true);
 };
 

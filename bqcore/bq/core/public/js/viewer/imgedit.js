@@ -213,17 +213,18 @@ ImgEdit.prototype.cancelEdit = function () {
 
 ImgEdit.prototype.startEdit = function () {
     if (this.editing_gobjects) return;
+    var surf = this.viewer.viewer_controls_surface;
     this.editing_gobjects = true;
     this.renderer.stage.content.style.zIndex = this.zindex_high;
-    this.viewer.viewer_controls_surface.style.zIndex = this.zindex_low;
+    surf.style.zIndex = this.zindex_low;
 
     //this.renderer.setmousedown(null);
     this.renderer.setmousedown(callback(this, this.mousedown));
-    this.surface_original_onmousedown = this.viewer.viewer_controls_surface.onmousedown;
-    this.viewer.viewer_controls_surface.onmousedown = callback(this, this.mousedown);
+    this.surface_original_onmousedown = surf.onmousedown;
+    surf.onmousedown = callback(this, this.mousedown);
 
     this.renderer.setmousemove(callback(this, this.mousemove));
-    this.viewer.viewer_controls_surface.onmousemove = callback(this, this.mousemove);
+    surf.onmousemove = callback(this, this.mousemove);
     /*
     this.renderer.setmouseup(callback(this, function(e){
         this.renderer.setMode('edit');
@@ -232,30 +233,35 @@ ImgEdit.prototype.startEdit = function () {
     */
 
     //this.renderer.setdblclick(callback(this, this.mousedblclick));
-    //this.viewer.viewer_controls_surface.ondblclick = callback(this, this.mousedblclick);
+    //surf.ondblclick = callback(this, this.mousedblclick);
 
     //this.renderer.setclick(callback(this, this.mousedown));
-    //this.surface_original_onclick = this.viewer.viewer_controls_surface.onclick;
-    //this.viewer.viewer_controls_surface.onclick = callback(this, this.mousedown);
+    //this.surface_original_onclick = surf.onclick;
+    //surf.onclick = callback(this, this.mousedown);
 
 
-    this.renderer.setkeyhandler(callback(this, "keyhandler"));
+    this.renderer.setkeyhandler(callback(this, this.keyhandler));
+    //surf.contentEditable=true;
+    //surf.focus();
+    //surf.addEventListener('keydown', callback(this, this.keyhandler), false);
     this.renderer.enable_edit (true);
 };
 
 ImgEdit.prototype.endEdit = function () {
+    var surf = this.viewer.viewer_controls_surface;
     this.renderer.stage.content.style.zIndex = this.zindex_low;
-    this.viewer.viewer_controls_surface.style.zIndex = this.zindex_high;
+    surf.style.zIndex = this.zindex_high;
 
     if (this.surface_original_onmousedown)
-        this.viewer.viewer_controls_surface.onmousedown = this.surface_original_onmousedown;
+        surf.onmousedown = this.surface_original_onmousedown;
     this.renderer.setmousedown(null);
     this.renderer.setmousemove(null);
+
     //this.renderer.setdblclick(null);
-    //this.viewer.viewer_controls_surface.ondblclick = null;
+    //surf.ondblclick = null;
 
     //if (this.surface_original_onclick)
-    //    this.viewer.viewer_controls_surface.onclick = this.surface_original_onclick;
+    //    surf.onclick = this.surface_original_onclick;
     //this.renderer.setclick(null);
 
 
@@ -323,6 +329,7 @@ ImgEdit.prototype.mousemove = function (e) {
     p = this.renderer.getUserCoord(e),
     pt = view.inverseTransformPoint(p.x, p.y);
     this.viewer.print_coordinate(pt, true, true);
+    //this.renderer.focus();
 
     if(!this.trackpt)
         this.trackpt = pt;
@@ -348,18 +355,48 @@ ImgEdit.prototype.mousemove = function (e) {
 */
 };
 
-/*ImgEdit.prototype.mousedblclick = function (e) {
+ImgEdit.prototype.mousedblclick = function (e) {
     if (!e) e = window.event;  // IE event model
     if (!e || !this.current_gob) return;
-    if (!(e.target===this.renderer.svgdoc || e.target===this.renderer.svggobs)) return;
+    if (e.type !== 'dblclick') return;
+    //if (!(e.target===this.renderer.svgdoc || e.target===this.renderer.svggobs)) return;
 
-    // this will disable all propagation while in edit selected
-    if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
-    else e.cancelBubble = true;                 // IE
+    if (this.mode) {
+        // this will disable all propagation while in edit selected
+        if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
+        else e.cancelBubble = true;                 // IE
 
-    var svgPoint = this.renderer.getUserCoord(e);
-    this.finishPolys (e, svgPoint.x, svgPoint.y);
-};*/
+        var p = this.renderer.getUserCoord(e);
+        this.mode (e, p.x, p.y);
+    }
+};
+
+ImgEdit.prototype.keyhandler = function (e) {
+    e = e ? e : window.event;  // IE event model
+    var key = e.keyCode ? e.keyCode : e.which,
+        nav_keys = {
+            33: 33, 34: 34, 37: 37, 38: 38, 39: 39, 40: 40, 107: 107, 109: 109, 187: 187, 189: 189,
+        };
+
+    if (key in nav_keys) {
+      this.viewer.tiles.tiled_viewer.keyboardHandler(e);
+      return;
+    }
+
+    if (this.mode && this.current_gob) {
+        // this will disable all propagation while in edit selected
+        if (e.stopPropagation) e.stopPropagation(); // DOM Level 2
+        else e.cancelBubble = true;                 // IE
+
+        if (e.type === 'keydown' && e.keyCode === 46) { // delete
+            this.remove_gobject(this.current_gob);
+            return;
+        }
+
+        //var p = this.renderer.getUserCoord(e);
+        this.mode (e, NaN, NaN);
+    }
+};
 
 ImgEdit.prototype.display_gob_info = function (gob) {
     if (!gob) return;
@@ -530,6 +567,18 @@ ImgEdit.prototype.store_new_gobject = function (gob) {
 
 };
 
+ImgEdit.prototype.get_gobs_w_shapes = function (gob, shapes) {
+    shapes = shapes || [];
+    if (gob.shape) shapes.push(gob);
+    var g = null,
+        i = 0;
+    for (i=0; (g=gob.gobjects[i]); ++i) {
+        this.get_gobs_w_shapes(g, shapes);
+    }
+
+    return shapes;
+},
+
 ImgEdit.prototype.remove_gobject = function (gob) {
     // dima: a hack to stop writing into a MEX
 
@@ -539,8 +588,16 @@ ImgEdit.prototype.remove_gobject = function (gob) {
         return;
     }
 
-    this.renderer.quadtree.remove(gob.shape);
-
+    this.current_gob = null;
+    this.renderer.setmousemove(null);
+    this.renderer.unselectCurrent();
+    //this.renderer.quadtree.remove(gob.shape);
+    var gobs = this.get_gobs_w_shapes(gob),
+        i = 0,
+        g = null;
+    for (i=0; (g=gobs[i]); ++i) {
+        this.renderer.quadtree.remove(g.shape);
+    }
 
     if (gob.uri && gob.uri.indexOf('/mex/')>=0) {
         BQ.ui.warning('Can\'t delete annotation from a Module EXecution document...');
@@ -548,8 +605,9 @@ ImgEdit.prototype.remove_gobject = function (gob) {
     }
 
     // remove rendered shape first
-    this.renderer.hideShape(gob, this.viewer.current_view);
+    this.renderer.hideShape(gobs, this.viewer.current_view);
     this.visit_render.visitall(gob, [this.viewer.current_view, false]); // make sure to hide all the children if any
+    this.renderer.rerender();
 
 
     //test privelages and abort if we don't, we still want to reflect changes in renderer, though
@@ -641,7 +699,7 @@ ImgEdit.prototype.on_move = function (gob) {
 
     if(this.saveTimeout) clearTimeout(this.saveTimeout);
     var timeout = function() {
-        console.log('post');
+        //console.log('post');
         var keys = Object.keys(me.gobQueue);
         keys.forEach(function(k){
             var gob = me.gobQueue[k];
@@ -789,8 +847,9 @@ ImgEdit.prototype.basic_drag_callback = function(g, parent, x, y){
 
 }
 
-ImgEdit.prototype.basic_shape  = function (shape, parent, e, x, y){
-     e.evt.cancelBubble = true;
+ImgEdit.prototype.basic_shape  = function (shape, parent, e, x, y) {
+    if (e.type === 'keydown') return;
+    e.evt.cancelBubble = true;
 
     var me = this;
     var v =  this.viewer.current_view;
@@ -821,11 +880,12 @@ ImgEdit.prototype.new_circle = function (parent, e, x, y) {
     this.basic_shape('circle', parent, e, x, y);
 };
 
-ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
-    this.basic_shape('ellipse', parent, e, x, y);
-};
+//ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
+//    this.basic_shape('ellipse', parent, e, x, y);
+//};
 
 ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
+    if (e.type === 'keydown') return;
     e.evt.cancelBubble = true;
 
     var me = this;
@@ -851,9 +911,9 @@ ImgEdit.prototype.new_ellipse = function (parent, e, x, y) {
 
 ImgEdit.prototype.basic_polygon = function (type, parent, e, x, y) {
 
-    var v = this.viewer.current_view;
-    var g = this.current_gob;
-    var me = this;
+    var v = this.viewer.current_view,
+        g = this.current_gob,
+        me = this;
     parent = parent || this.global_parent;
 
     if (g == null) {
@@ -863,6 +923,11 @@ ImgEdit.prototype.basic_polygon = function (type, parent, e, x, y) {
             g.edit_parent = parent;
         } else
             this.viewer.image.addgobjects(g);
+        this.current_gob = g;
+        this.renderer.setmousemove(function(e){
+            g.shape.onDragCreate(e,[x,y]);
+            me.display_gob_info(g);
+        });
     }
 
     var pt = v.inverseTransformPoint(x,y);
@@ -871,7 +936,7 @@ ImgEdit.prototype.basic_polygon = function (type, parent, e, x, y) {
 
 
     //if we want to close this sucker without adding more points
-    if(index > 2){
+    /*if(index > 2){
         //var ip = v.inverseTransformPoint(g.vertices[0].x,g.vertices[0].y);
         var dx = g.vertices[0].x - pt.x;
         var dy = g.vertices[0].y - pt.y;
@@ -881,33 +946,43 @@ ImgEdit.prototype.basic_polygon = function (type, parent, e, x, y) {
             this.finish_add(g, g.edit_parent);
             this.renderer.resetShapeCornerFill();
 
+
             return;
         };
     }
+    */
 
-    if (e.evt.detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
+    var detail = e.evt ? e.evt.detail : e.detail;
+
+    if (e.type === 'keydown' && e.keyCode === 27 && g.shape && g.shape.getLastPoint) { // escape
+        pt = g.shape.getLastPoint();
+        detail = 1;
+    }
+
+    if (e.type === 'keydown' && e.keyCode === 8 && g.shape && g.shape.removeLastPoint) { // backspace
+        g.shape.removeLastPoint();
+        g.shape.redraw();
+        return;
+    }
+
+    if (detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y) {
         g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
+    }
 
-    // Double click ends the object otherwise add points
-    this.current_gob = (e.evt.detail > 1)?null:g;
-
-    if (!this.current_gob){
+    // Double click or Escape ends the object otherwise add points
+    if (detail > 1 ||
+        e.type === 'dblclick' ||
+        e.type === 'keydown' && e.keyCode === 27
+    ) {
         this.finish_add(g, g.edit_parent);
         return;
     }
-    else{
-        if(g.shape)
-            g.shape.sprite.remove();
-        this.visit_render.visitall(g, [v]);
-        g.shape.postEnabled = false;
-        //this.renderer.setmousemove(callback({shape: g.shape, start: [x,y]}, g.shape.onDragCreate));
-        this.renderer.setmousemove(function(e){
-            g.shape.onDragCreate(e,[x,y]);
-            me.display_gob_info(g);
-        });
 
-        this.begin_add(g, g.edit_parent);
-    }
+    if (g.shape)
+        g.shape.sprite.remove();
+    this.visit_render.visitall(g, [v]);
+    g.shape.postEnabled = false;
+    this.begin_add(g, g.edit_parent);
 };
 
 
@@ -921,6 +996,7 @@ ImgEdit.prototype.new_polyline = function (parent, e, x, y) {
 
 
 ImgEdit.prototype.new_freehand = function (type, parent, e, x, y) {
+    if (e.type === 'keydown') return;
     var me = this;
     var v = this.viewer.current_view;
     var g = this.current_gob;
@@ -943,8 +1019,8 @@ ImgEdit.prototype.new_freehand = function (type, parent, e, x, y) {
     //if we want to close this sucker without adding more points
     //var ip = v.inverseTransformPoint(g.vertices[0].x,g.vertices[0].y);
 
-
-    if (e.evt.detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
+    var detail = e.evt ? e.evt.detail : e.detail;
+    if (detail==1 && pt.x && pt.y && !isNaN(pt.x) && !isNaN(pt.y) && pt.x!==prev.x && pt.y!==prev.y)
         g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, index));
 
     // Double click ends the object otherwise add points
@@ -988,7 +1064,7 @@ ImgEdit.prototype.new_freehand_open = function (parent, e, x, y) {
 };
 
 ImgEdit.prototype.new_line = function (parent, e, x, y) {
-
+    if (e.type === 'keydown') return;
     var v = this.viewer.current_view,
         g = this.current_gob,
         me = this;
@@ -1033,13 +1109,14 @@ ImgEdit.prototype.new_line = function (parent, e, x, y) {
 };
 
 ImgEdit.prototype.new_label = function (parent, e, x, y) {
+    if (e.type === 'keydown') return;
     var v = this.viewer.current_view;
     var g = new BQGObject('label');
     parent = parent || this.global_parent;
 
     var pt = v.inverseTransformPoint(x,y);
     g.vertices.push (new BQVertex (pt.x, pt.y, v.z, v.t, null, 0)); //label location
-    g.vertices.push (new BQVertex (pt.x + 2, pt.y, v.z, v.t, null, 1)); //label offset
+    g.vertices.push (new BQVertex (pt.x+10, pt.y+10, v.z, v.t, null, 1)); //label offset
 
     this.current_gob = null;
     var me = this;
