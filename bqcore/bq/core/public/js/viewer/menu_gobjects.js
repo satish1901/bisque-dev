@@ -134,7 +134,7 @@ Ext.define('BQ.editor.GraphicalMenu', {
             offset = el.getY(),
             h = 90,
             btn = null;
-        
+
         this.num_buttons_visible = 0;
         for (var p in BQGObject.primitives) {
             buttons.push({
@@ -145,7 +145,7 @@ Ext.define('BQ.editor.GraphicalMenu', {
                 primitive: p,
                 //text: p,
                 //flex: 1,
-                tooltip: BQGObject.primitives[p],
+                tooltip: BQGObject.primitives_help[p],
                 scope: this,
                 handler: this.onPrimitive,
                 toggleGroup: 'Primitives',

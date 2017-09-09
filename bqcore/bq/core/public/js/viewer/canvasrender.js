@@ -1549,6 +1549,10 @@ function CanvasRenderer (viewer,name) {
 }
 CanvasRenderer.prototype = new ViewerPlugin();
 
+CanvasRenderer.prototype.focus = function (parent) {
+    this.stage.content.focus();
+};
+
 CanvasRenderer.prototype.create = function (parent) {
 
 
@@ -1591,6 +1595,9 @@ CanvasRenderer.prototype.create = function (parent) {
 
     this.stage._mousemove = Kinetic.Util._throttle( this.stage._mousemove, 10);
     this.stage.content.style.setProperty('z-index', 15);
+    //this.stage.content.contentEditable=true;
+    //this.stage.content.focus();
+
 
     this.initShapeLayer();
     this.initEditLayer();
@@ -2807,18 +2814,22 @@ CanvasRenderer.prototype.viewShape = function (gob, move, select){
     */
 } ;
 
-CanvasRenderer.prototype.hideShape = function (gob, view) {
-    var shape = gob.shape;
-    //gob.shape = undefined;
+CanvasRenderer.prototype.hideShape = function (gobs, view) {
+    if (!Array.isArray(gobs)) gobs = [gobs];
+    var gob = null,
+        shape = null,
+        i=0;
 
-
-    if (shape) {
-        this.removeSpriteEvents(shape);
-        this.destroy(this.selectedSet);
-        this.selectedSet = [];
-        //shape.sprite.hide();
-        shape.destroy();
-        delete shape;
+    this.destroy(this.selectedSet);
+    this.selectedSet = [];
+    for (i=0; (gob=gobs[i]); ++i) {
+        shape = gob.shape;
+        if (shape) {
+            this.removeSpriteEvents(shape);
+            shape.sprite.hide();
+            shape.destroy();
+            delete shape;
+        }
     }
     this.draw();
 };

@@ -96,15 +96,16 @@ Ext.define('BQ.viewer.Image', {
         else
             this.loadViewer(this.resource);
 
-        this.keyNav = Ext.create('Ext.util.KeyNav', document.body, {
-            left:     this.onkeyboard,
-            right:    this.onkeyboard,
-            up:       this.onkeyboard,
-            down:     this.onkeyboard,
-            pageUp:   this.onkeyboard,
-            pageDown: this.onkeyboard,
-            scope : this
-        });
+        // this.keyNav = Ext.create('Ext.util.KeyNav', { //document.body, {
+        //     target:   document.body,
+        //     left:     this.onkeyboard,
+        //     right:    this.onkeyboard,
+        //     up:       this.onkeyboard,
+        //     down:     this.onkeyboard,
+        //     pageUp:   this.onkeyboard,
+        //     pageDown: this.onkeyboard,
+        //     scope : this
+        // });
     },
 
     loadViewer: function(resource) {

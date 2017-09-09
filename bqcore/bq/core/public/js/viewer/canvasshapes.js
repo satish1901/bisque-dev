@@ -846,6 +846,11 @@ CanvasShape.prototype.calcBboxTZ = function () {
     return {min: min, max: max};
 };
 
+CanvasShape.prototype.redraw = function () {
+    this.bbox = this.calcBbox();
+    this.renderer.drawEditLayer();
+};
+
 ///////////////////////////////////////////////
 // polyline:
 ///////////////////////////////////////////////
@@ -1061,6 +1066,7 @@ CanvasPolyLine.prototype.onDragCreate = function(e, start){
     var points = me.sprite.points();
     var ept = me.renderer.getUserCoord(e);
     var pte = v.inverseTransformPoint(ept.x, ept.y);
+    this.last_point = pte;
 
     var ex = pte.x - cx;
     var ey = pte.y - cy;
@@ -1081,15 +1087,16 @@ CanvasPolyLine.prototype.onDragCreate = function(e, start){
                 radius: 8/me.renderer.scale(),
             });
         me.renderer.editLayer.add(me.closeCircle);
-        me.renderer.drawEditLayer();
+        //me.renderer.drawEditLayer();
     } else{
         if(me.closeCircle)
             me.closeCircle.remove();
-        me.renderer.drawEditLayer();
+        //me.renderer.drawEditLayer();
     }
 
-    me.bbox = me.calcBbox();
-    me.renderer.drawEditLayer();
+    //me.bbox = me.calcBbox();
+    //me.renderer.drawEditLayer();
+    me.redraw();
 
     //console.log(g);
 }
@@ -1175,6 +1182,33 @@ CanvasPolyLine.prototype.moveLocal = function(){
         this.gob.vertices[ii] = new BQVertex (sx*x + offx, sy*y + offy, z, t, null, ii);
     }
 }
+
+CanvasPolyLine.prototype.getLastPoint = function() {
+    if (this.last_point) return this.last_point;
+    var points = this.sprite.points(),
+        offx = this.x(),
+        offy = this.y(),
+        sx = this.sprite.scaleX(),
+        sy = this.sprite.scaleY(),
+        x = points[points.length-2],
+        y = points[points.length-1];
+
+    return {
+        x: sx*x + offx,
+        y: sy*y + offy,
+    };
+}
+
+CanvasPolyLine.prototype.removeLastPoint = function() {
+    var g = this.gob,
+        points = this.sprite.points();
+
+    if (g.vertices.length>0) {
+        g.vertices.pop();
+        points.splice(-2, 2);
+    }
+}
+
 
 CanvasPolyLine.prototype.points = function(){
     var points = this.sprite.points();
@@ -2073,8 +2107,8 @@ CanvasLabel.prototype.init = function(gob){
 
     this.text = new Kinetic.Text({
         text: this.choppedText,
-        fontSize: 14/scale.x,
-        fill: 'red',
+        fontSize: 20/scale.x,
+        fill: 'rgba(255,255,0,1)',
     });
     this.offset = {x: 4, y: 0};
 

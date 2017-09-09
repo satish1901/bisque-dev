@@ -1414,6 +1414,20 @@ else
         label    : 'Label',
     };
 
+BQGObject.primitives_help = {
+    point    : '<h2>Point</h2> <li>Click to create points',
+    line     : '<h2>Line</h2> <li>Two clicks to create a line',
+    polygon  : '<h2>Polygon</h2> <li><b>Double-click</b> or <b>Escape</b> to finish <li><b>Back-space</b> to remove last point <li><b>Delete</b> to remove current',
+    polyline : '<h2>Polyline</h2> <li><b>Double-click</b> or <b>Escape</b> to finish <li><b>Back-space</b> to remove last point <li><b>Delete</b> to remove current',
+    freehand_line : '<b>Freehand line</b> <li>Click, hold and move',
+    freehand_shape: '<b>Freehand shape</b> <li>Click, hold and move',
+    circle   : '<h2>Circle</h2> <li>Click, hold and move',
+    ellipse  : '<h2>Ellipse</h2> <li>Click, hold and move <li>Rotate by selecting',
+    rectangle: '<h2>Rectangle</h2> <li>Click, hold and move',
+    square   : '<h2>Square</h2> <li>Click, hold and move',
+    label    : '<h2>Label</h2> <li>Click to create',
+};
+
 var bq_create_gradient = function (r1,g1,b1,a1,r2,g2,b2,a2) {
     var ri = r1,
         gi = g1,

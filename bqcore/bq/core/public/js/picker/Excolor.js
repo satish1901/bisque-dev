@@ -42,6 +42,12 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+
+// dima: polyfill for chrome>48
+SVGElement.prototype.getTransformToElement = SVGElement.prototype.getTransformToElement || function(elem) {
+    return elem.getScreenCTM().inverse().multiply(this.getScreenCTM());
+};
+
 Ext.define('BQ.viewer.Volume.fieldSlider', {
   extend : 'Ext.Component',
   alias : 'widget.field-slider',
@@ -335,7 +341,7 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
       me.fireEvent('change', me);
 
     }, false);
-
+/*
     this.dot.addEventListener('mousedown', function (e) {
       var el = me.dot;
       var x = 'cx';
@@ -363,10 +369,6 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
         dragEvent.initEvent("dragged", true, true);
         el.dispatchEvent(dragEvent);
         me.fireEvent('change', me);
-        /*
-        if (me.handler)
-        me.handler(e, me);
-         */
       };
       document.body.addEventListener('mousemove', onMove, false);
     }, false);
@@ -375,6 +377,7 @@ Ext.define('BQ.viewer.Volume.fieldSlider', {
       document.body.removeEventListener('mousemove', onMove, false);
     }, false);
     var me = this;
+    */
       //this.width = this.height;
   },
 
