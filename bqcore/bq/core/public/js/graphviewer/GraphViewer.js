@@ -27,7 +27,7 @@ ResourceCard.prototype.getSpan = function (field) {
     var cname = this.fields[field].className;
     var fname = this.fields[field].fieldName;
     var attr  = this.fields[field].attribute;
-    var max = 15;
+    var max = 50;
     if(attr.length > max){
         var sub = attr.substring(0,max);
         sub += '...';
@@ -168,10 +168,54 @@ PipelineStepCard.prototype.populateFields = function (xnode) {
     for (var i = 0; i < xnode.children.length; i++) {
         attr_name = xnode.children[i].getAttribute('name');
         attr_value = xnode.children[i].getAttribute('value');
-        this.addField(attr_name, attr_value, 'value');
+        var val = Ext.JSON.decode(attr_value);
+        num_fields = this.recurseFields(val, attr_name, 0, 0);
+        if (num_fields > 30) {
+            this.addField('<<< SOME FIELDS OMITTED >>>', '', 'value');
+            break;
+        }
     }
 };
 
+PipelineStepCard.prototype.recurseFields = function (val, attr_name, depth, num_fields) {
+    if (depth > 4 || num_fields > 30) {
+        return num_fields;
+    }
+    var indent = Array(depth*3+1).join(":");
+    if (typeof val == 'string' || typeof val == 'number' || typeof val == 'boolean') {
+        var attr_value = String(val);
+        this.addField(indent+attr_name, attr_value, 'value');
+        num_fields += 1;
+    }
+    else {
+        if (Array.isArray(val) && (val.length != 1 || typeof val[0] != 'object')) {
+            this.addField(indent+'[ '+attr_name+' ]', (depth == 4 ? '...' : ''), 'value');
+            num_fields += 1;
+            for (var ii = 0; ii < val.length; ii++) {
+                num_fields = this.recurseFields(val[ii], ''+(ii+1), depth+1, num_fields);
+                if (num_fields > 30) {
+                    break;
+                }
+            }
+        }
+        else {
+            if (Array.isArray(val)) {
+                val = val[0];
+            }
+            this.addField(indent+'[ '+attr_name+' ]', (depth == 4 ? '...' : ''), 'value');
+            num_fields += 1;
+            for (var key in val) {
+                if (val.hasOwnProperty(key)) {
+                    num_fields = this.recurseFields(val[key], key, depth+1, num_fields);
+                    if (num_fields > 30) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    return num_fields;
+};
 
 function BQFactoryGraph(){
 };
@@ -260,15 +304,15 @@ Ext.define('BQ.graphviewer', {
     	    if(gnode && gnode.card){
     	        var xmlDoc = document.implementation.createDocument(null, "tmpdoc");
     	        var xnode = xmlDoc.createElement("tmpnode");
-    	        // add node attributes as children (because we may have duplicate attr names and order may matter)
     	        if ('extra_attr_Parameters' in gnode) {
+    	            // add node attributes as children (because we may have duplicate attr names and order may matter)
     	            for (var attr in gnode['extra_attr_Parameters']) {
     	                if (gnode['extra_attr_Parameters'].hasOwnProperty(attr)) {
         	                var subnode = xmlDoc.createElement("attribute");
         	                // assume each attribute is a singleton hashtable {name:value}
         	                var name = Object.keys(gnode['extra_attr_Parameters'][attr])[0];
         	                subnode.setAttribute("name", name);
-        	                subnode.setAttribute("value", gnode['extra_attr_Parameters'][attr][name]);
+        	                subnode.setAttribute("value", Ext.JSON.encode(gnode['extra_attr_Parameters'][attr][name]));
         	                xnode.appendChild(subnode);
     	                }
     	            }
