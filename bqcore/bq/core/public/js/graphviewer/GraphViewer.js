@@ -204,7 +204,7 @@ PipelineStepCard.prototype.recurseFields = function (val, attr_name, depth, num_
             }
             this.addField(indent+'[ '+attr_name+' ]', (depth == 4 ? '...' : ''), 'value');
             num_fields += 1;
-            for (var key in val) {
+            for (let key of Object.keys(val).sort()) {
                 if (val.hasOwnProperty(key)) {
                     num_fields = this.recurseFields(val[key], key, depth+1, num_fields);
                     if (num_fields > 30) {
