@@ -95,7 +95,7 @@ class PipelineDream3D(PipelineBase):
             else:
                 # store pipeline steps as they are except for label
                 step = { "__Label__": pipeline[key]['Filter_Human_Label'], "__Meta__": {}, "Parameters": [] }
-                for step_key in pipeline[key]:
+                for step_key in sorted(pipeline[key]):
                     if step_key in ['Filter_Name', 'FilterVersion']:
                         step['__Meta__'][step_key] = pipeline[key][step_key]
                     elif step_key != 'Filter_Human_Label':
