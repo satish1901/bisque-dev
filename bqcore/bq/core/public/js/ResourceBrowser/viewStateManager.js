@@ -41,7 +41,7 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager', {
                 this.cBar.btnLayoutGrid = true;
                 this.cBar.btnLayoutFull = true;
 
-                this.cBar.btnGear = true;
+                //this.cBar.btnGear = false;
 
                 break;
             }
@@ -53,7 +53,7 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager', {
                 this.cBar.btnLayoutGrid = true;
                 this.cBar.btnLayoutFull = true;
 
-                this.cBar.btnGear = true;
+                //this.cBar.btnGear = false;
                 break;
             }
             case 'ViewSearch': {
@@ -67,13 +67,13 @@ Ext.define('Bisque.ResourceBrowser.viewStateManager', {
                 this.cBar.btnLayoutFull = true;
 
                 this.cBar.slider = true;
-                this.cBar.btnGear = true;
+                //this.cBar.btnGear = false;
 
                 break;
             }
             case 'ViewerLayouts': {
-                this.cBar.searchBar = true;
-                this.cBar.btnGear = true;
+                //this.cBar.searchBar = false;
+                //this.cBar.btnGear = false;
                 break;
             }
             case 'ModuleBrowser': {

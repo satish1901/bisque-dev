@@ -462,7 +462,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
     },
 
     btnOrganizerClickTreeNew : function(reload) {
-        this.westPanel.setWidth(420).show().expand();
+        this.westPanel.setWidth(300).show().expand();
         if (!this.organizerCt) {
             this.organizerCt = Ext.create('BQ.tree.organizer.Panel', {
                 title: 'Organizer',
@@ -488,7 +488,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
 
     btnOrganizerClickFiles : function(reload) {
         if (this.filesCt) return;
-        this.westPanel.setWidth(420).show().expand();
+        this.westPanel.setWidth(300).show().expand();
         //this.westPanel.queryById('files').removeAll(false);
         this.filesCt = this.westPanel.add({
             xtype: 'bq-tree-files-panel',
