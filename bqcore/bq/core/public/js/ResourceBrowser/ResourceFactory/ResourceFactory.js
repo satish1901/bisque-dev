@@ -607,32 +607,6 @@ Ext.define('Bisque.Resource.Page',
 
         this.callParent(arguments);
 
-        // if user preferences request provenance, add this tab now
-        if (BQ.Preferences) {
-            // if user wants to see provenance tab, add it now
-            var me = this;
-            BQ.Preferences.load('user', '', function(pref) {
-                var show_provenance = BQ.Preferences.get('user', 'ResourceViewer/Show Provenance', false);
-                var tabPanel = me.queryById('tabs');
-                if (tabPanel && show_provenance) {
-                    tabPanel.add({
-                        xtype : 'bq_graphviewer_panel',
-                        itemId: 'graph',
-                        title : 'Provenance',
-                        resource: me.resource,
-                        resourceType: 'graph_url',
-                        rankdir: 'LR',
-                        listeners:{
-                            'context' : function(res, div, graph) {
-                                var node = graph.g.node(res);
-                                window.open(BQ.Server.url(node.card.getUrl(res)));
-                            },
-                        },
-                    });
-                }
-            });    // TODO: double check this
-        }
-
         this.toolbar = this.getDockedComponent(0);
 
         if (Ext.isEmpty(BQApp.userList))
@@ -640,7 +614,13 @@ Ext.define('Bisque.Resource.Page',
         else
             this.testAuth(BQApp.user, false);
 
-        this.addListener('afterlayout', this.onResourceRender, this, {single:true});
+        //this.addListener('afterlayout', this.onResourceRender, this, {single:true});
+        this.addListener('afterlayout', this.onAfterLayout, this, {single:true});
+    },
+
+    onAfterLayout : function() {
+        this.onResourceRender();
+        this.addProvenanceViewer();
     },
 
     onResourceRender : function()
@@ -695,6 +675,29 @@ Ext.define('Bisque.Resource.Page',
 
         //this.add(resourceTagger);
         this.setLoading(false);
+    },
+
+    addProvenanceViewer : function() {
+        // if user preferences request provenance, add this tab now
+        // if user wants to see provenance tab, add it now
+        var show_provenance = BQ.Preferences.get('user', 'ResourceViewer/Show Provenance', false),
+            tabPanel = this.queryById('tabs');
+        if (tabPanel && show_provenance) {
+            tabPanel.add({
+                xtype : 'bq_graphviewer_panel',
+                itemId: 'graph',
+                title : 'Provenance',
+                resource: this.resource,
+                resourceType: 'graph_url',
+                rankdir: 'LR',
+                listeners:{
+                    'context' : function(res, div, graph) {
+                        var node = graph.g.node(res);
+                        window.open(BQ.Server.url(node.card.getUrl(res)));
+                    },
+                },
+            });
+        }
     },
 
     testAuth : function(user, loaded, permission, action)
@@ -754,43 +757,47 @@ Ext.define('Bisque.Resource.Page',
     getOperations : function(resource)
     {
         // new interface
-        var download = BQApp.main.getToolbar().queryById('button_download');
-        if (download) {
-            download.menu.add([{
-                xtype       : 'menuitem',
-                compression : 'none',
-                text        : 'Original',
-                scope       :   this,
-                handler     :   this.downloadResource,
-                operation   :   this.downloadResource,
-            }, {
-                xtype       : 'menuseparator'
-            }, {
-                compression : 'tar',
-                text        : 'as TARball',
-                scope       :   this,
-                handler     :   this.downloadResource,
-                operation   :   this.downloadResource,
-            },{
-                compression : 'gzip',
-                text        : 'as GZip archive',
-                scope       :   this,
-                handler     :   this.downloadResource,
-                operation   :   this.downloadResource,
-            },{
-                compression : 'bz2',
-                text        : 'as BZip2 archive',
-                scope       :   this,
-                handler     :   this.downloadResource,
-                operation   :   this.downloadResource,
-            },{
-                compression : 'zip',
-                text        : 'as (PK)Zip archive',
-                scope       :   this,
-                handler     :   this.downloadResource,
-                operation   :   this.downloadResource,
-            }]);
-        }
+        var items = [{
+            xtype       : 'menuitem',
+            itemId      : 'download_original',
+            compression : 'none',
+            text        : 'Original',
+            scope       :   this,
+            handler     :   this.downloadResource,
+            operation   :   this.downloadResource,
+        }, {
+            xtype       : 'menuseparator',
+            itemId      : 'download_separator',
+        }, {
+            itemId      : 'download_tar',
+            compression : 'tar',
+            text        : 'as TARball',
+            scope       :   this,
+            handler     :   this.downloadResource,
+            operation   :   this.downloadResource,
+        }, {
+            itemId      : 'download_gzip',
+            compression : 'gzip',
+            text        : 'as GZip archive',
+            scope       :   this,
+            handler     :   this.downloadResource,
+            operation   :   this.downloadResource,
+        }, {
+            itemId      : 'download_bz2',
+            compression : 'bz2',
+            text        : 'as BZip2 archive',
+            scope       :   this,
+            handler     :   this.downloadResource,
+            operation   :   this.downloadResource,
+        }, {
+            itemId      : 'download_zip',
+            compression : 'zip',
+            text        : 'as (PK)Zip archive',
+            scope       :   this,
+            handler     :   this.downloadResource,
+            operation   :   this.downloadResource,
+        }];
+        BQApp.add_to_toolbar_menu('button_download', items);
 
         // old stuff
         var items=[];
@@ -840,36 +847,7 @@ Ext.define('Bisque.Resource.Page',
             iconCls     :   'icon-group',
             operation   :   this.shareResource,
             handler     :   this.testAuth1
-        }, /*{
-            itemId      :   'btnPerm',
-            operation   :   this.changePrivacy,
-            handler     :   this.testAuth1,
-            setBtnText  :   function(me)
-                            {
-                                var text = 'Visibility: ';
-
-                                if (this.resource.permission == 'published')
-                                {
-                                    text += '<span style="font-weight:bold;color: #079E0C">published</span>';
-                                    me.setIconCls('icon-eye');
-                                }
-                                else
-                                {
-                                    text += 'private';
-                                    me.setIconCls('icon-eye-close')
-                                }
-
-                                me.setText(text);
-                            },
-            listeners   :   {
-                                'afterrender'   :   function(me)
-                                                    {
-                                                        me.setBtnText.call(this, me);
-                                                    },
-                                scope           :   this
-
-                            }
-        },*/ {
+        }, {
             itemId : 'btnDelete',
             text   : 'Delete',
             iconCls: 'icon-delete',
@@ -1000,3 +978,8 @@ Ext.define('Bisque.Resource.Page',
 Ext.define('Bisque.Resource.Grid', {
     extend:'Bisque.Resource',
 });
+
+Ext.define('Bisque.Resource.Annotator', {
+    extend:'Bisque.Resource',
+});
+

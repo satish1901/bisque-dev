@@ -194,6 +194,13 @@ Ext.define('BQ.Application', {
             return this.main.getToolbar();
     },
 
+    add_to_toolbar_menu: function(menu_id, items, position) {
+        var toolbar = this.getToolbar();
+        if (toolbar) {
+            toolbar.add_to_menu(menu_id, items, position);
+        }
+    },
+
     setLoading: function(load, targetEl) {
         if (!this.main) return;
         var w = this.getCenterComponent() || this.main;

@@ -62,3 +62,7 @@ Ext.define('Bisque.Resource.File.Grid', {
         return fields;
     },
 });
+
+Ext.define('Bisque.Resource.File.Annotator', {
+    extend : 'Bisque.Resource.Annotator',
+});

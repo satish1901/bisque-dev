@@ -1161,4 +1161,37 @@ Ext.define('BQ.Application.Toolbar', {
             pageAction('/module_service/' + module.name  + '/?wpublic=1');
     },
 
+    add_to_menu: function(menu_id, items, position) {
+        // take care of items array as input
+        if (Array.isArray(items)) {
+            for (var i=0; i<items.length; ++i) {
+                this.add_to_menu(menu_id, items[i], position);
+                if (typeof position !== 'undefined') {
+                    ++position;
+                }
+            }
+            return;
+        }
+
+        // single input case
+        var btn = BQApp.getToolbar().queryById(menu_id);
+        if (!btn) return;
+
+        // test if item exists then update
+        var m = btn.menu.queryById(items.itemId);
+        if (m) {
+            for (var k in items) {
+                m[k] = items[k];
+            }
+            return;
+        }
+
+        // item does not exist: add or insert
+        if (position) {
+            btn.menu.insert(position, items);
+        } else {
+            btn.menu.add(items);
+        }
+    },
+
 });

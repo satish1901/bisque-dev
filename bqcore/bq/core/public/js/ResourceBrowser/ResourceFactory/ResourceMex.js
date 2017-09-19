@@ -43,7 +43,7 @@ Ext.define('Bisque.Resource.Mex', {
                 },
                 scope: this,
                 disableCaching: false,
-            });  
+            });
         }
         this.callParent(arguments);
     },
@@ -95,11 +95,11 @@ Ext.define('Bisque.Resource.Mex', {
             cls: 'mex_preview',
             text: html,
         });
-        
+
         this.ttip.setLoading(false);
         this.tagsLoaded = true;
         //this.resource.tags = data.tags;
-    },    
+    },
 
     prefetch : function() {
         if (!this.getData('fetched')) {
@@ -114,7 +114,7 @@ Ext.define('Bisque.Resource.Mex', {
         var renderedRef = this.getData('renderedRef');
         if (renderedRef)
             renderedRef.updateContainer();
-    },    
+    },
 
 });
 
@@ -299,6 +299,10 @@ Ext.define('Bisque.Resource.Mex.Grid', {
         }];
     }
 
+});
+
+Ext.define('Bisque.Resource.Mex.Annotator', {
+    extend : 'Bisque.Resource.Mex',
 });
 
 // Page view for a mex

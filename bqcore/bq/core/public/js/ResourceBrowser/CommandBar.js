@@ -77,7 +77,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 itemId : 'btnThumb',
                 icon : BQ.Server.url('/core/js/ResourceBrowser/Images/thumb.png'),
                 hidden : this.viewMgr.cBar.btnLayoutThumb,
-                tooltip : 'Thumbnail layout',
+                tooltip : 'Thumbnail view',
                 toggleGroup : 'btnLayout',
                 scale : 'large',
                 handler : this.btnLayoutClick,
@@ -87,7 +87,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 itemId : 'btnGrid',
                 icon : BQ.Server.url('/core/js/ResourceBrowser/Images/grid.png'),
                 hidden : this.viewMgr.cBar.btnLayoutGrid,
-                tooltip : 'Grid layout',
+                tooltip : 'Grid view',
                 scale : 'large',
                 toggleGroup : 'btnLayout',
                 handler : this.btnLayoutClick,
@@ -97,7 +97,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 itemId : 'btnCard',
                 icon : BQ.Server.url('/core/js/ResourceBrowser/Images/card.png'),
                 hidden : this.viewMgr.cBar.btnLayoutCard,
-                tooltip : 'Card layout',
+                tooltip : 'Annotator view',
                 scale : 'large',
                 toggleGroup : 'btnLayout',
                 handler : this.btnLayoutClick,
@@ -107,7 +107,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 itemId : 'btnFull',
                 icon : BQ.Server.url('/core/js/ResourceBrowser/Images/full.png'),
                 hidden : this.viewMgr.cBar.btnLayoutFull,
-                tooltip : 'Full layout',
+                tooltip : 'Details view',
                 scale : 'large',
                 toggleGroup : 'btnLayout',
                 handler : this.btnLayoutClick,
@@ -526,7 +526,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact);
                 break;
             case 'btnCard' :
-                this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card);
+                //this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card);
+                this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Annotator);
                 break;
             case 'btnGrid' :
                 this.browser.changeLayoutThrottled(Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid);
@@ -542,7 +543,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
             case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact :
                 this.getComponent('btnThumb').toggle(true, false);
                 break;
-            case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card :
+            //case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Card :
+            case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Annotator :
                 this.getComponent('btnCard').toggle(true, false);
                 break;
             case Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Grid :
@@ -587,6 +589,8 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
     },
 
     setResourceVisibilityUI: function(v) {
+        var btnGear = this.getComponent('btnGear');
+        if (!btnGear) return;
         var menu = this.getComponent('btnGear').menu;
         v = String(v) || '';
         //menu.getComponent('btnWpublic').setChecked(this.browser.browserParams.wpublic, true);
