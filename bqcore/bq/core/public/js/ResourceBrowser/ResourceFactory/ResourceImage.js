@@ -528,6 +528,10 @@ Ext.define('Bisque.Resource.Image.Grid', {
     },
 });
 
+Ext.define('Bisque.Resource.Image.Annotator', {
+    extend : 'Bisque.Resource.Image',
+});
+
 //-----------------------------------------------------------------------
 // Page view for an image
 //-----------------------------------------------------------------------
@@ -949,22 +953,19 @@ Ext.define('Bisque.Resource.Image.Page', {
             }]
         });
 
-        //var download = this.toolbar.queryById('btnDownload');
-        var download = BQApp.getToolbar().queryById('button_download');
-        if (download) {
-            //download.menu.add([{
-            download.menu.insert(3, [{
-                itemId: 'download_as_ometiff',
-                text: 'as OME-TIFF',
-                scope: this,
-                handler: this.download_ometiff,
-            }, {
-                itemId: 'download_as_omebigtiff',
-                text: 'as OME-BigTIFF',
-                scope: this,
-                handler: this.download_omebigtiff,
-            }]);
-        };
+        // new interface
+        var items = [{
+            itemId: 'download_as_ometiff',
+            text: 'as OME-TIFF',
+            scope: this,
+            handler: this.download_ometiff,
+        }, {
+            itemId: 'download_as_omebigtiff',
+            text: 'as OME-BigTIFF',
+            scope: this,
+            handler: this.download_omebigtiff,
+        }];
+        BQApp.add_to_toolbar_menu('button_download', items, 3);
 
         var export_btn = this.toolbar.queryById('menu_viewer_external');
         if (export_btn) {
@@ -977,13 +978,17 @@ Ext.define('Bisque.Resource.Image.Page', {
             }]);
         };
 
+        var viewer_menu_items = [],
+            v=null;
+        for (var i=0; (v=BQ.image_viewers.available[i]); ++i) {
+            if (v.container) v.container.destroy();
+            v.container = undefined;
+        }
 
         BQ.image_viewers.available[0].container = this.viewerContainer;
         BQ.image_viewers.available[1].creator = this.show3D;
         BQ.image_viewers.available[2].creator = this.showMovie;
 
-        var viewer_menu_items = [],
-            v=null;
         for (var i=0; (v=BQ.image_viewers.available[i]); ++i) {
             viewer_menu_items.push({
                 xtype  : 'button',
@@ -1194,37 +1199,36 @@ Ext.define('Bisque.Resource.Image.Page', {
             phys: this.viewerContainer.viewer.imagephys,
             preferences: this.viewerContainer.viewer.preferences,
         });
-        var download = BQApp.getToolbar().queryById('button_download');
-        var qt = download.menu.queryById('download_movie_qt');
-        if (!qt) {
-            download.menu.add([{
-                xtype: 'menuseparator',
-            }, {
-                itemId: 'download_movie_h264',
-                text: 'Movie as MPEG4 H264',
-                handler: function() { movie.export('h264'); },
-            }, {
-                itemId: 'download_movie_qt',
-                text: 'Movie as Apple QuickTime (MOV)',
-                handler: function() { movie.export('quicktime'); },
-            }, {
-                itemId: 'download_movie_webm',
-                text: 'Google WebM',
-                handler: function() { movie.export('webm'); },
-            }, {
-                itemId: 'download_movie_avi',
-                text: 'Microsoft AVI (MPEG4)',
-                handler: function() { movie.export('avi'); },
-            }, {
-                itemId: 'download_movie_wmv',
-                text: 'Windows Media Video',
-                handler: function() { movie.export('wmv'); },
-            }, {
-                itemId: 'download_movie_flv',
-                text: 'Adobe Flash Video',
-                handler: function() { movie.export('flv'); },
-            }]);
-        }
+
+        var items = [{
+            xtype: 'menuseparator',
+            itemId: 'download_movie_separator',
+        }, {
+            itemId: 'download_movie_h264',
+            text: 'Movie as MPEG4 H264',
+            handler: function() { movie.export('h264'); },
+        }, {
+            itemId: 'download_movie_qt',
+            text: 'Movie as Apple QuickTime (MOV)',
+            handler: function() { movie.export('quicktime'); },
+        }, {
+            itemId: 'download_movie_webm',
+            text: 'Google WebM',
+            handler: function() { movie.export('webm'); },
+        }, {
+            itemId: 'download_movie_avi',
+            text: 'Microsoft AVI (MPEG4)',
+            handler: function() { movie.export('avi'); },
+        }, {
+            itemId: 'download_movie_wmv',
+            text: 'Windows Media Video',
+            handler: function() { movie.export('wmv'); },
+        }, {
+            itemId: 'download_movie_flv',
+            text: 'Adobe Flash Video',
+            handler: function() { movie.export('flv'); },
+        }];
+        BQApp.add_to_toolbar_menu('button_download', items);
         return movie;
     },
 

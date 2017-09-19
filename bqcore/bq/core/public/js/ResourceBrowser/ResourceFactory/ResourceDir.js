@@ -33,6 +33,10 @@ Ext.define('Bisque.Resource.Dir.Grid', {
     },
 });
 
+Ext.define('Bisque.Resource.Dir.Annotator', {
+    extend : 'Bisque.Resource.Annotator',
+});
+
 // Store
 
 Ext.define('Bisque.Resource.Store.Compact', {
@@ -66,3 +70,8 @@ Ext.define('Bisque.Resource.Store.Grid', {
         return fields;
     },
 });
+
+Ext.define('Bisque.Resource.Store.Annotator', {
+    extend : 'Bisque.Resource.Annotator',
+});
+

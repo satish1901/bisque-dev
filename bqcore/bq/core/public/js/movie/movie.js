@@ -547,11 +547,11 @@ PlayerSize.prototype.createMenu = function () {
         {"value":"HD720", "text":"HD 720p (1280x720)"},
         {"value":"HD",    "text":"HD 1080p (1920x1080)"},
         {"value":"4K",    "text":"4K (3840x2160)"}
-    ], this.def.videoResolution, this, this.doChnage, 'combo_resolution');
+    ], this.def.videoResolution, this, this.doChange, 'combo_resolution');
 
 };
 
-PlayerSize.prototype.doChnage = function () {
+PlayerSize.prototype.doChange = function () {
     BQ.Preferences.set(this.uuid, 'Viewer/video_resolution', this.combo_resolution.value);
     this.changed();
 };

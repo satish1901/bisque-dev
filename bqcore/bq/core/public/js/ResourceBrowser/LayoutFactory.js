@@ -39,6 +39,7 @@ Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS = {
     "IconList" : 6,
     'Page' : 7,
     'Grid' : 8,
+    'Annotator' : 9,
 
     // for backwards compatibility
     "COMPACT" : 1,
@@ -594,3 +595,96 @@ Ext.define('Bisque.ResourceBrowser.Layout.Grid', {
         return this.resourceStore;
     },
 });
+
+
+// Annotator layout: shows full resource view and a strip with Next and Prev buttons at the bottom
+Ext.define('Bisque.ResourceBrowser.Layout.Annotator', {
+    extend : 'Bisque.ResourceBrowser.Layout.Base',
+
+    inheritableStatics : {
+        layoutCSS : null
+    },
+
+    layout: {
+        type: 'fit',
+        //align: 'stretch',
+    },
+    cls: 'bq-annotator',
+
+
+    Init : function(resourceQueue) {
+        // if no results were obtained for a given query, show a default no-results message
+        if (resourceQueue.length == 0) {
+            this.noResults();
+            return;
+        }
+
+        this.layoutConfig = this.browser.layoutConfig || {};
+
+        /*this.add([{
+            xtype: 'container',
+            itemId: 'center_viewer',
+            flex: 1,
+        }, {
+            xtype: 'container',
+            height: 40,
+            layout: {
+                type: 'hbox',
+                align: 'stretch',
+            },
+            defaults: {
+                scale: 'large',
+            },
+            items: [{
+                xtype: 'button',
+                text: 'Previous',
+                width: 100,
+            }, {
+                xtype: 'tbspacer',
+                flex: 1,
+            }, {
+                xtype: 'button',
+                text: 'Next',
+                width: 100,
+            }],
+        }]);*/
+
+        //var rq = resourceQueue[0].layoutMgr = this;
+        this.loadResource(resourceQueue[0].resource);
+    },
+
+    getVisibleElements : function(direction) {
+        return 1;
+    },
+
+    loadResource : function(resource) {
+        this.setLoading('Fetching resource...');
+        BQFactory.request({
+            uri: resource.uri,
+            uri_params: {view : 'deep'},
+            cb: callback(this, this.onLoadResource),
+            errorcb: callback(this, this.onError)
+        });
+    },
+
+    onLoadResource : function(resource) {
+        this.setLoading(false);
+        if (this.editor) {
+            this.remove(this.editor, true);
+        }
+
+        this.editor = Bisque.ResourceFactoryWrapper.getResource({
+            resource: resource,
+            layoutKey: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Page,
+        });
+
+        this.add(this.editor);
+    },
+
+    onError: function(error) {
+        BQApp.setLoading(false);
+        BQ.ui.error('Error fetching resource: <br>' + error.message);
+    },
+
+});
+
