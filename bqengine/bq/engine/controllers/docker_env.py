@@ -21,6 +21,7 @@ CONTAINER=$$(docker create ${DOCKER_IMAGE}  $@)
 ${DOCKER_INPUTS}
 docker start $CONTAINER
 MODULE_RETURN=$$(docker wait  $CONTAINER)
+docker logs $CONTAINER
 ${DOCKER_OUTPUTS}
 # docker will not copy to existing directory .. so create a new one and copy from that
 docker cp $CONTAINER:/module/ output_files
