@@ -58,7 +58,7 @@ import re
 #import md5
 import hashlib
 import logging
-import json
+import tempfile
 
 from urlparse import urlparse
 from datetime import datetime
@@ -77,6 +77,7 @@ from bq.core.service import ServiceController
 #from bq.exceptions import RequestError
 from bq.util.paths import data_path
 from bq.util.converters import asbool
+from bq.util.copylink import copy_link
 #from bq.util.xmldict import d2xml
 from .formats import find_inputer, find_formatter
 
@@ -215,10 +216,12 @@ class ResponseCache(object):
         headers = dict ([ (k,v) for k,v in headers.items() if k in self.known_headers])
         log.debug (u'cache write %s to %s', url, cachename )
         try:
-            with  open (cachename, 'wb') as f:
+            with tempfile.NamedTemporaryFile (dir=os.path.dirname(cachename)) as f:
                 f.write (str (headers))
                 f.write ('\n\n')
                 f.write (value)
+                copy_link (f.name, cachename)
+
         except IOError:
             log.exception ("problem in cache save of %s", cachename)
 
