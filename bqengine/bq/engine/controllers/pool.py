@@ -153,6 +153,7 @@ class ProcessManager(object):
                 logger.debug("interrupting subprocess %s" % subproc)
                 subproc.terminate()
                 # wait for thread to terminate
-                while self.thread_tasks[tid] is not None:
-                    sleep(0.2)
+                # (following will not always work: thread may pick another task while we wait...) 
+                #while self.thread_tasks[tid] is not None:
+                #    sleep(0.2)
                 logger.debug("task interrupted")
