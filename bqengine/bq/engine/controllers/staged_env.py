@@ -38,6 +38,8 @@ class StagedEnvironment(BaseEnvironment):
             if isinstance(mex.files, basestring):
                 mex.files =  strtolist(mex.files)
             mex.staging_path= mex.staging_path or mex.named_args.get ('staging_path')
+            if mex.staging_path is None:
+                self._set_staging_path(runner, mex)
             #mex.mex_id=mex.named_args.get ('mex_id')
 
     def _set_staging_path(self, runner, mex):

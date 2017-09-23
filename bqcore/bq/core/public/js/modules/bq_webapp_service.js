@@ -73,6 +73,17 @@ ModuleService.prototype.run = function (parameters) {
     mex.save_(ensureTrailingSlash(this.URI) + 'execute', callback(this, 'onstarted'), callback(this, 'onerror'));
 };
 
+ModuleService.prototype.stop = function (mex_uri) {
+    var url = mex_uri.split('/');
+    BQFactory.request ({
+                uri : ensureTrailingSlash(this.URI) + 'kill/' + url[url.length-1],
+                uri_params : {},
+                method : 'post',
+                errorcb: callback(this, this.onerror),
+                cache : false,
+    });
+};
+
 ModuleService.prototype.onstarted = function (mex) {
     if (this.conf.onstarted) this.conf.onstarted(mex);
     this.checkMexStatus(mex);

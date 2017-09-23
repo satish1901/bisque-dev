@@ -106,8 +106,8 @@ class RuntimeAdapter(BaseAdapter):
             pass
             #os.chdir(current_dir)
 
-    def execute(self, module, mex, pool):
-        log.debug("Excecute module : %s mex %s", module.get('name'), mex.get('uri'))
+    def execute(self, module, mex, pool, command='start'):
+        log.debug("Excecute %s module : %s mex %s", command, module.get('name'), mex.get('uri'))
         module_name = module.get('name')
         module_path = module.get('path')
         input_nodes = []
@@ -124,7 +124,7 @@ class RuntimeAdapter(BaseAdapter):
         #else:
         #    params = [ i.get('value') for i in input_nodes ]
 
-        params.append ('start')
+        params.append (command)
         #command = os.path.join(module_dir, module_path)
         #command_line = module_path.split(' ')
         command_line = []

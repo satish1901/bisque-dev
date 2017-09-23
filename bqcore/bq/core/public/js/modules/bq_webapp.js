@@ -230,7 +230,7 @@ BQWebApp.prototype.onerror = function (error) {
 
     var button_run = document.getElementById("webapp_run_button");
     button_run.childNodes[0].nodeValue = this.label_run;
-    button_run.disabled = false;
+    //button_run.disabled = false;
 
     var result_label = document.getElementById("webapp_results_summary");
     if (result_label)
@@ -747,6 +747,16 @@ BQWebApp.prototype.inputsValid = function () {
 //------------------------------------------------------------------------------
 
 BQWebApp.prototype.run = function () {
+    var button_run = document.getElementById("webapp_run_button");
+    if (button_run.childNodes[0].nodeValue != this.label_run) {
+        // already running => try to stop the run
+        if (this.current_mex_uri) {
+            button_run.childNodes[0].nodeValue = "Stopping ...";
+            this.ms.stop(this.current_mex_uri);
+        }
+        return;
+    }
+
     if (!BQSession.current_session || !BQSession.current_session.hasUser()) {
         BQ.ui.warning('You are not logged in! You need to log-in to run any analysis...');
         BQ.ui.tip('webapp_run_button', 'You are not logged in! You need to log-in to run any analysis...');
@@ -758,8 +768,7 @@ BQWebApp.prototype.run = function () {
     this.updateResultsVisibility(false);
     this.mex = undefined;
 
-    var button_run = document.getElementById("webapp_run_button");
-    button_run.disabled=true;
+    //button_run.disabled=true;
     button_run.childNodes[0].nodeValue = "Running ...";
 
     this.ms.run();
@@ -781,7 +790,7 @@ BQWebApp.prototype.onprogress = function (mex) {
 
     if (!mex.isMultiMex()) {
         button_run.childNodes[0].nodeValue = "Progress: " + mex.status;
-        button_run.disabled = true;
+        //button_run.disabled = true;
         return;
     }
 
@@ -816,7 +825,7 @@ BQWebApp.prototype.done = function (mex) {
     this.onprogress(mex);
     var button_run = document.getElementById("webapp_run_button");
     button_run.childNodes[0].nodeValue = this.label_run;
-    button_run.disabled = false;
+    //button_run.disabled = false;
     //this.status_panel.setVisible(false);
     this.mex = mex;
     this.parseResults(mex);

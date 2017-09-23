@@ -604,8 +604,27 @@ class EngineModuleResource(BaseController):
         finally:
             return mextree
 
-
-
+    @expose(content_type='text/xml')
+    def kill(self, *path, **kw):
+        """stop execution of mex"""
+        log.debug ("in kill path=%s kw=%s" ,  path, kw)
+        if tg.request.method.lower() not in ('put', 'post'):
+            raise abort(405)
+        module = self.module_xml
+        try:
+            adapter_type = module.get('type')
+            adapter = self.adapters.get(adapter_type, None)
+            if not adapter:
+                log.debug ('No adaptor for type %s' , adapter_type)
+                raise EngineError ('No adaptor for type %s' % (adapter_type))
+            # create fake mex doc
+            mextree = etree.Element('mex', resource_uniq=path[0], uri='/mex/'+path[0])
+            adapter.execute(module, mextree, self.mpool, command='kill')
+            
+        except Exception:
+            log.exception ("Execption in adaptor:" )
+            tg.response.status_int = 500
+            
 
 def initialize(uri):
     """ Initialize the top level server for this microapp"""
