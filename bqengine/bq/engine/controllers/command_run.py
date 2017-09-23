@@ -313,6 +313,7 @@ class BaseRunner(object):
         self.postrun = None
         #self.process_environment (pre-set)
         #self.options (pre-set)
+        self.runner_ids = {}
         # ---- the previous items are preserved across execution phases ----
 
         # Add remaining arguments to the executable line
@@ -396,6 +397,7 @@ class BaseRunner(object):
             pickle.dump(self.postrun, f)
             pickle.dump(self.process_environment, f)
             pickle.dump(self.options, f)
+            pickle.dump(self.runner_ids, f)
 
     def load_runstate(self):
         staging_path = self.mexes[0].get('staging_path') or  '.'
@@ -411,6 +413,7 @@ class BaseRunner(object):
             self.postrun = pickle.load(f)
             self.process_environment = pickle.load(f)
             self.options = pickle.load(f)
+            self.runner_ids = pickle.load(f)
 
 
     ##################################################
@@ -558,29 +561,35 @@ class BaseRunner(object):
             args  = kw.pop('arguments', None)
             # Pull out command line arguments
             self.options, arguments = self.parser.parse_args(args)
-            command = arguments.pop()
+            command_str = arguments.pop()
 
             # the following always has to run first so that e.g., staging dirs are set up properly
             self.init_runstate(arguments, **kw)
             self.create_environments(**kw)
             self.process_config(**kw)
 
-            if command == 'start':
+            if command_str == 'start':
                 # new run => setup environments from scratch
                 self.setup_environments()
             else:
                 # continued run => load saved run state
-                self.load_runstate()
+                try:
+                    self.load_runstate()
+                except OSError:
+                    # could not load state => OK if it was command that can run without previous 'start' (e.g., 'kill')
+                    if command_str not in ['kill']:
+                        raise
 
             self.mexes[0].arguments = arguments
 
-            command = getattr (self, 'command_%s' % command, None)
+            command = getattr (self, 'command_%s' % command_str, None)
             while command:
                 self.info("COMMAND_RUNNER %s" % command)
                 command = command(**kw)
 
-            # store run state since we may come back (e.g., condor finish)
-            self.store_runstate()
+            if command_str not in ['kill']:
+                # store run state since we may come back (e.g., condor finish)
+                self.store_runstate()
 
             if created_pool:
                 self.pool.stop()
@@ -699,7 +708,7 @@ class CommandRunner(BaseRunner):
         #             self.command_failed(p, retcode)
         #     return self.command_finish
         #return None
-
+    
     def command_success(self, proc):
         "collect return values when mex was executed asynchronously "
         self.info ("SUCCESS Command %s with %s" , " ".join (proc.get ('command_line')), proc.get ('return_code'))
@@ -716,6 +725,24 @@ class CommandRunner(BaseRunner):
         process['fail_message'] = msg
         self.check_pool_status (process, 'failed')
 
+    def command_kill(self, **kw):
+        """Kill the running module if possible
+        """
+        mex = kw.get('mex_tree')
+        topmex = self.mexes[0]
+        if mex is not None:
+            mex_id = mex.get('resource_uniq')
+            self.pool.kill(selector_fct=lambda task: '00-' + task['mex'].get('mex_url').split('/00-',1)[1].split('/',1)[0] == mex_id)
+            if self.session is None:
+                mex_url = topmex.named_args['mex_url']
+                token   = topmex.named_args['bisque_token']
+                self.session = BQSession().init_mex(mex_url, token)
+            self.session.fail_mex(msg = 'job stopped by user')
+        else:
+            self.debug("No mex provided")
+            
+        return None
+    
     def check_pool_status(self, p, status):
         # Check that all have finished or failed
         with self.pool.pool_lock:

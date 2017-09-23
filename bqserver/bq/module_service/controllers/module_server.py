@@ -116,6 +116,10 @@ from bq.data_service.model import  ModuleExecution
 
 log = logging.getLogger('bq.module_server')
 
+
+_max_submexes = 10000    # max number of sub mexes
+
+
 def request_host():
     "Return host of current request"
     try:
@@ -414,8 +418,8 @@ def create_mex(module, name, mex = None, **kw):
                 val = start
                 while True:
                     members.append(str(val))
-                    if len(members) > 100:
-                        log.error("too many combinations (>100)")
+                    if len(members) > _max_submexes:
+                        log.error("too many combinations (>%s)" % _max_submexes)
                         return mex
                     valold = val
                     val += step
@@ -439,8 +443,8 @@ def create_mex(module, name, mex = None, **kw):
         # tag1:val1, tag2:valx, tag3:vala
         # tag1:val2, tag2:valy, tag3:valb
         # ...
-        if max([len(sublist) for sublist in all_iterables]) > 100:   # safety check
-            log.error("too many combinations (>100)")
+        if max([len(sublist) for sublist in all_iterables]) > _max_submexes:   # safety check
+            log.error("too many combinations (>%s)" % _max_submexes)
             return mex
         list_lengths = [len(sublist) for sublist in all_iterables]
         max_list_length = max(list_lengths)
@@ -462,8 +466,8 @@ def create_mex(module, name, mex = None, **kw):
         # ...
         # tag1:val1, tag2:valy, tag3:vala
         # ...
-        if reduce(mul, [len(sublist) for sublist in all_iterables], 1) > 100:   # safety check
-            log.error("too many combinations (>100)")
+        if reduce(mul, [len(sublist) for sublist in all_iterables], 1) > _max_submexes:   # safety check
+            log.error("too many combinations (>%s)" % _max_submexes)
             return mex
         for iter_combo in itertools.product(*all_iterables):
             # Create SubMex section with original parameters replaced with iterated members
@@ -659,6 +663,28 @@ class ServiceDelegate(controllers.WSGIAppController):
         #req = tg.app_globals.pool.wait_for(req)
 
         return etree.tostring (mex)
+
+    @expose(content_type='text/xml')
+    def kill(self, *args, **kw):
+        log.info ('KILL %s with %s %s' , str(self.module), str(args), str(kw))        
+        if tg.request.method.lower() not in ('put', 'post'):
+            abort(405, 'Kill operation requires PUT or POST method')
+        if len(args) != 1:
+            abort(405, 'Kill operation requires mex id')
+            
+        mex_uniq = args[0]
+        mex_token = "%(user)s:%(uniq)s" % dict(user=get_username(), uniq=mex_uniq)
+        
+        try:
+            resp, content = http.xmlrequest(urlparse.urljoin(self.service_url, "kill/"+mex_uniq), "POST",
+                                            headers = {'Mex': mex_uniq,
+                                                       'Authorization' : "Mex %s" % mex_token})
+        except socket.error:
+            resp = {'status':'503', }
+            content = ""
+        status = resp.get('status')
+        log.debug("DISPATCH: RESULT %s %s", status, content)
+        return ''
 
     def remap_uri (self, mex):
         """

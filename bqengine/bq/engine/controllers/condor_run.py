@@ -127,6 +127,16 @@ class CondorRunner (CommandRunner):
             if submit.returncode != 0:
                 self.command_failed(process, submit.returncode)
 
+            # get ID of dag runner cluster and store in runner_ids
+            runner_id = None
+            for line in out.split('\n'):
+                toks = line.split('job(s) submitted to cluster')
+                if len(toks) == 2:
+                    runner_id = toks[1].strip().rstrip('.')
+                    break
+            if runner_id is not None:
+                self.runner_ids[self.mexes[0].mex_id] = runner_id
+
         # Don't do anything after execute
         return None
 
@@ -161,11 +171,30 @@ class CondorRunner (CommandRunner):
         if self.session.mex.value not in ('FAILED', 'FINISHED'):
             self.session.fail_mex (msg)
 
-
     def command_kill(self, **kw):
         """Kill the running module if possible
         """
-        return False
+        mex = kw.get('mex_tree')
+        topmex = self.mexes[0]
+        if mex is not None:
+            mex_id = mex.get('resource_uniq')
+            proc_id = self.runner_ids.get(mex_id)
+            if proc_id:
+                message = subprocess.Popen (['condor_rm', proc_id, ],
+                                            cwd=topmex.get('staging_path'),
+                                            stdout = subprocess.PIPE).communicate()[0]
+                self.info("status = %s " , message)
+                if self.session is None:
+                    mex_url = topmex.named_args['mex_url']
+                    token   = topmex.named_args['bisque_token']
+                    self.session = BQSession().init_mex(mex_url, token)
+                self.session.fail_mex(msg = 'job stopped by user')
+            else:
+                self.debug("Mex id %s not found", mex_id)
+        else:
+            self.debug("No mex provided")
+            
+        return None
 
     def command_status(self, **kw):
         message =  subprocess.Popen (['condor_q', ],
