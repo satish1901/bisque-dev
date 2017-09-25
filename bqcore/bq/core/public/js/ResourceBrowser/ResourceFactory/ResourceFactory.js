@@ -620,7 +620,10 @@ Ext.define('Bisque.Resource.Page',
 
     onAfterLayout : function() {
         this.onResourceRender();
-        this.addProvenanceViewer();
+        var me = this;
+        BQ.Preferences.load('user', '', function(pref) {
+            me.addProvenanceViewer();
+        });
     },
 
     onResourceRender : function()
