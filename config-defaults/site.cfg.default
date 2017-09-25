@@ -196,6 +196,8 @@ bisque.login.local.icon = /core/images/signin/signin_bisque.png
 #bisque.tracking.piwik_url = http://yourpiwikhost.org
 #bsique.tracking.google_id  = <your google id> i.e. UA-3923721-4
 
+# Google Maps API Key
+#bisque.gmaps = ABC
 
 # Bisque Cluster Runtime
 condor.enabled = False

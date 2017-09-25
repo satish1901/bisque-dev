@@ -13,7 +13,8 @@
     <title>Resource viewer</title>
 
     <!-- GMaps API -->
-    <script type="text/javascript" src="//maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script py:if="tg.config.get('bisque.gmaps', None) is None" type="text/javascript" src="//maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script py:if="tg.config.get('bisque.gmaps', None) is not None" type="text/javascript" src="//maps.googleapis.com/maps/api/js?key=${tg.config.get('bisque.gmaps')}"></script>
 
     <!-- Fix for templates that do not create html in the body -->
     <style type="text/css">
