@@ -34,6 +34,7 @@ function BQWebApp (urlargs) {
   // arguments that may be defined by inherited classes
   this.module_url = this.module_url || location.pathname;
   this.label_run = this.label_run || "Run analysis";
+  this.label_progress = this.label_progress || "This may take some time, progress will be shown here.";
 
   this.renderers = {};
 
@@ -230,7 +231,8 @@ BQWebApp.prototype.onerror = function (error) {
 
     var button_run = document.getElementById("webapp_run_button");
     button_run.childNodes[0].nodeValue = this.label_run;
-    //button_run.disabled = false;
+    var status_field = document.getElementById("webapp_status_text");
+    status_field.innerHTML = this.label_progress;
 
     var result_label = document.getElementById("webapp_results_summary");
     if (result_label)
@@ -768,8 +770,7 @@ BQWebApp.prototype.run = function () {
     this.updateResultsVisibility(false);
     this.mex = undefined;
 
-    //button_run.disabled=true;
-    button_run.childNodes[0].nodeValue = "Running ...";
+    button_run.childNodes[0].nodeValue = "STOP";
 
     this.ms.run();
 };
@@ -785,12 +786,11 @@ BQWebApp.prototype.onstarted = function (mex) {
 BQWebApp.prototype.onprogress = function (mex) {
     if (!mex) return;
     if (!(mex instanceof BQMex)) return;
-    var button_run = document.getElementById("webapp_run_button");
+    var status_field = document.getElementById("webapp_status_text");
     //if (mex.status == "FINISHED" || mex.status == "FAILED") return;
 
     if (!mex.isMultiMex()) {
-        button_run.childNodes[0].nodeValue = "Progress: " + mex.status;
-        //button_run.disabled = true;
+        status_field.innerHTML = "Progress: " + mex.status;
         return;
     }
 
@@ -825,7 +825,8 @@ BQWebApp.prototype.done = function (mex) {
     this.onprogress(mex);
     var button_run = document.getElementById("webapp_run_button");
     button_run.childNodes[0].nodeValue = this.label_run;
-    //button_run.disabled = false;
+    var status_field = document.getElementById("webapp_status_text");
+    status_field.innerHTML = this.label_progress;
     //this.status_panel.setVisible(false);
     this.mex = mex;
     this.parseResults(mex);
@@ -899,6 +900,14 @@ BQWebApp.prototype.showOutputs = function (mex, key) {
         var result_label = document.getElementById("webapp_results_summary");
         if (result_label)
             result_label.innerHTML = '<h3>Selected analysis is still running, wait for it to complete...</h3>';
+        // init properly
+        this.onstarted(mex);
+        // ensure button is showing "STOP"
+        var button_run = document.getElementById("webapp_run_button");
+        button_run.childNodes[0].nodeValue = "STOP";
+        if (this.ms) {
+            this.ms.checkMexStatus(mex);   // keep updating mex status
+        }
     }
 };
 
