@@ -1125,22 +1125,23 @@ CanvasPolyLine.prototype.onDragFree = function(e, start){
     //points[2*index + 0] = ex;
     //points[2*index + 1] = ey;
 
-    var bx = points[2*index - 2];
-    var by = points[2*index - 1];
-    //var bx = points[0];
-    //var by = points[1];
-    var dx = ex - bx;
-    var dy = ey - by;
+    // dima: next lines seem unneccessary
+    // var bx = points[2*index - 2];
+    // var by = points[2*index - 1];
+    // //var bx = points[0];
+    // //var by = points[1];
+    // var dx = ex - bx;
+    // var dy = ey - by;
 
-    //var n = g.vertices.length;
-    //var dx = start.x - pte.x;
-    //var dy = start.y - pte.y;
-    var dp = dx*dx + dy*dy;
-    if(dp < 100){
-        points.push(ex,ey);
-        //start = [cex,ey];
-        //g.vertices.push (new BQVertex (cx + ex, cy + ey, v.z, v.t, null, index));
-    }
+    // //var n = g.vertices.length;
+    // //var dx = start.x - pte.x;
+    // //var dy = start.y - pte.y;
+    // var dp = dx*dx + dy*dy;
+    // if(dp < 100){
+    //     points.push(ex,ey);
+    //     //start = [cex,ey];
+    //     //g.vertices.push (new BQVertex (cx + ex, cy + ey, v.z, v.t, null, index));
+    // }
 
     me.bbox = me.calcBbox();
     me.renderer.drawEditLayer();
@@ -1162,8 +1163,7 @@ CanvasPolyLine.prototype.visvalingamSimplify = function() {
     points = [];
     for(var i=0; i<pp.length; ++i) {
         p = pp[i];
-        points.push(p.x);
-        points.push(p.y);
+        points.push(p.x, p.y);
     }
     this.sprite.points(points);
 };
@@ -1176,10 +1176,12 @@ CanvasPolyLine.prototype.moveLocal = function(){
     var sy = this.sprite.scaleY();
     var z = this.gob.vertices[0].z;
     var t = this.gob.vertices[0].t;
+
+    this.gob.vertices = [];
     for (var i=0, ii=0; i<points.length-1; i+=2, ++ii){
         var x = points[i];
         var y = points[i+1];
-        this.gob.vertices[ii] = new BQVertex (sx*x + offx, sy*y + offy, z, t, null, ii);
+        this.gob.vertices.push(new BQVertex (sx*x + offx, sy*y + offy, z, t, null, ii));
     }
 }
 

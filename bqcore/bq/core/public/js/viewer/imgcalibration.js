@@ -614,7 +614,7 @@ Ext.define('BQ.viewer.Calibration', {
                     onlyedit: true,
                     nosave: true,
                     editprimitives: 'line',
-                    no_semantic_types: true,
+                    semantic_types: false,
                 },
 
                 listeners: {

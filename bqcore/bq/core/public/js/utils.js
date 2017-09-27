@@ -195,18 +195,24 @@ BQ.util.formatInt = function(n, len) {
     return s;
 }
 
-BQ.util.clone = function(item) {
+BQ.util.clone = function(item, skiptemplate) {
     var type,
         i,
         j,
         k,
+        N=0,
         clone,
         key,
         t,
-        as_is = {'doc':0, 'parent':0, 'xmlfields':0};
+        as_is = {'doc':0, 'parent':0, 'xmlfields':0, 'shape':0, 'edit_parent': 0, },
+        ignore = {'parent':0, 'shape':0, 'doc':0, 'edit_parent': 0, };
 
     if (item === null || item === undefined) {
         return item;
+    }
+
+    if (skiptemplate === true && item.resource_type === "template") {
+        return undefined;
     }
 
     // DOM nodes
@@ -220,29 +226,44 @@ BQ.util.clone = function(item) {
 
     // Array
     if (type === '[object Array]') {
-        i = item.length;
+        N = item.length;
         clone = [];
-        while (i--) {
-            clone[i] = BQ.util.clone(item[i]);
+        for (i=0; i<N; ++i) {
+            t = BQ.util.clone(item[i], skiptemplate);
+            if (t !== undefined && t !== null)
+                clone.push(t);
         }
+
     } else if (type === '[object Function]') {
         return;
     } else if (type === '[object Object]' && item.constructor === Object) {
         clone = {};
         for (key in item) {
-            if (key in as_is)
+            if (key in ignore ) {
+                delete clone[key];
+            } else if (key in as_is) {
                 clone[key] = item[key];
-            else
-                clone[key] = BQ.util.clone(item[key]);
+            } else {
+                t = BQ.util.clone(item[key], skiptemplate);
+                if (t !== undefined && t !== null)
+                    clone[key] = t;
+                else
+                    delete clone[key];
+            }
         }
     } else if (type === '[object Object]' && item.resource_type) {
         clone = BQFactory.makeShortCopy(item);
         for (key in item) {
-            if (key in as_is)
+            if (key in ignore) {
+                delete clone[key];
+            } else if (key in as_is) {
                 clone[key] = item[key];
-            else if (toString.call(item[key]) !== '[object Function]') {
-                t = BQ.util.clone(item[key]);
-                if (t) clone[key] = t;
+            } else if (toString.call(item[key]) !== '[object Function]') {
+                t = BQ.util.clone(item[key], skiptemplate);
+                if (t !== undefined && t !== null)
+                    clone[key] = t;
+                else
+                    delete clone[key];
             }
         }
     }

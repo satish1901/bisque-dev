@@ -400,7 +400,7 @@ Ext.define('BQ.overlayEditor.Window', {
                 editprimitives: 'point',
                 showmanipulators: false,
                 intialMode: 'point',
-                no_semantic_types: true,
+                semantic_types: false,
                 widget: this,
             },
             listeners: {

@@ -473,7 +473,7 @@ BQXml.prototype.xmlNode = function (content) {
 
     var fields = this.xmlfields;
     for (var f in fields ){
-        if (this[fields[f]] != undefined  &&  this[fields[f]] != null )
+        if (this[fields[f]] !== undefined  &&  this[fields[f]] !== null )
             resource.setAttribute(fields[f], this[fields[f]]);
     }
 
@@ -816,7 +816,7 @@ function clean_resources(resource, skiptemplate) {
         var p=resource.children.length-1;
         while (p>=0) {
             var t = resource.children[p];
-            if (t.resource_type in BQObject.types_skip)
+            if (t && t.resource_type in BQObject.types_skip)
                 resource.children.splice(p, 1);
             p--;
         }
@@ -834,7 +834,7 @@ function clean_resources(resource, skiptemplate) {
 };
 
 BQObject.prototype.clone = function (skiptemplate) {
-    var resource = BQ.util.clone(this);
+    var resource = BQ.util.clone(this, skiptemplate);
     clean_resources(resource, skiptemplate);
     return resource;
 };
@@ -1475,6 +1475,41 @@ BQGObject.color_html2rgb = function(c) {
     return rgb;
 };
 
+BQGObject.colors_per_type = {
+   default: '#FF0000',
+};
+
+BQGObject.parse_colors_from_gob_template = function(resource) {
+    /*
+    <tag name="gobject" value="freehand_line" />
+    <tag name="gobject" value="foreground">
+        <tag name="color" value="#00FF00" type="color" />
+    </tag>
+    <tag name="gobject" value="background">
+        <tag name="color" value="#FF0000" type="color" />
+    </tag>
+    */
+    var template = resource.find_children('template');
+    if (template && template instanceof Array && template.length>0) {
+        template = template[0];
+    }
+    if (!template) return;
+
+    // walk gobject tags and set colors
+    var i=0,
+        t=null,
+        d=null;
+    for (i=0; (t=template.tags[i]); ++i) {
+        if (t.name === 'gobject') {
+            d = t.toDict(false);
+            if (d.color) {
+                BQGObject.colors_per_type[t.value] = d.color;
+            }
+        }
+    }
+};
+
+
 BQGObject.confidence_tag = 'confidence';
 BQGObject.confidence_cutoff = 0;
 BQGObject.color_gradient = [];
@@ -1530,6 +1565,9 @@ BQGObject.prototype.getColor = function (r,g,b,a,no_default) {
         return c;
     } else if (r && g && b && a) {
         return {r: r, g: g, b: b, a: a};
+    } else if (this.type in BQGObject.colors_per_type) {
+        var c = BQGObject.colors_per_type[this.type];
+        return Kinetic.Util._hexToRgb(c);
     } else if (no_default===true) {
         return;
     }
