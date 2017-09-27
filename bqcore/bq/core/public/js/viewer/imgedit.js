@@ -36,7 +36,7 @@ function ImgEdit (viewer,name){
   if ('editprimitives' in this.viewer.parameters && this.viewer.parameters.editprimitives)
     primitives = this.viewer.parameters.editprimitives.toLowerCase().split(',');
   this.editprimitives = {};
-  this.no_semantic_types = this.viewer.parameters.no_semantic_types;
+  this.semantic_types = this.viewer.parameters.semantic_types;
   for (var i=0; i < primitives.length; i++)
     this.editprimitives[ primitives[i] ] = '';
 }
@@ -149,7 +149,7 @@ ImgEdit.prototype.createEditMenu = function(surf) {
         renderTo: surf,
         widget: this.viewer.widget,
         editprimitives: this.editprimitives,
-        no_semantic_types: this.no_semantic_types,
+        semantic_types: this.semantic_types,
         listeners: {
             scope: this,
             selected: this.onSelectedType,
@@ -501,9 +501,7 @@ ImgEdit.prototype.test_save_permission = function (uri) {
 };
 
 ImgEdit.prototype.on_error = function(gob, e){
-
-
-    if(e.request.status === 403 &&
+    if (e.request.status === 403 &&
        !this.issuedPrivelageWarning){
 
         if(e.message.length > 256)
@@ -512,14 +510,12 @@ ImgEdit.prototype.on_error = function(gob, e){
             BQ.ui.warning(e.message + ' Any changes made during this session will not be saved.');
         this.insufficientPrivelage = true;
         this.issuedPrivelageWarning = true;
-    }
-
-    else if(e.request.status >= 400){
+    } else if (e.request.status < 300) {
        this.remove_gobject(gob);
+    } else {
+        this.viewer.parameters.onerror(e);
     }
 
-    else
-        this.viewer.parameters.onerror(e)
     //this is here because its required to release the ui from working state
     this.viewer.parameters.ondone();
 };
@@ -1031,10 +1027,10 @@ ImgEdit.prototype.new_freehand = function (type, parent, e, x, y) {
     this.renderer.unselectCurrent();
     this.renderer.selectedSet = [g.shape];
     this.renderer.select(this.renderer.selectedSet);
-    var n = g.vertices.length;
-    var dx = g.vertices[n-1].x - pt.x;
-    var dy = g.vertices[n-1].y - pt.y;
-    var dp = dx*dx + dy*dy;
+    //var n = g.vertices.length;
+    //var dx = g.vertices[n-1].x - pt.x;
+    //var dy = g.vertices[n-1].y - pt.y;
+    //var dp = dx*dx + dy*dy;
     this.renderer.setmousemove(function(e){
         g.shape.onDragFree(e, [x,y]);
         me.display_gob_info(g);

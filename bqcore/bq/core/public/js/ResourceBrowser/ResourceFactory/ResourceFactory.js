@@ -620,10 +620,7 @@ Ext.define('Bisque.Resource.Page',
 
     onAfterLayout : function() {
         this.onResourceRender();
-        var me = this;
-        BQ.Preferences.load('user', '', function(pref) {
-            me.addProvenanceViewer();
-        });
+        this.addProvenanceViewer();
     },
 
     onResourceRender : function()
@@ -681,6 +678,11 @@ Ext.define('Bisque.Resource.Page',
     },
 
     addProvenanceViewer : function() {
+        if (!BQ.Preferences.isLoaded('user')) {
+            BQ.Preferences.on('update_user_pref', this.addProvenanceViewer, this);
+            return;
+        }
+
         // if user preferences request provenance, add this tab now
         // if user wants to see provenance tab, add it now
         var show_provenance = BQ.Preferences.get('user', 'ResourceViewer/Show Provenance', false),

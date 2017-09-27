@@ -550,6 +550,8 @@ Ext.define('BQ.selectors.Resource', {
     onfetched: function(R) {
         this._fetched_resource = R;
         if (this._fetched_gobs) {
+            this._fetched_gobs[0].template = this.resource.gobjects[0].template;
+            this._fetched_gobs[0].children = this.resource.gobjects[0].children;
             this._fetched_resource.gobjects = this._fetched_gobs;
             this.resource.gobjects = this._fetched_gobs;
             this.onselected(this._fetched_resource);
@@ -803,13 +805,17 @@ Ext.define('BQ.selectors.Gobject', {
         var resource = this.resource;
         var template = resource.template || {};
         var editprimitives = (template.gobject instanceof Array)? template.gobject.join(','):template.gobject;
+        var semantic_types = template.semantic_types;
+        if (semantic_types === 'false') semantic_types = false;
+        if (semantic_types === 'true') semantic_types = true;
+        BQGObject.parse_colors_from_gob_template(resource);
         var parameters = {
             nogobjects: '',
             nosave: '',
             alwaysedit: '',
             onlyedit: '',
             editprimitives: editprimitives,
-            no_semantic_types: true,
+            semantic_types: semantic_types,
         };
 
         if (template.color) {

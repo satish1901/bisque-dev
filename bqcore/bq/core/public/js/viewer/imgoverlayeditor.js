@@ -89,7 +89,7 @@ Ext.define('BQ.overlayEditor.Window', {
                 onlyedit: true,
                 nosave: true,
                 editprimitives: 'point',
-                no_semantic_types: true,
+                semantic_types: false,
             },
             listeners: {
                 'changed': function(el) {

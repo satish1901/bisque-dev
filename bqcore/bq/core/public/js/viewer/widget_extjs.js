@@ -26,10 +26,15 @@
     gobjects       - load gobjects from the givel URL, 'gobjects':'http://gobejcts_url' or a BQGobject or a vector of BQGObject
 
     noedit         - read-only view for gobjects
-      alwaysedit     - instantiates editor right away and disables hiding it
-      nosave         - disables saving gobjects
-      editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
-                       can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
+    alwaysedit     - instantiates editor right away and disables hiding it
+    nosave         - disables saving gobjects
+    editprimitives - only load edit for given primitives, 'editprimitives':'point,polyline'
+                     can be one of: 'Point,Rectangle,Polyline,Polygon,Circle'
+                     may contain semantic types as well
+    semantic_types - false - hides the gobject types list
+                     true - shows the gobject types list
+                     'require' - shows and does not permit non-sematci types from being selected
+
     gobjectDeleted
     gobjectCreated
 

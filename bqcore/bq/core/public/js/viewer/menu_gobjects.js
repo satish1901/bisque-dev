@@ -7,8 +7,11 @@
   Configurations:
     widget : main extjs component holding the component
              needed in order to implement proper hiding
-    editprimitives: primitives config from the viewer, constraints visibility
-    no_semantic_types: if true hides the gobject types list
+    editprimitives: specific graphical primitives to constraint selection
+                    may contain semantic types as well
+    semantic_types: false - hides the gobject types list
+                    true - shows the gobject types list
+                    'require' - shows and does not permit non-sematci types from being selected
 
   Events:
     this.fireEvent( 'selected', this.primitive, this.semantic, this );
@@ -112,6 +115,13 @@ Ext.define('BQ.editor.GraphicalMenu', {
     initComponent : function() {
         this.callParent();
         this.editprimitives = this.editprimitives || BQGObject.primitives;
+        this.editsemantic = [];
+        var p=null;
+        for (p in this.editprimitives) {
+            if (!(p in BQGObject.primitives)) {
+                this.editsemantic.push(p);
+            }
+        }
     },
 
     onMenuToggle: function(e) {
@@ -122,7 +132,7 @@ Ext.define('BQ.editor.GraphicalMenu', {
     },
 
     needsShow: function() {
-        if (this.no_semantic_types === true && this.num_buttons_visible<=1)
+        if (this.semantic_types === false && this.num_buttons_visible<=1)
             return false;
         return true;
     },
@@ -175,7 +185,7 @@ Ext.define('BQ.editor.GraphicalMenu', {
             scale: 'large',
         }];
 
-        if (this.no_semantic_types !== true) {
+        if (this.semantic_types !== false) {
             items = items.concat([{
                 xtype: 'tbspacer',
                 height: 10,
@@ -193,6 +203,7 @@ Ext.define('BQ.editor.GraphicalMenu', {
                     text: 'Add new semantic type',
                     scale: 'large',
                     iconCls: 'add',
+                    hidden: this.editsemantic.length>0,
                     handler: this.createComplexGobject,
                     scope: this,
                     tooltip: 'Create a new custom graphical annotation wrapping any primitive annotation',
@@ -202,6 +213,8 @@ Ext.define('BQ.editor.GraphicalMenu', {
                 itemId: 'semanticTypesPanel',
                 border: 0,
                 flex: 10,
+                user_defined: this.editsemantic,
+                semantic_types: this.semantic_types,
                 listeners: {
                     scope: this,
                     select: this.onSemantic,
@@ -287,6 +300,7 @@ Ext.define('BQ.editor.GraphicalMenu', {
 
 //-----------------------------------------------------------------------
 // BQ.grid.GobsPanel - list view of available gobjects types
+//   user_defined: this.editsemantic,
 //-----------------------------------------------------------------------
 
 function getType(v, record) {
@@ -344,7 +358,7 @@ Ext.define('BQ.grid.GobsPanel', {
             itemId: 'gob_types_panel',
             header: false,
             hideHeaders: true,
-            allowDeselect: true,
+            allowDeselect: this.semantic_types === 'require' ? false : true,
             /*store: {
                 model : 'Gobs',
                 autoLoad : true,
@@ -381,6 +395,10 @@ Ext.define('BQ.grid.GobsPanel', {
         this.setLoading('Fetching types of graphical annotations');
         BQ.Preferences.on('update_user_pref', this.onPreferences, this);
         this.onPreferences();
+        if (this.user_defined) {
+            this.onTypesList(this.user_defined);
+            return;
+        }
         Ext.Ajax.request({
             url: '/data_service/image/?gob_types=true&wpublic=false',
             callback: function(opts, succsess, response) {
@@ -446,6 +464,25 @@ Ext.define('BQ.grid.GobsPanel', {
         } // for types
 
         this.typesstore.loadData(this.types);
+        this.doselect();
+    },
+
+    onTypesList : function(a) {
+        this.setLoading(false);
+        this.types = [];
+        var t=undefined;
+        for (var i=0; t=a[i]; ++i) {
+            if (!(t in this.types_ignore)){
+                var ix = this.types.push({
+                    Type   : t,
+                    Custom : t,
+                });
+            }
+            //this.formats_index[name] = this.formats[ix-1];
+        } // for types
+
+        this.typesstore.loadData(this.types);
+        this.doselect();
     },
 
     addType: function(newType) {
@@ -473,8 +510,17 @@ Ext.define('BQ.grid.GobsPanel', {
     },
 
     deselect: function() {
+        if (this.semantic_types === 'require') return;
         var grid = this.queryById('gob_types_panel');
         if (grid) grid.getSelectionModel().deselectAll();
+    },
+
+    doselect: function() {
+        if (this.semantic_types === 'require') {
+            var grid = this.queryById('gob_types_panel');
+            if (grid)
+                setTimeout(function() { grid.getSelectionModel().select(0); }, 100);
+        }
     },
 });
 
