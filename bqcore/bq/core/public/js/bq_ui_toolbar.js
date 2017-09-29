@@ -866,95 +866,6 @@ Ext.define('BQ.Application.Toolbar', {
         this.queryById('menu_create_resource').handler = function() {this.createResource(mytypes);};
     },
 
-    /*
-    createResourceFromTemplate  :   function(template)
-    {
-        if (!template)
-        {
-            BQFactory.request({
-                uri     :   '/data_service/template/',
-                cb      :   Ext.bind(this.createResourceFromTemplate, this),
-                errorcb :   function(error){BQ.ui.error('createResourceFromTemplate: Error occured while fetching list of available templates.'+error.message, 4000)}
-                }
-        );
-
-            return;
-        }
-
-        var store = Ext.create('Ext.data.Store', {
-            fields  :   ['name', 'uri'],
-            data    :   template.children
-        });
-
-        var formPanel = Ext.create('Ext.form.Panel',
-        {
-            frame           :   true,
-            width           :   350,
-            defaultType     :   'textfield',
-            bodyStyle       :   {
-                                    padding         :   '10px'
-                                },
-            fieldDefaults   :   {
-                                    msgTarget       :   'side',
-                                    labelWidth      :   100
-                                },
-            defaults        :   {
-                                    anchor          : '100%',
-                                    allowBlank      :   false,
-                                },
-            items           :   [{
-                                    xtype           :   'combobox',
-                                    name            :   'template',
-                                    fieldLabel      :   'Select template',
-                                    store           :   store,
-                                    displayField    :   'name',
-                                    valueField      :   'uri',
-                                    editable        :   false
-                                }, {
-                                    fieldLabel      :   'Name',
-                                    name            :   'name'
-                                }]
-        });
-
-
-        var display = Ext.create('Ext.window.Window',
-        {
-            items       :   formPanel,
-            modal       :   true,
-            border      :   false,
-            title       :   'Create resource from template',
-            buttonAlign :   'center',
-            buttons     :   [
-                                {
-                                    text    :   'Create',
-                                    scope   :   this,
-                                    margin  :   3,
-                                    handler :   function(btn)
-                                    {
-                                        var form = formPanel.getForm();
-
-                                        if (form.isValid())
-                                        {
-                                            var input = form.getValues();
-                                            BQ.TemplateManager.createResource({name: input.name}, this.onResourceCreated, input.template+'?view=deep');
-                                        }
-                                    }
-                                },
-                                {
-                                    text    :   'Cancel',
-                                    scope   :   this,
-                                    margin  :   3,
-                                    handler :   function()
-                                    {
-                                        display.destroy();
-                                    }
-                                },
-                            ]
-        }).show();
-
-    },
-   */
-
     createResource : function(types, def) {
         var mykeys =  Ext.Object.merge(types, BQ.resources.preferred);
         if (def) mykeys[def] = null;
@@ -1072,7 +983,7 @@ Ext.define('BQ.Application.Toolbar', {
             'Please enter a new <b>'+type+'</b> name:',
             function(btn, name) {
                 if (btn !== 'ok' || !name) return;
-                BQ.TemplateManager.createResource({name: name}, this.onResourceCreated, u+'?view=deep');
+                BQ.TemplateManager.createResource({name: name}, this.onResourceCreated, undefined, u);
             },
             this
         );

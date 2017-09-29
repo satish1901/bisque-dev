@@ -44,12 +44,14 @@ Ext.define('BQ.TagRenderer.Base', {
                 return templateObj;
             } else if ( template instanceof Object) {
                 var templateRes = new BQTemplate(), newTag;
-                for (var i in template)
-                templateRes.addtag({
-                    name : i,
-                    value : template[i].toString(),
-                    type : typeof template[i]
-                });
+                for (var i in template) {
+                    if (template[i] !== undefined)
+                    templateRes.addtag({
+                        name : i,
+                        value : template[i].toString(),
+                        type : typeof template[i]
+                    });
+                }
                 templateRes.resource_type = 'template';
                 return templateRes;
             }
@@ -72,7 +74,9 @@ Ext.define('BQ.TagRenderer.Base', {
 
             return value;
         },
+
     },
+
 });
 
 Ext.define('BQ.TagRenderer.String', {
@@ -367,4 +371,199 @@ Ext.define('BQ.TagRenderer.AnnotationStatus', {
             editable : false,
         };
     }
+});
+
+
+Ext.define('BQ.TagRenderer.Gobject', {
+    extend : 'BQ.TagRenderer.Base',
+    alias : 'widget.bqfieldgobject',
+
+    inheritableStatics : {
+        componentName : 'Gobject',
+        template : {
+            Type: undefined,
+            defaultValue : undefined,
+            allowBlank : undefined,
+            Editable : undefined,
+
+            color : '',
+            vertices : undefined,
+        }
+    },
+
+    getRenderer : function(config) {
+        return {
+            xtype: 'textfield',
+            name: 'type',
+            fieldLabel: 'Type',
+            allowBlank: false,
+        };
+    },
+
+});
+
+Ext.define('BQ.TagRenderer.Point', {
+    extend : 'BQ.TagRenderer.Gobject',
+    alias : 'widget.bqfieldpoint',
+
+    inheritableStatics : {
+        componentName : 'Point',
+        template : {
+            Type: undefined,
+            defaultValue : undefined,
+            allowBlank : undefined,
+            Editable : undefined,
+
+            vertices : '100,100',
+            color : '',
+        }
+    },
+
+});
+
+Ext.define('BQ.TagRenderer.Line', {
+    extend : 'BQ.TagRenderer.Gobject',
+    alias : 'widget.bqfieldline',
+
+    inheritableStatics : {
+        componentName : 'Line',
+        template : {
+            Type: undefined,
+            defaultValue : undefined,
+            allowBlank : undefined,
+            Editable : undefined,
+
+            vertices : '10,10;100,100',
+            color : '',
+        }
+    },
+
+});
+
+Ext.define('BQ.TagRenderer.Polygon', {
+    extend : 'BQ.TagRenderer.Gobject',
+    alias : 'widget.bqfieldpolygon',
+
+    inheritableStatics : {
+        componentName : 'Polygon',
+        template : {
+            Type: undefined,
+            defaultValue : undefined,
+            allowBlank : undefined,
+            Editable : undefined,
+
+            vertices : '10,10;100,100;40,40',
+            color : '',
+        }
+    },
+
+});
+
+Ext.define('BQ.TagRenderer.Polyline', {
+    extend : 'BQ.TagRenderer.Gobject',
+    alias : 'widget.bqfieldpolyline',
+
+    inheritableStatics : {
+        componentName : 'Polyline',
+        template : {
+            Type: undefined,
+            defaultValue : undefined,
+            allowBlank : undefined,
+            Editable : undefined,
+
+            vertices : '10,10;100,100;40,40',
+            color : '',
+        }
+    },
+});
+
+Ext.define('BQ.TagRenderer.Circle', {
+    extend : 'BQ.TagRenderer.Gobject',
+    alias : 'widget.bqfieldcircle',
+
+    inheritableStatics : {
+        componentName : 'Circle',
+        template : {
+            Type: undefined,
+            defaultValue : undefined,
+            allowBlank : undefined,
+            Editable : undefined,
+
+            vertices : '10,10;100,100',
+            color : '',
+        }
+    },
+});
+
+Ext.define('BQ.TagRenderer.Ellipse', {
+    extend : 'BQ.TagRenderer.Gobject',
+    alias : 'widget.bqfieldellipse',
+
+    inheritableStatics : {
+        componentName : 'Ellipse',
+        template : {
+            Type: undefined,
+            defaultValue : undefined,
+            allowBlank : undefined,
+            Editable : undefined,
+
+            vertices : '10,10;100,100;40,40',
+            color : '',
+        }
+    },
+});
+
+Ext.define('BQ.TagRenderer.Rectangle', {
+    extend : 'BQ.TagRenderer.Gobject',
+    alias : 'widget.bqfieldrectangle',
+
+    inheritableStatics : {
+        componentName : 'Rectangle',
+        template : {
+            Type: undefined,
+            defaultValue : undefined,
+            allowBlank : undefined,
+            Editable : undefined,
+
+            vertices : '10,10;100,100',
+            color : '',
+        }
+    },
+});
+
+Ext.define('BQ.TagRenderer.Square', {
+    extend : 'BQ.TagRenderer.Gobject',
+    alias : 'widget.bqfieldsquare',
+
+    inheritableStatics : {
+        componentName : 'Square',
+        template : {
+            Type: undefined,
+            defaultValue : undefined,
+            allowBlank : undefined,
+            Editable : undefined,
+
+            vertices : '10,10;100,100',
+            color : '',
+        }
+    },
+});
+
+Ext.define('BQ.TagRenderer.Label', {
+    extend : 'BQ.TagRenderer.Gobject',
+    alias : 'widget.bqfieldlabel',
+
+    inheritableStatics : {
+        componentName : 'Label',
+        template : {
+            Type: undefined,
+            defaultValue : undefined,
+            allowBlank : undefined,
+            Editable : undefined,
+
+            vertices : '10,10;100,100',
+            text: 'My label',
+            color : '',
+        }
+    },
 });

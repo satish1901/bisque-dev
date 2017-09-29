@@ -793,13 +793,17 @@ Ext.define('Bisque.ResourceTagger', {
             dataset: menuItem.name,
             viewMode: 'ViewerLayouts',
             selType: 'SINGLE',
+            original: this.resource,
             listeners:
             {
                 'Select': function (me, resource) {
                     if (resource instanceof BQTemplate) {
                         function applyTemplate(response) {
                             if (response == 'yes')
-                                BQ.TemplateManager.createResource({ name: '', noSave: true }, Ext.bind(this.onResourceCreated, this), resource.uri + '?view=deep');
+                                //BQ.TemplateManager.createResource({ name: '', noSave: true }, Ext.bind(this.onResourceCreated, this), resource.uri + '?view=deep');
+                                BQ.TemplateManager.createResource({ name: '', noSave: false }, function() {
+                                    location.reload();
+                                }, me.original, resource.uri);
                         }
 
                         if (this.resource.type)
