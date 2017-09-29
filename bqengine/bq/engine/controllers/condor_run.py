@@ -5,6 +5,7 @@ import logging
 import string
 import subprocess
 import StringIO
+import platform
 
 from bq.util.configfile import ConfigFile
 from bqapi import BQSession
@@ -116,6 +117,8 @@ class CondorRunner (CommandRunner):
         return self.command_execute
 
     def command_execute(self, **kw):
+        self.info ("ExecuteOn %s",  platform.node())
+
         cmd = ['condor_submit_dag', self.helper.dag_path]
         process = dict(command_line = cmd, mex = self.mexes[0])
         self.info( "SUBMIT %s in %s " % (cmd, self.mexes[0].get('staging_path')))
@@ -174,16 +177,18 @@ class CondorRunner (CommandRunner):
     def command_kill(self, **kw):
         """Kill the running module if possible
         """
+        self.info ("Kill On %s",  platform.node())
         mex = kw.get('mex_tree')
         topmex = self.mexes[0]
         if mex is not None:
             mex_id = mex.get('resource_uniq')
             proc_id = self.runner_ids.get(mex_id)
             if proc_id:
-                message = subprocess.Popen (['condor_rm', proc_id, ],
+                pk = subprocess.Popen (['condor_rm', proc_id, ],
                                             cwd=topmex.get('staging_path'),
-                                            stdout = subprocess.PIPE).communicate()[0]
-                self.info("status = %s " , message)
+                                            stdout = subprocess.PIPE)
+                message = pk.communicate()[0]
+                self.info("status = %s message= %s" , pk.returncode, message)
                 if self.session is None:
                     mex_url = topmex.named_args['mex_url']
                     token   = topmex.named_args['bisque_token']
@@ -193,7 +198,7 @@ class CondorRunner (CommandRunner):
                 self.debug("Mex id %s not found", mex_id)
         else:
             self.debug("No mex provided")
-            
+
         return None
 
     def command_status(self, **kw):
