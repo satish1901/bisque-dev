@@ -115,6 +115,7 @@ Ext.define('Bisque.TemplateTagger', {
             sortable : true,
             dataIndex : 'value',
             renderer : Bisque.ResourceTagger.BaseRenderer,
+            editable: false,
             field : {
                 xtype : 'combobox',
                 displayField : 'value',

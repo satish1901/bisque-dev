@@ -1414,6 +1414,9 @@ else
         label    : 'Label',
     };
 
+BQGObject.objects = BQ.util.clone(BQGObject.primitives);
+BQGObject.objects['gobject'] = 'Gobject';
+
 BQGObject.primitives_help = {
     point    : '<h2>Point</h2> <li>Click to create points',
     line     : '<h2>Line</h2> <li>Two clicks to create a line',
@@ -1475,8 +1478,8 @@ BQGObject.color_html2rgb = function(c) {
     return rgb;
 };
 
-BQGObject.colors_per_type = {
-   default: '#FF0000',
+BQGObject.styles_per_type = {
+   default: { color: '#FF0000', },
 };
 
 BQGObject.parse_colors_from_gob_template = function(resource) {
@@ -1503,7 +1506,9 @@ BQGObject.parse_colors_from_gob_template = function(resource) {
         if (t.name === 'gobject') {
             d = t.toDict(false);
             if (d.color) {
-                BQGObject.colors_per_type[t.value] = d.color;
+                var s = BQGObject.styles_per_type[t.value] || {};
+                s.color = d.color;
+                BQGObject.styles_per_type[t.value] = s;
             }
         }
     }
@@ -1565,8 +1570,8 @@ BQGObject.prototype.getColor = function (r,g,b,a,no_default) {
         return c;
     } else if (r && g && b && a) {
         return {r: r, g: g, b: b, a: a};
-    } else if (this.type in BQGObject.colors_per_type) {
-        var c = BQGObject.colors_per_type[this.type];
+    } else if (this.type in BQGObject.styles_per_type && BQGObject.styles_per_type[this.type].color) {
+        var c = BQGObject.styles_per_type[this.type].color;
         return Kinetic.Util._hexToRgb(c);
     } else if (no_default===true) {
         return;

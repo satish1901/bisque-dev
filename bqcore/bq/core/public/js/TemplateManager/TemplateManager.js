@@ -8,13 +8,13 @@ Ext.define('BQ.TemplateManager',
         },
 
         // Create a blank resource from a template
-        createResource : function(config, cb, template)
+        createResource : function(config, cb, original, template)
         {
             if (!(template instanceof BQTemplate))
             {
                 BQFactory.request({
-                    uri     :   template,
-                    cb      :   Ext.pass(BQ.TemplateManager.createResource, [config, cb]),
+                    uri     :   template + '?view=deep',
+                    cb      :   Ext.pass(BQ.TemplateManager.createResource, [config, cb, original]),
                     cache   :   false,
                 });
             }
@@ -26,37 +26,83 @@ Ext.define('BQ.TemplateManager',
 
                 // Assume the template is fully loaded
                 var resource = new BQResource();
-
-                Ext.apply(resource, {
-                    resource_type   :   template.name,
-                    type            :   parser.pathname,
-                }, config);
+                if (!original) {
+                    Ext.apply(resource, {
+                        resource_type   :   template.name,
+                        type            : parser.pathname,
+                    }, config);
+                } else {
+                    resource.uri = original ? original.uri : null;
+                    resource.type = parser.pathname;
+                }
 
                 resource = copyTags.call(this, template, resource);
 
                 if (config.noSave)
                     cb(resource, template);
                 else
+                    var url = original ? undefined : '/data_service/' + resource.resource_type + '?view=deep';
                     //resource.save_('/data_service/' + resource.resource_type + '?view=deep',
-                    resource.save_('/data_service/resource?view=deep',
+                    resource.save_(url,
                       cb,
                       function(e) {
                           BQ.ui.error('An error occured while trying to create a resource from template: <br>' + e.message_short);
-                    });
+                    }, 'post');
             }
 
             function copyTags(template, resource)
             {
-                var parser = document.createElement('a');
+                var parser = document.createElement('a'),
+                    i=0,
+                    tag=null,
+                    g=null;
 
-                for(var i = 0; i < template.tags.length; i++)
-                {
-                    var tag = template.tags[i];
+                for (i=0; (tag=template.tags[i]); ++i) {
                     parser.href = tag.uri;
-                    copyTags.call(this, tag, resource.addtag({name:tag.name, value:tag.template["defaultValue"] || '', type: parser.pathname}));
+                    if (!(tag.value.toLowerCase() in BQGObject.objects)) {
+                        copyTags.call(this, tag, resource.addtag({
+                            name:tag.name,
+                            value:tag.template["defaultValue"] || '',
+                            type: parser.pathname,
+                        }));
+                    } else {
+                        var type = tag.value === 'Gobject' ? tag.name : tag.value.toLowerCase(),
+                            vrtx = [],
+                            l = (tag.template['vertices'] || '').split(';'),
+                            j=0, s=null, v=null;
+                        for (j=0; (s=l[j]); ++j) {
+                            v = s.split(',');
+                            var x = v[0] ? parseInt(v[0]) : undefined;
+                            var y = v[1] ? parseInt(v[1]) : undefined;
+                            var z = v[2] ? parseInt(v[2]) : undefined;
+                            var t = v[3] ? parseInt(v[3]) : undefined;
+                            var ch = v[4] ? parseInt(v[4]) : undefined;
+                            vrtx.push(new BQVertex(x, y, z, t, ch));
+                        }
+
+                        var g = resource.addgobjects({
+                            type: type,
+                            vertices: vrtx,
+                            value: tag.template.text
+                            //name: tag.name,
+                            //value:this.template["defaultValue"] || '',
+                            //type: this.template.Type,
+                        });
+
+                        if (tag.template.color && tag.template.color.indexOf('#')===0) {
+                            g.addtag({
+                                name: 'color',
+                                value: tag.template.color,
+                                type: 'color',
+                            });
+                        }
+
+                        copyTags.call(this, tag, g);
+                    }
                 }
                 return resource;
             }
+
         },
     }
 });
@@ -167,6 +213,16 @@ Ext.define('BQ.TemplateManager.Creator',
                     xtype    : 'hyperreference',
                     viewMode : 'widget',
                 },
+
+                'color' : {
+                    xtype: 'textareafield',
+                    emptyText: 'HTML style color: #FF0000'
+                },
+                'vertices' : {
+                    xtype: 'textareafield',
+                    emptyText: 'Semi-colon separated 5D vertices: X1,Y1,Z1;X2,Y2,Z2'
+                },
+
             },
         });
 
