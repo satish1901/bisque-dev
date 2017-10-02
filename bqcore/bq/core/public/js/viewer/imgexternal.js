@@ -298,15 +298,23 @@ ImgExternal.prototype.calibrateResolution = function () {
 };
 
 ImgExternal.prototype.onPreferences = function () {
-    var resource_uniq = this.viewer.image.resource_uniq;
+    var viewer = this.viewer,
+        resource_uniq = viewer.image.resource_uniq;
     //if (BQ.Preferences.get('user', 'ResourceBrowser/Images/enable_annotation_status', false) === true) {
     if (!this.annotation_status &&
         BQ.Preferences.get(resource_uniq, 'ResourceBrowser/Images/enable_annotation_status', false) === true) {
-        this.annotation_status = this.viewer.addMenu({
+        this.annotation_status = viewer.addMenu({
             xtype: 'bqannotationstatus',
             itemId: 'annotation_status',
             needsAuth: true,
-            resource : this.viewer.image,
+            resource : viewer.image,
+            listeners: {
+                //scope: this,
+                changed: function(cnt) {
+                    if (viewer.parameters.tagsChanged)
+                        viewer.parameters.tagsChanged();
+                },
+            },
         });
     }
 };

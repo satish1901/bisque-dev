@@ -730,6 +730,11 @@ Ext.define('Bisque.Resource.Image.Page', {
                         this.gobjectTagger.deselectAll();
                 },
 
+                tags_changed: function() {
+                    var tagger = this.queryById('tagger');
+                    tagger.reload();
+                },
+
                 loadedPhys: this.onImagePhys,
                 working : this.onworking,
                 done    : this.ondone,
@@ -901,6 +906,7 @@ Ext.define('Bisque.Resource.Image.Page', {
 
         var resourceTagger = {
             xtype: 'bq-tagger',
+            itemId: 'tagger',
             resource : this.resource,
             title : 'Annotations',
         };

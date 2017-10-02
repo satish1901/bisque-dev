@@ -100,7 +100,8 @@ Ext.define('BQ.button.AnnotationStatus', {
     onSuccess: function(r) {
         this.setLoading(false);
         this.status.uri = r.uri;
-        location.reload();
+        //location.reload();
+        this.fireEvent('changed', this.status.value, this);
     },
 
     onError: function() {
@@ -127,9 +128,7 @@ Ext.define('BQ.button.AnnotationStatus', {
                            callback(this, this.onError),
                            'post');
         }
-        // dima: reload the page
         this.setStatus();
-        //location.reload();
     },
 
 });
