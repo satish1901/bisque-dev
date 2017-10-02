@@ -425,10 +425,10 @@ Ext.define('BQ.tree.organizer.Panel', {
                 return (value/Math.pow(10, 9)).toFixed(2)+'G';
         },
         handler: function(view, rowIndex, colIndex, item, e, record, row) {
-            if (record.data.attribute === 'name') {
-                BQ.ui.notification('Not queries on "name" attributes are currently disabled' );
-                return;
-            }
+            // if (record.data.attribute === 'name') {
+            //     BQ.ui.notification('Not queries on "name" attributes are currently disabled' );
+            //     return;
+            // }
             if (record.data.negated)
                 record.data.negated = false;
             else
@@ -810,7 +810,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                 query[query.length-1] += neg+encodeURIComponent('"'+node.data.value+'"' + sep);
             } else {
                 query.push(neg+encodeURIComponent('"'+node.data.value+'"')+sep);
-                if (node.data.type==='tag')
+                if (node.data.type==='tag' && node.data.negated !== true)
                     order.push( '"'+node.data.value+'":asc' );
             }
 
