@@ -147,6 +147,8 @@ Ext.define('BQ.viewer.Image', {
         this.parameters.oneditcontrols  = callback(this, this.oneditcontrols);
         this.parameters.onposition      = callback(this, this.onposition);
 
+        this.parameters.tagsChanged     = callback(this, this.onTagsChanged);
+
         //var id = Ext.getVersion('core').isGreaterThan('4.2.0') ? this.getId()+'-innerCt' : this.getId();
         var id = this.getId();
         this.viewer = new ImgViewer(id, this.resource, this.parameters);
@@ -358,6 +360,10 @@ Ext.define('BQ.viewer.Image', {
 
     onposition : function(pt) {
         this.fireEvent( 'position_selected', pt, this );
+    },
+
+    onTagsChanged : function() {
+        this.fireEvent( 'tags_changed', this );
     },
 
 });
