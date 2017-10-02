@@ -454,7 +454,7 @@ class Taggable(object):
             n.resource_hidden = hdv
             for k in n.children:
                 set_hidden_deep(k, hdv)
-        set_hidden_deep(self, hdv in ('True', 'true', True))
+        set_hidden_deep(self, (hdv in ('True', 'true', True)) or None)
         return self.resource_hidden
     hidden = property(get_hidden, set_hidden)
 
