@@ -334,7 +334,7 @@ class Taggable(object):
                 else:
                     self.owner_id = owner_id
             else:
-                log.warn ("CREATING taggable %s with no owner" % str(self) )
+                log.warn ("CREATING taggable %s with no owner" , str(self) )
                 admin = identity.get_admin()
                 if admin:
                     log.warn("Setting owner to admin")
@@ -360,7 +360,7 @@ class Taggable(object):
     @validates('owner')
     def validate_owner (self, key, owner):
         if isinstance(owner, basestring) and owner.startswith ('http'):
-            log.warn ("validating owner  %s" % owner)
+            log.warn ("validating owner  %s" , str(owner))
             return map_url (owner)
         return owner
 
@@ -435,13 +435,13 @@ class Taggable(object):
 
     def get_permission(self):
         return perm2str.get(self.perm)
-    def set_permission(self, v):
-        log.debug("permission deep = %s" % v)
-        def set_perm_deep(n, v):
-            n.perm = v
+    def set_permission(self, pmv):
+        log.debug("permission deep = %s" , pmv)
+        def set_perm_deep(n, pmv):
+            n.perm = pmv
             for k in n.children:
-                set_perm_deep(k, v)
-        set_perm_deep(self, perm2code.get(v))
+                set_perm_deep(k, pmv)
+        set_perm_deep(self, perm2code.get(pmv))
         #self.perm = perm2code.get(v)
 
 
@@ -449,8 +449,12 @@ class Taggable(object):
 
     def get_hidden(self):
         return self.resource_hidden
-    def set_hidden(self, v):
-        self.resource_hidden = v in ('True', 'true', True)
+    def set_hidden(self, hdv):
+        def set_hidden_deep(n, hdv):
+            n.resource_hidden = hdv
+            for k in n.children:
+                set_hidden_deep(k, hdv)
+        set_hidden_deep(self, hdv in ('True', 'true', True))
         return self.resource_hidden
     hidden = property(get_hidden, set_hidden)
 
@@ -982,7 +986,7 @@ def bquser_callback (tg_user, operation, **kw):
         if u is None:
             u = BQUser(tg_user=tg_user)
             DBSession.add(u)
-            log.info ('created BQUSER %s' % u.name)
+            log.info ('created BQUSER %s' , u.name)
         return
     if operation  == 'update':
         u = DBSession.query(BQUser).filter_by(resource_name=tg_user.user_name).first()
@@ -991,7 +995,7 @@ def bquser_callback (tg_user, operation, **kw):
             dn = u.findtag('display_name', create=True)
             dn.value = tg_user.display_name
             dn.permission = 'published'
-            log.info ('updated BQUSER %s' % u.name)
+            log.info ('updated BQUSER %s' , u.name)
         return
 
 User.callbacks.append (bquser_callback)
@@ -1021,19 +1025,19 @@ def current_mex_id ():
     mex_id = None
     if hasattr(request,'identity'):
         mex_id = request.identity.get('bisque.mex_id', None)
-        log.debug ("IDENTITY request %s" % mex_id == 'None')
+        log.debug ("IDENTITY request %s" , (mex_id == 'None'))
     if mex_id is None:
         try:
             mex_id = session.get('mex_id', None)
             if mex_id is None and 'mex_uniq' in session :
                 mex = DBSession.query(ModuleExecution).filter_by(resource_uniq = session['mex_uniq']).first()
                 mex_id = session['mex_id'] = mex.id
-            log.debug ("IDENTITY session %s" % mex_id == 'None')
+            log.debug ("IDENTITY session %s" , ( mex_id == 'None'))
         except TypeError:
             # ignore bad session object
             pass
     if mex_id is None:
-        log.info("using initialization mex")
+        log.debug("using initialization mex")
         if hasattr(request, 'initial_mex_id'):
             mex_id = request.initial_mex_id
         else:
@@ -1054,7 +1058,7 @@ def current_mex_id ():
     if hasattr(request, 'identity') and mex_id is not None:
         request.identity['bisque.mex_id'] = mex_id
 
-    log.debug ('IDENTITY mex_id %s' % mex_id)
+    log.debug ('IDENTITY mex_id %s' , mex_id)
 
     return mex_id
 
