@@ -305,9 +305,14 @@ class Taggable(object):
         if parent:
             parent.children.append(self)
             self.document = parent.document
+            self.perm = parent.perm
+            self.hidden = parent.hidden
         else:
             self.document = self
             self.resource_uniq = make_uniq_code()
+            self.perm = PRIVATE
+            #self.hidden = None
+
 
         #if self.resource_type == 'mex':
         #    self.mex = self
@@ -316,7 +321,6 @@ class Taggable(object):
         #if self.resource_type == 'user':
         #    self.owner = self
 
-        self.perm = PRIVATE
         self.ts = datetime.now()
         #log.debug("new taggable user:" + str(session.dough_user.__dict__) )
         if mex_id is not False:
