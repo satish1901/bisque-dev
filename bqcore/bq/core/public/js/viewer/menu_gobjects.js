@@ -393,9 +393,14 @@ Ext.define('BQ.grid.GobsPanel', {
     afterRender : function() {
         this.callParent();
         this.setLoading('Fetching types of graphical annotations');
-        BQ.Preferences.on('update_user_pref', this.onPreferences, this);
-        this.onPreferences();
-        if (this.user_defined) {
+
+        if (!BQ.Preferences.isLoaded('user')) {
+            BQ.Preferences.on('update_user_pref', this.onPreferences, this);
+        } else {
+            this.onPreferences();
+        }
+
+        if (this.user_defined.length>0) {
             this.onTypesList(this.user_defined);
             return;
         }
