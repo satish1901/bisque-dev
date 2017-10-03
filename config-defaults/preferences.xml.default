@@ -60,10 +60,10 @@
             </tag>
             <tag name="Images">
                 <tag name="ImageParameters"/>
-                <tag name="enable_annotation_status" value="false" type="boolean">
+                <tag name="enable_annotation_status" value="true" type="boolean">
                     <template>
                         <tag name="Type" value="Boolean"/>
-                        <tag name="defaultValue" value="false"/>
+                        <tag name="defaultValue" value="true"/>
                         <tag name="allowBlank" value="false" type="boolean" />
                         <tag name="Editable" value="true" type="boolean" />
                     </template>
