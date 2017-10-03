@@ -411,7 +411,7 @@ Ext.define('BQ.tree.organizer.Panel', {
         stopSelection : true,
         //align: 'center',
         align: 'right',
-        tooltip: 'Toggle to NOT find resources with this annotation',
+        tooltip: 'Toggle to find resources WITHOUT this annotation',
         renderer: function(value, meta, record) {
             if (record.data.negated)
                 meta.tdCls = 'negated';
@@ -434,16 +434,27 @@ Ext.define('BQ.tree.organizer.Panel', {
             else
                 record.data.negated = true;
 
-            var tree = record.store.ownerTree,
-                selection = tree.getSelectionModel(),
-                sel = selection.getSelection();
+            var store = record.store,
+                tree = store.ownerTree;//,
+                //selection = tree.getSelectionModel(),
+                //sel = selection.getSelection();
 
-            view.refreshNode(rowIndex);
-            if (sel[0] === record) {
+            // the query for this node has changed and thus childer are no loger valid
+            // we need to force the reload of the store for this node since query has changed
+            tree.getSelectionModel().deselectAll();
+            //record.collapse(); // dima: removing all the children is enough
+            view.refreshNode(rowIndex); // re-render the node itself
+
+            record.removeAll(true);
+            record.data.loaded = false;
+            record.data.expanded = false;
+            tree.getSelectionModel().select(record);
+
+            /*if (sel[0] === record) {
                 tree.setActiveNode(record);
             } else {
                 tree.getSelectionModel().select(record);
-            }
+            }*/
         },
 
     }],
@@ -727,6 +738,7 @@ Ext.define('BQ.tree.organizer.Panel', {
                 scope: this,
                 load: function () {
                     //this.setLoading(false);
+
                     if (this.initialized) return;
                     this.initialized = true;
                     if (this.path)
