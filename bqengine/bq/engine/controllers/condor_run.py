@@ -130,15 +130,15 @@ class CondorRunner (CommandRunner):
             if submit.returncode != 0:
                 self.command_failed(process, submit.returncode)
 
-            # get ID of dag runner cluster and store in runner_ids
-            runner_id = None
-            for line in out.split('\n'):
-                toks = line.split('job(s) submitted to cluster')
-                if len(toks) == 2:
-                    runner_id = toks[1].strip().rstrip('.')
-                    break
-            if runner_id is not None:
-                self.runner_ids[self.mexes[0].mex_id] = runner_id
+#             # get ID of dag runner cluster and store in runner_ids
+#             runner_id = None
+#             for line in out.split('\n'):
+#                 toks = line.split('job(s) submitted to cluster')
+#                 if len(toks) == 2:
+#                     runner_id = toks[1].strip().rstrip('.')
+#                     break
+#             if runner_id is not None:
+#                 self.runner_ids[self.mexes[0].mex_id] = runner_id
 
         # Don't do anything after execute
         return None
@@ -182,20 +182,44 @@ class CondorRunner (CommandRunner):
         topmex = self.mexes[0]
         if mex is not None:
             mex_id = mex.get('resource_uniq')
-            proc_id = self.runner_ids.get(mex_id)
-            if proc_id:
-                pk = subprocess.Popen (['condor_rm', proc_id, ],
-                                            cwd=topmex.get('staging_path'),
-                                            stdout = subprocess.PIPE)
-                message = pk.communicate()[0]
-                self.info("status = %s message= %s" , pk.returncode, message)
-                if self.session is None:
-                    mex_url = topmex.named_args['mex_url']
-                    token   = topmex.named_args['bisque_token']
-                    self.session = BQSession().init_mex(mex_url, token)
-                self.session.fail_mex(msg = 'job stopped by user')
-            else:
-                self.debug("Mex id %s not found", mex_id)
+            
+            # get all condor schedds
+            schedd_names = []
+            cmd = ['condor_status', '-long', '-schedd']
+            pk = subprocess.Popen(cmd, stdout = subprocess.PIPE)
+            for line in pk.stdout:
+                toks = line.split('=', 1)
+                if len(toks) == 2:
+                    if toks[0].strip().lower() == 'name':
+                        schedd_names.append(toks[1].strip().strip('"').strip("'"))
+            self.debug("schedds found: %s" % schedd_names)
+            pk.communicate()
+            if pk.returncode != 0:
+		self.debug("condor_status failed")
+		process = dict(command_line = cmd, mex = topmex)
+		self.command_failed(process, pk.returncode)
+                return None
+            
+            # for each one: condor_rm with condition "mexid == <mexid>"
+            for schedd_name in schedd_names:
+                cmd = ['condor_rm', '-name', schedd_name, '-constraint', 'MexID =?= "%s"' % mex_id]
+                self.debug("running %s", cmd)
+                pk = subprocess.Popen (cmd,
+                                       cwd=topmex.get('staging_path'),
+                                       stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+                message, err = pk.communicate()
+                self.info("condor_rm %s status = %s message = %s err = %s" % (schedd_name, pk.returncode, message, err))
+                if pk.returncode != 0:
+                    self.debug("condor_rm failed")
+                    process = dict(command_line = cmd, mex = topmex)
+                    self.command_failed(process, pk.returncode)
+                    return None
+                
+            if self.session is None:
+                mex_url = topmex.named_args['mex_url']
+                token   = topmex.named_args['bisque_token']
+                self.session = BQSession().init_mex(mex_url, token)
+            self.session.fail_mex(msg = 'job stopped by user')
         else:
             self.debug("No mex provided")
 

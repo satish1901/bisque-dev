@@ -38,6 +38,8 @@ request_cpus = 1
 request_memory = 1024
 
 ${condor_submit}
+# store mex id for stopping
++MexID = "${mexes[0].mex_id}"
 
 %for mex in mexes:
 <%

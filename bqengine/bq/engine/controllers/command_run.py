@@ -313,7 +313,6 @@ class BaseRunner(object):
         self.postrun = None
         #self.process_environment (pre-set)
         #self.options (pre-set)
-        self.runner_ids = {}
         # ---- the previous items are preserved across execution phases ----
 
         # Add remaining arguments to the executable line
@@ -397,7 +396,6 @@ class BaseRunner(object):
             pickle.dump(self.postrun, f)
             pickle.dump(self.process_environment, f)
             pickle.dump(self.options, f)
-            pickle.dump(self.runner_ids, f)
 
     def load_runstate(self):
         staging_path = self.mexes[0].get('staging_path') or  '.'
@@ -413,7 +411,6 @@ class BaseRunner(object):
             self.postrun = pickle.load(f)
             self.process_environment = pickle.load(f)
             self.options = pickle.load(f)
-            self.runner_ids = pickle.load(f)
 
 
     ##################################################
