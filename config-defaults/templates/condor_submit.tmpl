@@ -12,6 +12,8 @@ when_to_transfer_output = ON_EXIT_OR_EVICT
 notification = never
 # variables from local environment here
 ${condor_submit}
+# store mex id for stopping
++MexID = "${mexes[0].mex_id}"
 
 %for mex in mexes:
 <%
