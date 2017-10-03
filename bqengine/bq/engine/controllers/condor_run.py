@@ -8,6 +8,7 @@ import StringIO
 import platform
 
 from bq.util.configfile import ConfigFile
+from bq.util.paths import config_path
 from bqapi import BQSession
 
 from command_run import CommandRunner, strtolist, AttrDict, check_exec
@@ -46,7 +47,7 @@ class CondorRunner (CommandRunner):
             mex.files = strtolist(mex.get('files', []))
             mex.output_files = strtolist(mex.get('output_files', []))
             mex.files.append('runtime-module.cfg')
-            mex.files.append('runtime-bisque.cfg')
+            mex.files.append(os.path.abspath (config_path ('runtime-bisque.cfg')))
 
     def setup_environments(self, **kw):
         super(CondorRunner, self).setup_environments(**kw)
@@ -182,7 +183,7 @@ class CondorRunner (CommandRunner):
         topmex = self.mexes[0]
         if mex is not None:
             mex_id = mex.get('resource_uniq')
-            
+
             # get all condor schedds
             schedd_names = []
             cmd = ['condor_status', '-long', '-schedd']
@@ -199,7 +200,7 @@ class CondorRunner (CommandRunner):
 		process = dict(command_line = cmd, mex = topmex)
 		self.command_failed(process, pk.returncode)
                 return None
-            
+
             # for each one: condor_rm with condition "mexid == <mexid>"
             for schedd_name in schedd_names:
                 cmd = ['condor_rm', '-name', schedd_name, '-constraint', 'MexID =?= "%s"' % mex_id]
@@ -214,7 +215,7 @@ class CondorRunner (CommandRunner):
                     process = dict(command_line = cmd, mex = topmex)
                     self.command_failed(process, pk.returncode)
                     return None
-                
+
             if self.session is None:
                 mex_url = topmex.named_args['mex_url']
                 token   = topmex.named_args['bisque_token']

@@ -60,7 +60,7 @@ class StagedEnvironment(BaseEnvironment):
 
     def _filelist(self, runner, files, **kw):
         if os.name != 'nt':
-            return [os.path.join(runner.rundir, f) for f in files]
+            return [ os.path.join(runner.rundir, f) for f in files ]
         fs = []
         for f in files:
             mf = os.path.join (runner.rundir, f)
