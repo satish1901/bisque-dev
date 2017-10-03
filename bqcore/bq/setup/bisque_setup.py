@@ -2654,6 +2654,7 @@ OTHER_STEPS = {
     "logins"  : [ setup_logins ],
     "testing" : [ setup_testing ],
     'docker'  : [ install_docker ],
+    'runtime' : [ install_runtime ] ,
     'build-modules'   : [ install_modules, setup_build_modules ] ,
 }
 
