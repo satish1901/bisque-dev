@@ -68,6 +68,9 @@ Ext.define('BQ.button.AnnotationStatus', {
 
         if (this.resource && this.resource.tags) {
             this.status = this.resource.find_tags(BQ.annotations.name);
+            if (this.status && this.status instanceof Array && this.status.length>0) {
+                this.status = this.status[0];
+            }
         }
         if (!this.status) {
             // try to fetch the status tag if not found just to guarantee
@@ -99,8 +102,12 @@ Ext.define('BQ.button.AnnotationStatus', {
 
     onSuccess: function(r) {
         this.setLoading(false);
-        this.status.uri = r.uri;
-        //location.reload();
+        if (this.resource) {
+            var t = this.resource.find_tags(BQ.annotations.name);
+            if (!t) {
+                this.resource.addtag(this.status);
+            }
+        }
         this.fireEvent('changed', this.status.value, this);
     },
 
@@ -112,17 +119,25 @@ Ext.define('BQ.button.AnnotationStatus', {
     updateStatus: function(btn) {
         var v = btn.text;
         this.setLoading('Updating annotation status');
-        if (this.status) {
+        if (this.status && this.status.uri) {
             this.status.value = v;
-            this.status.save_(
-                undefined,
-                callback(this, this.onSuccess),
-                callback(this, this.onError)
-            );
+
+            // dima: this code saves the whole image instead of just the tag of interest
+            // this.status.save_(
+            //     this.status.uri,
+            //     callback(this, this.onSuccess),
+            //     callback(this, this.onError),
+            //     'post'
+            // );
+
+            var t = new BQTag(undefined, BQ.annotations.name, v, BQ.annotations.type);
+            t.uri = this.status.uri;
+            t.save_(t.uri,
+                    callback(this, this.onSuccess),
+                    callback(this, this.onError),
+                    'post');
         } else {
-            //var resource = BQFactory.makeShortCopy(this.resource);
             this.status = new BQTag(undefined, BQ.annotations.name, v, BQ.annotations.type);
-            //resource.addtag(this.status);
             this.status.save_(this.resource.uri,
                            callback(this, this.onSuccess),
                            callback(this, this.onError),
