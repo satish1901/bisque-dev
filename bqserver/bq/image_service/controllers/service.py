@@ -121,15 +121,7 @@ class ImageServiceController(ServiceController):
         user_name = self.get_user_name(resource.get('owner'))
 
         # fetch image meta from a resource if any, has to have a name and a type as "image_meta"
-        meta = None
-        try:
-            meta = resource.xpath('tag[@type="image_meta"]')[0]
-            meta = dict((i.get('name'), misc.safetypeparse(i.get('value'))) for i in meta.xpath('tag'))
-            log.debug('images meta: %s', meta)
-            if len(meta)==0:
-                meta=None
-        except (AttributeError, IndexError):
-            meta = None
+        meta = self.srv.cache.get_meta(uniq)
 
         # run processing
         try:
@@ -279,15 +271,7 @@ class ImageServiceController(ServiceController):
 
 
         # fetch image meta from a resource if any, has to have a name and a type as "image_meta"
-        meta = None
-        try:
-            meta = resource.xpath('tag[@type="image_meta"]')[0]
-            meta = dict((i.get('name'), misc.safetypeparse(i.get('value'))) for i in meta.xpath('tag'))
-            log.debug('images meta: %s', meta)
-            if len(meta)==0:
-                meta=None
-        except (AttributeError, IndexError):
-            meta = None
+        meta = self.srv.cache.get_meta(ident)
 
         # if the image is multi-blob and blob is requested, use export service
         try:
