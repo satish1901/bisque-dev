@@ -196,9 +196,9 @@ class CondorRunner (CommandRunner):
             self.debug("schedds found: %s" % schedd_names)
             pk.communicate()
             if pk.returncode != 0:
-		self.debug("condor_status failed")
-		process = dict(command_line = cmd, mex = topmex)
-		self.command_failed(process, pk.returncode)
+                self.debug("condor_status failed")
+                process = dict(command_line = cmd, mex = topmex)
+                self.command_failed(process, pk.returncode)
                 return None
 
             # for each one: condor_rm with condition "mexid == <mexid>"
