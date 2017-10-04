@@ -2,121 +2,70 @@
 UCSB
 ----------------------------------------
 
-BisQue dough 0.5.7:
-Tile retreival in seconds, avg: 0.918539996147 max: 3.38399982452 min: 0.591000080109, std: 0.793536578412
-Tile retreival in seconds, avg: 0.133559999466 max: 0.18499994278 min: 0.128000020981, std: 0.00798537707001
+BisQue ucsb 5.8:
 
-BisQue dough 0.5.8:
-
-planar
+planar:
 Tile retreival in seconds, avg: 0.797860002518 max: 6.32700014114 min: 0.273999929428, std: 1.45603849639
 Tile retreival in seconds, avg: 0.2175 max: 0.81200003624 min: 0.19000005722, std: 0.0858263964426
 
-pyramidal
+pyramidal:
 Tile retreival in seconds, avg: 0.337000002861 max: 1.1930000782 min: 0.267000198364, std: 0.148608480402
 Tile retreival in seconds, avg: 0.201339998245 max: 0.22400021553 min: 0.194000005722, std: 0.00675164725352
 
-
-BisQue flour 0.5.8:
-
-planar
-Tile retreival in seconds, avg: 0.72509999752 max: 4.52099990845 min: 0.264999866486, std: 1.24204313501
-Tile retreival in seconds, avg: 0.218759999275 max: 0.25 min: 0.202999830246, std: 0.00859200676521
-
-pyramidal
-Tile retreival in seconds, avg: 0.326979999542 max: 0.547000169754 min: 0.266000032425, std: 0.0752439909939
-Tile retreival in seconds, avg: 0.214099998474 max: 0.25 min: 0.202999830246, std: 0.00986357310111
-
-
-BisQue loup 0.5.7:
-Tile retreival in seconds, avg: 0.897779998779 max: 2.67800021172 min: 0.661999940872, std: 0.580030829752
-Tile retreival in seconds, avg: 0.119299998283 max: 0.223999977112 min: 0.109000205994, std: 0.0201387724739
-
-BisQue loup 0.5.8 dylib:
+BisQue ucsb 5.10:
 
 planar:
-Tile retreival in seconds, avg: 0.405620002747 max: 2.29700016975 min: 0.171000003815, std: 0.622654655777
-Tile retreival in seconds, avg: 0.106859998703 max: 0.188999891281 min: 0.0910000801086, std: 0.0140328442002
+Tile retreival in seconds, avg: 1.11923999786 max: 8.56599998474 min: 0.178999900818, std: 2.33188294654
+Tile retreival in seconds, avg: 0.0690399980545 max: 0.0810000896454 min: 0.0639998912811, std: 0.00370382879654
 
 pyramidal:
-Tile retreival in seconds, avg: 0.219819998741 max: 0.43799996376 min: 0.177000045776, std: 0.0472159649414
-Tile retreival in seconds, avg: 0.105840001106 max: 0.125 min: 0.0929999351501, std: 0.00745484230563
-
-BisQue loup 0.5.8:
-
-Tile retreival in seconds, avg: 0.454000000954 max: 3.38100004196 min: 0.177000045776, std: 0.718637608493
-Tile retreival in seconds, avg: 0.166900000572 max: 0.31500005722 min: 0.151000022888, std: 0.0345092933462
-
-Tile retreival in seconds, avg: 0.213700003624 max: 0.274999856949 min: 0.18700003624, std: 0.0232449961154
-Tile retreival in seconds, avg: 0.155260000229 max: 0.161000013351 min: 0.148000001907, std: 0.0029853593999
+Tile retreival in seconds, avg: 0.388680000305 max: 0.976000070572 min: 0.178999900818, std: 0.157602984435
+Tile retreival in seconds, avg: 0.0621600008011 max: 0.0680000782013 min: 0.0569999217987, std: 0.00250884551866
 
 ----------------------------------------
 iplant
 ----------------------------------------
 
-BisQue bovary 0.5.7:
+BisQue cyverse 5.8:
 
 planar:
-Tile retreival in seconds, avg: 0.98757999897 max: 2.82999992371 min: 0.680999994278, std: 0.577348052095
-Tile retreival in seconds, avg: 0.183140001297 max: 0.663999795914 min: 0.130999803543, std: 0.0855046004833
-
-pyramidal:
-Tile retreival in seconds, avg: 0.82507999897 max: 1.56200003624 min: 0.68700003624, std: 0.157688542927
-Tile retreival in seconds, avg: 0.169240002632 max: 0.383999824524 min: 0.127999782562, std: 0.0592491690668
-
-BisQue bovary 0.5.8:
-
 Tile retreival in seconds, avg: 0.533180003166 max: 2.83000016212 min: 0.240000009537, std: 0.663772119202
 Tile retreival in seconds, avg: 0.215500001907 max: 0.482000112534 min: 0.18499994278, std: 0.044912917756
 
+pyramidal:
 Tile retreival in seconds, avg: 0.314459996223 max: 0.513999938965 min: 0.242000102997, std: 0.0513482914271
 Tile retreival in seconds, avg: 0.207039999962 max: 0.321000099182 min: 0.18700003624, std: 0.0221819560406
 
-BisQue bisque-web 0.5.8:
+BisQue cyverse 5.10:
 
+planar:
+
+pyramidal:
 
 
 ----------------------------------------
 tests
 ----------------------------------------
 
-
-entire pipeline
+dev ucsb: 5.10
 =====================
 
 planar:
-Tile retreival in seconds, avg: 0.554599995613 max: 2.98400020599 min: 0.25, std: 0.802151292881
-Tile retreival in seconds, avg: 0.143340001106 max: 0.157999992371 min: 0.125, std: 0.00731738909674
+Tile retreival in seconds, avg: 0.353619999886 max: 2.4960000515 min: 0.100000143051, std: 0.700563189352
+Tile retreival in seconds, avg: 0.0528599977493 max: 0.232999801636 min: 0.0400002002716, std: 0.0284112485742
 
 pyramidal:
-Tile retreival in seconds, avg: 0.306220002174 max: 0.621999979019 min: 0.264999866486, std: 0.0799598142316
-Tile retreival in seconds, avg: 0.145499997139 max: 0.25 min: 0.12900018692, std: 0.0162040125661
+Tile retreival in seconds, avg: 0.13493999958 max: 0.325000047684 min: 0.105999946594, std: 0.0389617480801
+Tile retreival in seconds, avg: 0.0425600004196 max: 0.0499999523163 min: 0.039999961853, std: 0.00204116060085
 
-DYLIB entire pipeline
-=========================
 
-planar:
-Tile retreival in seconds, avg: 0.452859997749 max: 2.71099996567 min: 0.18700003624, std: 0.719729603196
-Tile retreival in seconds, avg: 0.109879999161 max: 0.125 min: 0.0939998626709, std: 0.00518706398346
-
-pyramidal:
-Tile retreival in seconds, avg: 0.218559999466 max: 0.313000202179 min: 0.186999797821, std: 0.0320831421614
-Tile retreival in seconds, avg: 0.111480002403 max: 0.128999948502 min: 0.0939998626709, std: 0.00668203185509
-
-DYLIB entire pipeline -blob_service
-======================================
-
-Tile retreival in seconds, avg: 0.426180000305 max: 2.75 min: 0.161999940872, std: 0.71543630587
-Tile retreival in seconds, avg: 0.113559999466 max: 0.25 min: 0.105999946594, std: 0.0198878461193
-
-Tile retreival in seconds, avg: 0.195900001526 max: 0.287999868393 min: 0.171000003815, std: 0.0298095543748
-Tile retreival in seconds, avg: 0.112179999352 max: 0.125 min: 0.108999967575, std: 0.00602226016397
-
-Cached resources
+dev ucsb: 5.11
 ====================
 
-Tile retreival in seconds, avg: 0.455360002518 max: 4.20700001717 min: 0.172000169754, std: 0.828245764226
-Tile retreival in seconds, avg: 0.115720000267 max: 0.167000055313 min: 0.106999874115, std: 0.0126839156253
+planar:
+Tile retreival in seconds, avg: 0.345059995651 max: 2.53199982643 min: 0.085000038147, std: 0.708673248364
+Tile retreival in seconds, avg: 0.0323000001907 max: 0.0549998283386 min: 0.0309998989105, std: 0.00338375761115
 
-Tile retreival in seconds, avg: 0.199719996452 max: 0.344000101089 min: 0.174999952316, std: 0.0371806802742
-Tile retreival in seconds, avg: 0.110039997101 max: 0.115000009537 min: 0.106999874115, std: 0.0021996332496
+pyramidal:
+Tile retreival in seconds, avg: 0.123899998665 max: 0.235000133514 min: 0.0939998626709, std: 0.0365405528661
+Tile retreival in seconds, avg: 0.032000002861 max: 0.0409998893738 min: 0.0309998989105, std: 0.00202976745288
