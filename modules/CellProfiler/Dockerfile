@@ -45,7 +45,7 @@ ENV  LD_LIBRARY_PATH /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server:/usr
 RUN python setup.py install
 RUN pip install --editable .
 RUN yes | pip uninstall prokaryote
-RUN pip install prokaryote
+RUN pip install prokaryote==1.0.11
 RUN pip install javabridge
 RUN pip install centrosome
 RUN pip install bioformats
@@ -65,11 +65,11 @@ COPY CellProfiler /module/CellProfiler/
 COPY pydist /module/CellProfiler/pydist/
 
 #RUN mv /module/CellProfiler/pydist/CellProfiler/libxml2.so.2 /module/CellProfiler/pydist/CellProfiler/libxml2.so.2.bak
-RUN ln -s /usr/lib/x86_64-linux-gnu/libxml2.so.2 /module/CellProfiler/pydist/CellProfiler
+#RUN ln -s /usr/lib/x86_64-linux-gnu/libxml2.so.2 /module/CellProfiler/pydist/CellProfiler
 RUN mkdir /module/CellProfiler/workdir
 
 RUN rm -rf /module/CellProfiler/.git
 
-ENV PATH /module:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV PATH /module/CellProfiler:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 CMD  [ "CellProfiler" ]
