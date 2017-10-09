@@ -387,7 +387,7 @@ class ImageServer(object):
             if len(query)>0:
                 token.setFile(self.initialWorkPath(ident, user_name=kw.get('user_name', None)))
                 token.dims = self.getImageInfo(filename=token.data, series=token.series, infofile='%s.info'%token.data, meta=kw.get('imagemeta', None) )
-                token.init(resource_id=ident, ifnm=token.data, imagemeta=kw.get('imagemeta', None), timeout=kw.get('timeout', None), resource_name=resource.get('name'))
+                token.init(resource_id=ident, ifnm=token.data, imagemeta=kw.get('imagemeta', None), timeout=kw.get('timeout', None), resource_name=resource.get('name'), dryrun=True)
                 for action, args in query:
                     try:
                         service = self.operations.plugins[action]
@@ -420,7 +420,7 @@ class ImageServer(object):
             #log.debug('Original %s, %s, %s', b.path, b.sub, b.files)
             workpath = self.ensureWorkPath(b.path, ident, user_name=kw.get('user_name', None))
             token.setFile(workpath, series=(b.sub or 0))
-            token.init(resource_id=ident, ifnm=b.path, imagemeta=kw.get('imagemeta', None), files=b.files, timeout=kw.get('timeout', None), resource_name=resource.get('name'), initial_workpath=workpath)
+            token.init(resource_id=ident, ifnm=b.path, imagemeta=kw.get('imagemeta', None), files=b.files, timeout=kw.get('timeout', None), resource_name=resource.get('name'), initial_workpath=workpath, dryrun=None)
 
             if not os.path.exists(b.path):
                 raise ImageServiceException(404, 'File not found...')
