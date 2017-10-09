@@ -564,7 +564,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         };
 
         for (var param in uri)
-        if (uri[param].length == 0)
+        if (uri[param] && uri[param].length === 0)
             delete uri[param];
 
         return uri;

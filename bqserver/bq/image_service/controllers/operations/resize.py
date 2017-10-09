@@ -137,7 +137,7 @@ class ResizeOperation(BaseOperation):
         if maxBounding and num_x<=size[0] and num_y<=size[1]:
             log.debug('Resize: Max bounding resize requested on a smaller image, skipping...')
             return token
-        if (size[0]<=0 or size[1]<=0) and (num_x<=0 or num_y<=0):
+        if token.dryrun != True and (size[0]<=0 or size[1]<=0) and (num_x<=0 or num_y<=0):
             raise ImageServiceException(400, 'Resize: image improperly decoded, has side of 0px' )
 
         ifile = token.first_input_file()
