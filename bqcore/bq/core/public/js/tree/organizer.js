@@ -434,8 +434,7 @@ Ext.define('BQ.tree.organizer.Panel', {
             else
                 record.data.negated = true;
 
-            var store = record.store,
-                tree = store.ownerTree;//,
+            var tree = view;
                 //selection = tree.getSelectionModel(),
                 //sel = selection.getSelection();
 
