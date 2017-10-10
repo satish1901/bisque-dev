@@ -8,31 +8,32 @@ Ext.define('Bisque.DatasetBrowser.Dialog', {
     layout: 'fit',
     buttonAlign: 'center',
 
-    constructor : function(config) {
-        Ext.apply(this, {
-            title : config.title || 'Select a dataset...',
-            items : [{
-                xtype: 'bq-dataset-browser',
-                itemId: 'browser-dataset',
-            }],
-            buttons: [{
-                text: 'Select',
-                iconCls : 'icon-select',
-                scale: 'large',
-                scope: this,
-                width: 100,
-                handler: this.onDone,
-            }, {
-                text: 'Close',
-                iconCls : 'icon-cancel',
-                scale: 'large',
-                scope: this,
-                width: 100,
-                handler: this.close,
-            }],
-        }, config);
+    selType: 'SINGLE',
 
-        this.callParent([arguments]);
+    initComponent : function() {
+        this.title = this.title || 'Select a dataset...',
+        this.items = [{
+            xtype: 'bq-dataset-browser',
+            itemId: 'browser-dataset',
+            selType: this.selType,
+        }];
+        this.buttons = [{
+            text: 'Select',
+            iconCls : 'icon-select',
+            scale: 'large',
+            scope: this,
+            width: 100,
+            handler: this.onDone,
+        }, {
+            text: 'Close',
+            iconCls : 'icon-cancel',
+            scale: 'large',
+            scope: this,
+            width: 100,
+            handler: this.close,
+        }];
+
+        this.callParent();
         this.show();
     },
 
@@ -51,40 +52,46 @@ Ext.define('Bisque.DatasetBrowser.Browser', {
     alias: 'widget.bq-dataset-browser',
     layout: 'border',
 
-    constructor : function(config) {
-        Ext.apply(this, {
-            items : [{
-                xtype: 'bq-resource-browser',
-                itemId: 'browser-dataset',
-                region: 'west',
-                split: true,
-                title: 'Dataset browser',
-                flex: 3,
-                'dataset' : '/data_service/dataset',
-                selType: 'SINGLE',
-                showOrganizer : false,
-                listeners : {
-                    'Select' : this.onSelect,
-                    scope : this
-                },
-            }, {
-                xtype: 'bq-resource-browser',
-                itemId  : 'browser-preview',
-                region: 'center',
-                showOrganizer : false,
-                'dataset' : 'None',
-                layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact,
-                viewMode: 'ViewerOnly',
-                title: 'Dataset preview',
-                flex: 1,
-            }],
-        }, config);
+    selType: 'SINGLE',
 
-        this.callParent([arguments]);
+    initComponent : function() {
+        this.items = [{
+            xtype: 'bq-resource-browser',
+            itemId: 'browser-dataset',
+            region: 'west',
+            split: true,
+            title: 'Dataset browser',
+            flex: 3,
+            dataset : '/data_service/dataset',
+            selType: this.selType,
+            selectState: this.selType === 'SINGLE' ? 'ACTIVATE' : 'SELECT',
+            showOrganizer : false,
+            listeners : {
+                Select : this.onSelect,
+                ResSelectionChange: this.onSelect,
+                scope : this
+            },
+        }, {
+            xtype: 'bq-resource-browser',
+            itemId  : 'browser-preview',
+            region: 'center',
+            showOrganizer : false,
+            dataset : 'None',
+            layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact,
+            viewMode: 'ViewerOnly',
+            title: 'Dataset preview',
+            flex: 1,
+        }];
+
+        this.callParent();
     },
 
     onSelect: function(me, resource) {
         this.selected_dataset = resource;
+        if (resource && resource instanceof Array && resource.length>0) {
+            resource = resource[0];
+        }
+
         var preview = this.queryById('browser-preview');
         preview.loadData({
             baseURL: resource.uri + '/value',

@@ -373,6 +373,7 @@ ImgEdit.prototype.mousedblclick = function (e) {
 
 ImgEdit.prototype.keyhandler = function (e) {
     e = e ? e : window.event;  // IE event model
+    if (e.target !== BQApp.main.getEl().dom) return;
     var key = e.keyCode ? e.keyCode : e.which,
         nav_keys = {
             33: 33, 34: 34, 37: 37, 38: 38, 39: 39, 40: 40, 107: 107, 109: 109, 187: 187, 189: 189,
