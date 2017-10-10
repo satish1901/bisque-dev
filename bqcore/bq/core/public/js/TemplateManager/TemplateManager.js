@@ -17,6 +17,7 @@ Ext.define('BQ.TemplateManager',
                     cb      :   Ext.pass(BQ.TemplateManager.createResource, [config, cb, original]),
                     cache   :   false,
                 });
+                return;
             }
             else
             {
@@ -38,9 +39,9 @@ Ext.define('BQ.TemplateManager',
 
                 resource = copyTags.call(this, template, resource);
 
-                if (config.noSave)
+                if (config.noSave) {
                     cb(resource, template);
-                else
+                } else {
                     var url = original ? undefined : '/data_service/' + resource.resource_type + '?view=deep';
                     //resource.save_('/data_service/' + resource.resource_type + '?view=deep',
                     resource.save_(url,
@@ -48,6 +49,7 @@ Ext.define('BQ.TemplateManager',
                       function(e) {
                           BQ.ui.error('An error occured while trying to create a resource from template: <br>' + e.message_short);
                     }, 'post');
+                }
             }
 
             function copyTags(template, resource)

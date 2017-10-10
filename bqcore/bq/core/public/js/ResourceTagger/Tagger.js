@@ -786,7 +786,8 @@ Ext.define('Bisque.ResourceTagger', {
     },
 
     importTags: function (menuItem) {
-        var rb = new Bisque.ResourceBrowser.Dialog(
+        var met = this,
+        rb = new Bisque.ResourceBrowser.Dialog(
         {
             height: '85%',
             width: '85%',
@@ -794,6 +795,7 @@ Ext.define('Bisque.ResourceTagger', {
             viewMode: 'ViewerLayouts',
             selType: 'SINGLE',
             original: this.resource,
+            offline:  this.viewMode === "Offline",
             listeners:
             {
                 'Select': function (me, resource) {
@@ -801,8 +803,12 @@ Ext.define('Bisque.ResourceTagger', {
                         function applyTemplate(response) {
                             if (response == 'yes')
                                 //BQ.TemplateManager.createResource({ name: '', noSave: true }, Ext.bind(this.onResourceCreated, this), resource.uri + '?view=deep');
-                                BQ.TemplateManager.createResource({ name: '', noSave: false }, function() {
-                                    location.reload();
+                                BQ.TemplateManager.createResource({ name: '', noSave: (me.offline === true), }, function(R, T) {
+                                    if (me.offline !== true) {
+                                        location.reload();
+                                    } else {
+                                        met.onResourceCreated(R, T);
+                                    }
                                 }, me.original, resource.uri);
                         }
 
@@ -824,15 +830,17 @@ Ext.define('Bisque.ResourceTagger', {
     },
 
     onResourceCreated: function (resource, template) {
-        if (resource.type == this.resource.type)
+        if (resource.type === this.resource.type)
             this.mergeTags(resource.tags);
         else {
             this.resource.type = resource.type;
             this.appendTags(resource.tags);
         }
 
-        var resource = this.copyTemplate(template, this.resource);
-        this.resource = resource;
+        var R = this.copyTemplate(template, this.resource),
+            RR = resource.clone(true);
+        R.gobjects = R.gobjects.concat(RR.gobjects);
+        this.resource = R;
     },
 
     mergeTags: function (data) {
