@@ -479,8 +479,12 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                     ft.setPath(path);
                     return;
                 }
-                if (this.browserParams.selType == 'SINGLE' && this.selectState == 'ACTIVATE')
+                if (this.browserParams.selType === 'SINGLE' && this.selectState === 'ACTIVATE')
                     this.fireEvent('Select', this, resource);
+            },
+
+            ResSelectionChange : function(selection) {
+                this.fireEvent('ResSelectionChange', this, this.getSelection());
             },
 
             'Browser_ReloadData' : function(uri) {
@@ -657,6 +661,21 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         this.ChangeLayout(this.layoutKey);
     },
 
+    getSelection: function() {
+        var selection = this.resourceQueue.selectedRes;
+        if (selection instanceof Bisque.Resource) {
+            selection = [selection];
+        } else {
+            selection = Ext.Object.getValues(selection);
+        }
+
+        if (selection.length) {
+            for (var i = 0; i < selection.length; i++)
+                selection[i] = selection[i].resource;
+        }
+
+        return selection;
+    },
 });
 
 
