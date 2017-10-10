@@ -702,9 +702,11 @@ Ext.define('BQ.upload.Item', {
 
         // add tagger annotations
         if (this.tagger) {
-            //resource.tags = this.tagger.getTagDocument();
-            resource.addtags( this.tagger.getTagDocument(), true );
-            resource.type = this.tagger.resource.type;
+            var doc = this.tagger.resource.clone(true);
+            resource.type = doc.type;
+            resource.addtags( doc.tags, true );
+            //resource.tags = doc.tags;
+            resource.gobjects = doc.gobjects;
         }
 
         // create the ingest tag
