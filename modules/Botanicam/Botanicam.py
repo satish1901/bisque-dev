@@ -11,7 +11,7 @@ from lxml import etree
 import numpy as np
 from optparse import OptionParser
 from bqapi.comm import BQSession, BQCommError
-from bqapi.bqfeature import Feature, ParallelFeature, FeatureResource, FeatureCommError
+from bqapi.bqfeature import Feature, ParallelFeature, FeatureResource, FeatureError
 from sklearn.externals import joblib
 
 #Constants
@@ -233,7 +233,7 @@ class Botanicam(object):
             
         try:
             feature_vectors = extract_bush_feature(self.bqSession, image_url)
-        except FeatureCommError as e:
+        except FeatureError as e:
             raise BotanicamError(str(e))
                 
         #parse features

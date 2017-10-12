@@ -91,7 +91,7 @@ class Feature(object):
 
             @return: a list of features as numpy array
 
-            @exception: FeatureCommError - if any part of the request has an error the FeatureCommError will be raised on the
+            @exception: FeatureError - if any part of the request has an error the FeatureError will be raised on the
             first error.
             note: You can use fetch and read from the status table for the error.
             warning: fetch_vector will not return response if an error occurs within the request

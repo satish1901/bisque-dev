@@ -16,7 +16,7 @@ import numpy as np
 from sklearn.externals import joblib
 from optparse import OptionParser
 from bqapi.comm import BQSession
-from bqapi.bqfeature import Feature, ParallelFeature, FeatureResource, FeatureCommError
+from bqapi.bqfeature import Feature, ParallelFeature, FeatureResource, FeatureError
 
 #constants
 PARALLEL                        = True
@@ -276,7 +276,7 @@ class BotanicamTrainer(object):
                     table.flush()
                 vectors.close()
                 os.remove(vectors.filename)
-            except FeatureCommError as e:
+            except FeatureError as e:
                 raise BotanicamTrainerError(str(e))
             
             self.bqSession.update_mex('Calculated features on (%s/%s) spieces...' % (i+1,len(tag_query_url_list)))
