@@ -1,4 +1,5 @@
 import sys
+import collections
 try:
     from lxml import etree as ET
 except ImportError:
@@ -38,6 +39,30 @@ class MetaData(object):
         #  Allow for testing by passing an alreay initialized session
         if bq is None:
             bq = BQSession().init_mex(mex_url, bisque_token)
+        
+        # ---------- EXAMPLE OF HOW TO CHECK FOR LIST PARAMETERS ----------
+        params = bq.get_mex_inputs()
+        image_iter = params.get('image_url', [])
+        if isinstance(image_iter, collections.Iterable) and not isinstance(image_iter, dict):
+            image_iter = list(image_iter)
+        else:
+            image_iter = [image_iter]
+        # ------------------------------------------------------------------
+
+        for image_url in image_iter:
+            metadata_tag = self._process_single_img(bq, image_url.get('value'))        
+            if metadata_tag is None:
+                bq.fail_mex ("could not write tag: no write access")
+                return
+
+        bq.finish_mex(tags = [{ 'name': 'outputs',
+                                'tag' : [{ 'name': 'metadata',
+                                           'value': metadata_tag.uri,
+                                           'type' : 'tag' }]}])
+        sys.exit(0)
+        #bq.close()
+        
+    def _process_single_img(self, bq, image_url):
         # Fetch the image metadata
         image = bq.load(image_url)
 
@@ -55,15 +80,8 @@ class MetaData(object):
         # Add the new tag to the image
         image.addTag(tag = md)
         metadata_tag = bq.save(md, image.uri + "/tag")
-        if metadata_tag is None:
-            bq.fail_mex ("could not write tag: no write access")
-            return
-        bq.finish_mex(tags = [{ 'name': 'outputs',
-                                'tag' : [{ 'name': 'metadata',
-                                           'value': metadata_tag.uri,
-                                           'type' : 'tag' }]}])
-        sys.exit(0)
-        #bq.close()
+        return metadata_tag
+
 
 
 if __name__ == "__main__":

@@ -115,11 +115,15 @@ class MexParser(object):
             else:
                 found = actual_inputs.xpath ('./tag[@name="%s"]'%param_name)
                 if len(found ):
-                    # found parameter but it may be a subtree (tree of parameters)
-                    # => traverse the tree and collect all parameters at the leaves
-                    addtl_input = [ copy.deepcopy(kid) for kid in found[0].iter() if not len(kid) and kid.tag=='tag' ]
+                    if found[0].get('type') == 'range' or (len(found[0])>0 and all([kid.tag == 'value' and kid.get('type') == 'object' for kid in found[0]])):
+                        # special multi-param case => keep entire subtree
+                        addtl_input = [ copy.deepcopy(found[0]) ]
+                    else:
+                        # found parameter but it may be a subtree (tree of parameters)
+                        # => traverse the tree and collect all parameters at the leaves
+                        addtl_input = [ copy.deepcopy(kid) for kid in found[0].iter() if not len(kid) and kid.tag=='tag' ]
                     log.debug ("PARAM %s=%s" % (param_name, str(addtl_input)))
-                    input_nodes.extend(el for el  in addtl_input if el.tag == 'tag')
+                    input_nodes.extend(addtl_input)
                 else:
                     log.warn ('missing input for parameter %s' % mi.get('value'))
 
@@ -165,11 +169,11 @@ class MexParser(object):
         @param style: 'named' return a list formal=actual, None return (formal, actual), else actual
         """
         if style is None:
-            params = [ (i.get('name'), i.get('value')) for i in input_nodes]
+            params = [ (i.get('name'), i.get('value') if i.get('value', None) else i.get('uri')) for i in input_nodes if i.get('value', None) or len(i)>0 ]
         elif style == 'named':
-            params = ['%s=%s'%(i.get('name'), i.get('value')) for i in input_nodes]
+            params = ['%s=%s'%(i.get('name'), i.get('value') if i.get('value', None) else i.get('uri')) for i in input_nodes if i.get('value', None) or len(i)>0 ]
         else:
-            params = [ i.get('value') for i in input_nodes if i.get('value', None) ]
+            params = [ i.get('value') if i.get('value', None) else i.get('uri') for i in input_nodes if i.get('value', None) or len(i)>0 ]
         log.debug('\n\nPARAMS : %s'%params)
         return params
 
