@@ -117,6 +117,7 @@ from bq.data_service.model import  ModuleExecution
 log = logging.getLogger('bq.module_server')
 
 
+_min_submexes = 4        # min number of sub mexes (TODO: should be number of expected compute nodes)
 _max_submexes = 10000    # max number of sub mexes
 
 
@@ -327,8 +328,11 @@ def create_mex(module, name, mex = None, **kw):
     # <mex> <tag name="execute_options">
     #   <tag name="iterable" value="resource_url" type="dataset">
     #        <tag name="xpath" value="./value/@text'/>
+    #        <tag name="blocksize" value="10" />                     blocked iteration (optional)
     #   </tag>
-    #   <tag name="iterable" value="RefFrameZDir" type="list" />     comma-separated list of values or '...'
+    #   <tag name="iterable" value="RefFrameZDir" type="list">       comma-separated list of values or '...'
+    #        <tag name="blocksize" value="10" />                     blocked iteration (optional)
+    #   </tag>
     #   <tag name="coupled_iter" value="true" />                     couple both 
     # </tag> </mex>
     iterables = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
@@ -347,11 +351,15 @@ def create_mex(module, name, mex = None, **kw):
         resource_tag = itr.get('value')
         resource_type = itr.get('type')
         resource_iterexpr = './value/text()' if resource_type not in ['list'] else '@'+resource_type
-        if len(itr):
-            # Children of iterable allow overide of extraction expression
-            if itr[0].get('name') == 'xpath':
-                resource_iterexpr = itr[0].get('value')
-        iters.setdefault(resource_tag, {})[resource_type] =  resource_iterexpr
+        iter_blocksize = 1
+        for sub in itr:
+            if sub.get('name') == 'xpath':
+                # override of extraction expression
+                resource_iterexpr = sub.get('value')
+            elif sub.get('name') == 'blocksize':
+                # request blocked iteration
+                iter_blocksize = int(sub.get('value'))
+        iters.setdefault(resource_tag, {})[resource_type] =  (resource_iterexpr, iter_blocksize)
     log.debug ('iterables in module %s' , iters)
 
     # Find an iterable tags (that match name and type) in the mex inputs, add them mex_tags
@@ -373,7 +381,7 @@ def create_mex(module, name, mex = None, **kw):
     for iter_tag, iterable in mex_tags.items():
         resource_value = iterable.get('value')
         resource_type = iterable.get('type')
-        resource_iterexpr  = iters[iter_tag][resource_type]
+        resource_iterexpr, iter_blocksize  = iters[iter_tag][resource_type]
         if resource_type == 'list':
             # list type: value is comma-separated list itself
             members = csv.reader([resource_value], skipinitialspace=True).next()
@@ -414,15 +422,30 @@ def create_mex(module, name, mex = None, **kw):
                 if (start < end and step < 0) or (start > end and step > 0):
                     log.error("illegal list enumeration")
                     return mex
+                # ensure we have at least _min_submexes blocks (TODO: this should be total number of blocks; for now, calculate per "dimension")
+                total_steps = int(abs(end-start+step)/abs(step))
+                if total_steps == 0:
+                    total_steps = 1
+                if iter_blocksize > 1 and (total_steps+iter_blocksize-1)/iter_blocksize < _min_submexes:
+                    iter_blocksize = max((total_steps+_min_submexes-1)/_min_submexes, 1)
+                    log.debug("adjusted blocksize to %s" % iter_blocksize)
                 members = []
                 val = start
                 while True:
-                    members.append(str(val))
+                    # collect all values for block if iter_blocksize is set
+                    if iter_blocksize > 1:
+                        newval = etree.Element('tag', type='range')
+                        etree.SubElement(newval, 'tag', name='start', value=str(val))
+                        etree.SubElement(newval, 'tag', name='end', value=str(min(val+(iter_blocksize-1)*step, end) if step>0 else max(val+(iter_blocksize-1)*step, end)))
+                        etree.SubElement(newval, 'tag', name='step', value=str(step))
+                    else:
+                        newval = val
+                    members.append(newval)
                     if len(members) > _max_submexes:
                         log.error("too many combinations (>%s)" % _max_submexes)
                         return mex
                     valold = val
-                    val += step
+                    val += iter_blocksize*step
                     if val == valold or not((start < end and val <= end) or (start > end and val >= end)):   # step may be too small to affect val
                         break
                 log.debug ('enumeration "%s" expanded to "%s"' % (resource_value, str(members)))
@@ -432,8 +455,25 @@ def create_mex(module, name, mex = None, **kw):
             # if the fetched resource doesn't match the expected type, then skip to next iterable
             if not (resource_type == resource.tag or resource_type == resource.get('type')):
                 continue
-            members = resource.xpath(resource_iterexpr)
+            members = []
+            allitems = []
+            for value in resource.xpath(resource_iterexpr):
+                allitems.append(str(value))
+                if len(allitems) == iter_blocksize:
+                    if iter_blocksize > 1:
+                        newval = etree.Element('tag')
+                        for item in allitems:
+                            elem = etree.SubElement(newval, 'value', type='object')
+                            elem.text = str(item)
+                    else:
+                        newval = allitems[0]
+                    members.append(newval)
+                    if len(members) > _max_submexes:
+                        log.error("too many combinations (>%s)" % _max_submexes)
+                        return mex
+                    allitems = []
             log.debug ('iterated xpath %s members %s' , resource_iterexpr, members)
+        # add all values to this iter_tag        
         all_iterables.append([(iter_tag, value) for value in members])
 
     log.debug("all iterable values: %s", str(all_iterables))
@@ -454,7 +494,14 @@ def create_mex(module, name, mex = None, **kw):
             for sublist in all_iterables:
                 iter_tag, value = sublist[int(step*len(sublist)/max_list_length)]
                 resource_tag = subinputs.xpath('.//tag[@name="%s"]' % iter_tag)[0]
-                etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=value)
+                if isinstance(value, etree._Element):
+                    elem = etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag)
+                    if value.get('type'):
+                        elem.set('type', value.get('type'))
+                    for kid in value:
+                        elem.append(copy.deepcopy(kid))
+                else:
+                    etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=str(value))
                 resource_tag.getparent().remove (resource_tag)
             submex = etree.Element('mex', name=name, type=module.get ('uri'))
             submex.append(subinputs)
@@ -474,7 +521,14 @@ def create_mex(module, name, mex = None, **kw):
             subinputs = copy.deepcopy(mex_inputs)
             for iter_tag, value in iter_combo:
                 resource_tag = subinputs.xpath('.//tag[@name="%s"]' % iter_tag)[0]
-                etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=value)
+                if isinstance(value, etree._Element):
+                    elem = etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag)
+                    if value.get('type'):
+                        elem.set('type', value.get('type'))
+                    for kid in value:
+                        elem.append(copy.deepcopy(kid))
+                else:
+                    etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=str(value))
                 resource_tag.getparent().remove (resource_tag)
             submex = etree.Element('mex', name=name, type=module.get ('uri'))
             submex.append(subinputs)
