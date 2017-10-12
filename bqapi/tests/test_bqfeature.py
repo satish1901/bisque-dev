@@ -120,7 +120,7 @@ def test_bqfeature_fetchvector_error():
     try:
         resource_list = [FeatureResource(image='%s/image_service/image/notaresource' % bqsession.bisque_root)]
         feature_vector = Feature().fetch_vector(bqsession, 'SimpleTestFeature', resource_list)
-    except FeatureCommError:
+    except FeatureError:
         assert True
     else:
         assert False
