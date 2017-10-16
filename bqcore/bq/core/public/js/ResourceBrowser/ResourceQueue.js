@@ -357,7 +357,7 @@ Ext.apply(Bisque.ResourceBrowser.ResourceQueue.prototype, {
         }
 
         for (var param in uriObj)
-        if (uriObj[param].length == 0)
+        if (uriObj[param] && uriObj[param].length == 0)
             delete uriObj[param];
         else
             uri += '&' + param + '=' + uriObj[param];
