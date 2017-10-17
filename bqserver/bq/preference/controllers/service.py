@@ -98,7 +98,7 @@ TagValueNode.__new__.__defaults__ = ('', {}, [])
 TagNameNode = namedtuple('TagNameNode',['sub_node_dict','node_attrib', 'sub_none_tag_node'])
 TagNameNode.__new__.__defaults__ = (OrderedDict(), {}, [])
 
-def mergeDocuments(current, new, attrib={}):
+def mergeDocuments(current, new, **attrib):
     """
         Merges two xml documents. Current document elements are replace with new document elements.
 
@@ -179,7 +179,7 @@ def mergeDocuments(current, new, attrib={}):
 
     m_dict = merge(newDict, currentDict)
 
-    return to_etree(m_dict, attrib=attrib)
+    return to_etree(m_dict, **attrib)
 
 
 def to_dict(tree):
@@ -211,7 +211,7 @@ def to_dict(tree):
     return build(tree)
 
 
-def to_etree(dictionary, attrib={}):
+def to_etree(dictionary, **attrib):
     """
         @param: preference dictionary stucture (TagNameNode)
         @return: etree
@@ -230,16 +230,18 @@ def to_etree(dictionary, attrib={}):
             node.append(subNode)
         return node
 
-    node = etree.Element('preference', **attrib)
+    if 'hidden' in attrib: del attrib['hidden']
+    node = etree.Element('preference', hidden='true', **attrib)
     for e in dictionary.sub_none_tag_node:
         node.append(e)
     return build(dictionary.sub_node_dict, node)
 
 
-def update_level(new_doc, current_doc, attrib={}):
+def update_level(new_doc, current_doc, **attrib):
     """
         prepares the new elements to be place in the preference resource
     """
+    log.debug('update_level')
     new_dict = to_dict(new_doc)
     current_dict = to_dict(current_doc)
     def build(new, current):
@@ -288,7 +290,7 @@ def update_level(new_doc, current_doc, attrib={}):
 
 
 
-    return to_etree(update_dict, attrib=attrib)
+    return to_etree(update_dict, **attrib)
 
 
 class PreferenceController(ServiceController):
@@ -457,7 +459,7 @@ class PreferenceController(ServiceController):
             attrib = {}
             if 'clean' not in kw.get('view', ''):
                 attrib = system_preference.attrib
-            user_preference = mergeDocuments(system_preference, user_preference, attrib=attrib)
+            user_preference = mergeDocuments(system_preference, user_preference, **attrib)
         else:
             user_preference  = system_preference
 
@@ -483,12 +485,14 @@ class PreferenceController(ServiceController):
         if len(resource_preference_list)>0:
             resource_preference = data_service.get_resource(resource_preference_list[0].attrib.get('uri'), **kw)
             if not resource_preference: #handles a bug in the data_service with permissions and full verse deep views
-                resource_preference = etree.Element('prefererence')
+                resource_preference = etree.Element('prefererence', hidden='true')
+            else:
+                resource_preference.set('hidden', 'true')
             attrib = {}
             if 'clean' not in kw.get('view',''):
                 attrib.update(user_preference.attrib)
                 attrib.update(resource_preference.attrib)
-            resource_preference = mergeDocuments(user_preference, resource_preference, attrib=attrib)
+            resource_preference = mergeDocuments(user_preference, resource_preference, **attrib)
         else:
             resource_preference = user_preference
 
@@ -502,7 +506,7 @@ class PreferenceController(ServiceController):
             if 'clean' not in kw.get('view', ''):
                 attrib.update(resource_preference.attrib)
                 attrib.update(annotation_preference.attrib)
-            annotation_preference = mergeDocuments(resource_preference, annotation_preference, attrib=attrib)
+            annotation_preference = mergeDocuments(resource_preference, annotation_preference, **attrib)
         else:
             annotation_preference = resource_preference
 
@@ -588,6 +592,7 @@ class PreferenceController(ServiceController):
             @param: path
             @param: body
         """
+        log.debug('system_post')
         try:
             preference_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
@@ -644,6 +649,7 @@ class PreferenceController(ServiceController):
             @param: xpath
             @param: body
         """
+        log.debug('system_put')
         try:
             new_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
@@ -739,6 +745,7 @@ class PreferenceController(ServiceController):
             @param: body - an xml string of the element being posted back (default: None)
             @param: kw - pass through query parameters to data_service
         """
+        log.debug('user_post')
         try:
             preference_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
@@ -764,6 +771,7 @@ class PreferenceController(ServiceController):
             @param: body - an xml string of the element being posted back (default: None)
             @param: kw - pass through query parameters to data_service
         """
+        log.debug('user_put')
         try:
             preference_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
@@ -808,6 +816,7 @@ class PreferenceController(ServiceController):
             @param: body - an xml string of the element being posted back(default: None)
             @param: kw - pass through query parameters to data_service
         """
+        log.debug('resource_post')
         try:
             preference_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
@@ -845,6 +854,7 @@ class PreferenceController(ServiceController):
             @param: body - an xml string of the element being posted back(default: None)
             @param: kw - pass through query parameters to data_service
         """
+        log.debug('resource_put')
         try:
             preference_doc = etree.fromstring(body)
         except etree.XMLSyntaxError:
@@ -909,6 +919,7 @@ class PreferenceController(ServiceController):
     def post(self, resource, resource_preference_list, preference_doc, xpath=None):
         """
         """
+        log.debug('post')
         resource_preference = None
         if len(resource_preference_list)>0:
             resource_preference = data_service.get_resource(resource_preference_list[0].attrib.get('uri'), view='deep')
@@ -917,7 +928,7 @@ class PreferenceController(ServiceController):
             tagNames = re.findall('tag\[@name="(?P<name>[A-Za-z0-9_\- ]+)"\]', xpath) #only alphanumeric tag names are allowed right now
             if len(tagNames)>0 and preference_doc.attrib.get('name')==tagNames[-1]:
                 #parse xpath and form the xml doc to merge
-                preference = etree.Element('preference')
+                preference = etree.Element('preference', hidden='true')
                 tagElement = preference
                 for t in tagNames[:-1]: #last element should already be included
                     tagElement = etree.SubElement(tagElement, 'tag', name = t)
@@ -934,9 +945,12 @@ class PreferenceController(ServiceController):
             abort(400)
 
         if resource_preference: #replace element
+            log.debug('post current_preference_etree: %s'%etree.tostring(current_preference_etree))
+            log.debug('post resource_preference: %s'%etree.tostring(resource_preference))
             data_service.update_resource(resource=resource_preference, new_resource=current_preference_etree)
             #data_service.del_resource(resource_preference.attrib.get('uri'))
         else: #create new element
+            log.debug('post current_preference_etree: %s'%etree.tostring(current_preference_etree))
             data_service.new_resource(current_preference_etree, parent='/data_service/%s' % resource.attrib.get('resource_uniq'))
 
 
