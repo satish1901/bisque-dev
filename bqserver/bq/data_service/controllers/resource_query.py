@@ -220,8 +220,8 @@ def p_term_tagvaltype(p):
 
     tagfilter =None
     if name is not None:
-        # attributes
-        if name[0] == '@' and val:
+        # attributes in tag_query
+        if len(name) and name[0] == '@' and val:
             name = name[1:]
             if name in LEGAL_ATTRIBUTES:
                 op = _OPERATIONS[rel]
