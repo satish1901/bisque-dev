@@ -43,6 +43,7 @@ class ResourceDescriptor(object):
             diff = datetime.now() - self.ts_resource
             ms = diff.total_seconds()*1000.0
             if ms>self.valid_period:
+                #log.debug('%s resource is outdated, removing cache'%self.uniq)
                 self.ts_resource = None
                 self.resource = None
                 self.meta = None
@@ -51,12 +52,14 @@ class ResourceDescriptor(object):
             diff = datetime.now() - self.ts_files
             ms = diff.total_seconds()*1000.0
             if ms>self.valid_period:
+                #log.debug('%s blob is outdated, removing cache'%self.uniq)
                 self.ts_files = None
                 self.files = None
 
     def get_resource(self):
         self.validate()
         if self.resource is not None:
+            #log.debug('%s resource from cache'%self.uniq)
             return self.resource
         self.resource = data_service.resource_load (uniq=self.uniq, view='image_meta')
         self.ts_resource = datetime.now()
@@ -81,6 +84,7 @@ class ResourceDescriptor(object):
         if self.files is not None:
             # dima: do file existence check here
             # re-request blob service if unavailable
+            #log.debug('%s blob from cache'%self.uniq)
             return self.files
         self.get_resource()
         self.files = blob_service.localpath(self.uniq, resource=self.resource)
