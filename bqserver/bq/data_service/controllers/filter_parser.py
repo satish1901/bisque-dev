@@ -68,6 +68,8 @@ def p_filter(p) :
     print "FILTER", p[3]
     columns = [getattr(dbclass, col[0]) for col in p[3]][::-1]
     filters = [ getattr(dbclass, col[0]) == col[1] for col in p[3][1:] ]
+    if not any ( col[0] == 'resource_hidden' for col  in p[3][1:] ):
+        filters.append (getattr(dbclass, 'resource_hidden') == None)
     #filters.append (Taggable.resource_type == p[1])
     #p[0] = (p[1], DBSession.query (*columns).filter (*filters).group_by(*columns).order_by(*columns))
     p[0] = (dbclass, columns, filters)

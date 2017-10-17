@@ -614,7 +614,7 @@ def tags_special(dbtype, query, params):
         'gob_types' : (GObject, ['resource_user_type'], None),
     }
 
-    name_map = { 'resource_name' : 'name', 'resource_user_type' : 'type', 'resource_value': 'value', 'count':'text' }
+    name_map = { 'resource_name' : 'name', 'resource_user_type' : 'type', 'resource_value': 'value', 'count':'text','resource_hidden' : 'hidden' }
 
     # extract=tag[name],tag[value, name="qqq"],gobject[type],gobject[name,type="Fish*",value, ts ]
     # /tag[name],tag[value,name=qqq]
