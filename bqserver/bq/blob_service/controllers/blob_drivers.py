@@ -422,7 +422,7 @@ class IrodsDriver(StorageDriver):
         self.cache = string.Template(cache).safe_substitute(datadir=data_url_path())
         log.debug('irods.user: %s irods.password: %s' , self.user, self.password)
         # Get the constant portion of the path
-        log.info("created irods store %s " , self.mount_url)
+        log.debug("created irods store %s " , self.mount_url)
 
     def valid(self, storeurl):
         return storeurl.startswith(self.mount_url) and storeurl
