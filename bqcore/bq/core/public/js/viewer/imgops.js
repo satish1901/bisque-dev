@@ -80,6 +80,22 @@ ImgOperations.prototype.changed = function () {
         this.viewer.need_update();
 };
 
+ImgOperations.prototype.save_brightness = function (v) {
+    var me = this;
+    clearTimeout(this.timeout_brightness);
+    this.timeout_brightness = setTimeout(function(){
+        BQ.Preferences.set(me.uuid, 'Viewer/brightness', v);
+    }, 500);
+};
+
+ImgOperations.prototype.save_contrast = function (v) {
+    var me = this;
+    clearTimeout(this.timeout_contrast);
+    this.timeout_contrast = setTimeout(function(){
+        BQ.Preferences.set(me.uuid, 'Viewer/contrast', v);
+    }, 500);
+};
+
 ImgOperations.prototype.createMenu = function () {
     if (this.menu) return;
     this.menu = this.viewer.createViewMenu();
@@ -110,10 +126,11 @@ ImgOperations.prototype.createMenu = function () {
         maxValue: 100,
         increment: 10,
         zeroBasedSnapping: true,
+        checkChangeBuffer: 150, // dima: does not seem to work
         listeners: {
             scope: this,
             change: function(slider, v) {
-                BQ.Preferences.set(this.uuid, 'Viewer/brightness', v);
+                this.save_brightness(v);
                 this.changed();
             },
         },
@@ -130,11 +147,11 @@ ImgOperations.prototype.createMenu = function () {
         maxValue: 100,
         increment: 10,
         zeroBasedSnapping: true,
-        zeroBasedSnapping: true,
+        checkChangeBuffer: 150, // dima: does not seem to work
         listeners: {
             scope: this,
             change: function(slider, v) {
-                BQ.Preferences.set(this.uuid, 'Viewer/contrast', v);
+                this.save_contrast(v);
                 this.changed();
             },
         },
@@ -190,9 +207,12 @@ ImgOperations.prototype.createChannelMap = function ( ) {
             listeners: {
                 scope: this,
                 change: function(field, value) {
-                    channel_colors[field.channel] = Ext.draw.Color.fromString('#'+value);
-                    phys.prefsSetFusion (this.uuid);
-                    this.changed();
+                    var c = Ext.draw.Color.fromString('#'+value);
+                    if (c) {
+                        channel_colors[field.channel] = c;
+                        phys.prefsSetFusion (this.uuid);
+                        this.changed();
+                    }
                 },
             },
         });
@@ -211,6 +231,8 @@ ImgOperations.prototype.onPreferences = function () {
     this.default_brightness       = BQ.Preferences.get(resource_uniq, 'Viewer/brightness',       this.default_brightness) || this.default_brightness;
     this.default_contrast         = BQ.Preferences.get(resource_uniq, 'Viewer/contrast',         this.default_contrast) || this.default_contrast;
 };
+
+
 
 //-----------------------------------------------------------------------
 // BQ.editor.GraphicalSelector - Graphical annotations menu

@@ -22,6 +22,18 @@ pyramidal:
 Tile retreival in seconds, avg: 0.388680000305 max: 0.976000070572 min: 0.178999900818, std: 0.157602984435
 Tile retreival in seconds, avg: 0.0621600008011 max: 0.0680000782013 min: 0.0569999217987, std: 0.00250884551866
 
+BisQue ucsb 5.11:
+
+planar:
+Tile retreival in seconds, avg: 0.963779997826 max: 7.89700007439 min: 0.174000024796, std: 1.98362018492
+Tile retreival in seconds, avg: 0.0591799974442 max: 0.0749998092651 min: 0.0479998588562, std: 0.00932241239629
+
+pyramidal:
+Tile retreival in seconds, avg: 0.367980003357 max: 0.97000002861 min: 0.156999826431, std: 0.175666089739
+Tile retreival in seconds, avg: 0.0486400032043 max: 0.066999912262 min: 0.0409998893738, std: 0.00865506828418
+
+
+
 ----------------------------------------
 iplant
 ----------------------------------------
