@@ -81,7 +81,13 @@ class ThumbnailOperation(BaseOperation):
         dims = token.dims or {}
         num_x = int(dims.get('image_num_x', 0))
         num_y = int(dims.get('image_num_y', 0))
-        width, height = compute_new_size(num_x, num_y, size[0], size[1], keep_aspect_ratio=True, no_upsample=True)
+        try:
+            width, height = compute_new_size(num_x, num_y, size[0], size[1], keep_aspect_ratio=True, no_upsample=True)
+        except ZeroDivisionError:
+            log.warning('Thumbnail warning while guessing size %s: [%sx%s] to [%sx%s]', token.resource_id, num_x, num_y, width, height)
+            width = size[0]
+            height = size[1]
+
         info = {
             'image_num_x': width,
             'image_num_y': height,
@@ -121,7 +127,12 @@ class ThumbnailOperation(BaseOperation):
         dims = token.dims or {}
         num_x = int(dims.get('image_num_x', 0))
         num_y = int(dims.get('image_num_y', 0))
-        width, height = compute_new_size(num_x, num_y, size[0], size[1], keep_aspect_ratio=True, no_upsample=True)
+
+        try:
+            width, height = compute_new_size(num_x, num_y, size[0], size[1], keep_aspect_ratio=True, no_upsample=True)
+        except ZeroDivisionError:
+            raise ImageServiceException(400, 'Thumbnail: new image size cannot be guessed due to missing info' )
+
         info = {
             'image_num_x': width,
             'image_num_y': height,

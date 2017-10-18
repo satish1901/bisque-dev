@@ -137,13 +137,24 @@ class ResizeOperation(BaseOperation):
         if maxBounding and num_x<=size[0] and num_y<=size[1]:
             log.debug('Resize: Max bounding resize requested on a smaller image, skipping...')
             return token
-        if token.dryrun != True and (size[0]<=0 or size[1]<=0) and (num_x<=0 or num_y<=0):
+        if token.dryrun != True and (num_x<=0 or num_y<=0):
             raise ImageServiceException(400, 'Resize: image improperly decoded, has side of 0px' )
+        if token.dryrun != True and (size[0]<=0 or size[1]<=0) and (num_x<=0 or num_y<=0):
+            raise ImageServiceException(400, 'Resize: new image size cannot be guessed due to missing info' )
 
         ifile = token.first_input_file()
         ofile = '%s.size_%d,%d,%s,%s' % (token.data, size[0], size[1], method, textAddition)
         args = ['-resize', '%s,%s,%s%s'%(size[0], size[1], method,aspectRatio)]
-        width, height = compute_new_size(num_x, num_y, size[0], size[1], aspectRatio!='', maxBounding)
+        try:
+            width, height = compute_new_size(num_x, num_y, size[0], size[1], aspectRatio!='', maxBounding)
+        except ZeroDivisionError:
+            if token.dryrun == True:
+                log.warning('Resize warning while guessing size %s: [%sx%s] to [%sx%s]', token.resource_id, num_x, num_y, width, height)
+                width = 1
+                height = 1
+            else:
+                raise ImageServiceException(400, 'Resize: new image size cannot be guessed due to missing info' )
+
         log.debug('Resize %s: [%sx%s] to [%sx%s] for [%s] to [%s]', token.resource_id, num_x, num_y, width, height, ifile, ofile)
 
         # if image has multiple resolution levels find the closest one and request it
