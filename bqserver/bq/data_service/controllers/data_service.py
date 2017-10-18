@@ -124,7 +124,7 @@ class DataServerController(ServiceController):
     def _default(self, *path, **kw):
         #log.debug ('headers:'+ str(cherrypy.request.headers))
         path = list(path)
-        log.info ("path = %s %s " , path, kw)
+        #log.debug ("path = %s %s " , path, kw)
         token = path.pop(0)
         if is_uniq_code(token):
             log.debug('using uniq token')
