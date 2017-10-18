@@ -179,7 +179,7 @@ class BisquikResource(Resource):
 
         resource = self.force_dbload(query)
         if resource is None:
-            log.info ("Permission check failure %s = %s" , str(query), str( resource))
+            log.warn ("Permission check failure %s = %s" , str(query), str( resource))
             if identity.not_anonymous():
                 abort(403)
             else:
@@ -307,10 +307,10 @@ class BisquikResource(Resource):
         #    return '<response status="FAIL">Permission denied</response>'
 
         parent = self.load_parent()
-        log.debug ("NEW: parent %s " % parent)
+        log.debug ("NEW: parent %s " , str( parent))
         parent = self.check_access(parent, RESOURCE_EDIT)
         resource = bisquik2db(doc=xml, parent = parent)
-        log.info ("NEW: => %s " % resource )
+        log.info ("NEW: => %s " , str( resource ))
         if resource is None:
             resource = etree.Element ('resource')
             resource.text = "FAIL"
@@ -327,8 +327,7 @@ class BisquikResource(Resource):
         if parent:
             resource = self.check_access(parent, RESOURCE_EDIT)
             DBSession.autoflush = False
-            log.info('REPLACE %s in %s' , self.resource_name , str(parent))
-            log.debug ("replace: %s => %s" , xml.tag , str(resource))
+            log.debug('REPLACE %s in %s  %s=>%s' , self.resource_name , str(parent), xml.tag , str(resource))
             # Here we clear the specific type (tag,gobject) etc. and
 
             parent.clear([ self.resource_name ])
@@ -351,6 +350,7 @@ class BisquikResource(Resource):
         #transaction.commit()
         if resource is None:
             resource = etree.Element ('resource')
+        log.info ('DELETE_ALL finished %s' , request.url)
         return self.resource_output(resource, **kw)
 
     @expose()

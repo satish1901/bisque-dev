@@ -137,7 +137,7 @@ def check_access(query, action=RESOURCE_READ):
 
     resource = force_dbload(query)
     if resource is None:
-        log.info ("Permission check failure %s" , str( query))
+        log.debug ("Permission check failure %s" , str( query))
         if identity.not_anonymous():
             abort(403)
         else:
@@ -220,7 +220,7 @@ class ResourceAuth(Resource):
         view = kw.pop('view', None)
         recurse = kw.pop('recurse', None)
         resource = check_access(request.bisque.parent, RESOURCE_READ)
-        log.info ("AUTH %s  %s" , resource, request.environ)
+        log.debug ("AUTH %s  %s" , resource, request.environ)
         response = etree.Element('resource', uri=request.url)
 
         resource_acl_query(resource, recurse=recurse,response=response)
@@ -254,10 +254,10 @@ class ResourceAuth(Resource):
     #############
     # Modifies
     def replace_all(self, resource, xml, notify=False, **kw):
-        log.info("REPLACE_ALL %s %s", request.url, xml )
+        log.debug("REPLACE_ALL %s %s", request.url, xml )
         response = etree.Element('resource', uri=request.url)
         resource = check_access(resource, RESOURCE_EDIT)
-        log.debug ("REPLACE_ALL resource %s", resource)
+        #log.debug ("REPLACE_ALL resource %s", resource)
         if resource is not None:
             DBSession.autoflush = False
             newacls = []
@@ -460,7 +460,7 @@ def resource_acl (resource,  newauth, user=None, acl=None, notify=False, invalid
     #
     handler = SHARE_HANDLERS.get(resource.resource_type)
     if handler:
-        log.info ("Special share handling with %s", handler)
+        log.debug ("Special share handling with %s", handler)
         handler(resource.resource_uniq, user.resource_uniq, newauth, action)
 
     # Notify changes if needed

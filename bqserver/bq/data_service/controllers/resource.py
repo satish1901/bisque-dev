@@ -233,7 +233,7 @@ class ResponseCache(object):
             if os.path.exists (cachename):
                 with open(cachename) as f:
                     headers, cached = f.read().split ('\n\n', 1)
-                    log.info (u'cache fetch serviced %s', url)
+                    log.debug (u'cache fetch serviced %s', url)
                     headers = eval (headers)
                     return headers, cached
         except ValueError,e:
@@ -249,7 +249,7 @@ class ResponseCache(object):
         if '?' in url:
             url = url.split('?',1)[0]
         cachename = self._cache_name(url, user)
-        log.info ('cache invalidate ( %s )' , cachename )
+        log.debug ('cache invalidate ( %s )' , cachename )
         if exact:
             # current cache names file-system safe versions of urls
             # /data_service/images/1?view=deep
@@ -339,7 +339,7 @@ class HierarchicalCache(ResponseCache):
            This is overkill as we do not need to invalidate
              /ds/images/1/gobjects/3
         """
-        log.info ("CACHE invalidate %s for %s " ,url , user)
+        log.debug ("CACHE invalidate %s for %s " ,url , user)
         files = os.listdir(self.cachepath)
         (scheme, authority, path, query, fragment) = parse_uri(url)
         splitpath = path.split('/')
@@ -465,7 +465,7 @@ class HierarchicalCache(ResponseCache):
         names  = list( cache_names )
         names.extend (query_names)
         #names.extend (dataset_names)
-        log.info ("CACHE invalidate %s for %s %s" , resource and resource.resource_uniq , user, names)
+        log.debug ("CACHE invalidate %s for %s %s" , resource and resource.resource_uniq , user, names)
         # Delete user matches
         try:
             log.debug ('cache delete for user')
@@ -638,8 +638,8 @@ class Resource(ServiceController):
         user_id  = identity.get_user_id()
         usecache = asbool(kw.pop('cache', True))
         http_method = request.method.lower()
-        log.info ('Request "%s" with %s?%s' , http_method, request.path,str(kw))
-        log.debug ('Request "%s" ', path)
+        log.debug ('Request "%s" with %s?%s' , http_method, request.path,str(kw))
+        #log.debug ('Request "%s" ', path)
 
         #check the http method is supported.
         try:
