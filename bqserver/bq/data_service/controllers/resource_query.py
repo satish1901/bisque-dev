@@ -212,7 +212,7 @@ def p_term_not(p):
 def p_term_tagvaltype(p):
     '''term : tvexpr '''
 
-    log.debug ('tagval %s' % list(p[1]))
+    #log.debug ('tagval %s' % list(p[1]))
     name, val, type_, rel = p[1]
     #vals= values.alias()
     tag = taggable.alias ()
@@ -274,7 +274,7 @@ def p_term_tagvaltype(p):
 
     p[0] = exists([tag.c.id]).where(tagfilter)
 
-    log.debug ("SQL %s" % p[0])
+    #log.debug ("SQL %s" % p[0])
 
 
 
@@ -358,7 +358,7 @@ def base_permissions (user_id, with_public, action = RESOURCE_READ):
 
     if is_admin():
         if 'public' in with_public:
-            log.info('user (%s) is admin wpublic %s. Skipping protection filters' , user_id, with_public)
+            log.debug('user (%s) is admin wpublic %s. Skipping protection filters' , user_id, with_public)
             return None
     user_id = user_id or get_user_id()
     if user_id is None:
@@ -414,10 +414,10 @@ def prepare_tag_expr (query, tag_query=None):
             return query
         lexer = lex.lex()
         parser = yacc.yacc(outputdir = data_path(), debug = 0)
-        log.debug ("parsing '%s'  " % (tag_query))
+        log.debug ("parsing '%s'  " , tag_query)
         #expr = parser.parse (tag_query, lexer=lexer, debug=log)
         expr = parser.parse (tag_query, lexer=lexer, debug = 0)
-        log.debug ("parsed '%s' -> %s " % (tag_query, expr))
+        log.debug ("parsed '%s' -> %s " , tag_query, str(expr))
         query = query.filter(expr)
     return query
 
@@ -450,13 +450,13 @@ def prepare_type (resource_type):
     query_expr = None
     for resource_type in types:
         ## Setup universal query type
-        log.debug ("query type %s %s" % (name, dbtype))
+        log.debug ("query type %s %s" ,  name, str(dbtype))
         nm, dbty = resource_type
         query_type = None
         # Special clause for non-system resource and list of resources
         # the name 'nm' is the local type and we will filter those
         if dbtype == Taggable and nm is not None and nm != 'resource':
-            log.debug ("query resource_type %s" % nm)
+            log.debug ("query resource_type %s" , nm)
             #query_expr = (Taggable.tb_id == UniqueName(name).id)
             query_type =  (Taggable.resource_type == nm)
         # Check if value or vertix ?
@@ -483,7 +483,7 @@ def prepare_parent(resource_type, query, parent_query=None):
         subquery = parent_query.with_labels().subquery()
         #parent = parent_query.first()
         #log.debug ("subquery " + str(subquery))
-        log.debug ( "adding parent of %s %s " % ( name , dbtype))
+        log.debug ( "adding parent of %s %s " ,  name , str(dbtype))
         #query = DBSession.query(dbtype).filter (dbtype.resource_parent_id == subquery.c.taggable_id)
         query  = query.filter(dbtype.resource_parent_id == subquery.c.taggable_id)
         #query  = query.filter(dbtype.resource_parent_id == parent.id)
@@ -508,7 +508,7 @@ def prepare_order_expr (query, tag_order, **kw):
                 ordering = desc
             order = order.strip('"\'')
 
-            log.debug ("tag_order: %s" % (order))
+            log.debug ("tag_order: %s" ,  order)
 
             if order.startswith('@'):
                 # skip illegal attributes
@@ -630,7 +630,7 @@ def tags_special(dbtype, query, params):
             query = DBSession.query(func.count(columns[-1]).label('count'), *columns).filter (dbclass.document_id == sq1.c.taggable_document_id)
             query =query.filter (*filters)
             query =query.group_by(*columns).order_by(*columns)
-            log.debug ("FILTER %s" % query)
+            #log.debug ("FILTER %s" , str( query))
             q = [ fobject(resource_type=dbclass.xmltag, **(dict ((name_map[k], v) for k,v in attr._asdict().items()))) for  attr in query]
             #q = []
             results.extend (q)
@@ -684,7 +684,7 @@ def tags_special(dbtype, query, params):
 
     tv = params.pop('gob_names', None)
     if tv:
-        log.debug ("GOB %s" % tv)
+        #log.debug ("GOB %s" % tv)
         ### Given a query and a tag_name, return all the possible values for the tag
         #valtags = tags.alias()
         #tv = UniqueName(tv)
@@ -846,7 +846,7 @@ def prepare_attributes (query, dbtype, attribs):
                     except ValueError:
                         log.error('bad time: %s' %val)
                         continue
-                log.debug ("adding attribute search %s %s op=%s %s" % (dbtype, k, op,  val))
+                log.debug ("adding attribute search %s %s op=%s %s" ,  str(dbtype), k, op,  val)
                 if op == '>=':
                     query =query.filter( getattr(dbtype, k) >= val)
                 elif op == '>':
@@ -900,7 +900,7 @@ def resource_query(resource_type,
     # This converts an request for values to the actual
     # objects represented by those values;  :o
     if dbtype == Value:
-        log.debug ("VALUE QUERY %s" % query)
+        log.debug ("VALUE QUERY %s" , str( query))
         sq1 = query.with_labels().subquery()
         query = DBSession.query (Taggable).filter (Taggable.id == sq1.c.values_valobj)
         wpublic = 1
@@ -1016,7 +1016,7 @@ def match_user (user_url =None, email =None ):
     tg_user = User(user_name=name, password='bisque', email_address=email, display_name=email)
     DBSession.add(tg_user)
     DBSession.flush()
-    log.debug ("AUTH: tg_user = %s" % tg_user)
+    log.debug ("AUTH: tg_user = %s" , str( tg_user))
 
     # we should have created the BQUser by now.
     user = DBSession.query(BQUser).filter_by(resource_name = name).first()
@@ -1062,7 +1062,7 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
 
         # Remove the previous ACL elements and replace with the provided xml
 
-        log.debug ("RESOURCE EDIT %d %s" % (resource.id, resource.acl))
+        log.debug ("RESOURCE EDIT %s %s" ,  resource.id, str(resource.acl))
         current_shares = []
         previous_shares = []
         shares = []
@@ -1115,7 +1115,7 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
                     continue
 
                 if  user is None:
-                    log.debug ('AUTH: no user %s sending invite' % email)
+                    log.debug ('AUTH: no user %s sending invite' , email)
 
                     # Setup a temporary user so that we can add the ACL
                     # Also setup the pre-registration info they can
@@ -1131,13 +1131,12 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
                         check_name = name + str(count)
                         count += 1
 
-                    log.debug('AUTH: tg_user name=%s email=%s display=%s' %
-                              ( name, email, email))
+                    log.debug('AUTH: tg_user name=%s email=%s display=%s',   name, email, email)
 
                     tg_user = User(user_name=name, password='bisque', email_address=email, display_name=email)
                     DBSession.add(tg_user)
                     DBSession.flush()
-                    log.debug ("AUTH: tg_user = %s" % tg_user)
+                    log.debug ("AUTH: tg_user = %s" , str( tg_user))
 
                     #user = BQUser(create_tg=True,
                     #              user_name = name,
@@ -1167,7 +1166,7 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
                 except StopIteration:
                     # Not found
                     acl = TaggableAcl()
-                    log.info('new acl for user %s' % user.name)
+                    log.debug('new acl for user %s' , user.name)
                     acl.user = user
                     #resource.acl.append(acl)
 
@@ -1206,7 +1205,8 @@ def resource_delete(resource, user_id=None):
 
     @param resource: a database resource
     """
-    log.info('resource_delete %s: start' % resource)
+    resource_uniq  = resource.resource_uniq
+    log.debug('resource_delete %s: start' , resource_uniq)
     if  user_id is None:
         user_id = get_user_id()
     if  resource.owner_id != user_id  \
@@ -1216,7 +1216,7 @@ def resource_delete(resource, user_id=None):
         q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
         q = q.filter (TaggableAcl.user_id == user_id)
         q.delete()
-        log.info('deleting acls for %s reource_owner(%s)' , user_id, resource.owner_id)
+        log.debug('deleting acls for %s reource_owner(%s)' , user_id, resource.owner_id)
         Resource.hier_cache.invalidate_resource (q, user = user_id)
         #Resource.hier_cache.invalidate ('/', user = user_id)
         return
@@ -1228,7 +1228,7 @@ def resource_delete(resource, user_id=None):
     value_count = DBSession.query(Value).filter_by(valobj = resource.id).count()
     if value_count:
         resource.resource_hidden = True
-        log.info('hiding resource due to references')
+        log.debug('hiding resource due to references')
         return
 
     # Delete any ACLs refering to object
@@ -1238,7 +1238,6 @@ def resource_delete(resource, user_id=None):
     ts = datetime.now()
     resource.document.ts = ts
     # We can delete the resource .. check it has an associated blob
-    resource_uniq  = resource.resource_uniq
     if resource_uniq is not None:
         try:
             from bq import blob_service
@@ -1252,7 +1251,7 @@ def resource_delete(resource, user_id=None):
         DBSession.delete(resource)
     #DBSession.flush()
 
-    log.info('resource_delete %s:end' % resource)
+    log.debug('resource_delete %s:end' , resource_uniq)
     return None
 
 

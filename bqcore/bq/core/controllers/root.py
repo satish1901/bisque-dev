@@ -168,6 +168,9 @@ oldnames = {'imgsrv' : 'image_service',
             'ds'     : 'data_service',
             'ms'     : 'module_service',}
 
+NOLOGGING = set (["/check", "/auth_service/session", ])
+
+
 #class Root(controllers.RootController):
 class RootController(BaseController):
     #service_registry = MultiDict()
@@ -203,7 +206,11 @@ class RootController(BaseController):
         URL are formed with
         <service_type>/<path>?arguments
         """
-        log.info ('[%s] %s %s', request.identity.get('repoze.who.userid'), request.method, request.url )
+        if request.path in NOLOGGING:
+            log.debug ('[%s] %s %s', request.identity.get('repoze.who.userid'), request.method, request.url )
+        else:
+            log.info ('[%s] %s %s', request.identity.get('repoze.who.userid'), request.method, request.url )
+
         if log.isEnabledFor (logging.DEBUG):
             log.debug ('HEADERS: %s %s', request.url, dict(request.headers))
             log.debug ('PATH %s in DIR %s', request.path, os.getcwd())
