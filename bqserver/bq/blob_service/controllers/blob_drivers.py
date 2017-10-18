@@ -315,7 +315,7 @@ class LocalDriver (StorageDriver):
                 return ident, localpath
             localpath = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
             #localpath = "%s-%04d%s" % (fpath , x , ext)
-            log.debug ("local.write: File exists... trying %s", tounicode(localpath))
+            log.warn ("local.write: File exists... trying %s", tounicode(localpath))
         raise DuplicateFile(localpath)
 
     def pull (self, storeurl, localpath=None):
@@ -615,7 +615,7 @@ class HttpDriver(StorageDriver):
 
     def mount(self):
         # Get the constant portion of the path
-        log.info("created http store %s " , self.mount_url)
+        log.debug("created http store %s " , self.mount_url)
 
     def valid(self, http_ident):
         return  http_ident.startswith(self.mount_url) and http_ident

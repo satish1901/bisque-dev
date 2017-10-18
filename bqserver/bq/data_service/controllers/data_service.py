@@ -368,7 +368,7 @@ class DataServerController(ServiceController):
             parent_uri = parent
             parent = load_uri(parent)
 
-        log.info ('query: %s %s %s', resource_tag, parent_uri, kw)
+        log.debug ('query: %s %s %s', resource_tag, parent_uri, kw)
 
         uri = "%s/%s" % (parent_uri or self.url, resource_tag or '')
 
