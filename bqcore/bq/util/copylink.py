@@ -34,7 +34,7 @@ def copy_link (*largs):
             #os.link(f, dest)
             dolink(f, dest)
 
-        except (OSError, AttributeError), e:
+        except (OSError, AttributeError) as e:
             log.debug ("Problem in link %s... trying copy" , e)
             if os.path.isdir(f):
                 shutil.copytree(f, dest)

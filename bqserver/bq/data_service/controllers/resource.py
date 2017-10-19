@@ -77,7 +77,8 @@ from bq.core.service import ServiceController
 #from bq.exceptions import RequestError
 from bq.util.paths import data_path
 from bq.util.converters import asbool
-from bq.util.copylink import copy_link
+#from bq.util.copylink import copy_link
+from bq.util.io_misc import dolink
 #from bq.util.xmldict import d2xml
 from .formats import find_inputer, find_formatter
 
@@ -220,9 +221,10 @@ class ResponseCache(object):
                 f.write (str (headers))
                 f.write ('\n\n')
                 f.write (value)
-                copy_link (f.name, cachename)
+                #copy_link (f.name, cachename)
+                dolink (f.name, cachename)
 
-        except IOError:
+        except (OSError, IOError) as e:
             log.exception ("problem in cache save of %s", cachename)
 
     def fetch(self, url,user):
