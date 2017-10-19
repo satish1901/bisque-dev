@@ -68,7 +68,7 @@ from lxml import etree
 from pylons.controllers.util import abort, redirect
 from repoze.what.predicates import Any, in_group
 #from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from tg import (config,  expose,   request, response)
 
 from bq import data_service
@@ -77,6 +77,7 @@ from bq.core.identity import get_username, set_current_user
 from bq.core.model import DBSession, Group, User  # , Visit
 from bq.core.service import ServiceController
 from bq.data_service.model import BQUser, Image, TaggableAcl
+from bq.data_service.controllers.formats import find_inputer, find_formatter
 #from bq.util.bisquik2db import bisquik2db, db2tree
 from bq.util.paths import data_path
 from bq.util import urlutil
@@ -713,6 +714,73 @@ class AdminController(ServiceController):
                 )
             except Exception:
                 log.exception("Mail not sent")
+
+
+    @expose (content_type='text/xml')
+    def group(self, *args, **kw):
+        """
+            GET /admin/group: returns list of all groups <resource> <group name="a" /> <group ... /> </resource>
+
+            POST /admin/group: creates new group,
+                  <group name="new_group" /> or <resource> <group ..> <group ../> </resource>
+                  shortcut:  POST /group/new_group with no body
+            PUT /admin/group  : same as POST
+
+            DELETE /admin/group/group_name : delete the group
+
+        """
+
+
+        log.info ("GROUP %s %s", args, kw)
+        reqformat = kw.pop('format', None)
+        http_method = request.method.upper()
+        if http_method == 'GET':
+            resource =  self.get_groups (*args, **kw)
+        elif http_method == 'DELETE':
+            resource = self.delete_group(*args, **kw)
+        elif http_method in ('PUT', 'POST'):
+            resource = self.new_group(*args, **kw)
+        else:
+            abort (400, "bad request")
+        accept_header = request.headers.get ('accept')
+        formatter, content_type  = find_formatter (reqformat, accept_header)
+        response.headers['Content-Type'] = content_type
+        return formatter(resource)
+
+    def get_groups (self, *args, **kw):
+        resource = etree.Element ('resource')
+        for group in DBSession.query (Group):
+            etree.SubElement (resource, 'group', name = group.group_name)
+        return resource
+    def delete_group (self, group_name, *args, **kw):
+        resource = etree.Element ('resource')
+        group = DBSession.query (Group).filter_by (group_name = group_name).first()
+        if group:
+            etree.SubElement (resource, 'group', name = group.group_name)
+            DBSession.delete(group)
+
+        return resource
+    def new_group (self, *args, **kw):
+        if len(args):
+            group_names = args
+        else:
+            content_type = request.headers.get('Content-Type')
+            inputer = find_inputer (content_type)
+            els = inputer (request.body_file)
+            group_names = els.xpath ('//group/@name')
+        resource = etree.Element ('resource')
+        for nm in group_names:
+            g = Group(group_name  = nm)
+            DBSession.add (g)
+            etree.SubElement (resource, 'group', name=nm)
+
+        try:
+            transaction.commit()
+        except (IntegrityError, InvalidRequestError) as e:
+            transaction.abort()
+            abort (400, "Bad request %s" %e)
+
+        return resource
 
 def initialize(url):
     """ Initialize the top level server for this microapp"""
