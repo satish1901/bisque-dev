@@ -1755,11 +1755,17 @@ Ext.define('BQ.data.writer.Groups', {
             item = null,
             xml = ['<resource>'];
 
-        for (var i=0; (item=data[i]); ++i) {
-            xml.push(Ext.String.format('<group name="{0}" />', item.name));
+        if (request.action === 'destroy') {
+            request.url += '/' + encodeURIComponent(record.data.name);
+        } else {
+            for (var i=0; (item=data[i]); ++i) {
+                xml.push(Ext.String.format('<group name="{0}" />', item.name));
+            }
+            xml.push('</resource>');
+            request.xmlData = xml.join('');
         }
-        xml.push('</resource>');
-        request.xmlData = xml.join('');
+
+
         return request;
     }
 
