@@ -752,7 +752,16 @@ class AdminController(ServiceController):
         for group in DBSession.query (Group):
             etree.SubElement (resource, 'group', name = group.group_name)
         return resource
-    def delete_group (self, group_name, *args, **kw):
+
+    def delete_group (self, *args, **kw):
+        if len(args):
+            group_name = args[0]
+        else:
+            content_type = request.headers.get('Content-Type')
+            inputer = find_inputer (content_type)
+            els = inputer (request.body_file)
+            group_name = els.xpath ('//group/@name')[0]
+
         resource = etree.Element ('resource')
         group = DBSession.query (Group).filter_by (group_name = group_name).first()
         if group:
@@ -760,6 +769,7 @@ class AdminController(ServiceController):
             DBSession.delete(group)
 
         return resource
+
     def new_group (self, *args, **kw):
         if len(args):
             group_names = args

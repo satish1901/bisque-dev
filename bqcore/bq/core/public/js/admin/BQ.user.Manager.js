@@ -1480,3 +1480,289 @@ Ext.define('BQ.admin.logs.Manager', {
 
 });
 
+
+//--------------------------------------------------------------------------------
+// Groups
+//--------------------------------------------------------------------------------
+
+Ext.namespace('BQ.admin.groups');
+
+Ext.define('BQ.model.Groups', {
+    extend : 'Ext.data.Model',
+    fields : [{
+        name: 'name',
+        mapping: '@name',
+    }],
+    proxy : {
+        type: 'ajax',
+        url : '/admin/group',
+
+        batchActions: true,
+        noCache : false,
+
+        limitParam : undefined,
+        pageParam: undefined,
+        startParam: undefined,
+        sortParam : undefined,
+        filterParam : undefined,
+
+        actionMethods: {
+            create : 'POST', // 'PUT'
+            read   : 'GET',
+            update : 'POST',
+            destroy: 'DELETE'
+        },
+
+        reader : {
+            type :  'xml',
+            root :  'resource',
+            record: '>group',
+        },
+
+        writer : {
+            type : 'bq-group',
+            root : 'resource',
+            record: '>group',
+            writeAllFields : true,
+            writeRecordId: false,
+        },
+    },
+});
+
+Ext.define('BQ.admin.groups.Manager', {
+    extend: 'Ext.container.Container',
+    alias: 'widget.bq_groups_manager',
+
+    componentCls: 'bq_groups',
+
+    layout: {
+        type: 'vbox',
+        align : 'stretch',
+        pack  : 'start',
+    },
+
+    initComponent: function() {
+
+        this.store = Ext.create('Ext.data.Store', {
+            model : 'BQ.model.Groups',
+            autoLoad : false,
+            autoSync : true,
+            listeners : {
+                scope: this,
+                //load: this.onUsersStoreLoaded,
+            },
+        });
+
+        this.items = [{
+            xtype: 'toolbar',
+            margin: false,
+            border: false,
+            defaults: {
+                scale: 'large',
+            },
+            items:[{
+                xtype: 'button',
+                itemId: 'ButtonAdd',
+                text: 'Add',
+                iconCls : 'icon add',
+                tooltip: 'Add new group',
+                handler: this.addGroupDlg,
+                disabled: false,
+                scope: this,
+            }, {
+                xtype: 'button',
+                itemId: 'ButtonDelete',
+                text: 'Delete',
+                iconCls : 'icon remove',
+                tooltip: 'Delete existing group',
+                handler: this.deleteGroupDlg,
+                scope: this,
+                disabled: true,
+            }, '->', {
+                xtype:'textfield',
+                itemId: 'search',
+                cls: 'search_field',
+                disabled: false,
+
+                flex: 2,
+                name: 'search',
+
+                default_string: 'Filter groups',
+                value: 'Filter groups',
+
+                //minWidth: 100,
+                //tooltip: 'Query for images using Bisque expressions',
+                enableKeyEvents: true,
+                listeners: {
+                    scope: this,
+                    afterrender: function() {},
+                    focus: function(c) {
+                        //c.flex = 2;
+                        //this.doLayout();
+                        if (c.value === c.default_string) {
+                            c.setValue('');
+                        }
+                    },
+                    // specialkey: function(f, e) {
+                    //     if (e.getKey()==e.ENTER && f.value!='' && f.value != c.default_string) {
+                    //         document.location = BQ.Server.url('/client_service/browser?tag_query='+escape(f.value));
+                    //     }
+                    // },
+                    blur: function(c) {
+                        //c.flex = 0;
+                        //this.doLayout();
+                    },
+                    change: function ( c, newValue, oldValue ) {
+                        if (newValue !== '' && newValue !== c.default_string) {
+                            this.store.clearFilter(true);
+                            var re = new RegExp(newValue, 'i');
+                            this.store.filter(new Ext.util.Filter({
+                                filterFn: function (object) {
+                                    var match = false;
+                                    Ext.Object.each(object.data, function (property, value) {
+                                        //match = match || re.test(String(value));
+                                        match = match || value.indexOf(newValue)===0;
+                                    });
+                                    return match;
+                                  }
+                            }));
+                        } else {
+                            this.store.clearFilter();
+                        }
+                    },
+                },
+            }, '', {
+                xtype: 'button',
+                //text: 'Refresh',
+                iconCls : 'icon refresh',
+                tooltip: 'Refresh groups',
+                disabled: false,
+                scope: this,
+                handler: function() {
+                    this.store.reload();
+                },
+            }],
+        }, {
+            xtype: 'gridpanel',
+            itemId  : 'grid_groups',
+            cls: 'groups',
+            autoScroll: true,
+            flex: 2,
+            store: this.store,
+            //plugins: [this.cellEditing],
+            viewConfig: {
+                stripeRows: true,
+                forceFit: true,
+            },
+
+            listeners : {
+                scope: this,
+                selectionchange: function( me, selected, eOpts ) {
+                    var btn = this.queryById('ButtonDelete');
+                    btn.setDisabled(selected.length===0);
+                },
+            },
+
+            columns: {
+                defaults: {
+                    tdCls: 'bq_row',
+                    cls: 'bq_row',
+                },
+                items: [{
+                    text: 'Name',
+                    flex: 3,
+                    dataIndex: 'name',
+                    sortable: true,
+                    //renderer: this.renderer_group,
+                }],
+            },
+        }];
+        this.callParent();
+    },
+
+    afterRender: function() {
+        this.callParent();
+        this.store.load();
+        //this.queryById('search').setValue('');
+    },
+
+    renderer_group: function(v, metadata, record, rowIndex, colIndex, store) {
+        //metadata.css = record.data.level.toLowerCase();
+        return v;
+    },
+
+    addGroupDlg: function() {
+        Ext.MessageBox.prompt(
+            'Create group',
+            'Please enter a new group name:',
+            function(btn, name) {
+                if (btn !== 'ok' || !name) return;
+                this.onAddGroup(name);
+            },
+            this
+        );
+    },
+
+    onAddGroup: function(name) {
+        // Create a model instance
+        var recs = this.store.add({
+            name: name,
+        });
+        //recs[0].setDirty();
+        //this.queryById('main_grid').view.refresh();
+
+        // clear combo box when successfully added share
+        //this.queryById('user_combo').setValue('');
+    },
+
+    deleteGroupDlg: function() {
+        var record = this.queryById('grid_groups').getView().getSelectionModel().getSelection()[0];
+        var win = Ext.MessageBox.show({
+            title: 'Delete group',
+            msg: 'Are you sure you want to delete group '+record.data.name+'?',
+            buttons: Ext.MessageBox.OKCANCEL,
+            fn: function(buttonResponse) {
+                if (buttonResponse === "ok") {
+                    //this.onDeleteGroup(resource_uniq)
+                    //record.remove();
+                    this.store.remove(record);
+                }
+            },
+            scope: this,
+        });
+    },
+
+    onDeleteGroup: function() {
+        var selection = this.queryById('grid_groups').getView().getSelectionModel().getSelection()[0];
+        if (selection) {
+            this.store.remove(selection);
+        }
+    },
+
+});
+
+//--------------------------------------------------------------------------------------
+// BQ.data.writer.groups
+// XML writer that writes group levels
+//--------------------------------------------------------------------------------------
+
+Ext.define('BQ.data.writer.Groups', {
+    extend: 'Ext.data.writer.Xml',
+    alias: 'writer.bq-group',
+
+    writeRecords: function(request, data) {
+        var record = request.records[0],
+            item = null,
+            xml = ['<resource>'];
+
+        for (var i=0; (item=data[i]); ++i) {
+            xml.push(Ext.String.format('<group name="{0}" />', item.name));
+        }
+        xml.push('</resource>');
+        request.xmlData = xml.join('');
+        return request;
+    }
+
+});
+
+
