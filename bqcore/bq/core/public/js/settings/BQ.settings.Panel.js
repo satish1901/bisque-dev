@@ -48,6 +48,11 @@ Ext.define('BQ.setting.Panel', {
             title: 'Users',
             users: { user: false, admin: true, },
         }, {
+            xtype: 'bq_groups_manager',
+            itemId: 'settings_group_manager',
+            title: 'Groups',
+            users: { user: false, admin: true, },
+        }, {
             xtype: 'bq_cache_manager',
             itemId: 'settings_cache_manager',
             title: 'Cache',
