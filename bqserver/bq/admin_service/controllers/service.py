@@ -731,7 +731,7 @@ class AdminController(ServiceController):
         """
 
 
-        log.info ("GROUP %s %s", args, kw)
+        log.debug ("GROUP %s %s", args, kw)
         reqformat = kw.pop('format', None)
         http_method = request.method.upper()
         if http_method == 'GET':
@@ -759,7 +759,9 @@ class AdminController(ServiceController):
         else:
             content_type = request.headers.get('Content-Type')
             inputer = find_inputer (content_type)
-            els = inputer (request.body_file)
+            body = request.body_file.read()
+            log.debug ("DELETE content %s", body)
+            els = inputer (body)
             group_name = els.xpath ('//group/@name')[0]
 
         resource = etree.Element ('resource')

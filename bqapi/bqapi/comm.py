@@ -452,6 +452,23 @@ class BQSession(object):
             self._create_mex(user, moduleuri)
         return self
 
+    def init_session (self,  user, pwd, moduleuri=None, bisque_root=None, create_mex = False):
+        providers = { 'cas' : self.init_cas, 'internal' : self.init_local }
+        if bisque_root == None:
+            raise BQApiError ("cas login requires bisque_root")
+
+
+        self.bisque_root = bisque_root
+        self.c.root = bisque_root
+        self._load_services()
+        queryurl = self.service_url('auth_service', 'login_providers')
+        login_providers = self.fetchxml (queryurl)
+        login_type = login_providers.find ("./*[@type]")
+        login_type = login_type.get ('type') if login_type is not None else None
+        provider = providers.get (login_type, None)
+        if provider:
+            return provider (user=user, pwd=pwd, moduleuri=moduleuri, bisque_root=bisque_root, create_mex=create_mex)
+
 
     def close(self):
         pass

@@ -234,6 +234,7 @@ def main():
     cpp = sp.add_parser ('cp')
     cpp.add_argument('paths',  nargs='+')
     cpp.add_argument('-T', '--tag_file', default = None, help="tag document for insert")
+    cpp.add_argument('-R', '--resource', default=None, help='force resource type')
     cpp.add_argument('-P', '--permission',   default="private", help="Set resource permission (compatibility)")
     cpp.add_argument('--hidden',   default=None, help="Set resource visibility (hidden)")
     cpp.set_defaults(func=bisque_copy)

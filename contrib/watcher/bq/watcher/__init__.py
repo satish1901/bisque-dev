@@ -1,4 +1,5 @@
-
+from __future__ import absolute_import, division, print_function, unicode_literals
+import os
 import sys
 import time
 import logging
@@ -47,6 +48,10 @@ def tri_iter(singleiter):
     while True:
         yield next(iterable), next(iterable), next(iterable)
 
+
+def remove_prefix(text, prefix):
+    return text[text.startswith(prefix) and len(prefix):]
+
 USAGE="""
 bq-watcher:  watch a directory and transfer or link files to bisqe
 
@@ -82,15 +87,21 @@ def main():
         return
 
     parser = argparse.ArgumentParser(USAGE)
+    launch_dir = os.getcwd ()
     parser.add_argument("--link", '-l', default=False, action="store_true", help="use linking")
-    parser.add_argument("pairs", nargs="*", default=["file:///", ".", "./"], help = "store pairs  file:// dir strip" )
+    parser.add_argument("pairs", nargs="*", default=["file://", launch_dir, "/"], help = "store pairs  file:// dir strip" )
     parser.add_argument("--auth", "-a", help="basic auth credentials to pass", default=None)
     args = parser.parse_args()
-    print args.pairs
+    print (args.pairs)
 
     observer = Observer()
 
     for prefix,path,strip in  tri_iter(args.pairs):
+
+        path = os.path.abspath (path)
+        if strip.startswith ('.'):
+            strip = os.path.abspath (strip)
+        print ("Watching path {} ({})  generating {}".format (path, strip,  os.path.join ( prefix, remove_prefix (path, strip), "<path>")))
         event_handler = BQEventHandler (prefix, strip=strip, use_link=args.link, auth=args.auth)
         observer.schedule(event_handler, path, recursive=True)
 
