@@ -74,7 +74,9 @@ from bq.core.model import DBSession
 from bq.data_service.model import   User
 from bq import module_service
 from bq.util.urlutil import update_url
+from bq.util.xmldict import d2xml
 from bq.exceptions import ConfigurationError
+
 
 from bq import data_service
 log = logging.getLogger("bq.auth")
@@ -108,7 +110,7 @@ class AuthenticationServer(ServiceController):
         identifiers = OrderedDict()
         for key in (x.strip() for x in config.get('bisque.login.providers').split(',')):
             entries = {}
-            for kent in ('url', 'text', 'icon'):
+            for kent in ('url', 'text', 'icon', 'type'):
                 kval = config.get('bisque.login.%s.%s' % (key, kent))
                 if kval is not None:
                     entries[kent] = kval
@@ -117,6 +119,11 @@ class AuthenticationServer(ServiceController):
                 raise ConfigurationError ('Missing url for bisque login provider %s' % key)
         cls.providers = identifiers
         return identifiers
+
+    @expose(content_type="text/xml")
+    def login_providers (self):
+        log.debug ("providers")
+        return etree.tostring (d2xml ({ 'providers' : self.login_map()} ))
 
     @expose()
     def login_check(self, came_from='/', login='', **kw):

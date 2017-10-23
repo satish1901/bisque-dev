@@ -909,7 +909,7 @@ def resource_query(resource_type,
         query = prepare_permissions(query, user_id, with_public = wpublic, action=action)
         #query = prepare_readable_docs(query, user_id, with_public = wpublic)
     else:
-        log.warn ("skipping permissions")
+        log.debug ("skipping permissions")
 
     ## Extra attributes
     if kw.has_key('hidden'):

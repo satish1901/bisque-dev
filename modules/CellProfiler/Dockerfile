@@ -33,12 +33,12 @@ RUN pip install --upgrade six
 WORKDIR /module
 # was: WORKDIR /usr/local/src
 RUN git clone https://github.com/CellProfiler/CellProfiler.git
-#RUN cd CellProfiler && git checkout 2.1.1 
+#RUN cd CellProfiler && git checkout 2.1.1
 RUN cd CellProfiler && git checkout 2.2.0
 
 WORKDIR /module/CellProfiler
-ENV  JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64   
-ENV  LD_LIBRARY_PATH /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server:/usr/lib/jvm/java-7-openjdk-amd64:/usr/lib/jvm/java-7-openjdk-amd64/include  
+ENV  JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64
+ENV  LD_LIBRARY_PATH /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server:/usr/lib/jvm/java-7-openjdk-amd64:/usr/lib/jvm/java-7-openjdk-amd64/include
 #RUN pip install                                                     \
 #  --requirement                                                     \
 #    requirements.txt
