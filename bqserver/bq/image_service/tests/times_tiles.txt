@@ -56,10 +56,10 @@ pyramidal:
 
 
 ----------------------------------------
-tests
+dev ucsb
 ----------------------------------------
 
-dev ucsb: 5.10
+5.10
 =====================
 
 planar:
@@ -71,7 +71,7 @@ Tile retreival in seconds, avg: 0.13493999958 max: 0.325000047684 min: 0.1059999
 Tile retreival in seconds, avg: 0.0425600004196 max: 0.0499999523163 min: 0.039999961853, std: 0.00204116060085
 
 
-dev ucsb: 5.11
+5.11
 ====================
 
 planar:
@@ -81,3 +81,31 @@ Tile retreival in seconds, avg: 0.0323000001907 max: 0.0549998283386 min: 0.0309
 pyramidal:
 Tile retreival in seconds, avg: 0.123899998665 max: 0.235000133514 min: 0.0939998626709, std: 0.0365405528661
 Tile retreival in seconds, avg: 0.032000002861 max: 0.0409998893738 min: 0.0309998989105, std: 0.00202976745288
+
+
+----------------------------------------
+dev vq
+----------------------------------------
+
+5.10
+=====================
+
+planar:
+Tile retreival in seconds, avg: 0.163880000114 max: 1.19899988174 min: 0.0429999828339, std: 0.33417160572
+Tile retreival in seconds, avg: 0.0185800027847 max: 0.0320000648499 min: 0.00999999046326, std: 0.00515788764031
+
+pyramidal:
+Tile retreival in seconds, avg: 0.0575199985504 max: 0.0929999351501 min: 0.0460000038147, std: 0.0106774842958
+Tile retreival in seconds, avg: 0.0184800004959 max: 0.0339999198914 min: 0.00599980354309, std: 0.00517780945676
+
+5.11
+====================
+
+planar:
+Tile retreival in seconds, avg: 0.157940001488 max: 1.16300010681 min: 0.0360000133514, std: 0.332178119231
+Tile retreival in seconds, avg: 0.0139000034332 max: 0.0230000019073 min: 0.0, std: 0.00604068392001
+
+pyramidal:
+Tile retreival in seconds, avg: 0.053060002327 max: 0.108000040054 min: 0.0370001792908, std: 0.0144753542777
+Tile retreival in seconds, avg: 0.0141599988937 max: 0.0220000743866 min: 0.0, std: 0.00537535417267
+
