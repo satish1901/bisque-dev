@@ -91,6 +91,7 @@ Ext.define('BQ.renderers.Renderer', {
     initComponent : function() {
         var resource = this.resource;
         var template = resource.template || {};
+        resource.renderer = resource.renderer || this;
         this.callParent();
     },
 
@@ -132,6 +133,13 @@ Ext.define('BQ.selectors.Selector', {
         });
         this.callParent(arguments);
         return this;
+    },
+
+    initComponent : function() {
+        var resource = this.resource;
+        var template = resource.template || {};
+        resource.renderer = resource.renderer || this;
+        this.callParent();
     },
 
     // cascade if you need to make validation more complex
@@ -807,7 +815,9 @@ Ext.define('BQ.selectors.Gobject', {
         var editprimitives = (template.gobject instanceof Array)? template.gobject.join(','):template.gobject;
         var semantic_types = template.semantic_types;
         if (semantic_types === 'false') semantic_types = false;
-        if (semantic_types === 'true') semantic_types = true;
+        else if (semantic_types === 'true') semantic_types = true;
+        else if (typeof semantic_types === 'undefined') semantic_types = false;
+
         BQGObject.parse_colors_from_gob_template(resource);
         var parameters = {
             nogobjects: '',
