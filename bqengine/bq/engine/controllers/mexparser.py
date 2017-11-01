@@ -95,8 +95,11 @@ class MexParser(object):
         formal_inputs = formal_inputs and formal_inputs[0]
         actual_inputs = mex.xpath('./tag[@name="inputs"]')
         if len( actual_inputs )==0:
-            # no inputs in mex
-            return []
+            # maybe this is a blocked mex => look one level deeper
+            actual_inputs = mex.xpath('./mex/tag[@name="inputs"]')
+            if len( actual_inputs )==0:
+                # no inputs in mex
+                return []
         actual_inputs = actual_inputs and actual_inputs[0]
 
 

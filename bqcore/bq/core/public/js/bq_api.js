@@ -2731,6 +2731,7 @@ BQModule.prototype.createMEX = function( ) {
     if (this.iterables && this.iterables.length>0) {
         var tag_execute = mex.addtag ({name:'execute_options'});
         var iterable_name = undefined;
+        var exec_options = [].concat(this.find_tags("execute_options"));
         for (var p=0; (iterable_name=this.iterables[p]); p++) {
             var i = this.inputs_index[iterable_name];
             if (!i) continue;
@@ -2739,7 +2740,6 @@ BQModule.prototype.createMEX = function( ) {
             // if not (i.e., a dynamically added iterable), use i.type
             var iterable_type = i.type;
             var iterable_kids = [];
-            var exec_options = [].concat(this.find_tags("execute_options"));
             if (exec_options.length >= 1) {
                 var static_iters = [].concat(exec_options[0].find_tags("iterable"));
                 for (var idx=0; (static_iter=static_iters[idx]); idx++) {
@@ -2762,8 +2762,16 @@ BQModule.prototype.createMEX = function( ) {
                 }
             }
         }
+        // add coupled iter flag if requested
         if (this.coupled_iter) {
             tag_execute.addtag({ name:'coupled_iter', value:true, });
+        }
+        // add blocked iter flag if found in module def
+        if (exec_options.length >= 1) {
+            var blocked_iter = exec_options[0].find_tags("blocked_iter");
+            if (blocked_iter && blocked_iter.value.toLowerCase() == 'true') {
+                tag_execute.addtag({ name:'blocked_iter', value:true, });
+            }
         }
     }
 
