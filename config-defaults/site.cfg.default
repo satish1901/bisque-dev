@@ -142,6 +142,7 @@ bisque.stores.local.top = file://$datadir/imagedir/
 #bisque.data_service.max_response_time = 0
 # Module Service
 #bisque.module_service.queue_wait =  5
+#bisque.module_service.blocksize = 3
 
 # Engine Service
 #bisque.engine =  http://localhost:8080

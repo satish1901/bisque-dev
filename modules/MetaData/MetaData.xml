@@ -25,10 +25,9 @@
     </tag>
 
     <tag name="execute_options">
-        <tag name="iterable" value="image_url" type="dataset">
-            <!-- Example for a blocked iteration -->
-            <tag name="blocksize" value="5" />
-        </tag>
+        <tag name="iterable" value="image_url" type="dataset" />
+        <!-- Example for a blocked iteration -->
+        <tag name="blocked_iter" value="true" />
     </tag>
 
     <tag name="module_options" >

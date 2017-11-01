@@ -521,56 +521,47 @@ class BQSession(object):
         """
             Get all input parameters in mex.
             
-            @return: map parameter name -> {'type':..., 'value':..., ...} or iter over {'type':..., 'value':..., ...}
+            @return: map parameter name -> {'type':..., 'value':..., ...} or [ map parameter name -> {'type':..., 'value':..., ...}, ... ] if blocked iter
         """
         def _xml2dict(e):
-            if e.get('type') == 'range':
-                # this is range expression => return iter over range
-                def _iter_vals(node):
-                    val = node.find('tag[@name="start"]').get('value')
-                    try:
-                        val = int(val)
-                    except ValueError:
-                        val = float(val)
-                    end = node.find('tag[@name="end"]').get('value')
-                    try:
-                        end = int(end)
-                    except ValueError:
-                        end = float(end)
-                    step = node.find('tag[@name="step"]').get('value')
-                    try:
-                        step = int(step)
-                    except ValueError:
-                        step = float(step)
-                    while (step > 0 and val <= end) or (step < 0 and val >= end):
-                        yield {'value': str(val)}
-                        valold = val
-                        val += step
-                        if val == valold:   # step may be too small
-                            return
-                return _iter_vals(e)
-            elif len(e) > 0 and all([kid.tag == 'value' and kid.get('type') == 'object' for kid in e]):
-                # this is list of links => return iter over links
-                def _iter_links(node):
-                    for link in node.iterfind('value'):
-                        yield {'type': 'object', 'value': link.text}
-                return _iter_links(e)
-            else:
-                # this is single value or other subtree => return value or JSON representation
-                kids = { key:e.attrib[key] for key in e.attrib if key in ['type', 'value'] }
-                if e.text:
-                    kids['value'] = e.text
-                for k, g in itertools.groupby(e, lambda x: x.tag):
-                    g = [ _xml2dict(x) for x in g ]
-                    kids[k] = g
-                return kids
+            kids = { key:e.attrib[key] for key in e.attrib if key in ['type', 'value'] }
+            if e.text:
+                kids['value'] = e.text
+            for k, g in itertools.groupby(e, lambda x: x.tag):
+                g = [ _xml2dict(x) for x in g ]
+                kids[k] = g
+            return kids
+
+        def _get_mex_params(mextree):
+            p = {}
+            for inp in mextree.iterfind('tag[@name="inputs"]/tag'):
+                p[inp.get('name')] = _xml2dict(inp)
+            p['mex_url']['value'] = mextree.get('uri')
+            return p
 
         # assemble map param name -> param value
+        if self.mex is None:
+            return {}
+        # check if outside is a block mex
+        if self.mex.xmltree.get('type') == 'block':
+            res = []
+            for inner_mex in self.mex.xmltree.iterfind('./mex'):
+                res.append(_get_mex_params(inner_mex))
+        else:
+            res = _get_mex_params(self.mex.xmltree)
+        return res
+
+    def get_mex_execute_options(self):
+        """
+            Get execute options in mex.
+            
+            @return: map option name -> value
+        """
         p = {}
         if self.mex is None:
             return p
-        for inp in self.mex.xmltree.iterfind('tag[@name="inputs"]/tag'):
-            p[inp.get('name')] = _xml2dict(inp)
+        for exop in self.mex.xmltree.iterfind('tag[@name="execute_options"]/tag'):
+            p[exop.get('name')] = exop.get('value')
         return p
 
     def fetchxml(self, url, path=None, **params):

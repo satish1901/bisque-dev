@@ -328,38 +328,36 @@ def create_mex(module, name, mex = None, **kw):
     # <mex> <tag name="execute_options">
     #   <tag name="iterable" value="resource_url" type="dataset">
     #        <tag name="xpath" value="./value/@text'/>
-    #        <tag name="blocksize" value="10" />                     blocked iteration (optional)
     #   </tag>
-    #   <tag name="iterable" value="RefFrameZDir" type="list">       comma-separated list of values or '...'
-    #        <tag name="blocksize" value="10" />                     blocked iteration (optional)
-    #   </tag>
-    #   <tag name="coupled_iter" value="true" />                     couple both 
+    #   <tag name="iterable" value="RefFrameZDir" type="list" />     comma-separated list of values or '...'
+    #   <tag name="coupled_iter" value="true" />                     couple both
+    #   <tag name="blocked_iter" value="true" />                     blocked iteration (TODO: add cost estimates)
     # </tag> </mex>
     iterables = mex.xpath('./tag[@name="execute_options"]/tag[@name="iterable"]')
     if len(iterables)==0:
         return mex
 
     # check for "coupled_iter" execution option
-    coupled_iter = False
     coupled_iters = mex.xpath('./tag[@name="execute_options"]/tag[@name="coupled_iter"]')
-    if len(coupled_iters) > 0:
-        coupled_iter = (coupled_iters[0].get('value', 'false').lower() == 'true')
+    coupled_iter = len(coupled_iters) > 0 and (coupled_iters[0].get('value', 'false').lower() == 'true')
+    log.debug("coupled_iter %s", coupled_iter)
 
+    # check for "blocked_iter" execution option
+    blocked_iters = mex.xpath('./tag[@name="execute_options"]/tag[@name="blocked_iter"]')
+    iter_blocksize = int(config.get('bisque.module_service.blocksize', 1)) if len(blocked_iters) > 0 and (blocked_iters[0].get('value', 'false').lower() == 'true') else 1
+    log.debug("iter_blocksize %s", iter_blocksize)
+        
     # Build dict of iterable input names ->   dict of iterable types -> iter expressions
     iters = {}
     for itr in iterables:
         resource_tag = itr.get('value')
         resource_type = itr.get('type')
         resource_iterexpr = './value/text()' if resource_type not in ['list'] else '@'+resource_type
-        iter_blocksize = 1
         for sub in itr:
             if sub.get('name') == 'xpath':
                 # override of extraction expression
                 resource_iterexpr = sub.get('value')
-            elif sub.get('name') == 'blocksize':
-                # request blocked iteration
-                iter_blocksize = int(sub.get('value'))
-        iters.setdefault(resource_tag, {})[resource_type] =  (resource_iterexpr, iter_blocksize)
+        iters.setdefault(resource_tag, {})[resource_type] =  resource_iterexpr
     log.debug ('iterables in module %s' , iters)
 
     # Find an iterable tags (that match name and type) in the mex inputs, add them mex_tags
@@ -381,7 +379,7 @@ def create_mex(module, name, mex = None, **kw):
     for iter_tag, iterable in mex_tags.items():
         resource_value = iterable.get('value')
         resource_type = iterable.get('type')
-        resource_iterexpr, iter_blocksize  = iters[iter_tag][resource_type]
+        resource_iterexpr = iters[iter_tag][resource_type]
         if resource_type == 'list':
             # list type: value is comma-separated list itself
             members = csv.reader([resource_value], skipinitialspace=True).next()
@@ -422,33 +420,18 @@ def create_mex(module, name, mex = None, **kw):
                 if (start < end and step < 0) or (start > end and step > 0):
                     log.error("illegal list enumeration")
                     return mex
-                # ensure we have at least _min_submexes blocks (TODO: this should be total number of blocks; for now, calculate per "dimension")
-                total_steps = int(abs(end-start+step)/abs(step))
-                if total_steps == 0:
-                    total_steps = 1
-                if iter_blocksize > 1 and (total_steps+iter_blocksize-1)/iter_blocksize < _min_submexes:
-                    iter_blocksize = max((total_steps+_min_submexes-1)/_min_submexes, 1)
-                    log.debug("adjusted blocksize to %s" % iter_blocksize)
                 members = []
                 val = start
                 while True:
-                    # collect all values for block if iter_blocksize is set
-                    if iter_blocksize > 1:
-                        newval = etree.Element('tag', type='range')
-                        etree.SubElement(newval, 'tag', name='start', value=str(val))
-                        etree.SubElement(newval, 'tag', name='end', value=str(min(val+(iter_blocksize-1)*step, end) if step>0 else max(val+(iter_blocksize-1)*step, end)))
-                        etree.SubElement(newval, 'tag', name='step', value=str(step))
-                    else:
-                        newval = val
-                    members.append(newval)
-                    if len(members) > _max_submexes:
-                        log.error("too many combinations (>%s)" % _max_submexes)
+                    members.append(val)
+                    if len(members)/iter_blocksize > _max_submexes:
+                        log.error("too many combinations (>%s)" % _max_submexes*iter_blocksize)
                         return mex
                     valold = val
-                    val += iter_blocksize*step
+                    val += step
                     if val == valold or not((start < end and val <= end) or (start > end and val >= end)):   # step may be too small to affect val
                         break
-                log.debug ('enumeration "%s" expanded to "%s"' % (resource_value, str(members)))
+                log.debug ('enumeration "%s" expanded to "%s..."' % (resource_value, str(members)[:100]))
         else:
             # must be dataset, assume resource_iterexpr is xpath
             resource = data_service.get_resource(resource_value, view='deep')
@@ -456,56 +439,34 @@ def create_mex(module, name, mex = None, **kw):
             if not (resource_type == resource.tag or resource_type == resource.get('type')):
                 continue
             members = []
-            allitems = []
             for value in resource.xpath(resource_iterexpr):
-                allitems.append(str(value))
-                if len(allitems) == iter_blocksize:
-                    if iter_blocksize > 1:
-                        newval = etree.Element('tag')
-                        for item in allitems:
-                            elem = etree.SubElement(newval, 'value', type='object')
-                            elem.text = str(item)
-                    else:
-                        newval = allitems[0]
-                    members.append(newval)
-                    if len(members) > _max_submexes:
-                        log.error("too many combinations (>%s)" % _max_submexes)
-                        return mex
-                    allitems = []
-            log.debug ('iterated xpath %s members %s' , resource_iterexpr, members)
+                members.append(str(value))
+                if len(members)/iter_blocksize > _max_submexes:
+                    log.error("too many combinations (>%s)" % _max_submexes*iter_blocksize)
+                    return mex
+            log.debug ('iterated xpath %s members %s...' , resource_iterexpr, members[:100])
         # add all values to this iter_tag        
         all_iterables.append([(iter_tag, value) for value in members])
 
     log.debug("all iterable values: %s", str(all_iterables))
 
+    all_step_params = [] 
     if coupled_iter:
         # Generate coupled list of values:
         # tag1:val1, tag2:valx, tag3:vala
         # tag1:val2, tag2:valy, tag3:valb
         # ...
-        if max([len(sublist) for sublist in all_iterables]) > _max_submexes:   # safety check
+        if max([len(sublist) for sublist in all_iterables])/iter_blocksize > _max_submexes:   # safety check
             log.error("too many combinations (>%s)" % _max_submexes)
             return mex
         list_lengths = [len(sublist) for sublist in all_iterables]
         max_list_length = max(list_lengths)
         for step in range(0, max_list_length):
-            # Create SubMex section with original parameters replaced with iterated members
-            subinputs = copy.deepcopy(mex_inputs)
+            single_step_params = {}
             for sublist in all_iterables:
                 iter_tag, value = sublist[int(step*len(sublist)/max_list_length)]
-                resource_tag = subinputs.xpath('.//tag[@name="%s"]' % iter_tag)[0]
-                if isinstance(value, etree._Element):
-                    elem = etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag)
-                    if value.get('type'):
-                        elem.set('type', value.get('type'))
-                    for kid in value:
-                        elem.append(copy.deepcopy(kid))
-                else:
-                    etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=str(value))
-                resource_tag.getparent().remove (resource_tag)
-            submex = etree.Element('mex', name=name, type=module.get ('uri'))
-            submex.append(subinputs)
-            mex.append(submex)
+                single_step_params[iter_tag] = value
+            all_step_params.append(single_step_params)
     else:
         # Generate a "matrix" of iterable values:
         # tag1:val1, tag2:valx, tag3:vala
@@ -513,26 +474,51 @@ def create_mex(module, name, mex = None, **kw):
         # ...
         # tag1:val1, tag2:valy, tag3:vala
         # ...
-        if reduce(mul, [len(sublist) for sublist in all_iterables], 1) > _max_submexes:   # safety check
+        if reduce(mul, [len(sublist) for sublist in all_iterables], 1)/iter_blocksize > _max_submexes:   # safety check
             log.error("too many combinations (>%s)" % _max_submexes)
             return mex
         for iter_combo in itertools.product(*all_iterables):
-            # Create SubMex section with original parameters replaced with iterated members
-            subinputs = copy.deepcopy(mex_inputs)
+            single_step_params = {}
             for iter_tag, value in iter_combo:
-                resource_tag = subinputs.xpath('.//tag[@name="%s"]' % iter_tag)[0]
-                if isinstance(value, etree._Element):
-                    elem = etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag)
-                    if value.get('type'):
-                        elem.set('type', value.get('type'))
-                    for kid in value:
-                        elem.append(copy.deepcopy(kid))
-                else:
-                    etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=str(value))
-                resource_tag.getparent().remove (resource_tag)
-            submex = etree.Element('mex', name=name, type=module.get ('uri'))
-            submex.append(subinputs)
+                single_step_params[iter_tag] = value
+            all_step_params.append(single_step_params)
+    
+    # ensure we have at least _min_submexes blocks
+    total_steps = len(all_step_params)
+    if total_steps == 0:
+        total_steps = 1
+    if iter_blocksize > 1 and (total_steps+iter_blocksize-1)/iter_blocksize < _min_submexes:
+        iter_blocksize = max((total_steps+_min_submexes-1)/_min_submexes, 1)
+        log.debug("adjusted blocksize to %s" % iter_blocksize)
+                    
+    # Create SubMex sections with original parameters replaced with iterated members
+    multi_subinputs = []
+    single_step_cnt = 0
+    for single_step_params in all_step_params:
+        subinputs = copy.deepcopy(mex_inputs)
+        # replace the iterated params
+        for iter_tag, value in single_step_params.iteritems():
+            resource_tag = subinputs.xpath('.//tag[@name="%s"]' % iter_tag)[0]
+            if isinstance(value, etree._Element):
+                elem = etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag)
+                if value.get('type'):
+                    elem.set('type', value.get('type'))
+                for kid in value:
+                    elem.append(copy.deepcopy(kid))
+            else:
+                etree.SubElement(resource_tag.getparent(), 'tag', name=iter_tag, value=str(value))
+            resource_tag.getparent().remove (resource_tag)
+        multi_subinputs.append(subinputs)
+        single_step_cnt += 1
+        if len(multi_subinputs) >= iter_blocksize or single_step_cnt >= len(all_step_params):
+            submex = etree.Element('mex', name=name, type=module.get ('uri') if iter_blocksize == 1 else 'block')
+            for subinputs in multi_subinputs:
+                singlemex = submex if iter_blocksize == 1 else etree.SubElement(submex, 'mex', name=name, type=module.get ('uri'))
+                input_tag = etree.SubElement(singlemex, 'tag', name='inputs')
+                for kid in subinputs:
+                    input_tag.append(kid)
             mex.append(submex)
+            multi_subinputs = []
             
     log.debug('mex rewritten-> %s' , etree.tostring(mex))
     return mex
