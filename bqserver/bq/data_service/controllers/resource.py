@@ -606,7 +606,7 @@ class Resource(ServiceController):
 
     def add_cache_header(self, resource):
         if not CACHING: return
-        tg.response.headers['Cache-Control'] = 'public, max-age=10'
+        tg.response.headers['Cache-Control'] = 'public, max-age=1'
         etag = self.get_entity_tag(resource)
         if etag:
             tg.response.headers['ETag'] = etag

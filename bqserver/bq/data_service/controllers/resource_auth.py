@@ -259,7 +259,7 @@ class ResourceAuth(Resource):
         resource = check_access(resource, RESOURCE_EDIT)
         #log.debug ("REPLACE_ALL resource %s", resource)
         if resource is not None:
-            DBSession.autoflush = False
+            #DBSession.autoflush = False
             newacls = []
             #auth_list=etree.XML(xml)
             auth_list=xml
@@ -287,7 +287,7 @@ class ResourceAuth(Resource):
     def modify(self, useracl, xml, notify=False, **kw):
         resource, user, acl  = useracl
         response = etree.Element('resource', uri=request.url)
-        DBSession.autoflush = False
+        #DBSession.autoflush = False
         resource = check_access(resource, RESOURCE_EDIT)
         if resource is not None:
             DBSession.autoflush = False
@@ -305,7 +305,7 @@ class ResourceAuth(Resource):
     #@identity.require(identity.not_anonymous())
     def delete(self, useracl, **kw):
         resource, user, acl = useracl
-        DBSession.autoflush = False
+        #DBSession.autoflush = False
         resource = check_access(resource, RESOURCE_EDIT)
         #if resource is not None:
         #    DBSession.query(TaggableAcl).join (Taggable).filter (Taggable.resource_uniq == uniq).delete()
@@ -320,7 +320,7 @@ class ResourceAuth(Resource):
         resource = check_access(request.bisque.parent, RESOURCE_EDIT)
         if resource is not None:
             log.debug ("AUTH %s with %s" , str(resource),  xml)
-            DBSession.autoflush = False
+            #DBSession.autoflush = False
             #newauth=etree.XML(xml)
             newauth=xml
             acl = resource_acl (resource,  newauth,  notify=asbool(notify))
@@ -338,9 +338,8 @@ class ResourceAuth(Resource):
         '''
         resource, user, acl = useracl
         response = etree.Element('resource', uri=request.url)
-        DBSession.autoflush = False
+        #DBSession.autoflush = False
         if acl:
-            DBSession.autoflush = False
             #newauth=etree.XML(xml)
             newauth=xml
             acl = resource_acl (resource, newauth, user, acl, notify=asbool(notify))
@@ -465,7 +464,10 @@ def resource_acl (resource,  newauth, user=None, acl=None, notify=False, invalid
 
     # Notify changes if needed
     if notify:
-        notify_user (action, resource, user, passwd)
+        try:
+            notify_user (action, resource, user, passwd)
+        except Exception:
+            log.exception ("While notifying share")
 
     if invalidate:
         Resource.hier_cache.invalidate_resource (None, user = user.id)
