@@ -118,6 +118,7 @@ class DataServerController(ServiceController):
         for r in resource_types():
             etree.SubElement(resource, 'resource', name = str(r), uri = self.makeurl(str(r)))
 
+        tg.response.headers['Cache-Control'] = 'prviate, max-age=1'
         return etree.tostring(resource)
 
     @expose()

@@ -177,18 +177,22 @@ bisque.login.providers =  local
 #bisque.login.iplant.text = iPlant Login
 #bisque.login.iplant.url = /auth_service/cas_login_handler
 #bisque.login.iplant.icon = /core/images/signin/signin_iplant.png
+#bisque.login.iplant.type = cas
 
 #bisque.login.google.text = Google Login
 #bisque.login.google.url = /auth_service/openid_login_handler?openid_provider=https://www.google.com/accounts/o9/id
 #bisque.login.google.icon = /core/images/signin/signin_google.png
+#bisque.login.google.type = openid
 
 #bisque.login.yahoo.text = Yahoo Login
 #bisque.login.yahoo.url = /auth_service/openid_login_handler?openid_provider=https://www.yahoo.com/
 #bisque.login.yahoo.icon = /core/images/signin/signin_yahoo.png
+#bisque.login.yahoo.type = openid
 
 bisque.login.local.text = Local Login
 bisque.login.local.url = /auth_service/login
 bisque.login.local.icon = /core/images/signin/signin_bisque.png
+bisque.login.local.type = internal
 
 # User traffic tracking
 # You can use google (http://www.google.com/analytics/)  or piwik (http://piwik.org/), etc.

@@ -606,7 +606,7 @@ class Resource(ServiceController):
 
     def add_cache_header(self, resource):
         if not CACHING: return
-        tg.response.headers['Cache-Control'] = 'public'
+        tg.response.headers['Cache-Control'] = 'public, max-age=10'
         etag = self.get_entity_tag(resource)
         if etag:
             tg.response.headers['ETag'] = etag
@@ -617,8 +617,8 @@ class Resource(ServiceController):
         if last_modified is None:
             last_modified = datetime(*gmtime()[:6])
 
-            tg.response.headers['Last-Modified'] = (
-                datetime.strftime(last_modified, "%a, %d %b %Y %H:%M:%S GMT"))
+        tg.response.headers['Last-Modified'] = (
+            datetime.strftime(last_modified, "%a, %d %b %Y %H:%M:%S GMT"))
 
     def invalidate(self, url):
         self.server_cache.invalidate(url, user=identity.get_user_id())

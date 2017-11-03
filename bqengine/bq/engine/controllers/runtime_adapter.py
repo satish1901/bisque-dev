@@ -54,7 +54,7 @@ import os
 import logging
 #import tempfile
 #from StringIO import StringIO
-#from subprocess import call, PIPE, Popen, STDOUT
+import subprocess
 
 #from tg import config
 from lxml import etree
@@ -105,6 +105,18 @@ class RuntimeAdapter(BaseAdapter):
         finally:
             pass
             #os.chdir(current_dir)
+
+    def build (self, module):
+        module_name = module.get('name')
+        module_dir = module.get('path')
+        cmd = ['bq-admin', 'setup', '--inscript', '-y', 'build-modules', module_name]
+        try:
+            log.debug("BUILDING: %s", " ".join (cmd))
+            return "success", subprocess.check_output (cmd, stderr = subprocess.STDOUT, shell  = (os.name == "nt"))
+        except subprocess.CalledProcessError as exc:
+            log.error (" building  %s failed with %s", module_dir, exc.returncode)
+            return "failed({})".format (exc.returncode), exc.output
+
 
     def execute(self, module, mex, pool, command='start'):
         log.debug("Excecute %s module : %s mex %s", command, module.get('name'), mex.get('uri'))
