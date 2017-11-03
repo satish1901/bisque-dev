@@ -122,6 +122,10 @@ Ext.define('Bisque.QueryBrowser.Dialog', {
 Ext.define('Bisque.ResourceBrowser.Browser', {
     extend : 'Ext.panel.Panel',
     alias : 'widget.bq-resource-browser',
+    componentCls: 'browser',
+
+    width: '100%',
+    height: '100%',
 
     constructor : function(config) {
         //Prefetch the loading spinner
@@ -160,6 +164,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             region : 'center',
             border : false,
             layout : 'fit',
+            flex: 1,
         });
         config = config || {};
 
@@ -676,6 +681,56 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
 
         return selection;
     },
+
+    doFullScreen: function () {
+        var maximized = (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement),
+            vd = this.getEl().dom,
+            me = this,
+            has_fs = vd.requestFullscreen || vd.webkitRequestFullscreen || vd.msRequestFullscreen || vd.mozRequestFullScreen;
+        if (!has_fs) return;
+
+        if (!maximized) {
+            if (vd.requestFullscreen) {
+                vd.requestFullscreen();
+            } else if (vd.webkitRequestFullscreen) {
+                vd.webkitRequestFullscreen();
+            } else if (vd.msRequestFullscreen) {
+                vd.msRequestFullscreen();
+            } else if (vd.mozRequestFullScreen) {
+                vd.mozRequestFullScreen();
+            }
+
+            /*
+            vd.style.width='100%';
+            vd.style.height='100%';
+
+            setTimeout( function() {
+                var width = document.body.clientWidth,
+                    height = document.body.clientHeight;
+                console.log('Resizing to '+width+','+height);
+                //vd.style.width='100%';
+                //vd.style.height='100%';
+                me.setSize(width, height);
+                me.updateLayout({
+                    defer: true,
+                    isRoot: false,
+                });
+            }, 1000);
+            */
+
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            }
+        };
+    },
+
 });
 
 

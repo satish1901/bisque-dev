@@ -94,7 +94,7 @@ Ext.define('BQ.renderers.dataset', {
             region:'center',
             flex: 3,
             dataset: this.resource?this.resource:'None',
-            title : 'Item browser',
+            //title : 'Item browser',
             tagOrder: '"@ts":desc',
             //selType: 'SINGLE',
             //wpublic: false,

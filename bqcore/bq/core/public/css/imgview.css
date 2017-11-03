@@ -949,7 +949,7 @@ table.x-form-color {
 }
 
 .bq-editor-menu {
-    z-index: 2147483646 !important;
+    z-index: 2147483647 !important;
 }
 
 .bq-editor-menu .x-tool img {

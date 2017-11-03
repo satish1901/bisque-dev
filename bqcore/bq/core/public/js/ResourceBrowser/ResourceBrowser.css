@@ -30,8 +30,23 @@
     background: transparent;
 }
 
+.browser {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 .browser-main {
     background: white;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.browser .x-toolbar {
+    width: 100% !important;
+}
+
+.browser_toolbar_menu {
+    z-index: 2147483648 !important;
 }
 
 .organizer-tabs {
