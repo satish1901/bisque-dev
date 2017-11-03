@@ -13,6 +13,7 @@ function ImgExternal (viewer,name){
         scope: this,
         tooltip: 'Export current image to external applications',
         menu: {
+            cls: 'bq-editor-menu',
             defaults: {
                 scope: this,
             },
@@ -105,6 +106,7 @@ function ImgExternal (viewer,name){
         scope: this,
         //tooltip: 'Export current image to external applications',
         menu: {
+            cls: 'bq-editor-menu',
             defaults: {
                 scope: this,
             },
@@ -215,12 +217,12 @@ ImgExternal.prototype.updateImage = function () {
 		var level = this.imgCurrentView.getCurrentLevel(); //level can not drop below 0
 		var currentView200 = this.viewer.toolbar.queryById('menu_viewer_export_view_button_200');
 		var currentView400 = this.viewer.toolbar.queryById('menu_viewer_export_view_button_400');
-		if (level) {
+		if (level && currentView200 && currentView400) {
 			if (level<1) currentView200.setDisabled(true);
 			else currentView200.setDisabled(false);
 			if (level<2) currentView400.setDisabled(true);
 			else currentView400.setDisabled(false);
-		} else {
+		} else if (currentView200 && currentView400) {
 			currentView200.setDisabled(true);
 			currentView400.setDisabled(true);
 		}

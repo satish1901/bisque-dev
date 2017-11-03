@@ -40,6 +40,7 @@ Ext.define('BQ.button.AnnotationStatus', {
         this.menu = {
             xtype: 'menu',
             //cls: 'toolbar-menu',
+            cls: 'bq-editor-menu',
             plain: true,
             items: [{
                 xtype: 'menucheckitem',

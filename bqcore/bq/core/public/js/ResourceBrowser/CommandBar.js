@@ -144,6 +144,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 handler : this.onSortOrder,
                 scope : this,
                 menu : {
+                    cls: 'browser_toolbar_menu',
                     items : [{
                         text : 'Name',
                         itemId : 'btn_sort_name',
@@ -236,6 +237,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 scale : 'large',
                 tooltip : 'Options',
                 menu : {
+                    cls: 'browser_toolbar_menu',
                     items : [{
                         xtype: 'menucheckitem',
                         text : 'Show my data',
@@ -313,6 +315,12 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                                 value : val
                             });
                         }
+                    }, '-', {
+                        text: 'Full-screen',
+                        //icon: BQ.Server.url('/core/js/ResourceBrowser/Images/link.png'),
+                        hidden: this.viewMgr.cBar.btnFullscreen,
+                        scope: this,
+                        handler: this.onFullScreen,
                     }]
                 }
             }, {
@@ -614,6 +622,10 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                v.push(c.value);
         }
         return v.join(',');
+    },
+
+    onFullScreen: function() {
+        this.browser.doFullScreen();
     },
 
 });
