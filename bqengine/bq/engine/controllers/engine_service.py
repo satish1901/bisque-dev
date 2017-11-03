@@ -620,11 +620,31 @@ class EngineModuleResource(BaseController):
             # create fake mex doc
             mextree = etree.Element('mex', resource_uniq=path[0], uri='/mex/'+path[0])
             adapter.execute(module, mextree, self.mpool, command='kill')
-            
+
         except Exception:
             log.exception ("Execption in adaptor:" )
             tg.response.status_int = 500
-            
+
+    @expose(content_type='text/xml')
+    def build (self, *path, **kw):
+        module = self.module_xml
+        try:
+            adapter_type = module.get('type')
+            adapter = self.adapters.get(adapter_type, None)
+            if not adapter:
+                log.debug ('No adaptor for type %s' , adapter_type)
+            log.debug ("BUILDING %s", module.get ('name'))
+            status, output = adapter.build(module)
+            build_tree = etree.Element('build', status=status)
+            build_tree.text = output
+            response =  etree.tostring(build_tree)
+            return response
+
+        except Exception:
+            log.exception ("Execption in adaptor:" )
+            tg.response.status_int = 500
+
+
 
 def initialize(uri):
     """ Initialize the top level server for this microapp"""

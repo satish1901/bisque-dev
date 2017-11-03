@@ -261,7 +261,10 @@ def p_term_tagvaltype(p):
 
     if type_ is not None:
         ty = type_.lower()
-        tyexpr = (func.lower(tag.c.resource_user_type) == ty)
+        if ty.count('*'):
+            tyexpr = func.lower(tag.c.resource_user_type).like (ty.replace ('*', '%'))
+        else:
+            tyexpr = (func.lower(tag.c.resource_user_type) == ty)
         if tagfilter is not None:
             tagfilter = and_(tagfilter, tyexpr)
         else:

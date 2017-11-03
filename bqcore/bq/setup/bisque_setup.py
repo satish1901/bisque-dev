@@ -1224,11 +1224,12 @@ def install_docker_base_images(params, runtime_params, cfg=None):
 
 def setup_build_modules (params, runtime_params):
     "Build the local set of modules"
-    ans =  getanswer( "Try to Build modules", 'N',
+    ans =  getanswer( "Try to Build modules locally", 'Y',
                   "Run the installation scripts on the modules. Some of these require local compilations and have outside dependencies. Please monitor carefullly")
     if ans != 'Y':
         return params, runtime_params
-    install_matlab(params, runtime_params)
+
+    module_names = params.get ("setup.arguments", None)
 
     module_dirs = params.get ('bisque.engine_service.module_dirs', "")
     module_dirs = [ x.strip() for x in module_dirs.split(",") ]
@@ -1239,14 +1240,14 @@ def setup_build_modules (params, runtime_params):
     for module_dir in module_dirs:
         if not os.path.exists(module_dir):
             os.makedirs (module_dir)
-        s,b,f = install_module_tree(module_dir)
+        s,b,f = install_module_tree(module_dir, params, runtime_params)
         skipped.extend(s)
         built.extend(b)
         failed.extend(f)
 
-    print "Skipped:", ",".join(skipped)
-    print "Built:", ",".join(built)
-    print "Failed:", ",".join(failed)
+    print "Skipped {}: {}".format (len(skipped),",".join(skipped))
+    print "Built   {}: {}".format (len(built),  ",".join(built))
+    print "Failed  {}: {}".format (len(failed), ",".join(failed))
 
     return params, runtime_params
 
@@ -1443,12 +1444,14 @@ def check_module_enabled(module_dir):
         return False
     return True
 
-def install_module_tree(module_root):
+def install_module_tree(module_root, params, runtime_params):
     """Find and install module based at MODULE_ROOT
     """
     environ = dict(os.environ)
     environ.pop ('DISPLAY', None) # Makes matlab hiccup
     environ['BISQUE_ROOT'] = os.getcwd()
+
+    module_names = params.get ("setup.arguments", None)
 
     failed    = []
     completed = []
@@ -1457,7 +1460,12 @@ def install_module_tree(module_root):
     for root, dirs, files in os.walk(module_root):
         for module_file in files:
             if module_file == 'runtime-module.cfg':
-                module_directory = os.path.dirname (os.path.join (root,module_file))
+                module_directory = os.path.dirname (os.path.join (root, module_file))
+                dirname = os.path.basename (module_directory)
+                if module_names and dirname not in module_names:
+                    print "Skipping {0}. Not in {1}".format (dirname, module_names)
+                    continue
+
                 if check_module_enabled (module_directory):
                     if setup_module(module_directory, environ):
                         completed.append (module_directory)
@@ -2655,7 +2663,7 @@ OTHER_STEPS = {
     "testing" : [ setup_testing ],
     'docker'  : [ install_docker ],
     'runtime' : [ install_runtime ] ,
-    'build-modules'   : [ install_modules, setup_build_modules ] ,
+    'build-modules'   : [ install_modules, install_matlab, setup_build_modules ] ,
 }
 
 def merge_lists (*dicts ):
@@ -2766,16 +2774,17 @@ def bisque_installer(options, args):
 
     print "Beginning install of %s with %s " % (system_type, args)
 
-    params = {}
     runtime_params =  {}
     #if not os.path.exists (DIRS['config']):
     #    os.makedirs (DIRS['config'])
+    params = initial_vars.copy()
 
     if 'bisque' in system_type and  os.path.exists (SITE_CFG):
         params = read_site_cfg(cfg = SITE_CFG, section=BQ_SECTION)
     if 'engine' in system_type and  os.path.exists(RUNTIME_CFG):
         runtime_params = read_site_cfg(cfg=RUNTIME_CFG, section = None)
 
+    params['setup.arguments']  =  args[1:]
     params['bisque.installed'] = "inprogress"
 
     #print "STEPS", install_steps
@@ -2797,14 +2806,9 @@ def bisque_installer(options, args):
 
     if args[0]  in ('server', 'bisque'):
         print STemplate(start_msg).substitute(params)
-        return 0
-
     if args[0] == 'engine':
         print STemplate(engine_msg).substitute(params)
-        return 0
-
-
-    return -1
+    return 0
 
 
 class CaptureIO(object):
@@ -2972,8 +2976,6 @@ def setup(options, args):
             except KeyboardInterrupt:
                 print "Cancelled"
         sys.exit(r)
-
-
     try:
         r  = bisque_installer(options, args)
         return r
@@ -2991,6 +2993,9 @@ def setup(options, args):
         msg = "\n".join(msg)
 
         print msg
+
+    # indicate an issue
+    return 2
 
 #    finally:
 #        capture.close();
