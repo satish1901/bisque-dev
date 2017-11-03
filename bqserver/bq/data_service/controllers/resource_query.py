@@ -222,6 +222,7 @@ def p_term_tagvaltype(p):
     if name is not None:
         # attributes in tag_query
         if len(name) and name[0] == '@' and val:
+            # strip off '@' from name and use as attribute on taggable.
             name = name[1:]
             if name in LEGAL_ATTRIBUTES:
                 op = _OPERATIONS[rel]

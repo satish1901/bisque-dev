@@ -171,9 +171,8 @@ class setup(object):
         parser.add_option("-c", "--config",  help="Set config directory locations"  )
         parser.add_option("-d", "--debug", action="store_true", default=False)
         options, args = parser.parse_args()
-        for arg in args:
-            if arg not in ALL_OPTIONS:
-                parser.error('argument must be install option')
+        if args and args[0] not in ALL_OPTIONS:
+            parser.error('argument %s must be install option %s' % (args[0], ALL_OPTIONS))
 
         self.args = args
         self.options = options
