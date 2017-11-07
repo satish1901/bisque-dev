@@ -368,7 +368,18 @@ Ext.define('Bisque.ResourceTagger', {
 
                     scope: this,
                 },
-            }
+            },
+            renderer: function(value, meta, record) {
+                if (record && record.raw && record.raw instanceof BQGObject) {
+                    var g = record.raw,
+                       c = g.getColor();
+                    if (c.r===255 && c.g===255 && c.b===255 ) {
+                        c.r = 0; c.g = 0; c.b = 0;
+                    }
+                    meta.style = 'color: '+BQGObject.color_rgb2html(c)+';';
+                }
+                return value;
+            },
         }];
         if (!this.hide_value) {
             clmn.push({
@@ -1556,7 +1567,7 @@ Ext.define('Bisque.GObjectTagger', {
             }
             gobs.push(r.raw);
             var node = view.getNode(r);
-            if(node)
+            if (node)
                 node.style.setProperty( 'color', '#'+color);
         }
         if (color==='000000')

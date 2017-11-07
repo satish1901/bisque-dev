@@ -1797,18 +1797,17 @@ CanvasCircle.prototype.points = function(){
 ///////////////////////////////////////////////
 
 function CanvasPoint(gob, renderer) {
+    this.pointSize = 2.5;
+    this.strokeWidth = 1.0;
 	this.renderer = renderer;
     this.gob = gob;
     this.init(gob);
     CanvasShape.call(this, gob, renderer);
-
 };
 
 CanvasPoint.prototype = new CanvasShape();
 
 CanvasPoint.prototype.init = function(gob){
-
-    this.pointSize = 2.5;
     var scale = this.renderer.stage.scale();
     var color = 'rgba(255,0,0,0.5)';
 
@@ -1833,7 +1832,8 @@ CanvasPoint.prototype.init = function(gob){
                              callback(this,'select_sprite'));
 */
 }
-CanvasPoint.prototype.setPointSize = function(size){
+
+CanvasPoint.prototype.setPointSize = function(size) {
     this.pointSize = size;
 };
 
@@ -1846,64 +1846,64 @@ CanvasPoint.prototype.calcBbox = function (scaleIn) {
         px = this.x(),
         py = this.y(),
         scale = scaleIn ? scaleIn : this.renderer.scale(),
-        buffer = this.pointSize/scale;
+        r = (this.pointSize*this.strokeWidth)/scale;
+    r += r/2.0;
 
-    mm.min[0] = px - buffer;
-    mm.min[1] = py - buffer;
-    mm.max[0] = px + buffer;
-    mm.max[1] = py + buffer;
+    mm.min[0] = Math.floor(px - r);
+    mm.min[1] = Math.floor(py - r);
+    mm.max[0] = Math.ceil(px + r);
+    mm.max[1] = Math.ceil(py + r);
     return mm;
 };
 
 
 CanvasPoint.prototype.setStroke = function(sw){
-    if(sw) this.strokeWidth = sw;
-    else if(!this.strokeWidth) this.strokeWidth = 1.0;
-    if(!this.pointSize) this.pointSize = 2.5;
-    //this.pointSize = 2.5*this.strokeWidth;
+    if (sw)
+        this.strokeWidth = sw;
 
-    var scale = this.renderer.stage.scale();
-    var r = this.pointSize*this.strokeWidth/scale.x;
+    var scale = this.renderer.stage.scale(),
+        r = (this.pointSize*this.strokeWidth)/scale.x;
     this.sprite.radius(r);
-    this.sprite.strokeWidth(2.0*this.pointSize/scale.x);
+    //this.sprite.strokeWidth(2*this.pointSize/scale.x);
+    this.sprite.strokeWidth(r/2.0);
 };
 
 CanvasPoint.prototype.updateStroke = function(){
+    /*
     var scale = this.renderer.stage.scale();
     var r = this.pointSize/scale.x;
     this.sprite.radius(r);
     this.sprite.strokeWidth(2.0*this.pointSize/scale.x);
+    */
 };
 
 CanvasPoint.prototype.updateLocal = function () {
 
     var viewstate = this.renderer.viewer.current_view;
 
-    var pnt1 = this.gob.vertices[0];
+    var p1 = this.gob.vertices[0];
     /*
     if (!test_visible(pnt1, viewstate)){
         this.sprite.remove();
         return;
     }
     */
-    var scale = this.renderer.stage.scale();
+    //var scale = this.renderer.stage.scale();
 
-    var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
-    var r = this.pointSize/scale.x;
+    //var p1 = viewstate.transformPoint (pnt1.x, pnt1.y);
+    //var r = this.pointSize/scale.x;
 
     var c = this.getColor(),
         color = this.getColorString(c),
         strokeColor = color;
 
-    this.sprite.fill(color);
-    this.sprite.stroke(strokeColor);
-
     var sprite = this.sprite;
+    sprite.fill(color);
+    sprite.stroke(strokeColor);
+    //sprite.radius(r);
 
     this.x(p1.x);
     this.y(p1.y);
-    //this.sprite.scale({x: 1.0/scale.x, y: 1.0/scale.y });
-    sprite.radius(r);
     this.setStroke();
 
     this.bbox = this.calcBbox();
@@ -1945,6 +1945,7 @@ CanvasPoint.prototype.points = function(){
 ///////////////////////////////////////////////
 
 function CanvasImagePoint(gob, renderer) {
+    this.pointSize = 5.0;
 	this.renderer = renderer;
     this.gob = gob;
     this.init(gob);
@@ -1954,8 +1955,6 @@ function CanvasImagePoint(gob, renderer) {
 CanvasImagePoint.prototype = new CanvasShape();
 
 CanvasImagePoint.prototype.init = function(gob){
-
-
     var scale = this.renderer.stage.scale();
     var color = 'rgba(255,0,0,0.5)';
 /*
@@ -2002,7 +2001,7 @@ CanvasImagePoint.prototype.calcBbox = function () {
         sprite = this.sprite,
         px = this.x(),
         py = this.y(),
-        r = 3;
+        r = this.pointSize;
 
     mm.min[0] = px - r;
     mm.min[1] = py - r;
@@ -2025,7 +2024,7 @@ CanvasImagePoint.prototype.updateLocal = function () {
     var scale = this.renderer.stage.scale();
 
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
-    var r = 3.0/scale.x;
+    var r = this.pointSize/scale.x;
 
     var c = this.getColor(),
         color = this.getColorString(c),
@@ -2062,8 +2061,8 @@ CanvasImagePoint.prototype.drag = function(evt, corner){
 
 CanvasImagePoint.prototype.moveLocal = function(){
     var p1 = this.gob.vertices[0];
-    p1.x = this.x() + 6;
-    p1.y = this.y() + 6;
+    p1.x = this.x() + this.pointSize*2;
+    p1.y = this.y() + this.pointSize*2;
 }
 
 CanvasImagePoint.prototype.points = function(){

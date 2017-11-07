@@ -1478,9 +1478,59 @@ BQGObject.color_html2rgb = function(c) {
     return rgb;
 };
 
+BQGObject.string_to_color_html = function(str) {
+    var hash = 0,
+        colour = '#',
+        i=0;
+    for (i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    for (i = 0; i < 3; i++) {
+        var value = (hash >> (i * 8)) & 0xFF;
+        colour += ('00' + value.toString(16)).substr(-2);
+    }
+    if (colour === '#000000') colour = '#ffffff';
+    return colour;
+};
+
 BQGObject.styles_per_type = {
    default: { color: '#FF0000', },
 };
+
+BQGObject.add_default_style = function(t) {
+    if (t in BQGObject.styles_per_type) return;
+    BQGObject.styles_per_type[t] = {
+        color: BQGObject.string_to_color_html(t),
+    };
+};
+
+BQGObject.load_default_styles = function(xml) {
+    if (!xml) {
+        Ext.Ajax.request({
+            url: '/data_service/image/?gob_types=true&wpublic=false',
+            callback: function(opts, succsess, response) {
+                if (response.status>=400) {
+                    BQ.ui.error('Problem fetching available gobject types');
+                } else {
+                    BQGObject.load_default_styles(response.responseXML);
+                }
+            },
+            //scope: this,
+            disableCaching: false,
+        });
+        return;
+    }
+
+    var gobs = BQ.util.xpath_nodes(xml, '//gobject'),
+        g=undefined, i=0, t=null;
+    for (i=0; g=gobs[i]; ++i) {
+        t = g.getAttribute('type');
+        BQGObject.add_default_style(t);
+    } // for types
+};
+
+// set random colors for objects
+BQGObject.load_default_styles();
 
 BQGObject.parse_colors_from_gob_template = function(resource) {
     /*
