@@ -436,11 +436,13 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
     #rtype = dbo.xmltag
     if rtype not in ('value', 'vertex'):
         elem = xmlelement (dbo, parent, baseuri, view=view)
-        if 'deep' not in view and hasattr(dbo,'resource_value') and dbo.resource_value == None:
+        if 'deep' not in view and hasattr(dbo,'resource_value') and dbo.resource_value is None:
+            # adding value's
             if 'short' not in view:
-                junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
+                _ = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
         if 'deep' not in view and 'short' not in view and hasattr(dbo, 'vertices'):
-            junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
+            # adding vertices
+            _ = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
         return elem
 
     #if rtype == 'tag':
@@ -551,8 +553,10 @@ def db2tree(dbo, parent=None, view=None, baseuri=None, progressive=False, **kw):
     "Convert a Database Object into ElementTree representation"
     if isinstance(view, basestring):
         # pylint:disable=E1103
-        view = [ x.strip() for x in view.split(',') ]
+        view = [ x.strip() for x in view.split(',') if len (x.strip()) ]
     view = view or []
+    if 'deep' not in view and 'full' not in view:
+        view.append ('short')
 
     #if 'fulluri' in view:
     #    view = [ x for x in view if x != 'fulluri' ]
@@ -584,6 +588,7 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None, **kw)
     doc_id = None
     if hasattr(dbo, '__iter__'):
         r = []
+        #log.debug ("looping on %s", str(dbo))
         for x in dbo:
             #log.debug ("proxing %s "% x)
             if endtime and  time.clock() >= endtime:
@@ -601,7 +606,7 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None, **kw)
 
 def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
     from bq.data_service.controllers.resource_query import resource_permission
-    #log.debug ("db2node dbo=%s view=%s" (dbo, view))
+    #log.debug ("db2node dbo=%s view=%s", str(dbo), view)
     if dbo is None:
         log.error ("None pass to as DB object parent = %s" % parent)
         return None, nodes, doc_id
@@ -638,7 +643,6 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
 #         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ]
 #         #gl = [ db2tree_int(x, node, view, baseuri) for x in dbo.gobjects ]
     elif view is None or len(view)==0 or 'short' in view:
-    #elif not view or 'short' in view:
         pass
     else:
         # Allow a list of tags to be specified in the view parameter which
