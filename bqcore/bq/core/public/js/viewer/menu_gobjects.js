@@ -371,14 +371,22 @@ Ext.define('BQ.grid.GobsPanel', {
                 flex: 1,
                 dataIndex: 'Type',
                 sortable: true,
+                renderer: function(value, meta, record) {
+                    if (value) {
+                        var c = BQGObject.string_to_color_html(value);
+                        if (c === '#ffffff') c = '#000000';
+                        meta.style = 'color: '+c+';';
+                    }
+                    return value;
+                },
             }],
             viewConfig: {
                 stripeRows: true,
                 forceFit: true,
-                getRowClass: function(record, rowIndex, rowParams, store){
+                /*getRowClass: function(record, rowIndex, rowParams, store){
                     if (record.data.Custom != '')
                         return 'bq-row-gob-custom';
-                },
+                },*/
             },
             listeners: {
                 scope: this,
@@ -491,6 +499,7 @@ Ext.define('BQ.grid.GobsPanel', {
     },
 
     addType: function(newType) {
+        BQGObject.add_default_style(newType);
         var ix = this.types.push({
             Type   : newType,
             Custom : newType,

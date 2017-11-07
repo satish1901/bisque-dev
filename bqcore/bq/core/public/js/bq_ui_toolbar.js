@@ -746,21 +746,21 @@ Ext.define('BQ.Application.Toolbar', {
     //always visible
     settingModuleManagerPage: function() {
         var settings = Ext.create('BQ.setting.Dialog', {
-            activeTab: 2,
+            activeTab: 3,
         });
     },
 
     //always visible
     settingModuleDeveloperPage: function() {
         var settings = Ext.create('BQ.setting.Dialog', {
-            activeTab: 3,
+            activeTab: 4,
         });
     },
 
     //should go to the highest level
     settingPreferencePage: function() {
         var settings = Ext.create('BQ.setting.Dialog', {
-            activeTab: 4,
+            activeTab: 5,
         });
     },
 

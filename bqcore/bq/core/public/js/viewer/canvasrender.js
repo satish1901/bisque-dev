@@ -2961,7 +2961,7 @@ CanvasRenderer.prototype.square = function (visitor, gob,  viewstate, visibility
 };
 
 CanvasRenderer.prototype.point = function (visitor, gob,  viewstate, visibility) {
-    this.pointSize = 2.5;
+    this.pointSize = 5.5; //3.5;
     this.makeShape(gob, viewstate, 'point', visibility);
     if(gob.shape)
         gob.shape.setPointSize(this.pointSize);
