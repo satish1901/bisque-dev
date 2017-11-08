@@ -153,7 +153,7 @@ def iterate(duri=None, operation='idem', dataset=None, members = None, last= Fal
     @param kw : operation parameters by name
     """
 
-    log.info('iterate op %s on  %s' % (operation, duri or dataset.get('uri')))
+    log.info('iterate op %s on  %s' , operation, duri or dataset.get('uri'))
     if dataset is None:
         dataset = data_service.get_resource(duri, view='full')
     if members is None:
