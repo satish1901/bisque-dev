@@ -199,7 +199,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 xtype : 'tbseparator',
                 hidden : this.viewMgr.cBar.btnTS
             }, {
-                tooltip : 'Load more data',
+                tooltip : 'Previous page',
                 itemId : 'btnLeft',
                 icon : BQ.Server.url('/core/js/ResourceBrowser/Images/left.png'),
                 hidden : this.viewMgr.cBar.btnLeft,
@@ -213,7 +213,7 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
                 },
                 scope : this
             }, {
-                tooltip : 'Load more data',
+                tooltip : 'Next page (space-bar)',
                 itemId : 'btnRight',
                 icon : BQ.Server.url('/core/js/ResourceBrowser/Images/right.png'),
                 hidden : this.viewMgr.cBar.btnRight,
