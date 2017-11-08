@@ -270,7 +270,7 @@ class ImageServer(object):
         if command is not None:
             #token.queue[op_name] = command
             token.queue.extend(command)
-        if dims is not None:
+        if dims is not None and token.dims is not None:
             token.dims.update(dims)
         log.debug('Queue: %s', token.getQueue())
         return token
@@ -387,30 +387,33 @@ class ImageServer(object):
             if len(query)>0:
                 token.setFile(self.initialWorkPath(ident, user_name=kw.get('user_name', None)))
                 token.dims = self.getImageInfo(filename=token.data, series=token.series, infofile='%s.info'%token.data, meta=kw.get('imagemeta', None) )
-                token.init(resource_id=ident, ifnm=token.data, imagemeta=kw.get('imagemeta', None), timeout=kw.get('timeout', None), resource_name=resource.get('name'), dryrun=True)
-                for action, args in query:
-                    try:
-                        service = self.operations.plugins[action]
-                        # if the service has a dryrun function, some actions are same as dryrun
-                        if callable( getattr(service, "dryrun", None) ):
-                            #log.debug ('DRY run: %s calling dryrun', action)
-                            token = service.dryrun(token, args)
-                        else:
-                            #log.debug ('DRY run: %s calling action', action)
-                            token = service.action(token, args)
-                        log.debug ('DRY run: %s producing: %s', action, token.data)
-                    except Exception:
-                        log.exception('Exception during dryrun')
-                        pass
-                    if token.isHttpError():
-                        break
-                localpath = os.path.join(os.path.realpath(self.workdir), token.data)
-                log.debug('Dryrun test %s: [%s] [%s]', ident, localpath, str(token))
-                if token.isFile() and os.path.exists(localpath):
-                    log.debug('FINISHED %s: returning pre-cached result %s', ident, token.data)
-                    with Locks(token.data):
-                        pass
-                    return token
+                if token.dims is None:
+                    log.debug('SKIPPING dryrun processing due to empty image info')
+                else:
+                    token.init(resource_id=ident, ifnm=token.data, imagemeta=kw.get('imagemeta', None), timeout=kw.get('timeout', None), resource_name=resource.get('name'), dryrun=True)
+                    for action, args in query:
+                        try:
+                            service = self.operations.plugins[action]
+                            # if the service has a dryrun function, some actions are same as dryrun
+                            if callable( getattr(service, "dryrun", None) ):
+                                #log.debug ('DRY run: %s calling dryrun', action)
+                                token = service.dryrun(token, args)
+                            else:
+                                #log.debug ('DRY run: %s calling action', action)
+                                token = service.action(token, args)
+                            log.debug ('DRY run: %s producing: %s', action, token.data)
+                        except Exception:
+                            log.exception('Exception during dryrun')
+                            pass
+                        if token.isHttpError():
+                            break
+                    localpath = os.path.join(os.path.realpath(self.workdir), token.data)
+                    log.debug('Dryrun test %s: [%s] [%s]', ident, localpath, str(token))
+                    if token.isFile() and os.path.exists(localpath):
+                        log.debug('FINISHED %s: returning pre-cached result %s', ident, token.data)
+                        with Locks(token.data):
+                            pass
+                        return token
 
             log.debug('STARTING full processing %s: with %s', ident, token)
 
