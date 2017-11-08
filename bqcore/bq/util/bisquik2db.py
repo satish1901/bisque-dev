@@ -555,7 +555,7 @@ def db2tree(dbo, parent=None, view=None, baseuri=None, progressive=False, **kw):
         # pylint:disable=E1103
         view = [ x.strip() for x in view.split(',') if len (x.strip()) ]
     view = view or []
-    if 'deep' not in view and 'full' not in view:
+    if not view:
         view.append ('short')
 
     #if 'fulluri' in view:
@@ -610,7 +610,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
     if dbo is None:
         log.error ("None pass to as DB object parent = %s" % parent)
         return None, nodes, doc_id
-    if 'deep' in view:
+    if  'deep' in view :
         n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
         return n, nodes, doc_id
 
@@ -625,42 +625,53 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
     #     n, nodes, doc_id = resource2tree(dbo, parent, ['deep'], baseuri, nodes, doc_id, qfilter)
     #     return n, nodes, doc_id
 
+    if 'short' in view:
+        return xmlnode(dbo, parent, baseuri, view), nodes, doc_id
 
-    node = xmlnode(dbo, parent, baseuri, view)
     if "full" in view :
-        #v = filter (lambda x: x != 'full', view)
-        #log.debug ('FULL %s', kw)
+        node = xmlnode(dbo, parent, baseuri, view), nodes, doc_id
         q = dbo.childrenq
-        #q = resource_permission (q)
+        # apply limit offsets
         if kw.has_key('offset'):
             q = q.offset (int(kw.pop('offset')))
         if kw.has_key('limit'):
             q = q.limit (int(kw.pop('limit')))
-        #log.debug ("FULL QUERY: %s" , q)
-        tl = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in q ]
-        #gl = [ db2tree_int(x, node, view=v, baseuri=baseuri) for x in dbo.gobjects ]
-#    elif "deep" in view:
-#         tl = [ db2tree_int(x, node, view, baseuri) for x in dbo.children ]
-#         #gl = [ db2tree_int(x, node, view, baseuri) for x in dbo.gobjects ]
-    elif view is None or len(view)==0 or 'short' in view:
-        pass
-    else:
-        # Allow a list of tags to be specified in the view parameter which
-        # will be included the object
-        v = filter (lambda x: x not in ('full','deep','short', 'canonical'), view)
-        #log.debug ("TAG VIEW=%s", v)
-        #tl = [ db2tree_int(x, node, v, baseuri) for x in dbo.tags if x.resource_name in v ]
-        for tag_name in v:
-            tags = DBSession.query(Taggable).filter(Taggable.document_id == dbo.document_id,
-                                                    Taggable.resource_type == 'tag',
-                                                    Taggable.resource_name == tag_name,
-                                                    Taggable.resource_parent_id == dbo.id,)
-            for tag in tags:
-                kid = xmlnode(tag, node, view=view, baseuri=baseuri)
-                tl = [ xmlnode(x, kid, view=view, baseuri=baseuri) for x in tag.childrenq ]
-             #tag = dbo.tagq.filter_by(resource_name = tag_name).first()
-             #if tag:
-             #    xmlnode(tag, node, view=v, baseuri=baseuri)
+        # add immediate children
+        _ = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in q ]
+        return node, nodes, doc_id
+
+    if 'deep' in view:
+        n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
+        return n, nodes, doc_id
+
+    # Allow a list of tags to be specified in the view parameter which
+    # will be included the object
+
+
+    if any ('deep' in x for x in view):
+        # are we fetching any deep tags ?
+        n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
+
+    node = xmlnode(dbo, parent, baseuri, view)
+
+    #fv = filter (lambda x: x not in ('full','deep','short', 'canonical'), view)
+    fv = [ x for x in view if x not in ('full','deep','short', 'canonical') ]
+    for tag_name in fv:
+        new_view=view
+        if ':' in tag_name:
+            tag_name, new_view = tag_name.split (':')
+            log.debug ("SPLIT %s %s", tag_name, new_view)
+        tags = DBSession.query(Taggable).filter(Taggable.document_id == dbo.document_id,
+                                                Taggable.resource_type == 'tag',
+                                                Taggable.resource_name == tag_name,
+                                                Taggable.resource_parent_id == dbo.id,)
+        for tag in tags:
+            if 'deep' in new_view:
+                log.debug ('appending %s', tag.id)
+                node.append (nodes[tag.id])
+            else:
+                kid = xmlnode(tag, node, view=new_view, baseuri=baseuri)
+                _ = [ xmlnode(x, kid, view=new_view, baseuri=baseuri) for x in tag.childrenq ]
 
     return node, nodes, doc_id
 

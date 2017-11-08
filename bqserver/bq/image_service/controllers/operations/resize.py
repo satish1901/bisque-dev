@@ -146,12 +146,11 @@ class ResizeOperation(BaseOperation):
         ofile = '%s.size_%d,%d,%s,%s' % (token.data, size[0], size[1], method, textAddition)
         args = ['-resize', '%s,%s,%s%s'%(size[0], size[1], method,aspectRatio)]
         try:
+            width = height = 1
             width, height = compute_new_size(num_x, num_y, size[0], size[1], aspectRatio!='', maxBounding)
         except ZeroDivisionError:
             if token.dryrun == True:
                 log.warning('Resize warning while guessing size %s: [%sx%s] to [%sx%s]', token.resource_id, num_x, num_y, width, height)
-                width = 1
-                height = 1
             else:
                 raise ImageServiceException(400, 'Resize: new image size cannot be guessed due to missing info' )
 
