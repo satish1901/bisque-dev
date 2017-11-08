@@ -614,22 +614,12 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
         n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
         return n, nodes, doc_id
 
-    # newview = filter (lambda x: x not in ('full','deep','short', 'canonical'), view)
-    # if newview:
-    #     qfilter = (Taggable.resource_parent_id == None)
-    #     for tag_name in newview:
-    #         qfilter = or_(qfilter, and_(Taggable.resource_type == 'tag',
-    #                                     Taggable.resource_name == tag_name))
-    #     qfilter = and_(Taggable.document_id == dbo.document_id, qfilter)
 
-    #     n, nodes, doc_id = resource2tree(dbo, parent, ['deep'], baseuri, nodes, doc_id, qfilter)
-    #     return n, nodes, doc_id
-
+    node = xmlnode(dbo, parent, baseuri, view)
     if 'short' in view:
-        return xmlnode(dbo, parent, baseuri, view), nodes, doc_id
+        return node, nodes, doc_id
 
     if "full" in view :
-        node = xmlnode(dbo, parent, baseuri, view), nodes, doc_id
         q = dbo.childrenq
         # apply limit offsets
         if kw.has_key('offset'):
@@ -640,19 +630,12 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
         _ = [ xmlnode(x, node, view=view, baseuri=baseuri) for x in q ]
         return node, nodes, doc_id
 
-    if 'deep' in view:
-        n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
-        return n, nodes, doc_id
-
     # Allow a list of tags to be specified in the view parameter which
     # will be included the object
-
 
     if any ('deep' in x for x in view):
         # are we fetching any deep tags ?
         n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
-
-    node = xmlnode(dbo, parent, baseuri, view)
 
     #fv = filter (lambda x: x not in ('full','deep','short', 'canonical'), view)
     fv = [ x for x in view if x not in ('full','deep','short', 'canonical') ]
