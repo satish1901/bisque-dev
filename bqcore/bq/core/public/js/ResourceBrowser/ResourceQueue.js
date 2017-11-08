@@ -356,11 +356,13 @@ Ext.apply(Bisque.ResourceBrowser.ResourceQueue.prototype, {
             uriObj.view = tags.join(',');
         }
 
-        for (var param in uriObj)
-        if (uriObj[param] && uriObj[param].length == 0)
-            delete uriObj[param];
-        else
-            uri += '&' + param + '=' + uriObj[param];
+        for (var param in uriObj) {
+            var v = uriObj[param];
+            if (typeof v === 'undefined' || v === null || v === '')
+                delete uriObj[param];
+            else
+                uri += '&' + param + '=' + v;
+        }
 
         uri = (uri == '' ? uri : uri.substring(1, uri.length));
         return Ext.urlAppend(baseURL, uri);

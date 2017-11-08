@@ -1498,6 +1498,7 @@ BQGObject.styles_per_type = {
 };
 
 BQGObject.add_default_style = function(t) {
+    if (!t) return;
     if (t in BQGObject.styles_per_type) return;
     BQGObject.styles_per_type[t] = {
         color: BQGObject.string_to_color_html(t),
@@ -1525,7 +1526,8 @@ BQGObject.load_default_styles = function(xml) {
         g=undefined, i=0, t=null;
     for (i=0; g=gobs[i]; ++i) {
         t = g.getAttribute('type');
-        BQGObject.add_default_style(t);
+        if (t)
+            BQGObject.add_default_style(t);
     } // for types
 };
 
@@ -2620,11 +2622,32 @@ BQUser.prototype.on_credentials = function(cb, cred) {
     if (cb) cb(cred);
 };
 
-
 BQUser.prototype.is_admin = function () {
     return this.groups && this.groups.indexOf ('admin')>-1;
 };
 
+//-------------------------------------------------------------------------------
+// BQUser - static methods to cache users
+//-------------------------------------------------------------------------------
+
+BQUser.users = {};
+
+BQUser.fetch_user = function(uri, cb, errorcb) {
+    if (uri in BQUser.users) {
+        cb(BQUser.users[uri]);
+        return;
+    }
+    BQFactory.request({
+        uri: uri,
+        errorcb: errorcb,
+        cb: function(resource) {
+            BQUser.users[uri] = resource;
+            cb(BQUser.users[uri]);
+        },
+        cache: true,
+        uri_params: {view:'full'},
+    });
+};
 
 //-------------------------------------------------------------------------------
 // BQAuth
@@ -3109,7 +3132,8 @@ BQSession.prototype.new_session  = function (opts) {
         console.log ('no expire');
     }
     if (this.user_uri){
-        BQFactory.request({uri: this.user_uri, cb: callback(this, 'setUser'), cache: false, uri_params: {view:'full'}});
+        //BQFactory.request({uri: this.user_uri, cb: callback(this, 'setUser'), cache: false, uri_params: {view:'full'}});
+        BQUser.fetch_user(this.user_uri, callback(this, this.setUser), Ext.emptyFn);
         if (this.callbacks.onsignedin) this.callbacks.onsignedin(this);
     }else{
         if (this.callbacks.onnouser) this.callbacks.onnouser(this);

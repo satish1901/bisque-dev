@@ -147,9 +147,12 @@ Ext.define('Bisque.Resource.Module.List', {
             // -1 = Loading
 
             BQFactory.request({
-                uri : this.resource.uri + '?view=deep',
+                uri : this.resource.uri,
                 cb : Ext.bind(this.loadResourceTags, this),
-                errorcb : Ext.emptyFn
+                errorcb : Ext.emptyFn,
+                cache: true,
+                uri_params: {view:'deep'},
+                //uri_params: {view:'module_options,display_options,thumbnail,title,description'},
             });
         }
     },
@@ -157,11 +160,13 @@ Ext.define('Bisque.Resource.Module.List', {
     loadResourceTags : function(resource) {
         this.setData('tags', resource.tags);
         this.resource = resource;
-        BQFactory.request({
+        /*BQFactory.request({
             uri : this.resource.owner,
             cb : Ext.bind(this.loadResource, this),
             errorcb : Ext.emptyFn
-        });
+        });*/
+
+        BQUser.fetch_user(this.resource.owner, callback(this, this.loadResource), Ext.emptyFn);
     },
 
     loadResource : function(ownerInfo) {
@@ -246,8 +251,13 @@ Ext.define('Bisque.Resource.Module.IconList', {
             cls : 'lblModuleName',
         });
 
+        var html = '';
+        var v = this.resource.tags_index['module_options/version'];
+        var o = this.getData('owner');
+        if (v) html += 'Version: '+v+', ';
+        if (o) html += 'Owner: ' + o;
         var moduleInfo = new Ext.form.Label({
-            html : this.getData('owner') != 0 ? 'Owner: ' + this.getData('owner') : '',
+            html : html,
             //padding:'0 0 0 3',
             maxHeight : 18,
             cls : 'lblModuleOwner'

@@ -572,9 +572,11 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             wpublic : this.browserParams.wpublic
         };
 
-        for (var param in uri)
-        if (uri[param] && uri[param].length === 0)
-            delete uri[param];
+        for (var param in uri) {
+            var v = uri[param];
+            if (typeof v === 'undefined' || v === null || v === '')
+                delete uri[param];
+        }
 
         return uri;
     },
