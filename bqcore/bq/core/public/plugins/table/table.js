@@ -657,6 +657,19 @@ Ext.define('BQ.table.Panel', {
             this.needs_loading_first_child = true;
         }
 
+        // select a first node in a hierarchical document with only one level of tables
+        if (json && json.group && json.group.length>0 && !this.needs_loading_first_child) {
+            this.needs_loading_first_child = true;
+            var g = null,
+                i = 0;
+            for (i=0; (g=json.group[i]); ++i) {
+                if (g.type !== 'table') {
+                    this.needs_loading_first_child = undefined;
+                    break;
+                }
+            }
+        }
+
         if (this.groups && (this.groups.length>1 || (this.groups.length===1 && !json.headers))) {
             this.tabs = this.add({
                 xtype: 'tabpanel',
