@@ -77,17 +77,18 @@ import socket
 import copy
 import time
 import logging
-import transaction
-import tg
 import urlparse
-import urllib
+#import urllib
 import itertools
 import csv
-import numbers
-from operator import mul
-from bqapi import BQServer
-from lxml import etree
+#import numbers
 from datetime import datetime
+from operator import mul
+from lxml import etree
+from collections import OrderedDict
+
+import tg
+import transaction
 from paste.proxy import make_proxy
 from pylons.controllers.util import abort
 from tg import controllers, expose, config, request, override_template
@@ -97,11 +98,12 @@ from repoze.what.predicates import not_anonymous
 #from tgext.asyncjob import asyncjob_perform, asyncjob_timed_query
 
 
+from bqapi import BQServer
 from bq import data_service
 from bq.util import http
 from bq.util.xmldict import d2xml
 from bq.util.thread_pool import WorkRequest, NoResultsPending
-from bq.util.bisquik2db import bisquik2db, load_uri
+from bq.util.bisquik2db import bisquik2db  #, load_uri
 from bq.util.hash import is_uniq_code
 from bq.core.identity import  set_admin_mode, set_current_user, get_username
 #from bq.core.permission import *
@@ -346,7 +348,7 @@ def create_mex(module, name, mex = None, **kw):
     blocked_iters = mex.xpath('./tag[@name="execute_options"]/tag[@name="blocked_iter"]')
     iter_blocksize = int(config.get('bisque.module_service.blocksize', 1)) if len(blocked_iters) > 0 and (blocked_iters[0].get('value', 'false').lower() == 'true') else 1
     log.debug("iter_blocksize %s", iter_blocksize)
-        
+
     # Build dict of iterable input names ->   dict of iterable types -> iter expressions
     iters = {}
     for itr in iterables:
@@ -397,7 +399,7 @@ def create_mex(module, name, mex = None, **kw):
                             step = 1.0 if start<=end else -1.0
                         except ValueError:
                             log.error("illegal list enumeration")
-                            return mex                    
+                            return mex
                 elif members[0] != '...' and members[1] != '...' and members[2] == '...' and members[3] != '...':
                     # case "a, b, ..., z"
                     try:
@@ -445,12 +447,12 @@ def create_mex(module, name, mex = None, **kw):
                     log.error("too many combinations (>%s)" % _max_submexes*iter_blocksize)
                     return mex
             log.debug ('iterated xpath %s members %s...' , resource_iterexpr, members[:100])
-        # add all values to this iter_tag        
+        # add all values to this iter_tag
         all_iterables.append([(iter_tag, value) for value in members])
 
     log.debug("all iterable values: %s", str(all_iterables))
 
-    all_step_params = [] 
+    all_step_params = []
     if coupled_iter:
         # Generate coupled list of values:
         # tag1:val1, tag2:valx, tag3:vala
@@ -482,7 +484,7 @@ def create_mex(module, name, mex = None, **kw):
             for iter_tag, value in iter_combo:
                 single_step_params[iter_tag] = value
             all_step_params.append(single_step_params)
-    
+
     # ensure we have at least _min_submexes blocks
     total_steps = len(all_step_params)
     if total_steps == 0:
@@ -490,7 +492,7 @@ def create_mex(module, name, mex = None, **kw):
     if iter_blocksize > 1 and (total_steps+iter_blocksize-1)/iter_blocksize < _min_submexes:
         iter_blocksize = max((total_steps+_min_submexes-1)/_min_submexes, 1)
         log.debug("adjusted blocksize to %s" % iter_blocksize)
-                    
+
     # Create SubMex sections with original parameters replaced with iterated members
     multi_subinputs = []
     single_step_cnt = 0
@@ -519,7 +521,7 @@ def create_mex(module, name, mex = None, **kw):
                     input_tag.append(kid)
             mex.append(submex)
             multi_subinputs = []
-            
+
     log.debug('mex rewritten-> %s' , etree.tostring(mex))
     return mex
 
@@ -706,15 +708,15 @@ class ServiceDelegate(controllers.WSGIAppController):
 
     @expose(content_type='text/xml')
     def kill(self, *args, **kw):
-        log.info ('KILL %s with %s %s' , str(self.module), str(args), str(kw))        
+        log.info ('KILL %s with %s %s' , str(self.module), str(args), str(kw))
         if tg.request.method.lower() not in ('put', 'post'):
             abort(405, 'Kill operation requires PUT or POST method')
         if len(args) != 1:
             abort(405, 'Kill operation requires mex id')
-            
+
         mex_uniq = args[0]
         mex_token = "%(user)s:%(uniq)s" % dict(user=get_username(), uniq=mex_uniq)
-        
+
         try:
             resp, content = http.xmlrequest(urlparse.urljoin(self.service_url, "kill/"+mex_uniq), "POST",
                                             headers = {'Mex': mex_uniq,
@@ -825,7 +827,7 @@ class ModuleServer(ServiceController):
             #modules = data_service.query('module', wpublic='1', view='deep')
             modules = data_service.query('module', **kw)
 
-        service_list = {}
+        service_list = OrderedDict()
         for module in modules.xpath('module'):
             log.debug ("FOUND module: %s" , (module.get('uri')))
             engine = module.get('value')
