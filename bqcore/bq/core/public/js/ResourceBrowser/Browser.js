@@ -423,7 +423,8 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
         this.centerPanel.on('resize', Ext.bind(this.ChangeLayout, this, [-1]));
 
         this.centerPanel.getEl().on('mousewheel', function(e) {
-            if (this.layoutMgr.key != Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full) {
+            if (this.layoutMgr.key != Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Full &&
+                this.layoutMgr.key != Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Annotator) {
                 if (e.getWheelDelta() > 0) {
                     var btnLeft = this.commandBar.getComponent("btnLeft");
                     if (!btnLeft.disabled)
@@ -446,6 +447,14 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                 },
                 defaultEventAction : 'stopEvent',
                 scope : this
+            }, {
+                key: 32,
+                scope: this,
+                fn: function() {
+                    var btnRight = this.commandBar.getComponent("btnRight");
+                    if (!btnRight.disabled)
+                        btnRight.handler.call(btnRight.scope, btnRight);
+                }
             }]
         });
 
