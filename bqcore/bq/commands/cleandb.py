@@ -20,6 +20,8 @@ def clean_store(stores, options):
     localfiles = set()
 
     for local in stores:
+        if 'top' not in local:
+            continue
         top =  local['top'][7:]
         top = string.Template(top).safe_substitute(datadir = data_path())
         tops.append  (top)
@@ -36,7 +38,8 @@ def clean_store(stores, options):
     dbfiles = []
     resources_missing = []
     locs = DBSession.query(Taggable).filter(or_(Taggable.resource_type=='image',
-                                                  Taggable.resource_type=='file'))
+                                                Taggable.resource_type=='file',
+                                                Taggable.resource_type=='table'))
     for f in locs:
         if f.resource_value is None:
             # check for sub values
@@ -86,5 +89,3 @@ def clean_images(options):
 
     # Collect ALL files in file stores
     clean_store([store for name, store in drivers.items() if store['mounturl'].startswith('file')], options)
-
-
