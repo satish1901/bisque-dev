@@ -285,7 +285,7 @@ Ext.define('BQ.table.View', {
                 text: h,
                 flex: 1,
                 dataIndex: i, // need to use numbers for reading from json array
-                //sortable: true,
+                sortable: false, //true,
                 autoSizeColumn : true,
                 renderer: function(value) {
                     return value;
@@ -396,7 +396,7 @@ Ext.define('BQ.table.Tree', {
         text: '',
         flex: 2,
         dataIndex: 'path',
-        sortable: true,
+        sortable: false, //true,
         renderer: function(value) {
             return value.split('/').slice(-1)[0];
         },
