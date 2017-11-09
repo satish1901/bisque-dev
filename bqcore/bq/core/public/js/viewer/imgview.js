@@ -743,6 +743,11 @@ ImgViewer.prototype.newPhys = function (phys) {
         this.current_view = new Viewstate(imgview_min_width, imgview_min_width, Math.floor((phys.z-1)/2), 0, 1.0);
     this.current_view.imagesrc = this.imagesrc;
     this.current_view.imagedim = this.imagedim.clone();
+
+    var resource_uniq = this.image.resource_uniq;
+    this.current_view.gob_tolerance.z = BQ.Preferences.get(resource_uniq, 'GraphicalAnnotations/Projections/visible_plane_tolerance_z', 1.0);
+    this.current_view.gob_tolerance.t = BQ.Preferences.get(resource_uniq, 'GraphicalAnnotations/Projections/visible_plane_tolerance_t', 1.0);
+
     if (this.parameters.onphys) this.parameters.onphys();
 
     for (var i = 0; i < this.plugins.length; i++) {
@@ -816,9 +821,10 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
 ImgViewer.prototype.onPreferences = function() {
     var resource_uniq = this.image.resource_uniq;
     this.disable_geo = BQ.Preferences.get(resource_uniq, 'Viewer/disable_geographical_extensions', false);
-
-    this.current_view.gob_tolerance.z = BQ.Preferences.get(resource_uniq, 'GraphicalAnnotations/Projections/visible_plane_tolerance_z', 1.0);
-    this.current_view.gob_tolerance.t = BQ.Preferences.get(resource_uniq, 'GraphicalAnnotations/Projections/visible_plane_tolerance_t', 1.0);
+    if (this.current_view) {
+        this.current_view.gob_tolerance.z = BQ.Preferences.get(resource_uniq, 'GraphicalAnnotations/Projections/visible_plane_tolerance_z', 1.0);
+        this.current_view.gob_tolerance.t = BQ.Preferences.get(resource_uniq, 'GraphicalAnnotations/Projections/visible_plane_tolerance_t', 1.0);
+    }
     if (!('semantic_types' in this.parameters)) {
         var require = BQ.Preferences.get(resource_uniq, 'GraphicalAnnotations/require_semantic_types', false);
         if (require)
