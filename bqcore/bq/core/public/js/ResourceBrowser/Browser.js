@@ -233,7 +233,8 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             selType : (this.browserParams.selType || 'SINGLE').toUpperCase()
         });
 
-        this.browserParams.tagOrder = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Sorting', this.browserParams.tagOrder);
+        if (this.browserParams.tagOrder === '"@ts":desc')
+            this.browserParams.tagOrder = BQ.Preferences.get('user', 'ResourceBrowser/Browser/Sorting', this.browserParams.tagOrder);
         this.browserState['offset'] = this.browserParams.offset;
         this.layoutKey = this.layoutKey || this.browserParams.layout;
         //this.showOrganizer = true;
@@ -841,7 +842,8 @@ Ext.define('Bisque.ModuleBrowser.Browser', {
             baseURL: this.baseURL || '/module_service/',
             dataset: this.dataset || '/module_service/',
             offset: this.offset || 0,
-            tag_order: this.tag_order || '"@ts":desc',
+            tag_order: '"@name":asc',
+            tagOrder: '"@name":asc',
             tag_query: this.tag_query,
             wpublic: this.wpublic || 'owner',
 
@@ -856,6 +858,7 @@ Ext.define('Bisque.ModuleBrowser.Browser', {
             this.dataset   = q.dataset || this.dataset;
             this.offset    = q.offset || this.offset;
             this.tag_order = q.tag_order || this.tag_order;
+            this.tagOrder = q.tagOrder || this.tagOrder;
             this.tag_query = q.tag_query || this.tag_query;
             this.wpublic   = q.wpublic || this.wpublic;
             return;
@@ -871,6 +874,7 @@ Ext.define('Bisque.ModuleBrowser.Browser', {
                 dataset: q.dataset || this.dataset,
                 offset: q.offset || this.offset,
                 tag_order: q.tag_order || this.tag_order,
+                tagOrder: q.tagOrder || this.tagOrder,
                 tag_query: q.tag_query,
                 wpublic: q.wpublic || this.wpublic,
             });

@@ -219,7 +219,9 @@ Ext.define('BQ.module.UnregisteredPanel', {
                 name: 'moduleXmlDoc',
             },{
                 name: 'version',
-            },{
+            }, {
+                name: 'module_uri',
+            }, {
                 name: 'engine',
             }, {
                 name: 'registration'
@@ -401,22 +403,19 @@ Ext.define('BQ.module.UnregisteredPanel', {
     checkRegistrationModule: function(record) {
         var me = this;
         var engine = record.get('engine');
-        if (engine) {
+        if (!engine) {
+            BQ.ui.error('Record does not have an engine!')
+        } else if (engine && me.module_service_xml) {
+            me.doCheckRegistrationModule(record, me.module_service_xml);
+        } else if (engine) {
             Ext.Ajax.request({
                 url: '/module_service',
                 method: 'GET',
                 headers: { 'Content-Type': 'text/xml' },
                 disableCaching: false,
                 success: function(response) {
-                    var xmlDoc = response.responseXML;
-                    var moduleList = BQ.util.xpath_nodes(xmlDoc, '//module[@value="'+engine+'"]')
-                    if (moduleList.length<1){ //module was not registered
-                        record.set('registration', 'Not Registered')
-                    } else {
-                        record.set('registration', 'Registered')
-                        var uniq = moduleList[0].getAttribute('resource_uniq')
-                        record.set('resource_uniq', uniq)
-                    }
+                    me.module_service_xml = response.responseXML;
+                    me.doCheckRegistrationModule(record, me.module_service_xml);
                 },
                 failure: function(response) {
                     BQ.ui.error('Failed to find module_service');
@@ -424,8 +423,18 @@ Ext.define('BQ.module.UnregisteredPanel', {
                 },
                 scope: this,
             });
+        }
+    },
+
+    doCheckRegistrationModule: function(record, xmlDoc) {
+        var engine = record.get('engine');
+        var moduleList = BQ.util.xpath_nodes(xmlDoc, '//module[@value="'+engine+'"]')
+        if (moduleList.length<1){ //module was not registered
+            record.set('registration', 'Not Registered')
         } else {
-            BQ.ui.error('Record does not have an engine!')
+            record.set('registration', 'Registered')
+            var uniq = moduleList[0].getAttribute('resource_uniq')
+            record.set('resource_uniq', uniq)
         }
     },
 
@@ -577,7 +586,9 @@ Ext.define('BQ.module.RegisteredPanel', {
                 name: 'moduleXmlDoc',
             },{
                 name: 'version',
-            },{
+            }, {
+                name: 'module_uri',
+            }, {
                 name: 'engine',
             }, {
                 name: 'registration'
@@ -585,19 +596,18 @@ Ext.define('BQ.module.RegisteredPanel', {
             root   : 'records'
         });
 
-        Ext.apply(me, {
+        /*Ext.apply(me, {
             //items: items,
             //tbar: tbar,
             store: this.store,
-        });
+        });*/
 
 
         this.store.on('add', function(store, records, index, eOpts) {
-            for (var r=0; r<records.length;r++) {
-                var owner_uri = records[r].get('owner_uri');
-                var name = records[r].get('name');
-                if (owner_uri) me.setOwner(records[r], owner_uri);
-                if (name) me.setStatus(records[r], name);
+            var i=0, r=null;
+            for (i=0; (r=records[i]); ++i) {
+                if (r.data.loading || r.data.loaded) continue;
+                me.updateEntry(r);
             }
         });
 
@@ -641,7 +651,8 @@ Ext.define('BQ.module.RegisteredPanel', {
                         '<p><b>Authors:</b> {authors}</p>',
                         '<p><b>Version:</b> {version}</p>',
                         '<p><b>Visibility:</b> {visibility}</p>',
-                        '<p><b>Url:</b> {engine}</p>',
+                        '<p><b>URL:</b> {module_uri}</p>',
+                        '<p><b>Engine URL:</b> {engine}</p>',
                         '<p><b>Status:</b> {status}</p>',
                     '</div>',
                 '</div>',
@@ -653,25 +664,43 @@ Ext.define('BQ.module.RegisteredPanel', {
     initTable: function() { //search module service for registered modules
         var me = this;
         Ext.Ajax.request({
-            url: '/module_service',
-            params: {wpublic: 'true'},
+            url: '/module_service?tag_order=%22@name%22:asc&wpublic=owner,shared,public',
+            //params: {wpublic: 'owner,shared,public', tag_order: '%22@name%22:asc', },
             method: 'GET',
             headers: { 'Content-Type': 'text/xml' },
             disableCaching: false,
             success: function(response) {
+                var engine_list = [];
+                var engine_hash = {};
+
                 var xml = response.responseXML;
                 var moduleNodes = BQ.util.xpath_nodes(xml, '//module');
-                for (var i = 0; i<moduleNodes.length; i++) {
+                var node = null;
+                for (var i=0; (node=moduleNodes[i]); ++i) {
                     var record = me.store.add({
-                        moduleXmlDoc: moduleNodes[i],
-                        resource_uniq: moduleNodes[i].attributes['resource_uniq'].value || '',
-                        name: moduleNodes[i].attributes['name'].value || '',
-                        owner_uri: moduleNodes[i].attributes['owner'].value||'',
-                        engine: moduleNodes[i].attributes['value'].value||'',
-                        visibility : moduleNodes[i].attributes['permission'].value||'',
+                        moduleXmlDoc: node,
+                        resource_uniq: node.getAttribute('resource_uniq') || '',
+                        name: node.getAttribute('name') || '',
+                        owner_uri: node.getAttribute('owner') ||'',
+                        engine: node.getAttribute('value') ||'',
+                        visibility : node.getAttribute('permission') ||'',
                     });
-                    this.updateEntry(record[0]);
+                    //this.updateEntry(record[0]);
+
+                    var engine = node.getAttribute('value');
+                    var name = node.getAttribute('name');
+                    if (engine && name) {
+                        //strip the name from the engine
+                        var engine = engine.replace(new RegExp("/" + name+ "+$", "g"), "");
+                        engine_hash[engine] = engine;
+                    }
                 }
+
+                for (var i in engine_hash) {
+                    engine_list.push(i);
+                }
+                me.main_panel.engineSearchBar.bindStore(engine_list);
+                me.main_panel.unregisterPanel.module_service_xml = xml;
             },
             failure: function(response) {
                 BQ.ui.error('Failed to find module service');
@@ -719,8 +748,11 @@ Ext.define('BQ.module.RegisteredPanel', {
         var name = record.get('name');
         var engine = record.get('engine');
         if (owner_uri) me.setOwner(record, owner_uri);
-        if (name) me.setStatus(record, name);
-        if (engine) me.setEngine(record, engine);
+        //if (name) me.setStatus(record, name);
+        //if (engine) me.setEngine(record, engine); // dima, we only need to do this when needed
+
+        // dima: fetch the whole thing from module service proxy
+        if (name) me.fetchModuleDefinition(record, name);
     },
 
     removeEntry: function(record) {
@@ -809,6 +841,12 @@ Ext.define('BQ.module.RegisteredPanel', {
     setOwner: function(record, owner_uri) {
         var me = this;
         if (owner_uri) {
+            BQUser.fetch_user(owner_uri, function(resource) {
+                record.set('owner', resource.name || resource.user_name || resource.display_name); // set user name
+            }, function() {
+                BQ.ui.error('Failed to load user: '+ owner_uri);
+            });
+            /*
             Ext.Ajax.request({
                 url: owner_uri,
                 method: 'GET',
@@ -826,13 +864,16 @@ Ext.define('BQ.module.RegisteredPanel', {
                 },
                 scope: me,
             });
+            */
         }
     },
 
     //sets the statuses of all the nodes
+    /*
     setStatus: function(record, name) {
         var me = this;
-        if (name) {
+        if (!name) return;
+        setTimeout(function() {
             Ext.Ajax.request({
                 url: '/module_service/'+name+'/definition',
                 method: 'GET',
@@ -845,8 +886,73 @@ Ext.define('BQ.module.RegisteredPanel', {
                     record.set('status', 'Failed!')
                 },
                 scope: me,
-            });
-        }
+            })
+        }, 10 );
+    },
+    */
+
+    fetchModuleDefinition: function(record, name) {
+        var me = this;
+        if (!name || record.data.loaded) return;
+        record.data.loading = true;
+        record.data.loaded = false;
+
+        Ext.Ajax.request({
+            url: '/module_service/'+name+'/definition',
+            method: 'GET',
+            headers: { 'Content-Type': 'text/xml' },
+            disableCaching: false,
+            success: function(response) {
+                var definition = response.responseXML;
+                function getTagValues(node, name) {
+                    if(node) {
+                        var tag = node.querySelector('tag[name="'+name+'"]')
+                        if (tag) {
+                            var value = tag.attributes['value']||'';
+                            if (value) value = value.value;
+                        } else {
+                            var value = '';
+                        }
+                    } else {
+                        var value = '';
+                    }
+                    return value;
+                }
+
+                function getVersion(node) {
+                    if(node) {
+                        var module_options = node.querySelector('tag[name="module_options"]')
+                        if (module_options) {
+                            var version = module_options.querySelector('tag[name="version"]')
+                            if (version) {
+                                var value = version.attributes['value']||'';
+                                if (value) value = value.value;
+                                else var value = ''
+                            }
+                        }
+                    }
+                    return value||'';
+                }
+
+                record.set('status', 'Good!');
+                record.set('title', getTagValues(definition, 'title'));
+                record.set('authors', getTagValues(definition, 'authors'));
+                record.set('description', getTagValues(definition, 'description'));
+                record.set('definition', definition);
+                record.set('groups', '');
+                record.set('module_uri', '/module_service/'+record.get('name') );
+                record.set('thumbnail_uri', '/module_service/'+record.get('name')+'/thumbnail' );
+                record.set('version', getVersion(definition));
+                record.data.loading = false;
+                record.data.loaded = true;
+                //var idx = record.store.indexOf(record);
+                //me.getView().refreshNode(idx);
+            },
+            failure: function(response) {
+                record.set('status', 'Failed!');
+            },
+            scope: me,
+        });
     },
 
     reload: function() {
@@ -1060,6 +1166,9 @@ Ext.define('BQ.module.ModuleManagerMain', {
         });
 
         this.registerPanel = Ext.create('BQ.module.RegisteredPanel', {
+            //engineSearchBar: this.engineSearchBar,
+            main_panel: this,
+
             ddGroup: 'unregisterGripDDGroup',
             split: true,
             region: 'center',
@@ -1374,10 +1483,12 @@ Ext.define('BQ.module.ModuleManagerMain', {
         });
 
         this.engineSearchBar.on('afterrender', function() {
+            /*
             function storeBind(store) {
                 me.engineSearchBar.bindStore(store)
             }
             me.unregisterPanel.searchForEngines(storeBind);
+            */
         });
 
         this.unregisterPanel.getView().on('beforedrop', function(node, data, overModel, dropPosition,  dropFunction,  eOpts){
@@ -1453,7 +1564,7 @@ Ext.define('BQ.module.ModuleManagerMain', {
         var me = this;
         var moduleXmlDoc = record.get('moduleXmlDoc');
         var uniq = record.get('resource_uniq');
-        if (new_owner_url && uniq && definition) {
+        if (new_owner_url && uniq) { //} && definition) {
             var def_clone = moduleXmlDoc.cloneNode(true);
             def_clone.setAttribute('owner',new_owner_url);
             def_clone.innerHTML = '';
@@ -1490,13 +1601,14 @@ Ext.define('BQ.module.ModuleManagerMain', {
                     if (uniq) {
                         record.set('registration', 'Registered');
                         if (dropFunction) {
-                            me.registerPanel.addEntry(uniq, record, dropFunction.processDrop);
+                            dropFunction.processDrop();
+                            record = me.registerPanel.store.last();
                         } else {
-                            storeRecord = function() {
-                                me.registerPanel.store.add(record);
-                            }
-                            me.registerPanel.addEntry(uniq, record, storeRecord);
+                            var r = me.registerPanel.store.add(r);
+                            record = r[0];
                         }
+
+                        me.registerPanel.addEntry(uniq, record);
                         me.fireEvent('registered', me, record)
                         if (cb) cb();
 
