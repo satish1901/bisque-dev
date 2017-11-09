@@ -158,13 +158,13 @@ Ext.define('BQ.Application', {
 
     onGotUser: function() {
         this.user = BQSession.current_session.user;
-        BQ.Preferences.load('user'); //loads on initialization of BQ.Preferences
+        this.loadPreferences();
         this.fireEvent( 'gotuser', BQSession.current_session.user);
     },
 
     onNoUser: function() {
         this.user = null;
-        BQ.Preferences.load('user'); //loads on initialization of BQ.Preferences
+        this.loadPreferences();
         this.fireEvent( 'nouser');
     },
 
@@ -174,6 +174,25 @@ Ext.define('BQ.Application', {
 
     getUser: function() {
         return this.user;
+    },
+
+    loadPreferences: function() {
+        if (!this.linked_prefs) {
+            this.linked_prefs = true;
+            BQ.Preferences.on('update_user_pref', this.onPreferences, this);
+            BQ.Preferences.on('onerror_user_pref', this.onPreferences, this);
+        }
+
+        //checks to see if preference has been loaded already
+        if (BQ.Preferences.isLoaded('user'))
+            this.onPreferences();
+        BQ.Preferences.load('user'); //loads on initialization of BQ.Preferences
+    },
+
+    onPreferences: function() {
+        var level = BQ.Preferences.get('user', 'GraphicalAnnotations/Colors/type_hierarchy_level', 0),
+            separator = BQ.Preferences.get('user', 'GraphicalAnnotations/Colors/type_hierarchy_separator', '');
+        BQGObject.load_default_styles(BQGObject.unique_gobjects_xml, level, separator);
     },
 
     // UI elements --------------------------------------------------

@@ -2929,7 +2929,7 @@ CanvasRenderer.prototype.select_shape = function ( view, gob ) {
 
 CanvasRenderer.prototype.polygon = function (visitor, gob , viewstate, visibility) {
     this.polyline (visitor, gob, viewstate, visibility);
-    if(gob.shape)
+    if (gob.shape)
         gob.shape.closed(true);
 };
 
@@ -2961,7 +2961,7 @@ CanvasRenderer.prototype.square = function (visitor, gob,  viewstate, visibility
 };
 
 CanvasRenderer.prototype.point = function (visitor, gob,  viewstate, visibility) {
-    this.pointSize = 5.5; //3.5;
+    this.pointSize = 5.0; //3.5;
     this.makeShape(gob, viewstate, 'point', visibility);
     if(gob.shape)
         gob.shape.setPointSize(this.pointSize);

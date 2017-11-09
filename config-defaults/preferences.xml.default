@@ -214,12 +214,75 @@
                     <tag name="Editable" value="true" type="boolean"/>
                 </template>
             </tag>
+
             <tag name="preferred_text_per_channel_name" value="">
                 <template>
                     <tag name="description" value="Semicolon separated pairs of name=TEXT; example: DAPI=Nuclear;Alexa Fluor 488=Membrane;"/>
                     <tag name="Editable" value="true" type="boolean"/>
                 </template>
             </tag>
+        </tag>
+
+        <tag name="GraphicalAnnotations" >
+
+            <tag name="require_semantic_types" value="false" type="boolean">
+                <template>
+                    <tag name="Type" value="Boolean"/>
+                    <tag name="defaultValue" value="false"/>
+                    <tag name="allowBlank" value="false" type="boolean"/>
+                    <tag name="Editable" value="true" type="boolean"/>
+                </template>
+            </tag>
+
+            <tag name="Projections">
+                <tag name="visible_plane_tolerance_z" value="2.5" type="number">
+                    <template>
+                        <tag name="Type" value="number"/>
+                        <tag name="defaultValue" value="2.5"/>
+                        <tag name="allowBlank" value="false" type="boolean"/>
+                        <tag name="Editable" value="true" type="boolean"/>
+                        <tag name="minValue" value="1" type="number" />
+                        <tag name="maxValue" value="50" type="number" />
+                        <tag name="allowDecimals" value="true" type="boolean" />
+                        <tag name="decimalPrecision" value="1" type="number" />
+                        <tag name="step" value="0.5" type="number" />
+                    </template>
+                </tag>
+                <tag name="visible_plane_tolerance_t" value="1.0" type="number">
+                    <template>
+                        <tag name="Type" value="number"/>
+                        <tag name="defaultValue" value="1.0"/>
+                        <tag name="allowBlank" value="false" type="boolean"/>
+                        <tag name="Editable" value="true" type="boolean"/>
+                        <tag name="minValue" value="1" type="number" />
+                        <tag name="maxValue" value="50" type="number" />
+                        <tag name="allowDecimals" value="true" type="boolean" />
+                        <tag name="decimalPrecision" value="1" type="number" />
+                        <tag name="step" value="1" type="number" />
+                    </template>
+                </tag>
+            </tag>
+
+            <tag name="Colors">
+                <tag name="type_hierarchy_level" value="0" type="number">
+                    <template>
+                        <tag type="string" name="Type" value="ComboBox"/>
+                        <tag type="string" name="defaultValue" value="0"/>
+                        <tag type="boolean" name="allowBlank" value="false"/>
+                        <tag type="boolean" name="Editable" value="true"/>
+                        <tag type="string" name="select" value="Whole,1,2,3,4,5,6,7,8,9,10"/>
+                        <tag type="string" name="passedValues" value="0,1,2,3,4,5,6,7,8,9,10"/>
+                    </template>
+                </tag>
+
+                <tag name="type_hierarchy_separator" value="">
+                    <template>
+                        <tag name="description" value="Character used to separate type hierarchy, for example '.' for Arthropoda.Barnicle" />
+                        <tag name="Editable" value="true" type="boolean"/>
+                    </template>
+                </tag>
+            </tag>
+
         </tag>
 
         <tag name="Viewer3D" >
