@@ -33,7 +33,7 @@
                      may contain semantic types as well
     semantic_types - false - hides the gobject types list
                      true - shows the gobject types list
-                     'require' - shows and does not permit non-sematci types from being selected
+                     'require' - shows and does not permit non-semantic types from being selected
 
     gobjectDeleted
     gobjectCreated

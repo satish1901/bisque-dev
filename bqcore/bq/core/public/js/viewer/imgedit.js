@@ -32,6 +32,7 @@ function ImgEdit (viewer,name){
   this.zindex_low  = 15;
 
   //parse input parameters
+  /*
   var primitives = 'Point,Rectangle,Square,Polyline,Line,Polygon,freehand_line,freehand_shape,Circle,Ellipse,Label'.toLowerCase().split(',');
   if ('editprimitives' in this.viewer.parameters && this.viewer.parameters.editprimitives)
     primitives = this.viewer.parameters.editprimitives.toLowerCase().split(',');
@@ -39,6 +40,7 @@ function ImgEdit (viewer,name){
   this.semantic_types = this.viewer.parameters.semantic_types;
   for (var i=0; i < primitives.length; i++)
     this.editprimitives[ primitives[i] ] = '';
+*/
 }
 ImgEdit.prototype = new ViewerPlugin();
 
@@ -53,7 +55,13 @@ ImgEdit.prototype.newImage = function () {
 };
 
 ImgEdit.prototype.updateImage = function () {
-
+  var primitives = 'Point,Rectangle,Square,Polyline,Line,Polygon,freehand_line,freehand_shape,Circle,Ellipse,Label'.toLowerCase().split(',');
+  if ('editprimitives' in this.viewer.parameters && this.viewer.parameters.editprimitives)
+    primitives = this.viewer.parameters.editprimitives.toLowerCase().split(',');
+  this.editprimitives = {};
+  this.semantic_types = this.viewer.parameters.semantic_types;
+  for (var i=0; i < primitives.length; i++)
+    this.editprimitives[ primitives[i] ] = '';
 };
 
 ImgEdit.prototype.createButtonsDeselect = function() {

@@ -193,6 +193,7 @@ function CanvasShape(gob, renderer) {
     this.zindex = Math.random(); //generate a false zindex for depth sorting.
     this.isDestroyed = false;
     //this.rotation = 0;
+    this.strokeMultiplier = 2.5;
 };
 
 
@@ -712,7 +713,7 @@ CanvasShape.prototype.setStroke = function(sw){
     else if(!this.strokeWidth) this.strokeWidth = 1.0;
 
     var scale = this.renderer.stage.scale();
-    this.sprite.strokeWidth(1.25*this.strokeWidth/scale.x); //reset the moves to zero
+    this.sprite.strokeWidth(this.strokeMultiplier*(this.strokeWidth/scale.x)); //reset the moves to zero
 };
 
 
@@ -788,13 +789,13 @@ CanvasShape.prototype.setColor = function (r,g,b) {
     }, 100);
 };
 
-
+/*
 CanvasShape.prototype.applyColor = function () {
     var color = this.getColor();
     this.sprite.fill(this.getColorString(color));
     this.sprite.stroke(this.getColorString(color));
 };
-
+*/
 
 CanvasShape.prototype.getColorString = function (c, alpha) {
     c = c || this.getColor();
@@ -856,6 +857,9 @@ CanvasShape.prototype.redraw = function () {
 ///////////////////////////////////////////////
 
 function CanvasPolyLine(gob, renderer) {
+    this.strokeMultiplierClosed = 2.5;
+    this.strokeMultiplier = 4.0;
+
 	this.renderer = renderer;
     this.gob = gob;
     this.init(gob);
@@ -974,9 +978,9 @@ CanvasPolyLine.prototype.setStroke = function(sw){
     else if(!this.strokeWidth) this.strokeWidth = 1.0;
 
     if(this._closed)
-        this.sprite.strokeWidth(1.25*this.strokeWidth/scale.x); //reset the moves to zero
+        this.sprite.strokeWidth(this.strokeMultiplierClosed*(this.strokeWidth/scale.x)); //reset the moves to zero
     else
-        this.sprite.strokeWidth(2.5*this.strokeWidth/scale.x); //reset the moves to zero
+        this.sprite.strokeWidth(this.strokeMultiplier*(this.strokeWidth/scale.x)); //reset the moves to zero
 };
 
 CanvasPolyLine.prototype.updateLocal = function () {
@@ -1022,7 +1026,15 @@ CanvasPolyLine.prototype.updateLocal = function () {
         vertices[xy + 1] -= my;
     }
 
-    this.applyColor();
+    //this.applyColor();
+    var color = this.getColor();
+    if (this._closed) {
+        this.sprite.fill(this.getColorString(color));
+        this.sprite.stroke(this.getColorString(color));
+    } else  {
+        this.sprite.fill(this.getColorString(color, 1.0));
+        this.sprite.stroke(this.getColorString(color, 1.0));
+    }
 
     this.setStroke();
     this.sprite.points(vertices);
@@ -1322,7 +1334,7 @@ CanvasEllipse.prototype.init = function(gob){
         //y: p1.y,
         fill: color,
         stroke: 'red',
-        strokeWidth: 1/scale.x,
+        strokeWidth: 5.0/scale.x,
     });
 
     gob.shape = this;
@@ -1797,7 +1809,7 @@ CanvasCircle.prototype.points = function(){
 ///////////////////////////////////////////////
 
 function CanvasPoint(gob, renderer) {
-    this.pointSize = 2.5;
+    this.pointSize = 5.0;
     this.strokeWidth = 1.0;
 	this.renderer = renderer;
     this.gob = gob;
@@ -1808,17 +1820,18 @@ function CanvasPoint(gob, renderer) {
 CanvasPoint.prototype = new CanvasShape();
 
 CanvasPoint.prototype.init = function(gob){
-    var scale = this.renderer.stage.scale();
-    var color = 'rgba(255,0,0,0.5)';
+    var scale = this.renderer.stage.scale(),
+        r = this.pointSize*(this.strokeWidth/scale.x),
+        color = 'rgba(255,0,0,0.5)';
 
     this.sprite = new Kinetic.Circle({
         //radius: {x: rx, y: ry},
         //x: p1.x,
         //y: p1.y,
-        radius: this.pointSize/scale.x,
+        radius: r,
         fill: color,
         stroke: 'red',
-        strokeWidth: 2.0*this.pointSize/scale.x,
+        strokeWidth: r/2.0,
     });
 
     gob.shape = this;
@@ -1846,7 +1859,7 @@ CanvasPoint.prototype.calcBbox = function (scaleIn) {
         px = this.x(),
         py = this.y(),
         scale = scaleIn ? scaleIn : this.renderer.scale(),
-        r = (this.pointSize*this.strokeWidth)/scale;
+        r = this.pointSize*(this.strokeWidth/scale);
     r += r/2.0;
 
     mm.min[0] = Math.floor(px - r);
@@ -1862,7 +1875,7 @@ CanvasPoint.prototype.setStroke = function(sw){
         this.strokeWidth = sw;
 
     var scale = this.renderer.stage.scale(),
-        r = (this.pointSize*this.strokeWidth)/scale.x;
+        r = this.pointSize*(this.strokeWidth/scale.x);
     this.sprite.radius(r);
     //this.sprite.strokeWidth(2*this.pointSize/scale.x);
     this.sprite.strokeWidth(r/2.0);
@@ -1894,8 +1907,9 @@ CanvasPoint.prototype.updateLocal = function () {
     //var r = this.pointSize/scale.x;
 
     var c = this.getColor(),
-        color = this.getColorString(c),
-        strokeColor = color;
+        color = this.getColorString(c, 1.0),
+        //strokeColor = color;
+        strokeColor = this.getColorString(BQGObject.color_contrasting(c));
 
     var sprite = this.sprite;
     sprite.fill(color);
@@ -1943,7 +1957,7 @@ CanvasPoint.prototype.points = function(){
 //  *
 //
 ///////////////////////////////////////////////
-
+/*
 function CanvasImagePoint(gob, renderer) {
     this.pointSize = 5.0;
 	this.renderer = renderer;
@@ -1957,25 +1971,7 @@ CanvasImagePoint.prototype = new CanvasShape();
 CanvasImagePoint.prototype.init = function(gob){
     var scale = this.renderer.stage.scale();
     var color = 'rgba(255,0,0,0.5)';
-/*
-    var sprite = new Kinetic.Circle({
-        //radius: {x: rx, y: ry},
-        //x: p1.x,
-        //y: p1.y,
-        fill: color,
-        stroke: 'red',
-        strokeWidth: 1.5/scale.x,
-    });
-*/
-/*    var sprite = new Kinetic.Circle({
-        //radius: {x: rx, y: ry},
-        //x: p1.x,
-        //y: p1.y,
-        fill: color,
-        stroke: 'red',
-        strokeWidth: 1.5/scale.x,
-    });
-*/
+
     this.sprite = new Kinetic.Image({
         image: this.renderer.pointImageCache,
     });
@@ -1986,11 +1982,6 @@ CanvasImagePoint.prototype.init = function(gob){
     this.sprite.shapeId = 0;
 
     this.sprite.shape = this;
-    /*
-    this.renderer.viewShape (gob,
-                             callback(this,'move_sprite'),
-                             callback(this,'select_sprite'));
-*/
 }
 
 CanvasImagePoint.prototype.clearCache = function(){};
@@ -2015,12 +2006,6 @@ CanvasImagePoint.prototype.updateLocal = function () {
     var viewstate = this.renderer.viewer.current_view;
 
     var pnt1 = this.gob.vertices[0];
-    /*
-    if (!test_visible(pnt1, viewstate)){
-        this.sprite.remove();
-        return;
-    }
-    */
     var scale = this.renderer.stage.scale();
 
     var p1 = pnt1;//viewstate.transformPoint (pnt1.x, pnt1.y);
@@ -2068,7 +2053,7 @@ CanvasImagePoint.prototype.moveLocal = function(){
 CanvasImagePoint.prototype.points = function(){
     return [];
 }
-
+*/
 
 ///////////////////////////////////////////////
 // label
@@ -2289,7 +2274,7 @@ CanvasLabel.prototype.updateLocal = function () {
     var r = 3.0/scale.x;
 
     var c = this.getColor(),
-        color = this.getColorString(c),
+        color = this.getColorString(c, 1.0),
         strokeColor = color;
 
     this.sprite.fill(color);

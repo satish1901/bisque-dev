@@ -1478,6 +1478,13 @@ BQGObject.color_html2rgb = function(c) {
     return rgb;
 };
 
+BQGObject.color_contrasting = function(c) {
+    var Y = 0.2126*c.r + 0.7152*c.g + 0.0722*c.b;
+    if (Y<70)
+        return { r:255, g: 255, b: 255, a: c.a };
+    return { r:0, g: 0, b: 0, a: c.a };
+};
+
 BQGObject.string_to_color_html = function(str) {
     var hash = 0,
         colour = '#',
@@ -1497,18 +1504,29 @@ BQGObject.styles_per_type = {
    default: { color: '#FF0000', },
 };
 
-BQGObject.add_default_style = function(t) {
+BQGObject.add_default_style = function(t, level, separator) {
     if (!t) return;
-    if (t in BQGObject.styles_per_type) return;
+    var tt = t;
+
+    // parse the type and pick specific level
+    if (level && level>0 && separator && separator !== '') {
+        try {
+            var h = t.split(separator);
+            tt = h[level-1].trim();
+        } catch (e) {
+        }
+    }
+
+    //if (t in BQGObject.styles_per_type) return;
     BQGObject.styles_per_type[t] = {
-        color: BQGObject.string_to_color_html(t),
+        color: BQGObject.string_to_color_html(tt),
     };
 };
 
-BQGObject.load_default_styles = function(xml) {
+BQGObject.load_default_styles = function(xml, level, separator) {
     if (!xml) {
         Ext.Ajax.request({
-            url: '/data_service/image/?gob_types=true&wpublic=false',
+            url: '/data_service/image/?gob_types=true&wpublic=true',
             callback: function(opts, succsess, response) {
                 if (response.status>=400) {
                     BQ.ui.error('Problem fetching available gobject types');
@@ -1521,18 +1539,19 @@ BQGObject.load_default_styles = function(xml) {
         });
         return;
     }
+    BQGObject.unique_gobjects_xml = xml;
 
     var gobs = BQ.util.xpath_nodes(xml, '//gobject'),
         g=undefined, i=0, t=null;
     for (i=0; g=gobs[i]; ++i) {
         t = g.getAttribute('type');
         if (t)
-            BQGObject.add_default_style(t);
+            BQGObject.add_default_style(t, level, separator);
     } // for types
 };
 
 // set random colors for objects
-BQGObject.load_default_styles();
+BQGObject.load_default_styles(); // dima: load this after loading preferences
 
 BQGObject.parse_colors_from_gob_template = function(resource) {
     /*
