@@ -70,6 +70,10 @@ def safe_config_read(config, sp):
         n,v = l.strip('\r\n ').split('=', 1)
         config.set(sec, n.strip(' '), v.strip(' '))
 
+def imaris_to_rgb(color):
+    h = color.lstrip('#')
+    a,r,g,b = tuple(int(h[i:i+2], 16) for i in (0, 2, 4, 6))
+    return (r, g, b, a)
 
 ################################################################################
 # ConverterImaris
@@ -297,6 +301,11 @@ class ConverterImaris(ConverterBase):
             safe_config_read(config, sp)
         sp.close()
 
+        # custom - any tags in proprietary files should go further prefixed by the custom parent
+        for section in config.sections():
+            for option in config.options(section):
+                rd['custom/%s/%s'%(section,option)] = config.get(section, option)
+
         # Image parameters
         safeReadAndSet(config, 'Image', 'numericalaperture', rd, 'numerical_aperture')
 
@@ -333,10 +342,54 @@ class ConverterImaris(ConverterBase):
             if rng is not None:
                 rd['%s/range'%path] = ','.join(rng.split(' '))
 
-        # custom - any other tags in proprietary files should go further prefixed by the custom parent
-        for section in config.sections():
-            for option in config.options(section):
-                rd['custom/%s/%s'%(section,option)] = config.get(section, option)
+            # read Zeiss CZI specific metadata not parsed properly by the Imaris convert
+            qpath = 'custom/ZeissAttrs/imagedocument/metadata/information/image/dimensions/channels/channel'
+
+            # color as defined in CZI and not properly red by ImarisConvert
+            t = '%s/color %s'%(qpath, c)
+            if t in rd:
+                #<tag name="color 0" value="#FF0000FF"/>
+                try:
+                    v = rd[t]
+                    r,g,b,a = imaris_to_rgb(v)
+                    #new
+                    rd['%s/color'%path] = '%s,%s,%s'%(r/255.0, g/255.0, b/255.0)
+                    # old
+                    rd['channel_color_%s'%c] = '%s,%s,%s'%(r, g, b)
+                except Exception:
+                    pass
+
+            # channel exposure defined in CZI
+            t = '%s/exposuretime %s'%(qpath, c)
+            if t in rd:
+                try:
+                    #<tag name="exposuretime 0" value="53000000"/> -> 53.0 ms
+                    v = misc.safefloat(rd[t])
+                    rd['%s/exposure'%path] = v/1000000.0
+                    rd['%s/exposure_units'%path] = 'ms'
+                except Exception:
+                    pass
+
+        # instrument and assay names, not standard CZI but used in industry
+        path  = 'custom/Document'
+        qpath = 'custom/ZeissAttrs/imagedocument/metadata/experiment/experimentblocks/acquisitionblock/processinggraph/filters/filter'
+        t = '%s/argument'%(qpath)
+        if t in rd:
+            #"INSTRUMENT_NAME:Axio2;ASSAY_NAME:ARv7;FILTER_NAME:Epic.AnalysisFilters.ARv7.dll"
+            v = rd[t]
+            try:
+                v = [i.split(':') for i in v.split(';')]
+                for i in v:
+                    rd['%s/%s'%(path, i[0].lower())] = i[1]
+            except Exception:
+                pass
+
+        # slide id found in barcode
+        path  = 'custom/Document'
+        qpath = 'custom/ZeissAttrs/imagedocument/metadata/attachmentinfos/attachmentinfo/label/barcodes/barcode'
+        t = '%s/content'%(qpath)
+        if t in rd:
+            rd['%s/slide_id'%path] = rd[t]
 
         return rd
 
