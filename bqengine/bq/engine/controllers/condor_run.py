@@ -1,18 +1,19 @@
 # condor_run.py
 #
-import os, sys,shutil
-import logging
-import string
+import os
+#import logging
+#import string
 import subprocess
-import StringIO
+#import StringIO
 import platform
 
-from bq.util.configfile import ConfigFile
+#from bq.util.configfile import ConfigFile
 from bq.util.paths import config_path
 from bqapi import BQSession
 
-from command_run import CommandRunner, strtolist, AttrDict, check_exec
-from condor_templates import CondorTemplates
+#from .attrdict import AttrDict
+from .command_run import CommandRunner, strtolist, check_exec
+from .condor_templates import CondorTemplates
 
 class CondorRunner (CommandRunner):
     """A Runtime to execute a module on a condor enabled system

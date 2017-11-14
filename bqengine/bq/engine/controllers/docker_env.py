@@ -9,6 +9,7 @@ import string
 from bq.util.converters import asbool
 from .base_env import strtolist
 from .module_env import BaseEnvironment, ModuleEnvironmentError
+from .attrdict import AttrDict
 
 
 DOCKER_RUN="""#!/bin/bash
@@ -54,16 +55,24 @@ class DockerEnvironment(BaseEnvironment):
     name = "Docker"
     config = { }
     matlab_launcher = ""
+    docker_keys = [ 'docker.hub', 'docker.image', 'docker.hub.user', 'docker.hub.user', 'docker.hub.email',
+                      'docker.login_tmpl' ]
 
     def process_config (self, runner, **kw):
         runner.load_section ('docker', runner.bisque_cfg)
         runner.load_section ('docker', runner.module_cfg)
         self.enabled = asbool(runner.config.get ('docker.enabled', False))
-        self.docker_hub = runner.config.get('docker.hub', '')
-        self.docker_image = runner.config.get('docker.image', '')
-        self.docker_user = runner.config.get ('docker.hub.user', '')
-        self.docker_pass = runner.config.get('docker.hub.password', '')
-        self.docker_email = runner.config.get('docker.hub.email', '')
+        #self.docker_hub = runner.config.get('docker.hub', '')
+        #self.docker_image = runner.config.get('docker.image', '')
+        #self.docker_user = runner.config.get ('docker.hub.user', '')
+        #self.docker_pass = runner.config.get('docker.hub.password', '')
+        #self.docker_email = runner.config.get('docker.hub.email', '')
+        #self.docker_login_tmpl = runner.config.get ('docker.login_tmpl', self.docker_login_tmpl)
+        self.docker_params = AttrDict()
+        for k in self.docker_keys:
+            self.docker_params[ k.replace('.', '_') ] = runner.config.get (k, '')
+
+
         #self.matlab_launcher = runner.config.get('runtime.matlab_launcher', None)
         #if self.matlab_launcher is not None and not os.path.exists(self.matlab_launcher):
         #    raise ModuleEnvironmentError("Can't find matlab script %s" % self.matlab_launcher)
@@ -77,31 +86,26 @@ class DockerEnvironment(BaseEnvironment):
             runner.info ("docker disabled")
             return
 
-
         if build:
             #docker_outputs = [ "." ]
             #module_vars =  runner.module_cfg.get ('command', asdict=True)
             #docker_inputs = [x.strip () for x in module_vars.get ('files', '').split (',') ]
             runner.mexes[0].files = strtolist (runner.mexes[0].files)
-            runner.mexes[0].outputs = [ ]
+            runner.mexes[0].outputs = []
             return
 
 
-        docker_login=""
-        if self.docker_user and self.docker_pass:
-            docker_login = "docker login -u %s -p %s -e %s %s" % (self.docker_user, self.docker_pass, self.docker_email, self.docker_hub)
-
+        p = self.docker_params # pylint: disable=invalid-name
+        docker_pull = ""
+        docker_login= ""
+        docker_image = "/".join ([x for x in  [ p.docker_hub, p.docker_hub_user, p.docker_image ] if x ])
+        # always pull an image
+        if p.docker_hub:
+            docker_login = p.docker_login_tmpl.format ( p )
+            docker_pull = "docker pull %s" % docker_image
 
         for mex in runner.mexes:
             docker_pull =""
-            #if mex.executable:
-            docker_image = "/".join ([x for x in  [ self.docker_hub, self.docker_user, self.docker_image ] if x ])
-            #docker = os.path.join('.', os.path.basename(docker))
-
-            # always pull an image
-            if self.docker_hub:
-                docker_pull = "docker pull %s" % docker_image
-
 
             docker_outputs = [ ]
             docker_inputs  = []

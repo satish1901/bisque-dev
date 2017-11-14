@@ -14,8 +14,13 @@ docker.enabled = false
 # A  hub where to push containers to
 docker.hub =
 docker.hub.user =
-docker.hub.password
-docker.hub.email
+docker.hub.password =
+docker.hub.email=
+# This is used only if docker hub is defined
+docker.login_tmpl =
+# Example full login
+#docker.login_tmpl = docker login -u {docker_hub_user} -p {docker_hub_password} -e {docker_hub_email} {docker_hub}
+
 # A matlab runtime base container for matlab modules
 docker.image.matlab_runtime = biodev.ece.ucsb.edu:5000/mcr_runtime_2015b
 docker.image.dream3d = biodev.ece.ucsb.edu:5000/dream3d
