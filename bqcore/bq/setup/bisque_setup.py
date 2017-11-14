@@ -1189,7 +1189,10 @@ def install_docker (params, runtime_params, cfg = None):
     if getanswer( "Enable docker modules", 'Y' if has_docker else 'N',
                   "Use docker to build and run modules") != 'Y':
         return params, runtime_params
+
+
     docker_params = read_site_cfg (cfg, 'docker')
+    docker_params  = update_environment (docker_params, prefix="RT__", section="docker", cfg=cfg)
     docker_params['docker.enabled'] = 'true'
     docker_params = modify_site_cfg(DOCKER_QUESTIONS, docker_params, section='docker', cfg=cfg)
 
@@ -1643,8 +1646,8 @@ def install_proxy(params, runtime_params):
     return params, runtime_params
 
 
-def update_environment(params, prefix, section = BQ_SECTION):
-    """Process the environments parameters listed by PREFIX i.e. BQ__
+def update_environment(params, prefix, section = BQ_SECTION, cfg=None):
+    """Process the environments parameters listed by PREFIX i.e. BQ__, or RT__
     and update the params
     """
     # Process env
@@ -1657,7 +1660,7 @@ def update_environment(params, prefix, section = BQ_SECTION):
             params [k] = v
     if newenv:
         print "ENV REPLACED", newenv
-        update_site_cfg(params, section=section)
+        update_site_cfg(params, section=section, cfg=cfg)
     return params
 
 

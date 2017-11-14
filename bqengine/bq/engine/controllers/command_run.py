@@ -67,6 +67,7 @@ from .base_env import strtobool, strtolist
 from .module_env import MODULE_ENVS, ModuleEnvironmentError
 from .mexparser import MexParser
 from .pool import ProcessManager
+from .attrdict import AttrDict
 
 ENV_MAP = dict ([ (env.name, env) for env in MODULE_ENVS ])
 POOL_SIZE   = int(config.get('bisque.engine_service.poolsize', 4))
@@ -118,29 +119,6 @@ class RunnerException(Exception):
         return "%s env=%s" % (super( RunnerException, self).__str__(), self.mex )
 
 
-
-######################################
-# dict allowing field access to elements
-class AttrDict(dict):
-    "dictionary allowing access to elements as field"
-
-    def __init__(self, *args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
-    def __getattr__(self, name):
-        try:
-            return self[name]
-        except KeyError:
-            raise AttributeError
-    def __setattr__(self, name, value):
-        self[name] = value
-        return value
-
-    def __getstate__(self):
-        return self.items()
-
-    def __setstate__(self, items):
-        for key, val in items:
-            self[key] = val
 
 
 ###############################
@@ -705,7 +683,7 @@ class CommandRunner(BaseRunner):
         #             self.command_failed(p, retcode)
         #     return self.command_finish
         #return None
-    
+
     def command_success(self, proc):
         "collect return values when mex was executed asynchronously "
         self.info ("SUCCESS Command %s with %s" , " ".join (proc.get ('command_line')), proc.get ('return_code'))
@@ -737,9 +715,9 @@ class CommandRunner(BaseRunner):
             self.session.fail_mex(msg = 'job stopped by user')
         else:
             self.debug("No mex provided")
-            
+
         return None
-    
+
     def check_pool_status(self, p, status):
         # Check that all have finished or failed
         with self.pool.pool_lock:
