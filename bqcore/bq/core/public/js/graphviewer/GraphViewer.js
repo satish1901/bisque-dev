@@ -235,8 +235,7 @@ BQFactoryGraph.make = function(node, resource){
     else if (node.label.startsWith("dataset")) {
         card = DataSetCard;
     }
-    else if (node.label.startsWith("dream3d_pipeline") ||
-             node.label.startsWith("cellprofiler_pipeline")) {
+    else if (node.label.indexOf("_pipeline") !== -1) {
         card = PipelineCard;
     }
     else if (node.label.startsWith("pipeline_step")) {
