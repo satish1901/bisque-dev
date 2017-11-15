@@ -227,13 +227,13 @@ def p_term_tagvaltype(p):
             if name in LEGAL_ATTRIBUTES:
                 op = _OPERATIONS[rel]
                 if val.count('*'):
-                    val = val.replace('*', '%')
+                    val = val.replace('%', '\\%').replace('*', '%')
                 p[0] = op(getattr(Taggable, LEGAL_ATTRIBUTES[name]), val)
             return
 
         # standard subtag
         if name.count('*'):
-            namexpr = tag.c.resource_name.ilike (name.replace('*', '%'))
+            namexpr = tag.c.resource_name.ilike (name.replace('%', '\\%').replace('*', '%'))
         else:
             namexpr = tag.c.resource_name == name
         tagfilter = namexpr
@@ -242,7 +242,7 @@ def p_term_tagvaltype(p):
         v = val.lower()
         valexpr = None
         if val.count('*'):
-            v = v.replace('*', '%')
+            v = v.replace('%', '\\%').replace('*', '%')
             valexpr = tag.c.resource_value.ilike(v)
         else:
             op = _OPERATIONS[rel]
@@ -263,7 +263,7 @@ def p_term_tagvaltype(p):
     if type_ is not None:
         ty = type_.lower()
         if ty.count('*'):
-            tyexpr = func.lower(tag.c.resource_user_type).like (ty.replace ('*', '%'))
+            tyexpr = func.lower(tag.c.resource_user_type).like (ty.replace('%', '\\%').replace('*', '%'))
         else:
             tyexpr = (func.lower(tag.c.resource_user_type) == ty)
         if tagfilter is not None:
@@ -848,7 +848,7 @@ def prepare_attributes (query, dbtype, attribs):
                             val = datetime.strptime(val, "%Y-%m-%dT%H:%M:%S")
                             val = val.replace(microsecond=int(frag))
                     except ValueError:
-                        log.error('bad time: %s' %val)
+                        log.error('bad time: %s' , val)
                         continue
                 log.debug ("adding attribute search %s %s op=%s %s" ,  str(dbtype), k, op,  val)
                 if op == '>=':
