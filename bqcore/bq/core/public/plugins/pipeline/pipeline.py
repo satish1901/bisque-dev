@@ -4,7 +4,7 @@ from bq.pipeline.controllers.importers.from_imagej import upload_imagej_pipeline
 
 class Dream3DPipelinePlugin (ResourcePlugin):
     '''Dream.3D Pipeline resource''' 
-    name = "PipelinePlugin"  
+    name = "Dream3DPipelinePlugin"  
     version = '1.0'
     ext = 'json'
     resource_type = 'dream3d_pipeline'
@@ -15,7 +15,7 @@ class Dream3DPipelinePlugin (ResourcePlugin):
 
 class CellprofilerPipelinePlugin (ResourcePlugin):
     '''Cellprofiler Pipeline resource''' 
-    name = "PipelinePlugin"  
+    name = "CellprofilerPipelinePlugin"  
     version = '1.0'
     ext = 'cp'
     resource_type = 'cellprofiler_pipeline'
@@ -29,7 +29,7 @@ class CellprofilerPipelinePlugin (ResourcePlugin):
 
 class CellprofilerPipeline2Plugin (ResourcePlugin):
     '''Cellprofiler Pipeline resource''' 
-    name = "PipelinePlugin"  
+    name = "CellprofilerPipelinePlugin"  
     version = '1.0'
     ext = 'cppipe'
     resource_type = 'cellprofiler_pipeline'
@@ -43,7 +43,7 @@ class CellprofilerPipeline2Plugin (ResourcePlugin):
     
 class ImageJPipelinePlugin (ResourcePlugin):
     '''ImageJ Pipeline resource''' 
-    name = "PipelinePlugin"  
+    name = "ImageJPipelinePlugin"  
     version = '1.0'
     ext = 'ijm'
     resource_type = 'imagej_pipeline'

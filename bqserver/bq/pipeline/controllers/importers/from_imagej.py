@@ -81,7 +81,6 @@ def _get_parameters(step, param_name):
 def upload_imagej_pipeline(uf, intags):
     # analyze ImageJ macro and replace illegal operations with BisQue operations
     pipeline = {}
-    #uf.ensurelocal('/tmp/murks.ijm')   #!!!
     with open(uf.localpath(), 'r') as fo:
         pipeline = imagej_to_json(fo)
     uf.close()
