@@ -169,3 +169,7 @@ file renderer
     font: normal 12px/14px tahoma,arial,verdana,sans-serif;
     color: black;
 }
+
+.dataset .x-box-target {
+    height: 100%;
+}

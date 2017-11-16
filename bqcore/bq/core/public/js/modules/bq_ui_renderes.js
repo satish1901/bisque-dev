@@ -3425,6 +3425,8 @@ Ext.define('BQ.renderers.Dataset', {
     extend: 'BQ.renderers.Renderer',
     requires: ['Bisque.ResourceBrowser.Browser'],
 
+    componentCls: 'dataset',
+
     height: 300,
     layout: {
         type: 'vbox',
