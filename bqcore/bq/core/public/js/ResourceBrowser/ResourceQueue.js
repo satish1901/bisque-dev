@@ -349,11 +349,16 @@ Ext.apply(Bisque.ResourceBrowser.ResourceQueue.prototype, {
 
             for (var i = 0; i < tagValuePair.length; i++) {
                 nextPair = tagValuePair[i].split(':');
-                if (nextPair[0].indexOf('@')<0)
+
+                var m = tagValuePair[i].match(/"@(\w+)":(asc|desc|ASC|DESC)/);
+                //if (nextPair[0].indexOf('@')<0)
+                if (!m || m.length!==3) {
                     tags.push(unquote(nextPair[0]));
+                }
             }
 
-            uriObj.view = tags.join(',');
+            if (tags.length>0)
+                uriObj.view = tags.join(',');
         }
 
         for (var param in uriObj) {

@@ -822,7 +822,7 @@ Ext.define('BQ.tree.organizer.Panel', {
             } else {
                 query.push(neg+encodeURIComponent('"'+node.data.value+'"')+sep);
                 if (node.data.type==='tag' && node.data.negated !== true)
-                    order.push( '"'+node.data.value+'":asc' );
+                    order.push( '"'+encodeURIComponent(node.data.value)+'":asc' );
             }
 
             path.push(pt+node.data.value);
