@@ -393,11 +393,15 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
     },
 
     btnTSSetState : function(tagOrder) {
-        var m = tagOrder.match(/"@(\w+)":(asc|desc|ASC|DESC)/),
-            attr = m[1] || 'ts',
-            ord = m[2].toUpperCase() || 'DESC',
-            btn = this.getComponent('btnTS'),
-            mnu = btn.menu.getComponent('btn_sort_'+attr);
+        try {
+            var m = tagOrder.match(/"@(\w+)":(asc|desc|ASC|DESC)/),
+                attr = m[1] || 'ts',
+                ord = m[2].toUpperCase() || 'DESC',
+                btn = this.getComponent('btnTS'),
+                mnu = btn.menu.getComponent('btn_sort_'+attr);
+        } catch (e) {
+            return;
+        }
 
         if (mnu) {
             mnu.setChecked(true);
@@ -434,7 +438,9 @@ Ext.define('Bisque.ResourceBrowser.CommandBar', {
 
         // remove attributes
         tagOrder = tagOrder.filter(function(item) {
-            return item.indexOf('@')<0;
+            var m = item.match(/"@(\w+)":(asc|desc|ASC|DESC)/);
+            return !m || m.length!==3;
+            //return item.indexOf('@')<0;
         });
 
         tagOrder.push(Ext.String.format('"{0}":{1}', btn.sortAttribute, btn.sortOrder.toLowerCase()));

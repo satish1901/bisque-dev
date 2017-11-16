@@ -299,7 +299,7 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
             if (!uri.baseURL)
                 uri.baseURL = this.browserState.baseURL;
 
-            if (uri.tag_order === undefined || uri.tag_order.indexOf('@') === -1) {
+            if (uri.tag_order === undefined || !uri.tag_order.match(/"@(\w+)":(asc|desc|ASC|DESC)/)) {
                 var btn = this.commandBar.getComponent("btnTS"),
                     sorting = Ext.String.format('"{0}":{1}', btn.sortAttribute, btn.sortOrder.toLowerCase());
                 if (uri.tag_order && uri.tag_order != '') {
@@ -320,7 +320,9 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
                 p = null;
 
             for (var i=0; (p=order[i]); ++i) {
-                if (p.indexOf('@')<0) {
+                var m = p.match(/"@(\w+)":(asc|desc|ASC|DESC)/);
+                if (!m || m.length!==3) {
+                //if (p.indexOf('@')<0) {
                     p = p.split(':');
                     tags.push(p[0].replace(/"/g, ''));
                     values.push(p[1].toUpperCase());
