@@ -190,6 +190,12 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base', {
                     i++;
                 }
 
+                try {
+                    var str = Ext.String.ellipsis(decodeURIComponent(currentGrp), 80);
+                } catch (e) {
+                    var str = Ext.String.ellipsis(currentGrp, 80);
+                }
+
                 resCt.push(new Ext.form.FieldSet({
                     items : resCtSub,
                     cls : 'fieldSet',
@@ -197,7 +203,7 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base', {
                     width : (this.getParentSize().width - 30),
                     //autoScroll:true,
                     padding : 0,
-                    title : '<b>Group </b><i>' + Ext.String.ellipsis(decodeURIComponent(currentGrp), 80) + '</i>',
+                    title : '<b>Group </b><i>' + str + '</i>',
                     collapsible : true,
                     collapsed : false
                 }));
