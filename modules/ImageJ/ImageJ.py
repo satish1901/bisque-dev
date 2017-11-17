@@ -16,9 +16,9 @@ import urlparse
 import fnmatch
 from datetime import datetime
 
-
 from lxml import etree
 from optparse import OptionParser
+
 #from bqapi import BQGObject, BQEllipse, BQVertex
 from bqapi.util import fetch_image_pixels, save_image_pixels
 
@@ -35,6 +35,60 @@ log = logging.getLogger('bq.modules')
 from bqapi.comm import BQSession
 #from bq.util.mkdir import _mkdir
 from bq.util.hash import is_uniq_code
+
+
+
+def _simplify_polygon(xcoords, ycoords):
+    coords = [(xcoords[i], ycoords[i]) for i in range(len(xcoords))]
+    simpl_coords = _simplifyDouglasPeucker(coords)
+    return [coord[0] for coord in simpl_coords], [coord[1] for coord in simpl_coords]
+
+# ----------------------------------
+#  _simplifyDouglasPeucker adapted for Python from
+#  (c) 2013, Vladimir Agafonkin
+#  Simplify.js, a high-performance JS polyline simplification library
+#  mourner.github.io/simplify-js
+
+def _simplifyDouglasPeucker(points, tolerance=0.6):
+    sqTolerance = tolerance*tolerance
+    last = len(points)-1
+    simplified = [points[0]]
+    _simplifyDPStep(points, 0, last, sqTolerance, simplified)
+    simplified.append(points[last])
+    return simplified
+
+def _simplifyDPStep(points, first, last, sqTolerance, simplified):
+    maxSqDist = sqTolerance
+    for i in xrange(first+1, last):
+        sqDist = _getSqSegDist(points[i], points[first], points[last])
+        if sqDist > maxSqDist:
+            index = i
+            maxSqDist = sqDist
+    if maxSqDist > sqTolerance:
+        if index-first > 1:
+            _simplifyDPStep(points, first, index, sqTolerance, simplified)
+        simplified.append(points[index])
+        if last-index > 1:
+            _simplifyDPStep(points, index, last, sqTolerance, simplified)
+
+def _getSqSegDist(p, p1, p2):
+    x = p1[0]
+    y = p1[1]
+    dx = p2[0]-x
+    dy = p2[1]-y
+    if dx != 0 or dy != 0:
+        t = ((p[0] - x) * dx + (p[1] - y) * dy) / (dx * dx + dy * dy)
+        if t > 1:
+            x = p2[0]
+            y = p2[1]
+        elif t > 0:
+            x += dx*t
+            y += dy*t
+    dx = p[0]-x
+    dy = p[1]-y
+    return dx*dx + dy*dy
+
+# ----------------------------------
 
 
 class IJError(Exception):
@@ -242,6 +296,27 @@ class ImageJ(object):
             resource = self.bqSession.postblob(output_file, xml = cl_model)
             resource_xml = etree.fromstring(resource)
             res += [resource_xml[0]]
+        elif op['service'] == 'postpolygon':
+            # add polygon gobject to mex
+            # Read object measurements from csv and write to gobjects
+            (header, records) = self._readCSV(os.path.join(self.options.stagingPath, op['filename']))
+            if header is not None:
+                parentGObject = etree.Element('gobject', type='detected shapes', name='detected shapes')
+                xcoords = []
+                ycoords = []
+                for i in range(len(records)):
+                    curr_id = int(records[i][header.index(op['id_col'])])
+                    xcoords.append(float(records[i][header.index(op['x_coord'])]))
+                    ycoords.append(float(records[i][header.index(op['y_coord'])]))
+                    if i == len(records)-1 or curr_id != int(records[i+1][header.index(op['id_col'])]):
+                        # new polygon starts => save current one
+                        xcoords, ycoords = _simplify_polygon(xcoords, ycoords)
+                        shape = self._get_polygon_elem(name=str(i), xcoords=xcoords, ycoords=ycoords, label=op['label'], color=op['color'])
+                        if shape:
+                            parentGObject.append(shape)
+                        xcoords = []
+                        ycoords = []
+                res += [parentGObject]
         return res
 
     def _instantiate_pipeline(self, pipeline_url, params):
@@ -281,40 +356,17 @@ class ImageJ(object):
 
         self.bqSession.finish_mex(tags=[outputTag])
 
-    def _get_ellipse_elem(self, name, **params): 
-        header = params.get('header')
-        record = params.get('record')
-        getValue = lambda x: float(record[header.index(x)])
-
+    def _get_polygon_elem(self, name, **params): 
         shape = etree.Element('gobject', name=name, type=params.get('label'))
-        res = etree.SubElement(shape, 'ellipse')
+        res = etree.SubElement(shape, 'polygon')
+        xcoords = params.get('xcoords')
+        ycoords = params.get('ycoords')
 
         try:
-            # centroid
-            x = getValue(params.get('x'))
-            y = getValue(params.get('y'))
-            theta = math.radians(getValue(params.get('orientation')))
-    
-            etree.SubElement(res, 'vertex', x=str(x), y=str(y))
-     
-            # major axis/minor axis endpoint coordinates
-            a = 0.5 * getValue(params.get('major_axis'))
-            b = 0.5 * getValue(params.get('minor_axis'))
-     
-            bX = round(x - b*math.sin(theta))
-            bY = round(y + b*math.cos(theta))
-            etree.SubElement(res, 'vertex', x=str(bX), y=str(bY))
-     
-            aX = round(x + a*math.cos(theta))
-            aY = round(y + a*math.sin(theta))        
-            etree.SubElement(res, 'vertex', x=str(aX), y=str(aY))
-            
-            # other statistics
-            #etree.SubElement(res, 'tag', name="Compactness", value=str(getValue('AreaShape_Compactness')))
-            #etree.SubElement(res, 'tag', name="Eccentricity", value=str(getValue('AreaShape_Eccentricity')))
-            #etree.SubElement(res, 'tag', name="FormFactor", value=str(getValue('AreaShape_FormFactor')))
-            #etree.SubElement(res, 'tag', name="Solidity", value=str(getValue('AreaShape_Solidity')))
-            
+            for i in range(len(xcoords)):
+                x = xcoords[i]
+                y = ycoords[i]
+                etree.SubElement(res, 'vertex', x=str(x), y=str(y))            
             etree.SubElement(res, 'tag', name='color', value=params.get('color', '#FF0000'), type='color')
         
         except KeyError:
