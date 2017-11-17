@@ -122,6 +122,18 @@ class ExporterImageJ (PipelineExporter):
                     new_op['rmprefix'] = '__BisQueSaveImage__'
                     new_op['rmsuffix'] = '.tif'
                 res['PostOps'] += [ new_op ]
+            elif step_name == 'BisQueSaveROIs':
+                gobject_type = self._get_parameters(pipeline[str(step_id)], 'arg0')[0].strip('"')
+                gobject_label = self._get_parameters(pipeline[str(step_id)], 'arg1')[0].strip('"')
+                gobject_color = self._get_parameters(pipeline[str(step_id)], 'arg2')[0].strip('"')
+                if gobject_type.lower() == 'polygon':
+                    res['PostOps'] += [ {'service':'postpolygon',
+                                         'label':gobject_label,
+                                         'color':gobject_color,
+                                         'id_col':'id',
+                                         'x_coord':'xcoord',
+                                         'y_coord':'ycoord', 
+                                         'filename':'gobjects.csv'} ]
         return res
         
     def bisque_to_native(self, pipeline):
@@ -131,17 +143,57 @@ class ExporterImageJ (PipelineExporter):
         for step_id in range(0,len(pipeline)-1):
             step_name = pipeline[str(step_id)]['__Label__']
             if step_name == 'BisQueLoadImage':
+                """ 
+                Example:
+                ---------------------------------------------
+                BisQueLoadImage();
+                ---------------------------------------------
+                """
                 pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
                 pipeline_res[str(new_step_id)]['__Label__'] = 'open'
                 pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"input.tif"'}]
                 new_step_id += 1
             elif step_name == 'BisQueSaveImage':
+                """ 
+                Example:
+                ---------------------------------------------
+                BisQueSaveImage("image_name");
+                ---------------------------------------------
+                """
                 name = self._get_parameters(pipeline[str(step_id)], 'arg0')[0]
                 # in case name is a variable, add a unique prefix for later
                 name = name.strip('"') if name.startswith('"') else '"__BisQueSaveImage__" + %s' % name
                 pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
                 pipeline_res[str(new_step_id)]['__Label__'] = 'saveAs'
                 pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"Tiff"'}, {'arg1': name}]
+                new_step_id += 1
+            elif step_name == 'BisQueSaveROIs':
+                """ 
+                Example:
+                ---------------------------------------------
+                BisQueSaveROIs("polygon", "label", "color");
+                ---------------------------------------------
+                """
+                outfile = 'gobjects.csv'
+                pipeline_res[str(new_step_id)] = { '__Label__': 'File.open', 'Parameters': [{'arg0':'"'+outfile+'"'}, {'resvar':'bq_file'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'print', 'Parameters': [{'arg0':'bq_file'}, {'arg1':r'"id,xcoord,ycoord\n"'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'for', 'Parameters': [{'arg0':'bq_i = 0; bq_i < roiManager("count"); bq_i++'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'roiManager', 'Parameters': [{'arg0':'"select"'}, {'arg1':'bq_i'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'run', 'Parameters': [{'arg0':'"Fit Spline"'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'getSelectionCoordinates', 'Parameters': [{'arg0':'bq_xcoord'}, {'arg1':'bq_ycoord'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'for', 'Parameters': [{'arg0':'bq_j = 0; bq_j < bq_xcoord.length; bq_j++'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'print', 'Parameters': [{'arg0':'bq_file'}, {'arg1':r'bq_i + "," + bq_xcoord[bq_j] + "," + bq_ycoord[bq_j] + "\n"'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'endblock', 'Parameters': [] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'endblock', 'Parameters': [] }
                 new_step_id += 1
             else:
                 pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
