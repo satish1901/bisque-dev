@@ -499,18 +499,21 @@ def prepare_parent(resource_type, query, parent_query=None):
         query = query.filter_by(resource_parent_id = None)
     return query
 
+QUOTED_RE = re.compile ( r'(?s)(?P<quote>["\'])(?:\\?.)*?(?P=quote)' )
+SPLIT_RE  = re.compile (r'''[, ]+(?=(?:[^'"]|'[^']*'|"[^"]*")*$)''')
 
 def prepare_order_expr (query, tag_order, **kw):
     if tag_order:
         ordering = lambda x:  x
-        for order in tag_order.split(','):
+        for order in SPLIT_RE.split(tag_order):
             if order.endswith(':asc'):
                 order = order[:-4]
                 ordering = asc
             elif order.endswith(':desc'):
                 order = order[:-5]
                 ordering = desc
-            order = order.strip('"\'')
+            if QUOTED_RE.match (order):
+                order = order[1:-1]
 
             log.debug ("tag_order: %s" ,  order)
 
