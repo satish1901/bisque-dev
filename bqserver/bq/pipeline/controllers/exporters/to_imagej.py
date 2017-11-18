@@ -109,18 +109,9 @@ class ExporterImageJ (PipelineExporter):
             if step_name == 'BisQueLoadImage':
                 res['PreOps'] += [ {'service':'image_service', 'id':'@INPUT', 'ops':'/format:tiff', 'filename':'input.tif'} ]
             elif step_name == 'BisQueSaveImage':
-                name = self._get_parameters(pipeline[str(step_id)], 'arg0')[0]
-                if name.startswith('"'):
-                    name = name.strip('"')
-                    fullname = name+'.tif'
-                else:
-                    # in case name is a variable, try to find the name chosen at runtime from the file system
-                    name = ''
-                    fullname = '__BisQueSaveImage__*.tif'
+                name = '__BisQueSaveImage__.txt'
+                fullname = '__BisQueSaveImage__.tif'
                 new_op = {'service':'postblob', 'type':'image', 'name':name, 'filename':fullname}
-                if '*' in fullname:
-                    new_op['rmprefix'] = '__BisQueSaveImage__'
-                    new_op['rmsuffix'] = '.tif'
                 res['PostOps'] += [ new_op ]
             elif step_name == 'BisQueSaveROIs':
                 gobject_type = self._get_parameters(pipeline[str(step_id)], 'arg0')[0].strip('"')
@@ -134,6 +125,11 @@ class ExporterImageJ (PipelineExporter):
                                          'x_coord':'xcoord',
                                          'y_coord':'ycoord', 
                                          'filename':'gobjects.csv'} ]
+            elif step_name == 'BisQueSaveResults':
+                name = '__BisQueSaveResults__.txt'
+                fullname = '__BisQueSaveResults__.csv'
+                new_op = {'service':'postblob', 'type':'table', 'name':name, 'filename':fullname}
+                res['PostOps'] += [ new_op ]
         return res
         
     def bisque_to_native(self, pipeline):
@@ -161,11 +157,16 @@ class ExporterImageJ (PipelineExporter):
                 ---------------------------------------------
                 """
                 name = self._get_parameters(pipeline[str(step_id)], 'arg0')[0]
-                # in case name is a variable, add a unique prefix for later
-                name = name.strip('"') if name.startswith('"') else '"__BisQueSaveImage__" + %s' % name
+                # in case name is a variable, let ImageJ store value in a file for later
+                pipeline_res[str(new_step_id)] = { '__Label__': 'File.open', 'Parameters': [{'arg0':'"__BisQueSaveImage__.txt"'}, {'resvar':'bq_file'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'print', 'Parameters': [{'arg0':'bq_file'}, {'arg1':name}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'File.close', 'Parameters': [{'arg0':'bq_file'}] }
+                new_step_id += 1
                 pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
                 pipeline_res[str(new_step_id)]['__Label__'] = 'saveAs'
-                pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"Tiff"'}, {'arg1': name}]
+                pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"Tiff"'}, {'arg1': '"__BisQueSaveImage__"'}]
                 new_step_id += 1
             elif step_name == 'BisQueSaveROIs':
                 """ 
@@ -195,6 +196,36 @@ class ExporterImageJ (PipelineExporter):
                 new_step_id += 1
                 pipeline_res[str(new_step_id)] = { '__Label__': 'endblock', 'Parameters': [] }
                 new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'File.close', 'Parameters': [{'arg0':'bq_file'}] }
+                new_step_id += 1
+            elif step_name == 'BisQueAddTag':
+                """ 
+                Example:
+                ---------------------------------------------
+                BisQueAddTag("tag_name", "tag_value");
+                ---------------------------------------------
+                """
+                #!!! TODO
+                pass
+            elif step_name == 'BisQueSaveResults':
+                """ 
+                Example:
+                ---------------------------------------------
+                BisQueSaveResults("table_name");
+                ---------------------------------------------
+                """
+                name = self._get_parameters(pipeline[str(step_id)], 'arg0')[0]
+                # in case name is a variable, let ImageJ store value in a file for later
+                pipeline_res[str(new_step_id)] = { '__Label__': 'File.open', 'Parameters': [{'arg0':'"__BisQueSaveResults__.txt"'}, {'resvar':'bq_file'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'print', 'Parameters': [{'arg0':'bq_file'}, {'arg1':name}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'File.close', 'Parameters': [{'arg0':'bq_file'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
+                pipeline_res[str(new_step_id)]['__Label__'] = 'saveAs'
+                pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"Results"'}, {'arg1': '"__BisQueSaveResults__.csv"'}]
+                new_step_id += 1
             else:
                 pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
                 pipeline_res[str(new_step_id)]['__Meta__']['module_num'] = str(new_step_id+1)
@@ -214,4 +245,4 @@ class ExporterImageJ (PipelineExporter):
         if not pipeline or '__Header__' not in pipeline or pipeline['__Header__']['__Type__'] != 'ImageJ':
             # wrong pipeline type
             return None        
-        return json_to_imagej(pipeline) + '\nrun("Close All");\n'
+        return json_to_imagej(pipeline) + '\nrun("Quit");\neval("script", "System.exit(0);");\n'
