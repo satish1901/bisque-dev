@@ -191,7 +191,7 @@ class ImageJ(object):
             # TODO: wait for Xvfb to show up?
             time.sleep(1)
             res = subprocess.call(['/module/Fiji.app/ImageJ-linux64', # '--headless',
-                                   '-batch', pipeline_file],
+                                   '-macro', pipeline_file],
                                   env = { 'DISPLAY' : ':0.0' },       # use virtual X server
                                   stderr=fo, stdout=fo)
             # stop virtual X server
@@ -263,24 +263,15 @@ class ImageJ(object):
             url = self.bqSession.service_url('image_service', path=op['id']+op['ops'])
             # TODO: don't read image into memory!!!
             image_data = self.bqSession.c.fetch(url)
-            image_file = os.path.join(self.options.stagingPath, op['filename'])
-            with open(image_file, 'w') as fo:
-                fo.write(image_data)
-            res += [image_file]
+            if image_data:
+                image_file = os.path.join(self.options.stagingPath, op['filename'])
+                with open(image_file, 'w') as fo:
+                    fo.write(image_data)
+                res += [image_file]
         elif op['service'] == 'postblob':
             filename = op['filename']
-            if '*' in filename:
-                for myfile in os.listdir(self.options.stagingPath):
-                    if fnmatch.fnmatch(myfile, filename):
-                        filename = myfile
-                        break
-            resname = op['name']
-            if not resname:
-                resname = filename
-            if 'rmprefix' in op and resname.startswith(op['rmprefix']):
-                resname = resname[len(op['rmprefix']):]
-            if 'rmsuffix' in op and resname.endswith(op['rmsuffix']):
-                resname = resname[:-len(op['rmsuffix'])]
+            with open(op['name']) as namef:
+                resname = namef.readlines()[0].rstrip('\n')
             # upload image or table (check op['type'])            
             dt = module_time.strftime('%Y%m%dT%H%M%S')
             final_output_file = "ModuleExecutions/ImageJ/%s/%s"%(dt,resname)
@@ -293,9 +284,10 @@ class ImageJ(object):
             etree.SubElement(cl_model, 'tag', name='description', value = 'output from ImageJ Module')
             # post blob
             output_file = os.path.join(self.options.stagingPath, filename)
-            resource = self.bqSession.postblob(output_file, xml = cl_model)
-            resource_xml = etree.fromstring(resource)
-            res += [resource_xml[0]]
+            if os.path.isfile(output_file):
+                resource = self.bqSession.postblob(output_file, xml = cl_model)
+                resource_xml = etree.fromstring(resource)
+                res += [resource_xml[0]]
         elif op['service'] == 'postpolygon':
             # add polygon gobject to mex
             # Read object measurements from csv and write to gobjects

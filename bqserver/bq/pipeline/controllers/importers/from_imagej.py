@@ -89,19 +89,26 @@ def upload_imagej_pipeline(uf, intags):
     new_step_id = 0
     old_step_id = 0
     converted_cnt = 0   # TODO: only keep up to 10 interactive params... URL gets too big otherwise
-    had_save = False
+    had_save_img = False
+    had_save_res = False
     for step_id in range(old_step_id, len(pipeline)-1):
         new_pipeline[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
         new_pipeline[str(new_step_id)]['__Meta__']['module_num'] = str(new_step_id+1)
-        if pipeline[str(step_id)]['__Label__'] == 'open' and step_id == 0:
+        if pipeline[str(step_id)]['__Label__'] == 'open':
             new_pipeline[str(new_step_id)]['__Label__'] = 'BisQueLoadImage'
             new_pipeline[str(new_step_id)]['Parameters'] = []
             new_step_id += 1
-        elif pipeline[str(step_id)]['__Label__'] in ['save', 'saveAs'] and not had_save:
+        elif pipeline[str(step_id)]['__Label__'] in ['saveAs'] and _get_parameters(pipeline[str(step_id)], 'arg0').lower() == 'tiff' and not had_save_img:
             new_pipeline[str(new_step_id)]['__Label__'] = 'BisQueSaveImage'
             out_name = _get_parameters(pipeline[str(step_id)], 'arg1')
             new_pipeline[str(new_step_id)]['Parameters'] = [{'arg0' : out_name[0] if len(out_name)>0 else '"output.tif"' }]
-            had_save = True
+            had_save_img = True
+            new_step_id += 1
+        elif pipeline[str(step_id)]['__Label__'] in ['saveAs'] and _get_parameters(pipeline[str(step_id)], 'arg0').lower() == 'results' and not had_save_res:
+            new_pipeline[str(new_step_id)]['__Label__'] = 'BisQueSaveResults'
+            out_name = _get_parameters(pipeline[str(step_id)], 'arg1')
+            new_pipeline[str(new_step_id)]['Parameters'] = [{'arg0' : out_name[0] if len(out_name)>0 else '"output.csv"' }]
+            had_save_res = True
             new_step_id += 1
         else:
             # keep all others unchanged
@@ -134,6 +141,9 @@ def upload_imagej_pipeline(uf, intags):
 
 def imagej_to_json(pipeline_file):
     # TODO: write real parser
+    # TODO: FUNCTION DEF!!!
+    # TODO: MACRO DEF NOT SUPPORTED!!!
+    # TODO: COMMENTS WITH /* */
     data = {}
     step_id = 0
     data['__Header__'] = { '__Type__': 'ImageJ' }
