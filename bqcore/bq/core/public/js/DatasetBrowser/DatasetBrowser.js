@@ -51,21 +51,21 @@ Ext.define('Bisque.DatasetBrowser.Browser', {
     extend : 'Ext.panel.Panel',
     alias: 'widget.bq-dataset-browser',
     layout: 'border',
-
     selType: 'SINGLE',
 
     initComponent : function() {
         this.items = [{
             xtype: 'bq-resource-browser',
             itemId: 'browser-dataset',
-            region: 'west',
-            split: true,
-            title: 'Dataset browser',
-            flex: 3,
+            region: 'center',
+            //region: 'west',
+            //split: true,
+            title: 'Datasets',
+            flex: 1,
             dataset : '/data_service/dataset',
             selType: this.selType,
             selectState: this.selType === 'SINGLE' ? 'ACTIVATE' : 'SELECT',
-            showOrganizer : false,
+            showOrganizer : true,
             listeners : {
                 Select : this.onSelect,
                 ResSelectionChange: this.onSelect,
@@ -74,13 +74,16 @@ Ext.define('Bisque.DatasetBrowser.Browser', {
         }, {
             xtype: 'bq-resource-browser',
             itemId  : 'browser-preview',
-            region: 'center',
+            //region: 'center',
+            region: 'east',
+            split: true,
             showOrganizer : false,
             dataset : 'None',
             layout: Bisque.ResourceBrowser.LayoutFactory.LAYOUT_KEYS.Compact,
             viewMode: 'ViewerOnly',
-            title: 'Dataset preview',
-            flex: 1,
+            title: 'Preview',
+            //flex: 1,
+            width: 400,
         }];
 
         this.callParent();

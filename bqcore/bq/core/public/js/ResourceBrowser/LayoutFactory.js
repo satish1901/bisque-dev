@@ -299,18 +299,25 @@ Ext.define('Bisque.ResourceBrowser.Layout.Base', {
     getGroup : function(res) {
         var grp = '', tagHash = {}, value;
         var tagRef = res.resource.tags;
-        var value;
+        var name, value;
 
         for (var i = 0; i < tagRef.length; i++)
             tagHash[tagRef[i].name] = tagRef[i].value;
 
         for (var k = 0; k < this.showGroups.tags.length; k++) {
+            name = this.showGroups.tags[k];
+            try {
+                name = decodeURIComponent(this.showGroups.tags[k]);
+            } catch (e) {
+                name = this.showGroups.tags[k];
+            }
+
             try {
                 value = tagHash[decodeURIComponent(this.showGroups.tags[k])];
             } catch (e) {
                 value = tagHash[this.showGroups.tags[k]];
             }
-            grp += this.showGroups.tags[k] + ( value ? ':' + value : '') + ', ';
+            grp += name + ( value ? ':' + value : '') + ', ';
         }
 
         return grp.substring(0, grp.length - 2);
