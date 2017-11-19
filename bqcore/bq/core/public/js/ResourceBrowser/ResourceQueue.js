@@ -316,7 +316,7 @@ Ext.apply(Bisque.ResourceBrowser.ResourceQueue.prototype, {
             visLimit = this.length - this.rqOffset;
         }
 
-        var st = Ext.String.format('Showing {0}-{1} of {2} {3}', this.dbOffset.left + this.rqOffset + (this.list.length ? 1 : 0), this.dbOffset.left + this.rqOffset + this.list.length, ((this.hasMoreData.left || this.hasMoreData.right) ? 'atleast ' : 'total '), this.dbOffset.left + this.length);
+        var st = Ext.String.format('Showing {0}-{1} of {2} {3}', this.dbOffset.left + this.rqOffset + (this.list.length ? 1 : 0), this.dbOffset.left + this.rqOffset + this.list.length, ((this.hasMoreData.left || this.hasMoreData.right) ? 'at least ' : 'total '), this.dbOffset.left + this.length);
 
         var sliderSt = {
             left : this.hasMoreData.left,
