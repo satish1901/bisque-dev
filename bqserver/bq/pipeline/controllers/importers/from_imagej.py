@@ -141,8 +141,6 @@ def upload_imagej_pipeline(uf, intags):
 
 def imagej_to_json(pipeline_file):
     # TODO: write real parser
-    # TODO: FUNCTION DEF!!!
-    # TODO: MACRO DEF NOT SUPPORTED!!!
     # TODO: COMMENTS WITH /* */
     data = {}
     step_id = 0
@@ -167,6 +165,20 @@ def imagej_to_json(pipeline_file):
         elif any([line.startswith(fct) for fct in ['do {', 'do{']]):
             # start of block
             line = 'startdo();'
+        elif line.startswith('function'):
+            # function definition
+            toks = line[len('function'):].split('(')
+            fname = toks[0].strip()
+            args = [arg.strip() for arg in toks[1].split(')')[0].split(',')]
+            line = 'function(%s,%s);' % (fname, ','.join(args))
+        elif line.startswith('return'):
+            # function return
+            retval = line[len('return'):].strip().rstrip(';').rstrip()
+            line = 'return(%s);' % retval
+        elif line.startswith('macro'):
+            # macro definition
+            mname = line[len('macro'):].split('{')[0].strip()
+            line = 'macro(%s);' % mname
         if re.match(r"((?P<lexpr>\w+)\s*=\s*)?(?P<namespace>\w+\.)?(?P<function>\w+)\s*\((\s*(?P<arg1>[^,]+)\s*(,\s*(?P<arg2>[^,]+))*)?\s*\);$", line) is not None:
             # some fct call          
             toks = line.split('(',1)
@@ -192,9 +204,9 @@ def _validate_step(step):
     # mark actions not compatible with BisQue
     if step['__Label__'].startswith('BisQue'):
         step['__Meta__']['__compatibility__'] = 'bisque'
-    elif step['__Label__'] in ['Crop']:  #TODO: check for other ignored steps
+    elif step['__Label__'] in ['print']:  #TODO: check for other ignored steps
         step['__Meta__']['__compatibility__'] = 'ignored'
-    elif any([step['__Label__'].startswith(pre) for pre in ['Dialog.']]) or step['__Label__'] in ['open', 'save', 'saveAs']:  #TODO: check for other incompatible steps
+    elif any([step['__Label__'].startswith(pre) for pre in ['Dialog.', 'File.']]) or step['__Label__'] in ['open', 'save', 'saveAs', 'macro', 'getDirectory', 'waitForUser']:  #TODO: check for other incompatible steps
         step['__Meta__']['__compatibility__'] = 'incompatible'
     return step
 

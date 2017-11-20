@@ -76,6 +76,13 @@ def json_to_imagej(pipeline):
             line = '} else {'
         elif pipeline[str(step_id)]['__Label__'] == 'startdo':
             line = 'do {'
+        elif pipeline[str(step_id)]['__Label__'] == 'function':
+            params = [param.values()[0] for param in pipeline[str(step_id)]['Parameters']]
+            line = 'function %s(%s) {' % (params[0], ','.join(params[1:]))
+        elif pipeline[str(step_id)]['__Label__'] == 'return':
+            line = 'return %s;' % pipeline[str(step_id)]['Parameters'][0].values()[0]
+        elif pipeline[str(step_id)]['__Label__'] == 'macro':
+            line = 'macro %s {' % pipeline[str(step_id)]['Parameters'][0].values()[0]
         else:
             resvar = None
             params = []
@@ -226,6 +233,8 @@ class ExporterImageJ (PipelineExporter):
                 pipeline_res[str(new_step_id)]['__Label__'] = 'saveAs'
                 pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"Results"'}, {'arg1': '"__BisQueSaveResults__.csv"'}]
                 new_step_id += 1
+            elif pipeline[str(step_id)]['__Meta__'].get('__compatibility__', '') == 'incompatible':
+                return {}
             else:
                 pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
                 pipeline_res[str(new_step_id)]['__Meta__']['module_num'] = str(new_step_id+1)
