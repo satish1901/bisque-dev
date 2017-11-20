@@ -141,13 +141,20 @@ def upload_imagej_pipeline(uf, intags):
 
 def imagej_to_json(pipeline_file):
     # TODO: write real parser
-    # TODO: COMMENTS WITH /* */
     data = {}
     step_id = 0
+    in_comment=False
     data['__Header__'] = { '__Type__': 'ImageJ' }
     for fline in pipeline_file:
         line = fline.rstrip('\r\n').strip()
-        if line == '' or line.startswith('//'):
+        if line == '' or line.startswith('//') or (line.startswith('/*') and line.endswith('*/')):
+            continue
+        if in_comment:
+            if line.endswith('*/'):
+                in_comment=False
+            continue
+        if line.startswith('/*'):
+            in_comment=True
             continue
         if line == '}':
             # end of block
