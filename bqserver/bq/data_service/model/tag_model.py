@@ -381,22 +381,27 @@ class Taggable(object):
         results = []
         if 'all' in what:
             results.extend(self.children) # pylint: disable=access-member-before-definition
-            self.children = []
-            self.tags = []
-            self.gobjects = []
-            self.values = []
-            self.vertices = []
+            del self.children[:]
+            #self.children = []
+            #self.tags = []
+            #self.gobjects = []
+            #self.values = []
+            #self.vertices = []
             log.debug ('cleared all')
             return results
         if 'tag' in what:
             results.extend(self.tags)
-            self.children = list (set(self.children) - set(self.tags))
-            self.tags = []
+            for tg in self.tags:
+                self.children.remove (tg)
+            #self.children = list (set(self.children) - set(self.tags))
+            #self.tags = []
             log.debug ('cleared tags')
         if 'gobject' in what:
             results.extend(self.gobjects)
-            self.children = list (set(self.children) - set(self.gobjects))
-            self.gobjects = []
+            for go in self.gobjects:
+                self.children.remove (go)
+            #self.children = list (set(self.children) - set(self.gobjects))
+            #self.gobjects = []
             log.debug ('cleared gobjects')
         return results
 
