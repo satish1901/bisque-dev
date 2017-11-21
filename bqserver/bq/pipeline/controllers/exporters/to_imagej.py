@@ -116,8 +116,8 @@ class ExporterImageJ (PipelineExporter):
             if step_name == 'BisQueLoadImage':
                 res['PreOps'] += [ {'service':'image_service', 'id':'@INPUT', 'ops':'/format:tiff', 'filename':'input.tif'} ]
             elif step_name == 'BisQueSaveImage':
-                name = '__BisQueSaveImage__.txt'
-                fullname = '__BisQueSaveImage__.tif'
+                name = '__BisQueSaveImage%s__.txt'%step_id
+                fullname = '__BisQueSaveImage%s__.tif'%step_id
                 new_op = {'service':'postblob', 'type':'image', 'name':name, 'filename':fullname}
                 res['PostOps'] += [ new_op ]
             elif step_name == 'BisQueSaveROIs':
@@ -131,11 +131,15 @@ class ExporterImageJ (PipelineExporter):
                                          'id_col':'id',
                                          'x_coord':'xcoord',
                                          'y_coord':'ycoord', 
-                                         'filename':'gobjects.csv'} ]
+                                         'filename':'gobjects%s.csv'%step_id} ]
             elif step_name == 'BisQueSaveResults':
-                name = '__BisQueSaveResults__.txt'
-                fullname = '__BisQueSaveResults__.csv'
+                name = '__BisQueSaveResults%s__.txt'%step_id
+                fullname = '__BisQueSaveResults%s__.csv'%step_id
                 new_op = {'service':'postblob', 'type':'table', 'name':name, 'filename':fullname}
+                res['PostOps'] += [ new_op ]
+            elif step_name == 'BisQueAddTag':
+                name = '__BisQueAddTag%s__.txt'%step_id
+                new_op = {'service':'posttag', 'name':name, 'value':name}
                 res['PostOps'] += [ new_op ]
         return res
         
@@ -165,7 +169,7 @@ class ExporterImageJ (PipelineExporter):
                 """
                 name = self._get_parameters(pipeline[str(step_id)], 'arg0')[0]
                 # in case name is a variable, let ImageJ store value in a file for later
-                pipeline_res[str(new_step_id)] = { '__Label__': 'File.open', 'Parameters': [{'arg0':'"__BisQueSaveImage__.txt"'}, {'resvar':'bq_file'}] }
+                pipeline_res[str(new_step_id)] = { '__Label__': 'File.open', 'Parameters': [{'arg0':'"__BisQueSaveImage%s__.txt"'%step_id}, {'resvar':'bq_file'}] }
                 new_step_id += 1
                 pipeline_res[str(new_step_id)] = { '__Label__': 'print', 'Parameters': [{'arg0':'bq_file'}, {'arg1':name}] }
                 new_step_id += 1
@@ -173,7 +177,7 @@ class ExporterImageJ (PipelineExporter):
                 new_step_id += 1
                 pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
                 pipeline_res[str(new_step_id)]['__Label__'] = 'saveAs'
-                pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"Tiff"'}, {'arg1': '"__BisQueSaveImage__"'}]
+                pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"Tiff"'}, {'arg1': '"__BisQueSaveImage%s__"'%step_id}]
                 new_step_id += 1
             elif step_name == 'BisQueSaveROIs':
                 """ 
@@ -182,7 +186,7 @@ class ExporterImageJ (PipelineExporter):
                 BisQueSaveROIs("polygon", "label", "color");
                 ---------------------------------------------
                 """
-                outfile = 'gobjects.csv'
+                outfile = 'gobjects%s.csv'%step_id
                 pipeline_res[str(new_step_id)] = { '__Label__': 'File.open', 'Parameters': [{'arg0':'"'+outfile+'"'}, {'resvar':'bq_file'}] }
                 new_step_id += 1
                 pipeline_res[str(new_step_id)] = { '__Label__': 'print', 'Parameters': [{'arg0':'bq_file'}, {'arg1':r'"id,xcoord,ycoord\n"'}] }
@@ -212,8 +216,17 @@ class ExporterImageJ (PipelineExporter):
                 BisQueAddTag("tag_name", "tag_value");
                 ---------------------------------------------
                 """
-                #!!! TODO
-                pass
+                name = self._get_parameters(pipeline[str(step_id)], 'arg0')[0]
+                value = self._get_parameters(pipeline[str(step_id)], 'arg1')[0]
+                # in case name is a variable, let ImageJ store name/value in a file for later
+                pipeline_res[str(new_step_id)] = { '__Label__': 'File.open', 'Parameters': [{'arg0':'"__BisQueAddTag%s__.txt"'%step_id}, {'resvar':'bq_file'}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'print', 'Parameters': [{'arg0':'bq_file'}, {'arg1':name}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'print', 'Parameters': [{'arg0':'bq_file'}, {'arg1':value}] }
+                new_step_id += 1
+                pipeline_res[str(new_step_id)] = { '__Label__': 'File.close', 'Parameters': [{'arg0':'bq_file'}] }
+                new_step_id += 1
             elif step_name == 'BisQueSaveResults':
                 """ 
                 Example:
@@ -223,7 +236,7 @@ class ExporterImageJ (PipelineExporter):
                 """
                 name = self._get_parameters(pipeline[str(step_id)], 'arg0')[0]
                 # in case name is a variable, let ImageJ store value in a file for later
-                pipeline_res[str(new_step_id)] = { '__Label__': 'File.open', 'Parameters': [{'arg0':'"__BisQueSaveResults__.txt"'}, {'resvar':'bq_file'}] }
+                pipeline_res[str(new_step_id)] = { '__Label__': 'File.open', 'Parameters': [{'arg0':'"__BisQueSaveResults%s__.txt"'%step_id}, {'resvar':'bq_file'}] }
                 new_step_id += 1
                 pipeline_res[str(new_step_id)] = { '__Label__': 'print', 'Parameters': [{'arg0':'bq_file'}, {'arg1':name}] }
                 new_step_id += 1
@@ -231,7 +244,7 @@ class ExporterImageJ (PipelineExporter):
                 new_step_id += 1
                 pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
                 pipeline_res[str(new_step_id)]['__Label__'] = 'saveAs'
-                pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"Results"'}, {'arg1': '"__BisQueSaveResults__.csv"'}]
+                pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"Results"'}, {'arg1': '"__BisQueSaveResults%s__.csv"'%step_id}]
                 new_step_id += 1
             elif pipeline[str(step_id)]['__Meta__'].get('__compatibility__', '') == 'incompatible':
                 return {}
