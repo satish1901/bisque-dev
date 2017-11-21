@@ -24,10 +24,10 @@ def copy_link (*largs):
             dest = d
             if os.path.isdir (dest):
                 dest = os.path.join (d, os.path.basename(f))
+            if os.path.abspath(f) == os.path.abspath(dest):
+                continue
             log.debug ("linking %s to %s", f,dest)
             if os.path.exists(dest):
-                if os.path.abspath(f) == os.path.abspath(dest):
-                    return
                 log.debug ("Found existing file %s: removing .." , dest)
                 os.unlink (dest)
 

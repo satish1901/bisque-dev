@@ -217,12 +217,15 @@ class ResponseCache(object):
         headers = dict ([ (k,v) for k,v in headers.items() if k in self.known_headers])
         log.debug (u'cache write %s to %s', url, cachename )
         try:
-            with tempfile.NamedTemporaryFile (dir=os.path.dirname(cachename)) as f:
+            with tempfile.NamedTemporaryFile (dir=os.path.dirname(cachename), delete=False) as f:
                 f.write (str (headers))
                 f.write ('\n\n')
                 f.write (value)
                 #copy_link (f.name, cachename)
-                dolink (f.name, cachename)
+                if os.name == 'nt':
+                    os.remove (cachename)
+                os.rename (f.name, cachename)
+                #dolink (f.name, cachename)
 
         except (OSError, IOError) as e:
             log.exception ("problem in cache save of %s", cachename)
@@ -579,29 +582,37 @@ class Resource(ServiceController):
         return cls.children.get(token, None)
 
 
-    def check_cache_header(self, resource):
+    def check_cache_header(self, method, resource):
         if not CACHING: return
 
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+        # GET/HEAD check if client-side stale resource has changed.
+        # PUT : only with * -> only if entity does not exist
         if 'If-None-Match' in tg.request.headers:
             htag = tg.request.headers.get('If-None-Match')
             etag = self.get_entity_tag(resource)
             if etag is not None and etag == htag:
                 abort(304)
 
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Match
+        # GET, HEAD return resource  if etag  is still valid
+        # Others: apply operation only if matches
         if 'If-Match' in tg.request.headers:
             htag = tg.request.headers.get('If-Match')
             etag = self.get_entity_tag(resource)
             log.debug ("IFMATCH %s = %s", htag, etag)
             if etag is not None and etag != htag:
-                abort(412)
+                abort(412) # precondtion failed
 
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
+        # GET,HEAD only
         if 'If-Modified-Since' in tg.request.headers:
             modified_check = tg.request.headers.get('If-Modified-Since', None)
             modified_check = parse_http_date(modified_check)
             last_modified = self.get_last_modified_date(resource)
             if last_modified is not None:
                 if last_modified <= modified_check:
-                    log.error('Document has been modified before POST')
+                    log.debug('Document still valid')
                     abort(304)
 
     def add_cache_header(self, resource):
@@ -652,7 +663,7 @@ class Resource(ServiceController):
 
 
         if not path: #If the request path is to a collection.
-            self.check_cache_header(resource)
+            self.check_cache_header(http_method, resource)
             if http_method == 'post':
                 #If the method is a post, we call self.create which returns
                 #a class which is passed into the self.new method.
@@ -727,7 +738,7 @@ class Resource(ServiceController):
 
 
         #resource = self.server_cache.force_load(resource)
-        self.check_cache_header(resource)
+        self.check_cache_header(http_method, resource)
         method = getattr(self, method_name)
         #pylons.response.headers['Content-Type'] = 'text/xml'
         log.debug ("Dispatch for %s", method_name)

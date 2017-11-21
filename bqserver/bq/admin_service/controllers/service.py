@@ -659,7 +659,9 @@ class AdminController(ServiceController):
                 try:
                     if os.path.isfile(file_path):
                         os.unlink(file_path)
-                except Exception, e:
+                except OSError as e:
+                    log.debug ("unlinking failed: %s", file_path)
+                except Exception as e:
                     log.exception('while removing %s' % file_path)
 
         server_cache = data_path('server_cache')
