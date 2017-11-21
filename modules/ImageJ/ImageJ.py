@@ -13,7 +13,6 @@ import itertools
 import subprocess
 import json
 import urlparse
-import fnmatch
 from datetime import datetime
 
 from lxml import etree
@@ -288,6 +287,12 @@ class ImageJ(object):
                 resource = self.bqSession.postblob(output_file, xml = cl_model)
                 resource_xml = etree.fromstring(resource)
                 res += [resource_xml[0]]
+        elif op['service'] == 'posttag':
+            with open(op['name']) as namef:
+                lines = namef.readlines()
+                resname = lines[0].rstrip('\n')
+                resval = lines[1].rstrip('\n')
+            res += [etree.Element('tag', name=resname, value=resval)]
         elif op['service'] == 'postpolygon':
             # add polygon gobject to mex
             # Read object measurements from csv and write to gobjects
@@ -342,6 +347,9 @@ class ImageJ(object):
                 image_resource = self.bqSession.fetchxml(self.options.InputFile)
                 image_elem = etree.SubElement(outputTag, 'tag', name=image_resource.get('name'), type='image', value=image_resource.get('uri'))
                 image_elem.append(r_xml)
+            elif res_type == 'tag':
+                # simple tag => append to output as is
+                etree.SubElement(outputTag, 'tag', name=r_xml.get('name'), value=r_xml.get('value'))
             else:
                 # r_xml is some other resource (e.g., image or table) => append reference to output
                 etree.SubElement(outputTag, 'tag', name='output_table' if res_type=='table' else 'output_image', type=res_type, value=r_xml.get('uri',''))
