@@ -2,9 +2,11 @@
 import os, sys
 import urlparse
 from optparse import OptionParser
-import requests
-
 import logging
+
+import requests
+import requests_toolbelt
+
 
 logging.basicConfig(level = logging.WARN)
 
@@ -32,9 +34,14 @@ def upload(dest, filename, userpass, tags=None):
     files = []
     if tags:
         files.append( ('file_resource', (None, tags, "text/xml")  ) )
-    files.append( ("file",  open(filename, "rb")) )
+    files.append( ("file",  (filename, open(filename, "rb"), 'application/octet-stream') ))
 
-    response = requests.post (dest, files=files, auth = requests.auth.HTTPBasicAuth(*userpass),verify=False)
+    fields  = dict (files)
+    print fields
+    m  = requests_toolbelt.MultipartEncoder (fields = dict (files) )
+
+    response = requests.post (dest, data=m, auth = requests.auth.HTTPBasicAuth(*userpass),verify=False,
+                              headers={'Content-Type': m.content_type})
     if response.status_code != 200:
         print "error while copying %s: Server response %s" % (filename, response.headers)
         print "saving error information to ", filename , "-transfer.err"
@@ -61,6 +68,9 @@ def main():
     parser.add_option('-d','--debug',  action="store_true", default=False, help='print debug log')
     parser.add_option('-t','--tag', action="append", dest="tags", help="-t name:value")
     parser.add_option('--resource', action="store", default=None, help="XML resource record for the file")
+
+
+    print "TETSINF"
 
     (options, args) = parser.parse_args()
     if len(args) < 2:

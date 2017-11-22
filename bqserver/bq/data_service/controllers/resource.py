@@ -299,7 +299,7 @@ class ResponseCache(object):
     def modified(self, url, user):
         cachename = os.path.join(self.cachepath, self._cache_name(url, user))
         if os.path.exists(cachename):
-            return datetime.fromtimestamp(os.stat(cachename).st_mtime)
+            return datetime.utcfromtimestamp(os.stat(cachename).st_mtime)
         return None
 
     def modified_resource(self, resource):
@@ -588,26 +588,31 @@ class Resource(ServiceController):
         # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
         # GET/HEAD check if client-side stale resource has changed.
         # PUT : only with * -> only if entity does not exist
-        if 'If-None-Match' in tg.request.headers:
-            htag = tg.request.headers.get('If-None-Match')
+        #if 'If-None-Match' in tg.request.headers:
+        htag = tg.request.headers.get('If-None-Match', None)
+        if htag is not None and method in ('get', 'head'):
             etag = self.get_entity_tag(resource)
             if etag is not None and etag == htag:
                 abort(304)
+            return
 
         # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Match
         # GET, HEAD return resource  if etag  is still valid
         # Others: apply operation only if matches
-        if 'If-Match' in tg.request.headers:
-            htag = tg.request.headers.get('If-Match')
+        #if 'If-Match' in tg.request.headers:
+        htag = tg.request.headers.get('If-Match', None)
+        if htag is not None:
             etag = self.get_entity_tag(resource)
             log.debug ("IFMATCH %s = %s", htag, etag)
             if etag is not None and etag != htag:
                 abort(412) # precondtion failed
+            return
 
         # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
         # GET,HEAD only
-        if 'If-Modified-Since' in tg.request.headers:
-            modified_check = tg.request.headers.get('If-Modified-Since', None)
+        #if 'If-Modified-Since' in tg.request.headers:
+        modified_check = tg.request.headers.get('If-Modified-Since', None)
+        if modified_check is not None and method in ('get', 'head'):
             modified_check = parse_http_date(modified_check)
             last_modified = self.get_last_modified_date(resource)
             if last_modified is not None:
@@ -617,7 +622,6 @@ class Resource(ServiceController):
 
     def add_cache_header(self, resource):
         if not CACHING: return
-        tg.response.headers['Cache-Control'] = 'public, max-age=1'
         etag = self.get_entity_tag(resource)
         if etag:
             tg.response.headers['ETag'] = etag
@@ -626,6 +630,7 @@ class Resource(ServiceController):
         last_modified = self.get_last_modified_date(resource)
         #logger.debug('response: ' + str(last_modified))
         if last_modified is None:
+            tg.response.headers['Cache-Control'] = 'public, max-age=1'
             last_modified = datetime(*gmtime()[:6])
 
         tg.response.headers['Last-Modified'] = (
