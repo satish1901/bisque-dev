@@ -568,6 +568,10 @@ Ext.define('BQ.upload.Item', {
 
     upload : function() {
         if (!this.isReadyToUpload()) return;
+        var formconf = Ext.clone(this.formconf);
+        // dima: force haproxy hashing to distribute transfer over to separate machines
+        formconf.form_action += '_'+Math.random().toString(36).substring(2);
+
         //this.time_started = new Date();
         this.error = undefined;
         this.state = BQ.upload.STATES.UPLOADING;
@@ -579,7 +583,7 @@ Ext.define('BQ.upload.Item', {
             uploadTransferProgress: Ext.Function.bind( this.onProgress, this ),
             uploadTransferStart:    Ext.Function.bind( this.onTransferStart, this ),
             uploadTransferEnd:      Ext.Function.bind( this.onTransferEnd, this ),
-            formconf: this.formconf,
+            formconf: formconf,
             resource: this.annotations ? this.annotations.toXML(): undefined,
         });
         this.fup.upload();
