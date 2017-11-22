@@ -115,6 +115,9 @@ class ExporterImageJ (PipelineExporter):
             step_name = pipeline[str(step_id)]['__Label__']
             if step_name == 'BisQueLoadImage':
                 res['PreOps'] += [ {'service':'image_service', 'id':'@INPUT', 'ops':'/format:tiff', 'filename':'input.tif'} ]
+            elif step_name == 'BisQueLoadPolygon':
+                gob_type = self._get_parameters(pipeline[str(step_id)], 'arg0')[0].strip('"')
+                res['PreOps'] += [ {'service':'data_service', 'id':'@INPUT', 'ops':'//gobject[@type="%s"]/polygon/vertex'%gob_type, 'attrs':['x', 'y'], 'filename':'gobjects%s.csv'%step_id} ]
             elif step_name == 'BisQueSaveImage':
                 name = '__BisQueSaveImage%s__.txt'%step_id
                 fullname = '__BisQueSaveImage%s__.tif'%step_id
@@ -159,6 +162,17 @@ class ExporterImageJ (PipelineExporter):
                 pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
                 pipeline_res[str(new_step_id)]['__Label__'] = 'open'
                 pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"input.tif"'}]
+                new_step_id += 1
+            elif step_name == 'BisQueLoadPolygon':
+                """ 
+                Example:
+                ---------------------------------------------
+                BisQueLoadPolygon("gobject type");
+                ---------------------------------------------
+                """
+                pipeline_res[str(new_step_id)] = copy.deepcopy(pipeline[str(step_id)])
+                pipeline_res[str(new_step_id)]['__Label__'] = 'run'
+                pipeline_res[str(new_step_id)]['Parameters'] = [{'arg0': '"XY Coordinates... "'}, {'arg1': '"open=gobjects%s.csv"'%step_id}]
                 new_step_id += 1
             elif step_name == 'BisQueSaveImage':
                 """ 
