@@ -54,6 +54,7 @@ import pkg_resources
 import tempfile
 import re
 import copy
+import ast
 from pylons.controllers.util import abort
 
 from bq import blob_service
@@ -186,22 +187,37 @@ def imagej_to_json(pipeline_file):
             # macro definition
             mname = line[len('macro'):].split('{')[0].strip()
             line = 'macro(%s);' % mname
-        if re.match(r"((?P<lexpr>\w+)\s*=\s*)?(?P<namespace>\w+\.)?(?P<function>\w+)\s*\((\s*(?P<arg1>[^,]+)\s*(,\s*(?P<arg2>[^,]+))*)?\s*\);$", line) is not None:
-            # some fct call          
-            toks = line.split('(',1)
-            tag = toks[0].strip()
-            params = toks[1].rstrip(');').split(',') if len(toks) > 1 else []
-            params = [{'arg'+str(argidx) : params[argidx].strip()} for argidx in range(0,len(params)) if params[argidx].strip() != '']
-            toks = tag.split('=',1)
-            if len(toks) > 1:
-                tag = toks[1].strip()
-                params.append({'resvar' : toks[0].strip() })
-            step = { "__Label__": tag, "__Meta__": {}, "Parameters": params }
-        elif re.match(r"(?P<lexpr>\w+)\s*=\s*(?P<rexpr>.+);$", line) is not None:
-            # assignment op
-            matchdict = re.match(r"(?P<lexpr>\w+)\s*=\s*(?P<rexpr>.+);$", line).groupdict()
-            step = { "__Label__": "assign", "__Meta__": {}, "Parameters": [{'arg0': matchdict['rexpr']}, {'resvar': matchdict['lexpr']}] }
-        else:
+        ### at this point, line is either (1) fct call or (2) assignment ###
+        try:
+            line = line.rstrip(';').rstrip()
+            stree = ast.parse(line)   # TODO: replace AST
+            if isinstance(stree.body[0].value, ast.Call):
+                # some fct call
+                tag = stree.body[0].value.func.id
+                paran_off = line.index('(')
+                arg_offs = [arg.col_offset for arg in stree.body[0].value.args] + [len(line)]
+                params = []
+                for argidx in range(0,len(arg_offs)-1):
+                    start_off = arg_offs[argidx]-1
+                    end_off = arg_offs[argidx+1]-1
+                    # find the real start of the arg in case of redundant (((...)))
+                    while line[start_off] != ',' and start_off > paran_off:
+                        start_off -= 1
+                    arg = line[start_off+1 : end_off].strip().rstrip(',').rstrip()
+                    params.append({'arg'+str(argidx) : arg})
+                if isinstance(stree.body[0], ast.Assign):
+                    resvar = stree.body[0].targets[0].id
+                    params.append({'resvar' : resvar })
+                step = { "__Label__": tag, "__Meta__": {}, "Parameters": params }
+            elif isinstance(stree.body[0], ast.Assign):
+                # assignment op
+                resvar = stree.body[0].targets[0].id
+                rexpr_off = stree.body[0].value.col_offset
+                rexpr = line[rexpr_off:].rstrip()
+                step = { "__Label__": "assign", "__Meta__": {}, "Parameters": [{'arg0': rexpr}, {'resvar': resvar}] }
+            else:
+                abort (400, 'ImageJ macro line "%s" cannot be parsed' % fline.rstrip('\r\n').strip())
+        except SyntaxError:
             abort (400, 'ImageJ macro line "%s" cannot be parsed' % fline.rstrip('\r\n').strip())
         data[str(step_id)] = _validate_step(step)
         step_id += 1

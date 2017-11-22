@@ -267,6 +267,18 @@ class ImageJ(object):
                 with open(image_file, 'w') as fo:
                     fo.write(image_data)
                 res += [image_file]
+        elif op['service'] == 'data_service':
+            # perform data_service operation
+            doc = self.bqSession.fetchxml(url=op['id'], view='deep,clean')
+            csv_file = os.path.join(self.options.stagingPath, op['filename'])
+            matches = doc.xpath(op['ops'])
+            if len(matches) > 0:
+                with open(csv_file, 'w') as fo:
+                    for match_id in xrange(0,len(matches)):
+                        match = matches[match_id]
+                        line = '\t'.join([match.get(attr_name, '') for attr_name in op['attrs']]) + '\n'
+                        fo.write(line)
+                res += [csv_file]
         elif op['service'] == 'postblob':
             filename = op['filename']
             with open(op['name']) as namef:
