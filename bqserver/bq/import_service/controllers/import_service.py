@@ -1218,6 +1218,11 @@ class import_serviceController(ServiceController):
 
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
+    def _default(self, **kw):
+        return self.transfer (**kw)
+
+    @expose(content_type="text/xml")
+    @require(predicates.not_anonymous())
     def transfer(self, **kw):
         """Recieve a multipart form with images and possibly tag documents
 
