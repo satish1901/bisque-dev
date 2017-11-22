@@ -37,7 +37,14 @@ Ext.define('BQ.TemplateManager',
                     resource.type = parser.pathname;
                 }
 
-                resource = copyTags.call(this, template, resource);
+                templated = null;
+                if (original) {
+                    templated = findTemplatedTags(original);
+                    if (Object.keys(templated).length>0) {
+                        resource.tags = original.tags;
+                    }
+                }
+                resource = copyTags.call(this, template, resource, templated);
 
                 if (config.noSave) {
                     cb(resource, template);
@@ -52,21 +59,27 @@ Ext.define('BQ.TemplateManager',
                 }
             }
 
-            function copyTags(template, resource)
+            function copyTags(template, resource, templated)
             {
                 var parser = document.createElement('a'),
                     i=0,
                     tag=null,
-                    g=null;
+                    g=null, tt=null;
 
                 for (i=0; (tag=template.tags[i]); ++i) {
                     parser.href = tag.uri;
-                    if (!(tag.value.toLowerCase() in BQGObject.objects)) {
-                        copyTags.call(this, tag, resource.addtag({
-                            name:tag.name,
-                            value:tag.template["defaultValue"] || '',
-                            type: parser.pathname,
-                        }));
+                    if (!(tag.value.toLowerCase() in BQGObject.objects) ) {
+                        if (!templated || !(parser.pathname in templated && templated[parser.pathname] === tag.name)) {
+                            tt = resource.addtag({
+                                name:tag.name,
+                                value:tag.template["defaultValue"] || '',
+                                type: parser.pathname,
+                            });
+                        } else {
+                            // find an existing tag in the resource
+                            tt = resource.find_tags(tag.name);
+                        }
+                        copyTags.call(this, tag, tt, templated);
                     } else {
                         var type = tag.value === 'Gobject' ? tag.name : tag.value.toLowerCase(),
                             vrtx = [],
@@ -99,11 +112,23 @@ Ext.define('BQ.TemplateManager',
                             });
                         }
 
-                        copyTags.call(this, tag, g);
+                        copyTags.call(this, tag, g, templated);
                     }
                 }
                 return resource;
-            }
+            };
+
+            function findTemplatedTags(resource, templated) {
+                templated = templated || {};
+                for (i=0; (tag=resource.tags[i]); ++i) {
+                    // dima: hack here to identify if type points to template, its just optimization for fast query
+                    if (tag.type && tag.type[0] === '/') {
+                        templated[tag.type] = tag.name;
+                    }
+                }
+
+                return templated;
+            };
 
         },
     }
@@ -250,7 +275,9 @@ Ext.define('BQ.TemplateManager.Creator',
         }
 
         this.resource.dirty = false;
-        this.resource.uri = this.resource.uri + '?view=deep';
+        if (this.resource.uri.indexOf('view=deep')===-1) {
+            this.resource.uri = this.resource.uri + '?view=deep';
+        }
         this.resource.save_(undefined, Ext.bind(success, this), Ext.pass(BQ.ui.error, ['Save failed!']));
     },
 
