@@ -193,7 +193,10 @@ def imagej_to_json(pipeline_file):
             stree = ast.parse(line)   # TODO: replace AST
             if isinstance(stree.body[0].value, ast.Call):
                 # some fct call
-                tag = stree.body[0].value.func.id
+                if isinstance(stree.body[0].value.func, ast.Attribute):
+                    tag = stree.body[0].value.func.value.id + '.' + stree.body[0].value.func.attr
+                else:
+                    tag = stree.body[0].value.func.id
                 paran_off = line.index('(')
                 arg_offs = [arg.col_offset for arg in stree.body[0].value.args] + [len(line)]
                 params = []
@@ -211,7 +214,10 @@ def imagej_to_json(pipeline_file):
                 step = { "__Label__": tag, "__Meta__": {}, "Parameters": params }
             elif isinstance(stree.body[0], ast.Assign):
                 # assignment op
-                resvar = stree.body[0].targets[0].id
+                if isinstance(stree.body[0].targets[0], ast.Attribute):
+                    resvar = stree.body[0].targets[0].value.id + '.' + stree.body[0].targets[0].attr
+                else:
+                    resvar = stree.body[0].targets[0].id
                 rexpr_off = stree.body[0].value.col_offset
                 rexpr = line[rexpr_off:].rstrip()
                 step = { "__Label__": "assign", "__Meta__": {}, "Parameters": [{'arg0': rexpr}, {'resvar': resvar}] }
