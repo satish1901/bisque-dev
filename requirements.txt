@@ -33,7 +33,8 @@ altgraph==0.9
 #bbfreeze==1.1.3
 #bbfreeze-loader==1.1.0
 beautifulsoup4==4.3.2
-boto==2.48.0
+#boto==2.48.0
+boto3==1.4.8
 cssutils==1.0
 #cuisine==0.6.5
 decorator==3.4.0

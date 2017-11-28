@@ -8,6 +8,7 @@ import urllib
 
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
+from bq.util.locks import Locks
 
 
 log = logging.getLogger('bq.irods')
@@ -129,16 +130,20 @@ def chk_cache(cache):
 def irods_cache_fetch(path, cache):
     cache_filename = os.path.join(cache, path[1:])
     if os.path.exists(cache_filename):
-        return cache_filename
+        with Locks (cache_filename): # checks if currently writing
+            return cache_filename
     return None
 
 def irods_cache_save(f, path, cache, *dest):
     cache_filename = os.path.join(cache, path[1:])
     _mkdir(os.path.dirname(cache_filename))
-    with open(cache_filename, 'wb') as fw:
-        copyfile(f, fw, *dest)
+    with Locks (None, cache_filename,  failonexist=True) as l:
+        if l.locked:
+            with open(cache_filename, 'wb') as fw:
+                copyfile(f, fw, *dest)
 
-    return cache_filename
+    with Locks (cache_filename):
+        return cache_filename
 
 def irods_fetch_file(url, cache, **kw):
     chk_cache(cache)

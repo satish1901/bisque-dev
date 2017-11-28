@@ -491,18 +491,21 @@ class S3Driver(StorageDriver):
 
         self.mount_url = posixpath.join (mount_url, '')
         if credentials:
-            self.access_key,  self.secret_key = credentials.split(':')
+            access_key,  secret_key = credentials.split(':')
+            self.creds = { 'aws_access_key_id': access_key,
+                           'aws_secret_access_key' : secret_key,
+        }
         else:
             log.error ('need credentials for S3 store')
 
         self.location = location or Location.USWest
         self.bucket_id = bucket_id #config.get('bisque.blob_service.s3.bucket_id')
-        self.bucket = None
+        #self.bucket = None
         self.conn = None
         self.readonly = asbool(readonly)
         self.top = mount_url.split('$')[0]
         self.options = kw
-        self.mount ()
+        #self.mount ()
         cache = cache or data_path ('s3_cache')
         self.cache = string.Template(cache).safe_substitute(datadir=data_url_path())
 
@@ -512,24 +515,24 @@ class S3Driver(StorageDriver):
         if self.conn is not None:
             return
 
-        if self.access_key is None or self.secret_key is None or self.bucket_id is None:
-            raise ConfigurationError('bisque.blob_service.s3 incomplete config')
+        # if self.access_key is None or self.secret_key is None or self.bucket_id is None:
+        #     raise ConfigurationError('bisque.blob_service.s3 incomplete config')
 
-        try:
-            self.conn = S3Connection(self.access_key, self.secret_key)
-        except boto.exception.S3ResponseError:
-            log.error ("S3 Connection failed")
-            raise IllegalOperation ("S3 connection Failed")
+        # try:
+        #     self.conn = S3Connection(self.access_key, self.secret_key)
+        # except boto.exception.S3ResponseError:
+        #     log.error ("S3 Connection failed")
+        #     raise IllegalOperation ("S3 connection Failed")
 
-        try:
-            self.bucket = self.conn.get_bucket(self.bucket_id)
-        except boto.exception.S3ResponseError:
-            try:
-                self.bucket = self.conn.create_bucket(self.bucket_id, location=self.location)
-            except boto.exception.S3CreateError:
-                raise ConfigurationError('bisque.blob_service.s3.bucket_id already owned by someone else. Please use a different bucket_id')
+        # try:
+        #     self.bucket = self.conn.get_bucket(self.bucket_id)
+        # except boto.exception.S3ResponseError:
+        #     try:
+        #         self.bucket = self.conn.create_bucket(self.bucket_id, location=self.location)
+        #     except boto.exception.S3CreateError:
+        #         raise ConfigurationError('bisque.blob_service.s3.bucket_id already owned by someone else. Please use a different bucket_id')
 
-        log.info("mounted S3 store %s (%s)" , self.mount_url, self.top)
+        # log.info("mounted S3 store %s (%s)" , self.mount_url, self.top)
 
     def unmount (self):
         if self.conn:
@@ -547,11 +550,11 @@ class S3Driver(StorageDriver):
         uniq = uniq or make_uniq_code()
         for x in xrange(len(uniq)-7):
             s3_key = s3_ident.replace("s3://","")
-            if not s3_handler.s3_isfile (self.bucket, s3_key):
+            if not s3_handler.s3_isfile (self.bucket_id, s3_key, self.creds):
                 break
             s3_ident = "%s-%s%s" % (s3_base , uniq[3:7+x] , ext)
 
-        flocal = s3_handler.s3_push_file(fp, self.bucket , s3_key, self.cache)
+        flocal = s3_handler.s3_push_file(fp, self.bucket_id , s3_key, self.cache, self.creds)
         return s3_ident, flocal
 
     def pull(self, storeurl, locapath=None):
@@ -563,7 +566,7 @@ class S3Driver(StorageDriver):
         storeurl,sub = split_subpath(storeurl)
         s3_key = storeurl.replace("s3://","")
         try:
-            path = s3_handler.s3_fetch_file(self.bucket, s3_key, self.cache)
+            path = s3_handler.s3_fetch_file(self.bucket_id, s3_key, self.cache, self.creds)
             # dima: if path is a directory, list contents
             return Blobs(path=path, sub=sub, files=None)
         except boto.exception.S3ResponseError:
@@ -573,7 +576,7 @@ class S3Driver(StorageDriver):
     def delete(self, storeurl):
         log.info('s3.delete: %s ' , storeurl)
         s3_key = storeurl.replace("s3://","")
-        s3_handler.s3_delete_file(self.bucket, s3_key, self.cache)
+        s3_handler.s3_delete_file(self.bucket_id, s3_key, self.cache, self.creds)
     def isdir (self, storeurl):
         "Check if a url is a container/directory"
     def status(self, storeurl):
