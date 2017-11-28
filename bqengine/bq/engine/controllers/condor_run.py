@@ -119,11 +119,11 @@ class CondorRunner (CommandRunner):
         return self.command_execute
 
     def command_execute(self, **kw):
-        self.info ("ExecuteOn %s",  platform.node())
+        #self.info ("condor_execute: On %s",  platform.node())
 
         cmd = ['condor_submit_dag', self.helper.dag_path]
         process = dict(command_line = cmd, mex = self.mexes[0])
-        self.info( "SUBMIT %s in %s " % (cmd, self.mexes[0].get('staging_path')))
+        self.info("SUBMIT %s in %s", cmd, self.mexes[0].get('staging_path'))
         if not self.options.dryrun:
             submit =  subprocess.Popen (cmd, cwd=self.mexes[0].get('staging_path'),
                                          stdout = subprocess.PIPE)
@@ -151,6 +151,7 @@ class CondorRunner (CommandRunner):
         topmex = self.mexes[0]
         job_return = int(topmex.named_args.get ('condor_job_return', 0))
         #job_return = int(topmex.arguments.pop())
+        self.info ("condor_finish %s: return=%s", " ".join (topmex.executable), job_return)
         if job_return != 0:
             if self.session is None:
                 mex_url = topmex.named_args['mex_url']
@@ -169,7 +170,7 @@ class CondorRunner (CommandRunner):
         mex = process['mex']
         command = " ".join(process['command_line'])
         msg = "%s: returned (non-zero) %s" % (command, retcode)
-        self.error(msg)
+        self.error("condor_failed: " + msg)
         # update process mex
         if self.session is None:
             self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)

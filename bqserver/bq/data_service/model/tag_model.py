@@ -531,13 +531,13 @@ class Tag(Taggable):
     def __str__(self):
         return 'tag "%s":"%s"' % (unicode(self.name), unicode(self.value))
 
-    def clear(self, what=None):
-        '''Clear values from tag'''
-        super(Tag, self).clear()
-        log.debug ('cleared values')
-        old = self.values
-        self.values = []
-        return old
+    # def clear(self, what=None):
+    #     '''Clear values from tag'''
+    #     super(Tag, self).clear()
+    #     log.debug ('cleared values')
+    #     old = self.values
+    #     self.values = []
+    #     return old
 
 class Value(object):
     xmltag = 'value'
@@ -618,13 +618,13 @@ class Vertex(object):
 class GObject(Taggable):
     xmltag = 'gobject'
 
-    def clear(self, what=None):
-        '''Clear all the children'''
-        super(GObject, self).clear()
-        log.debug ('cleared vertices')
-        old = self.vertices
-        self.vertices = []
-        return old
+    # def clear(self, what=None):
+    #     '''Clear all the children'''
+    #     super(GObject, self).clear()
+    #     log.debug ('cleared vertices')
+    #     old = self.vertices
+    #     #self.vertices = []
+    #     return old
 
 #    def __str__(self):
 #        return 'gobject %s:%s' % (self.name, str(self.type))

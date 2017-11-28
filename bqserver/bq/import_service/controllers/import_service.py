@@ -1218,8 +1218,10 @@ class import_serviceController(ServiceController):
 
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
-    def _default(self, **kw):
-        return self.transfer (**kw)
+    def _default(self, *args, **kw):
+        log.debug ("import_default %s %s", args, kw)
+        if len(args) and args[0].startswith('transfer'):
+            return self.transfer (**kw)
 
     @expose(content_type="text/xml")
     @require(predicates.not_anonymous())
