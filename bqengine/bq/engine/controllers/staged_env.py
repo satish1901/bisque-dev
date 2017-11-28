@@ -94,8 +94,9 @@ class StagedEnvironment(BaseEnvironment):
             #if mex.initial_dir:
             #    os.chdir (mex.initial_dir)
 
-            if not runner.options.dryrun and not runner.options.debug:
-                runner.debug( "Cleaning %s " % mex.staging_path)
+            if  runner.options.dryrun or runner.options.debug:
+                runner.info('not removing %s for debug or dryrun' , mex.staging_path)
+                return
+            runner.debug( "Cleaning %s with status %s",  mex.staging_path, mex.status)
+            if mex.status == "finished":
                 shutil.rmtree (mex.staging_path)
-            else:
-                runner.info('not removing %s for debug or dryrun' % mex.staging_path)

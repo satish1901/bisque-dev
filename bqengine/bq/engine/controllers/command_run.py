@@ -729,10 +729,12 @@ class CommandRunner(BaseRunner):
         self.info ("All processes have returned %s", all_status)
         # all are done.. so check if we finished correctly
         if 'failed' not in all_status:
+            self.mexes[0].status = 'finished'
             self.command_finish(**self.execute_kw)
             return
         # there was a failue:
         msg = '\n'.join ( p.get('fail_message') for p in self.processes if p['status'] == 'fail' )
+        self.mexes[0].status = 'failed'
         self.error(msg)
         if self.session is None:
             self.session = BQSession().init_mex(self.mexes[0].mex_url, self.mexes[0].bisque_token)

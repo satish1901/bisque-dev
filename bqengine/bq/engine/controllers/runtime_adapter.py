@@ -140,7 +140,11 @@ class RuntimeAdapter(BaseAdapter):
         #command = os.path.join(module_dir, module_path)
         #command_line = module_path.split(' ')
         command_line = []
-        command_line.append('-d')
+        #if  log.isEnabledFor (logging.DEBUG) \
+        if  mex and mex.find("tag[@name='execute_options']/tag[@name='debug']"):
+            command_line.append('-d') # run with debug set.
+            log.debug ("Enabling module debug")
+
         command_line.extend (params)
 
         module_dir = module_path
