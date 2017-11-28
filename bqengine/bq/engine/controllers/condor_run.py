@@ -162,12 +162,13 @@ class CondorRunner (CommandRunner):
             #    pass
             self.session.fail_mex(msg = 'job failed with return code %s' % job_return)
             return None
-
+        topmex.status = "finished"
         return super(CondorRunner, self).command_finish(**kw)
 
     def command_failed(self, process, retcode):
         """Update the bisque server  with a failed command for a mex"""
         mex = process['mex']
+        mex.status = "failed"
         command = " ".join(process['command_line'])
         msg = "%s: returned (non-zero) %s" % (command, retcode)
         self.error("condor_failed: " + msg)
