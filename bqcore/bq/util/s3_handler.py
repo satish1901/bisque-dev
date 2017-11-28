@@ -14,6 +14,8 @@ from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 from bq.util.copylink import copy_link
 from bq.util.locks import Locks
+from bq.util.timer import Timer
+from bq.util.sizeoffmt import sizeof_fmt
 
 class S3Error(Exception):
     pass
@@ -35,7 +37,11 @@ def s3_cache_fetch(bucket, key, cache, creds):
         #k.key = key
         with Locks (None, cache_filename, failonexist=True) as l:
             if l.locked:
-                s3_client.download_file (bucket, key, cache_filename)
+                with Timer () as t:
+                    s3_client.download_file (bucket, key, cache_filename)
+                size_bytes = os.path.getsize (cache_filename)
+                log.info("S3 Downloaded %s in %s  (%s)/s",
+                         sizeof_fmt(size_bytes), t.interval, sizeof_fmt (size_bytes/t.interval))
                 #k.get_contents_to_filename(cache_filename)
         with Locks (cache_filename):
             return cache_filename
@@ -59,7 +65,12 @@ def s3_cache_save(f, bucket, key, cache, creds):
 
     s3_client = boto3.client('s3', **creds)
     with Locks (cache_filename):
-        s3_client.upload_file(cache_filename, bucket, key)
+        with Timer () as t:
+            s3_client.upload_file(cache_filename, bucket, key)
+        size_bytes = os.path.getsize (cache_filename)
+        log.info("S3 Uploaded %s in %s  (%s)/s",
+                 sizeof_fmt(size_bytes), t.interval, sizeof_fmt (size_bytes/t.interval))
+
 
     # file_size = os.path.getsize(cache_filename)
     # if file_size < 60 * 1e6:
