@@ -11,7 +11,7 @@ templateDAG =\
 CONFIG ./${mex_id}.dag.config
 SCRIPT POST ${mex_id} ${post_exec} ${post_args}
 """
-#RETRY ${mex_id} 5
+RETRY ${mex_id} 3
 
 templateDAGCONF = \
 """DAGMAN_LOG_ON_NFS_IS_ERROR = FALSE
