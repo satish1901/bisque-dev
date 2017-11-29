@@ -40,8 +40,8 @@ def s3_cache_fetch(bucket, key, cache, creds):
                 with Timer () as t:
                     s3_client.download_file (bucket, key, cache_filename)
                 size_bytes = os.path.getsize (cache_filename)
-                log.info("S3 Downloaded %s in %s  (%s)/s",
-                         sizeof_fmt(size_bytes), t.interval, sizeof_fmt (size_bytes/t.interval))
+                log.info("S3 Downloaded %s %s in %s  (%s)/s",
+                         cache_filename, sizeof_fmt(size_bytes), t.interval, sizeof_fmt (size_bytes/t.interval))
                 #k.get_contents_to_filename(cache_filename)
         with Locks (cache_filename):
             return cache_filename
@@ -68,8 +68,8 @@ def s3_cache_save(f, bucket, key, cache, creds):
         with Timer () as t:
             s3_client.upload_file(cache_filename, bucket, key)
         size_bytes = os.path.getsize (cache_filename)
-        log.info("S3 Uploaded %s in %s  (%s)/s",
-                 sizeof_fmt(size_bytes), t.interval, sizeof_fmt (size_bytes/t.interval))
+        log.info("S3 Uploaded %s %s in %s  (%s)/s",
+                 cache_filename, sizeof_fmt(size_bytes), t.interval, sizeof_fmt (size_bytes/t.interval))
 
 
     # file_size = os.path.getsize(cache_filename)
