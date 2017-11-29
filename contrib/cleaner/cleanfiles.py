@@ -16,7 +16,7 @@ logging.basicConfig(stream=sys.stdout, level = logging.INFO)
 def iter_files(dirname):
     for dirname, _, filenames in os.walk(dirname):
         for filename in filenames:
-            fullpath = dirname+'/'+filename
+            fullpath = os.path.join(dirname, filename)
             try:
                 (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(fullpath)
                 yield (fullpath, atime, size)
