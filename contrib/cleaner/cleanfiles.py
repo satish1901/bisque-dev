@@ -52,7 +52,8 @@ def main():
             stats = os.statvfs(dirname)
             f_bavail = stats.f_bavail
             f_blocks = stats.f_blocks
-            percent_free = percent_free_last = f_bavail * 100.0 / f_blocks
+            f_bfree = stats.f_bfree
+            percent_free = percent_free_last = 100.0 - ((f_blocks-f_bfree) * 100.0 / (f_blocks-f_bfree+f_bavail))
             files_removed = 0
             logger.info("Filesystem %s before cleaning %s%% free" ,  dirname, int(percent_free))
             if percent_free < float(options.capacity):
@@ -63,6 +64,7 @@ def main():
                             if options.dryrun:
                                 logger.info("(simulated) delete %s (%s bytes)" ,  filename, size)
                                 f_bavail += math.ceil(float(size) / float(stats.f_frsize))
+                                f_bfree += math.ceil(float(size) / float(stats.f_frsize))
                             else:
                                 logger.debug("delete %s (%s bytes)" ,  filename, size)
                                 os.remove(filename)
@@ -71,10 +73,12 @@ def main():
                                     # time to refresh stats
                                     stats = os.statvfs(dirname)
                                     f_bavail = stats.f_bavail
+                                    f_bfree = stats.f_bfree
                                     percent_free_last = percent_free
                                 else:
                                     f_bavail += math.ceil(float(size) / float(stats.f_frsize))
-                            percent_free = f_bavail * 100.0 / f_blocks
+                                    f_bfree += math.ceil(float(size) / float(stats.f_frsize))
+                            percent_free = percent_free_last = 100.0 - ((f_blocks-f_bfree) * 100.0 / (f_blocks-f_bfree+f_bavail))
                             logger.debug("now %s%% free" ,  percent_free)
                         else:
                             logger.debug("lock on %s failed, skipping" , filename)
