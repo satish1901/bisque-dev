@@ -22,7 +22,7 @@ def iter_files(dirname):
                 yield (fullpath, atime, size)
             except OSError:
                 pass  # skip this file (probably a symbolic link?)
-            
+
 def iter_files_by_atime(dirname):
     return sorted(iter_files(dirname), key = lambda tup: (tup[1], -tup[2]))   # sort by increasing atime and decreasing size (delete larger files first)
 
@@ -39,10 +39,10 @@ def main():
     if len(args) < 1:
         parser.error ("Need at least one directory to clean")
     dirnames = [arg.rstrip('/') for arg in args]
-    
+
     if options.debug:
         logging.getLogger().setLevel(logging.DEBUG)
-    
+
     while True:
         for dirname in dirnames:
             stats = os.statvfs(dirname)
@@ -50,13 +50,13 @@ def main():
             f_blocks = stats.f_blocks
             percent_free = percent_free_last = f_bavail * 100.0 / f_blocks
             logging.info("Filesystem %s before cleaning %s%% free" % (dirname, int(percent_free)))
-            if percent_free < float(options.capacity):    
+            if percent_free < float(options.capacity):
                 for filename, _, size in iter_files_by_atime(dirname):
                     with Locks(None, filename, failonexist=False, mode='ab') as bq_lock:
                         if bq_lock.locked:
                             # we have exclusive lock => OK to delete
                             if options.dryrun:
-                                logging.debug("(simulated) delete %s (%s bytes)" % (filename, size))
+                                logging.info("(simulated) delete %s (%s bytes)" % (filename, size))
                                 f_bavail += math.ceil(float(size) / float(stats.f_frsize))
                             else:
                                 logging.debug("delete %s (%s bytes)" % (filename, size))
@@ -75,7 +75,7 @@ def main():
                     if percent_free >= float(options.capacity):
                         break
             logging.info("Filesystem %s after cleaning %s%% free" % (dirname, int(percent_free)))
-            
+
         if options.loop:
             time.sleep(float(options.loop))
         else:
@@ -83,4 +83,3 @@ def main():
 
 if __name__=="__main__":
     main()
-    
