@@ -5,13 +5,9 @@ import math
 import time
 from optparse import OptionParser
 import logging
+import logging.config
 
 from bq.util.locks import Locks
-
-
-logging.basicConfig(stream=sys.stdout, level = logging.INFO)
-
-
 
 def iter_files(dirname):
     for dirname, _, filenames in os.walk(dirname):
@@ -34,14 +30,22 @@ def main():
     parser.add_option('-l','--loop', dest="loop", help="wait time between cleaning cycles (in s), default: no cycle" )
     parser.add_option('-r','--dryrun', action="store_true", default=False, help='simulate what would happen')
     parser.add_option('-d','--debug',  action="store_true", default=False, help='print debug log')
+    parser.add_option('--log-ini', dest='logini', default=None, help='logging config ini')
 
     (options, args) = parser.parse_args()
     if len(args) < 1:
         parser.error ("Need at least one directory to clean")
     dirnames = [arg.rstrip('/') for arg in args]
 
+    if options.logini:
+        logging.config.fileConfig (options.logini)
+    else:
+        logging.basicConfig(stream=sys.stdout, level = logging.INFO)
+
+    logger = logging.getLogger ('bq.file_cleaner')
+
     if options.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
 
     while True:
         for dirname in dirnames:
@@ -49,18 +53,20 @@ def main():
             f_bavail = stats.f_bavail
             f_blocks = stats.f_blocks
             percent_free = percent_free_last = f_bavail * 100.0 / f_blocks
-            logging.info("Filesystem %s before cleaning %s%% free" % (dirname, int(percent_free)))
+            files_removed = 0
+            logger.info("Filesystem %s before cleaning %s%% free" ,  dirname, int(percent_free))
             if percent_free < float(options.capacity):
                 for filename, _, size in iter_files_by_atime(dirname):
                     with Locks(None, filename, failonexist=False, mode='ab') as bq_lock:
                         if bq_lock.locked:
                             # we have exclusive lock => OK to delete
                             if options.dryrun:
-                                logging.info("(simulated) delete %s (%s bytes)" % (filename, size))
+                                logger.info("(simulated) delete %s (%s bytes)" ,  filename, size)
                                 f_bavail += math.ceil(float(size) / float(stats.f_frsize))
                             else:
-                                logging.debug("delete %s (%s bytes)" % (filename, size))
+                                logger.debug("delete %s (%s bytes)" ,  filename, size)
                                 os.remove(filename)
+                                files_removed += 1
                                 if percent_free_last < percent_free-0.1:
                                     # time to refresh stats
                                     stats = os.statvfs(dirname)
@@ -69,12 +75,12 @@ def main():
                                 else:
                                     f_bavail += math.ceil(float(size) / float(stats.f_frsize))
                             percent_free = f_bavail * 100.0 / f_blocks
-                            logging.debug("now %s%% free" % percent_free)
+                            logger.debug("now %s%% free" ,  percent_free)
                         else:
-                            logging.debug("lock on %s failed, skipping" % filename)
+                            logger.debug("lock on %s failed, skipping" , filename)
                     if percent_free >= float(options.capacity):
                         break
-            logging.info("Filesystem %s after cleaning %s%% free" % (dirname, int(percent_free)))
+            logger.info("Filesystem %s after cleaning %s%% free, removed %s files" , dirname, int(percent_free), files_removed)
 
         if options.loop:
             time.sleep(float(options.loop))
