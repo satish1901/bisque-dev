@@ -72,6 +72,8 @@ def main():
                             logging.debug("now %s%% free" % percent_free)
                         else:
                             logging.debug("lock on %s failed, skipping" % filename)
+                    if percent_free >= float(options.capacity):
+                        break
             logging.info("Filesystem %s after cleaning %s%% free" % (dirname, int(percent_free)))
             
         if options.loop:
