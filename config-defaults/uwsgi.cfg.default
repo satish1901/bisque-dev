@@ -20,7 +20,8 @@ bisque.services_enabled =
 bisque.services_disabled = engine_service
 
 [uwsgi]
-#main options
+####################
+# main options
 # Lazy-apps needed for threading to work
 lazy-apps = true
 
@@ -48,6 +49,7 @@ virtualenv = $virtualenv
 #create a master process to manage all the workers
 #master = true
 
+###############
 #limits
 
 #socket timeout
