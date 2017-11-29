@@ -320,7 +320,7 @@ toscawidgets.framework.resource_variant=debug
 
 [loggers]
 #keys = root, bq, bqroot, bqapi, sqlalchemy, auth, image, image-locks, import, export, blobs, usage, engine, registration
-keys = root, bqapi, bq,  sqlalchemy, auth
+keys = root, bqapi, bq,  locks, sqlalchemy, auth,
 
 [handlers]
 #keys = console, syslog, file, timedfile, pylog
@@ -389,6 +389,11 @@ qualname = bq
 #level = INFO
 #handlers =
 #qualname = bq.engine_service
+
+[logger_locks]
+level = INFO
+handlers =
+qualname = bq.util.locks
 
 [logger_sqlalchemy]
 level = WARN
