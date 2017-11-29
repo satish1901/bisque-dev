@@ -13,7 +13,7 @@ syntax: glob
 runtime-bisque.cfg
 build/*
 data/*
-config/*.ini
+config/*
 bqenv/*
 doc/build/*
 doc/data/*
