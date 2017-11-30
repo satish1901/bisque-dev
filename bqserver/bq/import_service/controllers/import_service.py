@@ -1287,7 +1287,7 @@ class import_serviceController(ServiceController):
 
                     while True:
                         # Read only up to the Content-Length given.
-                        max_readable = min(content_length - bytes_read, 1048576)
+                        max_readable = min(content_length - bytes_read, 1048576*64) # 64 MB chunks
                         buff = input_stream.read(max_readable)
 
                         # Write to the parser and update our length.

@@ -127,5 +127,7 @@ def s3_push_file(fileobj, bucket , key, cache, creds):
 def s3_delete_file(bucket, key, cache, creds):
     s3_cache_delete(bucket, key, cache=cache, creds=creds)
 
-def s3_list(bucket, key):
-    return bucket.list(prefix=key, delimiter='/')
+def s3_list(bucket, key, creds):
+    s3 = boto3.resource('s3', **creds)
+    s3_bucket = s3.Bucket (bucket)
+    return s3_bucket.objects.filter(Prefix=key)

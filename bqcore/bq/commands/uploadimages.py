@@ -37,7 +37,7 @@ def upload(dest, filename, userpass, tags=None):
     files.append( ("file",  (filename, open(filename, "rb"), 'application/octet-stream') ))
 
     fields  = dict (files)
-    print fields
+    #print fields
     m  = requests_toolbelt.MultipartEncoder (fields = dict (files) )
 
     response = requests.post (dest, data=m, auth = requests.auth.HTTPBasicAuth(*userpass),verify=False,
@@ -70,18 +70,16 @@ def main():
     parser.add_option('--resource', action="store", default=None, help="XML resource record for the file")
 
 
-    print "TETSINF"
-
     (options, args) = parser.parse_args()
     if len(args) < 2:
         parser.error ("Need at least one file or directory and destination")
     dest = args.pop()
 
-    if not dest.endswith(DESTINATION):
-        dest += DESTINATION
-
     if not dest.startswith('http'):
         dest = "http://%s" % dest
+
+    if  DESTINATION not in dest: # and not dest.endswith(DESTINATION):
+        urlparse.urljoin (dest, DESTINATION)
 
     dest_tuple = list(urlparse.urlsplit(dest))
     dest =  urlparse.urlunsplit(dest_tuple)
@@ -125,14 +123,14 @@ def main():
                     filename = os.path.join(root, name)
                     if isimagefile (filename):
                         if options.verbose:
-                            print ("transfering %s" % (filename))
+                            print "transfering %s" % (filename)
                         upload(dest, filename, userpass, tags)
         elif os.path.isfile(path):
             if isimagefile (path):
                 response = upload(dest, path, userpass, tags)
                 if options.verbose:
                     print response
-
+    sys.exit(0)
 
 
 
