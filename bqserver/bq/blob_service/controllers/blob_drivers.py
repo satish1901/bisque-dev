@@ -584,8 +584,8 @@ class S3Driver(StorageDriver):
     def list(self, storeurl):
         "list contents of store url"
         s3_key = posixpath.join(storeurl.replace("s3://",""), "")
-        for path in self.bucket.list(prefix=s3_key, delimiter='/'):
-            yield "s3://%s" % path.name
+        for obj in s3_handler.s3_list (bucket=self.bucket_id, key=s3_key, creds=self.creds):
+            yield "s3://%s" % obj.key
 
 
 ###############################################
