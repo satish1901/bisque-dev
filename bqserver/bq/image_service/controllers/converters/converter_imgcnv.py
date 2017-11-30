@@ -558,7 +558,7 @@ class ConverterImgcnv(ConverterBase):
         num_l = info.get('image_num_resolution_levels', 1)
         page=0
         if preproc == 'mid':
-            mx = (num_z if num_z>1 else num_t)-1
+            mx = (num_z if num_z>1 else min(num_t, 500))-1
             page = min(max(0, mx/2), mx)
         elif preproc != '':
             return None
