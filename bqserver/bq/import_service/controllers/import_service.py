@@ -107,7 +107,7 @@ from bq import image_service
 from bq.blob_service.controllers.blob_drivers import move_file
 from bq.util.io_misc import blocked_alpha_num_sort, toascii, tounicode
 from bq.util.timer import Timer
-
+from bq.util.sizeoffmt import sizeof_fmt
 from bq.image_service.controllers.service import ImageServiceController
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
 
@@ -1302,19 +1302,22 @@ class import_serviceController(ServiceController):
     def transfer_x_file (self):
         log.info ("X_file %s ", tg.request.headers) # ,  tg.request.body_file.read())
 
-        uploaded  = tg.request.headers['X-File']
-        #name      = g.filename or tg.request.headers.get ('X-Filename', 'upload')
+        uploaded  = tg.request.headers.get ('X-File', None)
+        if uploaded is None:
+            log.error ("No X-file was set for special upload")
+            abort (400, "No X-file header")
 
         try:
             g = None
             if os.path.exists (uploaded):
                 with Timer () as t:
                     g = self.multipart_processing (uploaded, tg.request.headers)
-                log.info ("multipart parsing %s in %s", uploaded, t.interval)
+                filesize = os.path.getsize (uploaded)
+                log.info("multipart parsing %s in %s (%s/s)", uploaded, t.interval, sizeof_fmt(filesize/t.interval))
                 os.remove (uploaded)
             else:
-                log.error ("No X-file was set for special upload")
-                return
+                log.error ("Unable to access X-File %s", uploaded)
+                abort (400, "No server access to uploaded file")
 
             if g.resource is None:
                 g.resource = "<resource/>"

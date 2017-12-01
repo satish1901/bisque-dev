@@ -18,6 +18,8 @@ class Timer(object):#pylint disable-msg=R0903
     log.info ("fun took %.03f seconds" % t.interval)
 
     """
+    def __init__(self):
+        self.start = self.end = self.interval = 0
     def __enter__(self):
         self.start = walltime()
         return self
@@ -25,4 +27,9 @@ class Timer(object):#pylint disable-msg=R0903
         self.end = walltime()
         self.interval = self.end - self.start
 
-
+    def begin(self):
+        self.start = walltime()
+    def end(self, *args):
+        self.end = walltime()
+        self.interval = self.end - self.start
+        return self.interval
