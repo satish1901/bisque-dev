@@ -79,7 +79,7 @@ def main():
         dest = "http://%s" % dest
 
     if  DESTINATION not in dest: # and not dest.endswith(DESTINATION):
-        urlparse.urljoin (dest, DESTINATION)
+        dest = urlparse.urljoin (dest, DESTINATION)
 
     dest_tuple = list(urlparse.urlsplit(dest))
     dest =  urlparse.urlunsplit(dest_tuple)
