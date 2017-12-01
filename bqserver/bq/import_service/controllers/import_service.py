@@ -106,6 +106,7 @@ from bq import blob_service
 from bq import image_service
 from bq.blob_service.controllers.blob_drivers import move_file
 from bq.util.io_misc import blocked_alpha_num_sort, toascii, tounicode
+from bq.util.timer import Timer
 
 from bq.image_service.controllers.service import ImageServiceController
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
@@ -1241,13 +1242,10 @@ class import_serviceController(ServiceController):
             abort(500, 'Internal error during upload')
 
 
-    @expose(content_type="text/xml")
-    @require(predicates.not_anonymous())
-    def transfer_x_file (self):
-        log.info ("X_file %s ", tg.request.headers) # ,  tg.request.body_file.read())
+
+    @classmethod
+    def multipart_processing (cls, uploaded, headers):
         import multipart
-
-
         class g(object):
             resource = None
             fileobj = None  # A file descriptor to the tmp file
@@ -1264,44 +1262,59 @@ class import_serviceController(ServiceController):
             g.filename = fle.file_name
             g.fileobj = g.filepath and open (g.filepath, 'rb') #tmp File will be deleted unless we open it.
 
+        config={'MAX_MEMORY_FILE_SIZE' : 0,
+                #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
+        }
+
+        with open (uploaded) as input_stream:
+            #multipart.multipart.parse_form (tg.request.headers, f, on_field, on_file,
+            #    config={'MAX_MEMORY_FILE_SIZE' : 0,
+            #            #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
+            #    })
+            parser = multipart.multipart.create_form_parser(headers, on_field,on_file, config=config)
+            content_length = headers.get('Content-Length')
+            if content_length is not None:
+                content_length = int(content_length)
+            else:
+                content_length = float('inf')
+            bytes_read = 0
+
+            while True:
+                # Read only up to the Content-Length given.
+                max_readable = min(content_length - bytes_read, 1048576*128) # 128 MB chunks
+                buff = input_stream.read(max_readable)
+
+                # Write to the parser and update our length.
+                parser.write(buff)
+                bytes_read += len(buff)
+
+                # If we get a buffer that's smaller than the size requested, or if we
+                # have read up to our content length, we're done.
+                if len(buff) != max_readable or bytes_read == content_length:
+                    break
+
+            # Tell our parser that we're done writing data.
+            parser.finalize()
+        return g
+
+    @expose(content_type="text/xml")
+    @require(predicates.not_anonymous())
+    def transfer_x_file (self):
+        log.info ("X_file %s ", tg.request.headers) # ,  tg.request.body_file.read())
+
         uploaded  = tg.request.headers['X-File']
         #name      = g.filename or tg.request.headers.get ('X-Filename', 'upload')
 
         try:
+            g = None
             if os.path.exists (uploaded):
-                with open (uploaded) as input_stream:
-                    #multipart.multipart.parse_form (tg.request.headers, f, on_field, on_file,
-                    #    config={'MAX_MEMORY_FILE_SIZE' : 0,
-                    #            #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
-                    #    })
-                    parser = multipart.multipart.create_form_parser(tg.request.headers, on_field,on_file,
-                                                                    config={'MAX_MEMORY_FILE_SIZE' : 0,
-                                                                            #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
-                                                                        })
-                    content_length = tg.request.headers.get('Content-Length')
-                    if content_length is not None:
-                        content_length = int(content_length)
-                    else:
-                        content_length = float('inf')
-                    bytes_read = 0
-
-                    while True:
-                        # Read only up to the Content-Length given.
-                        max_readable = min(content_length - bytes_read, 1048576*64) # 64 MB chunks
-                        buff = input_stream.read(max_readable)
-
-                        # Write to the parser and update our length.
-                        parser.write(buff)
-                        bytes_read += len(buff)
-
-                        # If we get a buffer that's smaller than the size requested, or if we
-                        # have read up to our content length, we're done.
-                        if len(buff) != max_readable or bytes_read == content_length:
-                            break
-
-                    # Tell our parser that we're done writing data.
-                    parser.finalize()
-                    os.remove (uploaded)
+                with Timer () as t:
+                    g = self.multipart_processing (uploaded, tg.request.headers)
+                log.info ("multipart parsing %s in %s", uploaded, t.interval)
+                os.remove (uploaded)
+            else:
+                log.error ("No X-file was set for special upload")
+                return
 
             if g.resource is None:
                 g.resource = "<resource/>"
@@ -1323,7 +1336,7 @@ class import_serviceController(ServiceController):
             log.exception ("During upload")
             abort (400, "Unable to complete upload")
         finally:
-            if g.fileobj:
+            if g and g.fileobj:
                 g.fileobj.close()
 
 
