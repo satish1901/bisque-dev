@@ -99,4 +99,5 @@ class StagedEnvironment(BaseEnvironment):
                 return
             runner.debug( "Cleaning %s with status %s",  mex.staging_path, mex.status)
             if mex.status == "finished":
-                shutil.rmtree (mex.staging_path)
+                #shutil.rmtree (mex.staging_path)
+                pass
