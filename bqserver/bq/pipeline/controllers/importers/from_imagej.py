@@ -99,13 +99,13 @@ def upload_imagej_pipeline(uf, intags):
             new_pipeline[str(new_step_id)]['__Label__'] = 'BisQueLoadImage'
             new_pipeline[str(new_step_id)]['Parameters'] = []
             new_step_id += 1
-        elif pipeline[str(step_id)]['__Label__'] in ['saveAs'] and _get_parameters(pipeline[str(step_id)], 'arg0').lower() == 'tiff' and not had_save_img:
+        elif pipeline[str(step_id)]['__Label__'] in ['saveAs'] and _get_parameters(pipeline[str(step_id)], 'arg0')[0].lower() == 'tiff' and not had_save_img:
             new_pipeline[str(new_step_id)]['__Label__'] = 'BisQueSaveImage'
             out_name = _get_parameters(pipeline[str(step_id)], 'arg1')
             new_pipeline[str(new_step_id)]['Parameters'] = [{'arg0' : out_name[0] if len(out_name)>0 else '"output.tif"' }]
             had_save_img = True
             new_step_id += 1
-        elif pipeline[str(step_id)]['__Label__'] in ['saveAs'] and _get_parameters(pipeline[str(step_id)], 'arg0').lower() == 'results' and not had_save_res:
+        elif pipeline[str(step_id)]['__Label__'] in ['saveAs'] and _get_parameters(pipeline[str(step_id)], 'arg0')[0].lower() == 'results' and not had_save_res:
             new_pipeline[str(new_step_id)]['__Label__'] = 'BisQueSaveResults'
             out_name = _get_parameters(pipeline[str(step_id)], 'arg1')
             new_pipeline[str(new_step_id)]['Parameters'] = [{'arg0' : out_name[0] if len(out_name)>0 else '"output.csv"' }]
