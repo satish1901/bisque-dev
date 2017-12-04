@@ -97,7 +97,10 @@ class StagedEnvironment(BaseEnvironment):
             if  runner.options.dryrun or runner.options.debug:
                 runner.info('not removing %s for debug or dryrun' , mex.staging_path)
                 return
-            runner.debug( "Cleaning %s with status %s",  mex.staging_path, mex.status)
-            if mex.status == "finished":
+
+
+            status = getattr (mex, 'status', None)
+            runner.debug( "Cleaning %s with status %s",  getattr (mex,'staging_path', None), status)
+            if status == "finished":
                 #shutil.rmtree (mex.staging_path)
                 pass
