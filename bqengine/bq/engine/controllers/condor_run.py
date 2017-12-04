@@ -151,7 +151,7 @@ class CondorRunner (CommandRunner):
         topmex = self.mexes[0]
         job_return = int(topmex.named_args.get ('condor_job_return', 0))
         #job_return = int(topmex.arguments.pop())
-        self.info ("condor_finish %s: return=%s", " ".join (topmex.executable), job_return)
+        self.info ("condor_finish %s: return=%s", topmex.executable, job_return)
         if job_return != 0:
             if self.session is None:
                 mex_url = topmex.named_args['mex_url']
