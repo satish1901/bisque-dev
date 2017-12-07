@@ -78,9 +78,10 @@ from bq.util.hash import make_uniq_code, is_uniq_code
 
 from .bisquik_resource import BisquikResource, force_dbload, RESOURCE_HANDLERS
 from .resource_query import resource_query, resource_count, resource_load, resource_delete, resource_types,  resource_permission
+from . import resource as resource_module
 from .resource_query import prepare_permissions, RESOURCE_READ, RESOURCE_EDIT
 from .resource_auth import resource_acl, check_access
-from .resource import HierarchicalCache
+from .resource import BaseCache, HierarchicalCache
 from .formats import find_formatter
 #from .doc_resource import XMLDocumentResource
 cachedir = config.get ('bisque.data_service.server_cache', data_path('server_cache'))
@@ -96,8 +97,10 @@ class DataServerController(ServiceController):
     def __init__(self, url = None):
         super(DataServerController, self).__init__(url)
         self.children = {}
-        self.server_cache = HierarchicalCache(cachedir)
-        self.server_cache._setup()
+        self.server_cache = BaseCache()
+        if resource_module.CACHING:
+            self.server_cache = HierarchicalCache(cachedir)
+            self.server_cache._setup()
 
     def get_child_resource(self, token, **kw):
         child = self.children.get (token, None)
@@ -287,7 +290,7 @@ class DataServerController(ServiceController):
         if uri is not None:
             resource = load_uri (uri)
         if resource is not None:
-            resource_delete(resource)
+            resource_delete(resource, **kw)
             #self.cache_invalidate(uri)
         else:
             log.warn ("Could not load uri %s ", uri)

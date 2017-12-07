@@ -69,7 +69,8 @@ from bq.util.bisquik2db import bisquik2db, db2tree
 from bq.util.hash import is_uniq_code
 
 
-from .resource import Resource
+from  . import resource
+#from .resource import Resource
 from .resource_query import resource_query, resource_load, resource_count, resource_delete, document_permission
 from .resource_query import RESOURCE_READ, RESOURCE_EDIT
 from .formats import find_formatter
@@ -105,12 +106,12 @@ RESOURCE_HANDLERS = {
 
 
 
-class BisquikResource(Resource):
+class BisquikResource(resource.Resource):
     """Provide access to the data server.  Exposes a RESTful
     interface to database resources (as found in tag_model
     """
     children = {}
-    cache = True
+    cache = resource.CACHING
 
     @classmethod
     def get_child_resource(cls, token):
