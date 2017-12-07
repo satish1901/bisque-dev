@@ -204,12 +204,11 @@ class ImageServer(object):
             infofile = '%s.info'%filename
         info = {}
 
-        # sanity check
-        if not os.path.exists(filename):
-            return None
-
         # read image info using converters
         if not os.path.exists(infofile):
+            # sanity check
+            if not os.path.exists(filename):
+                return None
             with Locks(filename, infofile, failonexist=True) as l:
                 if l.locked: # the file is not being currently written by another process
                     # parse image info from original file
