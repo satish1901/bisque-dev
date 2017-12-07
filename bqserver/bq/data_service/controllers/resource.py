@@ -84,8 +84,8 @@ from .formats import find_inputer, find_formatter
 
 log = logging.getLogger("bq.data_service.resource")
 
-CACHING  = bool(config.get ('bisque.data_service.caching', True))
-SERVER_CACHE = bool(config.get('bisque.data_service.server_cache', True))
+CACHING  = asbool(config.get ('bisque.data_service.caching', True))
+#SERVER_CACHE = asbool(config.get('bisque.data_service.server_cache', True))
 CACHEDIR = config.get ('bisque.data_service.server_cache', data_path('server_cache'))
 
 URI = re.compile(r"^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?")
@@ -556,6 +556,7 @@ class Resource(ServiceController):
     service_type = "resource"
     cache = False
     children = {}
+    # class level so are shared by all instances
     server_cache = BaseCache()
     hier_cache   = HierarchicalCache(CACHEDIR)
 
