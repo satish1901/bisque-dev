@@ -18,6 +18,7 @@ from lxml import etree
 import datetime
 import math
 import inspect
+import random
 
 from tg import config
 
@@ -236,9 +237,13 @@ class ImageServer(object):
                     with open(infofile, 'w') as f:
                         f.write(etree.tostring(image))
                     return info
+                elif l.locked is False: # dima: never wait, respond immediately
+                    raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
 
         # info file exists
-        with Locks(infofile):
+        with Locks(infofile, failonread=True) as l:
+            if l.locked is False: # dima: never wait, respond immediately
+                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
             try:
                 image = etree.parse(infofile).getroot()
                 for k,v in image.attrib.iteritems():
@@ -410,11 +415,19 @@ class ImageServer(object):
                     log.debug('Dryrun test %s: [%s] [%s]', ident, localpath, str(token))
                     if token.isFile() and os.path.exists(localpath):
                         log.debug('FINISHED %s: returning pre-cached result %s', ident, token.data)
-                        with Locks(token.data):
+                        with Locks(token.data, failonread=True) as l:
+                            if l.locked is False: # dima: never wait, respond immediately
+                                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
                             pass
                         return token
 
             log.debug('STARTING full processing %s: with %s', ident, token)
+
+            # dima - randomly raise exceptions for requested resources for testing of the UI
+            # this will imitate overloading the server with processing requests
+            # breaker = random.choice([False, True])
+            # if breaker:
+            #     raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
 
             # ----------------------------------------------
             # start the processing

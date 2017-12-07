@@ -152,7 +152,9 @@ class ConverterOpenSlide(ConverterBase):
         if not cls.supported(token):
             return {}
         log.debug('Info for: %s', ifnm )
-        with Locks(ifnm):
+        with Locks(ifnm, failonread=True) as l:
+            if l.locked is False: # dima: never wait, respond immediately
+                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
             if not os.path.exists(ifnm):
                 return {}
             try:
@@ -203,7 +205,9 @@ class ConverterOpenSlide(ConverterBase):
         if not cls.supported(token):
             return {}
         log.debug('Meta for: %s', ifnm )
-        with Locks (ifnm):
+        with Locks(ifnm, failonread=True) as l:
+            if l.locked is False: # dima: never wait, respond immediately
+                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
             try:
                 _, tmp = misc.start_nounicode_win(ifnm, [])
                 slide = openslide.OpenSlide(tmp or ifnm)
@@ -298,9 +302,13 @@ class ConverterOpenSlide(ConverterBase):
                     ConverterImgcnv.thumbnail(ProcessToken(ifnm=tmp), ofnm=ofnm, width=width, height=height, **kw)
                 slide.close()
                 misc.end_nounicode_win(tmp)
+            elif l.locked is False: # dima: never wait, respond immediately
+                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
 
         # make sure the file was written
-        with Locks(ofnm):
+        with Locks(ofnm, failonread=True) as l:
+            if l.locked is False: # dima: never wait, respond immediately
+                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
             pass
         return ofnm
 
@@ -316,7 +324,7 @@ class ConverterOpenSlide(ConverterBase):
             Level,X,Y tile from input filename into output in TIFF format
         alternative interface, not required to support and may return None in this case
         scale=scale, x1=x1, y1=y1, x2=x2, y2=y2, arbitrary_size=False '''
-         
+
         # open slide driver does not support arbitrary size interface
         if kw.get('arbitrary_size', False) == True or level is None or sz is None:
             return None
@@ -346,7 +354,9 @@ class ConverterOpenSlide(ConverterBase):
                     return None
 
         # make sure the file was written
-        with Locks(ofnm):
+        with Locks(ofnm, failonread=True) as l:
+            if l.locked is False: # dima: never wait, respond immediately
+                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
             pass
         return ofnm
 

@@ -296,14 +296,14 @@ class ReadWriteLockItem:
     def users(self):
         return self.readers + self.writers
 
-    def acquire_read(self):
-        self.lock.acquire_read()
+    def acquire_read(self, timeout=None):
+        self.lock.acquire_read(timeout=timeout)
 
     def release_read(self):
         self.lock.release_read()
 
-    def acquire_write(self):
-        self.lock.acquire_write()
+    def acquire_write(self, timeout=None):
+        self.lock.acquire_write(timeout=timeout)
 
     def release_write(self):
         self.lock.release_write()
@@ -321,7 +321,7 @@ class HashedReadWriteLock:
         self._names = {}
         self._hash_lock = thread.allocate_lock()
 
-    def acquire_read(self, name):
+    def acquire_read(self, name, timeout=None):
         """ Acquire a read lock. Blocks only if a thread has
         acquired the write lock. """
         self._hash_lock.acquire()
@@ -329,7 +329,7 @@ class HashedReadWriteLock:
             self._names[name] = ReadWriteLockItem()
         self._names[name].readers += 1
         self._hash_lock.release()
-        self._names[name].acquire_read()
+        self._names[name].acquire_read(timeout=timeout)
 
     def release_read(self, name):
         """ Release a read lock. """
@@ -341,7 +341,7 @@ class HashedReadWriteLock:
                 del self._names[name]
         self._hash_lock.release()
 
-    def acquire_write(self, name):
+    def acquire_write(self, name, timeout=None):
         """ Acquire a write lock. Blocks until there are no
         acquired read or write locks. """
         self._hash_lock.acquire()
@@ -349,7 +349,7 @@ class HashedReadWriteLock:
             self._names[name] = ReadWriteLockItem()
         self._names[name].writers += 1
         self._hash_lock.release()
-        self._names[name].acquire_write()
+        self._names[name].acquire_write(timeout=timeout)
 
     def release_write(self, name):
         """ Release a write lock. """
