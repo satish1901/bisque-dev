@@ -4,7 +4,7 @@ import sys
 import math
 import time
 import fnmatch
-from optparse import OptionParser
+import argparse
 import logging
 import logging.config
 
@@ -13,8 +13,8 @@ from bq.util.locks import Locks
 def iter_files(dirname, include_pattern=None, exclude_pattern=None):
     for dirname, _, filenames in os.walk(dirname):
         for filename in filenames:
-            if (include_pattern is not None and not fnmatch.fnmatch(filename, include_pattern)) or \
-               (exclude_pattern is not None and fnmatch.fnmatch(filename, exclude_pattern)):
+            if (include_pattern is not None and not any([fnmatch.fnmatch(filename, patt) for patt in include_pattern])) or \
+               (exclude_pattern is not None and any([fnmatch.fnmatch(filename, patt) for patt in exclude_pattern])):
                 continue
             fullpath = os.path.join(dirname, filename)
             try:
@@ -28,19 +28,18 @@ def iter_files_by_atime(dirname, include_pattern=None, exclude_pattern=None):
 
 
 def main():
-    usage="usage %prog [options] directory1 ... directoryn"
-    parser = OptionParser(usage)
-    parser.add_option('-c','--free', dest="capacity", default='80', help="target free capacity (in percent of drive), default: 80" )
-    parser.add_option('-l','--loop', dest="loop", help="wait time between cleaning cycles (in s), default: no cycle" )
-    parser.add_option('-r','--dryrun', action="store_true", default=False, help='simulate what would happen')
-    parser.add_option('-d','--debug',  action="store_true", default=False, help='print debug log')
-    parser.add_option('-i','--include',  dest="include_pattern", default=None, help='filename pattern to include')
-    parser.add_option('-e','--exclude',  dest="exclude_pattern", default=None, help='filename pattern to exclude')
-    parser.add_option('--log-ini', dest='logini', default=None, help='logging config ini')
+    parser = argparse.ArgumentParser(description='Clean specific files from directory trees.')
+    parser.add_argument('paths', metavar='path', type=str, nargs='+', help='directory to clean')
+    parser.add_argument('-c', '--free', dest="capacity", default='80', help="target free capacity (in percent of drive), default: 80" )
+    parser.add_argument('-l','--loop', dest="loop", help="wait time between cleaning cycles (in s), default: no cycle" )
+    parser.add_argument('-r','--dryrun', action="store_true", default=False, help='simulate what would happen')
+    parser.add_argument('-d','--debug',  action="store_true", default=False, help='print debug log')
+    parser.add_argument('-i','--include',  dest="include_pattern", default=None, nargs='*', help='filename pattern to include')
+    parser.add_argument('-e','--exclude',  dest="exclude_pattern", default=None, nargs='*', help='filename pattern to exclude')
+    parser.add_argument('--log-ini', dest='logini', default=None, help='logging config ini')
 
-    (options, args) = parser.parse_args()
-    if len(args) < 1:
-        parser.error ("Need at least one directory to clean")
+    options = parser.parse_args()
+    args = options.paths
     dirnames = [arg.rstrip('/') for arg in args]
 
     if options.logini:
