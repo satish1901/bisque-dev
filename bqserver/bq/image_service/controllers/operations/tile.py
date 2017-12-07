@@ -131,7 +131,9 @@ class TileOperation(BaseOperation):
                 if r is None:
                     raise ImageServiceException(500, 'Tile: could not generate pyramidal file' )
             # ensure the file was created
-            with Locks(pyramid):
+            with Locks(pyramid, failonread=True) as l:
+                if l.locked is False: # dima: never wait, respond immediately
+                    raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
                 pass
 
             # compute the number of pyramidal levels

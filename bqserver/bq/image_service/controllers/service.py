@@ -10,6 +10,7 @@ import re
 from datetime import datetime
 from hashlib import md5
 from lxml import etree
+import random
 
 from pylons.controllers.util import etag_cache
 from pylons.i18n import ugettext as _, lazy_ugettext as l_
@@ -285,7 +286,17 @@ class ImageServiceController(ServiceController):
         try:
             token = self.srv.process(url, ident, timeout=timeout, imagemeta=meta, resource=resource, user_name=user_name, **kw)
         except ImageServiceException, e:
+            if e.code == 202:
+                #tg.response.status_int = 307
+                tg.response.retry_after = random.randint(1, 10)
+                tg.response.location = request.url
+                log.info ("FINISHED with FUTURE (%s): %s", datetime.now().isoformat(), url)
+                #abort(202, e.message) # 202 - accepted - does not work
+                abort(307, e.message) # 307 - TEMPORARY REDIRECT - works on chrome
+                #abort(503, e.message) # 503, "Service Unavailable" - does not work
+            log.info ("FINISHED with ERROR (%s): %s", datetime.now().isoformat(), url)
             abort(e.code, e.message)
+
         tg.response.headers['Content-Type']  = token.contentType
         #tg.response.content_type  = token.contentType
         #tg.response.headers['Cache-Control'] = ",".join ([token.cacheInfo, "public"])

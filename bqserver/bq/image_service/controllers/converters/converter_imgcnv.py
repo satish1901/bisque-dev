@@ -297,7 +297,9 @@ class ConverterImgcnv(ConverterBase):
 
     @classmethod
     def run_read(cls, ifnm, command ):
-        with Locks(ifnm):
+        with Locks(ifnm, failonread=True) as l:
+            if l.locked is False: # dima: never wait, respond immediately
+                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
             #command, tmp = misc.start_nounicode_win(ifnm, command)
             log.debug('run_read dylib command: %s', misc.tounicode(command))
             #out = cls.run_command( command )
@@ -352,10 +354,14 @@ class ConverterImgcnv(ConverterBase):
                     # if not os.path.exists(ofnm):
                     #     log.error ('Run: output does not exist after command [%s]', ofnm)
                     #     return None
+            elif l.locked is False: # dima: never wait, respond immediately
+                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
 
         # make sure the write of the output file have finished
         if ofnm is not None and os.path.exists(ofnm):
-            with Locks(ofnm):
+            with Locks(ofnm, failonread=True) as l:
+                if l.locked is False: # dima: never wait, respond immediately
+                    raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
                 pass
 
         # safeguard for incorrectly converted files, sometimes only the tiff header can be written

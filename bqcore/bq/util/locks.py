@@ -25,6 +25,7 @@ from . import XFile
 rw = HashedReadWriteLock()
 LOCK_SLEEP = 0.3
 MAX_SLEEP  = 8
+TIMEOUT = 0
 
 class Locks (object):
     log = logging.getLogger('bq.util.locks')
@@ -36,8 +37,15 @@ class Locks (object):
                             (threading.currentThread().getName(),
                              self.ifnm, self.ofnm, msg))
 
+    def exception(self, msg):
+        """Log detailed info about the locking of threads and files"""
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.exception ("%s (%s,%s): %s" %
+                            (threading.currentThread().getName(),
+                             self.ifnm, self.ofnm, msg))
 
-    def __init__(self, ifnm, ofnm=None, failonexist=False, mode="wb"):
+
+    def __init__(self, ifnm, ofnm=None, failonexist=False, mode="wb", failonread=False):
         self.wf = self.rf = None
         self.ifnm = ifnm
         self.ofnm = ofnm
@@ -45,14 +53,18 @@ class Locks (object):
         self.locked = False
         self.thread_r = self.thread_w = False
         self.failonexist = failonexist
+        self.failonread = failonread
 
     def acquire (self, ifnm=None, ofnm=None):
-
-        self.debug ("acquire0 thread-r")
         if ifnm:
-            rw.acquire_read(ifnm)
+            self.debug ("acquire thread-r")
+            rtimeout = None if self.failonread is False else TIMEOUT
+            try:
+                rw.acquire_read(ifnm, timeout=rtimeout)
+            except Exception:
+                self.debug ("Failed to acquire READ lock and asked to bail...")
+                return
             self.thread_r = True
-
         self.debug ("acquired thread-r")
 
         if ifnm and os.name != "nt":
@@ -65,6 +77,9 @@ class Locks (object):
                     self.debug ("GOT RL")
                     break
                 except XFile.LockError:
+                    if self.failonread:
+                        self.debug ("Failed to acquire READ lock and asked to bail...")
+                        return
                     self.debug ("RL sleep %s" % lock_sleep)
                     time.sleep(lock_sleep)
                     lock_sleep *= 2
@@ -73,8 +88,14 @@ class Locks (object):
 
 
         if ofnm:
-            self.debug ("acquire0 thread-w")
-            rw.acquire_write(ofnm)
+            self.debug ("acquire thread-w")
+            wtimeout = None if self.failonexist is False else TIMEOUT
+            try:
+                rw.acquire_write(ofnm, timeout=wtimeout)
+            except Exception:
+                self.debug ("Failed to acquire WRITE lock and asked to bail...")
+                self.release()
+                return
             self.thread_w = True
             if self.failonexist and os.path.exists (ofnm):
                 self.debug ("out file exists: bailing")
@@ -94,7 +115,6 @@ class Locks (object):
                 self.wf = None
                 self.release()
                 return
-
 
         self.locked = True
 

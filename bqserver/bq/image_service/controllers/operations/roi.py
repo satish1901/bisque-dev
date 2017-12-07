@@ -103,10 +103,14 @@ class RoiOperation(BaseOperation):
                     # ensure the virtual locking file is not removed
                     with open(lfile, 'wb') as f:
                         f.write('#Temporary locking file')
+                elif l.locked is False: # dima: never wait, respond immediately
+                    raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
 
         # ensure the operation is finished
         if os.path.exists(lfile):
-            with Locks(lfile):
+            with Locks(lfile, failonread=True) as l:
+                if l.locked is False: # dima: never wait, respond immediately
+                    raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
                 pass
 
         info = {
