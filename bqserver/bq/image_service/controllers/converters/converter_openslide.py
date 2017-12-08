@@ -24,11 +24,8 @@ from bq.util.compat import OrderedDict
 from bq.util.locks import Locks
 import bq.util.io_misc as misc
 
-#from .imgsrv import min_level_size
-#from .process_token import ProcessToken
-#from .converter_base import ConverterBase, Format
-#from .converter_imgcnv import ConverterImgcnv
-from bq.image_service.controllers.imgsrv import min_level_size
+from bq.image_service.controllers.exceptions import ImageServiceException, ImageServiceFuture
+from bq.image_service.controllers.defaults import min_level_size
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
@@ -154,7 +151,7 @@ class ConverterOpenSlide(ConverterBase):
         log.debug('Info for: %s', ifnm )
         with Locks(ifnm, failonread=True) as l:
             if l.locked is False: # dima: never wait, respond immediately
-                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
+                raise ImageServiceFuture((1,10))
             if not os.path.exists(ifnm):
                 return {}
             try:
@@ -207,7 +204,7 @@ class ConverterOpenSlide(ConverterBase):
         log.debug('Meta for: %s', ifnm )
         with Locks(ifnm, failonread=True) as l:
             if l.locked is False: # dima: never wait, respond immediately
-                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
+                raise ImageServiceFuture((1,10))
             try:
                 _, tmp = misc.start_nounicode_win(ifnm, [])
                 slide = openslide.OpenSlide(tmp or ifnm)
@@ -303,13 +300,12 @@ class ConverterOpenSlide(ConverterBase):
                 slide.close()
                 misc.end_nounicode_win(tmp)
             elif l.locked is False: # dima: never wait, respond immediately
-                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
+                raise ImageServiceFuture((1,15))
 
         # make sure the file was written
         with Locks(ofnm, failonread=True) as l:
             if l.locked is False: # dima: never wait, respond immediately
-                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
-            pass
+                raise ImageServiceFuture((1,15))
         return ofnm
 
     @classmethod
@@ -356,8 +352,7 @@ class ConverterOpenSlide(ConverterBase):
         # make sure the file was written
         with Locks(ofnm, failonread=True) as l:
             if l.locked is False: # dima: never wait, respond immediately
-                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
-            pass
+                raise ImageServiceFuture((1,15))
         return ofnm
 
     @classmethod

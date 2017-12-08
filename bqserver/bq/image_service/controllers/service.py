@@ -26,10 +26,11 @@ from bq.util.mkdir import _mkdir
 from bq import data_service
 from bq import export_service
 import bq.util.io_misc as misc
+import bq.util.responses as responses
 
 from .process_token import ProcessToken
 from .imgsrv import ImageServer, getOperations
-from .exceptions import ImageServiceException
+from .exceptions import ImageServiceException, ImageServiceFuture
 
 log = logging.getLogger("bq.image_service")
 
@@ -256,12 +257,22 @@ class ImageServiceController(ServiceController):
         ident = resource_id or ident
         log.info ("STARTING (%s): %s", datetime.now().isoformat(), url)
 
-        # dima: patch for incorrect /auth requests for image service
+        # patch for incorrect /auth requests for image service
         if '/auth' in url:
             tg.response.headers['Content-Type'] = 'text/xml'
             log.info ("FINISHED DEPRECATED (%s): %s", datetime.now().isoformat(), url)
             return '<resource />'
 
+        # detect and remove indication of previous timeout future
+        future_timeout = 0
+        if '#timeout=' in url:
+            try:
+                m = re.split(r'\#timeout=([0-9]+)$', url)
+                url = m[0]
+                future_timeout = int(m[1])
+                log.debug('Received previous future timeout: %s', future_timeout)
+            except Exception:
+                log.exception('Exception while processing future timeout')
 
         # check for access permission
         resource = self.check_access(ident, view='image_meta')
@@ -285,15 +296,21 @@ class ImageServiceController(ServiceController):
         log.info ("PROCESSING (%s): %s", datetime.now().isoformat(), url)
         try:
             token = self.srv.process(url, ident, timeout=timeout, imagemeta=meta, resource=resource, user_name=user_name, **kw)
+        except ImageServiceFuture, e:
+            message = 'The request is being processed by the system, come back soon...'
+
+            # use a back-off strategy for long running tasks
+            #future_timeout = random.randint(e.timeout_range[0], e.timeout_range[1]) * future_timeout
+            future_timeout = random.randint(e.timeout_range[0], e.timeout_range[1]) + future_timeout*30
+
+            #tg.response.status_int = 307
+            tg.response.retry_after = future_timeout
+            tg.response.location = '%s#timeout=%s'%(url, future_timeout)
+            log.info ("FINISHED with FUTURE (%s): %s timeout @%ss", datetime.now().isoformat(), url, future_timeout)
+            #abort(202, message) # 202 - accepted - does not work
+            abort(307, message) # 307 - TEMPORARY REDIRECT - works on chrome, firefox
+            #abort(503, message) # 503, "Service Unavailable" - does not work
         except ImageServiceException, e:
-            if e.code == 202:
-                #tg.response.status_int = 307
-                tg.response.retry_after = random.randint(1, 10)
-                tg.response.location = request.url
-                log.info ("FINISHED with FUTURE (%s): %s", datetime.now().isoformat(), url)
-                #abort(202, e.message) # 202 - accepted - does not work
-                abort(307, e.message) # 307 - TEMPORARY REDIRECT - works on chrome
-                #abort(503, e.message) # 503, "Service Unavailable" - does not work
             log.info ("FINISHED with ERROR (%s): %s", datetime.now().isoformat(), url)
             abort(e.code, e.message)
 

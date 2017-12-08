@@ -22,7 +22,7 @@ from bq.util.locks import Locks
 from bq.util.read_write_locks import HashedReadWriteLock
 import bq.util.io_misc as misc
 
-from bq.image_service.controllers.exceptions import ImageServiceException
+from bq.image_service.controllers.exceptions import ImageServiceException, ImageServiceFuture
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converter_base import ConverterBase, Format
 
@@ -299,7 +299,7 @@ class ConverterImgcnv(ConverterBase):
     def run_read(cls, ifnm, command ):
         with Locks(ifnm, failonread=True) as l:
             if l.locked is False: # dima: never wait, respond immediately
-                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
+                raise ImageServiceFuture((1,15))
             #command, tmp = misc.start_nounicode_win(ifnm, command)
             log.debug('run_read dylib command: %s', misc.tounicode(command))
             #out = cls.run_command( command )
@@ -355,14 +355,13 @@ class ConverterImgcnv(ConverterBase):
                     #     log.error ('Run: output does not exist after command [%s]', ofnm)
                     #     return None
             elif l.locked is False: # dima: never wait, respond immediately
-                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
+                raise ImageServiceFuture((1,15))
 
         # make sure the write of the output file have finished
         if ofnm is not None and os.path.exists(ofnm):
             with Locks(ofnm, failonread=True) as l:
                 if l.locked is False: # dima: never wait, respond immediately
-                    raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
-                pass
+                    raise ImageServiceFuture((1,15))
 
         # safeguard for incorrectly converted files, sometimes only the tiff header can be written
         # empty lock files are automatically removed before by lock code
