@@ -25,6 +25,7 @@ import bq.util.io_misc as misc
 from bq.image_service.controllers.exceptions import ImageServiceException, ImageServiceFuture
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converter_base import ConverterBase, Format
+from bq.image_service.controllers.defaults import block_reads
 
 log = logging.getLogger('bq.image_service.converter_imgcnv')
 
@@ -297,7 +298,7 @@ class ConverterImgcnv(ConverterBase):
 
     @classmethod
     def run_read(cls, ifnm, command ):
-        with Locks(ifnm, failonread=True) as l:
+        with Locks(ifnm, failonread=(not block_reads)) as l:
             if l.locked is False: # dima: never wait, respond immediately
                 raise ImageServiceFuture((1,15))
             #command, tmp = misc.start_nounicode_win(ifnm, command)
@@ -359,7 +360,7 @@ class ConverterImgcnv(ConverterBase):
 
         # make sure the write of the output file have finished
         if ofnm is not None and os.path.exists(ofnm):
-            with Locks(ofnm, failonread=True) as l:
+            with Locks(ofnm, failonread=(not block_reads)) as l:
                 if l.locked is False: # dima: never wait, respond immediately
                     raise ImageServiceFuture((1,15))
 
