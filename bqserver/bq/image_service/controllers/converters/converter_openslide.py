@@ -25,7 +25,7 @@ from bq.util.locks import Locks
 import bq.util.io_misc as misc
 
 from bq.image_service.controllers.exceptions import ImageServiceException, ImageServiceFuture
-from bq.image_service.controllers.defaults import min_level_size
+from bq.image_service.controllers.defaults import min_level_size, block_reads
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
@@ -149,7 +149,7 @@ class ConverterOpenSlide(ConverterBase):
         if not cls.supported(token):
             return {}
         log.debug('Info for: %s', ifnm )
-        with Locks(ifnm, failonread=True) as l:
+        with Locks(ifnm, failonread=(not block_reads)) as l:
             if l.locked is False: # dima: never wait, respond immediately
                 raise ImageServiceFuture((1,10))
             if not os.path.exists(ifnm):
@@ -202,7 +202,7 @@ class ConverterOpenSlide(ConverterBase):
         if not cls.supported(token):
             return {}
         log.debug('Meta for: %s', ifnm )
-        with Locks(ifnm, failonread=True) as l:
+        with Locks(ifnm, failonread=(not block_reads)) as l:
             if l.locked is False: # dima: never wait, respond immediately
                 raise ImageServiceFuture((1,10))
             try:
@@ -303,7 +303,7 @@ class ConverterOpenSlide(ConverterBase):
                 raise ImageServiceFuture((1,15))
 
         # make sure the file was written
-        with Locks(ofnm, failonread=True) as l:
+        with Locks(ofnm, failonread=(not block_reads)) as l:
             if l.locked is False: # dima: never wait, respond immediately
                 raise ImageServiceFuture((1,15))
         return ofnm
@@ -350,7 +350,7 @@ class ConverterOpenSlide(ConverterBase):
                     return None
 
         # make sure the file was written
-        with Locks(ofnm, failonread=True) as l:
+        with Locks(ofnm, failonread=(not block_reads)) as l:
             if l.locked is False: # dima: never wait, respond immediately
                 raise ImageServiceFuture((1,15))
         return ofnm

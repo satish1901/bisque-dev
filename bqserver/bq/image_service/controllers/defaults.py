@@ -18,4 +18,4 @@ default_format = 'bigtiff'
 default_tile_size = 512
 min_level_size = 128
 block_reads = False
-
+block_tile_reads = True

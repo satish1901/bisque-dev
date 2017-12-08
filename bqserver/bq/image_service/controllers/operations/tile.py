@@ -43,7 +43,7 @@ from bq.image_service.controllers.exceptions import ImageServiceException, Image
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
-from bq.image_service.controllers.defaults import default_format, default_tile_size, min_level_size
+from bq.image_service.controllers.defaults import default_format, default_tile_size, min_level_size, block_reads, block_tile_reads
 
 log = logging.getLogger("bq.image_service.operations.tile")
 
@@ -131,7 +131,7 @@ class TileOperation(BaseOperation):
                 if r is None:
                     raise ImageServiceException(500, 'Tile: could not generate pyramidal file' )
             # ensure the file was created
-            with Locks(pyramid, failonread=True) as l:
+            with Locks(pyramid, failonread=(not block_tile_reads)) as l:
                 if l.locked is False: # dima: never wait, respond immediately
                     fff = (width*height) / (10000*10000)
                     raise ImageServiceFuture((15*fff,30*fff))

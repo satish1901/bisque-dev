@@ -27,7 +27,7 @@ from bq.image_service.controllers.exceptions import ImageServiceException, Image
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
-from bq.image_service.controllers.defaults import default_format
+from bq.image_service.controllers.defaults import default_format, block_reads
 
 log = logging.getLogger("bq.image_service.operations.roi")
 
@@ -108,7 +108,7 @@ class RoiOperation(BaseOperation):
 
         # ensure the operation is finished
         if os.path.exists(lfile):
-            with Locks(lfile, failonread=True) as l:
+            with Locks(lfile, failonread=(not block_reads)) as l:
                 if l.locked is False: # dima: never wait, respond immediately
                     raise ImageServiceFuture((1,15))
 

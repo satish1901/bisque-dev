@@ -45,7 +45,7 @@ from .operation_base import BaseOperation
 from .converter_dict import ConverterDict
 from .resource_cache import ResourceCache
 from .plugin_manager import PluginManager
-from .defaults import default_format, default_tile_size
+from .defaults import default_format, default_tile_size, block_reads
 
 from .converters.converter_imgcnv import ConverterImgcnv
 from .converters.converter_imaris import ConverterImaris
@@ -238,7 +238,7 @@ class ImageServer(object):
                     raise ImageServiceFuture((1,10))
 
         # info file exists
-        with Locks(infofile, failonread=True) as l:
+        with Locks(infofile, failonread=(not block_reads)) as l:
             if l.locked is False: # dima: never wait, respond immediately
                 raise ImageServiceFuture((1,10))
             try:
@@ -412,7 +412,7 @@ class ImageServer(object):
                     log.debug('Dryrun test %s: [%s] [%s]', ident, localpath, str(token))
                     if token.isFile() and os.path.exists(localpath):
                         log.debug('FINISHED %s: returning pre-cached result %s', ident, token.data)
-                        with Locks(token.data, failonread=True) as l:
+                        with Locks(token.data, failonread=(not block_reads)) as l:
                             if l.locked is False: # dima: never wait, respond immediately
                                 raise ImageServiceFuture((1,10))
                         return token
