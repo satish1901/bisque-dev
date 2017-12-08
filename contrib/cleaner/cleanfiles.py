@@ -63,6 +63,8 @@ def main():
             status = subprocess.call (options.prerun, shell=True)
             if status != 0:
                 logger.error ("Prerun %s failed with status %s", options.prerun, status)
+            else:
+                logger.info ("PRERUN %s: OK", options.prerun)
 
         for dirname in dirnames:
             stats = os.statvfs(dirname)
@@ -108,6 +110,8 @@ def main():
             status = subprocess.call (options.postrun, shell=True)
             if status != 0:
                 logger.error ("Postrun %s failed with status %s", options.postrun, status)
+            else:
+                logger.info ("POSTRUN %s: OK", options.prerun)
 
         if options.loop:
             time.sleep(float(options.loop))
