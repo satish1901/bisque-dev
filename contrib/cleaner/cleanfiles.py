@@ -7,6 +7,7 @@ import fnmatch
 import argparse
 import logging
 import logging.config
+import subprocess
 
 from bq.util.locks import Locks
 
@@ -29,18 +30,23 @@ def iter_files_by_atime(dirname, include_pattern=None, exclude_pattern=None):
 
 def main():
     parser = argparse.ArgumentParser(description='Clean specific files from directory trees.')
-    parser.add_argument('paths', metavar='path', type=str, nargs='+', help='directory to clean')
+    parser.add_argument('paths', nargs='+', help='directory to clean')
     parser.add_argument('-c', '--free', dest="capacity", default='80', help="target free capacity (in percent of drive), default: 80" )
     parser.add_argument('-l','--loop', dest="loop", help="wait time between cleaning cycles (in s), default: no cycle" )
     parser.add_argument('-r','--dryrun', action="store_true", default=False, help='simulate what would happen')
     parser.add_argument('-d','--debug',  action="store_true", default=False, help='print debug log')
-    parser.add_argument('-i','--include',  dest="include_pattern", default=None, nargs='*', help='filename pattern to include')
-    parser.add_argument('-e','--exclude',  dest="exclude_pattern", default=None, nargs='*', help='filename pattern to exclude')
+    parser.add_argument('-i','--include',  dest="include_pattern",  action='append', help='filename pattern to include')
+    parser.add_argument('-e','--exclude',  dest="exclude_pattern", action='append', help='filename pattern to exclude')
     parser.add_argument('--log-ini', dest='logini', default=None, help='logging config ini')
+    parser.add_argument('--prerun', default = None, help="Run script before processing")
+    parser.add_argument('--postrun', default = None, help="Run script after processing")
 
     options = parser.parse_args()
     args = options.paths
     dirnames = [arg.rstrip('/') for arg in args]
+
+    if options.dryrun:
+        print options
 
     if options.logini:
         logging.config.fileConfig (options.logini)
@@ -53,6 +59,11 @@ def main():
         logger.setLevel(logging.DEBUG)
 
     while True:
+        if options.prerun:
+            status = subprocess.call (options.prerun, shell=True)
+            if status != 0:
+                logger.error ("Prerun %s failed with status %s", options.prerun, status)
+
         for dirname in dirnames:
             stats = os.statvfs(dirname)
             f_bavail = stats.f_bavail
@@ -93,6 +104,10 @@ def main():
                     if percent_free >= float(options.capacity):
                         break
             logger.info("Filesystem %s after cleaning %s%% free, removed %s files" , dirname, int(percent_free), files_removed)
+        if options.postrun:
+            status = subprocess.call (options.postrun, shell=True)
+            if status != 0:
+                logger.error ("Postrun %s failed with status %s", options.postrun, status)
 
         if options.loop:
             time.sleep(float(options.loop))
