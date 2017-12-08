@@ -97,7 +97,7 @@ def s3_cache_delete(bucket, key, cache, creds):
     if os.path.exists(cache_filename):
         os.remove (cache_filename)
     s3_client = boto3.client('s3', **creds)
-    s3_client.delete_object (bucket, key)
+    s3_client.delete_object (Bucket = bucket, Key=key)
     #k = Key(bucket)
     #k.key = key
     #k.delete()
