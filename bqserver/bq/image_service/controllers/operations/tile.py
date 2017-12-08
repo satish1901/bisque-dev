@@ -39,11 +39,11 @@ __all__ = [ 'TileOperation' ]
 
 from bq.util.locks import Locks
 from bq.util.mkdir import _mkdir
-from bq.image_service.controllers.exceptions import ImageServiceException
+from bq.image_service.controllers.exceptions import ImageServiceException, ImageServiceFuture
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
-from bq.image_service.controllers.imgsrv import default_format, default_tile_size, min_level_size
+from bq.image_service.controllers.defaults import default_format, default_tile_size, min_level_size
 
 log = logging.getLogger("bq.image_service.operations.tile")
 
@@ -133,8 +133,8 @@ class TileOperation(BaseOperation):
             # ensure the file was created
             with Locks(pyramid, failonread=True) as l:
                 if l.locked is False: # dima: never wait, respond immediately
-                    raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
-                pass
+                    fff = (width*height) / (10000*10000)
+                    raise ImageServiceFuture((15*fff,30*fff))
 
             # compute the number of pyramidal levels
             # sz = max(width, height)

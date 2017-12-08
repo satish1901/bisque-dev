@@ -23,11 +23,11 @@ from lxml import etree
 __all__ = [ 'RoiOperation' ]
 
 from bq.util.locks import Locks
-from bq.image_service.controllers.exceptions import ImageServiceException
+from bq.image_service.controllers.exceptions import ImageServiceException, ImageServiceFuture
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
-from bq.image_service.controllers.imgsrv import default_format
+from bq.image_service.controllers.defaults import default_format
 
 log = logging.getLogger("bq.image_service.operations.roi")
 
@@ -104,14 +104,13 @@ class RoiOperation(BaseOperation):
                     with open(lfile, 'wb') as f:
                         f.write('#Temporary locking file')
                 elif l.locked is False: # dima: never wait, respond immediately
-                    raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
+                    raise ImageServiceFuture((1,15))
 
         # ensure the operation is finished
         if os.path.exists(lfile):
             with Locks(lfile, failonread=True) as l:
                 if l.locked is False: # dima: never wait, respond immediately
-                    raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
-                pass
+                    raise ImageServiceFuture((1,15))
 
         info = {
             'image_num_x': x2-x1,

@@ -25,3 +25,14 @@ class ImageServiceException(Exception):
     def __init__(self, code, message):
         self.code = code
         self.message = message
+
+class ImageServiceFuture(Exception):
+    """Raised when any operation timeout or is already locked
+
+    Attributes:
+        timeout_range: a range of seconds for a re-request: (1, 15)
+    """
+
+    def __init__(self, timeout_range=None):
+        self.timeout_range = timeout_range or (1,20)
+

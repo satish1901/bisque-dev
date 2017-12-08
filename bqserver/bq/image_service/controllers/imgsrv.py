@@ -35,20 +35,17 @@ from bq.util.urlpaths import url2localpath
 
 from bq.util.locks import Locks
 from bq.util.io_misc import safetypeparse, safeint
+import bq.util.responses as responses
 
-
-default_format = 'bigtiff'
-default_tile_size = 512
-min_level_size = 128
 converters_preferred_order = ['openslide', 'imgcnv', 'ImarisConvert', 'bioformats']
 
-
-from .exceptions import ImageServiceException
+from .exceptions import ImageServiceException, ImageServiceFuture
 from .process_token import ProcessToken
 from .operation_base import BaseOperation
 from .converter_dict import ConverterDict
 from .resource_cache import ResourceCache
 from .plugin_manager import PluginManager
+from .defaults import default_format, default_tile_size
 
 from .converters.converter_imgcnv import ConverterImgcnv
 from .converters.converter_imaris import ConverterImaris
@@ -238,12 +235,12 @@ class ImageServer(object):
                         f.write(etree.tostring(image))
                     return info
                 elif l.locked is False: # dima: never wait, respond immediately
-                    raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
+                    raise ImageServiceFuture((1,10))
 
         # info file exists
         with Locks(infofile, failonread=True) as l:
             if l.locked is False: # dima: never wait, respond immediately
-                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
+                raise ImageServiceFuture((1,10))
             try:
                 image = etree.parse(infofile).getroot()
                 for k,v in image.attrib.iteritems():
@@ -417,8 +414,7 @@ class ImageServer(object):
                         log.debug('FINISHED %s: returning pre-cached result %s', ident, token.data)
                         with Locks(token.data, failonread=True) as l:
                             if l.locked is False: # dima: never wait, respond immediately
-                                raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
-                            pass
+                                raise ImageServiceFuture((1,10))
                         return token
 
             log.debug('STARTING full processing %s: with %s', ident, token)
@@ -427,7 +423,7 @@ class ImageServer(object):
             # this will imitate overloading the server with processing requests
             # breaker = random.choice([False, True])
             # if breaker:
-            #     raise ImageServiceException(202, 'The request is being processed by the system, come back soon...' )
+            #     raise ImageServiceFuture((1,15))
 
             # ----------------------------------------------
             # start the processing
