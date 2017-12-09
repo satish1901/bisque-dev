@@ -21,10 +21,10 @@ def create_resource(resource):
     server = find_server()
     return server.create_resource(resource=resource)
 
-def localpath(uniq_ident, resource=None):
+def localpath(uniq_ident, resource=None, blocking=True):
     "return localpath of resource by ident (uniq)"
     server = find_server()
-    return server.localpath(uniq_ident, resource=resource)
+    return server.localpath(uniq_ident, resource=resource, blocking=blocking)
 
 
 def delete_blob(uniq_ident):

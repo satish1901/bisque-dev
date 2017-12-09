@@ -33,7 +33,7 @@ from bq.util.mkdir import _mkdir
 from bq.util.compat import OrderedDict
 from bq.util.urlpaths import url2localpath
 
-from bq.util.locks import Locks
+from bq.util.locks import Locks, FileLocked
 from bq.util.io_misc import safetypeparse, safeint
 import bq.util.responses as responses
 
@@ -192,7 +192,11 @@ class ImageServer(object):
         #         return Blobs(path=files[0], sub=None, files=files if len(files)>1 else None)
 
         #return blob_service.localpath(ident, resource=resource) or raise ImageServiceException (404, 'File not available from blob service')
-        blobs = self.cache.get_blobs(ident)
+        try:
+           blobs = self.cache.get_blobs(ident, blocking=False)
+        except FileLocked:
+            raise ImageServiceFuture((30,60))
+
         if blobs is None:
             raise ImageServiceException (404, 'File not available from blob service')
         return blobs

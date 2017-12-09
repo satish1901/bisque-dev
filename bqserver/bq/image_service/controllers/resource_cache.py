@@ -79,7 +79,7 @@ class ResourceDescriptor(object):
         self.meta = meta
         return self.meta
 
-    def get_blobs(self):
+    def get_blobs(self, blocking=True):
         self.validate()
         if self.files is not None:
             # dima: do file existence check here
@@ -87,7 +87,7 @@ class ResourceDescriptor(object):
             #log.debug('%s blob from cache'%self.uniq)
             return self.files
         self.get_resource()
-        self.files = blob_service.localpath(self.uniq, resource=self.resource)
+        self.files = blob_service.localpath(self.uniq, resource=self.resource, blocking=blocking)
         self.ts_files = datetime.now()
         return self.files
 
@@ -119,7 +119,9 @@ class ResourceCache(object):
         d = self.get_descriptor(ident)
         return d.get_metadata()
 
-    def get_blobs(self, ident):
+    def get_blobs(self, ident, blocking=True):
+        ''' Blocking option allows fail exceptions on resources that are be
+        '''
         d = self.get_descriptor(ident)
-        return d.get_blobs()
+        return d.get_blobs(blocking=blocking)
 
