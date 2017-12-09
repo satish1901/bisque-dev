@@ -27,6 +27,9 @@ LOCK_SLEEP = 0.3
 MAX_SLEEP  = 8
 TIMEOUT = 0
 
+class FileLocked(Exception):
+    pass
+
 class Locks (object):
     log = logging.getLogger('bq.util.locks')
 

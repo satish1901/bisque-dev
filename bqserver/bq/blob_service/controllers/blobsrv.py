@@ -508,7 +508,7 @@ class BlobServer(RestController, ServiceMixin):
         return resource
 
 
-    def localpath (self, uniq_ident, resource=None):
+    def localpath (self, uniq_ident, resource=None, blocking=True):
         "Find  local path for the identified blob, using workdir for local copy if needed"
         if resource is None:
             resource = data_service.resource_load (uniq=uniq_ident, view='full')
