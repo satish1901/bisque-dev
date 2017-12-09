@@ -194,10 +194,11 @@ def force_load(resource):
 
 def modified_resource(resource):
     #cachename = os.path.join(self.cachepath, self._cache_name(url, user))
-    log.debug ("modified %s" % resource)
+
+    log.debug ("modified %s" ,  str(resource))
     resource = force_load(resource)
     if hasattr(resource, 'ts'):
-        return resource.ts
+        return resource.ts # pylint: disable=no-member
     return None
 
 def etag_resource(resource):
@@ -825,11 +826,11 @@ class Resource(ServiceController):
                     self.server_cache.save (request.url,
                                             response.headers,
                                             value, user=user_id)
+                    self.add_cache_header(resource)
             else: # http_method == HEAD
                 value = method(resource, **kw)
 
             #set the last modified date header for the response
-            self.add_cache_header(resource)
             return value
 
         except identity.BQIdentityException:
