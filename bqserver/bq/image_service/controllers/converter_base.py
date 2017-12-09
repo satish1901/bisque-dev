@@ -14,6 +14,7 @@ from bq.util.compat import OrderedDict
 from itertools import groupby
 from bq.util.locks import Locks
 import bq.util.io_misc as misc
+import bq.util.responses as responses
 
 from .exceptions import ImageServiceException, ImageServiceFuture
 from .process_token import ProcessToken

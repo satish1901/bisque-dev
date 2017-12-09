@@ -228,7 +228,10 @@ class ResponseCache(object):
                 #dolink (f.name, cachename)
 
         except (OSError, IOError) as e:
-            log.exception ("problem in cache save of %s", cachename)
+            if os.name == 'nt':
+                log.debug ("problem in cache save of %s", cachename)
+            else:
+                log.exception ("problem in cache save of %s", cachename)
 
     def fetch(self, url,user):
         #log.debug ('cache fetch %s' % url)

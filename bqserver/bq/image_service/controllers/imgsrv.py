@@ -198,7 +198,7 @@ class ImageServer(object):
             raise ImageServiceFuture((30,60))
 
         if blobs is None:
-            raise ImageServiceException (404, 'File not available from blob service')
+            raise ImageServiceException (responses.NOT_FOUND, 'File not available from blob service')
         return blobs
 
     def getImageInfo(self, filename, series=0, infofile=None, meta=None):
@@ -282,7 +282,7 @@ class ImageServer(object):
 
     def imageconvert(self, token, ifnm, ofnm, fmt=None, extra=None, dims=None, **kw):
         if not token.isFile():
-            raise ImageServiceException(400, 'Convert: input is not an image...' )
+            raise ImageServiceException(responses.BAD_REQUEST, 'Convert: input is not an image...' )
         fmt = fmt or token.format or default_format
 
         command = []
@@ -333,7 +333,7 @@ class ImageServer(object):
 
             if r is None or os.path.getsize(ometiff)<16:
                 log.error('Convert %s: failed for [%s]', token.resource_id, ifnm)
-                raise ImageServiceException(415, 'Convert failed' )
+                raise ImageServiceException(responses.UNSUPPORTED_MEDIA_TYPE, 'Convert failed' )
 
         return self.converters[ConverterImgcnv.name].convert( ProcessToken(ifnm=ometiff), ofnm, fmt=fmt, extra=command)
 
@@ -367,7 +367,7 @@ class ImageServer(object):
     def request(self, method, token, arguments):
         '''Apply an image request'''
         if method not in self.operations.plugins:
-            raise ImageServiceException(400, 'Requested operation does not exist: %s'%method)
+            raise ImageServiceException(responses.BAD_REQUEST, 'Requested operation does not exist: %s'%method)
         return self.operations.plugins[method].action (token, arguments)
         # try:
         #     return self.operations.plugins[method].action (token, arguments)
@@ -438,7 +438,7 @@ class ImageServer(object):
             token.init(resource_id=ident, ifnm=b.path, imagemeta=kw.get('imagemeta', None), files=b.files, timeout=kw.get('timeout', None), resource_name=resource.get('name'), initial_workpath=workpath, dryrun=None)
 
             if not os.path.exists(b.path):
-                raise ImageServiceException(404, 'File not found...')
+                raise ImageServiceException(responses.NOT_FOUND, 'File not found...')
 
             if len(query)>0:
                 token.dims = self.getImageInfo(filename=token.first_input_file(), series=token.series, infofile='%s.info'%token.data, meta=token.meta)
