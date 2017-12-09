@@ -111,7 +111,7 @@ def main():
             if status != 0:
                 logger.error ("Postrun %s failed with status %s", options.postrun, status)
             else:
-                logger.info ("POSTRUN %s: OK", options.prerun)
+                logger.info ("POSTRUN %s: OK", options.postrun)
 
         if options.loop:
             time.sleep(float(options.loop))
