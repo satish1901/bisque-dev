@@ -109,3 +109,13 @@ pyramidal:
 Tile retreival in seconds, avg: 0.053060002327 max: 0.108000040054 min: 0.0370001792908, std: 0.0144753542777
 Tile retreival in seconds, avg: 0.0141599988937 max: 0.0220000743866 min: 0.0, std: 0.00537535417267
 
+5.12
+====================
+
+planar:
+Tile retreival in seconds, avg: 0.16704000473 max: 1.21400022507 min: 0.0460000038147, std: 0.345106309145
+Tile retreival in seconds, avg: 0.0148799991608 max: 0.018000125885 min: 0.0130000114441, std: 0.00124320485281
+
+pyramidal:
+Tile retreival in seconds, avg: 0.0577400016785 max: 0.101000070572 min: 0.0449998378754, std: 0.0146639732638
+Tile retreival in seconds, avg: 0.0158199977875 max: 0.0199999809265 min: 0.0139999389648, std: 0.00187286357735

@@ -53,4 +53,5 @@ INTERNAL_SERVER_ERROR   = 500 # A generic error message, given when an unexpecte
                               # more specific message is suitable
 NOT_IMPLEMENTED         = 501 # The server either does not recognize the request method, or it lacks the ability
                               # to fulfill the request. Usually this implies future availability
+GATEWAY_TIMEOUT         = 504 # The server was acting as a gateway or proxy and did not receive a timely response from the upstream server.
 INSUFFICIENT_STORAGE    = 507 # The server is unable to store the representation needed to complete the request

@@ -120,7 +120,7 @@ class ResourceCache(object):
         return d.get_metadata()
 
     def get_blobs(self, ident, blocking=True):
-        ''' Blocking option allows fail exceptions on resources that are be
+        ''' Blocking option allows fail exceptions on resources that are being fetched by other processes
         '''
         d = self.get_descriptor(ident)
         return d.get_blobs(blocking=blocking)
