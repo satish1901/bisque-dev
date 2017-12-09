@@ -85,6 +85,7 @@ from .formats import find_inputer, find_formatter
 log = logging.getLogger("bq.data_service.resource")
 
 CACHING  = asbool(config.get ('bisque.data_service.caching', True))
+ETAGS    = asbool(config.get ('bisque.data_service.etags', True))
 #SERVER_CACHE = asbool(config.get('bisque.data_service.server_cache', True))
 CACHEDIR = config.get ('bisque.data_service.server_cache', data_path('server_cache'))
 
@@ -166,6 +167,50 @@ def safename(filename, user):
     #return ",".join((str(user), filename, filemd5))
     return ",".join((str(user), filename))
 
+
+
+def force_load(resource):
+    "Force the loading the of resource from the database"
+
+    from sqlalchemy.orm import Query
+    from bq.data_service.model import Taggable
+    if isinstance(resource, tuple):
+        parent = getattr(tg.request.bisque,'parent', None)
+        #log.debug ("invalidate: tuple using %s", parent) #provokes logging error
+        if parent:
+            resource = parent
+            #log.debug ("CACHE parent %s", parent)
+        else:
+            # The a pure form i.e. /data_service/[image] with a POST
+            if resource[0] == 'resource':
+                # special case for POST to /data_service.. resource type is unknown so remove all
+                resource = ('', resource[1])
+            resource = Bunch(resource_uniq = None, resource_type = resource [0], permission="published")
+    if isinstance(resource, Query):
+        resource = resource.first() #pylint: disable=no-member
+    if isinstance(resource, Taggable):
+        resource = resource.document #pylint: disable=no-member
+    return resource
+
+def modified_resource(resource):
+    #cachename = os.path.join(self.cachepath, self._cache_name(url, user))
+    log.debug ("modified %s" % resource)
+    resource = force_load(resource)
+    if hasattr(resource, 'ts'):
+        return resource.ts
+    return None
+
+def etag_resource(resource):
+    mtime =  modified_resource(resource)
+    log.debug ('etag_resource %s', mtime)
+    if mtime:
+        # pylint: disable=E1103
+        return hashlib.md5 (str(mtime)).hexdigest()
+        # pylint: enable=E1103
+    return None
+
+
+
 class BaseCache(object):
     def fetch(self, url, user):
         return None, None
@@ -180,13 +225,12 @@ class BaseCache(object):
     def etag (self, url, user):
         return None
     def modified_resource(self, resource):
-        return None
+        return getattr (resource, 'ts', None)
     def etag_resource (self, resource):
-        return None
+        return getattr (resource, 'ts', None)
 
 
-
-class ResponseCache(object):
+class ResponseCache(BaseCache):
     known_headers = [ 'Content-Length', 'Content-Type' ]
 
     def __init__(self, cachepath):
@@ -305,13 +349,6 @@ class ResponseCache(object):
             return datetime.utcfromtimestamp(os.stat(cachename).st_mtime)
         return None
 
-    def modified_resource(self, resource):
-        #cachename = os.path.join(self.cachepath, self._cache_name(url, user))
-        log.debug ("modified %s" % resource)
-        if hasattr(resource, 'ts'):
-            return resource.ts
-        return None
-
     def etag (self, url, user):
         mtime =  self.modified(url, user)
         if mtime:
@@ -321,18 +358,11 @@ class ResponseCache(object):
             # pylint: enable=E1103
         return None
 
-    def force_load (self, resource):
-        return resource
+    def modified_resource(self, resource):
+        return modified_resource (resource)
+    def etag_resource (self, resource):
+        return etag_resource (resource)
 
-    def etag_resource(self, resource):
-        resource = self.force_load(resource)
-        mtime =  self.modified_resource(resource)
-        log.debug ('etag_resource %s', mtime)
-        if mtime:
-            # pylint: disable=E1103
-            return hashlib.md5 (str(mtime)).hexdigest()
-            # pylint: enable=E1103
-        return None
 
 
 class HierarchicalCache(ResponseCache):
@@ -407,29 +437,6 @@ class HierarchicalCache(ResponseCache):
         #     #    break
 
 
-    def force_load(self, resource):
-        "Force the loading the of resource from the database"
-
-        from sqlalchemy.orm import Query
-        from bq.data_service.model import Taggable
-        if isinstance(resource, tuple):
-            parent = getattr(tg.request.bisque,'parent', None)
-            #log.debug ("invalidate: tuple using %s", parent) #provokes logging error
-            if parent:
-                resource = parent
-                #log.debug ("CACHE parent %s", parent)
-            else:
-                # The a pure form i.e. /data_service/[image] with a POST
-                if resource[0] == 'resource':
-                    # special case for POST to /data_service.. resource type is unknown so remove all
-                    resource = ('', resource[1])
-                resource = Bunch(resource_uniq = None, resource_type = resource [0], permission="published")
-        if isinstance(resource, Query):
-            resource = resource.first() #pylint: disable=no-member
-        if isinstance(resource, Taggable):
-            resource = resource.document #pylint: disable=no-member
-        return resource
-
     def invalidate_resource(self, resource, user):
         """ Invalidate cached files and queries for a resource
 
@@ -445,7 +452,7 @@ class HierarchicalCache(ResponseCache):
                   USER,*#
            if published then delete all public queries
         """
-        resource = self.force_load(resource)
+        resource = force_load(resource)
         if resource and not hasattr (resource, 'resource_uniq'):
             log.error ("invalidate: Cannot determine resource %s",  resource)
             return
@@ -587,32 +594,33 @@ class Resource(ServiceController):
 
 
     def check_cache_header(self, method, resource):
-        if not CACHING: return
+        #if not CACHING: return
 
-        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
-        # GET/HEAD check if client-side stale resource has changed.
-        # PUT : only with * -> only if entity does not exist
-        #if 'If-None-Match' in tg.request.headers:
-        htag = tg.request.headers.get('If-None-Match', None)
-        if htag is not None and method in ('get', 'head'):
-            etag = self.get_entity_tag(resource)
-            if etag is not None and etag == htag:
-                abort(304)
-            return
+        if ETAGS:
+            # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+            # GET/HEAD check if client-side stale resource has changed.
+            # PUT : only with * -> only if entity does not exist
+            #if 'If-None-Match' in tg.request.headers:
+            htag = tg.request.headers.get('If-None-Match', None)
+            if htag is not None and method in ('get', 'head'):
+                etag = self.get_entity_tag(resource)
+                if etag is not None and etag == htag:
+                    abort(304)
+                return
 
-        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Match
-        # GET, HEAD return resource  if etag  is still valid
-        # Others: apply operation only if matches
-        #if 'If-Match' in tg.request.headers:
-        htag = tg.request.headers.get('If-Match', None)
-        if htag is not None:
-            etag = self.get_entity_tag(resource)
-            log.debug ("IFMATCH %s = %s", htag, etag)
-            if etag is not None and etag != htag:
-                abort(412) # precondtion failed
-            return
+            # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Match
+            # GET, HEAD return resource  if etag  is still valid
+            # Others: apply operation only if matches
+            #if 'If-Match' in tg.request.headers:
+            htag = tg.request.headers.get('If-Match', None)
+            if htag is not None:
+                etag = self.get_entity_tag(resource)
+                log.debug ("IFMATCH %s = %s", htag, etag)
+                if etag is not None and etag != htag:
+                    abort(412) # precondtion failed
+                return
 
-        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
+        # Https://Developer.Mozilla.Org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
         # GET,HEAD only
         #if 'If-Modified-Since' in tg.request.headers:
         modified_check = tg.request.headers.get('If-Modified-Since', None)
@@ -625,20 +633,22 @@ class Resource(ServiceController):
                     abort(304)
 
     def add_cache_header(self, resource):
-        if not CACHING: return
-        etag = self.get_entity_tag(resource)
-        if etag:
-            tg.response.headers['ETag'] = etag
+        #if not CACHING: return
+
+        if ETAGS:
+            etag = self.get_entity_tag(resource)
+            if etag:
+                tg.response.headers['ETag'] = etag
             return
 
         last_modified = self.get_last_modified_date(resource)
         #logger.debug('response: ' + str(last_modified))
-        if last_modified is None:
-            tg.response.headers['Cache-Control'] = 'public, max-age=1'
-            last_modified = datetime(*gmtime()[:6])
-
-        tg.response.headers['Last-Modified'] = (
-            datetime.strftime(last_modified, "%a, %d %b %Y %H:%M:%S GMT"))
+        #if last_modified is  None:
+            #tg.response.headers['Cache-Control'] = 'public, max-age=1'
+            #last_modified = datetime(*gmtime()[:6])
+        if last_modified is not None:
+            tg.response.headers['Last-Modified'] = (
+                datetime.strftime(last_modified, "%a, %d %b %Y %H:%M:%S GMT"))
 
     def invalidate(self, url):
         self.server_cache.invalidate(url, user=identity.get_user_id())
@@ -672,7 +682,7 @@ class Resource(ServiceController):
 
 
         if not path: #If the request path is to a collection.
-            self.check_cache_header(http_method, resource)
+            #self.check_cache_header(http_method, resource)
             if http_method == 'post':
                 #If the method is a post, we call self.create which returns
                 #a class which is passed into the self.new method.
@@ -680,25 +690,31 @@ class Resource(ServiceController):
                 assert resource is not None
                 method_name = 'new'
             elif http_method == 'get':
-                #If the method is a get, call the self.index method, which
-                #should list the contents of the collection.
-                accept_header = headers = value = None
-                if usecache:
-                    headers, value = self.server_cache.fetch(request.url, user=user_id)
-                    if headers:
-                        _, accept_header = find_formatter (accept_header=request.headers.get ('accept'))
-                        content_type  = headers.get ('Content-Type')
 
-                if value and accept_header == content_type:
-                    response.headers.update(headers) # cherrypy.response.headers.update (headers)
-                else:
-                    #self.add_cache_header(None)
-                    value =  self.dir(**kw)
-                    self.server_cache.save (request.url,
-                                            response.headers,
-                                            value, user=user_id)
-                self.add_cache_header(resource)
-                return value
+                resource = getattr(request.bisque,'parent', None)
+                method_name = 'dir'
+                # if parent:
+                #     self.check_cache_header (http_method, parent)
+
+                # #If the method is a get, call the self.index method, which
+                # #should list the contents of the collection.
+                # accept_header = headers = value = None
+                # if usecache:
+                #     headers, value = self.server_cache.fetch(request.url, user=user_id)
+                #     if headers:
+                #         _, accept_header = find_formatter (accept_header=request.headers.get ('accept'))
+                #         content_type  = headers.get ('Content-Type')
+
+                # if value and accept_header == content_type:
+                #     response.headers.update(headers) # cherrypy.response.headers.update (headers)
+                # else:
+                #     #self.add_cache_header(None)
+                #     value =  self.dir(**kw)
+                #     self.server_cache.save (request.url,
+                #                             response.headers,
+                #                             value, user=user_id)
+                # #self.add_cache_header(resource)
+                # return value
             elif http_method == 'put':
                 resource = getattr(bisque,'parent', None)
                 method_name = 'replace_all'
@@ -713,7 +729,7 @@ class Resource(ServiceController):
                 #Any other methods get rejected.
                 abort(501)
 
-        if resource is None:
+        if resource is None and method_name != 'dir':
             #if we don't have a resource by now, (it wasn't created)
             #then try and load one.
             if path:
@@ -825,7 +841,8 @@ class Resource(ServiceController):
             etag =  self.server_cache.etag_resource (resource)
             #etag =  self.server_cache.etag (tg.request.url, identity.get_user_id())
             return etag
-        return None
+        return etag_resource (resource)
+        #return None
     def get_last_modified_date(self, resource):
         """
         returns the last modified date of the resource.
@@ -833,11 +850,12 @@ class Resource(ServiceController):
         #log.debug ("CHECK MODFIED: %s " %tg.request.url)
 
         if self.cache:
-            return self.server_cache.modified (tg.request.url, identity.get_user_id())
-            #return self.server_cache.modified_resource (resource)
-        return None
+            #return self.server_cache.modified (tg.request.url, identity.get_user_id())
+            return self.server_cache.modified_resource (resource)
+        return modified_resource (resource)
+        #return None
 
-    def dir(self, **kw):
+    def dir(self, resource, **kw):
         """
         returns the representation of a collection of resources.
         """

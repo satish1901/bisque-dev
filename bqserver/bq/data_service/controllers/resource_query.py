@@ -1204,7 +1204,7 @@ def resource_auth (resource, action=RESOURCE_READ, newauth=None, notify=True, in
     return []
 
 
-def resource_delete(resource, user_id=None):
+def resource_delete(resource, user_id=None, check_acl=True, check_blob=True, check_references=True):
     """Delete the given resource:
     1. if owner delete the resource
     2. else remove ACL permissions
@@ -1216,7 +1216,8 @@ def resource_delete(resource, user_id=None):
     log.debug('resource_delete %s: start' , resource_uniq)
     if  user_id is None:
         user_id = get_user_id()
-    if  resource.owner_id != user_id  \
+    if  check_acl \
+        and resource.owner_id != user_id  \
         and resource.resource_parent_id is None \
         and not is_admin(): # user_id != get_admin_id():
         # Remove the ACL only
@@ -1232,20 +1233,22 @@ def resource_delete(resource, user_id=None):
     # ACL, values etc..
     #
     # KGK 9/26/17 DBSession.autoflush = False
-    value_count = DBSession.query(Value).filter_by(valobj = resource.id).count()
-    if value_count:
-        resource.resource_hidden = True
-        log.debug('hiding resource due to references')
-        return
+    if check_references:
+        value_count = DBSession.query(Value).filter_by(valobj = resource.id).count()
+        if value_count:
+            resource.resource_hidden = True
+            log.debug('hiding resource due to references')
+            return
 
     # Delete any ACLs refering to object
-    q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
-    q.delete()
+    if check_acl:
+        q = DBSession.query (TaggableAcl).filter_by (taggable_id = resource.id)
+        q.delete()
 
     ts = datetime.now()
     resource.document.ts = ts
     # We can delete the resource .. check it has an associated blob
-    if resource_uniq is not None:
+    if check_blob and resource_uniq is not None:
         try:
             from bq import blob_service
             blob_service.delete_blob (resource_uniq)
