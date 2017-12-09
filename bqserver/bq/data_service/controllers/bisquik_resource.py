@@ -206,7 +206,7 @@ class BisquikResource(resource.Resource):
         return formatter(response,view=view)
 
 
-    def dir(self, **kw):
+    def dir(self, resource, **kw):
         """GET /ds/images : fetch group of object
 
         Create a listing of the resource.  Several options are allowed
@@ -226,7 +226,8 @@ class BisquikResource(resource.Resource):
         #limit = kw.pop('limit', None)
         log.info ('DIR  %s %s' , request.url, self.uri)
         #  Do not use loading
-        parent = getattr(request.bisque,'parent', None)
+        #parent = getattr(request.bisque,'parent', None)
+        parent = resource
         #specials = set(['tag_names', 'tag_values', 'gob_types'])
         if kw.pop('noparent', None):
             parent = False

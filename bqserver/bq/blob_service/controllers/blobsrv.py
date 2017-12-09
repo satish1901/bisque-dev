@@ -518,7 +518,7 @@ class BlobServer(RestController, ServiceMixin):
         if resource is None:
             log.warn ('requested resource %s was not available/found' , uniq_ident)
             return None
-        return self.mounts.fetch_blob(resource)
+        return self.mounts.fetch_blob(resource, blocking=blocking)
 
     def delete_blob(self, uniq_ident):
         """Delete the  blob reference defined by this resource

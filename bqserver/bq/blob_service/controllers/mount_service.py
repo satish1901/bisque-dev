@@ -470,7 +470,7 @@ class MountServer(TGController):
         log.debug ("delete from %s of %s = %s", store_name, path, etree.tostring(q))
         #if  q.tag != 'link':
         #    return False
-        data_service.del_resource(q)
+        data_service.del_resource(q, check_acl=False, check_blob=False, check_references=False)
         if delete_resource and value is not None:
             data_service.del_resource(q.get ('value'))
         return True
@@ -719,7 +719,7 @@ class MountServer(TGController):
             return url2localpath(storeurl)
         return None
 
-    def fetch_blob(self, resource):
+    def fetch_blob(self, resource, blocking):
         'return a (set) path(s) for a resource'
         log.debug ("fetch_blob %s", resource.get ('resource_uniq'))
 
@@ -741,7 +741,7 @@ class MountServer(TGController):
             files = []
             sub = ''
             for storeurl in bloburls:
-                localblob = driver.pull (storeurl)
+                localblob = driver.pull (storeurl, blocking)
                 if localblob is None:
                     log.error ("Failed to fetch blob for %s of %s during pull %s", uniq, bloburls, storeurl)
                     return None
@@ -765,7 +765,7 @@ class MountServer(TGController):
         links = data_service.query ('link', parent=False, value = resource.get ('resource_uniq'), cache=False)
         for link in links:
             log.debug ("delete_blob: delete link %s", link.get('uri'))
-            data_service.del_resource(link)
+            data_service.del_resource(link, check_acl=False, check_blob=False, check_references=False)
 
 
     def delete_blob(self, resource):

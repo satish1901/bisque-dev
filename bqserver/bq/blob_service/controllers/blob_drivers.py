@@ -197,7 +197,7 @@ class StorageDriver(object):
         "Return validity of storeurl"
     def push(self, fp, storeurl, uniq=None):
         "Push a local file (file pointer)  to the store"
-    def pull (self, storeurl, localpath=None):
+    def pull (self, storeurl, localpath=None, blocking=True):
         "Pull a store file to a local location"
     def chmod(self, storeurl, permission):
         """Change permission of """
@@ -318,7 +318,7 @@ class LocalDriver (StorageDriver):
             log.warn ("local.write: File exists... trying %s", tounicode(localpath))
         raise DuplicateFile(localpath)
 
-    def pull (self, storeurl, localpath=None):
+    def pull (self, storeurl, localpath=None, blocking=True):
         "Pull a store file to a local location"
         #log.debug('local_store localpath: %s', path)
         path,sub = split_subpath(storeurl)
@@ -444,7 +444,7 @@ class IrodsDriver(StorageDriver):
             raise IllegalOperation ("irods push failed")
         return storeurl, flocal
 
-    def pull (self, storeurl, localpath=None):
+    def pull (self, storeurl, localpath=None, blocking=True):
         "Pull a store file to a local location"
         # dima: path can be a directory, needs listing and fetching all enclosed files
         log.info('irods.pull: %s' , storeurl)
@@ -557,7 +557,7 @@ class S3Driver(StorageDriver):
         flocal = s3_handler.s3_push_file(fp, self.bucket_id , s3_key, self.cache, self.creds)
         return s3_ident, flocal
 
-    def pull(self, storeurl, locapath=None):
+    def pull(self, storeurl, locapath=None, blocking=True):
         'return path to local copy of the s3 resource'
         # dima: path can be a directory, needs listing and fetching all enclosed files
 
@@ -566,7 +566,7 @@ class S3Driver(StorageDriver):
         storeurl,sub = split_subpath(storeurl)
         s3_key = storeurl.replace("s3://","")
         try:
-            path = s3_handler.s3_fetch_file(self.bucket_id, s3_key, self.cache, self.creds)
+            path = s3_handler.s3_fetch_file(self.bucket_id, s3_key, self.cache, self.creds, blocking=blocking)
             # dima: if path is a directory, list contents
             return Blobs(path=path, sub=sub, files=None)
         except boto.exception.S3ResponseError:
@@ -626,7 +626,7 @@ class HttpDriver(StorageDriver):
     def push(self, fp, filename, uniq=None):
         raise IllegalOperation('HTTP(S) write is not implemented')
 
-    def pull(self, http_ident,  localpath=None):
+    def pull(self, http_ident,  localpath=None, blocking=True):
         # dima: path can be a directory, needs listing and fetching all enclosed files
         raise IllegalOperation('HTTP(S) localpath is not implemented')
 
@@ -721,7 +721,7 @@ class SMBNetDriver(StorageDriver):
         log.debug ("smb wrote %s bytes", written)
         return "smb://%s/%s" % (sharename, path), None
 
-    def pull (self, storeurl, localpath=None):
+    def pull (self, storeurl, localpath=None, blocking=True):
         "Pull a store file to a local location"
         sharename, path = self.split_smb(storeurl)
         if self.conn:

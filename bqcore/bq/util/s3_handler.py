@@ -13,7 +13,7 @@ import botocore
 from bq.util.mkdir import _mkdir
 from bq.util.paths import data_path
 from bq.util.copylink import copy_link
-from bq.util.locks import Locks
+from bq.util.locks import Locks, FileLocked
 from bq.util.timer import Timer
 from bq.util.sizeoffmt import sizeof_fmt
 
@@ -27,7 +27,7 @@ log = logging.getLogger('bq.blobs.storage.s3')
 #    pass
 
 
-def s3_cache_fetch(bucket, key, cache, creds):
+def s3_cache_fetch(bucket, key, cache, creds, blocking):
 
     cache_filename = os.path.join(cache, key)
     if not os.path.exists(cache_filename):
@@ -43,7 +43,9 @@ def s3_cache_fetch(bucket, key, cache, creds):
                 log.info("S3 Downloaded %s %s in %s  (%s)/s",
                          cache_filename, sizeof_fmt(size_bytes), t.interval, sizeof_fmt (size_bytes/t.interval))
                 #k.get_contents_to_filename(cache_filename)
-        with Locks (cache_filename):
+        with Locks (cache_filename, failonread = (not blocking)) as l:
+            if l.locked is False:
+                raise FileLocked
             return cache_filename
         return None
 
@@ -102,10 +104,10 @@ def s3_cache_delete(bucket, key, cache, creds):
     #k.key = key
     #k.delete()
 
-def s3_fetch_file(bucket, key, cache, creds):
+def s3_fetch_file(bucket, key, cache, creds, blocking):
     if not os.path.exists(cache):
         _mkdir (cache)
-    localname = s3_cache_fetch(bucket, key, cache=cache,creds=creds)
+    localname = s3_cache_fetch(bucket, key, cache=cache,creds=creds, blocking=blocking)
     return localname
 
 def s3_isfile(bucket, key, creds):
