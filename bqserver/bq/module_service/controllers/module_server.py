@@ -188,7 +188,7 @@ class MexDelegate (Resource):
         return ""
 
     @expose(content_type='text/xml')
-    def dir(self, **kw):
+    def dir(self, resource, **kw):
         parent = getattr(self, 'parent',None)
         log.info ('MEX DIR %s ' , parent)
         return ""
@@ -1054,7 +1054,7 @@ class EngineResource (Resource):
         self.module_resource = module_resource
 
     @expose()
-    def dir(self, **kw):
+    def dir(self, resource, **kw):
         """Show all endpoint for modules
         """
 

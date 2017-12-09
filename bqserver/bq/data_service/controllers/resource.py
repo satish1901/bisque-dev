@@ -260,6 +260,9 @@ class ResponseCache(BaseCache):
         cachename = os.path.join(self.cachepath, self._cache_name(url, user))
         headers = dict ([ (k,v) for k,v in headers.items() if k in self.known_headers])
         log.debug (u'cache write %s to %s', url, cachename )
+        clen = headers.get ('Content-Length', None)
+        if not clen or clen=='0':
+            headers['Content-Length'] = str (len (value))
         try:
             with tempfile.NamedTemporaryFile (dir=os.path.dirname(cachename), delete=False) as f:
                 f.write (str (headers))
@@ -814,9 +817,11 @@ class Resource(ServiceController):
                         _, accept_header = find_formatter (accept_header=request.headers.get ('accept'))
                 if value and accept_header == content_type:
                     response.headers.update (headers)
+                    return value
                 else:
                     #run the requested method, passing it the resource
                     value = method(resource, **kw)
+                    # SET content length?
                     self.server_cache.save (request.url,
                                             response.headers,
                                             value, user=user_id)

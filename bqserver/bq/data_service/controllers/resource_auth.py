@@ -213,13 +213,13 @@ class ResourceAuth(Resource):
     def create(self, **kw):
         return int
 
-    def dir(self, **kw):
+    def dir(self, resource, **kw):
         'Read the list of authorization records associated with the parent resource'
         #baseuri = request.url
         format = kw.pop('format', None)
         view = kw.pop('view', None)
         recurse = kw.pop('recurse', None)
-        resource = check_access(request.bisque.parent, RESOURCE_READ)
+        resource = check_access(resource, RESOURCE_READ)
         log.debug ("AUTH %s  %s" , resource, request.environ)
         response = etree.Element('resource', uri=request.url)
 
