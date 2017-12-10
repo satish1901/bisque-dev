@@ -27,11 +27,11 @@ class Timer(object):#pylint disable-msg=R0903
         self.end = walltime()
         self.interval = self.end - self.start
 
-    def start(self):
+    def start_timer(self):
         self.start = walltime()
         return self
 
-    def stop(self, *args):
+    def stop_timer(self, *args):
         self.end = walltime()
         self.interval = self.end - self.start
         return self
