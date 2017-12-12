@@ -28,6 +28,50 @@ def iter_files_by_atime(dirname, include_pattern=None, exclude_pattern=None):
     return sorted(iter_files(dirname, include_pattern, exclude_pattern), key = lambda tup: (tup[1], -tup[2]))   # sort by increasing atime and decreasing size (delete larger files first)
 
 
+def scandir(dirname, options, logger):
+    """Scan a directory freeing oldest files until free target is achieved
+    """
+    stats = os.statvfs(dirname)
+    f_bavail = stats.f_bavail
+    f_blocks = stats.f_blocks
+    f_bfree = stats.f_bfree
+    percent_free = percent_free_last = 100.0 - ((f_blocks-f_bfree) * 100.0 / (f_blocks-f_bfree+f_bavail))
+    files_removed = 0
+    logger.info("Filesystem %s before cleaning %s%% free" ,  dirname, int(percent_free))
+    if percent_free < float(options.capacity):
+        for filename, _, size in iter_files_by_atime(dirname, include_pattern=options.include_pattern, exclude_pattern=options.exclude_pattern):
+            try:
+                with Locks(None, filename, failonexist=False, mode='ab') as bq_lock:
+                    if bq_lock.locked:
+                        # we have exclusive lock => OK to delete
+                        if options.dryrun:
+                            logger.info("(simulated) delete %s (%s bytes)" ,  filename, size)
+                            f_bavail += math.ceil(float(size) / float(stats.f_frsize))
+                            f_bfree += math.ceil(float(size) / float(stats.f_frsize))
+                        else:
+                            logger.debug("delete %s (%s bytes)" ,  filename, size)
+                            os.remove(filename)
+                            files_removed += 1
+                            if percent_free_last < percent_free-0.1:
+                                # time to refresh stats
+                                stats = os.statvfs(dirname)
+                                f_bavail = stats.f_bavail
+                                f_bfree = stats.f_bfree
+                                percent_free_last = percent_free
+                            else:
+                                f_bavail += math.ceil(float(size) / float(stats.f_frsize))
+                                f_bfree += math.ceil(float(size) / float(stats.f_frsize))
+                        percent_free = percent_free_last = 100.0 - ((f_blocks-f_bfree) * 100.0 / (f_blocks-f_bfree+f_bavail))
+                        logger.debug("now %s%% free" ,  percent_free)
+                    else:
+                        logger.info("lock on %s failed, skipping" , filename)
+            except IOError:
+                logger.info("IO error accessing %s, skipping", filename)
+            if percent_free >= float(options.capacity):
+                break
+    logger.info("Filesystem %s after cleaning %s%% free, removed %s files" , dirname, int(percent_free), files_removed)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Clean specific files from directory trees.')
     parser.add_argument('paths', nargs='+', help='directory to clean')
@@ -40,6 +84,7 @@ def main():
     parser.add_argument('--log-ini', dest='logini', default=None, help='logging config ini')
     parser.add_argument('--prerun', default = None, help="Run script before processing")
     parser.add_argument('--postrun', default = None, help="Run script after processing")
+    parser.add_argument('--lockdir', default = None , help="Directory for locks (deafult is dir path). Ensures 1 cleanrer ")
 
     options = parser.parse_args()
     args = options.paths
@@ -67,46 +112,19 @@ def main():
                 logger.info ("PRERUN %s: OK", options.prerun)
 
         for dirname in dirnames:
-            stats = os.statvfs(dirname)
-            f_bavail = stats.f_bavail
-            f_blocks = stats.f_blocks
-            f_bfree = stats.f_bfree
-            percent_free = percent_free_last = 100.0 - ((f_blocks-f_bfree) * 100.0 / (f_blocks-f_bfree+f_bavail))
-            files_removed = 0
-            logger.info("Filesystem %s before cleaning %s%% free" ,  dirname, int(percent_free))
-            if percent_free < float(options.capacity):
-                for filename, _, size in iter_files_by_atime(dirname, include_pattern=options.include_pattern, exclude_pattern=options.exclude_pattern):
-                    try:
-                        with Locks(None, filename, failonexist=False, mode='ab') as bq_lock:
-                            if bq_lock.locked:
-                                # we have exclusive lock => OK to delete
-                                if options.dryrun:
-                                    logger.info("(simulated) delete %s (%s bytes)" ,  filename, size)
-                                    f_bavail += math.ceil(float(size) / float(stats.f_frsize))
-                                    f_bfree += math.ceil(float(size) / float(stats.f_frsize))
-                                else:
-                                    logger.debug("delete %s (%s bytes)" ,  filename, size)
-                                    os.remove(filename)
-                                    files_removed += 1
-                                    if percent_free_last < percent_free-0.1:
-                                        # time to refresh stats
-                                        stats = os.statvfs(dirname)
-                                        f_bavail = stats.f_bavail
-                                        f_bfree = stats.f_bfree
-                                        percent_free_last = percent_free
-                                    else:
-                                        f_bavail += math.ceil(float(size) / float(stats.f_frsize))
-                                        f_bfree += math.ceil(float(size) / float(stats.f_frsize))
-                                percent_free = percent_free_last = 100.0 - ((f_blocks-f_bfree) * 100.0 / (f_blocks-f_bfree+f_bavail))
-                                logger.debug("now %s%% free" ,  percent_free)
-                            else:
-                                logger.info("lock on %s failed, skipping" , filename)
-                    except IOError:
-                        logger.info("IO error accessing %s, skipping", filename)
-                    if percent_free >= float(options.capacity):
-                        break
-            logger.info("Filesystem %s after cleaning %s%% free, removed %s files" , dirname, int(percent_free), files_removed)
-        if options.postrun:
+            skipped = False
+            lockname = os.path.join (options.lockdir or dirname, 'xCLEANERx')
+            with Locks (None, lockname, failonexist=True) as fl:
+                if not fl.locked:
+                    # Somebody
+                    skipped = True
+                    logger.info ("%s was locked .. skipping ", lockname)
+                    break
+                with open(lockname, 'wb') as fl:
+                    scandir (dirname, options, logger)
+                    os.remove (lockname)
+
+        if not skipped and options.postrun:
             status = subprocess.call (options.postrun, shell=True)
             if status != 0:
                 logger.error ("Postrun %s failed with status %s", options.postrun, status)
@@ -117,6 +135,7 @@ def main():
             time.sleep(float(options.loop))
         else:
             break
+
 
 if __name__=="__main__":
     main()
