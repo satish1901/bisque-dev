@@ -208,6 +208,7 @@ class ConverterBase(object):
         '''converts input filename into output using exact arguments as provided in args'''
         if not cls.installed:
             return None
+        failonread = kw.get('failonread') or (not block_reads)
         tmp = None
         with Locks(ifnm, ofnm, failonexist=True) as l:
             if l.locked: # the file is not being currently written by another process
@@ -250,7 +251,7 @@ class ConverterBase(object):
 
         # make sure the write of the output file have finished
         if ofnm is not None and os.path.exists(ofnm):
-            with Locks(ofnm, failonread=(not block_reads)) as l:
+            with Locks(ofnm, failonread=failonread) as l:
                 if l.locked is False: # dima: never wait, respond immediately
                     raise ImageServiceFuture((1,15))
 
