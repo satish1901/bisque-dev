@@ -25,7 +25,7 @@ import bq.util.io_misc as misc
 from bq.image_service.controllers.exceptions import ImageServiceException, ImageServiceFuture
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converter_base import ConverterBase, Format
-from bq.image_service.controllers.defaults import block_reads
+from bq.image_service.controllers.defaults import block_reads, block_tile_reads
 
 log = logging.getLogger('bq.image_service.converter_imgcnv')
 
@@ -135,9 +135,12 @@ def safedecode(s, encoding):
         return s.decode(encoding)
     except UnicodeEncodeError:
         try:
-            return s.decode('utf8')
+            return s.decode('utf-8')
         except UnicodeEncodeError:
-            return unicode(s.encode('ascii', 'replace'))
+            try:
+                return s.decode('latin-1')
+            except UnicodeEncodeError:
+                return unicode(s.encode('ascii', 'replace'))
 
 def dicom_parse_date(v):
     # first take care of improperly stored values
@@ -160,8 +163,6 @@ def dicom_parse_time(v):
         return v.replace('.', ':')
     # format proper value
     return '%s:%s:%s'%(v[0:2], v[2:4], v[4:6])
-
-
 
 ################################################################################
 # ConverterImgcnv
@@ -319,6 +320,7 @@ class ConverterImgcnv(ConverterBase):
         '''converts input filename into output using exact arguments as provided in args'''
         if not cls.installed:
             return None
+        failonread = kw.get('failonread') or (not block_reads)
         tmp = None
         with Locks(ifnm, ofnm, failonexist=True) as l:
             if l.locked: # the file is not being currently written by another process
@@ -360,7 +362,7 @@ class ConverterImgcnv(ConverterBase):
 
         # make sure the write of the output file have finished
         if ofnm is not None and os.path.exists(ofnm):
-            with Locks(ofnm, failonread=(not block_reads)) as l:
+            with Locks(ofnm, failonread=failonread) as l:
                 if l.locked is False: # dima: never wait, respond immediately
                     raise ImageServiceFuture((1,15))
 
@@ -394,7 +396,8 @@ class ConverterImgcnv(ConverterBase):
                 tag, val = [ l.lstrip() for l in line.split(':', 1) ]
             except ValueError:
                 continue
-            val = val.replace('\n', '')
+            tag = safedecode(tag, 'utf-8').replace('%3A', ':')
+            val = safedecode(val, 'utf-8').replace('\n', '')
             if val != '':
                 rd[tag] = misc.safetypeparse(val)
 
@@ -446,6 +449,8 @@ class ConverterImgcnv(ConverterBase):
                 tag, val = [ l.strip() for l in line.split(':',1) ]
             except ValueError:
                 continue
+            tag = safedecode(tag, 'utf-8').replace('%3A', ':')
+            val = safedecode(val, 'utf-8').replace('\n', '')
             if tag not in cls.info_map:
                 continue
             rd[cls.info_map[tag]] = misc.safetypeparse(val.replace('\n', ''))
@@ -564,8 +569,9 @@ class ConverterImgcnv(ConverterBase):
         num_l = info.get('image_num_resolution_levels', 1)
         page=0
         if preproc == 'mid':
-            mx = (num_z if num_z>1 else min(num_t, 500))-1
-            page = min(max(0, mx/2), mx)
+            if num_z>1 or num_z>1:
+                mx = (num_z if num_z>1 else min(num_t, 500))-1
+                page = min(max(0, mx/2), mx)
         elif preproc != '':
             return None
 
@@ -817,7 +823,7 @@ class ConverterImgcnv(ConverterBase):
             except (Exception):
                 pass
 
-        return cls.run(ifnm, ofnm, command )
+        return cls.run(ifnm, ofnm, command, failonread=(not block_tile_reads) )
 
 
     #######################################

@@ -25,7 +25,7 @@ from bq.util.locks import Locks
 import bq.util.io_misc as misc
 
 from bq.image_service.controllers.exceptions import ImageServiceException, ImageServiceFuture
-from bq.image_service.controllers.defaults import min_level_size, block_reads
+from bq.image_service.controllers.defaults import min_level_size, block_reads, block_tile_reads
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converter_base import ConverterBase, Format
 from .converter_imgcnv import ConverterImgcnv
