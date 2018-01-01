@@ -438,8 +438,12 @@ class ConverterImgcnv(ConverterBase):
         if not os.path.exists(ifnm):
             return {}
 
-        #info = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-info', '-i', ifnm] )
-        info = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-meta-parsed', '-i', ifnm] )
+        #command = [cls.CONVERTERCOMMAND, '-info', '-i', ifnm]
+        command = [cls.CONVERTERCOMMAND, '-meta-parsed', '-i', ifnm]
+        if 'speed' in kw:
+            command.extend(['-speed', kw.get('speed')])
+
+        info = cls.run_read(ifnm, command )
         if info is None:
             return {}
         rd = {}
@@ -770,6 +774,9 @@ class ConverterImgcnv(ConverterBase):
                         command.extend(['-c', files[page+s]])
 
         command.extend([ '-tile', '%s,%s,%s,%s'%(sz,x,y,level)])
+
+        # add speed file
+        command.extend(['-speed', token.get_speed_file()])
 
         return command
         #return cls.run(ifnm, ofnm, command )

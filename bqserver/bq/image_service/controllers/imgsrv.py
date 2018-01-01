@@ -214,8 +214,9 @@ class ImageServer(object):
             with Locks(filename, infofile, failonexist=True) as l:
                 if l.locked: # the file is not being currently written by another process
                     # parse image info from original file
+                    file_speed = infofile.replace('.info', '.speed')
                     for n,c in self.converters.iteritems():
-                        info = c.info(ProcessToken(ifnm=filename, series=series))
+                        info = c.info(ProcessToken(ifnm=filename, series=series), speed=file_speed)
                         if info is not None and len(info)>0:
                             info['converter'] = n
                             break
@@ -305,6 +306,9 @@ class ImageServer(object):
 
         if token.histogram is not None:
             command.extend(['-ihst', token.histogram])
+
+        # add speed file
+        command.extend(['-speed', token.get_speed_file()])
 
         if kw.get('try_imgcnv', True) is True:
             r = self.converters[ConverterImgcnv.name].convert( token, ofnm, fmt=fmt, extra=command, respect_command_inputs=True, **kw)
