@@ -252,3 +252,7 @@ class ProcessToken(object):
 
     def first_input_file(self):
         return self.input[0] if isinstance(self.input, list) else self.input
+
+    def get_speed_file(self):
+        return '%s/%s.speed'%(self.initial_workpath, self.resource_id)
+
