@@ -21,6 +21,7 @@ from bq.util.compat import OrderedDict
 from bq.util.locks import Locks
 from bq.util.read_write_locks import HashedReadWriteLock
 import bq.util.io_misc as misc
+import bq.util.responses as responses
 
 from bq.image_service.controllers.exceptions import ImageServiceException, ImageServiceFuture
 from bq.image_service.controllers.process_token import ProcessToken
@@ -199,6 +200,8 @@ class ConverterImgcnv(ConverterBase):
         'tile_num_x': 'tile_num_x',
         'tile_num_y': 'tile_num_y',
     }
+
+    extended_dimension_names = ['serie', 'fov', 'rotation', 'scene', 'illumination', 'phase', 'view']
 
 #     #######################################
 #     # Init
@@ -722,6 +725,16 @@ class ConverterImgcnv(ConverterBase):
                 if y2>0: y2 = y2-1
             command.extend(['-roi', '%s,%s,%s,%s' % (x1,y1,x2,y2)])
 
+        # other dimensions: -slice fov:345,rotation:23
+        nd = []
+        for k,v in kw.iteritems():
+            if k in cls.extended_dimension_names:
+                if len(v)>1:
+                    raise ImageServiceException(responses.UNPROCESSABLE_ENTITY, 'Ranges in extended dimensions are not yet supported')
+                nd.append('%s:%s'%(k,v[0]))
+        if len(nd)>0:
+            command.extend(['-slice', ','.join(nd)])
+
         #return cls.run(ifnm, ofnm, command )
         return command
 
@@ -735,12 +748,8 @@ class ConverterImgcnv(ConverterBase):
 
         ifnm = token.first_input_file()
         series = token.series
-        log.debug('Tile: %s %s %s %s %s for [%s]', level, x, y, sz, series, ifnm)
-        level = misc.safeint(level, 0)
-        x  = misc.safeint(x, 0)
-        y  = misc.safeint(y, 0)
-        sz = misc.safeint(sz, 0)
         page = 0
+        log.debug('Tile: %s %s %s %s %s for [%s]', level, x, y, sz, series, ifnm)
 
         info   = token.dims or {}
         tile_w = info.get('tile_num_x', 0)
@@ -773,6 +782,10 @@ class ConverterImgcnv(ConverterBase):
                     for s in range(1, samples):
                         command.extend(['-c', files[page+s]])
 
+        level = misc.safeint(level, 0)
+        x  = misc.safeint(x, 0)
+        y  = misc.safeint(y, 0)
+        sz = misc.safeint(sz, 0)
         command.extend([ '-tile', '%s,%s,%s,%s'%(sz,x,y,level)])
 
         # add speed file
