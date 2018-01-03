@@ -46,9 +46,9 @@ def get_dimension_string(dims, dim):
     try:
         v = dims.get(dim)
         try:
-            return '%s:%s-%s'%(dim,v[0],v[1])
+            return '%s_%s-%s'%(dim,v[0],v[1])
         except IndexError:
-            return '%s:%s-%s'%(dim,v[0],v[0])
+            return '%s_%s-%s'%(dim,v[0],v[0])
     except KeyError:
         pass
     return ''
@@ -103,9 +103,6 @@ class SliceOperation(BaseOperation):
             if len(extended_dims)>0:
                 # get a string of extended dimensions in the defined order
                 ddd = [get_dimension_string(extended_dims, k) for k in self.dimension_names if k in extended_dims]
-                # for k in self.dimension_names:
-                #     if k in extended_dims:
-                #         ddd.append(get_dimension_string(extended_dims, k))
                 extended_str = '.%s'%(','.join(ddd))
 
         # in case slices request an exact copy, skip
@@ -198,9 +195,6 @@ class SliceOperation(BaseOperation):
             if len(extended_dims)>0:
                 # get a string of extended dimensions in the defined order
                 ddd = [get_dimension_string(extended_dims, k) for k in self.dimension_names if k in extended_dims]
-                # for k in self.dimension_names:
-                #     if k in extended_dims:
-                #         ddd.append(get_dimension_string(extended_dims, k))
                 extended_str = '.%s'%(','.join(ddd))
 
         # in case slices request an exact copy, skip
