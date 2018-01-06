@@ -65,7 +65,7 @@ from bq.exceptions import ConfigurationError, IllegalOperation, DuplicateFile
 from bq.util.paths import data_path
 from bq.util.mkdir import _mkdir
 from bq.util.compat import OrderedDict
-from bq.util.urlpaths import *
+from bq.util.urlpaths import move_file, localpath2url, url2localpath, data_url_path, force_filesys
 from bq.util.hash import make_uniq_code, is_uniq_code
 
 from bq.util.io_misc import blocked_alpha_num_sort, tounicode
@@ -346,7 +346,7 @@ class LocalDriver (StorageDriver):
 
     def list(self, storeurl, view=None, limit=None, offset=None):
         "list contents of store url"
-        path, sub = self._local (storeurl)
+        path, _sub = self._local (storeurl)
 
         return  [ "%s%s" % (posixpath.join (storeurl, f),
                             '' if os.path.isfile (os.path.join(path, f)) else '/')
@@ -354,7 +354,7 @@ class LocalDriver (StorageDriver):
 
     def delete(self, storeurl):
         #ident,_ = split_subpath(ident) # reference counting required?
-        path,sub = split_subpath(storeurl)
+        path,_sub = split_subpath(storeurl)
         if not path.startswith('file:///'):
             if path.startswith('file://'):
                 path = os.path.join(self.top, path.replace('file://', ''))
