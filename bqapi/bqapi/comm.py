@@ -284,7 +284,7 @@ class BQServer(Session):
     def fetch(self, url, headers = None, path=None):
         return self.webreq(method='get', url=url, headers=headers, path=path)
 
-    def push(self, url, content=None, files=None, headers=None, path=None, method="POST", boundary=None):
+    def push(self, url, content=None, files=None, headers=None, path=None, method="POST", boundary=None, timeout=None):
         """
             Makes a http request
 
@@ -303,7 +303,7 @@ class BQServer(Session):
         log.debug("POST %s req %s" % (url, headers))
 
         try: #error checking
-            r = self.request(method, url, data=content, headers=headers, files=files)
+            r = self.request(method, url, data=content, headers=headers, files=files, timeout=timeout)
             r.raise_for_status()
         except requests.exceptions.HTTPError:
             log.exception("In push request: %s %s %s" % (method, url, r.content))
@@ -516,11 +516,11 @@ class BQSession(object):
         for i in inputs:
             p[i.get('name')] = self.parameter_value(p=i)
         return p
-    
+
     def get_mex_inputs(self):
         """
             Get all input parameters in mex.
-            
+
             @return: map parameter name -> {'type':..., 'value':..., ...} or [ map parameter name -> {'type':..., 'value':..., ...}, ... ] if blocked iter
         """
         def _xml2dict(e):
@@ -554,7 +554,7 @@ class BQSession(object):
     def get_mex_execute_options(self):
         """
             Get execute options in mex.
-            
+
             @return: map option name -> value
         """
         p = {}
@@ -663,7 +663,10 @@ class BQSession(object):
         if xml is not None:
             fields['file_resource'] = xml
         if fields:
+            # https://github.com/requests/toolbelt/issues/75
             m = MultipartEncoder(fields = fields )
+            m._read = m.read
+            m.read = lambda size: m._read (8129*1024) # 8MB
             return self.c.push(url,
                                content=m,
                                headers={'Accept': 'text/xml', 'Content-Type':m.content_type},
