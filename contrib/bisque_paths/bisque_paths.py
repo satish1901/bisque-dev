@@ -27,8 +27,8 @@ import requests
 DEFAULTS  = dict(
     logfile    = '/tmp/bisque_insert.log',
     bisque_host='https://loup.ece.ucsb.edu',
-    bisque_admin_user='admin',
-    bisque_admin_pass='admin',
+    bisque_user='admin',
+    bisque_pass='admin',
     irods_host='irods://mokie.iplantcollaborative.org',
     )
 # End Config
@@ -196,12 +196,13 @@ class _HelpAction(argparse._HelpAction):
 def main():
 
     config = SafeConfigParser()
-    config.add_section('bqpath')
+    config.add_section('main')
     for k,v in DEFAULTS.items():
-        config.set('bqpath', k,v)
+        config.set('main', k,v)
 
     config.read (['.bisque', os.path.expanduser('~/.bisque'), '/etc/bisque/bisque_config'])
-    defaults =  dict(config.items('bqpath'))
+    defaults =  dict(config.items('main'))
+    defaults.extend (config.items('bqpath'))
 
     parser = argparse.ArgumentParser(description=DESCRIPTION,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -211,7 +212,7 @@ def main():
     parser.add_argument('--alias', help="do action on behalf of user specified")
     parser.add_argument('-d', '--debug', action="store_true", default=False, help="log debugging")
     parser.add_argument('-H', '--host', default=defaults['bisque_host'], help="bisque host")
-    parser.add_argument('-c', '--credentials', default="%s:%s" % (defaults['bisque_admin_user'], defaults["bisque_admin_pass"]), help="user credentials")
+    parser.add_argument('-c', '--credentials', default="%s:%s" % (defaults['bisque_user'], defaults["bisque_pass"]), help="user credentials")
     parser.add_argument('-C', '--compatible',  action="store_true", help="Make compatible with old script")
     parser.add_argument('-V', '--verbose', action='store_true', help='print stuff')
     #parser.add_argument('-P', '--permission',   default="private", help="Set resource permission (compatibility)")
