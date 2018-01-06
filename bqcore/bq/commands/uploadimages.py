@@ -1,9 +1,12 @@
 #!/usr/bin/python
-import os, sys
+import os
+import sys
 import urlparse
-from optparse import OptionParser
 import logging
+import argparse
+#from StringIO import StringIO
 
+from six.moves.configparser import SafeConfigParser
 import requests
 import requests_toolbelt
 
@@ -37,8 +40,11 @@ def upload(dest, filename, userpass, tags=None):
     files.append( ("file",  (filename, open(filename, "rb"), 'application/octet-stream') ))
 
     fields  = dict (files)
-    #print fields
+    # Crazy way to speed up read speed.
+    # https://github.com/requests/toolbelt/issues/75
     m  = requests_toolbelt.MultipartEncoder (fields = dict (files) )
+    m._read = m.read
+    m.read = lambda size: m._read (1024*1024)
 
     response = requests.post (dest, data=m, auth = requests.auth.HTTPBasicAuth(*userpass),verify=False,
                               headers={'Content-Type': m.content_type})
@@ -57,56 +63,69 @@ def walk_deep(path):
         for f in filenames:
             yield os.path.join(root, f).replace('\\', '/')
 
-
+DEFAULTS  = dict(
+    logfile    = '/tmp/bisque_insert.log',
+    bisque_host='https://loup.ece.ucsb.edu',
+    bisque_user='admin',
+    bisque_pass='admin',
+    irods_host='irods://mokie.iplantcollaborative.org',
+    )
 
 def main():
-    usage="usage %prog [options] f1 [f2 f2 d1 ] bisque-url"
-    parser = OptionParser(usage)
-    parser.add_option('-u','--user', dest="user", help="Credentials in  user:pass form" )
-    parser.add_option('-r','--recursive', action="store_true", default=False, help='recurse into dirs')
-    parser.add_option('-v','--verbose',  action="store_true", default=False, help="print actions")
-    parser.add_option('-d','--debug',  action="store_true", default=False, help='print debug log')
-    parser.add_option('-t','--tag', action="append", dest="tags", help="-t name:value")
-    parser.add_option('--resource', action="store", default=None, help="XML resource record for the file")
+    #usage="usage [options] f1 [f2 f2 d1 ] bisque-url"
+    parser = argparse.ArgumentParser()
+
+    config = SafeConfigParser()
+    config.add_section('main')
+    for k,v in DEFAULTS.items():
+        config.set('main', k,v)
+
+    config.read (['.bisque', os.path.expanduser('~/.bisque'), '/etc/bisque/bisque_config'])
+    defaults =  dict(config.items('main'))
 
 
-    (options, args) = parser.parse_args()
-    if len(args) < 2:
-        parser.error ("Need at least one file or directory and destination")
-    dest = args.pop()
+    parser.add_argument('-u','--user', dest="user",
+                        default="%s:%s" % (defaults['bisque_user'], defaults["bisque_pass"]),
+                        help="Credentials in  user:pass form" )
+    parser.add_argument('-r','--recursive', action="store_true", default=False, help='recurse into dirs')
+    parser.add_argument('-v','--verbose',  action="store_true", default=False, help="print actions")
+    parser.add_argument('-d','--debug',  action="store_true", default=False, help='print debug log')
+    parser.add_argument('-t','--tag', action="append", dest="tags", help="-t name:value")
+    parser.add_argument('--resource', action="store", default=None, help="XML resource record for the file")
+    parser.add_argument('--dest', default=defaults['bisque_host'], help="Bisque server root")
+    parser.add_argument('paths', nargs='+', help="List for files or dirs")
 
-    if not dest.startswith('http'):
-        dest = "http://%s" % dest
 
-    if  DESTINATION not in dest: # and not dest.endswith(DESTINATION):
-        dest = urlparse.urljoin (dest, DESTINATION)
+    args = parser.parse_args()
 
-    dest_tuple = list(urlparse.urlsplit(dest))
-    dest =  urlparse.urlunsplit(dest_tuple)
-    if options.debug:
+    if  DESTINATION not in args.dest: # and not dest.endswith(DESTINATION):
+        args.dest = urlparse.urljoin (args.dest, DESTINATION)
+
+    dest_tuple = list(urlparse.urlsplit(args.dest))
+    args.dest =  urlparse.urlunsplit(dest_tuple)
+    if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
 
     # Prepare username
-    if options.user is None:
+    if args.user is None:
         parser.error ("Need username:password")
-    userpass = tuple(options.user.split (':'))
+    userpass = tuple(args.user.split (':'))
 
     # Prepare tags
     tags = None
-    if options.resource or options.tags:
-        from StringIO import StringIO
+    if args.resource or args.tags:
         resource = None
-        if options.resource:
-            if options.resource == '-':
+        if args.resource:
+            if args.resource == '-':
                 fresource = sys.stdin
             else:
-                fresource = open(options.resource, 'r')
+                fresource = open(args.resource, 'r')
             resource = et.parse (fresource).getroot()
-        if options.tags:
+        if args.tags:
             if resource is None:
                 resource = et.Element('resource', uri = "/tags")
-            for t,v in [ x.split(':') for x in options.tags]:
+            for t,v in [ x.split(':') for x in args.tags]:
                 et.SubElement (resource, 'tag', name=t, value=v)
         if resource is not None:
             #tags = StringIO(et.tostring(resource))
@@ -115,20 +134,20 @@ def main():
 
 
     #Upload copied files
-    for p in args:
+    for p in args.paths:
         path = os.path.abspath(os.path.expanduser(p))
         if os.path.isdir (path):
             for root, dirs, files in os.walk(path):
                 for name in files:
                     filename = os.path.join(root, name)
                     if isimagefile (filename):
-                        if options.verbose:
+                        if args.verbose:
                             print "transfering %s" % (filename)
-                        upload(dest, filename, userpass, tags)
+                        upload(args.dest, filename, userpass, tags)
         elif os.path.isfile(path):
             if isimagefile (path):
-                response = upload(dest, path, userpass, tags)
-                if options.verbose:
+                response = upload(args.dest, path, userpass, tags)
+                if args.verbose:
                     print response
     sys.exit(0)
 
