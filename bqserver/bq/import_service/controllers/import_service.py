@@ -1263,14 +1263,10 @@ class import_serviceController(ServiceController):
             g.fileobj = g.filepath and open (g.filepath, 'rb') #tmp File will be deleted unless we open it.
 
         config={'MAX_MEMORY_FILE_SIZE' : 0,
-                #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
+                'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
         }
 
         with open (uploaded) as input_stream:
-            #multipart.multipart.parse_form (tg.request.headers, f, on_field, on_file,
-            #    config={'MAX_MEMORY_FILE_SIZE' : 0,
-            #            #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
-            #    })
             parser = multipart.multipart.create_form_parser(headers, on_field,on_file, config=config)
             content_length = headers.get('Content-Length')
             if content_length is not None:
@@ -1339,6 +1335,9 @@ class import_serviceController(ServiceController):
             log.exception ("During upload")
             abort (400, "Unable to complete upload")
         finally:
+            if os.path.exists (uploaded):
+                log.error ("Removing left over file: %s", uploaded)
+                os.remove (uploaded)
             if g and g.fileobj:
                 g.fileobj.close()
 
