@@ -795,9 +795,10 @@ class MountServer(TGController):
 
             log.debug ("fetch_blob %s -> %s", resource.get ('resource_uniq'), bloburls)
 
+            # If image has subimages then check for other subimage otherwise for image  itself.
             file_query, sub = split_subpath (bloburls[0])
-            if len(sub)>0:
-                file_query = '%s#*'%file_query
+            #if len(sub)>0:
+            file_query = '%s*'%file_query
 
             # sanity check . ensure exactly one reference to store url before delete
             # Since storeurl can contain '#' marks for series files
