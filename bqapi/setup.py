@@ -8,7 +8,7 @@ except ImportError:
 #from bq.release import __VERSION__
 __VERSION__="0.5.9"
 
-setup(name='bqapi',
+setup(name='bisque_api',
       version=__VERSION__,
       description="Bisque Module API",
       author='Center for Bioimage informatics',
