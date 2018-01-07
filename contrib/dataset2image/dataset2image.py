@@ -42,7 +42,7 @@ def find_image_datasets(sess, name_pattern=r'^.*\.czi$', bisque_root=None):
         good_refs = True
         for ref_image in full_dataset.xpath("./image"):
             if not re.match('^.*#[0-9]+$', ref_image.get('name')) or not re.match('^.*#[0-9]+$', ref_image.get('value')):
-                logging.debug("mismatching image name found: %s, skipping dataset" % ref_image.get('name'))
+                logging.debug("malformatted image name/value found, skipping dataset")
                 good_refs = False
                 break
         if good_refs:
@@ -122,13 +122,13 @@ def update_references(sess, dataset_map, bisque_root=None, dryrun=False):
             for dataset_uniq, img_uniq in dataset_map.iteritems():
                 if val.startswith('http') and val.endswith(dataset_uniq):
                     # found pointer to dataset => convert it
-                    val.replace(dataset_uniq, img_uniq)
-                    ref.text = val
+                    ref.text = val.replace(dataset_uniq, img_uniq)
                     was_updated = True
+                    break
         if was_updated:
             try:
                 if not dryrun:
-                    sess.postxml(url=dataset.get('resource_uniq'), xml=deep_dataset)
+                    sess.postxml(url=dataset.get('uri'), xml=deep_dataset)
                 logging.debug("dataset %s updated" % dataset.get('resource_uniq'))
             except bqapi.BQCommError:
                 logging.error("could not update dataset %s" % dataset.get('resource_uniq'))
@@ -153,13 +153,13 @@ def update_references(sess, dataset_map, bisque_root=None, dryrun=False):
             for dataset_uniq, img_uniq in dataset_map.iteritems():
                 if val.startswith('http') and val.endswith(dataset_uniq):
                     # found pointer to dataset => convert it
-                    val.replace(dataset_uniq, img_uniq)
-                    tag.set("value", val)
+                    tag.set("value", val.replace(dataset_uniq, img_uniq))
                     was_updated = True
+                    break
         if was_updated:
             try:
                 if not dryrun:
-                    sess.postxml(url=mex.get('resource_uniq'), xml=deep_mex)
+                    sess.postxml(url=mex.get('uri'), xml=deep_mex)
                 logging.debug("mex %s updated" % mex.get('resource_uniq'))
             except bqapi.BQCommError:
                 logging.error("could not update mex %s" % mex.get('resource_uniq'))
