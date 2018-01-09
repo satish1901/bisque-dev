@@ -1422,9 +1422,10 @@ Ext.define('BQ.selectors.PipelineParams', {
             if (typeof(node[key]) == "string" && node[key].startsWith("@") && node[key] != "@INPUT" && node[key] != "@OUTPUT") {
                 var toks = node[key].split("@");
                 var val = (toks.length > 2 ? toks[2] : "");
-                var type = (toks[1] == "NUMPARAM" ? "number" : "string");
+                var typetoks = toks[1].split("|");    // assume placeholder is "@NUMPARAM|<name>@<default val>"
+                var type = (typetoks[0] == "NUMPARAM" ? "number" : "string");
                 var xtype = "selectorstring";    // TODO: this should be a list type here (list of numbers/strings)
-                fields.push({"name": key, "type": type, "value": val, "xtype": xtype});
+                fields.push({"name": (typetoks.length > 1 ? typetoks[1] : key), "type": type, "value": val, "xtype": xtype});
             }
             if (node[key] != null && typeof(node[key]) == "object") {
                 var moreFields = this.extractParameters(node[key]);

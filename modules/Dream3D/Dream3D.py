@@ -32,27 +32,27 @@ from bq.util.hash import is_uniq_code
 
 
 # replace "@..." placeholders in json structure based on provided params dict
-def _replace_placeholders(myjson, input_file, output_file, params):
-    if type(myjson) is dict:
-        for jsonkey in myjson:
-            if type(myjson[jsonkey]) in (list, dict):
-                _replace_placeholders(myjson[jsonkey], input_file, output_file, params)
-            elif isinstance(myjson[jsonkey], basestring):
-                try:
-                    if myjson[jsonkey] == '@INPUT':
-                        myjson[jsonkey] = input_file
-                    elif myjson[jsonkey] == '@OUTPUT':
-                        myjson[jsonkey] = output_file
-                    elif myjson[jsonkey].startswith('@NUMPARAM'):
-                        myjson[jsonkey] = float(params[jsonkey])
-                    elif myjson[jsonkey].startswith('@STRPARAM'):
-                        myjson[jsonkey] = str(params[jsonkey])
-                except KeyError:
-                    raise Dream3DError("pipeline parameter '%s' not provided" % jsonkey)
-    elif type(myjson) is list:
-        for item in myjson:
-            if type(item) in (list, dict):
-                _replace_placeholders(item, input_file, output_file, params)
+# def _replace_placeholders(myjson, input_file, output_file, params):
+#     if type(myjson) is dict:
+#         for jsonkey in myjson:
+#             if type(myjson[jsonkey]) in (list, dict):
+#                 _replace_placeholders(myjson[jsonkey], input_file, output_file, params)
+#             elif isinstance(myjson[jsonkey], basestring):
+#                 try:
+#                     if myjson[jsonkey] == '@INPUT':
+#                         myjson[jsonkey] = input_file
+#                     elif myjson[jsonkey] == '@OUTPUT':
+#                         myjson[jsonkey] = output_file
+#                     elif myjson[jsonkey].startswith('@NUMPARAM'):
+#                         myjson[jsonkey] = float(params[jsonkey])
+#                     elif myjson[jsonkey].startswith('@STRPARAM'):
+#                         myjson[jsonkey] = str(params[jsonkey])
+#                 except KeyError:
+#                     raise Dream3DError("pipeline parameter '%s' not provided" % jsonkey)
+#     elif type(myjson) is list:
+#         for item in myjson:
+#             if type(item) in (list, dict):
+#                 _replace_placeholders(item, input_file, output_file, params)
 
 
 class Dream3DError(Exception):
