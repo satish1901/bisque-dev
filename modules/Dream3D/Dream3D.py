@@ -10,6 +10,7 @@ import logging
 import itertools
 import subprocess
 import json
+import urlparse
 from datetime import datetime
 
 from lxml import etree
@@ -27,6 +28,7 @@ log = logging.getLogger('bq.modules')
 
 from bqapi.comm import BQSession
 from bq.util.mkdir import _mkdir
+from bq.util.hash import is_uniq_code
 
 
 # replace "@..." placeholders in json structure based on provided params dict
@@ -108,13 +110,17 @@ class Dream3D(object):
         """
         self.bqSession.update_mex('Initializing...')
         self.mex_parameter_parser(self.bqSession.mex.xmltree)
-        self.output_file = None
-
+        self.output_resources = []
+        self.ppops = None
+        self.ppops_url = None
+        
 
     def run(self):
         """
             The core of the Dream3D runner
         """
+
+        module_time = datetime.now()
 
         #retrieve tags
         self.bqSession.update_mex('Extracting properties')
@@ -124,25 +130,23 @@ class Dream3D(object):
         if (hdf_resource.tag != 'resource' or hdf_resource.get('resource_type', '') != 'table') and hdf_resource.tag != 'table':
             raise Dream3DError("trying to run Dream3D on non-table resource")
 
-        hdf_url = self.bqSession.service_url('blob_service', path=hdf_resource.get('resource_uniq'))
-        self.bqSession.fetchblob(hdf_url, path=os.path.join(self.options.stagingPath, 'input.h5'))
-        hdf_input_file = os.path.join(self.options.stagingPath, 'input.h5')
-        hdf_output_file = os.path.join(self.options.stagingPath, 'output.h5')
+        # run prerun operations
+        filelist_file = self._run_prerun_ops(module_time, pipeline_url=self.options.pipeline_url, input_xml=hdf_resource)
 
         # create pipeline with correct parameters
         pipeline_params = self.bqSession.mex.xmltree.xpath('tag[@name="inputs"]/tag[@name="pipeline_params"]/tag')
         params = {}
         for tag in pipeline_params:
             params[tag.get('name','')] = getattr(self.options, tag.get('name',''))
-        pipeline_file, err_file = self._instantiate_pipeline(pipeline_url=self.options.pipeline_url, input_file=hdf_input_file, output_file=hdf_output_file, params=params)
-
+        pipeline_file, err_file = self._instantiate_pipeline(pipeline_url=self.options.pipeline_url, params=params)
+        if not pipeline_file:
+            raise Dream3DError("trying to run incompatible Dream.3D pipeline")
+        
         # run Dream3D on the pipeline
         self.bqSession.update_mex('Running Dream3D')
         log.debug('run Dream3D on %s', pipeline_file)
         res = 1
         with open(err_file, 'w') as fo:
-#             res = 0  #!!! TESTING
-#             open(hdf_output_file, 'a').close()
             res = subprocess.call(['/dream3d/bin/PipelineRunner',
                                    '-p',
                                    pipeline_file],
@@ -157,66 +161,111 @@ class Dream3D(object):
                 err_msg = err_msg[:512] + '...' + err_msg[-512:]
             raise Dream3DError(err_msg)
 
-        self.output_file = hdf_output_file
+        # run postrun operations
+        self.output_resources = self._run_postrun_ops(module_time, pipeline_url=self.options.pipeline_url)
 
-    def _instantiate_pipeline(self, pipeline_url, input_file, output_file, params):
-        """instantiate pipeline json file with provided parameters"""
-        pipeline_resource = self.bqSession.fetchxml(pipeline_url, view='short')
+    def _cache_ppops(self, pipeline_url):
+        if not self.ppops or self.ppops_url != pipeline_url:            
+            pipeline_path = urlparse.urlsplit(pipeline_url).path.split('/')
+            pipeline_uid = pipeline_path[1] if is_uniq_code(pipeline_path[1]) else pipeline_path[2]
+            url = self.bqSession.service_url('pipeline', path = '/'.join([pipeline_uid]+['ppops:dream3d']))
+            self.ppops = json.loads(self.bqSession.c.fetch(url))
+            self.ppops_url = pipeline_url
+
+    def _run_prerun_ops(self, module_time, pipeline_url, input_xml):
+        """
+        Perform any operations necessary before the pipeline runs (e.g., download input table) and return filelist file
+        """
+        self._cache_ppops(pipeline_url)
+        post_ops = self.ppops['PreOps']
+        input_files = []
+        for op in post_ops:
+            input_files += self._run_single_op(module_time, op, input_xml)
+        filelist_file = os.path.join(self.options.stagingPath, 'filelist.txt')
+        with open(filelist_file, 'w') as fo:
+            for input_file in input_files:
+                fo.write(input_file+'\n')
+        return filelist_file
+        
+    def _run_postrun_ops(self, module_time, pipeline_url):
+        """
+        Perform any operations necessary after the pipeline finished (e.g., upload result tables) and return created resources
+        """
+        self._cache_ppops(pipeline_url)
+        post_ops = self.ppops['PostOps']
+        created_resources = []
+        for op in post_ops:            
+            created_resources += self._run_single_op(module_time, op)
+        return created_resources
+            
+    def _run_single_op(self, module_time, op, input_xml=None):
+        """
+        Perform single pre/post operation and return list of files or resources generated
+        """        
+        # replace special placeholders
+        if 'id' in op and op['id'] == '@INPUT':
+            op['id'] = input_xml.get('resource_uniq')
+        
+        res = []        
+        if op['service'] == 'postblob':
+            # upload image or table (check op['type'])
+            mex_id = self.bqSession.mex.uri.split('/')[-1]
+            dt = module_time.strftime('%Y%m%dT%H%M%S')
+            final_output_file = "ModuleExecutions/Dream3D/%s_%s_%s.h5"%(self.options.OutputPrefix, dt, mex_id)
+            cl_model = etree.Element('resource', resource_type=op['type'], name=final_output_file)
+            # module identifier (a descriptor to be found by the Dream3D model)
+            etree.SubElement(cl_model, 'tag', name='module_identifier', value='Dream3D')
+            # hdf filename            
+            etree.SubElement(cl_model, 'tag', name='OutputFile', value=final_output_file)
+            #description
+            etree.SubElement(cl_model, 'tag', name='description', value = 'output from Dream3D Module')
+            # post blob
+            output_file = os.path.join(self.options.stagingPath, op['filename'])
+            resource = self.bqSession.postblob(output_file, xml = cl_model)
+            resource_xml = etree.fromstring(resource)
+            res += [resource_xml[0]]
+        elif op['service'] == 'getblob':
+            # download table
+            table_file = os.path.join(self.options.stagingPath, op['filename'])
+            hdf_url = self.bqSession.service_url('blob_service', path=op['id'])
+            self.bqSession.fetchblob(hdf_url, path=table_file)
+            res += [table_file]
+        return res
+
+    def _instantiate_pipeline(self, pipeline_url, params):
+        """
+        instantiate dream.3d pipeline file with provided parameters
+        """
+        pipeline_path = urlparse.urlsplit(pipeline_url).path.split('/')
+        pipeline_uid = pipeline_path[1] if is_uniq_code(pipeline_path[1]) else pipeline_path[2]
+        url = self.bqSession.service_url('pipeline', path = '/'.join([pipeline_uid]+["setvar:%s|%s"%(tag,params[tag]) for tag in params]+['exbsteps:dream3d']), query={'format':'dream3d'})
+        pipeline = self.bqSession.c.fetch(url)
+        if not pipeline:
+            # bad pipeline
+            return None, None
         out_pipeline_file = os.path.join(self.options.stagingPath, 'pipeline.json')
         out_error_file = os.path.join(self.options.stagingPath, 'dream3d_error.txt')
-        pipeline_url = self.bqSession.service_url('blob_service', path=pipeline_resource.get('resource_uniq'))
-        self.bqSession.fetchblob(pipeline_url, path=os.path.join(self.options.stagingPath, 'pipeline_uninit.json'))
-        pipeline_file = os.path.join(self.options.stagingPath, 'pipeline_uninit.json')
-        with open(pipeline_file, 'r') as fi:
-            pipeline = json.load(fi)
-            # replace all placeholders in pipeline template
-            _replace_placeholders(pipeline, input_file, output_file, params)
-            # write out pipeline to provided file
-            with open(out_pipeline_file, 'w') as fo:
-                json.dump(pipeline, fo)
+        with open(out_pipeline_file, 'w') as fo:
+            fo.write(pipeline)
         return out_pipeline_file, out_error_file
-
+        
     def teardown(self):
         """
             Post the results to the mex xml.
         """
-        #save the HDF output and upload it to the data service with all the meta data
         self.bqSession.update_mex( 'Returning results')
-        log.debug('Storing HDF output')
-
-        #constructing and storing HDF file
-        mex_id = self.bqSession.mex.uri.split('/')[-1]
-        dt = datetime.now().strftime('%Y%m%dT%H%M%S')
-        final_output_file = "ModuleExecutions/Dream3D/%s_%s_%s.h5"%(self.options.OutputPrefix, dt, mex_id)
-
-        #does not accept no name on the resource
-        cl_model = etree.Element('resource', resource_type='table', name=final_output_file)
-
-        #module identifier (a descriptor to be found by the Dream3D model)
-        etree.SubElement(cl_model, 'tag', name='module_identifier', value='Dream3D')
-
-        #hdf filename
-        etree.SubElement(cl_model, 'tag', name='OutputFile', value=final_output_file)
-
-        #pipeline param
-        #etree.SubElement(cl_model, 'tag', name='RefFrameZDir', value=self.options.RefFrameZDir)
-
-        #input hdf url
-        #etree.SubElement(cl_model, 'tag', name='InputFile', type='link', value=self.options.InputFile)
-
-        #input pipeline
-        #etree.SubElement(cl_model, 'tag', name='pipeline_url', type='link', value=self.options.pipeline_url)
-
-        #description
-        etree.SubElement(cl_model, 'tag', name='description', value = 'HDF output file from Dream3D Module')
-
-        #storing the HDF file in blobservice
-        log.debug('before postblob')   #!!!
-        r = self.bqSession.postblob(self.output_file, xml = cl_model)
-        r_xml = etree.fromstring(r)
 
         outputTag = etree.Element('tag', name ='outputs')
-        etree.SubElement(outputTag, 'tag', name='output_hdf', type='table', value=r_xml[0].get('uri',''))
+        for r_xml in self.output_resources:
+            res_type = r_xml.get('type', None) or r_xml.get('resource_type', None) or r_xml.tag
+            if res_type == 'detected shapes':
+                # r_xml is a set of gobjects => append to output inside image tag 
+                image_resource = self.bqSession.fetchxml(self.options.InputFile)
+                image_elem = etree.SubElement(outputTag, 'tag', name=image_resource.get('name'), type='image', value=image_resource.get('uri'))
+                image_elem.append(r_xml)
+            else:
+                # r_xml is some other resource (e.g., image or table) => append reference to output
+                etree.SubElement(outputTag, 'tag', name='output_table' if res_type=='table' else 'output_image', type=res_type, value=r_xml.get('uri',''))
 
         self.bqSession.finish_mex(tags=[outputTag])
 

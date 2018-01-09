@@ -1,4 +1,5 @@
 from bq.blob_service.controllers.blob_plugins import ResourcePlugin
+from bq.pipeline.controllers.importers.from_dream3d import upload_dream3d_pipeline
 from bq.pipeline.controllers.importers.from_cellprofiler import upload_cellprofiler_pipeline
 from bq.pipeline.controllers.importers.from_imagej import upload_imagej_pipeline
 
@@ -12,6 +13,9 @@ class Dream3DPipelinePlugin (ResourcePlugin):
     
     def __init__(self):
         pass
+    
+    def process_on_import(self, f, intags):
+        return upload_dream3d_pipeline(f, intags)
 
 class CellprofilerPipelinePlugin (ResourcePlugin):
     '''Cellprofiler Pipeline resource''' 
