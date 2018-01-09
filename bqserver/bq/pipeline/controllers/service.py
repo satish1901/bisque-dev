@@ -32,7 +32,7 @@ def _replace_placeholders(myjson, tag, val):
         for jsonkey in myjson:
             if type(myjson[jsonkey]) in (list, dict):
                 _replace_placeholders(myjson[jsonkey], tag, val)
-            elif jsonkey == tag and isinstance(myjson[jsonkey], basestring):
+            elif isinstance(myjson[jsonkey], basestring) and _matches_tag(myjson, jsonkey, tag):
                 if myjson[jsonkey].startswith('@NUMPARAM'):
                     myjson[jsonkey] = str(val)
                 elif myjson[jsonkey].startswith('@STRPARAM'):
@@ -42,7 +42,14 @@ def _replace_placeholders(myjson, tag, val):
             if type(item) in (list, dict):
                 _replace_placeholders(item, tag, val)
     return myjson
-                
+
+def _matches_tag(myjson, jsonkey, tag):
+    if not myjson[jsonkey].startswith('@NUMPARAM') and not myjson[jsonkey].startswith('@STRPARAM'):
+        return False
+    toks = myjson[jsonkey].split('@')
+    typetoks = toks[1].split('|')
+    return (len(typetoks) > 1 and typetoks[1] == tag) or (len(typetoks) <= 1 and jsonkey == tag)
+         
 ################################################################################
 # PipelineController
 ################################################################################
