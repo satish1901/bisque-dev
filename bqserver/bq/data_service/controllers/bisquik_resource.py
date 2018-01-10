@@ -205,6 +205,13 @@ class BisquikResource(resource.Resource):
         tg.response.headers['Content-Type'] = content_type
         return formatter(response,view=view)
 
+    def set_new_identity (self, user):
+         if is_uniq_code(user):
+
+
+        identity.current.set_current_user( user )
+
+
 
     def dir(self, resource, **kw):
         """GET /ds/images : fetch group of object
@@ -301,6 +308,7 @@ class BisquikResource(resource.Resource):
         """
         view=kw.pop('view', None)
         format = kw.pop('format', None)
+        user   = kw.pop('user', None)
         log.info ("NEW: %s ... %s" ,request.url, xml.tag)
 
         # Create a DB object from the document.
@@ -311,6 +319,10 @@ class BisquikResource(resource.Resource):
         parent = self.load_parent()
         log.debug ("NEW: parent %s " , str( parent))
         parent = self.check_access(parent, RESOURCE_EDIT)
+        if user is not None and identity.is_admin():
+            self.set_new_identity (user)
+
+
         resource = bisquik2db(doc=xml, parent = parent)
         log.info ("NEW: => %s " , str( resource ))
         if resource is None:
@@ -324,6 +336,9 @@ class BisquikResource(resource.Resource):
         '''PUT /ds/image/1/gobjects  --> Replace contents of gobjects with doc
         '''
         log.info ('REPLACE_ALL %s %s' , request.url, xml.tag)
+        user   = kw.pop('user', None)
+        if user is not None and identity.is_admin():
+            self.set_new_identity (user)
         parent = self.load_parent()
         resource = None
         if parent:
@@ -373,6 +388,9 @@ class BisquikResource(resource.Resource):
         '''PUT /ds/image/1  --> Replace all contents with doc
         '''
         view=kw.pop('view', None)
+        user   = kw.pop('user', None)
+        if user is not None and identity.is_admin():
+            self.set_new_identity (user)
         log.info ('MODIFY %s %s' , request.url, xml.tag)
         resource = self.check_access(resource, RESOURCE_EDIT)
         parent = self.load_parent()
@@ -391,6 +409,9 @@ class BisquikResource(resource.Resource):
         '''
 
         view=kw.pop('view', None)
+        user   = kw.pop('user', None)
+        if user is not None and identity.is_admin():
+            self.set_new_identity (user)
         log.info ('APPEND %s %s' , request.url, xml.tag)
         resource = self.check_access(resource, RESOURCE_EDIT)
         #parent = self.load_parent()
@@ -403,7 +424,10 @@ class BisquikResource(resource.Resource):
     def delete(self, resource, **kw):
         """DELETE /ds/images/1/tags/2 : delete a specific resource
         """
-        log.info ('DELETE %s' % (request.url))
+        log.info ('DELETE %s' , request.url)
+        user   = kw.pop('user', None)
+        if user is not None and identity.is_admin():
+            self.set_new_identity (user)
         resource = self.check_access(resource, RESOURCE_EDIT)
         response = etree.Element ('resource')
         if resource is not None:
