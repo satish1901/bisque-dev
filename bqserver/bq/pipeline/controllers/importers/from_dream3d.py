@@ -95,7 +95,7 @@ def upload_dream3d_pipeline(uf, intags):
     old_step_id = 0
     converted_cnt = 0   # TODO: only keep up to 10 interactive params... URL gets too big otherwise
     for step_id in range(old_step_id, len(pipeline)-1):
-        if pipeline[str(step_id)]['__Label__'] == 'Read H5EBSD File':
+        if pipeline[str(step_id)]['__Label__'] in ['Read H5EBSD File', 'Read DREAM.3D Data File']:
             new_pipeline[str(new_step_id)] = { '__Label__': 'BisQueLoadTable',
                                                'Parameters': [{'Filename': 'input.h5'}],
                                                '__Meta__': {'module_num': str(new_step_id+1)}
@@ -173,7 +173,7 @@ def _validate_step(step):
     # mark actions not compatible with BisQue
     if step['__Label__'].startswith('BisQue'):
         step['__Meta__']['__compatibility__'] = 'bisque'
-    elif (step['__Label__'] == 'Read H5EBSD File' and _get_parameters(step, 'InputFile')[0] != 'input.h5') or \
+    elif (step['__Label__'] in ['Read H5EBSD File', 'Read DREAM.3D Data File'] and _get_parameters(step, 'InputFile')[0] != 'input.h5') or \
          (step['__Label__'] == 'Write DREAM.3D Data File' and _get_parameters(step, 'OutputFile')[0] != 'output.h5'):  #TODO: check for other incompatible steps
         step['__Meta__']['__compatibility__'] = 'incompatible'
     return step
