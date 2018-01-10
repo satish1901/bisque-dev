@@ -51,7 +51,7 @@ def find_image_datasets(sess, name_pattern=r'^.*\.czi$', bisque_root=None):
     logging.debug("found datasets to convert: %s" % res)
     return res
 
-def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dryrun=False):
+def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dryrun=False, as_user=None):
     dataset = None
     try:
         dataset = sess.fetchxml(url=bisque_root+'/data_service/'+dataset_uniq, view='deep,clean')
@@ -82,7 +82,8 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
     res = None
     try:
         if not dryrun:
-            res = sess.postxml(url=bisque_root+'/data_service', xml=new_image)
+            extra = {'user':as_user} if as_user is not None else {}
+            res = sess.postxml(url=bisque_root+'/data_service', xml=new_image, **extra)
         else:
             res = etree.Element('image', resource_uniq='00-blabla')
         logging.debug("new image posted back")
@@ -100,7 +101,7 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
             return None
     return res.get('resource_uniq')
 
-def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, update_datasets=False, dryrun=False):
+def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, update_datasets=False, dryrun=False, as_user=None):
     # find any reference to the converted dataset and switch it to the new image
     if update_datasets:
         logging.info("===== updating references in datasets =====")
@@ -112,29 +113,30 @@ def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, u
             logging.error("could not fetch datasets")
             return
         for dataset in datasets:
-             deep_dataset = None
-             was_updated = False
-             try:
-                 deep_dataset = sess.fetchxml(url=dataset.get('uri'), view='deep')  # TODO: avoid deep fetch
-             except bqapi.BQCommError:
-                 logging.error("could not fetch dataset %s" % dataset.get('resource_uniq'))
-                 continue
-             refs = deep_dataset.xpath("./value[@type='object']")
-             for ref in refs:
-                 val = ref.text
-                 for dataset_uniq, img_uniq in dataset_map.iteritems():
-                     if val.startswith('http') and val.endswith(dataset_uniq):
-                         # found pointer to dataset => convert it
-                         ref.text = val.replace(dataset_uniq, img_uniq)
-                         was_updated = True
-                         break
-             if was_updated:
-                 try:
-                     if not dryrun:
-                         sess.postxml(url=dataset.get('uri'), xml=deep_dataset)
-                     logging.debug("dataset %s updated" % dataset.get('resource_uniq'))
-                 except bqapi.BQCommError:
-                     logging.error("could not update dataset %s" % dataset.get('resource_uniq'))
+            deep_dataset = None
+            was_updated = False
+            try:
+                deep_dataset = sess.fetchxml(url=dataset.get('uri'), view='deep')  # TODO: avoid deep fetch
+            except bqapi.BQCommError:
+                logging.error("could not fetch dataset %s" % dataset.get('resource_uniq'))
+                continue
+            refs = deep_dataset.xpath("./value[@type='object']")
+            for ref in refs:
+                val = ref.text
+                for dataset_uniq, img_uniq in dataset_map.iteritems():
+                    if val.startswith('http') and val.endswith(dataset_uniq):
+                        # found pointer to dataset => convert it
+                        ref.text = val.replace(dataset_uniq, img_uniq)
+                        was_updated = True
+                        break
+            if was_updated:
+                try:
+                    if not dryrun:
+                        extra = {'user':as_user} if as_user is not None else {}
+                        sess.postxml(url=dataset.get('uri'), xml=deep_dataset, **extra)
+                    logging.debug("dataset %s updated" % dataset.get('resource_uniq'))
+                except bqapi.BQCommError:
+                    logging.error("could not update dataset %s" % dataset.get('resource_uniq'))
     if update_mexes:
         logging.info("===== updating references in mexes =====")
         # (2) search in mexes
@@ -164,7 +166,8 @@ def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, u
             if was_updated:
                 try:
                     if not dryrun:
-                        sess.postxml(url=mex.get('uri'), xml=deep_mex)
+                        extra = {'user':as_user} if as_user is not None else {}
+                        sess.postxml(url=mex.get('uri'), xml=deep_mex, **extra)
                     logging.debug("mex %s updated" % mex.get('resource_uniq'))
                 except bqapi.BQCommError:
                     logging.error("could not update mex %s" % mex.get('resource_uniq'))
@@ -194,6 +197,7 @@ def main():
     parser.add_argument("--delete", '-d', default=False, action="store_true", help="delete dataset after conversion")
     parser.add_argument("--server", "-s", help="BisQue server", default='http://localhost')
     parser.add_argument("--auth", "-a", help="basic auth credentials (user:passwd)", default='admin:admin')
+    parser.add_argument("--user", "-u", help="user name to run as", default=None)
     parser.add_argument("--verbose", '-v', default=False, action="store_true", help="verbose output")
     parser.add_argument("--dryrun", '-r', default=False, action="store_true", help="no updates")
     parser.add_argument("--mexrefs", default=False, action="store_true", help="update mex refs to converted images")
@@ -217,15 +221,15 @@ def main():
         datasets = find_image_datasets(sess, bisque_root=args.server.rstrip('/'))
         logging.info("===== converting %s datasets to images =====" % len(datasets))
         for dataset_uniq in datasets:
-            img_uniq = convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun)  # will delete later
+            img_uniq = convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)  # will delete later
             if img_uniq is not None:
                 dataset_map[dataset_uniq] = img_uniq
-        update_references(sess, dataset_map, bisque_root=args.server.rstrip('/'), update_mexes=args.mexrefs, update_datasets=args.dsrefs, dryrun=args.dryrun)
+        update_references(sess, dataset_map, bisque_root=args.server.rstrip('/'), update_mexes=args.mexrefs, update_datasets=args.dsrefs, dryrun=args.dryrun, as_user=args.user)
         if args.delete:
             delete_datasets(sess, dataset_map.keys(), bisque_root=args.server.rstrip('/'), dryrun=args.dryrun)        
     else:
         logging.info("===== converting dataset to image =====")
-        convert_dataset(sess, args.dataset_uniq, want_delete=args.delete, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun)
+        convert_dataset(sess, args.dataset_uniq, want_delete=args.delete, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)
     
 if __name__ == "__main__":
     main()
