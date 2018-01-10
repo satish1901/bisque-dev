@@ -134,13 +134,13 @@ def safedecode(s, encoding):
         return u'%s'%s
     try:
         return s.decode(encoding)
-    except UnicodeEncodeError:
+    except UnicodeDecodeError:
         try:
             return s.decode('utf-8')
-        except UnicodeEncodeError:
+        except UnicodeDecodeError:
             try:
                 return s.decode('latin-1')
-            except UnicodeEncodeError:
+            except UnicodeDecodeError:
                 return unicode(s.encode('ascii', 'replace'))
 
 def dicom_parse_date(v):
