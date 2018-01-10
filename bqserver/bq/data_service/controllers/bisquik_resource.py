@@ -206,12 +206,7 @@ class BisquikResource(resource.Resource):
         return formatter(response,view=view)
 
     def set_new_identity (self, user):
-         if is_uniq_code(user):
-
-
         identity.current.set_current_user( user )
-
-
 
     def dir(self, resource, **kw):
         """GET /ds/images : fetch group of object
