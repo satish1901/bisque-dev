@@ -320,7 +320,7 @@ toscawidgets.framework.resource_variant=debug
 
 [loggers]
 #keys = root, bq, bqroot, bqapi, sqlalchemy, auth, image, locks, import, export, blobs, usage, engine, registration
-keys = root, bqapi, bq, locks, sqlalchemy, auth,
+keys = root, bqapi, bq, locks, sqlalchemy, auth
 
 [handlers]
 #keys = console, syslog, file, timedfile, pylog
