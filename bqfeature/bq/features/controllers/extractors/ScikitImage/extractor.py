@@ -172,7 +172,7 @@ class HOG2(Feature.BaseFeature):
         except_image_only(resource)
         im = image2numpy(resource.image, remap='gray')
         feature = hog(im, orientations=4, pixels_per_cell=(8, 8), cells_per_block=(2, 2))
-        feature = np.reshape(feature, (feature.size/16, 16))
+        feature = np.reshape(feature, (feature.size/16, 16)) # pylint: disable=no-member
         block_count = np.arange(feature.shape[0])
         return (feature, block_count)
 
@@ -323,4 +323,3 @@ class RawMoments(Feature.BaseFeature):
 #        R = kwargs['R']
 #        method = kwargs['method']
 #        local_binary_pattern(resource.image, P, R, method=method)
-
