@@ -6,7 +6,7 @@ import logging
 import argparse
 #from StringIO import StringIO
 
-from six.moves.configparser import SafeConfigParser
+from ConfigParser import SafeConfigParser
 import requests
 import requests_toolbelt
 
