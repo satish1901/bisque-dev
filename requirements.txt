@@ -119,7 +119,7 @@ pydicom==0.9.8
 xlrd==0.9.4
 numexpr==2.6.2
 numpy==1.12.0
-tables==3.3.0
+tables==3.4.2
 pandas==0.19.2
 
 # Feature service
