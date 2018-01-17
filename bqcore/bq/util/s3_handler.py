@@ -36,17 +36,19 @@ def s3_cache_fetch(bucket, key, cache, creds, blocking):
         #k = Key(bucket)
         #k.key = key
         with Locks (None, cache_filename, failonexist=True) as l:
-            if l.locked:
+            if l.locked is True:
                 with Timer () as t:
                     s3_client.download_file (bucket, key, cache_filename)
                 size_bytes = os.path.getsize (cache_filename)
                 log.info("S3 Downloaded %s %s in %s  (%s)/s",
                          cache_filename, sizeof_fmt(size_bytes), t.interval, sizeof_fmt (size_bytes/t.interval))
                 #k.get_contents_to_filename(cache_filename)
-        with Locks (cache_filename, failonread = (not blocking)) as l:
-            if l.locked is False:
-                raise FileLocked
-            return cache_filename
+
+        if cache_filename is not None and os.path.exists(cache_filename):
+            with Locks (cache_filename, failonread = (not blocking)) as l:
+                if l.locked is False:
+                    raise FileLocked
+                return cache_filename
         return None
 
     return cache_filename
