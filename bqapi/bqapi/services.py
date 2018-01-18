@@ -6,6 +6,8 @@ from requests_toolbelt import MultipartEncoder
 from .util import  normalize_unicode
 
 
+#DEFAULT_TIMEOUT=None
+DEFAULT_TIMEOUT=60*60 # 1 hour
 
 ####
 #### KGK
@@ -15,10 +17,11 @@ from .util import  normalize_unicode
 
 class BaseServiceProxy(object):
 
-    def __init__(self, session, service_name):
+    def __init__(self, session, service_name, timeout=DEFAULT_TIMEOUT):
         self.session = session
         self.service_url = session.service_map [service_name]
         self.service_name = service_name
+        self.timeout = timeout
 
     def contruct(self, path, params):
         url = self.service_url
@@ -41,8 +44,10 @@ class BaseServiceProxy(object):
         else:
             path = self.service_url
 
+        # no longer in session https://github.com/requests/requests/issues/3341
+        timeout = kw.pop('timeout', self.timeout)
         try:
-            response = self.session.c.request (url=path, params=params, method=method, **kw)
+            response = self.session.c.request (url=path, params=params, method=method, timeout=timeout, **kw)
             if render =="xml":
                 return etree.fromstring (response.content)
             return response
@@ -124,7 +129,7 @@ def test_module():
     session = BQSession ().init_local ('admin', 'admin', 'http://localhost:8080')
     admin = session.service('admin')
     data = session.service('data_service')
-    admin.user(uniq).login().fetch ()
+    #admin.user(uniq).login().fetch ()
     xml = data.get ("user", params = {'wpublic':'1', 'resource_name' : 'admin'}, render='xml')
     user_uniq = xml.find ("user").get ('resource_uniq')
     admin.fetch ('/user/{}/login'.format( user_uniq))
