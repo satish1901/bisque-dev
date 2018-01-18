@@ -66,7 +66,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 from requests.auth import AuthBase
 from requests import Session
-from requests_toolbelt import MultipartEncoder
+#from requests_toolbelt import MultipartEncoder
 
 try:
     from collections import OrderedDict
@@ -82,6 +82,8 @@ except ImportError:
 from .types import BQMex, BQNode, BQFactory
 from .util import parse_qs, make_qs, xml2d, d2xml, normalize_unicode
 from .RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
+from .services import ServiceFactory
+
 try:
     from .casauth import caslogin
     CAS_SUPPORT=True
@@ -646,32 +648,37 @@ class BQSession(object):
             @param params: params will be added to url query
             @return: a <resource type="uploaded" <image> uri="URI to BLOB" > </image>
         """
-        import_service_url = self.service_url('import', path='transfer')
-        if import_service_url is None:
-            raise BQApiError('Could not find import service to post blob.')
 
-        url = self.c.prepare_url(import_service_url, **params)
-
+        import_service = self.service ("import")
         if xml!=None:
             if not isinstance(xml, basestring):
                 xml = self.factory.to_string(xml)
+        response = import_service.transfer (filename, xml)
+        return response.content
 
-        fields = {}
-        if filename is not None:
-            filename = normalize_unicode(filename)
-            fields['file'] = (filename, open(filename, 'rb'), 'application/octet-stream')
-        if xml is not None:
-            fields['file_resource'] = xml
-        if fields:
-            # https://github.com/requests/toolbelt/issues/75
-            m = MultipartEncoder(fields = fields )
-            m._read = m.read
-            m.read = lambda size: m._read (8129*1024) # 8MB
-            return self.c.push(url,
-                               content=m,
-                               headers={'Accept': 'text/xml', 'Content-Type':m.content_type},
-                               path=path, method=method)
-        raise BQApiError("improper parameters for postblob: must use paramater xml or filename or both ")
+        # import_service_url = self.service_url('import', path='transfer')
+        # if import_service_url is None:
+        #     raise BQApiError('Could not find import service to post blob.')
+        # url = self.c.prepare_url(import_service_url, **params)
+        # if xml!=None:
+        #     if not isinstance(xml, basestring):
+        #         xml = self.factory.to_string(xml)
+        # fields = {}
+        # if filename is not None:
+        #     filename = normalize_unicode(filename)
+        #     fields['file'] = (filename, open(filename, 'rb'), 'application/octet-stream')
+        # if xml is not None:
+        #     fields['file_resource'] = xml
+        # if fields:
+        #     # https://github.com/requests/toolbelt/issues/75
+        #     m = MultipartEncoder(fields = fields )
+        #     m._read = m.read
+        #     m.read = lambda size: m._read (8129*1024) # 8MB
+        #     return self.c.push(url,
+        #                        content=m,
+        #                        headers={'Accept': 'text/xml', 'Content-Type':m.content_type},
+        #                        path=path, method=method)
+        # raise BQApiError("improper parameters for postblob: must use paramater xml or filename or both ")
 
 
     def service_url(self, service_type, path = "" , query=None):
@@ -699,6 +706,9 @@ class BQSession(object):
         for service in services.tags:
             smap [service.type] = service.value
         self.service_map = smap
+
+    def service (self, service_name):
+        return ServiceFactory.make (self, service_name)
 
 
     #############################

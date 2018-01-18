@@ -14,7 +14,7 @@ try:
     from lxml import etree
 except ImportError:
     import xml.etree.ElementTree as etree
-    
+
 import bqapi
 
 
@@ -22,9 +22,13 @@ def find_image_datasets(sess, name_pattern=r'^.*\.czi$', bisque_root=None):
     # find all datasets that should be converted to images
     logging.info("===== finding datasets to convert =====")
     res = []
+    data = sess.service ('data_service')
+
     datasets = None
     try:
-        datasets = sess.fetchxml(url=bisque_root+'/data_service/dataset', view='short,clean', wpublic='1')
+        #datasets = sess.fetchxml(url=bisque_root+'/data_service/dataset', view='short,clean', wpublic='1')
+        #datasets = sess.fetchxml(url=bisque_root+'/data_service/dataset', view='short,clean')
+        datasets  = data.get ("dataset", params = {'view': 'short,clean' }, render='xml')
         logging.debug("got datasets")
     except bqapi.BQCommError:
         logging.error("could not fetch datasets")
@@ -36,7 +40,8 @@ def find_image_datasets(sess, name_pattern=r'^.*\.czi$', bisque_root=None):
         logging.debug("inspecting dataset %s" % dataset.get('resource_uniq'))
         full_dataset = None
         try:
-            full_dataset = sess.fetchxml(url=bisque_root+'/data_service/'+dataset.get('resource_uniq')+'/value', view='short,clean')
+            #full_dataset = sess.fetchxml(url=bisque_root+'/data_service/'+dataset.get('resource_uniq')+'/value', view='short,clean')
+            full_dataset = data.get(dataset.get('resource_uniq')+"/value", params = {'view': 'short,clean'}, render='xml')
         except bqapi.BQCommError:
             logging.error("could not fetch dataset")
             return []
@@ -53,8 +58,10 @@ def find_image_datasets(sess, name_pattern=r'^.*\.czi$', bisque_root=None):
 
 def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dryrun=False, as_user=None):
     dataset = None
+    data = sess.service('data_service')
     try:
-        dataset = sess.fetchxml(url=bisque_root+'/data_service/'+dataset_uniq, view='deep,clean')
+        #dataset = sess.fetchxml(url=bisque_root+'/data_service/'+dataset_uniq, view='deep,clean')
+        dataset = data.fetch(dataset_uniq, params = {'view': 'short,clean'}, render='xml')
         logging.debug("got dataset")
     except bqapi.BQCommError:
         logging.error("could not fetch dataset")
@@ -66,7 +73,8 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
         return None
     image = None
     try:
-        image = sess.fetchxml(url=matches[0].text, view='full,clean')
+        #image = sess.fetchxml(url=matches[0].text, view='full,clean')
+        image = data.fetch (matches[0].text, params = {'view': 'full,clean'}, render='xml')
         logging.debug("got one of the images in dataset")
     except bqapi.BQCommError:
         logging.error("could not fetch image in dataset")
@@ -81,9 +89,11 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
     # write new image back
     res = None
     try:
+        extra = {}
         if not dryrun:
-            extra = {'user':as_user} if as_user is not None else {}
-            res = sess.postxml(url=bisque_root+'/data_service', xml=new_image, **extra)
+            #extra = {'user':as_user} if as_user is not None else {}
+            #res = sess.postxml(url=bisque_root+'/data_service', xml=new_image, **extra)
+            res = data.post (data=etree.tostring(new_image), render="xml")
         else:
             res = etree.Element('image', resource_uniq='00-blabla')
         logging.debug("new image posted back")
@@ -94,7 +104,8 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
     if want_delete:
         try:
             if not dryrun:
-                sess.deletexml(url=bisque_root+'/data_service/'+dataset_uniq)
+                #sess.deletexml(url=bisque_root+'/data_service/'+dataset_uniq)
+                data.delete (dataset_uniq, render="xml")
             logging.debug("old dataset deleted")
         except bqapi.BQCommError:
             logging.error("could not delete dataset")
@@ -103,12 +114,15 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
 
 def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, update_datasets=False, dryrun=False, as_user=None):
     # find any reference to the converted dataset and switch it to the new image
+    data = sess.service("data_service")
     if update_datasets:
         logging.info("===== updating references in datasets =====")
         # (1) search in datasets
         datasets = []
         try:
-            datasets = sess.fetchxml(url=bisque_root+'/data_service/dataset', view='short', wpublic='1')
+            #datasets = sess.fetchxml(url=bisque_root+'/data_service/dataset', view='short', wpublic='1')
+            #datasets = sess.fetchxml(url=bisque_root+'/data_service/dataset', view='short')
+            datasets = data.fetch ("dataset", render="xml")
         except bqapi.BQCommError:
             logging.error("could not fetch datasets")
             return
@@ -116,7 +130,8 @@ def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, u
             deep_dataset = None
             was_updated = False
             try:
-                deep_dataset = sess.fetchxml(url=dataset.get('uri'), view='deep')  # TODO: avoid deep fetch
+                #deep_dataset = sess.fetchxml(url=dataset.get('uri'), view='deep')  # TODO: avoid deep fetch
+                deep_dataset = data.fetch(dataset.get ('resource_uniq'), params={'view':'deep'}, render="xml")
             except bqapi.BQCommError:
                 logging.error("could not fetch dataset %s" % dataset.get('resource_uniq'))
                 continue
@@ -131,9 +146,11 @@ def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, u
                         break
             if was_updated:
                 try:
+                    extra = {}
                     if not dryrun:
-                        extra = {'user':as_user} if as_user is not None else {}
-                        sess.postxml(url=dataset.get('uri'), xml=deep_dataset, **extra)
+                        #extra = {'user':as_user} if as_user is not None else {}
+                        #sess.postxml(url=dataset.get('uri'), xml=deep_dataset, **extra)
+                        data.post(data=etree.tostring(deep_dataset)) # no check?
                     logging.debug("dataset %s updated" % dataset.get('resource_uniq'))
                 except bqapi.BQCommError:
                     logging.error("could not update dataset %s" % dataset.get('resource_uniq'))
@@ -142,7 +159,8 @@ def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, u
         # (2) search in mexes
         mexes = []
         try:
-            mexes = sess.fetchxml(url=bisque_root+'/data_service/mex', view='short', wpublic='1')
+            #mexes = sess.fetchxml(url=bisque_root+'/data_service/mex', view='short')
+            mexes = data.fetch ("mex", render='xml')
         except bqapi.BQCommError:
             logging.error("could not fetch mexes")
             return
@@ -150,7 +168,8 @@ def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, u
             deep_mex = None
             was_updated = False
             try:
-                deep_mex = sess.fetchxml(url=mex.get('uri'), view='deep')  # TODO: avoid deep fetch
+                #deep_mex = sess.fetchxml(url=mex.get('uri'), view='deep')  # TODO: avoid deep fetch
+                deep_mex = data.fetch (mex.get('resource_uniq'), params={'view':'deep'}, render='xml')
             except bqapi.BQCommError:
                 logging.error("could not fetch mex %s" % mex.get('resource_uniq'))
                 continue
@@ -165,20 +184,25 @@ def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, u
                         break
             if was_updated:
                 try:
+                    extra = {}
                     if not dryrun:
-                        extra = {'user':as_user} if as_user is not None else {}
-                        sess.postxml(url=mex.get('uri'), xml=deep_mex, **extra)
+                        #extra = {'user':as_user} if as_user is not None else {}
+                        #sess.postxml(url=mex.get('uri'), xml=deep_mex, **extra)
+                        data.post (mex.get('resource_uniq'), data=etree.tostring(deep_mex))
                     logging.debug("mex %s updated" % mex.get('resource_uniq'))
                 except bqapi.BQCommError:
                     logging.error("could not update mex %s" % mex.get('resource_uniq'))
 
 def delete_datasets(sess, dataset_uniqs, bisque_root=None, dryrun=False):
     logging.info("===== deleting old dataset =====")
+    dataset= sess.service("dataset")
     for dataset_uniq in dataset_uniqs:
         try:
             if not dryrun:
-                sess.deletexml(url=bisque_root+'/data_service/'+dataset_uniq)
-            logging.debug("old dataset %s deleted" % dataset_uniq)
+                #sess.deletexml(url=bisque_root+'/data_service/'+dataset_uniq)
+                #sess.fetchxml(url=bisque_root+'/dataset_service/delete', duri="{}/data_service/{}".format (bisque_root, dataset_uniq))
+                dataset.delete (dataset_uniq, members=True)
+            logging.info("old dataset %s deleted" , dataset_uniq)
         except bqapi.BQCommError:
             logging.error("could not delete dataset %s" % dataset_uniq)
 
@@ -193,7 +217,7 @@ converts the given dataset into an image resource.
 
 def main():
     parser = argparse.ArgumentParser(USAGE)
-    parser.add_argument("dataset_uniq", help = "resource uniq of dataset to convert (or ALL)" )
+    parser.add_argument("dataset_uniq",  help = "resource uniq of dataset to convert (or ALL)" )
     parser.add_argument("--delete", '-d', default=False, action="store_true", help="delete dataset after conversion")
     parser.add_argument("--server", "-s", help="BisQue server", default='http://localhost')
     parser.add_argument("--auth", "-a", help="basic auth credentials (user:passwd)", default='admin:admin')
@@ -204,18 +228,21 @@ def main():
     parser.add_argument("--dsrefs", default=False, action="store_true", help="update dataset refs to converted images")
     args = parser.parse_args()
     print (args)
-    
+
     logging.basicConfig(stream=sys.stdout,
                         level=logging.DEBUG if args.verbose else logging.INFO,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
-        
+
     try:
         user, passwd = args.auth.split(':')
     except AttributeError:
         user, passwd = 'admin', 'admin'
     sess = bqapi.BQSession ().init_local(user, passwd, bisque_root=args.server, create_mex=False)
-    
+    if args.user:
+        admin = sess.service ('admin')
+        admin.login_as (args.user)
+
     if args.dataset_uniq.lower() == 'all':
         dataset_map = {}
         datasets = find_image_datasets(sess, bisque_root=args.server.rstrip('/'))
@@ -226,10 +253,10 @@ def main():
                 dataset_map[dataset_uniq] = img_uniq
         update_references(sess, dataset_map, bisque_root=args.server.rstrip('/'), update_mexes=args.mexrefs, update_datasets=args.dsrefs, dryrun=args.dryrun, as_user=args.user)
         if args.delete:
-            delete_datasets(sess, dataset_map.keys(), bisque_root=args.server.rstrip('/'), dryrun=args.dryrun)        
+            delete_datasets(sess, dataset_map.keys(), bisque_root=args.server.rstrip('/'), dryrun=args.dryrun)
     else:
         logging.info("===== converting dataset to image =====")
         convert_dataset(sess, args.dataset_uniq, want_delete=args.delete, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)
-    
+
 if __name__ == "__main__":
     main()
