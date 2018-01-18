@@ -92,8 +92,7 @@ def unicode_safe(u):
 
 
 #: Gobject type that may be used as top level tags
-known_gobjects = [
-    'gobject',
+VERTEX_GOBJECTS = set ([
     'point',
     'line' ,
     'polygon',
@@ -102,11 +101,11 @@ known_gobjects = [
     'circle',
     'ellipse' ,
     'label',
-    ]
+    ])
+KNOWN_GOBJECTS = set (VERTEX_GOBJECTS)
+KNOWN_GOBJECTS .update (['gobject'])
 
-
-
-system_types = [
+SYSTEM_TYPES = set ([
     'value',
     'vertex',
     'gobject',
@@ -126,7 +125,16 @@ system_types = [
     'link',
     'preference',
     'annotation',
-    ]
+    ])
+
+# types that containe values
+VALUE_TYPES = set ([
+    'gobject',
+    'tag',
+    'file',
+    'image',
+    'dataset',
+    ])
 
 
 def valid_element(tag):
@@ -189,7 +197,7 @@ class ResourceFactory(object):
     @classmethod
     def new(cls, xmlnode, parent, **kw):
         xmlname = xmlnode.tag
-        if xmlname in known_gobjects:
+        if xmlname in KNOWN_GOBJECTS:
             node = Taggable('gobject', parent = parent)
             if xmlname != 'gobject':
                 node.resource_user_type = xmlname
@@ -250,7 +258,7 @@ class ResourceFactory(object):
     @classmethod
     def index(cls, node, parent, indx, cleared):
         xmlname = node.tag
-        if xmlname in known_gobjects:
+        if xmlname in KNOWN_GOBJECTS:
             xmlname = 'gobject'
         #return cls.new(xmlname, parent)
         array, klass = cls.index_map.get (xmlname, (None,None))
@@ -413,58 +421,46 @@ def xmlelement(dbo, parent, baseuri, view, **kw):
     if 'primary' in view:
         kw['primary'] = str(dbo.id) if hasattr(dbo,'id') else ''
 
-    if 'canonical' in view or xtag not in system_types:
+    if 'canonical' in view or xtag not in SYSTEM_TYPES:
         kw['resource_type'] = xtag
         xtag = 'resource'
-    elif xtag == 'gobject' and dbo.type in known_gobjects:
+    elif xtag == 'gobject' and dbo.type in KNOWN_GOBJECTS:
         xtag  = dbo.type
         kw.pop('type')
+    elif xtag == 'value':
+        kw['type'] = dbo.type
+        if dbo.type == 'object':
+            kw['text'] = baseuri + unicode_safe(dbo.value)
+        else:
+            kw['text'] = unicode_safe(dbo.value)
     text = kw.pop ('text',None)
     if parent is not None:
         #log.debug ("etree: " + str(xtag)+ str(kw))
         elem =  etree.SubElement (parent, xtag, **kw)
     else:
         elem =  etree.Element (xtag,  **kw)
-    elem.text = text and str(text)
+    elem.text = text
     return elem
 
 
 def xmlnode(dbo, parent, baseuri, view, **kw):
-    'Produce a XML element and children '
+    'Produce a XML element and value/vertex children '
     rtype = getattr(dbo, 'resource_type', dbo.xmltag)
-    #log.debug ('xmlnode %s %s ' % (rtype, view))
-    #rtype = dbo.xmltag
-    if rtype not in ('value', 'vertex'):
-        elem = xmlelement (dbo, parent, baseuri, view=view)
-        if 'deep' not in view and hasattr(dbo,'resource_value') and dbo.resource_value is None:
-            # adding value's
-            if 'short' not in view:
-                _ = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
-        if 'deep' not in view and 'short' not in view and hasattr(dbo, 'vertices'):
-            # adding vertices
-            _ = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
-        return elem
 
-    #if rtype == 'tag':
-    #    elem = xmlelement (dbo, parent, baseuri, view=view)
-    #    if 'deep' not in view and dbo.resource_value == None:
-    #        junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.values ]
-    #    return elem
-    #if  rtype == 'gobject':
-    #    if 'canonical' not in view and dbo.type in known_gobjects:
-    #        elem = xmlelement (dbo, parent, baseuri, xtag=dbo.type, view=view)
-    #    else:
-    #        elem = xmlelement (dbo, parent, baseuri, view=view)
-    #    if 'deep' not in view:
-    #        junk = [ xmlnode(x, elem, baseuri, view) for x in dbo.vertices ]
-    #    return elem
-    if rtype=='value':
+    if rtype in VERTEX_GOBJECTS:
         elem = xmlelement (dbo, parent, baseuri, view=view)
-        elem.set('type', dbo.type)
-        if dbo.type == 'object':
-            elem.text = baseuri + unicode_safe(dbo.value)
-        else:
-            elem.text = unicode_safe(dbo.value)
+        #if 'deep' not in view and 'short' not in view and hasattr(dbo, 'vertices'):
+        if 'deep' not in view and 'short' not in view:
+            # adding vertices
+            _ = [ xmlelement(x, elem, baseuri, view) for x in dbo.vertices ]
+        return elem
+    if rtype in VALUE_TYPES:
+        elem = xmlelement (dbo, parent, baseuri, view=view)
+        if 'deep' not in view \
+           and  'short' not in view \
+           and  hasattr(dbo,'resource_value') and dbo.resource_value is None:
+            # adding value's
+            _ = [ xmlelement(x, elem, baseuri, view) for x in dbo.values ]
         return elem
 
     elem = xmlelement (dbo, parent, baseuri, view=view)
@@ -544,7 +540,7 @@ def resource2tree(dbo, parent=None, view=None, baseuri=None, nodes= {}, doc_id =
         else:
             return nodes[dbo.id], nodes, doc_id
     except KeyError:
-        log.exception ("Problem loading tree for document %s: nodes %s" % ( doc_id, nodes))
+        log.exception ("Problem loading tree for document %s: nodes %s" ,   doc_id, str(nodes))
 
     return xmlnode(dbo, parent=parent, baseuri=baseuri, view=view), nodes, doc_id
 
@@ -567,7 +563,7 @@ def db2tree(dbo, parent=None, view=None, baseuri=None, progressive=False, **kw):
     if progressive and max_response_time>0:
         log.debug ("progressive response: max %f", max_response_time)
         starttime = time.clock()
-        endtime   = starttime + max_response_time;
+        endtime   = starttime + max_response_time
     #log.debug ("db2tree: %s", str(dbo))
 
     complete,r = db2tree_int(dbo, parent, view, baseuri, endtime, **kw)
@@ -605,10 +601,10 @@ def db2tree_int(dbo, parent = None, view=None, baseuri=None, endtime=None, **kw)
 
 
 def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
-    from bq.data_service.controllers.resource_query import resource_permission
+    #from bq.data_service.controllers.resource_query import resource_permission
     #log.debug ("db2node dbo=%s view=%s", str(dbo), view)
     if dbo is None:
-        log.error ("None pass to as DB object parent = %s" % parent)
+        log.error ("None pass to as DB object parent = %s" , str( parent))
         return None, nodes, doc_id
     if  'deep' in view :
         n, nodes, doc_id = resource2tree(dbo, parent, view, baseuri, nodes, doc_id)
@@ -760,16 +756,16 @@ def load_uri (uri, query=False):
         if service  not in  ('data_service', 'module_service'):
             return None
         if ida and is_uniq_code (ida):
-            log.debug("loading resource_uniq %s" % ida)
+            log.debug("loading resource_uniq %s" , ida)
             resource = DBSession.query(Taggable).filter_by(resource_uniq = ida)
         elif clname:
             name, dbcls = dbtype_from_tag(clname)
-            log.debug("loading %s -> name/type (%s/%s)(%s) " %(uri, name,  str(dbcls), ida))
+            #log.debug("loading %s -> name/type (%s/%s)(%s) " , uri, name,  str(dbcls), ida)
             #resource = DBSession.query(dbcls).get (int (ida))
             resource = DBSession.query(dbcls).filter (dbcls.id == int(ida))
         if not query:
             resource = resource.first()
-        log.debug ("loaded %s"  % resource)
+        #log.debug ("loaded %s"  % resource)
         return resource
     except Exception:
         log.exception("Failed to load uri %s", uri)
@@ -799,8 +795,8 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
     try:
         evnodes = etree.iterwalk(root, events=('start','end'))
         log.debug ("updateDB: walking " + str(root))
-    except TypeError, e:
-        log.exception ("bad parse of tree: root-> %s %s" % ( root, resource ))
+    except TypeError as e:
+        log.exception ("bad parse of tree: root-> %s %s" , str(root), str(resource))
         raise e
 
     last_resource = None
@@ -902,16 +898,17 @@ def bisquik2db_internal(inputs, parent, resource,  replace):
         if node not in DBSession:  # pylint: disable=unsupported-membership-test
             # pylint: disable=no-member
             DBSession.add(node)
-        log.debug ("node.document = %s"  % node.document)
+        #log.debug ("node.document = %s"  , str( node.document))
         node.document.ts = ts
         results.append(node)
 
     #DBSession.flush()
     #for node in results:
     #    DBSession.refresh(node)
-    log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' ,
+    if log.isEnabledFor (logging.DEBUG):
+        log.debug ('modifyed : new (%d), dirty (%d), deleted(%d)' ,
                len(DBSession.new), len(DBSession.dirty), len(DBSession.deleted))     # pylint: disable=no-member
-    log.debug("Bisquik2db last_node %s of document %s " % (node, node.document))
+        log.debug("Bisquik2db last_node %s of document %s " ,  str (node), str(node.document))
     if len(results) == 1:
         return node
     return results
