@@ -285,7 +285,8 @@ class AuthenticationServer(ServiceController):
                                  name='user', value=data_service.uri() + current_user.uri)
                 etree.SubElement(sess, 'tag', name='group', value=",".join([ g.group_name for g in  current_user.get_groups()]))
 
-            etree.SubElement (sess, 'tag', name='expires', value= expires.isoformat() )
+            # https://stackoverflow.com/questions/19654578/python-utc-datetime-objects-iso-format-doesnt-include-z-zulu-or-zero-offset
+            etree.SubElement (sess, 'tag', name='expires', value= expires.isoformat()+'Z' )
             etree.SubElement (sess, 'tag', name='timeout', value= str(timeout) )
             etree.SubElement (sess, 'tag', name='length', value= str(length) )
         return etree.tostring(sess)
