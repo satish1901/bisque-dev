@@ -46,8 +46,12 @@ class BaseServiceProxy(object):
 
         # no longer in session https://github.com/requests/requests/issues/3341
         timeout = kw.pop('timeout', self.timeout)
+        headers = kw.pop('headers', self.session.c.headers)
+        if render=="xml":
+            headers.update ({'Content-Type':'text/xml', 'Accept': 'text/xml'})
+
         try:
-            response = self.session.c.request (url=path, params=params, method=method, timeout=timeout, **kw)
+            response = self.session.c.request (url=path, params=params, method=method, timeout=timeout, headers=headers, **kw)
             if render =="xml":
                 return etree.fromstring (response.content)
             return response
@@ -106,6 +110,12 @@ class DatasetProxy (BaseServiceProxy):
             return self.fetch("delete", params=params, **kw)
         data = self.session.service('data')
         return data.delete (dataset_uniq)
+
+
+
+class ModuleProxy (BaseServerProxy):
+    def execute (self, module_name, **module_parms):
+        pass
 
 
 SERVICE_PROXIES = {

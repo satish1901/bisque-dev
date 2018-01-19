@@ -61,7 +61,7 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
     data = sess.service('data_service')
     try:
         #dataset = sess.fetchxml(url=bisque_root+'/data_service/'+dataset_uniq, view='deep,clean')
-        dataset = data.fetch(dataset_uniq, params = {'view': 'short,clean'}, render='xml')
+        dataset = data.fetch(dataset_uniq, params = {'view': 'deep,clean'}, render='xml')
         logging.debug("got dataset")
     except bqapi.BQCommError:
         logging.error("could not fetch dataset")
@@ -195,7 +195,7 @@ def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, u
 
 def delete_datasets(sess, dataset_uniqs, bisque_root=None, dryrun=False):
     logging.info("===== deleting old dataset =====")
-    dataset= sess.service("dataset")
+    dataset= sess.service("dataset_service")
     for dataset_uniq in dataset_uniqs:
         try:
             if not dryrun:
