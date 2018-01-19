@@ -208,6 +208,49 @@ def update_references(sess, dataset_map, bisque_root=None, update_mexes=False, u
                 except bqapi.BQCommError:
                     logging.error("could not update mex %s" % mex.get('resource_uniq'))
 
+def rerun_mexes(sess, dataset_map, bisque_root=None, dryrun=False, as_user=None):
+    # find all mexes that have one of the converted datasets as input
+    # and re-run them with the new image as input
+    # after that, delete the old mex
+    data = sess.service("data_service")
+    module = sess.service("module_service")
+    # (1) find affected mexes
+    mexes = []
+    try:
+        mexes = data.fetch ("mex", params={'view':'full'}, render="xml")
+    except bqapi.BQCommError:
+        logging.error("could not fetch mexes")
+        return
+    for mex in mexes:
+        input_url = mex.xpath("./tag[@name='inputs']")
+        if len(input_url) >= 1:
+            mex_input = None
+            try:
+                mex_input = sess.fetchxml(url=input_url[0].get('uri'), view='deep,clean')
+            except bqapi.BQCommError:
+                logging.error("could not fetch mex %s input" % mex.get('resource_uniq'))
+                continue
+            in_links = mex_input.xpath("./tag[@name='resource_url' and @type='image]")
+            if len(in_links) >= 1 and in_links[0].get('value').startswith('http'):
+                for dataset_uniq, img_uniq in dataset_map.iteritems():
+                    if in_links[0].get('value').endswith(dataset_uniq):
+                        # found a mex with converted input => create new mex for re-run
+                        logging.debug("found mex to rerun: %s" % mex.get('resource_uniq'))
+                        new_mex = mex.copy()
+                        new_mex.append(mex_input.deepcopy())
+                        new_link = new_mex.xpath("./tag[@name='inputs']/tag[@name='resource_url' and @type='image]")[0]
+                        new_link.set("value", in_links[0].get('value').replace(dataset_uniq, img_uniq))
+                        # (2) re-run the MEX
+                        if not dryrun:
+                            extra = {'user':as_user} if as_user is not None else {}
+                            sess.postxml(url=bisque_root+'/module_service/'+mex.get('name')+'/execute', xml=new_mex, **extra)
+                            # now wait???
+                        logging.debug("mex %s started" % etree.tostring(new_mex))
+                        # (3) delete old MEX
+                        if not dryrun:
+                            data.delete(mex.get('resource_uniq'), render="xml")
+                        logging.debug("old mex %s deleted" % mex.get('resource_uniq'))
+
 def delete_datasets(sess, dataset_uniqs, bisque_root=None, dryrun=False):
     logging.info("===== deleting old dataset =====")
     dataset= sess.service("dataset_service")
@@ -241,6 +284,7 @@ def main():
     parser.add_argument("--dryrun", '-r', default=False, action="store_true", help="no updates")
     parser.add_argument("--mexrefs", default=False, action="store_true", help="update mex refs to converted images")
     parser.add_argument("--dsrefs", default=False, action="store_true", help="update dataset refs to converted images")
+    parser.add_argument("--mexrerun", default=False, action="store_true", help="delete and rerun mexes with converted images")
     args = parser.parse_args()
     print (args)
 
@@ -267,6 +311,8 @@ def main():
             if img_uniq is not None:
                 dataset_map[dataset_uniq] = img_uniq
         update_references(sess, dataset_map, bisque_root=args.server.rstrip('/'), update_mexes=args.mexrefs, update_datasets=args.dsrefs, dryrun=args.dryrun, as_user=args.user)
+        if args.mexrerun:
+            rerun_mexes(sess, dataset_map, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)
         if args.delete:
             delete_datasets(sess, dataset_map.keys(), bisque_root=args.server.rstrip('/'), dryrun=args.dryrun)
     else:
