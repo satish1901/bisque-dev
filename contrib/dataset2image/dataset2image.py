@@ -75,6 +75,7 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
     try:
         #image = sess.fetchxml(url=matches[0].text, view='full,clean')
         image = data.fetch (matches[0].text, params = {'view': 'full,clean'}, render='xml')
+        link  = data.fetch ('link', params = {'noparent':1, 'value': image.get('resource_uniq')}, render='xml')
         logging.debug("got one of the images in dataset")
     except bqapi.BQCommError:
         logging.error("could not fetch image in dataset")
@@ -86,6 +87,8 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
     for match in dataset.xpath("./tag"):
         match_copy = copy.deepcopy(match)
         new_image.append(match_copy)
+
+
     # write new image back
     res = None
     try:
@@ -95,11 +98,23 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
             #res = sess.postxml(url=bisque_root+'/data_service', xml=new_image, **extra)
             res = data.post (data=etree.tostring(new_image), render="xml")
         else:
-            res = etree.Element('image', resource_uniq='00-blabla')
+            res = etree.Element('image', name="blabla" , resource_uniq='00-blabla')
         logging.debug("new image posted back")
     except bqapi.BQCommError:
         logging.error("could not post new image back")
         return None
+    # update link
+    if link:
+        ## <link ... uri="http://loup.ece.ucsb.edu:8888/data_service/00-Xwdsd6i8GdGyiLyKuK85b/store/229/dir/18718/link/18719" />
+        link_uri = link.get ('uri')
+        dir_uri  = link_uri[link_uri.find("data_sevice/")+12: link_uri.rfind ('link')]
+        link_xml = etree.Element ('link', name=image.get ('name'), value=image.get ('value'))
+        try:
+            logging.debug ("new %s at %s", etree.tostring (link_xml), dir_uri)
+            res = data.post (dir_uri, data=etree.tostring (link_xml), render='xml')
+        except bqapi.BQCommError:
+            logging.error("could not post new image link")
+
     # delete old dataset if requested
     if want_delete:
         try:
