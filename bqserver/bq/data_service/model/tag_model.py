@@ -138,12 +138,12 @@ taggable = Table('taggable', metadata,
                  Column('resource_type', Unicode(255), index=True ),  # will be same as tb_id UniqueName
                  Column('resource_name', Unicode (1023), index=True),
                  Column('resource_user_type', Unicode(1023), ),
-                 Column('resource_value',  UnicodeText, index=True),
+                 Column('resource_value',  UnicodeText),
                  Column('resource_parent_id', Integer, ForeignKey('taggable.id', name="taggable_children_fk", ondelete="CASCADE"), index=True),
                  Column('document_id', Integer, ForeignKey('taggable.id', name="taggable_document_fk", ondelete="CASCADE"), index=True), # Unique Element
                  Column('resource_unid', UnicodeText),
-                 #Index('idx_user_unid', 'document_id', 'user_unid', unique=True)
-           Index('idx_user_unid', 'owner_id', 'resource_parent_id', 'resource_unid', unique=True,  mysql_length = {'resource_unid' : 255})
+                 Index('idx_user_unid', 'owner_id', 'resource_parent_id', 'resource_unid', unique=True,  mysql_length = {'resource_unid' : 255}),
+                 Index ('idx_resource_value', 'resource_value', postgresql_ops = { 'resource_value' : 'text_pattern_ops' })
                  )
 
 values = Table ('values', metadata,
@@ -152,7 +152,8 @@ values = Table ('values', metadata,
           Column('document_id',Integer, ForeignKey('taggable.id', name="values_document_fk", ondelete="CASCADE"), index=True),
           Column('valstr', UnicodeText),
           Column('valnum', Float),
-          Column('valobj', Integer, ForeignKey('taggable.id'))
+          Column('valobj', Integer, ForeignKey('taggable.id')),
+          Index ('idx_value_valobj', 'valobj')
                       )
 
 vertices = Table ('vertices', metadata,
@@ -169,10 +170,8 @@ taggable_acl = Table('taggable_acl', metadata,
                      Column('taggable_id', Integer, ForeignKey('taggable.id'), primary_key=True),
                      Column('user_id', Integer, ForeignKey('taggable.id'),primary_key=True),
                      Column('permission', Integer, key="action_code"),
-                     )
-
-
-
+                     Index ('idx_taggableacl_taggable_id', 'taggable_id'),
+                    )
 
 # users = Table ('users', metadata,
 #                Column('id', Integer, ForeignKey('taggable.id'), primary_key=True),
