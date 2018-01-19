@@ -56,7 +56,7 @@ class DockerEnvironment(BaseEnvironment):
     config = { }
     matlab_launcher = ""
     docker_keys = [ 'docker.hub', 'docker.image', 'docker.hub.user', 'docker.hub.user', 'docker.hub.email',
-                      'docker.login_tmpl' ]
+                      'docker.login_tmpl', 'docker.default_tag' ]
 
     def process_config (self, runner, **kw):
         runner.load_section ('docker', runner.bisque_cfg)
@@ -99,6 +99,8 @@ class DockerEnvironment(BaseEnvironment):
         docker_pull = ""
         docker_login= ""
         docker_image = "/".join ([x for x in  [ p.docker_hub, p.docker_hub_user, p.docker_image ] if x ])
+        if p.docker_default_tag and ':' not in docker_image:
+            docker_image = "{}:{}".format (docker_image, p.docker_default_tag)
         # always pull an image
         if p.docker_hub:
             docker_login = p.docker_login_tmpl.format ( p )
