@@ -286,6 +286,10 @@ def docker_setup (image, command, base_image=None, params=None):
     docker_user = docker_params.get ('docker.hub.user', '')
     docker_pass = docker_params.get('docker.hub.password', '')
     docker_email = docker_params.get('docker.hub.email', '')
+    docker_default_tag = docker_params.get ('docker.default_tag', None)
+    if docker_default_tag and ':' not in image:
+        image = "{}:{}".format (image, docker_default_tag)
+
 
     image = "/".join (filter (lambda x:x, [ docker_hub, docker_user, image.lower() ]))
 

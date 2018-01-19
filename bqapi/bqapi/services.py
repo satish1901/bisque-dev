@@ -113,7 +113,7 @@ class DatasetProxy (BaseServiceProxy):
 
 
 
-class ModuleProxy (BaseServerProxy):
+class ModuleProxy (BaseServiceProxy):
     def execute (self, module_name, **module_parms):
         pass
 

@@ -110,8 +110,11 @@ def session_update():
     timeout = session.get ('timeout', 0)
     length = session.get ('length', 0)
     if timeout and length:
-        session['expires']  = (datetime.utcnow() + timedelta(seconds=length))
-        session.save()
+        newexpire =  datetime.utcnow() + timedelta(seconds=length)
+        log.debug ("SESSION EXPIRE %s", session['expires'])
+        if newexpire >= session['expires'] + timedelta (seconds=timeout):
+            session['expires']  = newexpire
+            session.save()
 
 
 class ServiceRegistryController (ServiceController):
