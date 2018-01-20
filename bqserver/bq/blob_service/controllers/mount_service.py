@@ -741,7 +741,7 @@ class MountServer(TGController):
             files = []
             sub = ''
             for storeurl in bloburls:
-                localblob = driver.pull (storeurl, blocking)
+                localblob = driver.pull (storeurl, blocking=blocking)
                 if localblob is None:
                     log.error ("Failed to fetch blob for %s of %s during pull %s", uniq, bloburls, storeurl)
                     return None
