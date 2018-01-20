@@ -15,11 +15,20 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.create_index('ix_taggableacl_taggable_id', 'taggable_acl', [ 'taggable_id'])
-    op.create_index('ix_values_valobj', 'values', [ 'valobj'])
-    op.drop_index('ix_taggable_resource_value', 'taggable')
-    op.create_index('ix_taggable_resource_value', 'taggable', [ 'resource_value' ],
-                    postgresql_ops = { 'resource_value': 'text_pattern_ops' } )
+    try:
+        op.create_index('ix_taggableacl_taggable_id', 'taggable_acl', [ 'taggable_id'])
+    except sa.exc.IntegrityError:
+        pass
+    try:
+        op.create_index('ix_values_valobj', 'values', [ 'valobj'])
+    except sa.exc.IntegrityError:
+        pass
+    try:
+        op.drop_index('ix_taggable_resource_value', 'taggable')
+        op.create_index('ix_taggable_resource_value', 'taggable', [ 'resource_value' ],
+                        postgresql_ops = { 'resource_value': 'text_pattern_ops' } )
+    except sa.exc.IntegrityError:
+        pass
 
 
 def downgrade():
