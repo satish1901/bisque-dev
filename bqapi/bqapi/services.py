@@ -4,6 +4,7 @@ import urlparse
 from lxml import etree
 from requests_toolbelt import MultipartEncoder
 from .util import  normalize_unicode
+from .exception import BQCommError
 
 
 #DEFAULT_TIMEOUT=None
@@ -23,7 +24,7 @@ class BaseServiceProxy(object):
         self.service_name = service_name
         self.timeout = timeout
 
-    def contruct(self, path, params):
+    def construct(self, path, params):
         url = self.service_url
         if params:
             path = "%s?%s" % (path, urllib.urlencode(params))
@@ -56,7 +57,8 @@ class BaseServiceProxy(object):
                 return etree.fromstring (response.content)
             return response
         except etree.ParseError:
-            self.session.log.error ("xml parse error in %s", response.content)
+            #self.session.log.error ("xml parse error in %s", response.content)
+            raise BQCommError(response)
 
     def fetch(self, path=None, params=None, render=None, **kw):
         return self.request(path=path, params=params, render=render, **kw)

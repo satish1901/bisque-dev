@@ -48,6 +48,7 @@ def find_image_datasets(sess, name_pattern=r'^.*\.czi$', bisque_root=None):
         good_refs = True
         for ref_image in full_dataset.xpath("./image"):
             if not re.match('^.*#[0-9]+$', ref_image.get('name')) or not re.match('^.*#[0-9]+$', ref_image.get('value')):
+            # local testing !!!!!!!!!! if not any([ref_image.get('name').lower().endswith(ext) for ext in ['jpg', 'tif']]) or not any([ref_image.get('value').lower().endswith(ext) for ext in ['jpg', 'tif']]):
                 logging.debug("malformatted image name/value found, skipping dataset")
                 good_refs = False
                 break
@@ -75,7 +76,7 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
     try:
         #image = sess.fetchxml(url=matches[0].text, view='full,clean')
         image = data.fetch (matches[0].text, params = {'view': 'full,clean'}, render='xml')
-        link  = data.fetch ('link', params = {'noparent':1, 'value': image.get('resource_uniq')}, render='xml')
+        links  = data.fetch ('link', params = {'noparent':1, 'value': image.get('resource_uniq')}, render='xml')
         logging.debug("got one of the images in dataset")
     except bqapi.BQCommError:
         logging.error("could not fetch image in dataset")
@@ -98,20 +99,22 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
             #res = sess.postxml(url=bisque_root+'/data_service', xml=new_image, **extra)
             res = data.post (data=etree.tostring(new_image), render="xml")
         else:
-            res = etree.Element('image', name="blabla" , resource_uniq='00-blabla')
+            res = etree.Element('image', name="dryrun" , resource_uniq='00-dryrun')
         logging.debug("new image posted back")
     except bqapi.BQCommError:
         logging.error("could not post new image back")
         return None
     # update link
-    if link:
+    if links is not None and len(links) >= 1:
+        link = links[0]
         ## <link ... uri="http://loup.ece.ucsb.edu:8888/data_service/00-Xwdsd6i8GdGyiLyKuK85b/store/229/dir/18718/link/18719" />
         link_uri = link.get ('uri')
-        dir_uri  = link_uri[link_uri.find("data_sevice/")+12: link_uri.rfind ('link')]
+        dir_uri  = link_uri[link_uri.find("data_service/")+13: link_uri.rfind ('link')]
         link_xml = etree.Element ('link', name=image.get ('name'), value=image.get ('value'))
         try:
+            if not dryrun:
+                data.post (dir_uri, data=etree.tostring (link_xml), render='xml')
             logging.debug ("new %s at %s", etree.tostring (link_xml), dir_uri)
-            res = data.post (dir_uri, data=etree.tostring (link_xml), render='xml')
         except bqapi.BQCommError:
             logging.error("could not post new image link")
 
@@ -212,8 +215,9 @@ def rerun_mexes(sess, dataset_map, bisque_root=None, dryrun=False, as_user=None)
     # find all mexes that have one of the converted datasets as input
     # and re-run them with the new image as input
     # after that, delete the old mex
+    logging.info("===== re-running affected mexes =====")
     data = sess.service("data_service")
-    module = sess.service("module_service")
+    #module = sess.service("module_service")
     # (1) find affected mexes
     mexes = []
     try:
@@ -230,22 +234,22 @@ def rerun_mexes(sess, dataset_map, bisque_root=None, dryrun=False, as_user=None)
             except bqapi.BQCommError:
                 logging.error("could not fetch mex %s input" % mex.get('resource_uniq'))
                 continue
-            in_links = mex_input.xpath("./tag[@name='resource_url' and @type='image]")
+            in_links = mex_input.xpath("./tag[(@name='resource_url' or @name='image_url') and @type='dataset']")
             if len(in_links) >= 1 and in_links[0].get('value').startswith('http'):
                 for dataset_uniq, img_uniq in dataset_map.iteritems():
                     if in_links[0].get('value').endswith(dataset_uniq):
                         # found a mex with converted input => create new mex for re-run
                         logging.debug("found mex to rerun: %s" % mex.get('resource_uniq'))
-                        new_mex = mex.copy()
-                        new_mex.append(mex_input.deepcopy())
-                        new_link = new_mex.xpath("./tag[@name='inputs']/tag[@name='resource_url' and @type='image]")[0]
+                        new_mex = etree.Element('mex')
+                        new_mex.append(copy.deepcopy(mex_input))
+                        new_link = new_mex.xpath("./tag[@name='inputs']/tag[(@name='resource_url' or @name='image_url') and @type='dataset']")[0]
                         new_link.set("value", in_links[0].get('value').replace(dataset_uniq, img_uniq))
+                        new_link.set("type", "image")
                         # (2) re-run the MEX
                         if not dryrun:
                             extra = {'user':as_user} if as_user is not None else {}
                             sess.postxml(url=bisque_root+'/module_service/'+mex.get('name')+'/execute', xml=new_mex, **extra)
-                            # now wait???
-                        logging.debug("mex %s started" % etree.tostring(new_mex))
+                        logging.debug("started module %s with mex %s" % (mex.get('name'), etree.tostring(new_mex)))
                         # (3) delete old MEX
                         if not dryrun:
                             data.delete(mex.get('resource_uniq'), render="xml")
