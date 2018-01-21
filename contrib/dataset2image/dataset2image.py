@@ -60,9 +60,11 @@ def find_image_datasets(sess, name_pattern=r'^.*\.czi$', bisque_root=None):
 def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dryrun=False, as_user=None):
     dataset = None
     data = sess.service('data_service')
+    blobs= sess.service('blob_service')
     try:
         #dataset = sess.fetchxml(url=bisque_root+'/data_service/'+dataset_uniq, view='deep,clean')
         dataset = data.fetch(dataset_uniq, params = {'view': 'deep,clean'}, render='xml')
+        dataset_created=data.fetch (dataset_uniq, render='xml').get ('created')
         logging.debug("got dataset")
     except bqapi.BQCommError:
         logging.error("could not fetch dataset")
@@ -76,19 +78,18 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
     try:
         #image = sess.fetchxml(url=matches[0].text, view='full,clean')
         image = data.fetch (matches[0].text, params = {'view': 'full,clean'}, render='xml')
-        links  = data.fetch ('link', params = {'noparent':1, 'value': image.get('resource_uniq')}, render='xml')
+        #links  = data.fetch ('link', params = {'noparent':1, 'value': image.get('resource_uniq')}, render='xml')
         logging.debug("got one of the images in dataset")
     except bqapi.BQCommError:
         logging.error("could not fetch image in dataset")
         return None
     image_filename = image.xpath("./tag[@name='filename']")[0].get('value')
     # create image resource with filename without '#' and with all tags from dataset
-    new_image = etree.Element('image', name=image.get('name').split('#')[0], value=image.get('value').split('#')[0])
+    new_image = etree.Element('image', created=dataset_created, name=image.get('name').split('#')[0], value=image.get('value').split('#')[0])
     etree.SubElement(new_image, 'tag', name='filename', value=image_filename.split('#')[0])
     for match in dataset.xpath("./tag"):
         match_copy = copy.deepcopy(match)
         new_image.append(match_copy)
-
 
     # write new image back
     res = None
@@ -105,18 +106,15 @@ def convert_dataset(sess, dataset_uniq, want_delete=False, bisque_root=None, dry
         logging.error("could not post new image back")
         return None
     # update link
-    if links is not None and len(links) >= 1:
-        link = links[0]
-        ## <link ... uri="http://loup.ece.ucsb.edu:8888/data_service/00-Xwdsd6i8GdGyiLyKuK85b/store/229/dir/18718/link/18719" />
-        link_uri = link.get ('uri')
-        dir_uri  = link_uri[link_uri.find("data_service/")+13: link_uri.rfind ('link')]
-        link_xml = etree.Element ('link', name=image.get ('name'), value=image.get ('value'))
-        try:
-            if not dryrun:
-                data.post (dir_uri, data=etree.tostring (link_xml), render='xml')
-            logging.debug ("new %s at %s", etree.tostring (link_xml), dir_uri)
-        except bqapi.BQCommError:
-            logging.error("could not post new image link")
+    try:
+        dirname = dataset_created.split('T')[0]
+        linkpath="/mounts/s3/{}/{}?resource_uniq={}".format (dirname, new_image.get ('name'), res.get('resource_uniq'))
+        if not dryrun:
+            blob = blobs.post (linkpath)
+            #data.post (dir_uri, data=etree.tostring (link_xml), render='xml')
+        logging.debug ("new link at %s", linkpath)
+    except bqapi.BQCommError:
+        logging.error("could not post new image link")
 
     # delete old dataset if requested
     if want_delete:
@@ -318,6 +316,7 @@ def main():
         if args.mexrerun:
             rerun_mexes(sess, dataset_map, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)
         if args.delete:
+            logging.info ("MAP %s", dataset_map)
             delete_datasets(sess, dataset_map.keys(), bisque_root=args.server.rstrip('/'), dryrun=args.dryrun)
     else:
         logging.info("===== converting dataset to image =====")
