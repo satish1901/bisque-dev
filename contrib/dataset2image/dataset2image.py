@@ -313,11 +313,11 @@ def main():
             if img_uniq is not None:
                 dataset_map[dataset_uniq] = img_uniq
         update_references(sess, dataset_map, bisque_root=args.server.rstrip('/'), update_mexes=args.mexrefs, update_datasets=args.dsrefs, dryrun=args.dryrun, as_user=args.user)
-        if args.mexrerun:
-            rerun_mexes(sess, dataset_map, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)
         if args.delete:
             logging.info ("MAP %s", dataset_map)
             delete_datasets(sess, dataset_map.keys(), bisque_root=args.server.rstrip('/'), dryrun=args.dryrun)
+        if args.mexrerun:
+            rerun_mexes(sess, dataset_map, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)
     else:
         logging.info("===== converting dataset to image =====")
         convert_dataset(sess, args.dataset_uniq, want_delete=args.delete, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)
