@@ -9,6 +9,7 @@ import argparse
 import logging
 import copy
 import re
+import time
 
 try:
     from lxml import etree
@@ -253,6 +254,28 @@ def rerun_mexes(sess, dataset_map, bisque_root=None, dryrun=False, as_user=None)
                             data.delete(mex.get('resource_uniq'), render="xml")
                         logging.debug("old mex %s deleted" % mex.get('resource_uniq'))
 
+
+def reload_images(sess, dataset_map, bisque_root=None, dryrun=False):
+    logging.info("===== reloading images (ensure in s3 cache)  =====")
+    data = sess.service('data_service')
+    image = sess.service('image_service')
+    
+    for dataset_uniq, img_uniq in dataset_map.iteritems():
+        logging.info ("prefetch %s", img_uniq)
+        data.fetch (img_uniq)
+        if dryrun :
+            continue
+        while True:
+            try:
+                # need to wait for image to become available
+                response = image.fetch ("{}?thumbnail=280,280".format(img_uniq))
+                if response.status_code == 200:
+                    break
+                logging.warning ("too long to fetch %s (looping)", img_uniq)
+            except bqapi.BQCommError:
+                logging.warning ("too long to fetch %s (looping)", img_uniq)
+                
+
 def delete_datasets(sess, dataset_uniqs, bisque_root=None, dryrun=False):
     logging.info("===== deleting old dataset =====")
     dataset= sess.service("dataset_service")
@@ -313,11 +336,13 @@ def main():
             if img_uniq is not None:
                 dataset_map[dataset_uniq] = img_uniq
         update_references(sess, dataset_map, bisque_root=args.server.rstrip('/'), update_mexes=args.mexrefs, update_datasets=args.dsrefs, dryrun=args.dryrun, as_user=args.user)
-        if args.mexrerun:
-            rerun_mexes(sess, dataset_map, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)
         if args.delete:
             logging.info ("MAP %s", dataset_map)
             delete_datasets(sess, dataset_map.keys(), bisque_root=args.server.rstrip('/'), dryrun=args.dryrun)
+        
+        if args.mexrerun:
+            reload_images (sess, dataset_map, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun)
+            rerun_mexes(sess, dataset_map, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)
     else:
         logging.info("===== converting dataset to image =====")
         convert_dataset(sess, args.dataset_uniq, want_delete=args.delete, bisque_root=args.server.rstrip('/'), dryrun=args.dryrun, as_user=args.user)
