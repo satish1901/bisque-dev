@@ -70,9 +70,9 @@ def json_to_imagej(pipeline):
             line = '}'
         elif pipeline[str(step_id)]['__Label__'] == 'enddo':
             line = '} while(' + ','.join([param.values()[0] for param in pipeline[str(step_id)]['Parameters']]) + ');'
-        elif pipeline[str(step_id)]['__Label__'] in ['for', 'if', 'while']:
-            line = pipeline[str(step_id)]['__Label__'] + '(' + ';'.join([param.values()[0] for param in pipeline[str(step_id)]['Parameters']]) + ') {'
-        elif pipeline[str(step_id)]['__Label__'] == 'else':
+        elif pipeline[str(step_id)]['__Label__'] in ['__for__', '__if__', '__while__']:
+            line = pipeline[str(step_id)]['__Label__'].strip('_') + '(' + ';'.join([param.values()[0].strip('"') for param in pipeline[str(step_id)]['Parameters']]) + ') {'
+        elif pipeline[str(step_id)]['__Label__'] == '__else__':
             line = '} else {'
         elif pipeline[str(step_id)]['__Label__'] == 'startdo':
             line = 'do {'
