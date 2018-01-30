@@ -1265,7 +1265,6 @@ Ext.define('BQ.selectors.PixelResolution', {
 
 });
 
-
 /*******************************************************************************
 BQ.selectors.PipelineParams relies on BQ.selectors.Resource and altough
 it is instantiated directly it needs existing BQ.selectors.Resource to listen to
@@ -1279,8 +1278,11 @@ Ext.define('BQ.selectors.PipelineParams', {
     extend: 'BQ.selectors.Selector',
     requires: ['Ext.form.field.Number'],
 
-    height: 14,
-    layout: 'vbox',
+    height: 50,
+    layout: {
+        type: 'vbox',
+        align: 'stretch'
+    },
 
     initComponent : function() {
         var resource = this.resource;
@@ -1375,6 +1377,7 @@ Ext.define('BQ.selectors.PipelineParams', {
                     xtype: xtype,
                     itemId: name.replace(/ /g, '_'),
                     resource: tag,
+                    labelWidth: 600,  // accomodate large auto-generated labels
                   });
             total_height += this.field_res[i].getHeight();
             resource.tags[i] = new_tag;
@@ -2211,6 +2214,7 @@ Ext.define('BQ.selectors.String', {
 
     height: 30,
     layout: 'fit',
+    labelWidth: 200,
 
     initComponent : function() {
         var resource = this.resource;
@@ -2220,7 +2224,7 @@ Ext.define('BQ.selectors.String', {
             itemId: 'textfield',
             flex: 1,
             name: resource.name,
-            labelWidth: 200,
+            labelWidth: this.labelWidth,
             labelAlign: 'right',
 
             fieldLabel: template.label?template.label:'',
