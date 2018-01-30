@@ -34,7 +34,10 @@ def _replace_placeholders(myjson, tag, val):
                 _replace_placeholders(myjson[jsonkey], tag, val)
             elif isinstance(myjson[jsonkey], basestring) and _matches_tag(myjson, jsonkey, tag):
                 if myjson[jsonkey].startswith('@NUMPARAM'):
-                    myjson[jsonkey] = str(val)
+                    try:
+                        myjson[jsonkey] = int(val)
+                    except ValueError:
+                        myjson[jsonkey] = float(val)
                 elif myjson[jsonkey].startswith('@STRPARAM'):
                     myjson[jsonkey] = str(val)
     elif type(myjson) is list:
