@@ -166,10 +166,11 @@ def imagej_to_json(pipeline_file):
         elif any([line.startswith(fct) for fct in ['for (', 'for(', 'while (', 'while(', 'if (', 'if(']]):
             # start of block
             line = line.rstrip('{').rstrip()
-            line = line.replace(';', ',')
-            line += ';'
+            fctname = '__%s__' % line.split('(',1)[0].strip()
+            args = line.split('(',1)[1].rstrip(')').split(';')
+            line = fctname + '(' + ','.join(['"%s"' % arg for arg in args]) + ');'
         elif any([line.startswith(fct) for fct in ['} else {', '}else{']]):
-            line = 'else();'
+            line = '__else__();'
         elif any([line.startswith(fct) for fct in ['do {', 'do{']]):
             # start of block
             line = 'startdo();'
