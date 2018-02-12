@@ -439,6 +439,7 @@ class IrodsDriver(StorageDriver):
                     break
                 storeurl = "%s-%s%s" % (fpath , uniq[3:7+x] , ext)
             flocal = irods.irods_push_file(fp, storeurl, user=self.user, password=self.password, cache=self.cache)
+            flocal = force_filesys (flocal)
         except irods.IrodsError:
             log.exception ("During Irods Push")
             raise IllegalOperation ("irods push failed")
@@ -453,6 +454,7 @@ class IrodsDriver(StorageDriver):
             irods_ident,sub = split_subpath(storeurl)
             path = irods.irods_fetch_file(storeurl, user=self.user, password=self.password, cache=self.cache)
             # dima: if path is a directory, list contents
+            path = force_filesys (path)
             return Blobs(path=path, sub=sub, files=None)
         except irods.IrodsError:
             log.exception ("Error fetching %s ", irods_ident)
@@ -555,6 +557,7 @@ class S3Driver(StorageDriver):
             s3_ident = "%s-%s%s" % (s3_base , uniq[3:7+x] , ext)
 
         flocal = s3_handler.s3_push_file(fp, self.bucket_id , s3_key, self.cache, self.creds)
+        flocal = force_filesys (flocal)
         return s3_ident, flocal
 
     def pull(self, storeurl, locapath=None, blocking=True):
@@ -568,6 +571,7 @@ class S3Driver(StorageDriver):
         try:
             path = s3_handler.s3_fetch_file(self.bucket_id, s3_key, self.cache, self.creds, blocking=blocking)
             # dima: if path is a directory, list contents
+            path = force_filesys (path)
             return Blobs(path=path, sub=sub, files=None)
         except boto.exception.S3ResponseError:
             log.exception ("During s3 pull")
