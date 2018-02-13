@@ -25,6 +25,9 @@ def upgrade():
         pass
     try:
         op.drop_index('ix_taggable_resource_value', 'taggable')
+    except (sa.exc.IntegrityError, sa.exc.ProgrammingError) as _:
+        pass
+    try:
         op.create_index('ix_taggable_resource_value', 'taggable', [ 'resource_value' ],
                         postgresql_ops = { 'resource_value': 'text_pattern_ops' } )
     except sa.exc.IntegrityError:
