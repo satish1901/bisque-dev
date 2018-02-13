@@ -799,6 +799,9 @@ CanvasShape.prototype.applyColor = function () {
 
 CanvasShape.prototype.getColorString = function (c, alpha) {
     c = c || this.getColor();
+    if (typeof c.a !== 'undefined' && c.a !== null) {
+        alpha = c.a;
+    }
     if (typeof alpha === 'undefined' || alpha === null) {
         alpha = c.a;
     }
