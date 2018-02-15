@@ -1262,17 +1262,18 @@ CanvasPolyLine.prototype.getRenderableSprites = function(){
     var scale = this.renderer.scale();
     var verts = this.gob.vertices;
     var color = this.getColor();
+    var tolerance_z = viewstate.gob_tolerance.z || 1.0;
+    var tolerance_t = viewstate.gob_tolerance.t || 1.0;
     for(var i = 0; i < verts.length - 1; i++){
         var v0 = verts[i];
         var v1 = verts[i+1];
         var zt = (viewstate.z - v0.z)/(v1.z - v0.z - 0.000001);
         var tt = 0.5;
-        if(tl > 0)
+        if (tl > 0)
             tt = (viewstate.t - v0.t)/(v1.t - v0.t - 0.000001);
-        if((zt >= 0 && zt <= 1) &&
-           (tt >= 0 && tt <= 1))
-            spaceIntersections.push([v0.x + zt*(v1.x - v0.x),
-                                     v0.y + zt*(v1.y - v0.y)]);
+
+        if ((zt >= 0 && zt <= 1) && (tt >= 0 && tt <= 1))
+            spaceIntersections.push([v0.x + zt*(v1.x - v0.x), v0.y + zt*(v1.y - v0.y)]);
 
         var za = 0.5*(v0.z + v1.z);
         var ta = 0.5*(v0.t + v1.t);
@@ -1291,21 +1292,21 @@ CanvasPolyLine.prototype.getRenderableSprites = function(){
 
     }
 
-
+    if (viewstate.imagedim.z>1 || viewstate.imagedim.t>1)
     for(var i = 0; i < spaceIntersections.length; i++){
         var pt = spaceIntersections[i];
-
         var sprite = new Kinetic.Circle({
             //radius: {x: rx, y: ry},
             x: pt[0],
             y: pt[1],
             radius: 4.0/scale,
-            fill: 'rgba(255,0,0,0.1)',
-            stroke: 'rgba(0,0,255,1.0)',
+            fill: colorStr, //'rgba(255,0,0,0.1)',
+            stroke: colorStr, //'rgba(0,0,255,1.0)',
             strokeWidth: 2.0/scale,
         });
         out.push(sprite);
     }
+
     return out;
 }
 

@@ -1136,7 +1136,33 @@ Ext.define('Bisque.GObjectTagger', {
                         text: 'Set projection tolerance (in planes)',
                         handler: this.onGobTolerance,
                         scope: this,
-                    }]
+                    }, '-', {
+                        xtype:'tbtext',
+                        text: 'Coloring',
+                        indent: true,
+                        cls: 'menu-heading',
+                    }, {
+                        itemId: 'coloring_class',
+                        text: 'Class name',
+                        handler: this.onColoring,
+                        scope: this,
+                        group: 'coloring',
+                        checked: true,
+                        coloring: 'class',
+                    }, {
+                        itemId: 'coloring_confidence',
+                        text: 'Confidence',
+                        handler: this.onColoring,
+                        scope: this,
+                        group: 'coloring',
+                        checked: false,
+                        coloring: 'confidence',
+                    }/*, '-', {
+                        itemId: 'coloring_tag',
+                        text: 'Set confidence tag name',
+                        handler: this.onColoringTag,
+                        scope: this,
+                    }*/]
                 }
             }, {
                 itemId: 'btnCreateFolder',
@@ -1646,6 +1672,14 @@ Ext.define('Bisque.GObjectTagger', {
 
     onProjection: function(el, e) {
         this.fireEvent('gob_projection', this, el.projection);
+    },
+
+    onColoring: function(el, e) {
+        this.fireEvent('gob_coloring', this, el.coloring);
+    },
+
+    onColoringTag: function(el, e) {
+        this.fireEvent('gob_coloring_tag', this);
     },
 
     onGobTolerance: function(el, e) {
