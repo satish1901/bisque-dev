@@ -859,6 +859,20 @@ Ext.define('Bisque.Resource.Image.Page', {
                     }
                 },
 
+                gob_coloring : function(me, coloring) {
+                    if (BQGObject.coloring_mode === coloring) return;
+                    BQGObject.coloring_mode = coloring;
+                    //BQGObject.confidence_tag = 'confidence';
+                    this.viewerContainer.rerender();
+                },
+
+                gob_coloring_tag : function(me) {
+                    //if (BQGObject.coloring_mode === coloring) return;
+                    //BQGObject.coloring_mode = coloring;
+                    //BQGObject.confidence_tag = 'confidence';
+                    //this.viewerContainer.rerender();
+                },
+
                 create_gobject : function(gob) {
                     var uri = '';
                     if (!gob.parent) {

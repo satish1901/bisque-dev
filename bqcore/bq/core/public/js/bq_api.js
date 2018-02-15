@@ -1589,7 +1589,7 @@ BQGObject.parse_colors_from_gob_template = function(resource) {
     }
 };
 
-BQGObject.coloring_mode = 'type'; // available modes: 'type' 'confidence'
+BQGObject.coloring_mode = 'class'; // available modes: 'class' 'confidence'
 BQGObject.confidence_tag = 'confidence';
 BQGObject.confidence_cutoff = 0;
 BQGObject.confidence_mult = 1.0;
@@ -1645,7 +1645,7 @@ BQGObject.prototype.getColor = function (r,g,b,a,no_default) {
         return c;
     } else if (r && g && b && a) {
         return {r: r, g: g, b: b, a: a};
-    } else if (BQGObject.coloring_mode === 'type' && !(this.type in BQGObject.primitives)) {
+    } else if (BQGObject.coloring_mode === 'class' && this.type && !(this.type in BQGObject.primitives)) {
         var c = null;
         if (this.type in BQGObject.styles_per_type && BQGObject.styles_per_type[this.type].color) {
             c = BQGObject.styles_per_type[this.type].color;
@@ -1656,7 +1656,8 @@ BQGObject.prototype.getColor = function (r,g,b,a,no_default) {
     } else if (BQGObject.coloring_mode === 'confidence' && typeof(confidence) !== 'undefined') {
         var cc = Math.max(0, Math.min(100, Math.round(confidence)));
         var c = BQGObject.color_gradient[cc];
-        return {r: c.r, g: c.g, b: c.b, a: c.a};
+        //return {r: c.r, g: c.g, b: c.b, a: c.a};
+        return {r: c.r, g: c.g, b: c.b};
     } else if (no_default===true) {
         return;
     }
