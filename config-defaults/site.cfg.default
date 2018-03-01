@@ -87,6 +87,10 @@ bisque.welcome_message = Welcome to the Bisque database
 bisque.js_environment = production
 #bisque.static_files = true
 
+# which domains should be allowed to serve the intercom button (comma-separated list, no spaces!)
+bisque.intercom_domains = cyverse.org,iplantcollaborative.org
+#bisque.intercom_domains = 
+
 # server defaults
 bisque.server = http://0.0.0.0:8080
 bisque.services_disabled = engine_service
