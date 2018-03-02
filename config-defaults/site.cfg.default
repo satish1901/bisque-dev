@@ -88,7 +88,7 @@ bisque.js_environment = production
 #bisque.static_files = true
 
 # which domains should be allowed to serve the intercom button (comma-separated list, no spaces!)
-bisque.intercom_domains = cyverse.org,iplantcollaborative.org
+#bisque.intercom_domains = cyverse.org,iplantcollaborative.org
 #bisque.intercom_domains = 
 
 # server defaults
