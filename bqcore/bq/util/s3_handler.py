@@ -30,8 +30,8 @@ log = logging.getLogger('bq.blobs.storage.s3')
 
 s3q=None
 if asbool (config.get('bisque.s3queue')):
-    from rq import Queue
-    from redis import Redis
+    from rq import Queue #pylint: disable=import-error
+    from redis import Redis #pylint: disable=import-error
     s3q = Queue ("S3", connection = Redis())
 
 
