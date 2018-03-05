@@ -278,6 +278,10 @@
         <h2>${welcome_message}</h2>
     </div>
 
+    <div class="box heading" id="heading" py:if="not tg.identity and intercom_domains">
+        <h2>${intercom_domains}</h2>
+    </div>
+
     <div class="box randomimage" id="randomimage" py:if="not tg.identity and imageurl">
         <a href="${imageurl}">Current random image</a>
     </div>
@@ -286,6 +290,9 @@
 
     <div class="activity intro" id="activity" py:if="not tg.identity"></div>
     <div class="activity" id="activity" py:if="tg.identity"></div>
+
+
+    <xi:include href="intercom.html" py:if="${tg.config.get('intercom.app_id')}" />
 
 </body>
 </html>
