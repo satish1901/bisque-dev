@@ -125,11 +125,13 @@ class ClientServer(ServiceController):
         wpublic = kw.pop('wpublic', not bq.core.identity.current)
         pybool = {'True': 'true', 'False': 'false'}
         welcome_message = config.get ('bisque.welcome_message', "Welcome to the Bisque image database")
+        intercom_domains = config.get ('bisque.intercom_domains', "")
 
         return dict(imageurl=None,
                     thumbnail=None,
                     wpublicjs = pybool[str(wpublic)],
-                    welcome_message = welcome_message
+                    welcome_message = welcome_message,
+                    intercom_domains = intercom_domains
                     )
 
     @expose(template='bq.client_service.templates.welcome')
