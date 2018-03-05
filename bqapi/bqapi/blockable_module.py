@@ -8,8 +8,8 @@ import logging
 
 
 
-logging.basicConfig(filename='/tmp/MetaData.log',level=logging.DEBUG)   #!!!
-
+#logging.basicConfig(filename='BlockableModule.log',level=logging.DEBUG)   #!!!
+log = logging.getLogger('bqapi.blockable_module')
 
 class BlockableModule(object):
     """Base class for module that can run over blocks of parameters"""
