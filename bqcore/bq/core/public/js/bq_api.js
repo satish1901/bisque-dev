@@ -1500,11 +1500,7 @@ BQGObject.string_to_color_html = function(str) {
     return colour;
 };
 
-BQGObject.styles_per_type = {
-   default: { color: '#FF0000', },
-};
-
-BQGObject.add_default_style = function(t, level, separator) {
+BQGObject.get_gob_color = function(t, level, separator) {
     if (!t) return;
     var tt = t;
 
@@ -1517,9 +1513,17 @@ BQGObject.add_default_style = function(t, level, separator) {
         }
     }
 
-    //if (t in BQGObject.styles_per_type) return;
+    return BQGObject.string_to_color_html(tt);
+};
+
+BQGObject.styles_per_type = {
+   default: { color: '#FF0000', },
+};
+
+BQGObject.add_default_style = function(t, level, separator) {
+    if (!t) return;
     BQGObject.styles_per_type[t] = {
-        color: BQGObject.string_to_color_html(tt),
+        color: BQGObject.get_gob_color(t, level, separator),
     };
 };
 
@@ -1585,9 +1589,10 @@ BQGObject.parse_colors_from_gob_template = function(resource) {
     }
 };
 
-
+BQGObject.coloring_mode = 'class'; // available modes: 'class' 'confidence'
 BQGObject.confidence_tag = 'confidence';
 BQGObject.confidence_cutoff = 0;
+BQGObject.confidence_mult = 1.0;
 BQGObject.color_gradient = [];
 bq_create_gradient(0,0,255,1.0, 255,255,0,1.0);
 
@@ -1613,7 +1618,7 @@ BQGObject.prototype.initializeXml = function (node) {
 
     var t = BQ.util.xpath_node(node, 'tag[@name="'+BQGObject.confidence_tag+'"]');
     if (t)
-        this.confidence = parseFloat(t.getAttribute('value'));
+        this.confidence = parseFloat(t.getAttribute('value')) * BQGObject.confidence_mult;
 };
 
 BQGObject.prototype.setParent = function (p) {
@@ -1627,23 +1632,32 @@ BQGObject.prototype.isPrimitive = function () {
 };
 
 BQGObject.prototype.getColor = function (r,g,b,a,no_default) {
+    // first of all hide objects if needed
+    var confidence = this.getConfidence();
+    if (confidence && BQGObject.confidence_cutoff>0 && confidence < BQGObject.confidence_cutoff)
+        return {r: 255, g: 0, b: 0, a: 0};
+
     if (this.color_override) {
         return Kinetic.Util._hexToRgb('#' + this.color_override);
-    } else if (typeof(this.confidence) !== 'undefined') {
-        if (this.confidence < BQGObject.confidence_cutoff)
-            return {r: 255, g: 0, b: 0, a: 0};
-        var cc = Math.max(0, Math.min(100, Math.round(this.confidence)));
-        var c = BQGObject.color_gradient[cc];
-        return {r: c.r, g: c.g, b: c.b, a: c.a};
     } else if (this.color) {
         var c = Kinetic.Util._hexToRgb('#' + this.color);
         c.a = BQGObject.default_color.a;
         return c;
     } else if (r && g && b && a) {
         return {r: r, g: g, b: b, a: a};
-    } else if (this.type in BQGObject.styles_per_type && BQGObject.styles_per_type[this.type].color) {
-        var c = BQGObject.styles_per_type[this.type].color;
+    } else if (BQGObject.coloring_mode === 'class' && this.type && !(this.type in BQGObject.primitives)) {
+        var c = null;
+        if (this.type in BQGObject.styles_per_type && BQGObject.styles_per_type[this.type].color) {
+            c = BQGObject.styles_per_type[this.type].color;
+        } else {
+            c = BQGObject.get_gob_color(this.type);
+        }
         return Kinetic.Util._hexToRgb(c);
+    } else if (BQGObject.coloring_mode === 'confidence' && typeof(confidence) !== 'undefined') {
+        var cc = Math.max(0, Math.min(100, Math.round(confidence)));
+        var c = BQGObject.color_gradient[cc];
+        //return {r: c.r, g: c.g, b: c.b, a: c.a};
+        return {r: c.r, g: c.g, b: c.b};
     } else if (no_default===true) {
         return;
     }
@@ -1679,11 +1693,12 @@ BQGObject.prototype.setColor = function (c, skip_save) {
 },
 
 BQGObject.prototype.getConfidence = function () {
-    //if (this.confidence) {
-    //    var cc = Math.max(0, Math.min(100, Math.round(this.confidence)));
-    //    return BQGObject.color_gradient[cc];
-    //}
-    return this.confidence;
+    if (typeof this[BQGObject.confidence_tag] === 'undefined') {
+        var t = this.find_tags(BQGObject.confidence_tag);
+        if (t)
+            this[BQGObject.confidence_tag] = t.value * BQGObject.confidence_mult;
+    }
+    return this[BQGObject.confidence_tag];
 };
 
 BQGObject.prototype.perimeter = function (res) {
