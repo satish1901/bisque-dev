@@ -65,7 +65,7 @@
 
         this.usageExplorer = Ext.create('Ext.panel.Panel', {
             renderTo: 'stats',
-            title: 'Bisque usage',
+            title: 'Bisque Usage',
             header : { cls: 'widget-header', height: 45, },
             width: 350,
             height: 220,
@@ -167,7 +167,7 @@
 
 <script py:if="not tg.identity" type="text/javascript" >
     var tag_query = 'welcome_page:true';
-    var title = 'Featured datasets';
+    var title = 'Featured Datasets';
 </script>
 <script py:if="tg.identity" type="text/javascript" >
     var tag_query = undefined;
@@ -278,10 +278,6 @@
         <h2>${welcome_message}</h2>
     </div>
 
-    <div class="box heading" id="heading" py:if="not tg.identity and intercom_domains">
-        <h2>${intercom_domains}</h2>
-    </div>
-
     <div class="box randomimage" id="randomimage" py:if="not tg.identity and imageurl">
         <a href="${imageurl}">Current random image</a>
     </div>
@@ -291,25 +287,7 @@
     <div class="activity intro" id="activity" py:if="not tg.identity"></div>
     <div class="activity" id="activity" py:if="tg.identity"></div>
 
-    <!-- add intercom.io for specific domains (see bisque.intercom_domains in site.cfg) -->
-    <div py:if="len(intercom_domains)>1">
-      <div py:for="item in intercom_domains.split(',')">
-        <script>
-          var inDomain = (document.domain.search(/${item}$/i) === -1) ? false : true;
-          if ( inDomain ) {
-            window.intercomSettings = { 
-              company: {
-                "id": "BisQue",
-                "name": "BisQue Inc"
-              },
-              app_id: "tpwq3d9w",
-              name: "Phil Daly"
-            };
-            (function(){var w=window;var ic=w.Intercom;if(typeof ic==="function"){ic('reattach_activator');ic('update',intercomSettings);}else{var d=document;var i=function(){i.c(arguments)};i.q=[];i.c=function(args){i.q.push(args)};w.Intercom=i;function l(){var s=d.createElement('script');s.type='text/javascript';s.async=true;s.src='https://widget.intercom.io/widget/tpwq3d9w';var x=d.getElementsByTagName('script')[0];x.parentNode.insertBefore(s,x);}if(w.attachEvent){w.attachEvent('onload',l);}else{w.addEventListener('load',l,false);}}})()
-          }
-        </script>
-      </div>
-    </div>
+    <xi:include href="intercom.html" py:if="tg.config.get('intercom.app_id')" />
 
 </body>
 </html>
