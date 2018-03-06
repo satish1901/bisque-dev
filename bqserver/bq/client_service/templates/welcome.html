@@ -65,7 +65,7 @@
 
         this.usageExplorer = Ext.create('Ext.panel.Panel', {
             renderTo: 'stats',
-            title: 'Bisque usage',
+            title: 'Bisque Usage',
             header : { cls: 'widget-header', height: 45, },
             width: 350,
             height: 220,
@@ -167,7 +167,7 @@
 
 <script py:if="not tg.identity" type="text/javascript" >
     var tag_query = 'welcome_page:true';
-    var title = 'Featured datasets';
+    var title = 'Featured Datasets';
 </script>
 <script py:if="tg.identity" type="text/javascript" >
     var tag_query = undefined;
@@ -286,6 +286,8 @@
 
     <div class="activity intro" id="activity" py:if="not tg.identity"></div>
     <div class="activity" id="activity" py:if="tg.identity"></div>
+
+    <xi:include href="intercom.html" py:if="tg.config.get('intercom.app_id')" />
 
 </body>
 </html>
