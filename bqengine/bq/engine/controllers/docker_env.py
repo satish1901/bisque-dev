@@ -107,8 +107,6 @@ class DockerEnvironment(BaseEnvironment):
             docker_pull = "docker pull %s" % docker_image
 
         for mex in runner.mexes:
-            docker_pull =""
-
             docker_outputs = [ ]
             docker_inputs  = []
             #module_vars =  runner.module_cfg.get ('command', asdict=True)
