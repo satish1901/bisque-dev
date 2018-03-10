@@ -71,6 +71,20 @@ DEFAULTS  = dict(
     irods_host='irods://mokie.iplantcollaborative.org',
     )
 
+
+SPECIAL_TYPES=[
+    'zip-bisque',
+    'zip-multi-file',
+    'zip-time-series',
+    'zip-z-stack',
+    'zip-5d-image',
+    'zip-proprietary',
+    'zip-dicom',
+    'image/proprietary',
+    'image-part-5D',
+    ]
+
+
 def main():
     #usage="usage [options] f1 [f2 f2 d1 ] bisque-url"
     parser = argparse.ArgumentParser()
@@ -93,10 +107,13 @@ def main():
     parser.add_argument('-t','--tag', action="append", dest="tags", help="-t name:value")
     parser.add_argument('--resource', action="store", default=None, help="XML resource record for the file")
     parser.add_argument('--dest', default=defaults['bisque_host'], help="Bisque server root")
+    parser.add_argument('--ingest-type', default=None, help="Upload special type of image .. %s " % ",".join (SPECIAL_TYPES))
     parser.add_argument('paths', nargs='+', help="List for files or dirs")
 
 
     args = parser.parse_args()
+
+    print args
 
     if  DESTINATION not in args.dest: # and not dest.endswith(DESTINATION):
         args.dest = urlparse.urljoin (args.dest, DESTINATION)
@@ -114,7 +131,7 @@ def main():
 
     # Prepare tags
     tags = None
-    if args.resource or args.tags:
+    if args.resource or args.tags or args.ingest_type:
         resource = None
         if args.resource:
             if args.resource == '-':
@@ -122,11 +139,14 @@ def main():
             else:
                 fresource = open(args.resource, 'r')
             resource = et.parse (fresource).getroot()
+        if resource is None:
+            resource = et.Element('resource', uri = "/tags")
         if args.tags:
-            if resource is None:
-                resource = et.Element('resource', uri = "/tags")
             for t,v in [ x.split(':') for x in args.tags]:
                 et.SubElement (resource, 'tag', name=t, value=v)
+        if args.ingest_type:
+            ingest = et.SubElement (resource, 'tag', name='ingest')
+            et.SubElement (ingest, 'tag', name='type', value=args.ingest_type)
         if resource is not None:
             #tags = StringIO(et.tostring(resource))
             #tags.name = "stringio"
