@@ -155,6 +155,9 @@ bisque.stores.local.top = file://$datadir/imagedir/
 #bisque.image_service.work_dir  = ./data/workdir
 bisque.image_service.imgcnv.omp_num_threads = 4
 
+# Import service
+bisque.import_service.upload_dir = ./data/uploads
+
 # HTTP client
 #bisque.http_client.cache_dir = data/client_cache
 

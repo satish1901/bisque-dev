@@ -139,7 +139,7 @@ if hasattr(cgi, 'file_upload_handler'):
             return tempfile.TemporaryFile('w+b', dir=tmp_upload_dir)
 
     #map callables to paths here
-    cgi.file_upload_handler['/import/transfer'] = import_transfer_handler
+    cgi.file_upload_handler['/import/transfer.*'] = import_transfer_handler
 
 
 #---------------------------------------------------------------------------------------
@@ -1264,6 +1264,8 @@ class import_serviceController(ServiceController):
 
         config={'MAX_MEMORY_FILE_SIZE' : 0,
                 'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
+                'UPLOAD_KEEP_FILENAME': True,
+                'UPLOAD_KEEP_EXTENSIONS': True,
         }
 
         with open (uploaded) as input_stream:
@@ -1309,7 +1311,7 @@ class import_serviceController(ServiceController):
                 with Timer () as t:
                     g = self.multipart_processing (uploaded, tg.request.headers)
                 filesize = os.path.getsize (uploaded)
-                log.info("multipart parsing %s in %s (%s/s)", uploaded, t.interval, sizeof_fmt(filesize/t.interval))
+                log.info("multipart parsing %s in %s (%s/s) -> %s", uploaded, t.interval, sizeof_fmt(filesize/t.interval), g.filepath)
                 os.remove (uploaded)
             else:
                 log.error ("Unable to access X-File %s", uploaded)
