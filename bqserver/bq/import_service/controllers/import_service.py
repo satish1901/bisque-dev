@@ -1263,9 +1263,9 @@ class import_serviceController(ServiceController):
             g.fileobj = g.filepath and open (g.filepath, 'rb') #tmp File will be deleted unless we open it.
 
         config={'MAX_MEMORY_FILE_SIZE' : 0,
-                'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
-                'UPLOAD_KEEP_FILENAME': True,
-                'UPLOAD_KEEP_EXTENSIONS': True,
+                #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
+                #'UPLOAD_KEEP_FILENAME': True,  # uses full filename
+                #'UPLOAD_KEEP_EXTENSIONS': True,
         }
 
         with open (uploaded) as input_stream:
