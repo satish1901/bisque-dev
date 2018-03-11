@@ -37,7 +37,7 @@ def upload(dest, filename, userpass, tags=None):
     files = []
     if tags:
         files.append( ('file_resource', (None, tags, "text/xml")  ) )
-    files.append( ("file",  (filename, open(filename, "rb"), 'application/octet-stream') ))
+    files.append( ("file",  (os.path.basename (filename), open(filename, "rb"), 'application/octet-stream') ))
 
     fields  = dict (files)
     # Crazy way to speed up read speed.
