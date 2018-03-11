@@ -135,6 +135,17 @@ def load_default_drivers():
     return stores
 
 
+def list_wings (lst, els = 5):
+    """Give a summary for long lists"""
+    if len(lst) <= 2*els:
+        return lst, None
+    return lst[:els], lst[-els:]
+def list_summary(lst, els=5):
+    """Give a summary for long lists"""
+    if len(lst) <= 2*els:
+        return str(lst)
+    return  "[%s..%s]" % (",".join(str (x) for x in lst[:els]), ",".join(str (x) for x in lst[-els:]))
+
 
 ###########################################################################
 
@@ -649,7 +660,7 @@ class MountServer(TGController):
             else:  # Multi-entity
                 refs = [ (x, settext, split_subpath(x.text), None) for x in resource.xpath ('value') ]
                 rootpath = storepath # dima: fix for stripping multi-file paths
-            log.debug ("_save_storerefs refs: %s", str(refs))
+            log.debug ("_save_storerefs refs: %s", list_summary(refs))
 
             #rootpath = os.path.dirname(storepath) # dima: fix for stripping multi-file paths
 
@@ -672,17 +683,17 @@ class MountServer(TGController):
                     # Add a directory:
                     # dima: we should probably list and store all files but there might be overlaps with individual refs
                     movingrefs.extend ( (etree.SubElement(resource, 'value'), settext, (fpath, subpath), fpath[len(localpath):]) for fpath in blob_drivers.walk_deep(localpath))
-                    log.debug ("_save_storerefs if os.path.isdir(localpath): %s", movingrefs)
+                    #log.debug ("_save_storerefs if os.path.isdir(localpath): %s", movingrefs)
                 elif os.path.exists(localpath):
                     if storepath is None:
                         storepath = posixpath.join(rootpath, storeurl[len(rooturl):])
                     movingrefs.append ( (node, setter, (localpath, subpath), storepath) )
-                    log.debug ("_save_storerefs elif os.path.exists(localpath): %s", movingrefs)
+                    #log.debug ("_save_storerefs elif os.path.exists(localpath): %s", movingrefs)
                 else:
                     log.error ("_save_storerefs: Cannot access %s as %s of %s ", storeurl, localpath, etree.tostring(node))
 
-            log.debug ("_save_storerefs movingrefs: %s", str(movingrefs))
-            log.debug ("_save_storerefs fixedrefs: %s", str(fixedrefs))
+            log.debug ("_save_storerefs movingrefs: %s", list_summary(movingrefs))
+            log.debug ("_save_storerefs fixedrefs: %s", list_summary(fixedrefs))
 
             # I don't a single resource will have in places references and references that need to move
             if len(fixedrefs) and len(movingrefs):
@@ -691,7 +702,7 @@ class MountServer(TGController):
             if len(fixedrefs):
                 # retrieve storeurl, and  storepath yet
                 first = (fixedrefs[0][2][0], fixedrefs[0][3])
-                log.debug ("_save_storerefs fixed : %s", fixedrefs)
+                log.debug ("_save_storerefs fixed : %s", list_summary(fixedrefs))
 
             # References to a readonly store may be registered if no actual data movement takes place.
             if movingrefs and driver.readonly:

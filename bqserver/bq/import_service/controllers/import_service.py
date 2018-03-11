@@ -216,7 +216,8 @@ class UploadedResource(object):
         elif fileobj:
             # POSTed fileobject will have a filename (which may be path)
             # http://docs.pylonsproject.org/projects/pyramid_cookbook/en/latest/forms/file_uploads.html
-            #self.path = getattr(fileobj, 'filename', None)
+            if self.path is None:
+                self.path = getattr(fileobj, 'filename', None) or getattr (fileobj, 'name', None)
             self.filename = sanitize_filename (self.path)
             #resource.set('name', self.filename)
 
@@ -1262,12 +1263,14 @@ class import_serviceController(ServiceController):
             g.filename = fle.file_name
             g.fileobj = g.filepath and open (g.filepath, 'rb') #tmp File will be deleted unless we open it.
 
+        upload_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name)
         config={'MAX_MEMORY_FILE_SIZE' : 0,
-                #'UPLOAD_DIR' : UPLOAD_DIR,  # Issues with NFS permission
-                #'UPLOAD_KEEP_FILENAME': True,  # uses full filename
-                #'UPLOAD_KEEP_EXTENSIONS': True,
+                'UPLOAD_DIR' : upload_dir,
+                'UPLOAD_KEEP_FILENAME': True,  # uses full filename
+                'UPLOAD_KEEP_EXTENSIONS': True,
         }
 
+        _mkdir(upload_dir)
         with open (uploaded) as input_stream:
             parser = multipart.multipart.create_form_parser(headers, on_field,on_file, config=config)
             content_length = headers.get('Content-Length')
@@ -1342,6 +1345,8 @@ class import_serviceController(ServiceController):
                 os.remove (uploaded)
             if g and g.fileobj:
                 g.fileobj.close()
+            if g and os.path.exists (g.filepath):
+                os.remove (g.filepath)
 
 
     def transfer_internal(self, **kw):
