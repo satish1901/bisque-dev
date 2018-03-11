@@ -1247,6 +1247,13 @@ class import_serviceController(ServiceController):
     @classmethod
     def multipart_processing (cls, uploaded, headers):
         import multipart
+        upload_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name)
+        config={'MAX_MEMORY_FILE_SIZE' : 0,
+                'UPLOAD_DIR' : upload_dir,
+                'UPLOAD_KEEP_FILENAME': True,  # uses full filename
+                'UPLOAD_KEEP_EXTENSIONS': True,
+        }
+
         class g(object):
             resource = None
             fileobj = None  # A file descriptor to the tmp file
@@ -1259,16 +1266,9 @@ class import_serviceController(ServiceController):
 
         def on_file(fle):
             log.debug ("FILE %s %s %s", fle.actual_file_name, fle.field_name, fle.size)
-            g.filepath = fle.actual_file_name
+            g.filepath = os.path.join (upload_dir, fle.actual_file_name)
             g.filename = fle.file_name
             g.fileobj = g.filepath and open (g.filepath, 'rb') #tmp File will be deleted unless we open it.
-
-        upload_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name)
-        config={'MAX_MEMORY_FILE_SIZE' : 0,
-                'UPLOAD_DIR' : upload_dir,
-                'UPLOAD_KEEP_FILENAME': True,  # uses full filename
-                'UPLOAD_KEEP_EXTENSIONS': True,
-        }
 
         _mkdir(upload_dir)
         with open (uploaded) as input_stream:
