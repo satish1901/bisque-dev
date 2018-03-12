@@ -1,3 +1,4 @@
+import os
 import urllib
 import urlparse
 
@@ -90,7 +91,7 @@ class ImportProxy(BaseServiceProxy):
         fields = {}
         if filename is not None:
             filename = normalize_unicode(filename)
-            fields['file'] = (filename, open(filename, 'rb'), 'application/octet-stream')
+            fields['file'] = (os.path.basename(filename), open(filename, 'rb'), 'application/octet-stream')
         if xml is not None:
             fields['file_resource'] = xml
         if fields:
