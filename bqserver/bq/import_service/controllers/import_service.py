@@ -1250,8 +1250,9 @@ class import_serviceController(ServiceController):
         upload_dir = os.path.join(UPLOAD_DIR, bq.core.identity.get_user().name)
         config={'MAX_MEMORY_FILE_SIZE' : 0,
                 'UPLOAD_DIR' : upload_dir,
-                'UPLOAD_KEEP_FILENAME': True,  # uses full filename
-                'UPLOAD_KEEP_EXTENSIONS': True,
+                #'UPLOAD_KEEP_FILENAME': True,  # uses full filename
+                #'UPLOAD_KEEP_EXTENSIONS': True,
+                'UPLOAD_DELETE_TMP' :False,
         }
 
         class g(object):
