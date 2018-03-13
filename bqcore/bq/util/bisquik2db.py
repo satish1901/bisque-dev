@@ -430,9 +430,9 @@ def xmlelement(dbo, parent, baseuri, view, **kw):
     elif xtag == 'value':
         kw['type'] = dbo.type
         if dbo.type == 'object':
-            kw['text'] = baseuri + unicode_safe(dbo.value)
+            kw['text'] = baseuri + unicode_safe(dbo.value) # value ref causes DB load
         else:
-            kw['text'] = unicode_safe(dbo.value)
+            kw['text'] = unicode_safe(dbo.value) # value ref causes DB load to get uniq
     text = kw.pop ('text',None)
     if parent is not None:
         #log.debug ("etree: " + str(xtag)+ str(kw))
@@ -456,11 +456,13 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
         return elem
     if rtype in VALUE_TYPES:
         elem = xmlelement (dbo, parent, baseuri, view=view)
-        if 'deep' not in view \
-           and  'short' not in view \
-           and  hasattr(dbo,'resource_value') and dbo.resource_value is None:
+        if ('deep' not in view
+            #and  'short' not in view
+           and  hasattr(dbo,'resource_value') and dbo.resource_value is None):
             # adding value's
+            log.debug ("BEGIN VALUES")
             _ = [ xmlelement(x, elem, baseuri, view) for x in dbo.values ]
+            log.debug ("ENDING VALUES")
         return elem
 
     elem = xmlelement (dbo, parent, baseuri, view=view)
