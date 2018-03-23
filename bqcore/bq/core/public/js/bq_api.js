@@ -2505,7 +2505,7 @@ BQImagePhys.prototype.getDisplayColors = function (resource_uniq) {
 
     // fetch preferences mapping for channel names
     var map = this.prefsGetChannelColorMapping (resource_uniq),
-        n = null;
+        n = null, m=null;
 
     // ensure channel_colors parsed from metadata and then create a display variant
     this.channel_colors = this.channel_colors || [];
@@ -2519,8 +2519,9 @@ BQImagePhys.prototype.getDisplayColors = function (resource_uniq) {
     // update from preferred mapping per channel name
     for (var i = 0; i < this.channel_names.length; i++) {
         n = this.channel_names[i];
-        if (n in map) {
-            this.channel_colors_display[i] = map[n];
+        m = this.find_match(n, map);
+        if (m) {
+            this.channel_colors_display[i] = map[m];
         }
     }
 
@@ -2531,6 +2532,18 @@ BQImagePhys.prototype.getDisplayColors = function (resource_uniq) {
 };
 
 // Display channel names, mix metadata, system and object preferences
+
+BQImagePhys.prototype.find_match = function (n, map) {
+    if (n in map) return n;
+
+    // try to match map to the name
+    for (var i in map) {
+        if (n.indexOf(i)>=0) return i;
+        if (i.indexOf(n)>=0) return i;
+    }
+
+    return null;
+};
 
 BQImagePhys.prototype.prefsGetChannelNameMapping = function (resource_uniq) {
     // DAPI=Nuclear;Alexa Fluor 488=Membrane;
@@ -2553,7 +2566,7 @@ BQImagePhys.prototype.getDisplayNames = function (resource_uniq) {
 
     // fetch preferences mapping for channel names
     var map = this.prefsGetChannelNameMapping (resource_uniq),
-        n = null;
+        n = null, m=null;
 
     // first clone metadata based channel names
     this.channel_names_display = this.channel_names.slice(0);
@@ -2561,8 +2574,9 @@ BQImagePhys.prototype.getDisplayNames = function (resource_uniq) {
     // update final display values
     for (var i = 0; i < this.channel_names.length; i++) {
         n = this.channel_names[i];
-        if (n in map) {
-            this.channel_names_display[i] = map[n];
+        m = this.find_match(n, map);
+        if (m) {
+            this.channel_names_display[i] = map[m];
         }
     }
     return this.channel_names_display;
