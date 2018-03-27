@@ -457,8 +457,8 @@ def xmlnode(dbo, parent, baseuri, view, **kw):
     if rtype in VALUE_TYPES:
         elem = xmlelement (dbo, parent, baseuri, view=view)
         if ('deep' not in view
-            #and  'short' not in view
-           and  hasattr(dbo,'resource_value') and dbo.resource_value is None):
+            and  'short' not in view
+            and  hasattr(dbo,'resource_value') and dbo.resource_value is None):
             # adding value's
             log.debug ("BEGIN VALUES")
             _ = [ xmlelement(x, elem, baseuri, view) for x in dbo.values ]
