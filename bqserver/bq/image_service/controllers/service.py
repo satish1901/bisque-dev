@@ -310,9 +310,9 @@ class ImageServiceController(ServiceController):
 
             # use a back-off strategy for long running tasks
             #future_timeout = random.randint(e.timeout_range[0], e.timeout_range[1]) * future_timeout
-            future_timeout = random.randint(e.timeout_range[0], e.timeout_range[1]) + future_timeout*30
+            future_timeout = random.randint(e.timeout_range[0], e.timeout_range[1]) + future_timeout*8
 
-            #tg.response.status_int = 307
+            #tg.response.status = "307 retry later"
             tg.response.retry_after = future_timeout
             if '?' in url:
                 tg.response.location = '%s&timeout=%s'%(url, future_timeout)
@@ -321,7 +321,9 @@ class ImageServiceController(ServiceController):
             log.info ("FINISHED with FUTURE (%s): %s timeout @%ss", datetime.now().isoformat(), url, future_timeout)
             #abort(202, message) # 202 - accepted - does not work
             abort(307, message) # 307 - TEMPORARY REDIRECT - works on chrome, firefox
+            #abort(429, message) # 503, "Too many requests" - does not work
             #abort(503, message) # 503, "Service Unavailable" - does not work
+            #return
         except ImageServiceException, e:
             log.info ("FINISHED with ERROR (%s): %s", datetime.now().isoformat(), url)
             abort(e.code, e.message)
