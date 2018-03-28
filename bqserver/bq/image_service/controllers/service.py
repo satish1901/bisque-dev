@@ -274,6 +274,15 @@ class ImageServiceController(ServiceController):
             except Exception:
                 log.exception('Exception while processing future timeout')
 
+        if 'timeout' in kw:
+            try:
+                future_timeout = int(kw.pop('timeout'))
+                url = re.sub (r'\?timeout=\d+&', '?', url)
+                url = re.sub (r'[&\?]timeout=\d+', '', url)
+                log.debug('Received previous future timeout: %s', future_timeout)
+            except Exception:
+                log.exception('Exception while processing future timeout')
+
         # check for access permission
         resource = self.check_access(ident, view='image_meta')
         user_name = self.get_user_name(resource.get('owner'))
@@ -305,7 +314,10 @@ class ImageServiceController(ServiceController):
 
             #tg.response.status_int = 307
             tg.response.retry_after = future_timeout
-            tg.response.location = '%s#timeout=%s'%(url, future_timeout)
+            if '?' in url:
+                tg.response.location = '%s&timeout=%s'%(url, future_timeout)
+            else:
+                tg.response.location = '%s?timeout=%s'%(url, future_timeout)
             log.info ("FINISHED with FUTURE (%s): %s timeout @%ss", datetime.now().isoformat(), url, future_timeout)
             #abort(202, message) # 202 - accepted - does not work
             abort(307, message) # 307 - TEMPORARY REDIRECT - works on chrome, firefox
