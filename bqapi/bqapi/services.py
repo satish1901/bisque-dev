@@ -1,6 +1,7 @@
 import os
 import urllib
 import urlparse
+import random
 
 from lxml import etree
 from requests_toolbelt import MultipartEncoder
@@ -85,6 +86,8 @@ class BlobProxy (BaseServiceProxy): #TODO
     def register_file(self, store_path):
         pass
 
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 class ImportProxy(BaseServiceProxy):
     def transfer (self, filename, xml=None):
@@ -99,7 +102,7 @@ class ImportProxy(BaseServiceProxy):
             m = MultipartEncoder(fields = fields )
             m._read = m.read
             m.read = lambda size: m._read (8129*1024) # 8MB
-            response = self.post("transfer",
+            response = self.post("transfer_"+id_generator(),
                                  data=m,
                                  headers={'Accept': 'text/xml', 'Content-Type':m.content_type})
             return response
