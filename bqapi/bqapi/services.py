@@ -2,6 +2,8 @@ import os
 import urllib
 import urlparse
 import random
+import string
+
 
 from lxml import etree
 from requests_toolbelt import MultipartEncoder
@@ -100,7 +102,7 @@ class ImportProxy(BaseServiceProxy):
         if fields:
             # https://github.com/requests/toolbelt/issues/75
             m = MultipartEncoder(fields = fields )
-            m._read = m.read
+            m._read = m.read #pylint: disable=protected-member
             m.read = lambda size: m._read (8129*1024) # 8MB
             response = self.post("transfer_"+id_generator(),
                                  data=m,
