@@ -225,6 +225,10 @@ class UploadedResource(object):
         'retrieve a local path for this uploaded resource'
         if self.fileobj is None:
             return self.path
+
+        if os.name == 'nt' and self.fileobj is not None:
+            return self.path
+
         filename = getattr(self.fileobj, 'name', None)
         if filename and filename[0] == '<' and filename[-1] == '>':
             # special case: file was not created using open();
@@ -237,8 +241,11 @@ class UploadedResource(object):
         '''retrieve a local path for this uploaded resource'''
         if self.path is not None:
             return self.path
-        self.path = self.path or getattr(self.fileobj, 'name', None) or getattr(self.fileobj, 'filename', None)
+        if os.name != 'nt':
+            self.path = self.path or getattr(self.fileobj, 'name', None) or getattr(self.fileobj, 'filename', None)
         if self.path is None:
+            if os.name == 'nt':
+                _mkdir (os.path.dirname(localpath))
             move_file (self.fileobj, localpath)
             self.path = localpath
         return self.path
