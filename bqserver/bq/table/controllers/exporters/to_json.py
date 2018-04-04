@@ -109,8 +109,8 @@ class ExporterJSON (TableExporter):
             # has headers => this is a leaf object (table or matrix)
             v["headers"] = table.headers
             v["types"] = table.types
-            #if table.sizes is not None:
-            #    v["sizes"] = table.sizes
+            if table.sizes is not None:
+                v["sizes"] = table.sizes
         if table.tables is not None:
             v["group"] = table.tables
         #log.debug(v)
@@ -131,6 +131,6 @@ class ExporterJSON (TableExporter):
             'headers': table.headers,
             'types': table.types,
         }
-        #if table.sizes is not None:
-        #    v["sizes"] = table.sizes
+        if table.sizes is not None:
+            v["sizes"] = table.sizes
         return json.dumps(v, cls=ExtEncoder)
