@@ -2489,7 +2489,7 @@ BQImagePhys.prototype.prefsGetChannelColorMapping = function (resource_uniq) {
     var p = BQ.Preferences.get(resource_uniq, 'Viewer/preferred_color_per_channel_name', ''),
         pp = p.split(';'),
         v = null,
-        map = [];
+        map = {};
 
     for (var i=0; i<pp.length; ++i) {
         v = pp[i].split('=');
