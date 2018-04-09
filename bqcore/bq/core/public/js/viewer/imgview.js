@@ -799,9 +799,20 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
     }
 
     // print physical coordinates
-    if (phys.pixel_size[0]>0 && phys.pixel_size[1]>0) {
+    if (phys.pixel_size[0]>0 && phys.pixel_size[1]>0 && !phys.coordinates) {
         var c = phys.coordinate_to_phys(pt, false);
         text += ' ('+BQ.util.formatFloat(c[0], 6, 2, sep)+','+BQ.util.formatFloat(c[1], 6, 2, sep)+')'+phys.units;
+    }
+
+    // print transformed coordinates if available
+    if (phys.coordinates && phys.coordinates.top_left) {
+        var c = phys.coordinate_to_phys(pt, true);
+        if (c) {
+            text += ' Slide:';
+            if (c.length>3)
+                text += ' ('+BQ.util.formatFloat(c[2], 7, 0, sep)+','+BQ.util.formatFloat(c[3], 7, 0, sep)+')px';
+            text += ' ('+BQ.util.formatFloat(c[0], 7, 2, sep)+','+BQ.util.formatFloat(c[1], 7, 2, sep)+')'+phys.units;
+        }
     }
 
     // print geo coordinates if available
