@@ -2117,7 +2117,7 @@ BQImagePhys.prototype.coordinate_to_phys = function(pt, use_geo) {
     }
 
     // print physical coordinates
-    if (!use_geo && this.pixel_size[0]>0 && this.pixel_size[1]>0) {
+    if ((!use_geo && !this.coordinates) && this.pixel_size[0]>0 && this.pixel_size[1]>0) {
         v = [pt.x*(this.pixel_size[0]), pt.y*(this.pixel_size[1])];
         if (pt.z)
             v[2] = pt.z*(this.pixel_size[2]);
@@ -2132,6 +2132,19 @@ BQImagePhys.prototype.coordinate_to_phys = function(pt, use_geo) {
             var c = [this.geo.top_left[0] + pt.x*this.geo.res[0], this.geo.top_left[1] - pt.y*this.geo.res[1]];
             var latlong = proj4(this.geo.proj4, 'EPSG:4326', c);
             return [latlong[1], latlong[0]];
+        } catch (error) {
+            return;
+        }
+    }
+
+    // print physical geometry coordinates if available
+    if (this.coordinates && this.coordinates.top_left) {
+        if (this.coordinates.axis_origin !== 'top_left') return;
+        if (this.coordinates.axis_orientation !== 'ascending,descending') return;
+        try {
+            var pt_px = [pt.x + this.coordinates.top_left[0], pt.y + this.coordinates.top_left[1]];
+            var pt_ph = [pt_px[0]*this.pixel_size[0], pt_px[1]*this.pixel_size[1]];
+            return [pt_ph[0], pt_ph[1], pt_px[0], pt_px[1]];
         } catch (error) {
             return;
         }
@@ -2226,9 +2239,32 @@ BQImagePhys.prototype.onloadIS = function (image, xml) {
 
   // find geo tags
   if (xml) {
-      var geo = BQ.util.xpath_nodes(xml, "resource/tag[@name='Geo']");
-      if (geo && geo.length>0) {
-          geo = geo[0];
+
+      var coordinates = BQ.util.xpath_node(xml, "resource/tag[@name='coordinates']");
+      if (coordinates) {
+          var v = BQ.util.xpath_nodes(coordinates, "tag[@name='axis_origin']/@value");
+          var axis_origin = v && v.length>0 ? v[0].value : undefined;
+
+          var v = BQ.util.xpath_nodes(coordinates, "tag[@name='axis_orientation']/@value");
+          var axis_orientation = v && v.length>0 ? v[0].value : undefined;
+
+          var v = BQ.util.xpath_nodes(coordinates, "tag[@name='tie_points']/tag[@name='top_left']/@value");
+          var top_left = v && v.length>0 ? v[0].value.split(',') : undefined;
+          if (top_left) {
+              top_left[0] = parseFloat(top_left[0]);
+              top_left[1] = parseFloat(top_left[1]);
+          }
+
+          this.coordinates = this.coordinates || {};
+          this.coordinates.axis_origin = axis_origin || this.coordinates.axis_origin;
+          this.coordinates.axis_orientation = axis_orientation || this.coordinates.axis_orientation;
+          this.coordinates.top_left = top_left || this.coordinates.top_left;
+      } else {
+          this.coordinates = undefined;
+      }
+
+      var geo = BQ.util.xpath_node(xml, "resource/tag[@name='Geo']");
+      if (geo) {
           // fetch proj4 model definition
           var v = BQ.util.xpath_nodes(geo, "tag[@name='Model']/tag[@name='proj4_definition']/@value");
           var proj4_defn = v && v.length>0 ? v[0].value : undefined;
@@ -2254,8 +2290,9 @@ BQImagePhys.prototype.onloadIS = function (image, xml) {
           this.geo.res = res || this.geo.res;
           this.geo.center = center || this.geo.center;
       } else {
-          //this.geo = undefined;
+          this.geo = undefined;
       }
+
   }
 
   // find DICOM tags
