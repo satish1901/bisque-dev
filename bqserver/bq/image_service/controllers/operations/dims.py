@@ -18,6 +18,7 @@ __all__ = [ 'DimsOperation' ]
 from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
+from bq.image_service.controllers.utils import safeunicode
 
 log = logging.getLogger("bq.image_service.operations.dims")
 
@@ -37,5 +38,6 @@ class DimsOperation(BaseOperation):
         if info is not None:
             image = etree.SubElement (response, 'image', resource_uniq='%s'%token.resource_id)
             for k, v in info.iteritems():
-                tag = etree.SubElement(image, 'tag', name=str(k), value=str(v))
+                #log.debug('%s: %s', k, v)
+                tag = etree.SubElement(image, 'tag', name=safeunicode(k), value=safeunicode(v))
         return token.setXml(etree.tostring(response))

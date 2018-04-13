@@ -183,8 +183,14 @@ class ConverterImgcnv(ConverterBase):
         'image_num_z'        : 'image_num_z',
         'image_num_t'        : 'image_num_t',
         'image_num_c'        : 'image_num_c',
-        'image_num_p'        : 'image_num_p',
+        'image_num_series'   : 'image_num_series',
+        'image_series_index' : 'image_series_index',
+        'image_num_fovs'     : 'image_num_fovs',
+        'image_num_labels'   : 'image_num_labels',
+        'image_num_previews' : 'image_num_previews',
         'format'             : 'format',
+        'file_mode'          : 'file_mode',
+        'image_mode'         : 'image_mode',
         'image_pixel_format' : 'image_pixel_format',
         'image_pixel_depth'  : 'image_pixel_depth',
         'raw_endian'         : 'raw_endian',
@@ -201,7 +207,7 @@ class ConverterImgcnv(ConverterBase):
         'tile_num_y': 'tile_num_y',
     }
 
-    extended_dimension_names = ['serie', 'fov', 'rotation', 'scene', 'illumination', 'phase', 'view']
+    extended_dimension_names = ['serie', 'fov', 'rotation', 'scene', 'illumination', 'phase', 'view', 'label', 'preview']
 
 #     #######################################
 #     # Init
@@ -409,8 +415,8 @@ class ConverterImgcnv(ConverterBase):
 
         if rd.get('image_num_z', 0)==1 and rd.get('image_num_t', 0)==1 and rd.get('image_num_p', 0)>1:
             rd['image_num_t'] = rd['image_num_p']
-        rd['image_num_series'] = 0
-        rd['image_series_index'] = 0
+        rd.setdefault('image_num_series', 0)
+        rd.setdefault('image_series_index', 0)
 
         if token.is_multifile_series() is True:
             rd.update(token.meta)
@@ -474,8 +480,8 @@ class ConverterImgcnv(ConverterBase):
         if 'dimensions' in rd:
             rd['dimensions'] = rd['dimensions'].replace(' ', '') # remove spaces
 
-        rd['image_num_series'] = 0
-        rd['image_series_index'] = 0
+        rd.setdefault('image_num_series', 0)
+        rd.setdefault('image_series_index', 0)
         rd.setdefault('image_num_z', 1)
         rd.setdefault('image_num_t', 1)
         rd.setdefault('image_num_p', 1)

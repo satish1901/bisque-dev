@@ -69,7 +69,7 @@ class SliceOperation(BaseOperation):
        ex: slice=fov:345,z:0
        '''
     name = 'slice'
-    dimension_names = ['x', 'y', 'z', 't', 'serie', 'fov', 'rotation', 'scene', 'illumination', 'phase', 'view']
+    dimension_names = ['x', 'y', 'z', 't', 'serie', 'fov', 'rotation', 'scene', 'illumination', 'phase', 'view', 'label', 'preview']
 
     def __str__(self):
         return 'slice: returns an image of requested slices, arg = x1-x2,y1-y2,z|z1-z2,t|t1-t2 in ranges [1..N] or arg = z:V|v1-v2,fov:V,... in ranges [0..N-1]'
