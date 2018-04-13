@@ -310,7 +310,7 @@ class ImageServiceController(ServiceController):
 
             # use a back-off strategy for long running tasks
             #future_timeout = random.randint(e.timeout_range[0], e.timeout_range[1]) * future_timeout
-            future_timeout = random.randint(e.timeout_range[0], e.timeout_range[1]) + future_timeout*8
+            future_timeout = random.randint(e.timeout_range[0], e.timeout_range[1]) + future_timeout*2
 
             #tg.response.status = "307 retry later"
             tg.response.retry_after = future_timeout

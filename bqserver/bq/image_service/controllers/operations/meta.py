@@ -19,22 +19,9 @@ from bq.image_service.controllers.exceptions import ImageServiceException
 from bq.image_service.controllers.operation_base import BaseOperation
 from bq.image_service.controllers.process_token import ProcessToken
 from bq.image_service.controllers.converters.converter_imgcnv import ConverterImgcnv
+from bq.image_service.controllers.utils import safeunicode
 
 log = logging.getLogger("bq.image_service.operations.meta")
-
-def safeunicode(s):
-    if isinstance(s, unicode):
-        return s
-    if isinstance(s, str) is not True:
-        return unicode(s)
-    try:
-        return unicode(s, 'latin1')
-    except (UnicodeEncodeError,UnicodeDecodeError):
-        try:
-            return unicode(s, 'utf8')
-        except (UnicodeEncodeError,UnicodeDecodeError):
-            pass
-    return unicode(s, 'utf8', errors='ignore')
 
 class MetaOperation(BaseOperation):
     '''Provide image information'''
