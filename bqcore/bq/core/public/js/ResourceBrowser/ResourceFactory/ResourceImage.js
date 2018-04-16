@@ -928,7 +928,7 @@ Ext.define('Bisque.Resource.Image.Page', {
         var embeddedTagger = {
             xtype: 'bq-tagger',
             resource : this.resource.src + '?meta',
-            title : 'Embedded',
+            title : 'Metadata',
             viewMode : 'ReadOnly',
             disableAuthTest : true
         };

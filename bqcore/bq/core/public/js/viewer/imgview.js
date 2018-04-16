@@ -810,7 +810,7 @@ ImgViewer.prototype.print_coordinate = function(pt, show_pix, show_phys) {
         if (c) {
             text += ' Slide:';
             if (c.length>3)
-                text += ' ('+BQ.util.formatFloat(c[2], 7, 0, sep)+','+BQ.util.formatFloat(c[3], 7, 0, sep)+')px';
+                text += ' ('+BQ.util.formatFloat(c[2], 7, 2, sep)+','+BQ.util.formatFloat(c[3], 7, 2, sep)+')px';
             text += ' ('+BQ.util.formatFloat(c[0], 7, 2, sep)+','+BQ.util.formatFloat(c[1], 7, 2, sep)+')'+phys.units;
         }
     }

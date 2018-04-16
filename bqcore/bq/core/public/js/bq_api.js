@@ -2198,6 +2198,9 @@ BQImagePhys.prototype.onloadIS = function (image, xml) {
   this.t  = parseInt(hash['image_num_t']);
   this.ch  = parseInt(hash['image_num_c']);
 
+  this.labels = parseInt(hash['image_num_labels']);
+  this.previews = parseInt(hash['image_num_previews']);
+
   this.init();
 
   //-------------------------------------------------------
