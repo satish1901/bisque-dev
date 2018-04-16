@@ -1285,3 +1285,56 @@ table.x-form-color {
     background-size: 24px 24px;
     background-repeat: no-repeat;
 }
+
+.preview_button {
+    position: absolute;
+    z-index: 30;
+    width: 64px;
+    height: 32px;
+    left: none;
+    right: 10px;
+    top: 80px;
+    bottom: none;
+    background-color: rgb(0,0,0,0.5);
+    background-repeat: no-repeat;
+    background-position: center center;
+    /*background-image: url(/core/images/viewer/icons_viewer.svg);*/
+    background-size: contain;
+    color: transparent;
+    cursor: default;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    border-radius: 5px;
+    -moz-border-radius: 5px;
+    border: 1px solid white !important;
+}
+
+.preview_button.preview {
+    top: 80px;
+}
+
+.preview_button.label {
+    top: 120px;
+}
+
+.preview_image {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: contain;
+}
+
+
+.bq-viewer-menu.label {
+    background-color: rgba(0,0,0,1.0);
+    opacity: 1.0;
+}
+
+.bq-viewer-menu.label .x-tip-anchor {
+    border-left-color: rgba(0,0,0,0.8);
+    border-bottom-color: transparent;
+}
