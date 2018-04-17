@@ -214,6 +214,13 @@ classdef Url < matlab.mixin.Copyable
             end
         end          
         
+        function q = hasQuery(self)
+            q = false;
+            if ~isempty(self.purl.query)
+                q = true;                
+            end
+        end            
+        
     end% methods
     
     methods (Static)    
@@ -225,6 +232,7 @@ classdef Url < matlab.mixin.Copyable
                 urlOut = char(java.net.URLEncoder.encode(urlIn,'UTF-8'));
                 % un-encode commas, cannot pass a list of ignored characters
                 urlOut = strrep(urlOut, '%2C', ',');
+                urlOut = strrep(urlOut, '%3A', ':');
             end
         end % urlencode
         
