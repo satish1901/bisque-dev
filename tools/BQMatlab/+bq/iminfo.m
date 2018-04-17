@@ -71,6 +71,15 @@ function [info, meta] = iminfo(url, user, password)
                  'pixel_resolution_y', 'double';
                  'pixel_resolution_z', 'double';
                  'pixel_resolution_t', 'double';
+                 'image_series_index', 'int';
+                 'image_num_series', 'int';
+                 'image_num_previews', 'int';
+                 'image_num_resolution_levels', 'int';
+                 'image_num_labels', 'int';
+                 'image_num_fovs', 'int';
+                 'format', 'str';
+                 'date_time', 'str';
+                 'image_mode', 'str';                 
                };
         info = bq.parsetags(doc_meta, tags, template, info);
         meta = bq.Factory.fetch(doc_meta);

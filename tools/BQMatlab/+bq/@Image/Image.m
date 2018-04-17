@@ -111,13 +111,29 @@ classdef Image < bq.File
         % im - the actual image matrix data if no filename was provided or 
         %      the filename where the image was stored        
         function im = fetch(self, filename)
-            if exist('filename', 'var'),
-                im = self.fetch@bq.File(filename); 
+            if exist('filename', 'var')
+                if self.pixels_url.hasQuery() == true
+                    [im, ~] = bq.connect('GET', self.pixels_url.toString(), filename, [], self.user, self.password);    
+                else
+                    im = self.fetch@bq.File(filename); 
+                end
             else
                 im = bq.imreadND(self.pixels_url.toString(), self.user, self.password );
             end
         end % fetch  
 
+        % im - the actual image matrix data if no filename was provided or 
+        %      the filename where the image was stored 
+        % the difference with fetch is by using TIFF to trasmit data
+        function im = load(self)
+            filename = tempname;
+            self.fetch(filename); 
+            t = Tiff(filename, 'r');
+            im = read(t);
+            t.close();
+            delete(filename);
+        end % load          
+        
         function imo = command(self, command, params)
             imo = copy(self);
             imo.pixels_url.pushQuery(command, params);
@@ -132,7 +148,13 @@ classdef Image < bq.File
                 params = sprintf(',,,%d', t);               
             end
             imo = self.command('slice', params);
-        end % command           
+        end % slice           
+        
+        % extended slice opration giving access to more dimensions
+        function imo = slicex(self, dim, p)
+            params = sprintf('%s:%d', dim, p);
+            imo = self.command('slice', params);
+        end % slicex          
         
         % m = im.remap(1).fetch();
         % m = im.remap([3,2,1]).fetch();
@@ -167,6 +189,10 @@ classdef Image < bq.File
         function imo = roi(self, x1,y1,x2,y2)
             params = sprintf('%d,%d,%d,%d', x1,y1,x2,y2);
             imo = self.command('roi', params);
+        end % roi            
+        
+        function imo = format(self, fmt)
+            imo = self.command('format', fmt);
         end % roi            
         
     end% methods

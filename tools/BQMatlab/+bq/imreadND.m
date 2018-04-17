@@ -53,10 +53,20 @@ function I = imreadND(url, user, password)
              'image_num_t',        'int';              
              'image_num_c',        'int'; 
              'image_num_x',        'int';
-             'image_num_y',        'int';             
+             'image_num_y',        'int';
+             'image_series_index', 'int';
+             'image_num_series', 'int';
+             'image_num_previews', 'int';
+             'image_num_resolution_levels', 'int';
+             'image_num_labels', 'int';
+             'image_num_fovs', 'int';
              'image_pixel_depth',  'int';
              'image_pixel_format', 'str';
+             'format', 'str';
+             'date_time', 'str';
+             'image_mode', 'str';
            };
+       
     info = bq.parsetags(doc, tags, template);
     purl.popQuery();    
     

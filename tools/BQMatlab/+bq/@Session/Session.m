@@ -40,9 +40,9 @@ classdef Session < handle
         % user_or_mex_url     - username or url to the MEX documment
         % pass_or_auth_token  - password or auth token given by the system
         % bisque_root - optional for mex auth: server root        
-            if nargin==2,
+            if nargin==2
                 self.init(user_or_mex_url, pass_or_auth_token);
-            elseif nargin==3,
+            elseif nargin==3
                 self.init(user_or_mex_url, pass_or_auth_token, bisque_root);
             end
         end % constructor
@@ -60,7 +60,7 @@ classdef Session < handle
                 self.mex_url = user_or_mex_url;
                 self.user = 'Mex';
                 % if Bisque root isn't given, try to parse from mex url
-                if ~exist('bisque_root', 'var'),
+                if ~exist('bisque_root', 'var')
                     purl = bq.Url(self.mex_url);
                     bisque_root = purl.getRoot();
                 end
@@ -82,7 +82,7 @@ classdef Session < handle
         function update(self, status)
         % updates status/value of the MEX on the server, with given status string
             self.error = struct();
-            if isempty(self.mex),
+            if isempty(self.mex)
                 return;
             end
             
@@ -101,7 +101,7 @@ classdef Session < handle
  
         function fail(self, message)
         % fails MEX execution with the given error message
-            if isempty(self.mex),
+            if isempty(self.mex)
                 return;
             end
             status = 'FAILED';
@@ -122,7 +122,7 @@ classdef Session < handle
 
         function finish(self)
         % finishes the MEX posting outputs section to the system
-            if isempty(self.mex),
+            if isempty(self.mex)
                 return;
             end
             status = 'FINISHED';
@@ -145,7 +145,7 @@ classdef Session < handle
             % update the document on the server
             ops = self.mex.findNode('//tag[@name="outputs"]');
           
-            if isempty(ops) || ~isempty(ops) && ops.hasAttribute('uri'),
+            if isempty(ops) || ~isempty(ops) && ops.hasAttribute('uri')
                 bq.put(self.mex_url, self.mex.doc, self.user, self.password);
             else
                 % a little hack to create a document for POST operation
@@ -159,11 +159,11 @@ classdef Session < handle
         
         function outputs = getOutputs(self)
         % returns outputs section for this MEX, if does not exist - creates
-            if isempty(self.mex),
+            if isempty(self.mex)
                 return;
             end            
             outputs = self.mex.findNode('//tag[@name="outputs"]');
-            if isempty(outputs),
+            if isempty(outputs)
                 outputs = self.mex.addTag('outputs');
             end
         end % createOutputs         
@@ -235,7 +235,7 @@ classdef Session < handle
         function node = find(self, resource_type, tag_query, view)
         % find one resource matching tag_query, see query for more info
             nodes = self.query(resource_type, tag_query, [], view, 0, 1);
-            if length(nodes)<1,
+            if length(nodes)<1
                 node = [];
             else
                 node = nodes{1};
