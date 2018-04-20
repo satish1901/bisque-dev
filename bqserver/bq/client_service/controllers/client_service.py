@@ -69,7 +69,7 @@ from pylons.controllers.util import abort
 from webob import Request
 
 import tg
-from tg import expose, flash, redirect, require
+from tg import expose, flash, redirect, require, request
 from tg import config, tmpl_context as c, session
 from repoze.what import predicates
 
@@ -121,7 +121,7 @@ class ClientServer(ServiceController):
 
     @expose(template='bq.client_service.templates.welcome')
     def index(self, **kw):
-        log.info("WELCOME %s " % session )
+        log.info("WELCOME %s %s " , request.url, dict ( session ))
         wpublic = kw.pop('wpublic', not bq.core.identity.current)
         pybool = {'True': 'true', 'False': 'false'}
         welcome_message = config.get ('bisque.welcome_message', "Welcome to the Bisque image database")
