@@ -388,25 +388,17 @@ class Taggable(object):
             #self.vertices = []
             log.debug ('cleared all')
             return results
-        if 'tag' in what:
-            results.extend(self.tags)
-            for tg in self.tags:
-                self.children.remove (tg)
-            #self.children = list (set(self.children) - set(self.tags))
-            #self.tags = []
-            log.debug ('cleared tags')
-        if 'gobject' in what:
-            results.extend(self.gobjects)
-            for go in self.gobjects:
-                self.children.remove (go)
-            #self.children = list (set(self.children) - set(self.gobjects))
-            #self.gobjects = []
-            log.debug ('cleared gobjects')
+        else:
+            for tg in self.children:
+                if tg.tag in what:
+                    self.children.remove (tg)
+                    results.append (tg)
+        log.debug ('cleared %s', what)
         return results
 
     def findtag (self, nm, create=False):
-        for t in self.tags:
-            if t.resource_name == nm:
+        for t in self.children:
+            if t.tag == 'tag' and t.resource_name == nm:
                 return t
         t=None
         if create:
@@ -828,15 +820,16 @@ mapper( Taggable, taggable,
 #        polymorphic_on = taggable_discr,
 #        polymorphic_identity = 'taggable',
                        properties = {
-    'tags' : relation(Taggable, lazy=True, viewonly=True, #cascade="all, delete-orphan", passive_deletes=True,
-                      #remote_side=[taggable.c.resource_parent_id, taggable.c.resource_type],
-                      primaryjoin= and_(remote(taggable.c.resource_parent_id)==taggable.c.id,
-                                        taggable.c.resource_type == 'tag'),
-                      ),
-    'gobjects' : relation(Taggable, lazy=True, viewonly=True, #cascade="all, delete-orphan", passive_deletes=True,
-                          #remote_side=[taggable.c.resource_parent_id, taggable.c.resource_type],
-                          primaryjoin= and_(remote(taggable.c.resource_parent_id)==taggable.c.id,
-                                            remote(taggable.c.resource_type) == 'gobject')),
+    # 'tags' : relation(Taggable, lazy=True, viewonly=True, #cascade="all, delete-orphan", passive_deletes=True,
+    #                   #remote_side=[taggable.c.resource_parent_id, taggable.c.resource_type],
+    #                   primaryjoin= and_(remote(taggable.c.resource_parent_id)==taggable.c.id,
+    #                                     taggable.c.resource_type == 'tag'),
+    #                   ),
+    # 'gobjects' : relation(Taggable, lazy=True, viewonly=True, #cascade="all, delete-orphan", passive_deletes=True,
+    #                       #remote_side=[taggable.c.resource_parent_id, taggable.c.resource_type],
+    #                       primaryjoin= and_(remote(taggable.c.resource_parent_id)==taggable.c.id,
+    #                                         remote(taggable.c.resource_type) == 'gobject')),
+
     'acl'  : relation(TaggableAcl, lazy=True, cascade="all, delete-orphan", passive_deletes=True,
                       primaryjoin = (TaggableAcl.taggable_id == taggable.c.document_id),
                       foreign_keys=[TaggableAcl.taggable_id],
@@ -844,28 +837,31 @@ mapper( Taggable, taggable,
 
     'children' : relation(Taggable, lazy=True, cascade="all, delete-orphan", passive_deletes=True,
                           enable_typechecks = False,
-                          backref = backref('parent', enable_typechecks=False, remote_side = [taggable.c.id]),
                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id),
                           order_by = taggable.c.resource_index,
-                          collection_class = ordering_list ('resource_index')
+                          collection_class = ordering_list ('resource_index'),
+                          backref = backref('parent', post_update = True,
+                                            enable_typechecks=False, remote_side = [taggable.c.id]),
                           ),
 
-    'childrenq' : relation(Taggable, lazy='dynamic',
-                          enable_typechecks = False,
-                          remote_side = [taggable.c.resource_parent_id],
-                          primaryjoin = (taggable.c.id == taggable.c.resource_parent_id),
-                          order_by = taggable.c.resource_index,
-                          collection_class = ordering_list ('resource_index')
-                       ),
+    # 'childrenq' : relation(Taggable, lazy='dynamic', viewonly=True,
+    #                       enable_typechecks = False,
+    #                       remote_side = [taggable.c.resource_parent_id],
+    #                       primaryjoin = (taggable.c.id == taggable.c.resource_parent_id),
+    #                       #order_by = taggable.c.resource_index,
+    #                       #collection_class = ordering_list ('resource_index')
+    #                    ),
 
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan", passive_deletes=True,
                         order_by=[values.c.indx],
+                        collection_class = ordering_list ('indx'),
                         primaryjoin =(taggable.c.id == values.c.resource_parent_id),
                         backref = backref('parent', enable_typechecks = False, remote_side=[taggable.c.id])
                         #foreign_keys=[values.c.parent_id]
                         ),
     'vertices':relation(Vertex, lazy=True, cascade="all, delete-orphan", passive_deletes=True,
                         order_by=[vertices.c.indx],
+                        collection_class = ordering_list ('indx'),
                         primaryjoin =(taggable.c.id == vertices.c.resource_parent_id),
                         backref = backref('parent', enable_typechecks=False, remote_side=[taggable.c.id]),
                         #foreign_keys=[vertices.c.resource_parent_id]
@@ -876,35 +872,28 @@ mapper( Taggable, taggable,
     #                   primaryjoin= and_(remote(taggable.c.resource_parent_id)==taggable.c.id,
     #                                     remote(taggable.c.resource_type) == 'tag')),
 
-    #'document' : relation(Taggable, uselist=False,
-    #                      primaryjoin=(taggable.c.document_id==taggable.c.id),
-    #                      enable_typechecks=False,
-    #                      post_update=True
-    #                      ),
+    # The following primarily create a valid .document for Taggable, vertex, and value
 
-
-     'docnodes': relation(Taggable, lazy=True,
-                          cascade = "all, delete-orphan", passive_deletes=True,
-                          enable_typechecks = False,
-                          post_update=True,
-                          primaryjoin = (taggable.c.id == taggable.c.document_id),
-                          backref = backref('document', post_update=True,
-                                            enable_typechecks=False, remote_side=[taggable.c.id]),
-                          ),
+    'docnodes': relation(Taggable, lazy=True,
+                         cascade = "all, delete-orphan", passive_deletes=True,
+                         enable_typechecks = False,
+                         primaryjoin = (taggable.c.id == taggable.c.document_id),
+                         backref = backref('document', #post_update=True,
+                                           enable_typechecks=False, remote_side=[taggable.c.id]),
+                         post_update = True,
+                         ),
 
      'docvalues' : relation (Value, lazy=True,
-                          cascade = "all, delete-orphan", passive_deletes=True,
+                             cascade = "all, delete-orphan", passive_deletes=True,
                           enable_typechecks = False,
                           primaryjoin = (taggable.c.id == values.c.document_id),
-    #                      post_update=True,
                           backref = backref('document', #post_update=True,
                                             enable_typechecks=False, remote_side=[taggable.c.id]),
                           ),
      'docvertices' : relation (Vertex, lazy=True,
-                          cascade = "all, delete-orphan", passive_deletes=True,
+                               cascade = "all, delete-orphan", passive_deletes=True,
                           enable_typechecks = False,
                           primaryjoin = (taggable.c.id == vertices.c.document_id),
-    #                      post_update=True,
                           backref = backref('document', #post_update=True,
                                             enable_typechecks=False, remote_side=[taggable.c.id]),
                            ),

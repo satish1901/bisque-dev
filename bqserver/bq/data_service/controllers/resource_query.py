@@ -1229,6 +1229,9 @@ def resource_delete(resource, user_id=None, check_acl=True, check_blob=True, che
         #Resource.hier_cache.invalidate ('/', user = user_id)
         return
 
+    if resource.resource_parent_id is not None:
+        check_references = check_acl = check_blob = False
+
     # owner so first delete all referneces.
     # ACL, values etc..
     #
@@ -1257,8 +1260,8 @@ def resource_delete(resource, user_id=None, check_acl=True, check_blob=True, che
 
     if resource.resource_parent_id:
         resource.parent.children.remove(resource)
-    else:
-        DBSession.delete(resource)
+
+    DBSession.delete(resource)
     #DBSession.flush()
 
     log.debug('resource_delete %s:end' , resource_uniq)

@@ -185,6 +185,9 @@ class ResourceFactory(object):
     '''Create db class based on XML tags and place in proper
     hierarchy
     '''
+    # Map xml node tax -> (field list, Class)
+    field_index_map = { 'vertex' : ('vertices',Vertex), 'value' : ('values', Value) }
+
     @classmethod
     def load_uri(cls, uri, parent):
         #log.debug('factory.load_uri %s' % uri)
@@ -204,20 +207,20 @@ class ResourceFactory(object):
         elif xmlname == "vertex":
             node = Vertex()
             parent.vertices.append (node)
-            node.indx = len(parent.vertices)-1 # Default value (maybe overridden)
+            #node.indx = len(parent.vertices)-1 # Default value (maybe overridden)
             node.document = parent.document
         elif xmlname == "value":
             node = Value()
             parent.resource_value = None
             parent.values.append(node)
-            parent.resource_value = None
-            node.indx = len(parent.values)-1   # Default value (maybe overridden)
+            #parent.resource_value = None
+            #node.indx = len(parent.values)-1   # Default value (maybe overridden)
             node.document = parent.document
-        elif xmlname== "request" or xmlname=="response":
-            if parent:
-                node = parent
-            else:
-                node = XMLNode(xmlname)
+        #elif xmlname== "request" or xmlname=="response":
+        #    if parent:
+        #        node = parent
+        #    else:
+        #        node = XMLNode(xmlname)
         else:
             if xmlname=="resource":
                 xmlname = xmlnode.get ('resource_type')
@@ -239,45 +242,46 @@ class ResourceFactory(object):
         if xmlname == "vertex":
             if parent and node not in parent.vertices:
                 parent.vertices.append (node)
-                node.indx = len(parent.vertices)-1 # Default value (maybe overridden)
+                #node.indx = len(parent.vertices)-1 # Default value (maybe overridden)
         elif xmlname == "value":
             if node not in parent.values:
                 parent.resource_value = None
                 parent.values.append(node)
-                parent.resource_value = None
-                node.indx = len(parent.values)-1   # Default value (maybe overridden)
-        elif xmlname== "request" or xmlname=="response":
-            pass
+                #node.indx = len(parent.values)-1   # Default value (maybe overridden)
+        #elif xmlname== "request" or xmlname=="response":
+        #    pass
         else:
             if parent and node not in parent.children:
                 node.document = parent.document
                 parent.children.append(node)
 
 
-    index_map = dict(vertex=('vertices',Vertex), value=('values', Value))
     @classmethod
     def index(cls, node, parent, indx, cleared):
+        """ Find an element in a subarray of parent
+        """
         xmlname = node.tag
         if xmlname in KNOWN_GOBJECTS:
             xmlname = 'gobject'
         #return cls.new(xmlname, parent)
-        array, klass = cls.index_map.get (xmlname, (None,None))
+        array, klass = cls.field_index_map.get (xmlname, (None,None))
         if array:
             objarr =  getattr(parent, array)
             # If values have been 'cleared', then arrary will be empty
             # this will get the
-            log.debug ("CURRENTLEN = %s " , len(objarr))
+            log.debug ("EXTEDNING from CURRENTLEN = %s to %s " , len(objarr), indx)
             objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
             for x in range(len(objarr), indx+1):
                 objarr[indx].indx = x
                 objarr[indx].document = parent.document
 
 
-            v = DBSession.query(klass).get( (parent.id, indx) )
+            #v = DBSession.query(klass).get( (parent.id, indx) )
+            v = objarr[indx]
             #log.debug('indx %s fetched %s ' , indx, str(v))
             #objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
-            if v is not None:
-                objarr[indx] = v
+            #if v is not None:
+            #    objarr[indx] = v
             objarr[indx].document = parent.document
             #log.debug('ARRAY = %s' % [ str(x) for x in objarr ])
             return objarr[indx]
@@ -618,7 +622,8 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
         return node, nodes, doc_id
 
     if "full" in view :
-        q = dbo.childrenq
+        #q = dbo.childrenq
+        q = dbo.children
         # apply limit offsets
         if kw.has_key('offset'):
             q = q.offset (int(kw.pop('offset')))
@@ -652,7 +657,7 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
                 node.append (nodes[tag.id])
             else:
                 kid = xmlnode(tag, node, view=new_view, baseuri=baseuri)
-                _ = [ xmlnode(x, kid, view=new_view, baseuri=baseuri) for x in tag.childrenq ]
+                _ = [ xmlnode(x, kid, view=new_view, baseuri=baseuri) for x in tag.children ]
 
     return node, nodes, doc_id
 
@@ -821,16 +826,17 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                     parent = stack[-1]
 
                 attrib = dict (obj.attrib)
-
                 uri   = attrib.pop ('uri', None)
                 type_ = attrib.get ('type', None)
                 indx  = attrib.get ('index', None)
-                ts_   = attrib.pop ('ts', None)
-                created_ = attrib.pop ('created', None)
-                owner = attrib.pop ('owner', None)
+                _ts   = attrib.pop ('ts', None)  # Don't allow reassignment
+                _created = attrib.pop ('created', None) # Don't allow reassignment
+                _owner= attrib.pop ('owner', None) # Don't allow reassignment
                 #uniq  = attrib.pop ('resource_uniq', None)
 
                 cleared = []
+                #####
+                # Find the DB resource needed for updating
                 if resource is not None:
                     factory.set_parent (resource, parent)
                 elif uri:
@@ -851,14 +857,15 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
 
                     #log.debug("update: created %s:%s of %s" % (obj.tag, resource, resource.document))
                     log.debug("update: created %s:%s" % ( obj.tag, resource))
+                #####
                 # Assign attributes
                 resource.ts = ts
                 for k,v in attrib.items():
                     #log.debug ("%s attr %s:%s" % (resource, k, v))
                     if getattr(resource, k, v) != v:
                         setattr(resource, k, unicode_safe(v))
-
-                # Check for text
+                #####
+                # Speical check for text
                 value = attrib.pop ('value', None)
                 if value is None and obj.tag == 'value':
                     value = obj.text
@@ -866,13 +873,20 @@ def updateDB(root=None, parent=None, resource = None, factory = ResourceFactory,
                     convert = converters.get(type_, try_converters)
                     resource.value = convert (value.strip())
                     #log.debug (u"assigned %s = %s" % (obj.tag , unicode(value,"utf-8")))
+                # Store this resource as parent for next iteration
                 stack.append (resource)
                 last_resource = resource
                 resource = None
 
             elif ev == 'end':
                 last_resource = stack.pop()
-                #log.debug ("last_resource, resource %s, %s "  %(last_resource, resource))
+                if hasattr(last_resource, 'children'):
+                    last_resource.children.reorder()
+                if last_resource.xmltag == 'gobject' and  hasattr(last_resource, 'vertices'):
+                    last_resource.vertices.reorder()
+                if hasattr(last_resource, 'values'):
+                    last_resource.values.reorder()
+                log.debug ("last_resource, resource %s, %s " , str(last_resource), str(resource))
             else:
                 log.debug ("other node %s" , obj.tag)
 
