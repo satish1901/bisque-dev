@@ -272,7 +272,9 @@ class TableController(ServiceController):
         # load table
         table = None
         try:
-            # /table/ID[/PATH1/PATH2/...][/RANGE][/COMMAND:PARS]
+            # /table/ID[/PATH1/PATH2/...][/filter:FILTERCOND]*[/AGGRANGE][/COMMAND:PARS]
+            # Example:
+            #   /table/ID[/PATH1/PATH2/filter:[:,"temperature"] >= 0/filter:[:,"temperature"] < 30/AVG(:,"humidity")/format:csv
             if len(path)<1:
                 abort(400, 'Element ID is required as a first parameter, ex: /table/00-XXXXX/format:xml' )
             uniq = path.pop(0)
@@ -303,21 +305,31 @@ class TableController(ServiceController):
                 abort(501, 'Table cannot be read. Format not recognized')
             log.debug('Inited table: %s',str(table))
 
-            # range read
-            candidate = table.path[0].split(':')[0]
-            if candidate not in self.operations.plugins:
-                try:
-                    rng = table.path.pop(0)
-                    rng = rng.split(',') # split for per-dimension ranges
-                    rng = [parse_subrange(i) for i in rng] # split for within dimension ranges
-                except Exception:
-                    abort(400, 'Malformed range request')
-                table.read(rng=rng)
-            #else: # full read is not permitted anymore
-            #    table.read()
+            if len(table.path) == 0 or table.path[0] != 'info':
+                # some query on table; if only info, skip this for speed (no need to read in table)
+                
+                # extract and run filterconds, if any
+                while len(table.path) > 0:
+                    candidate = table.path[0].split(':')[0]
+                    if candidate == 'filter':
+                        filtercond = table.path.pop(0).split(':')[1]
+                        table = table.filter(filtercond)
+                    else:
+                        break
+                
+                # extract and run aggregation/range query, if any
+                if len(table.path) > 0:
+                    candidate = table.path[0].split(':')[0]
+                    if candidate not in self.operations.plugins:
+                        selcond = table.path.pop(0)
+                        table = table.slice(selcond)
+                    
+                # read what is selected
+                table.read()
+            
             log.debug('Loaded table: %s', str(table))
 
-            # operations consuming the rest of the path
+            # operations consuming the rest of the path            
             i = 0
             a = table.path[i] if len(table.path)>i else None
             while a is not None:

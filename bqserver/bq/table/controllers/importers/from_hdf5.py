@@ -78,7 +78,7 @@ try:
 except ImportError:
     log.info('Pandas was not found but required for table service!')
 
-from bq.table.controllers.table_base import TableBase
+from bq.table.controllers.table_base import TableBase, run_query
 
 ################################################################################
 # misc
@@ -176,20 +176,8 @@ class TableHDF(TableBase):
     def info(self, **kw):
         """ Returns table information """
         # load headers and types if empty
-        log.debug("HDF TABLES: %s", str(self.tables))   #!!!
-
-        # TODO: have to find a better way to split path in HDF from operations... this is a hack for now
-        end = len(self.path)
-        for i in range(len(self.path)):
-            if self.path[i] == 'info' or re.match(r"^-?[0-9]*[:;]-?[0-9]*(?:,-?[0-9]*[:;]-?[0-9]*)*$", self.path[i]):
-                end = i
-                break
-        self.subpath = '/' + '/'.join([p.strip('"') for p in self.path[0:end]])  # allow quoted path segments to escape slicing, e.g. /bla/"0:100"/bla
-        self.path = self.path[end:]
-
-        if self.tables is None:
+        if self.t is None:
             try:
-                log.debug("HDF FILENAME: %s", self.filename)   #!!!
                 # TODO: could lead to problems when multiple workers open same file???
                 # dima: no problems when reading but will have issues when writing and will require file locking
                 try:
@@ -199,6 +187,17 @@ class TableHDF(TableBase):
             except Exception:
                 log.exception('HDF file cannot be read')
                 raise RuntimeError("HDF file cannot be read")
+            
+        # determine which part of path is group in HDF vs operations
+        end = len(self.path)
+        for i in range(len(self.path)):
+            if '/' + '/'.join([p.strip('"') for p in self.path[0:i+1]]) not in self.t:    # allow quoted path segments to escape slicing, e.g. /bla/"0:100"/bla
+                end = i
+                break
+        self.subpath = '/' + '/'.join([p.strip('"') for p in self.path[0:end]])
+        self.path = self.path[end:]
+        
+        if self.tables is None:
             self.tables = self._collect_arrays(self.subpath)
 
         if len(self.tables) == 0:
@@ -220,46 +219,55 @@ class TableHDF(TableBase):
     def read(self, **kw):
         """ Read table cells and return """
         super(TableHDF, self).read(**kw)
-        rng = kw.get('rng')
-        log.debug('rng %s', str(rng))
+#        rng = kw.get('rng')
+#        log.debug('rng %s', str(rng))
 
         try:
             node = self.t.get_node(self.subpath or '/') # v3 API
         except AttributeError:
             node = self.t.getNode(self.subpath or '/') # pylint: disable=no-member
 
-        startrows = [0]*node.ndim
-        endrows   = [1]*node.ndim
-        #endrows   = [min(50, node.shape[i]) for i in range(node.ndim)]
-        if rng is not None:
-            for i in range(min(node.ndim, len(rng))):
-                row_range = rng[i]
-                if len(row_range)>0:
-                    startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
-                    endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else node.shape[i]
-                    startrows[i] = min(node.shape[i], max(0, startrows[i]))
-                    endrows[i]   = min(node.shape[i], max(0, endrows[i]))
-                    if startrows[i] > endrows[i]:
-                        endrows[i] = startrows[i]
-        log.debug('startrows %s, endrows %s', startrows, endrows)
-
-        if isinstance(node, tables.table.Table):
-            self.data = node.read(startrows[0], endrows[0])   # ignore higher dims
-            self.sizes = [endrows[0]-startrows[0], 1]
-        elif isinstance(node, tables.array.Array):
-            if node.ndim >= 1:
-                slice_ranges = tuple([slice(startrows[i], endrows[i], None) for i in range(node.ndim)])
-                self.sizes = [endrows[i]-startrows[i] for i in range(node.ndim)]
-            else:
-                slice_ranges = None
-                self.sizes = []
-            self.data = node.__getitem__(slice_ranges) if slice_ranges else node.read()
+        if isinstance(node, tables.table.Table) or isinstance(node, tables.array.Array):
+            self.data, self.sizes, self.offset, self.types, self.headers = run_query(node, sels=self.t_slice, cond=self.t_cond, want_stats=True, keep_dims=2)   # TODO: should be able to read from all dims (need to extend API/viewer)
         else:
             self.data = np.empty((), dtype=unicode)   # empty array
-            self.sizes = [0 for i in range(node.ndim)]
-        log.debug('Data: %s', str(self.data[0]) if len(self.data.shape) > 0 and self.data.shape[0] > 0 else str(self.data))
-        self.headers, self.types = _get_headers_types(node, startrows[1] if node.ndim > 1 else None, endrows[1] if node.ndim > 1 else None)
+            self.sizes = []
+            self.offset = 0
+            self.headers, self.types = _get_headers_types(node, None, None)
         return self.data
+    
+#         startrows = [0]*node.ndim
+#         endrows   = [1]*node.ndim
+#         #endrows   = [min(50, node.shape[i]) for i in range(node.ndim)]
+#         if rng is not None:
+#             for i in range(min(node.ndim, len(rng))):
+#                 row_range = rng[i]
+#                 if len(row_range)>0:
+#                     startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
+#                     endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else node.shape[i]
+#                     startrows[i] = min(node.shape[i], max(0, startrows[i]))
+#                     endrows[i]   = min(node.shape[i], max(0, endrows[i]))
+#                     if startrows[i] > endrows[i]:
+#                         endrows[i] = startrows[i]
+#         log.debug('startrows %s, endrows %s', startrows, endrows)
+# 
+#         if isinstance(node, tables.table.Table):
+#             self.data = node.read(startrows[0], endrows[0])   # ignore higher dims
+#             self.sizes = [endrows[0]-startrows[0], 1]
+#         elif isinstance(node, tables.array.Array):
+#             if node.ndim >= 1:
+#                 slice_ranges = tuple([slice(startrows[i], endrows[i], None) for i in range(node.ndim)])
+#                 self.sizes = [endrows[i]-startrows[i] for i in range(node.ndim)]
+#             else:
+#                 slice_ranges = None
+#                 self.sizes = []
+#             self.data = node.__getitem__(slice_ranges) if slice_ranges else node.read()
+#         else:
+#             self.data = np.empty((), dtype=unicode)   # empty array
+#             self.sizes = [0 for i in range(node.ndim)]
+#         log.debug('Data: %s', str(self.data[0]) if len(self.data.shape) > 0 and self.data.shape[0] > 0 else str(self.data))
+#         self.headers, self.types = _get_headers_types(node, startrows[1] if node.ndim > 1 else None, endrows[1] if node.ndim > 1 else None)
+#         return self.data
 
     def write(self, data, **kw):
         """ Write cells into a table"""

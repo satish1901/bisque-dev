@@ -53,6 +53,7 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 # default imports
 import os
 import sys
+import sys
 import logging
 import csv
 
@@ -61,7 +62,7 @@ import pandas as pd
 
 
 from bq import blob_service
-from bq.table.controllers.table_base import TableBase
+from bq.table.controllers.table_base import TableBase, run_query, ArrayOrTable
 
 __all__ = [ 'TableCSV' ]
 
@@ -85,6 +86,12 @@ def _get_headers_types(data, startcol=None, endcol=None, has_header=False):
         headers = [str(i) for i in range(startcol or 0, endcol or data.shape[1])]
     types = [t.name for t in data.dtypes.tolist()[slice(startcol, endcol, None)]] #data.dtypes.tolist()[0].name
     return (headers, types)
+
+def get_cb_csv(t, filename):
+    def cb_csv(slices):
+        # read only slices
+        return pd.read_csv(filename, skiprows=xrange(1,slices[0].start+1), nrows=slices[0].stop-slices[0].start, usecols=range(slices[1].start, slices[1].stop))   # skip header line
+    return cb_csv
 
 #---------------------------------------------------------------------------------------
 # Importer: CSV
@@ -137,40 +144,45 @@ class TableCSV(TableBase):
     def read(self, **kw):
         """ Read table cells and return """
         super(TableCSV, self).read(**kw)
-        rng = kw.get('rng')
-        log.debug('rng %s', str(rng))
-        data = pd.read_csv(self.filename, nrows=1)   # to get the shape later
+#        rng = kw.get('rng')
+#        log.debug('rng %s', str(rng))
 
-        # TODO: rows set to maxint for now
-        sizes = [sys.maxint, data.shape[1]] # pylint: disable=no-member
-        startrows = [0]*2
-        endrows   = [1]*2
-        #endrows   = [min(50, sizes[i]) for i in range(2)]
-        if rng is not None:
-            for i in range(min(2, len(rng))):
-                row_range = rng[i]
-                if len(row_range)>0:
-                    startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
-                    endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else sizes[i]
-                    startrows[i] = min(sizes[i], max(0, startrows[i]))
-                    endrows[i]   = min(sizes[i], max(0, endrows[i]))
-                    if startrows[i] > endrows[i]:
-                        endrows[i] = startrows[i]
-        log.debug('startrows %s, endrows %s', startrows, endrows)
-
-        usecols = range(startrows[1], endrows[1])
-        if endrows[0] > startrows[0] and endrows[1] > startrows[1]:
-            if self.has_header is True:
-                self.data = pd.read_csv(self.filename, skiprows=startrows[0], nrows=endrows[0]-startrows[0], usecols=usecols )
-            else:
-                self.data = pd.read_csv(self.filename, skiprows=startrows[0], nrows=endrows[0]-startrows[0], usecols=usecols, header=None )
-            self.sizes = [self.data.shape[0], endrows[1]-startrows[1]]
-        else:
-            self.data = pd.DataFrame()   # empty table
-            self.sizes = [0 for i in range(self.data.ndim)]
-        log.debug('Data: %s', str(self.data.head()) if self.data.ndim > 0 else str(self.data))
-        self.headers, self.types = _get_headers_types(data, startrows[1], endrows[1], has_header=self.has_header)
+        top = pd.read_csv(self.filename, nrows=1)   # to get the shape
+        data = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_csv(self.filename))
+        
+        self.data, self.sizes, self.offset, self.types, self.headers = run_query(data, sels=self.t_slice, cond=self.t_cond, want_stats=True)
         return self.data
+
+#         # TODO: rows set to maxint for now
+#         sizes = [sys.maxint, data.shape[1]] # pylint: disable=no-member
+#         startrows = [0]*2
+#         endrows   = [1]*2
+#         #endrows   = [min(50, sizes[i]) for i in range(2)]
+#         if rng is not None:
+#             for i in range(min(2, len(rng))):
+#                 row_range = rng[i]
+#                 if len(row_range)>0:
+#                     startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
+#                     endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else sizes[i]
+#                     startrows[i] = min(sizes[i], max(0, startrows[i]))
+#                     endrows[i]   = min(sizes[i], max(0, endrows[i]))
+#                     if startrows[i] > endrows[i]:
+#                         endrows[i] = startrows[i]
+#         log.debug('startrows %s, endrows %s', startrows, endrows)
+# 
+#         usecols = range(startrows[1], endrows[1])
+#         if endrows[0] > startrows[0] and endrows[1] > startrows[1]:
+#             if self.has_header is True:
+#                 self.data = pd.read_csv(self.filename, skiprows=startrows[0], nrows=endrows[0]-startrows[0], usecols=usecols )
+#             else:
+#                 self.data = pd.read_csv(self.filename, skiprows=startrows[0], nrows=endrows[0]-startrows[0], usecols=usecols, header=None )
+#             self.sizes = [self.data.shape[0], endrows[1]-startrows[1]]
+#         else:
+#             self.data = pd.DataFrame()   # empty table
+#             self.sizes = [0 for i in range(self.data.ndim)]
+#         log.debug('Data: %s', str(self.data.head()) if self.data.ndim > 0 else str(self.data))
+#         self.headers, self.types = _get_headers_types(data, startrows[1], endrows[1], has_header=self.has_header)
+#         return self.data
 
     def write(self, data, **kw):
         """ Write cells into a table"""

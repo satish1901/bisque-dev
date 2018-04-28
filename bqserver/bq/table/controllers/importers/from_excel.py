@@ -52,6 +52,7 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 
 # default imports
 import os
+import sys
 import logging
 import pkg_resources
 from pylons.controllers.util import abort
@@ -77,7 +78,8 @@ try:
 except ImportError:
     log.info('Pandas was not found but required for table service!')
 
-from bq.table.controllers.table_base import TableBase
+from bq.table.controllers.table_base import TableBase, run_query, ArrayOrTable
+
 
 ################################################################################
 # misc
@@ -93,6 +95,14 @@ def _get_headers_types(data, startcol=None, endcol=None):
     types = [t.name for t in data.dtypes.tolist()[slice(startcol, endcol, None)]] #data.dtypes.tolist()[0].name
     return (headers, types)
             
+def get_cb_excel(t, path):
+    def cb_excel(slices):
+        # read only slices
+        data = pd.read_excel(t, path, skiprows=xrange(1,slices[0].start+1), parse_cols=range(slices[1].start, slices[1].stop))
+        # excel cannot read only a specified number of rows, select now
+        return data[0:slices[0].stop-slices[0].start]
+    return cb_excel
+
 #---------------------------------------------------------------------------------------
 # Importer: Excel
 # TODO: identify if header is present
@@ -151,36 +161,41 @@ class TableExcel(TableBase):
     def read(self, **kw):
         """ Read table cells and return """
         super(TableExcel, self).read(**kw)
-        rng = kw.get('rng')
-        log.debug('rng %s', str(rng))
+#        rng = kw.get('rng')
+#        log.debug('rng %s', str(rng))
 
-        data = pd.read_excel(self.t, self.subpath, nrows=1)   # to get the shape later
-        startrows = [0]*2
-        endrows   = [1]*2
-        #endrows   = [min(50, data.shape[i]) for i in range(2)]
-        if rng is not None:
-            for i in range(min(2, len(rng))):
-                row_range = rng[i]
-                if len(row_range)>0:
-                    startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
-                    endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else data.shape[i]
-                    startrows[i] = min(data.shape[i], max(0, startrows[i]))
-                    endrows[i]   = min(data.shape[i], max(0, endrows[i]))
-                    if startrows[i] > endrows[i]:
-                        endrows[i] = startrows[i]        
-        log.debug('startrows %s, endrows %s', startrows, endrows)
+        top = pd.read_excel(self.t, self.subpath, nrows=1)   # to get the shape
+        data = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_excel(self.t, self.subpath))
         
-        usecols = range(startrows[1], endrows[1])
-        if endrows[0] > startrows[0] and endrows[1] > startrows[1]:
-            self.data = pd.read_excel(self.t, self.subpath, skiprows=startrows[0], nrows=endrows[0]-startrows[0], parse_cols=usecols)
-        else:
-            self.data = pd.DataFrame()   # empty table
-        # excel cannot read only a specified number of rows, select now
-        self.data = self.data[0:endrows[0]-startrows[0]]
-        self.sizes = [endrows[i]-startrows[i] for i in range(self.data.ndim)]
-        log.debug('Data: %s', str(self.data.head()) if self.data.ndim > 0 else str(self.data))
-        self.headers, self.types = _get_headers_types(data, startrows[1], endrows[1])
+        self.data, self.sizes, self.offset, self.types, self.headers = run_query(data, sels=self.t_slice, cond=self.t_cond, want_stats=True)
         return self.data
+        
+#         startrows = [0]*2
+#         endrows   = [1]*2
+#         #endrows   = [min(50, data.shape[i]) for i in range(2)]
+#         if rng is not None:
+#             for i in range(min(2, len(rng))):
+#                 row_range = rng[i]
+#                 if len(row_range)>0:
+#                     startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
+#                     endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else data.shape[i]
+#                     startrows[i] = min(data.shape[i], max(0, startrows[i]))
+#                     endrows[i]   = min(data.shape[i], max(0, endrows[i]))
+#                     if startrows[i] > endrows[i]:
+#                         endrows[i] = startrows[i]        
+#         log.debug('startrows %s, endrows %s', startrows, endrows)
+#         
+#         usecols = range(startrows[1], endrows[1])
+#         if endrows[0] > startrows[0] and endrows[1] > startrows[1]:
+#             self.data = pd.read_excel(self.t, self.subpath, skiprows=startrows[0], nrows=endrows[0]-startrows[0], parse_cols=usecols)
+#         else:
+#             self.data = pd.DataFrame()   # empty table
+#         # excel cannot read only a specified number of rows, select now
+#         self.data = self.data[0:endrows[0]-startrows[0]]
+#         self.sizes = [endrows[i]-startrows[i] for i in range(self.data.ndim)]
+#         log.debug('Data: %s', str(self.data.head()) if self.data.ndim > 0 else str(self.data))
+#         self.headers, self.types = _get_headers_types(data, startrows[1], endrows[1])
+#         return self.data
 
     def write(self, data, **kw):
         """ Write cells into a table"""
