@@ -286,7 +286,7 @@ class ArrayOrTable(object):
                 
         else:
             # with aggregation => apply agg fct
-            # TODO: find a way to not keep all in memory
+            # TODO: find a way to not keep all in memory (push down agg into kernel)
             row_iters_vals_map = OrderedDict()
             row_iters_agg_map = OrderedDict()
             for row in row_iter:
@@ -479,9 +479,9 @@ class ArrayOrTable(object):
     
     def _gen_array_filter(self, arr, slices, cond):
         if isinstance(cond, OrConditionTuple):
-            return (self._gen_array_filter(arr, cond.left)) | (self._gen_array_filter(arr, cond.right)) 
+            return (self._gen_array_filter(arr, slices, cond.left)) | (self._gen_array_filter(arr, slices, cond.right)) 
         elif isinstance(cond, AndConditionTuple):
-            return (self._gen_array_filter(arr, cond.left)) & (self._gen_array_filter(arr, cond.right))
+            return (self._gen_array_filter(arr, slices, cond.left)) & (self._gen_array_filter(arr, slices, cond.right))
         elif isinstance(cond, ConditionTuple):
             # get the selection slices in the CellSelectionTuple and construct boolean array of size of incoming slices
             # with cells in selection slices set to True, all others set to False
@@ -579,7 +579,7 @@ def run_query( arr, sels=None, cond=None, want_cell_coord=False, want_stats=Fals
         dim_sizes = [d for d in data.shape]
         offset = slices[0].start if slices is not None and len(slices)>0 else 0
         if isinstance(data, np.ndarray):
-            colnames = [str(i) for i in xrange(slices[1].start, slices[1].stop)] if len(slices)>1 else '0'
+            colnames = [str(i) for i in xrange(slices[1].start, slices[1].stop)] if len(slices)>1 and cond is None else ('0' if cond is None else 'filtered cells')
             coltypes = [arr.get_arr().dtype.name] * data.shape[1] if len(data.shape) > 1 else [arr.get_arr().dtype.name]
         else:
             colnames = data.columns.tolist()
