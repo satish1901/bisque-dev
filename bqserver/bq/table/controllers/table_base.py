@@ -57,7 +57,7 @@ import logging
 import pkg_resources
 import itertools
 from pylons.controllers.util import abort
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 import re
 import types
 import copy
@@ -234,20 +234,20 @@ class ArrayOrTable(object):
         if sels is None:
             # no selection, include all columns
             if self.is_dataframe():
-                sel_fct = lambda row: { colname:row[colname] for colname in row.keys() } 
+                sel_fct = lambda row: OrderedDict( (colname,row[colname]) for colname in row.keys() )
             elif self.is_table():
-                sel_fct = lambda row: { colname:row[colname] for colname in self.arr.colnames }
+                sel_fct = lambda row: OrderedDict( (colname,row[colname]) for colname in self.arr.colnames )
             elif self.is_array():
                 sel_fct = lambda row: row
             if want_cell_coord:
-                row_iter = ( dict(sel_fct(row), index=coord) for (coord, row) in row_iter )
+                row_iter = ( OrderedDict(sel_fct(row), index=coord) for (coord, row) in row_iter )
             else:
                 row_iter = ( sel_fct(row) for row in row_iter )
                 
         elif sels[0].agg is None:
             # no aggregation, just return slices
             def sel_fct_df(row):
-                res = {}
+                res = OrderedDict()
                 selix = 0
                 for sel in sels:
                     cols = self._selectors_to_columns(sel.selectors)
@@ -260,7 +260,7 @@ class ArrayOrTable(object):
                 return res
                 
             def sel_fct_tb(row):
-                res = {}
+                res = OrderedDict()
                 selix = 0
                 for sel in sels:
                     cols = self._selectors_to_columns(sel.selectors)
@@ -280,18 +280,18 @@ class ArrayOrTable(object):
                 # TODO: how about ALIAS??
                 sel_fct = lambda row: row
             if want_cell_coord:
-                row_iter = ( dict(sel_fct(row), index=coord) for (coord, row) in row_iter )
+                row_iter = ( OrderedDict(sel_fct(row), index=coord) for (coord, row) in row_iter )
             else:
                 row_iter = ( sel_fct(row) for row in row_iter )
                 
         else:
             # with aggregation => apply agg fct
             # TODO: find a way to not keep all in memory
-            row_iters_vals_map = {}
-            row_iters_agg_map = {}
+            row_iters_vals_map = OrderedDict()
+            row_iters_agg_map = OrderedDict()
             for row in row_iter:
-                res = {}
-                res_agg = {}
+                res = OrderedDict()
+                res_agg = OrderedDict()
                 selix = 0
                 for sel in sels:
                     if self.is_dataframe():
@@ -319,7 +319,7 @@ class ArrayOrTable(object):
                     row_iters_vals_map.setdefault(alias, []).append(res[alias])
                     row_iters_agg_map[alias] = res_agg[alias]
                         
-            res = { alias:_get_agg_fct(row_iters_agg_map[alias])(row_iters_vals_map[alias]) for alias in row_iters_vals_map.keys() }
+            res = OrderedDict( (alias,_get_agg_fct(row_iters_agg_map[alias])(row_iters_vals_map[alias])) for alias in row_iters_vals_map.keys() )
             row_iter = ( res for x in [1] )  # wrap in generator
             
         return row_iter
@@ -503,7 +503,7 @@ class ArrayOrTable(object):
         return mask
 
 #---------------------------------------------------------------------------------------
-# Translators for abstract language to underlying storage (TODO: move somewhere else?) 
+# Actual query processor operating on abstract tuple language
 #---------------------------------------------------------------------------------------
 
 def run_query( arr, sels=None, cond=None, want_cell_coord=False, want_stats=False, keep_dims=None ):

@@ -312,14 +312,14 @@ class TableController(ServiceController):
                 while len(table.path) > 0:
                     candidate = table.path[0].split(':')[0]
                     if candidate == 'filter':
-                        filtercond = table.path.pop(0).split(':')[1]
+                        filtercond = table.path.pop(0).split(':',1)[1]
                         table = table.filter(filtercond)
                     else:
                         break
                 
                 # extract and run aggregation/range query, if any
                 if len(table.path) > 0:
-                    candidate = table.path[0].split(':')[0]
+                    candidate = table.path[0].split(':',1)[0]
                     if candidate not in self.operations.plugins:
                         selcond = table.path.pop(0)
                         table = table.slice(selcond)
