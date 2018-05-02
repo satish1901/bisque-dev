@@ -395,7 +395,11 @@ class ConverterImgcnv(ConverterBase):
         ifnm = token.first_input_file()
         log.debug('Meta for: %s', ifnm)
 
-        meta = cls.run_read(ifnm, [cls.CONVERTERCOMMAND, '-meta', '-i', ifnm] )
+        command = [cls.CONVERTERCOMMAND, '-meta', '-i', ifnm]
+        if token.series is not None and token.series != 0:
+            command.extend(['-path', token.series])
+
+        meta = cls.run_read(ifnm, command)
         if meta is None:
             return {}
         rd = {}
@@ -406,7 +410,7 @@ class ConverterImgcnv(ConverterBase):
             except ValueError:
                 continue
             tag = safedecode(tag, 'utf-8').replace('%3A', ':')
-            val = safedecode(val, 'utf-8').replace('\n', '')
+            val = safedecode(val, 'utf-8').replace('\n', '').replace('%3E', '>').replace('%3C', '<').replace('%3A', ':').replace('%22', '"').replace('%0A', '\n')
             if val != '':
                 rd[tag] = misc.safetypeparse(val)
 
@@ -447,12 +451,13 @@ class ConverterImgcnv(ConverterBase):
         if not os.path.exists(ifnm):
             return {}
 
-        #command = [cls.CONVERTERCOMMAND, '-info', '-i', ifnm]
         command = [cls.CONVERTERCOMMAND, '-meta-parsed', '-i', ifnm]
+        if token.series is not None and token.series != 0:
+            command.extend(['-path', token.series])
         if 'speed' in kw:
             command.extend(['-speed', kw.get('speed')])
 
-        info = cls.run_read(ifnm, command )
+        info = cls.run_read(ifnm, command)
         if info is None:
             return {}
         rd = {}
@@ -545,6 +550,9 @@ class ConverterImgcnv(ConverterBase):
                 res = '%s,%s,%s,%s'%(meta.get('pixel_resolution_x', 0), meta.get('pixel_resolution_y', 0), meta.get('pixel_resolution_z', 0), meta.get('pixel_resolution_t', 0))
                 command.extend(['-resolution', res])
 
+        if token.series is not None and token.series != 0:
+            command.extend(['-path', token.series])
+
         dims = token.dims or {}
         nz = dims.get('image_num_z', 1)
         nt = dims.get('image_num_t', 1)
@@ -575,6 +583,8 @@ class ConverterImgcnv(ConverterBase):
         preproc = preproc if preproc != '' else 'mid' # use 'mid' as auto mode for imgcnv
 
         command = ['-o', ofnm, '-t', fmt]
+        if token.series is not None and token.series != 0:
+            command.extend(['-path', token.series])
 
         info = token.dims or {}
         num_z = info.get('image_num_z', 1)
@@ -662,6 +672,8 @@ class ConverterImgcnv(ConverterBase):
 
         #command = ['-o', ofnm, '-t', fmt]
         command = []
+        if token.series is not None and token.series != 0:
+            command.extend(['-path', token.series])
 
         if t2==0:
             t2=t1
@@ -768,6 +780,8 @@ class ConverterImgcnv(ConverterBase):
         queue = token.getQueue()
         #command = ['-o', ofnm, '-t', 'tiff']
         command = []
+        if token.series is not None and token.series != 0:
+            command.extend(['-path', token.series])
 
         # separate normal and multi-file series
         if '-i' not in queue and '-il' not in queue and '-page' not in queue:
@@ -810,6 +824,8 @@ class ConverterImgcnv(ConverterBase):
         ifnm = token.first_input_file()
         log.debug('Writing histogram for %s into: %s', ifnm, ofnm )
         command = ['-ohst', ofnm]
+        if token.series is not None and token.series != 0:
+            command.extend(['-path', token.series])
         queue = token.getQueue()
         page = 0
         if '-i' not in queue and '-il' not in queue:
