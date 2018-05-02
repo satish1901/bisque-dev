@@ -62,6 +62,15 @@ import re
 import types
 import copy
 
+try:
+    import ply.yacc as yacc
+    import ply.lex as lex
+    from ply.lex import TOKEN
+except:
+    import yacc as yacc
+    import lex as lex
+    from lex import TOKEN
+    
 log = logging.getLogger("bq.table.base")
 
 try:
@@ -107,8 +116,13 @@ def _get_agg_fct(agg):
             'max': np.max,
             'median': np.median,
             'std': np.std
-           }[agg]
-           
+           }.get(agg)
+
+def _check_aggfct(agg):
+    if _get_agg_fct(agg) is not None:
+        return agg
+    else:
+        raise ParseError("Unknown aggregation function: '%s'" % agg)
 
 #---------------------------------------------------------------------------------------
 # Array/Table wrapper
@@ -579,7 +593,7 @@ def run_query( arr, sels=None, cond=None, want_cell_coord=False, want_stats=Fals
         dim_sizes = [d for d in data.shape]
         offset = slices[0].start if slices is not None and len(slices)>0 else 0
         if isinstance(data, np.ndarray):
-            colnames = [str(i) for i in xrange(slices[1].start, slices[1].stop)] if len(slices)>1 and cond is None else ('0' if cond is None else 'filtered cells')
+            colnames = [str(i) for i in xrange(slices[1].start, slices[1].stop)] if len(slices)>1 and cond is None else (['0'] if cond is None else ['filtered cells'])
             coltypes = [arr.get_arr().dtype.name] * data.shape[1] if len(data.shape) > 1 else [arr.get_arr().dtype.name]
         else:
             colnames = data.columns.tolist()
@@ -589,6 +603,237 @@ def run_query( arr, sels=None, cond=None, want_cell_coord=False, want_stats=Fals
     else:
         return data    
     
+
+#---------------------------------------------------------------------------------------
+# Query string parser; generates abstract tuple language query
+#---------------------------------------------------------------------------------------
+
+class ParseError(Exception): pass
+
+class TableQueryLexer:
+    # constant patterns
+    decimal_constant = '((0)|([1-9][0-9]*))'
+    exponent_part = r"""([eE][-+]?[0-9]+)"""
+    fractional_constant = r"""([0-9]*\.[0-9]+)|([0-9]+\.)"""
+    floating_constant = '((('+fractional_constant+')'+exponent_part+'?)|([0-9]+'+exponent_part+'))'
+
+    keywords = ( 'AND', 'OR', 'AS' )
+    tokens = keywords + ('ID', 'LP', 'RP', 'LB', 'RB', 'COLON', 'COMMA', 'STRVAL', 'INTVAL', 'FLOATVAL',
+                         'PLUS', 'MINUS', 
+                         'LT', 'LE', 'GT', 'GE', 'EQ', 'NE')
+
+    #t_TAGVAL   = r'\w+\*?'
+    t_PLUS              = r'\+'
+    t_MINUS             = r'-'
+    t_LP                = r'\('
+    t_RP                = r'\)'
+    t_LB                = r'\['
+    t_RB                = r'\]'
+    t_LE                = r'<='
+    t_GE                = r'>='
+    t_LT                = r'<'
+    t_GT                = r'>'
+    t_EQ                = r'='
+    t_NE                = r'!='
+    t_COLON             = r'[:;]'
+    t_COMMA             = r','
+
+    t_ignore = ' \t\n'
+
+    # the following floating and integer constants are defined as
+    # functions to impose a strict order
+
+    @TOKEN(floating_constant)
+    def t_FLOATVAL(self, t):
+        t.value = float(t.value)
+        return t
+
+    @TOKEN(decimal_constant)
+    def t_INTVAL(self, t):
+        t.value = int(t.value)
+        return t
+
+    def t_STRVAL(self,t):
+        r"(?:'(?:\\'|[^'])*')|(?:\"(?:\\\"|[^\"])*\")"
+        t.value = t.value[1:-1].replace(r'\"', r'"').replace(r"\'", r"'")
+        return t
+
+    def t_ID(self,t):
+        r'[a-zA-Z_][0-9a-zA-Z_]*'
+        if t.value.upper() in self.keywords:
+            t.value = t.value.upper()
+            t.type = t.value
+        else:
+            t.value = t.value.lower()
+            t.type = 'ID'
+        return t
+    
+    def t_error(self,t):
+        raise ParseError( "Illegal character '%s'" % t.value[0] )
+        t.lexer.skip(1)
+
+    def __init__(self):
+        self.lexer = lex.lex(module=self, optimize=1)
+
+    def tokenize(self,data):
+        'Debug method!'
+        self.lexer.input(data)
+        while True:
+            tok = self.lexer.token()
+            if tok:
+                yield tok
+            else:
+                break
+            
+class TableQueryParser:
+    # standard precendence rules
+    precedence = (
+        ('left', 'OR'),
+        ('left', 'AND'),
+        ('left', 'EQ', 'NE'),
+        ('left', 'GT', 'GE', 'LT', 'LE'),
+        ('right', 'UPLUS', 'UMINUS')
+    )
+
+    def __init__(self):
+        """Create new parser and set up parse tables."""
+        self.lexer = TableQueryLexer()
+        self.tokens = self.lexer.tokens
+        self.cond_parser = yacc.yacc(module=self,write_tables=False,debug=False,optimize=False, start='filter_cond')
+        self.slice_parser = yacc.yacc(module=self,write_tables=False,debug=False,optimize=False, start='slice_cond')
+    
+    def parse_cond(self, query):
+        return self.cond_parser.parse(query,lexer=self.lexer.lexer,debug=True)
+    
+    def parse_slice(self, query):
+        return self.slice_parser.parse(query,lexer=self.lexer.lexer,debug=True)
+    
+    def p_error(self,p):
+        if p:
+            raise ParseError("Unexpected symbol: '%s'" % p.value)
+        else:
+            raise ParseError("Unexpected end of query")
+
+    def p_slice_cond(self,p):
+        '''slice_cond : cell_sel
+                      | slice_list
+                      | agg_list
+        '''
+        if len(p[1]) == 0:
+            p[0] = []
+        elif isinstance(p[1][0], CellSelectionTuple):
+            p[0] = p[1]
+        else:
+            p[0] = [ CellSelectionTuple(selectors=p[1], agg=None, alias=None) ]
+        
+    def p_slice_list(self,p):
+        '''slice_list : slice_list COMMA LB cell_sel RB
+                      | LB cell_sel RB
+        '''
+        if len(p) == 6:
+            p[0] = p[1] + [ CellSelectionTuple(selectors=p[4], agg=None, alias=None) ]
+        else:
+            p[0] = CellSelectionTuple(selectors=p[2], agg=None, alias=None)
+    
+    def p_agg_list(self,p):
+        '''agg_list : agg_list COMMA ID LP cell_sel RP AS STRVAL
+                    | agg_list COMMA ID LP cell_sel RP
+                    | ID LP cell_sel RP AS STRVAL
+                    | ID LP cell_sel RP
+        '''
+        if len(p) == 9:
+            p[0] = p[1] + [ CellSelectionTuple(selectors=p[5], agg=_check_aggfct(p[3]), alias=p[8]) ]
+        elif len(p) == 7:
+            if isinstance(p[1], list):
+                p[0] = p[1] + [ CellSelectionTuple(selectors=p[5], agg=_check_aggfct(p[3]), alias=None) ]
+            else:
+                p[0] = [ CellSelectionTuple(selectors=p[3], agg=_check_aggfct(p[1]), alias=p[6]) ]
+        else:
+            p[0] = [ CellSelectionTuple(selectors=p[3], agg=_check_aggfct(p[1]), alias=None) ]
+            
+    def p_filter_cond(self,p):
+        '''filter_cond : filter_cond OR and_expr
+                       | and_expr
+        '''
+        if len(p) == 4:
+            p[0] = OrConditionTuple(left=p[1], right=p[3])
+        else:
+            p[0] = p[1]
+            
+    def p_and_expr(self,p):
+        '''and_expr : and_expr AND comp_cond
+                    | comp_cond
+        '''
+        if len(p) == 4:
+            p[0] = AndConditionTuple(left=p[1], right=p[3])
+        else:
+            p[0] = p[1]
+            
+    def p_comp_cond(self,p):
+        '''comp_cond : LP filter_cond RP
+                     | LB cell_sel RB EQ unary_expr
+                     | LB cell_sel RB NE unary_expr
+                     | LB cell_sel RB GT unary_expr
+                     | LB cell_sel RB GE unary_expr
+                     | LB cell_sel RB LT unary_expr
+                     | LB cell_sel RB LE unary_expr
+        '''
+        if len(p) == 4:
+            p[0] = p[2]
+        else:
+            p[0] = ConditionTuple(left=CellSelectionTuple(selectors=p[2], agg=None, alias=None), comp=p[4], right=p[5])
+        
+    def p_unary_expr(self,p):
+        '''unary_expr : MINUS unary_expr %prec UMINUS
+                      | PLUS unary_expr %prec UPLUS
+                      | INTVAL
+                      | FLOATVAL
+                      | STRVAL
+        '''
+        if len(p) == 3:
+            p[0] = (p[2] if p[1] == '+' or isinstance(p[2], basestring) else -p[2])
+        else:
+            p[0] = p[1]
+            
+    def p_cell_sel(self,p):
+        '''cell_sel : cell_sel COMMA single_dim_sel
+                    | single_dim_sel
+        '''
+        if len(p) == 4:
+            p[3] = SelectorTuple(dimname=p[3].dimname or '__dim%s__' % (len(p[1])+1), dimvalues=p[3].dimvalues)
+            p[0] = p[1] + [ p[3] ]
+        else:
+            p[1] = SelectorTuple(dimname=p[1].dimname or '__dim1__', dimvalues=p[1].dimvalues)
+            p[0] = [ p[1] ]
+            
+    def p_single_dim_sel(self,p):
+        '''single_dim_sel : STRVAL EQ range_sel
+                          | range_sel
+        '''
+        if len(p) == 4:
+            p[0] = SelectorTuple(dimname=p[1], dimvalues=p[3])
+        else:
+            p[0] = SelectorTuple(dimname=None, dimvalues=p[1])
+            
+    def p_range_sel(self,p):
+        '''range_sel : COLON
+                     | index_expr
+                     | index_expr COLON
+                     | COLON index_expr
+                     | index_expr COLON index_expr
+        '''
+        if len(p) == 2:
+            p[0] = [None] if p[1] in [':', ';'] else [p[1]]
+        elif len(p) == 3:
+            p[0] = [p[1],None] if p[2] in [':', ';'] else [None,p[2]]
+        else:
+            p[0] = [p[1],p[3]]
+    
+    def p_index_expr(self,p):
+        '''index_expr : INTVAL
+                      | STRVAL
+        '''
+        p[0] = p[1]
 
 #---------------------------------------------------------------------------------------
 # Table base
@@ -672,22 +917,26 @@ class TableBase(object):
               .../filter:[x=0:10, y=0:10, c="infrared", field="r"] > 0.5/...    (x/y/z/c/t will be set for cells with "r > 0.5")  
               .../filter:[0:10,0:10,50,:,"abc"] > 0.5/...                       (no field=> cell has to be numeric, not compound)
         """
-        # simple hand parser for now (only "[x,y,z] < a")
-        toks = cond.strip().split(']')
-        ltoks = toks[0].strip().lstrip('[').strip()
-        selectors = self._parse_selectors(ltoks)
-        toks[1] = toks[1].strip()
-        if any([toks[1].startswith(pre) for pre in ['<=', '>=', '!=']]):
-            comp = toks[1][:2]
-            val = toks[1][2:].strip()
-        elif any([toks[1].startswith(pre) for pre in ['<', '>', '=']]):
-            comp = toks[1][:1]
-            val = toks[1][1:].strip()
-        if val.startswith('"'):
-            val = val.strip('"')
-        else:
-            val = float(val)
-        filtercond = ConditionTuple(left=CellSelectionTuple(selectors=selectors, agg=None, alias=None), comp=comp, right=val)
+        try:
+            filtercond = TableQueryParser().parse_cond(cond)
+        except ParseError as e:
+            abort(400, str(e))
+#         # simple hand parser for now (only "[x,y,z] < a")
+#         toks = cond.strip().split(']')
+#         ltoks = toks[0].strip().lstrip('[').strip()
+#         selectors = self._parse_selectors(ltoks)
+#         toks[1] = toks[1].strip()
+#         if any([toks[1].startswith(pre) for pre in ['<=', '>=', '!=']]):
+#             comp = toks[1][:2]
+#             val = toks[1][2:].strip()
+#         elif any([toks[1].startswith(pre) for pre in ['<', '>', '=']]):
+#             comp = toks[1][:1]
+#             val = toks[1][1:].strip()
+#         if val.startswith('"'):
+#             val = val.strip('"')
+#         else:
+#             val = float(val)
+#         filtercond = ConditionTuple(left=CellSelectionTuple(selectors=selectors, agg=None, alias=None), comp=comp, right=val)
         if self.t_slice is not None:
             abort(501, 'Filter condition cannot follow slice operation currently')
         if self.t_cond is None:
@@ -707,17 +956,22 @@ class TableBase(object):
                .../slice:SUM(0:10,0:10,0:10) AS total/...
                .../slice:0:100,"Ocean_flag"/...
         """
-        # simple hand parser for now (only "agg(x1:x2,y1:y2,z1:z2)") 
-        toks = sel.strip().split('(')
-        if len(toks) < 2:
-            aggfct = None
-            ltoks = sel.strip()
-        else:
-            aggfct = toks[0].strip().lower()
-            ltoks = toks[1].rstrip(')').strip()
-        selectors = self._parse_selectors(ltoks)
+        try:
+            slicecond = TableQueryParser().parse_slice(sel)
+        except ParseError as e:
+            abort(400, str(e))
+#         # simple hand parser for now (only "agg(x1:x2,y1:y2,z1:z2)") 
+#         toks = sel.strip().split('(')
+#         if len(toks) < 2:
+#             aggfct = None
+#             ltoks = sel.strip()
+#         else:
+#             aggfct = toks[0].strip().lower()
+#             ltoks = toks[1].rstrip(')').strip()
+#         selectors = self._parse_selectors(ltoks)
+#         slicecond = [ CellSelectionTuple(selectors=selectors, agg=aggfct, alias=aggfct) ]
         if self.t_slice is None:
-            self.t_slice = [ CellSelectionTuple(selectors=selectors, agg=aggfct, alias=aggfct) ]
+            self.t_slice = slicecond
         else:
             abort(501, 'Only one slice operation allowed currently')
         return self
