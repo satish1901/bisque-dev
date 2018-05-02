@@ -702,10 +702,12 @@ class TableQueryParser:
         self.cond_parser = yacc.yacc(module=self,write_tables=False,debug=False,optimize=False, start='filter_cond')
         self.slice_parser = yacc.yacc(module=self,write_tables=False,debug=False,optimize=False, start='slice_cond')
     
-    def parse_cond(self, query):
+    def parse_cond(self, query, colnames):
+        self.colnames = colnames
         return self.cond_parser.parse(query,lexer=self.lexer.lexer,debug=True)
     
-    def parse_slice(self, query):
+    def parse_slice(self, query, colnames):
+        self.colnames = colnames
         return self.slice_parser.parse(query,lexer=self.lexer.lexer,debug=True)
     
     def p_error(self,p):
@@ -714,6 +716,7 @@ class TableQueryParser:
         else:
             raise ParseError("Unexpected end of query")
 
+    # TODO: retire the first rule (single cell_sel without '[',']') once UI is updated
     def p_slice_cond(self,p):
         '''slice_cond : cell_sel
                       | slice_list
@@ -733,7 +736,7 @@ class TableQueryParser:
         if len(p) == 6:
             p[0] = p[1] + [ CellSelectionTuple(selectors=p[4], agg=None, alias=None) ]
         else:
-            p[0] = CellSelectionTuple(selectors=p[2], agg=None, alias=None)
+            p[0] = [ CellSelectionTuple(selectors=p[2], agg=None, alias=None) ]
     
     def p_agg_list(self,p):
         '''agg_list : agg_list COMMA ID LP cell_sel RP AS STRVAL
@@ -825,9 +828,24 @@ class TableQueryParser:
         if len(p) == 2:
             p[0] = [None] if p[1] in [':', ';'] else [p[1]]
         elif len(p) == 3:
-            p[0] = [p[1],None] if p[2] in [':', ';'] else [None,p[2]]
+            if p[2] in [':', ';']:
+                p[0] = [p[1],None]
+            else:
+                p[0] = [None,self._adjust_endcol(p[2])]
         else:
-            p[0] = [p[1],p[3]]
+            p[0] = [p[1],self._adjust_endcol(p[3])]
+    
+    def _adjust_endcol(self, endcol):
+        if isinstance(endcol, int):
+            endcol += 1
+        else:
+            endcol = self.colnames.index(endcol)
+            endcol += 1
+            if endcol >= len(self.colnames):
+                endcol = None
+            else:
+                endcol = self.colnames[endcol]
+        return endcol
     
     def p_index_expr(self,p):
         '''index_expr : INTVAL
@@ -918,25 +936,9 @@ class TableBase(object):
               .../filter:[0:10,0:10,50,:,"abc"] > 0.5/...                       (no field=> cell has to be numeric, not compound)
         """
         try:
-            filtercond = TableQueryParser().parse_cond(cond)
+            filtercond = TableQueryParser().parse_cond(cond, self.headers)
         except ParseError as e:
             abort(400, str(e))
-#         # simple hand parser for now (only "[x,y,z] < a")
-#         toks = cond.strip().split(']')
-#         ltoks = toks[0].strip().lstrip('[').strip()
-#         selectors = self._parse_selectors(ltoks)
-#         toks[1] = toks[1].strip()
-#         if any([toks[1].startswith(pre) for pre in ['<=', '>=', '!=']]):
-#             comp = toks[1][:2]
-#             val = toks[1][2:].strip()
-#         elif any([toks[1].startswith(pre) for pre in ['<', '>', '=']]):
-#             comp = toks[1][:1]
-#             val = toks[1][1:].strip()
-#         if val.startswith('"'):
-#             val = val.strip('"')
-#         else:
-#             val = float(val)
-#         filtercond = ConditionTuple(left=CellSelectionTuple(selectors=selectors, agg=None, alias=None), comp=comp, right=val)
         if self.t_slice is not None:
             abort(501, 'Filter condition cannot follow slice operation currently')
         if self.t_cond is None:
@@ -957,47 +959,14 @@ class TableBase(object):
                .../slice:0:100,"Ocean_flag"/...
         """
         try:
-            slicecond = TableQueryParser().parse_slice(sel)
+            slicecond = TableQueryParser().parse_slice(sel, self.headers)
         except ParseError as e:
             abort(400, str(e))
-#         # simple hand parser for now (only "agg(x1:x2,y1:y2,z1:z2)") 
-#         toks = sel.strip().split('(')
-#         if len(toks) < 2:
-#             aggfct = None
-#             ltoks = sel.strip()
-#         else:
-#             aggfct = toks[0].strip().lower()
-#             ltoks = toks[1].rstrip(')').strip()
-#         selectors = self._parse_selectors(ltoks)
-#         slicecond = [ CellSelectionTuple(selectors=selectors, agg=aggfct, alias=aggfct) ]
         if self.t_slice is None:
             self.t_slice = slicecond
         else:
             abort(501, 'Only one slice operation allowed currently')
         return self
-
-    def _parse_selectors(self, selstr):
-        log.debug("parse selectors %s" % selstr)
-        selectors = []
-        dim = 1
-        for tok in selstr.split(','):
-            tok = tok.strip()
-            if ':' in tok:
-                rtoks = tok.split(':')
-            elif ';' in tok:
-                rtoks = tok.split(';')
-            else:
-                rtoks = [tok]
-            rtoks = [r.strip('"') if r.startswith('"') else (r.strip() if r.strip() != '' else None) for r in rtoks]
-            try:
-                rtoks = [int(float(r)) if r is not None else None for r in rtoks]
-            except ValueError:
-                # no numbers => keep strings
-                pass
-            selectors.append(SelectorTuple(dimname="__dim%s__"%dim, dimvalues=rtoks))
-            dim += 1
-        log.debug("parse selectors %s -> %s" % (selstr, selectors))
-        return selectors
 
     def read(self, **kw):
         """ Read table cells and return """
