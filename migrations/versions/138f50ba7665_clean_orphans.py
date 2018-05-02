@@ -31,8 +31,9 @@ def upgrade():
     with open ('preferences.csv', 'wb') as pref_file:
         pref_csv   = csv.writer (pref_file)
         row = results.fetchone()
-        pref_csv.writerow (row.keys())
-        pref_csv.writerow (row.values())
+        if row:
+            pref_csv.writerow (row.keys())
+            pref_csv.writerow (row.values())
         for row in results:
             pref_csv.writerow (row.values())
 
@@ -53,8 +54,9 @@ def upgrade():
     with  open ('parent.csv', 'wb') as parent_file:
         parent_csv   = csv.writer (parent_file)
         row =  results.fetchone()
-        parent_csv.writerow (row.keys())
-        parent_csv.writerow (row.values())
+        if row:
+            parent_csv.writerow (row.keys())
+            parent_csv.writerow (row.values())
         for row in results:
             parent_csv.writerow (row.values())
     conn.execute (
