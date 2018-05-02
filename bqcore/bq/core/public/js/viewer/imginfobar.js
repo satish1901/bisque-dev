@@ -93,7 +93,7 @@ ImgInfoBar.prototype.createLabel = function () {
         this.preview = Ext.create('BQ.viewer.LabelView', {
             renderTo: this.viewer.viewer_controls_surface || this.viewer.imagediv,
             cls: 'preview',
-            uri: Ext.String.format('/image_service/{0}?slice=label:0&depth=8,d,u&rotate=-90&format=jpeg', this.uuid),
+            uri: Ext.String.format('/image_service/{0}/preview?depth=8,d,u&format=jpeg', this.uuid),
         });
     }
 
@@ -101,7 +101,7 @@ ImgInfoBar.prototype.createLabel = function () {
         this.label = Ext.create('BQ.viewer.LabelView', {
             renderTo: this.viewer.viewer_controls_surface || this.viewer.imagediv,
             cls: 'label',
-            uri: Ext.String.format('/image_service/{0}?slice=preview:0&depth=8,d,u&format=jpeg', this.uuid),
+            uri: Ext.String.format('/image_service/{0}/label?depth=8,d,u&rotate=-90&format=jpeg', this.uuid),
         });
     }
 
