@@ -87,7 +87,7 @@ def _get_headers_types(data, startcol=None, endcol=None, has_header=False):
     types = [t.name for t in data.dtypes.tolist()[slice(startcol, endcol, None)]] #data.dtypes.tolist()[0].name
     return (headers, types)
 
-def get_cb_csv(t, filename):
+def get_cb_csv(filename):
     def cb_csv(slices):
         # read only slices (skip header line)
         return pd.read_csv(filename, skiprows=xrange(1,slices[0].start+1), nrows=slices[0].stop-slices[0].start, usecols=range(slices[1].start, slices[1].stop))  # TODO: use chunked reading to handle large datasets
