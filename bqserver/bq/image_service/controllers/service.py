@@ -35,7 +35,11 @@ from .exceptions import ImageServiceException, ImageServiceFuture
 log = logging.getLogger("bq.image_service")
 
 # extensions not usually associated with image files
-extensions_ignore = set(['', 'amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log', 'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo', 'plotly'])
+extensions_ignore = set([
+    '', 'amiramesh', 'cfg', 'csv', 'dat', 'grey', 'htm', 'html', 'hx', 'inf', 'labels', 'log',
+    'lut', 'mdb', 'pst', 'pty', 'rec', 'tim', 'txt', 'xlog', 'xml', 'zip', 'zpo', 'plotly',
+    'hdf', 'h5', 'he2', 'hdf5', 'he5', 'h5ebsd', 'dream3d'
+])
 
 # confirmed extensions of header files in some proprietary series
 extensions_series = set(['cfg', 'xml'])
@@ -253,7 +257,7 @@ class ImageServiceController(ServiceController):
 
         #url = request.path+'?'+request.query_string if len(request.query_string)>0 else request.path
         url = request.url
-        resource_id, query = getOperations(url, self.srv.base_url)
+        resource_id, subpath, query = getOperations(url, self.srv.base_url)
         ident = resource_id or ident
         log.info ("STARTING (%s): %s", datetime.now().isoformat(), url)
 
@@ -265,14 +269,14 @@ class ImageServiceController(ServiceController):
 
         # detect and remove indication of previous timeout future
         future_timeout = 0
-        if '#timeout=' in url:
-            try:
-                m = re.split(r'\#timeout=([0-9]+)$', url)
-                url = m[0]
-                future_timeout = int(m[1])
-                log.debug('Received previous future timeout: %s', future_timeout)
-            except Exception:
-                log.exception('Exception while processing future timeout')
+        # if '#timeout=' in url:
+        #     try:
+        #         m = re.split(r'\#timeout=([0-9]+)$', url)
+        #         url = m[0]
+        #         future_timeout = int(m[1])
+        #         log.debug('Received previous future timeout: %s', future_timeout)
+        #     except Exception:
+        #         log.exception('Exception while processing future timeout')
 
         if 'timeout' in kw:
             try:
@@ -310,7 +314,7 @@ class ImageServiceController(ServiceController):
 
             # use a back-off strategy for long running tasks
             #future_timeout = random.randint(e.timeout_range[0], e.timeout_range[1]) * future_timeout
-            future_timeout = random.randint(e.timeout_range[0], e.timeout_range[1]) + future_timeout*2
+            future_timeout = min(3600, random.randint(e.timeout_range[0], e.timeout_range[1]) + future_timeout*2)
 
             #tg.response.status = "307 retry later"
             tg.response.retry_after = future_timeout

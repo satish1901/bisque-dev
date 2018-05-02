@@ -19,6 +19,7 @@ import datetime
 import math
 import inspect
 import random
+import hashlib
 
 from tg import config
 
@@ -56,10 +57,24 @@ log = logging.getLogger('bq.image_service.server')
 
 
 ################################################################################
-# Create a list of querie tuples
+# Create a list of query tuples
 ################################################################################
 
-def getQuery4Url(url):
+def url2operationsOld(url, base):
+    # http://localhost:8080/image_service/00-cQF6rVVAs3iYXWt4Xdh2i/sub/2?slice=,,1,1&tile=2,26,9,512&depth=8,d,u,cs&fuse=0,0,255;255,255,255;255,0,0;0,255,0;:m&format=jpeg
+    resource_id = None
+    subpath = None
+
+    # process UUID and path
+    path = filter(None, url.split('?', 1)[0].split('/')) # split and remove empty
+    path = path[path.index(base)+1:] # isolate query part
+    if path[0].lower() in ['image', 'images']:
+        path = path[1:]
+    resource_id = path.pop(0)
+    if len(path)>0:
+        subpath = '/%s'%('/'.join(path))
+
+    # process query string
     scheme, netloc, url, params, querystring, fragment = urlparse(url)
 
     #pairs = [s2 for s1 in querystring.split('&') for s2 in s1.split(';')]
@@ -76,17 +91,30 @@ def getQuery4Url(url):
         value = unquote(nv[1].replace('+', ' '))
         query.append((name, value))
 
-    return query
+    return resource_id, subpath, query
 
-def newUrl2Query(url, base):
+def url2operationsNew(url, base):
+    # http://localhost:8080/image_service/00-cQF6rVVAs3iYXWt4Xdh2i/sub/2/@/slice:,,1,1/tile:2,26,9,512/depth:8,d,u,cs/format:jpeg
+    subpath = None
     query = []
+
     path = filter(None, url.split('/')) # split and remove empty
     path = path[path.index(base)+1:] # isolate query part
-    if path[0].lower() == 'image' or path[0].lower() == 'images':
+    if path[0].lower() in ['image', 'images']:
         path = path[1:]
 
-    resource_id = path[0]
-    path = path[1:]
+    resource_id = path.pop(0)
+
+    # parse subpath
+    if '@' in path:
+        sp = []
+        p = path.pop(0)
+        while p != '@' and p is not None:
+            sp.append(p)
+            p = path.pop(0)
+        if len(sp)>0:
+            subpath = '/%s'%('/'.join(sp))
+
     for p in path:
         v = p.split(':', 1)
         name = unquote(v[0].replace('+', ' '))
@@ -95,14 +123,14 @@ def newUrl2Query(url, base):
         except IndexError:
             value = ''
         query.append((name, value))
-    return resource_id, query
+    return resource_id, subpath, query
 
 
 def getOperations(url, base):
     if '?' in url:
-        return None, getQuery4Url(url)
+        return url2operationsOld(url, base)
     else:
-        return newUrl2Query(url, base)
+        return url2operationsNew(url, base)
 
 ################################################################################
 # ImageServer
@@ -341,14 +369,20 @@ class ImageServer(object):
 
         return self.converters[ConverterImgcnv.name].convert( ProcessToken(ifnm=ometiff), ofnm, fmt=fmt, extra=command)
 
-    def initialWorkPath(self, image_id, user_name):
+    def initialWorkPath(self, image_id, user_name, series=0):
         if len(image_id)>3 and image_id[2]=='-':
             subdir = image_id[3]
         else:
             subdir = image_id[0]
+        log.debug('initialWorkPath Series: [%s]', series)
+        if series != 0 and series is not None:
+            if isinstance(series, (int, long)) is not True:
+                hash_object = hashlib.sha1(series)
+                series = hash_object.hexdigest()
+                image_id = '%s-%s'%(image_id, series)
         return os.path.realpath(os.path.join(self.workdir, user_name or '', subdir, image_id))
 
-    def ensureWorkPath(self, path, image_id, user_name):
+    def ensureWorkPath(self, path, image_id, user_name, series=0):
         """path may be a workdir path OR an original image path to transformed into
         a workdir path
         """
@@ -356,7 +390,7 @@ class ImageServer(object):
         path = os.path.realpath(path)
         workpath = os.path.realpath(self.workdir)
         if image_id and not path.startswith (workpath):
-            path = self.initialWorkPath(image_id, user_name)
+            path = self.initialWorkPath(image_id, user_name, series=series)
 
         # keep paths relative to running dir to reduce file name size
         try:
@@ -380,7 +414,7 @@ class ImageServer(object):
         #     return token
 
     def process(self, url, ident, resource=None, **kw):
-        resource_id, query = getOperations(url, self.base_url)
+        resource_id, subpath, query = getOperations(url, self.base_url)
         log.debug ('STARTING %s: %s', ident, query)
         #os.chdir(self.workdir)
         log.debug('Current path %s: %s', ident, self.workdir)
@@ -394,7 +428,9 @@ class ImageServer(object):
         if ident is not None:
             # pre-compute final filename and check if it exists before starting any other processing
             if len(query)>0:
-                token.setFile(self.initialWorkPath(ident, user_name=kw.get('user_name', None)))
+                series = subpath or 0
+                workpath = self.initialWorkPath(ident, user_name=kw.get('user_name', None), series=series)
+                token.setFile(workpath, series=series)
                 token.dims = self.getImageInfo(filename=token.data, series=token.series, infofile='%s.info'%token.data, meta=kw.get('imagemeta', None) )
                 if token.dims is None:
                     log.debug('SKIPPING dryrun processing due to empty image info')
@@ -402,7 +438,9 @@ class ImageServer(object):
                     token.init(resource_id=ident, ifnm=token.data, imagemeta=kw.get('imagemeta', None), timeout=kw.get('timeout', None), resource_name=resource.get('name'), dryrun=True)
                     for action, args in query:
                         try:
-                            service = self.operations.plugins[action]
+                            service = self.operations.plugins.get(action)
+                            #if service is None:
+                            #    continue
                             # if the service has a dryrun function, some actions are same as dryrun
                             if callable( getattr(service, "dryrun", None) ):
                                 #log.debug ('DRY run: %s calling dryrun', action)
@@ -437,8 +475,9 @@ class ImageServer(object):
             # start the processing
             b = self.ensureOriginalFile(ident, resource=resource)
             #log.debug('Original %s, %s, %s', b.path, b.sub, b.files)
-            workpath = self.ensureWorkPath(b.path, ident, user_name=kw.get('user_name', None))
-            token.setFile(workpath, series=(b.sub or 0))
+            series = (b.sub or subpath or 0)
+            workpath = self.ensureWorkPath(b.path, ident, user_name=kw.get('user_name', None), series=series)
+            token.setFile(workpath, series=series)
             token.init(resource_id=ident, ifnm=b.path, imagemeta=kw.get('imagemeta', None), files=b.files, timeout=kw.get('timeout', None), resource_name=resource.get('name'), initial_workpath=workpath, dryrun=None)
 
             if not os.path.exists(b.path):
