@@ -41,9 +41,10 @@ def bootstrap(command, conf, vars):
 
         admin = model.User(
             user_name = u"admin",
-            display_name = config.get('bisque.admin_display_name', 'Bisque admin'),
-            email_address = config.get('bisque.admin_email', 'manager@somedomain.com'),
-            password = u'admin')
+            display_name = config.get('bisque.admin_display_name', u'Bisque admin'))
+        admin._email_address = config.get('bisque.admin_email', u'manager@somedomain.com')
+        admin.password = u'admin'
+        #    password = u'admin')
         #admin.password = u'admin'
         model.DBSession.add(admin)
 
@@ -107,11 +108,11 @@ def bootstrap(command, conf, vars):
 
 
     except IntegrityError:
-        print 'Warning, there was a problem adding your system object, it may have already been added:'
+        log.exception ( 'Warning, there was a problem adding your system object, it may have already been added:')
         #import traceback
         #print traceback.format_exc()
         transaction.abort()
-        print 'Continuing with bootstrapping...'
+        log.warning ( 'Continuing with bootstrapping...' )
 
     log.info('END boostrap')
 
