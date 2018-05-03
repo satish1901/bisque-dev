@@ -10,6 +10,10 @@ from requests_toolbelt import MultipartEncoder
 from .util import  normalize_unicode
 from .exception import BQCommError
 
+import tables
+import json
+import tempfile
+
 
 #DEFAULT_TIMEOUT=None
 DEFAULT_TIMEOUT=60*60 # 1 hour
@@ -124,13 +128,67 @@ class DatasetProxy (BaseServiceProxy):
 class ModuleProxy (BaseServiceProxy):
     def execute (self, module_name, **module_parms):
         pass
-
+    
+    
+class TableProxy (BaseServiceProxy):
+    def load_array(self, table_uniq, path, slices=[]):
+        """
+        Load array from BisQue.
+        """
+        if table_uniq.startswith('http'):
+            table_uniq = table_uniq.split('/')[-1]
+        slice_list = []
+        for single_slice in slices:
+            if isinstance(single_slice, slice):
+                slice_list.append("%s;%s" % (single_slice.start or '', '' if single_slice.stop is None else single_slice.stop-1))
+            elif isinstance(single_slice, int):
+                slice_list.append("%s;%s" % (single_slice, single_slice))
+            else:
+                raise BQCommError("malformed slice parameter")
+        path = '/'.join([table_uniq.strip('/'), path.strip('/')])
+        info_url = '/'.join([path, 'info', 'format:json'])
+        response = self.get(info_url)
+        num_dims = len(json.loads(response.content).get('sizes'))
+        # fill slices with missing dims
+        for _ in range(num_dims-len(slice_list)):
+            slice_list.append(';')
+        data_url = '/'.join([path, ','.join(slice_list), 'format:hdf'])
+        response = self.get(data_url)
+        # convert HDF5 to Numpy array (preserve indices??)
+        with tables.open_file('array.h5', driver="H5FD_CORE", driver_core_image=response.content, driver_core_backing_store=0) as h5file:
+            return h5file.root.array.read()
+    
+    def store_array(self, array, name):
+        """
+        Store numpy array in BisQue and return resource doc.
+        """
+        try:
+            dirpath = tempfile.mkdtemp()
+            # (1) store array as HDF5 file
+            out_file = os.path.join(dirpath, "%s.h5" % name)   # importer needs extension .h5
+            with tables.open_file(out_file, "w", filters = tables.Filters(complevel=5)) as h5file:  # compression level 5
+                h5file.create_array(h5file.root, name, array)
+            # (2) call bisque importer with file
+            importer = self.session.service('import')
+            response = importer.transfer(out_file)
+            # (3) return resource xml
+            res = etree.fromstring (response.content)
+            if res.tag != 'resource' or res.get('type') != 'uploaded':
+                raise BQCommError('array could not be stored')
+            else:
+                return res[0]
+        finally:
+            if os.path.isfile(out_file):
+                os.remove(out_file)
+            os.rmdir(dirpath)
+    
 
 SERVICE_PROXIES = {
     'admin' : AdminProxy,
     'import' : ImportProxy,
-    'blob_serice': BlobProxy,
+    'blob_service': BlobProxy,
     'dataset_service': DatasetProxy,
+    'table': TableProxy,
 }
 
 class ServiceFactory (object):
