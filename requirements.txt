@@ -15,7 +15,7 @@ Pillow==4.2.1
 Pygments==1.6
 Pylons==1.0
 Routes==2.0
-SQLAlchemy==1.1.11
+SQLAlchemy==1.2.5
 PySqlite==2.8.3
 tempita==0.5.2
 ToscaWidgets==0.9.12
