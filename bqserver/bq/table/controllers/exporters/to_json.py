@@ -54,6 +54,7 @@ __copyright__ = "Center for Bio-Image Informatics, University of California at S
 import os
 import logging
 import datetime as dt
+import numbers
 
 __all__ = [ 'ExporterJSON' ]
 
@@ -90,6 +91,14 @@ class ExtEncoder(json.JSONEncoder):
         #    return str(o)
         return json.JSONEncoder.default(self, o)
 
+def _replace_nans(o):
+    if isinstance(o,list):
+        return [_replace_nans(el) for el in o]
+    elif isinstance(o, numbers.Number) and np.isnan(o):   # NaN not a JSON standard; replace with "null"
+        return None
+    else:
+        return o
+
 #---------------------------------------------------------------------------------------
 # exporters: Json
 #---------------------------------------------------------------------------------------
@@ -119,7 +128,7 @@ class ExporterJSON (TableExporter):
     def format(self, table):
         """ converts table to JSON """
         #return table.data.to_json()
-        data = table.as_array().tolist()
+        data = _replace_nans(table.as_array().tolist())
         if hasattr(data, "strip") or   \
            (not hasattr(data, "__getitem__") and   \
             not hasattr(data, "__iter__")):
