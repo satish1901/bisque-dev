@@ -595,7 +595,7 @@ def run_query( arr, sels=None, cond=None, want_cell_coord=False, want_stats=Fals
     if want_stats:
         # compute all other stats
         dim_sizes = [d for d in data.shape]
-        offset = slices[0].start if slices is not None and len(slices)>0 else 0
+        offset = slices[0].start if slices is not None and len(slices)>0 and (sels is None or sels[0].agg is None) else 0
         if isinstance(data, np.ndarray):
             colnames = [str(i) for i in xrange(slices[1].start, slices[1].stop)] if len(slices)>1 else ['0']
             coltypes = [arr.get_arr().dtype.name] * data.shape[1] if len(data.shape) > 1 else [arr.get_arr().dtype.name]
