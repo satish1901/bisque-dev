@@ -110,12 +110,12 @@ SelectorTuple = namedtuple('SelectorTuple', ['dimname', 'dimvalues'])
 
 def _get_agg_fct(agg):
     return {
-            'mean': np.mean,
-            'avg': np.average,
-            'min': np.min,
-            'max': np.max,
-            'median': np.median,
-            'std': np.std
+            'mean': np.nanmean,
+            'min': np.nanmin,
+            'max': np.nanmax,
+            'median': np.nanmedian,
+            'std': np.nanstd,
+            'var': np.nanvar
            }.get(agg)
 
 def _check_aggfct(agg):
@@ -236,7 +236,7 @@ class ArrayOrTable(object):
                     # this is very slow for large arrays; avoid!
                     row_iter = ( (tuple([coord[d]+slices[d].start+offsets[d] for d in xrange(len(slices))]), self.arr[slices][tuple(coord)]) for coord in np.argwhere(filter_exp) )
                 else:
-                    row_iter = ( self.arr[slices][filter_exp] for x in [1] )
+                    row_iter = ( np.where(filter_exp, self.arr[slices], self._gen_nan_array(slices)) for x in [1] )
                     
         return row_iter
     
@@ -515,6 +515,10 @@ class ArrayOrTable(object):
         mask_slices = self._and_slices(outer_slices, sel_slices)
         mask[[slice(mask_slices[dim].start-outer_slices[dim].start, mask_slices[dim].stop-outer_slices[dim].start) for dim in xrange(len(outer_slices))]] = True
         return mask
+    
+    def _gen_nan_array(self, slices):
+        shape = tuple([s.stop-s.start for s in slices])
+        return np.full(shape, np.nan)
 
 #---------------------------------------------------------------------------------------
 # Actual query processor operating on abstract tuple language
@@ -593,7 +597,7 @@ def run_query( arr, sels=None, cond=None, want_cell_coord=False, want_stats=Fals
         dim_sizes = [d for d in data.shape]
         offset = slices[0].start if slices is not None and len(slices)>0 else 0
         if isinstance(data, np.ndarray):
-            colnames = [str(i) for i in xrange(slices[1].start, slices[1].stop)] if len(slices)>1 and cond is None else (['0'] if cond is None else ['filtered cells'])
+            colnames = [str(i) for i in xrange(slices[1].start, slices[1].stop)] if len(slices)>1 else ['0']
             coltypes = [arr.get_arr().dtype.name] * data.shape[1] if len(data.shape) > 1 else [arr.get_arr().dtype.name]
         else:
             colnames = data.columns.tolist()
@@ -704,11 +708,11 @@ class TableQueryParser:
     
     def parse_cond(self, query, colnames):
         self.colnames = colnames
-        return self.cond_parser.parse(query,lexer=self.lexer.lexer,debug=True)
+        return self.cond_parser.parse(query,lexer=self.lexer.lexer,debug=False)
     
     def parse_slice(self, query, colnames):
         self.colnames = colnames
-        return self.slice_parser.parse(query,lexer=self.lexer.lexer,debug=True)
+        return self.slice_parser.parse(query,lexer=self.lexer.lexer,debug=False)
     
     def p_error(self,p):
         if p:
