@@ -282,12 +282,6 @@ who.log_stream=auth
 bisque.profiler.enable = false
 bisque.profiler.path = __profiler__
 
-# Intercom configuration
-# intercom.app_id = tpwq3d9w
-# intercom.company_name = Bisque Services
-# intercom.company_id =  Bisque
-
-
 
 # WARNING: *THE LINE BELOW MUST BE UNCOMMENTED ON A PRODUCTION ENVIRONMENT*
 # Debug mode will enable the interactive debugging tool, allowing ANYONE to
