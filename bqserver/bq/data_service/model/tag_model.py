@@ -398,7 +398,7 @@ class Taggable(object):
 
     def findtag (self, nm, create=False):
         for t in self.children:
-            if t.tag == 'tag' and t.resource_name == nm:
+            if t.resource_type == 'tag' and t.resource_name == nm:
                 return t
         t=None
         if create:
