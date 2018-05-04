@@ -315,14 +315,17 @@ class User(DeclarativeBase):
 
         return password_cls.check_password(self.password, password)
 
-    @hybrid_property
-    def email_address(self):
+    #@hybrid_property
+    def _get_email(self):
         return self._email_address
 
-    @email_address.setter
+    #@email_address.setter
     def _set_email(self, email):
         self._email_address = email
         self.on_update()
+
+    email_address = synonym('_email_address', descriptor=property(_get_email,
+                                                                  _set_email))
 
 
 
