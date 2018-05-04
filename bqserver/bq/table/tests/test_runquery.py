@@ -37,8 +37,8 @@ class TestTableQuery(object):
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.columns[0] == 'bla bla'
-        assert res.iloc[0].values[0] == 0
-        assert res.iloc[44].values[0] == 1
+        assert res.iloc[0].values[0] == 0 # pylint: disable=no-member
+        assert res.iloc[44].values[0] == 1 # pylint: disable=no-member
         t.close()
         
     def test_csv_singlecol(self):
@@ -47,13 +47,13 @@ class TestTableQuery(object):
                                       agg=None, alias='bla bla')]
         
         top = pd.read_csv('small.csv', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=cb_csv)
+        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=cb_csv) # pylint: disable=no-member
         res = run_query(d, sels=selcond, cond=None) 
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.columns[0] == 'bla bla'
-        assert res.iloc[0].values[0] == 11586.285146
-        assert res.iloc[14].values[0] == 29.587512
+        assert res.iloc[0].values[0] == 11586.285146 # pylint: disable=no-member
+        assert res.iloc[14].values[0] == 29.587512 # pylint: disable=no-member
 
     def test_excel_singlecol(self):
         """Simple column select query (Excel)"""
@@ -62,13 +62,13 @@ class TestTableQuery(object):
         
         t = pd.ExcelFile('large_1K.xls')
         top = pd.read_excel(t, 'my_sheet_N1', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_excel(t))
+        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_excel(t)) # pylint: disable=no-member
         res = run_query(d, sels=selcond, cond=None) 
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.columns[0] == '...my col name...'
-        assert res.iloc[0].values[0] == 77246
-        assert res.iloc[14].values[0] == 28282
+        assert res.iloc[0].values[0] == 77246 # pylint: disable=no-member
+        assert res.iloc[14].values[0] == 28282 # pylint: disable=no-member
         t.close()
 
     def test_hdf_twocol(self):
@@ -84,10 +84,10 @@ class TestTableQuery(object):
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 2
         assert res.columns[0] == 'bla bla1' and res.columns[1] ==  'bla bla2'
-        assert res.iloc[0]['bla bla1'] == 0
-        assert res.iloc[0]['bla bla2'] == 0.0
-        assert res.iloc[44]['bla bla1'] == 1
-        assert res.iloc[44]['bla bla2'] == 13655950.0
+        assert res.iloc[0]['bla bla1'] == 0 # pylint: disable=no-member
+        assert res.iloc[0]['bla bla2'] == 0.0 # pylint: disable=no-member
+        assert res.iloc[44]['bla bla1'] == 1 # pylint: disable=no-member
+        assert res.iloc[44]['bla bla2'] == 13655950.0 # pylint: disable=no-member
         t.close()
         
     def test_hdf_allcol(self):
@@ -135,7 +135,7 @@ class TestTableQuery(object):
 
         t = pd.ExcelFile('large_1K.xls')
         top = pd.read_excel(t, 'my_sheet_N1', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_excel(t))
+        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_excel(t)) # pylint: disable=no-member
         res = run_query(d, sels=None, cond=filtercond)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 3
@@ -151,15 +151,15 @@ class TestTableQuery(object):
 
         t = pd.ExcelFile('large_1K.xls')
         top = pd.read_excel(t, 'my_sheet_N1', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_excel(t))
+        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_excel(t)) # pylint: disable=no-member
         res = run_query(d, sels=selcond, cond=None)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 2
         assert set(res.columns) == set(['ssssss', 'bla bla2'])
-        assert res.iloc[0]['ssssss'] == 77246
-        assert res.iloc[0]['bla bla2'] == 19136.196304
-        assert res.iloc[29]['ssssss'] == 11582
-        assert res.iloc[29]['bla bla2'] == 32058.006895
+        assert res.iloc[0]['ssssss'] == 77246 # pylint: disable=no-member
+        assert res.iloc[0]['bla bla2'] == 19136.196304 # pylint: disable=no-member
+        assert res.iloc[29]['ssssss'] == 11582 # pylint: disable=no-member
+        assert res.iloc[29]['bla bla2'] == 32058.006895 # pylint: disable=no-member
         t.close()
     
     def test_hdf_rowcol(self):
@@ -173,8 +173,8 @@ class TestTableQuery(object):
         assert len(res.columns) == 1
         assert res.shape[0] == 40
         assert res.columns[0] == 'bla bla'
-        assert res.iloc[0].values[0] == 0
-        assert res.iloc[34].values[0] == 1
+        assert res.iloc[0].values[0] == 0 # pylint: disable=no-member
+        assert res.iloc[34].values[0] == 1 # pylint: disable=no-member
         t.close()
         
     def test_csv_rowcol(self):
@@ -183,14 +183,14 @@ class TestTableQuery(object):
                                       agg=None, alias='bla bla')]
         
         top = pd.read_csv('small.csv', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=cb_csv)
+        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=cb_csv) # pylint: disable=no-member
         res = run_query(d, sels=selcond, cond=None) 
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.shape[0] == 10
         assert res.columns[0] == 'bla bla'
-        assert res.iloc[0].values[0] == 8539.802001
-        assert res.iloc[9].values[0] == 4352.195533
+        assert res.iloc[0].values[0] == 8539.802001 # pylint: disable=no-member
+        assert res.iloc[9].values[0] == 4352.195533 # pylint: disable=no-member
 
     def test_hdf_selfilter(self):
         """Filter by one column and select a different column (hdf)"""
@@ -204,9 +204,9 @@ class TestTableQuery(object):
         assert len(res.columns) == 1
         assert res.shape[0] == 20
         assert res.columns[0] == 'bla bla'
-        assert res.iloc[0].values[0] == 17
-        assert res.iloc[14].values[0] == 31
-        assert res.iloc[15].values[0] == 44
+        assert res.iloc[0].values[0] == 17 # pylint: disable=no-member
+        assert res.iloc[14].values[0] == 31 # pylint: disable=no-member
+        assert res.iloc[15].values[0] == 44 # pylint: disable=no-member
         t.close()
         
     def test_hdf_aggfilter(self):
@@ -223,8 +223,8 @@ class TestTableQuery(object):
         assert len(res.columns) == 2
         assert res.shape[0] == 1
         assert set(res.columns) == set(['max block', 'min block'])
-        assert res.iloc[0]['max block'] == 48
-        assert res.iloc[0]['min block'] == 17
+        assert res.iloc[0]['max block'] == 48 # pylint: disable=no-member
+        assert res.iloc[0]['min block'] == 17 # pylint: disable=no-member
         t.close()
         
     def test_hdf_selfilter2col(self):
@@ -236,14 +236,14 @@ class TestTableQuery(object):
                                        right=AndConditionTuple(left=ConditionTuple(left=CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['rrrrrr'])], agg=None, alias=None), comp='>', right=5000),
                                                               right=ConditionTuple(left=CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['rrrrrr'])], agg=None, alias=None), comp='<', right=10000)))
         top = pd.read_csv('small.csv', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=cb_csv)
+        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=cb_csv) # pylint: disable=no-member
         res = run_query(d, sels=selcond, cond=filtercond) 
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.shape[0] == 2
         assert res.columns[0] == 'id'
-        assert res.iloc[0].values[0] == 3
-        assert res.iloc[1].values[0] == 55
+        assert res.iloc[0].values[0] == 3 # pylint: disable=no-member
+        assert res.iloc[1].values[0] == 55 # pylint: disable=no-member
         
     def test_array_filter(self):
         """Filter by three dimensions"""
@@ -271,7 +271,7 @@ class TestTableQuery(object):
         assert len(res.columns) == 1
         assert res.shape[0] == 1
         assert res.columns[0] == 'mean'
-        assert res.iloc[0].values[0] == 246452.0
+        assert res.iloc[0].values[0] == 246452.0 # pylint: disable=no-member
         t.close()
 
     def test_array_aggfiltercond(self):
@@ -288,5 +288,5 @@ class TestTableQuery(object):
         assert len(res.columns) == 1
         assert res.shape[0] == 1
         assert res.columns[0] == 'mean'
-        assert res.iloc[0].values[0] == 291452.0
+        assert res.iloc[0].values[0] == 291452.0 # pylint: disable=no-member
         t.close()

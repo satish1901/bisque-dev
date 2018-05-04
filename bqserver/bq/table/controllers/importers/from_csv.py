@@ -148,7 +148,7 @@ class TableCSV(TableBase):
 #        log.debug('rng %s', str(rng))
 
         top = pd.read_csv(self.filename, nrows=1)   # to get the shape
-        data = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_csv(self.filename))
+        data = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_csv(self.filename)) # pylint: disable=no-member
         
         self.data, self.sizes, self.offset, self.types, self.headers = run_query(data, sels=self.t_slice, cond=self.t_cond, want_stats=True)
         return self.data
