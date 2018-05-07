@@ -677,7 +677,7 @@ class TableQueryLexer:
         t.lexer.skip(1)
 
     def __init__(self):
-        self.lexer = lex.lex(module=self, optimize=1)
+        self.lexer = lex.lex(module=self, optimize=False, debug=False)
 
     def tokenize(self,data):
         'Debug method!'
