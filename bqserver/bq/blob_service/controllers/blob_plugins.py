@@ -133,7 +133,7 @@ class ResourcePlugin (object):
 # Plugin manager
 ################################################################################
 
-def walk_deep(path, ext='py'):
+def walk_deep(path, ext=['py']):
     """Splits sub path that follows # sign if present
     """
     files = []
