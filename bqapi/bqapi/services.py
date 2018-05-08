@@ -148,7 +148,10 @@ class TableProxy (BaseServiceProxy):
         path = '/'.join([table_uniq.strip('/'), path.strip('/')])
         info_url = '/'.join([path, 'info', 'format:json'])
         response = self.get(info_url)
-        num_dims = len(json.loads(response.content).get('sizes'))
+        try:
+            num_dims = len(json.loads(response.content).get('sizes'))
+        except ValueError:
+            raise BQCommError('array could not be read')
         # fill slices with missing dims
         for _ in range(num_dims-len(slice_list)):
             slice_list.append(';')
