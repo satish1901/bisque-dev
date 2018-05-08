@@ -843,13 +843,14 @@ mapper( Taggable, taggable,
                           backref = backref('parent', enable_typechecks=False, remote_side = [taggable.c.id]),
                           ),
 
-    # 'childrenq' : relation(Taggable, lazy='dynamic', viewonly=True,
-    #                       enable_typechecks = False,
-    #                       remote_side = [taggable.c.resource_parent_id],
-    #                       primaryjoin = (taggable.c.id == taggable.c.resource_parent_id),
-    #                       #order_by = taggable.c.resource_index,
+    'childrenq' : relation(Taggable, lazy='dynamic', viewonly=True,
+                           enable_typechecks = False,
+                           primaryjoin = (taggable.c.id == taggable.c.resource_parent_id),
+                           #remote_side = [taggable.c.resource_parent_id],
+
+                           order_by = taggable.c.resource_index,
     #                       #collection_class = ordering_list ('resource_index')
-    #                    ),
+                          ),
 
     'values' : relation(Value,  lazy=True, cascade="all, delete-orphan", passive_deletes=True,
                         order_by=[values.c.indx],

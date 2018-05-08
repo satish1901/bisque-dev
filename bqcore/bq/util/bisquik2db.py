@@ -622,8 +622,8 @@ def db2node(dbo, parent, view, baseuri, nodes, doc_id, **kw):
         return node, nodes, doc_id
 
     if "full" in view :
-        #q = dbo.childrenq
-        q = dbo.children
+        q = dbo.childrenq
+        #q = dbo.children
         # apply limit offsets
         if kw.has_key('offset'):
             q = q.offset (int(kw.pop('offset')))
