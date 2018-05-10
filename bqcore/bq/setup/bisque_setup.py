@@ -897,7 +897,7 @@ def install_driver(DBURL):
             six.print_ ('\nImport failed, trying to install package %s...' % ei_drname)
             try:
                 #easy_install.main(['-U',ei_drname])
-                pip.main(['install', '-U', ei_drname])
+                pip.main(['install', '-U', ei_drname]) #pylint: disable=no-member
                 # The following line is needed to make installed module importable
                 pkg_resources.require(ei_drname)
                 print 'Package %s successfully installed.' % ei_drname
@@ -908,7 +908,7 @@ def install_driver(DBURL):
                 print "are not available. Please check the Bisque Wiki"
                 print "http://biodev.ece.ucsb.edu/projects/bisquik/wiki/AdvancedInstalls"
 
-                log.exception( 'Failed to install package %s.' % ei_drname )
+                log.exception( 'Failed to install package %s.' , str( ei_drname ))
                 return False
 
 
@@ -1854,7 +1854,7 @@ def setup_uwsgi(params, server_params):
         return params
     if which ('uwsgi') is None:
         #easy_install.main(['-U','uwsgi'])
-        pip.main (['install', '-U','uwsgi'])
+        pip.main (['install', '-U','uwsgi']) #pylint: disable=no-member
 
     from bq.util.dotnested import parse_nested, unparse_nested
     servers = [ x.strip() for x in server_params['servers'].split(',') ]
