@@ -20,7 +20,7 @@ servers = h1
 # proxyroot =  the value of bisque.root for engines
 
 h1.url = http://0.0.0.0:8080
-h1.services_disabled = engine_service
+h1.services_disabled =
 # Extra params for uwsgi servers
 # h1.uwsgi.socket = unix:///tmp/bisque.sock
 # h1.uwsgi.threads = 8
