@@ -264,7 +264,7 @@ mail.manager = immediate
 mail.transport = smtp
 
 # SQLAlchemy
-sqlalchemy.url = sqlite:///bisque.db
+sqlalchemy.url = sqlite:///data/bisque.db
 #sqlalchemy.url = postgresql://localhost:5432/bisque05
 sqlalchemy.echo = false
 sqlalchemy.echo_pool = false
