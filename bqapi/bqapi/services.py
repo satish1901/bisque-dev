@@ -6,6 +6,8 @@ import string
 
 
 from lxml import etree
+from lxml.etree import ParseError
+
 from requests_toolbelt import MultipartEncoder
 from .util import  normalize_unicode
 from .exception import BQCommError
@@ -88,9 +90,60 @@ class AdminProxy (BaseServiceProxy):
         self.fetch ('/user/{}/login'.format(user_uniq))
 
 
-class BlobProxy (BaseServiceProxy): #TODO
-    def register_file(self, store_path):
-        pass
+class BlobProxy (BaseServiceProxy):
+    def _resource_element (self, args_tag_file=None, args_resource_type=None, args_srcpath=None, **kw):
+        """Check the args and create a compatible resource element  for posting or linking
+        """
+        if args_tag_file:
+            # Load file into resource
+            try:
+                resource = etree.parse (args_tag_file).getroot()
+            except ParseError as pe:
+                raise BQCommError('Parse failure: aborting: ', pe)
+        else:
+            resource = etree.Element (args_resource_type or 'resource')
+
+        for fld in ('permission', 'hidden'):
+            if fld in kw:
+                resource.set (fld, kw.get(fld))
+        if args_srcpath:
+            resource.set('value', args_srcpath)
+            resource.set('name', os.path.basename (args_srcpath))
+        return resource
+
+    def path_link(self, srcpath, alias=None, resource_type=None, tag_file=None):
+        url = urlparse.urljoin( self.session.service_map['blob_service'], 'paths/insert' )
+        params = {}
+        resource = self._resource_element(args_srcpath=srcpath, args_resource_type=resource_type, args_tag_file=tag_file)
+        payload = etree.tostring (resource)
+        if alias:
+            params['user'] = alias
+        r = self.post(url, data=payload, params=params, headers={'content-type': 'application/xml'})
+        return r
+    
+    def path_delete(self, srcpath, alias=None):
+        url = urlparse.urljoin( self.session.service_map['blob_service'], 'paths/remove' )
+        params = {'path': srcpath}
+        if alias:
+            params['user'] = alias
+        r = self.get(url, params=params)
+        return r
+    
+    def path_rename(self, srcpath, dstpath, alias=None):
+        url = urlparse.urljoin( self.session.service_map['blob_service'], 'paths/move' )
+        params = {'path': srcpath, 'destination': dstpath}
+        if alias:
+            params['user'] = alias
+        r = self.get(url, params=params)
+        return r
+    
+    def path_list(self, srcpath, alias=None):
+        url = urlparse.urljoin( self.session.service_map['blob_service'], 'paths/list' )
+        params = { 'path' : srcpath }
+        if alias:
+            params['user'] = alias
+        r = self.get(url, params=params)
+        return r
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -184,7 +237,7 @@ class TableProxy (BaseServiceProxy):
             if os.path.isfile(out_file):
                 os.remove(out_file)
             os.rmdir(dirpath)
-    
+
 
 SERVICE_PROXIES = {
     'admin' : AdminProxy,
