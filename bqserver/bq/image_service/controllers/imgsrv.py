@@ -72,6 +72,7 @@ def url2operationsOld(url, base):
         path = path[1:]
     resource_id = path.pop(0)
     if len(path)>0:
+        path = [unquote(p) for p in path]
         subpath = '/%s'%('/'.join(path))
 
     # process query string
@@ -102,7 +103,6 @@ def url2operationsNew(url, base):
     path = path[path.index(base)+1:] # isolate query part
     if path[0].lower() in ['image', 'images']:
         path = path[1:]
-
     resource_id = path.pop(0)
 
     # parse subpath
@@ -110,7 +110,7 @@ def url2operationsNew(url, base):
         sp = []
         p = path.pop(0)
         while p != '@' and p is not None:
-            sp.append(p)
+            sp.append(unquote(p))
             p = path.pop(0)
         if len(sp)>0:
             subpath = '/%s'%('/'.join(sp))

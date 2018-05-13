@@ -120,3 +120,15 @@ tree styles
 .tableio .bq_table_panel .table_tree {
     margin: 5px;
 }
+
+/*************************************************************
+Icons
+*************************************************************/
+
+.bq_table_panel .icon_table {
+    background-image: url(/core/plugins/table/icons_toolbar.svg);
+    background-size: 22px;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: 1px 1px;
+}

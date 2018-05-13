@@ -363,6 +363,7 @@ function ImgViewer (parentid, image_or_uri, parameters) {
     this.target.appendChild (this.imagediv);
     this.toolbar = this.parameters.toolbar;
     this.widget = this.parameters.widget;
+    this.plugins_skip = this.parameters.plugins_skip || {};
 
 
     var plugin_list = "default,slicer,tiles,ops,download,external,pixelcounter,scalebar,progressbar,infobar,overlay,edit,renderer";
@@ -390,7 +391,6 @@ function ImgViewer (parentid, image_or_uri, parameters) {
             "pixelcounter": ImgPixelCounter,
             "overlay"     : SVGRenderer,
             "renderer"    : CanvasRenderer,   // RENDERER MUST BE LAST
-
         };
 
     var plugin_names = plugin_list.split(',');

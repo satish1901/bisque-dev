@@ -555,6 +555,8 @@ BQ.image_viewers.available.push({
     min_p: 1,
     min_z: 1,
     min_t: 1,
+    min_x: 1,
+    min_y: 1,
     max_x: null,
     max_y: null,
 });
@@ -575,6 +577,8 @@ BQ.image_viewers.available.push({
     min_p: 2,
     min_z: 1,
     min_t: 1,
+    min_x: 1,
+    min_y: 1,
     max_x: null,
     max_y: null,
 });
@@ -595,6 +599,8 @@ BQ.image_viewers.available.push({
     min_p: 2,
     min_z: 1,
     min_t: 1,
+    min_x: 1,
+    min_y: 1,
     max_x: null,
     max_y: null,
 });
@@ -1117,6 +1123,8 @@ Ext.define('Bisque.Resource.Image.Page', {
 
             if (v.max_x && v.max_x<x) dis=true;
             if (v.max_y && v.max_y<y) dis=true;
+            if (v.min_x>x) dis=true;
+            if (v.min_y>y) dis=true;
             if (v.min_p>p) dis=true;
             if (v.min_t>t) dis=true;
             if (v.min_z>z) dis=true;

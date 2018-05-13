@@ -46,7 +46,7 @@ rw = HashedReadWriteLock()
 
 imgcnv_lib_name = 'libimgcnv.so'
 if os.name == 'nt':
-    imgcnv_lib_name = 'imgcnv.dll'
+    imgcnv_lib_name = 'libimgcnv.dll'
 elif sys.platform == 'darwin':
     imgcnv_lib_name = 'libimgcnv.dylib'
 

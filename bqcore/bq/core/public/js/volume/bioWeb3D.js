@@ -1547,7 +1547,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 
 	initTextures : function () {
         this.loadedTextures = 0;
-		var resUniqueUrl = (this.hostName ? this.hostName : '') + '/image_service/image/' + this.resource.resource_uniq;
+		var resUniqueUrl = this.resource.src;
 		var slice;
 		this.dims.slice.x = this.phys.x;
 		this.dims.slice.y = this.phys.y;
@@ -1739,8 +1739,7 @@ Ext.define('BQ.viewer.Volume.Panel', {
 		var plugin = undefined;
 		for (var i = 0; (plugin = this.plug_ins[i]); i++)
 			plugin.addCommand(command, opts);
-        var atlas = (this.hostName ? this.hostName : '') + '/image_service/image/'
-		    + this.resource.resource_uniq + '?' + command.join('&');
+        var atlas = this.resource.src + '?' + command.join('&');
         //console.log('atlas: ', atlas);
 		return atlas;
 	},
