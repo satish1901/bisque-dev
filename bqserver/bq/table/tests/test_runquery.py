@@ -8,7 +8,7 @@ import tables
 import pandas as pd
 import numpy as np
 
-from ..controllers.table_base import run_query, ArrayOrTable, OrConditionTuple, AndConditionTuple, ConditionTuple, CellSelectionTuple, SelectorTuple
+from ..controllers.table_base import TableLike, ArrayLike, OrConditionTuple, AndConditionTuple, ConditionTuple, CellSelectionTuple, SelectorTuple
 
 
 def cb_csv(slices):
@@ -23,6 +23,27 @@ def get_cb_excel(t):
         return data[0:slices[0].stop-slices[0].start]
     return cb_excel
 
+def _run_query(t, sels, cond, want_arr=True):
+    res = t.run_query(sels=sels, cond=cond)
+    return res.get_arr() if want_arr else res
+
+def _wrap_hdf_table(t, cb=None):
+    return TableLike(None, None, None, data=t if cb is None else None, offset=0, headers=t.colnames, types=[t.coltypes[h] if h in t.coltypes else '(compound)' for h in t.colnames], sizes=t.shape, cb=cb)
+
+def _wrap_hdf_array(node):
+    if node.ndim > 1:
+        headers = [str(i) for i in range(0, node.shape[1])]
+        types = [node.dtype.name for i in range(0, node.shape[1])]
+    elif node.ndim > 0:
+        headers = ['0']
+        types = [node.dtype.name]
+    else:
+        headers = ['']
+        types = [node.dtype.name]
+    return ArrayLike(None, None, None, data=node, offset=0, headers=headers, types=types, sizes=node.shape)
+    
+def _wrap_pd_table(t, cb=None):
+    return TableLike(None, None, None, data=t if cb is None else None, offset=0, headers=t.columns.tolist(), types=[ty.name for ty in t.dtypes.tolist()], sizes=(sys.maxint, t.shape[1]), cb=cb)
 
 @pytest.mark.unit
 class TestTableQuery(object):
@@ -32,8 +53,8 @@ class TestTableQuery(object):
                                       agg=None, alias='bla bla')]
 
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/Vdata table: PerBlockMetadataCommon')
-        res = run_query(d, sels=selcond, cond=None)
+        d = _wrap_hdf_table(t.get_node('/arrays/Vdata table: PerBlockMetadataCommon'))
+        res = _run_query(d, sels=selcond, cond=None)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.columns[0] == 'bla bla'
@@ -47,8 +68,8 @@ class TestTableQuery(object):
                                       agg=None, alias='bla bla')]
         
         top = pd.read_csv('small.csv', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=cb_csv) # pylint: disable=no-member
-        res = run_query(d, sels=selcond, cond=None) 
+        d = _wrap_pd_table(top, cb=cb_csv) # pylint: disable=no-member
+        res = _run_query(d, sels=selcond, cond=None) 
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.columns[0] == 'bla bla'
@@ -62,8 +83,8 @@ class TestTableQuery(object):
         
         t = pd.ExcelFile('large_1K.xls')
         top = pd.read_excel(t, 'my_sheet_N1', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_excel(t)) # pylint: disable=no-member
-        res = run_query(d, sels=selcond, cond=None) 
+        d = _wrap_pd_table(top, cb=get_cb_excel(t)) # pylint: disable=no-member
+        res = _run_query(d, sels=selcond, cond=None) 
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.columns[0] == '...my col name...'
@@ -79,8 +100,8 @@ class TestTableQuery(object):
                                       agg=None, alias='bla bla2')]
 
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/Vdata table: PerBlockMetadataCommon')
-        res = run_query(d, sels=selcond, cond=None)
+        d = _wrap_hdf_table(t.get_node('/arrays/Vdata table: PerBlockMetadataCommon'))
+        res = _run_query(d, sels=selcond, cond=None)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 2
         assert res.columns[0] == 'bla bla1' and res.columns[1] ==  'bla bla2'
@@ -96,8 +117,8 @@ class TestTableQuery(object):
                                       agg=None, alias=None)]
 
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/Vdata table: PerBlockMetadataCommon')
-        res = run_query(d, sels=selcond, cond=None)
+        d = _wrap_hdf_table(t.get_node('/arrays/Vdata table: PerBlockMetadataCommon'))
+        res = _run_query(d, sels=selcond, cond=None)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 7
         assert set(res.columns) == set(['Block_number', 'Ocean_flag', 'Block_coor_ulc_som_meter.x', 'Block_coor_ulc_som_meter.y', 'Block_coor_lrc_som_meter.x', 'Block_coor_lrc_som_meter.y', 'Data_flag'])
@@ -109,8 +130,8 @@ class TestTableQuery(object):
                                       agg=None, alias=None)]
 
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/Vdata table: PerBlockMetadataCommon')
-        res = run_query(d, sels=selcond, cond=None)
+        d = _wrap_hdf_table(t.get_node('/arrays/Vdata table: PerBlockMetadataCommon'))
+        res = _run_query(d, sels=selcond, cond=None)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 4
         assert set(res.columns) == set(['Block_coor_ulc_som_meter.x', 'Block_coor_ulc_som_meter.y', 'Block_coor_lrc_som_meter.x', 'Block_coor_lrc_som_meter.y'])
@@ -122,8 +143,8 @@ class TestTableQuery(object):
                                       agg=None, alias=None)]
 
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/Vdata table: PerBlockMetadataCommon')
-        res = run_query(d, sels=selcond, cond=None)
+        d = _wrap_hdf_table(t.get_node('/arrays/Vdata table: PerBlockMetadataCommon'))
+        res = _run_query(d, sels=selcond, cond=None)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 4
         assert set(res.columns) == set(['Block_number', 'Ocean_flag', 'Block_coor_ulc_som_meter.x', 'Block_coor_ulc_som_meter.y'])
@@ -131,12 +152,13 @@ class TestTableQuery(object):
         
     def test_excel_filter_somecol(self):
         """Filter on value of middle columns (csv)"""
+        selcond = [CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['zzzzzz', 'ssssss.1'])], agg=None, alias=None)]
         filtercond = ConditionTuple(left=CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['zzzzzz', 'ssssss.1'])], agg=None, alias=None), comp='<', right=1000)
 
         t = pd.ExcelFile('large_1K.xls')
         top = pd.read_excel(t, 'my_sheet_N1', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_excel(t)) # pylint: disable=no-member
-        res = run_query(d, sels=None, cond=filtercond)
+        d = _wrap_pd_table(top, cb=get_cb_excel(t)) # pylint: disable=no-member
+        res = _run_query(d, sels=selcond, cond=filtercond)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 3
         assert res.shape[0] == 71
@@ -151,8 +173,8 @@ class TestTableQuery(object):
 
         t = pd.ExcelFile('large_1K.xls')
         top = pd.read_excel(t, 'my_sheet_N1', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_excel(t)) # pylint: disable=no-member
-        res = run_query(d, sels=selcond, cond=None)
+        d = _wrap_pd_table(top, cb=get_cb_excel(t)) # pylint: disable=no-member
+        res = _run_query(d, sels=selcond, cond=None)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 2
         assert set(res.columns) == set(['ssssss', 'bla bla2'])
@@ -167,8 +189,8 @@ class TestTableQuery(object):
         selcond = [CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['Ocean_flag']), SelectorTuple(dimname='row', dimvalues=[10,50])], 
                                       agg=None, alias='bla bla')]
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/Vdata table: PerBlockMetadataCommon')
-        res = run_query(d, sels=selcond, cond=None)
+        d = _wrap_hdf_table(t.get_node('/arrays/Vdata table: PerBlockMetadataCommon'))
+        res = _run_query(d, sels=selcond, cond=None)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.shape[0] == 40
@@ -183,8 +205,8 @@ class TestTableQuery(object):
                                       agg=None, alias='bla bla')]
         
         top = pd.read_csv('small.csv', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=cb_csv) # pylint: disable=no-member
-        res = run_query(d, sels=selcond, cond=None) 
+        d = _wrap_pd_table(top, cb=cb_csv) # pylint: disable=no-member
+        res = _run_query(d, sels=selcond, cond=None) 
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.shape[0] == 10
@@ -196,10 +218,10 @@ class TestTableQuery(object):
         """Filter by one column and select a different column (hdf)"""
         selcond = [CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['Block_number']), SelectorTuple(dimname='row', dimvalues=[10,50])], 
                                       agg=None, alias='bla bla')]
-        filtercond = ConditionTuple(left=CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['Ocean_flag'])], agg=None, alias=None), comp='=', right=1)
+        filtercond = ConditionTuple(left=CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['Ocean_flag']), SelectorTuple(dimname='row', dimvalues=[10,50])], agg=None, alias=None), comp='=', right=1)
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/Vdata table: PerBlockMetadataCommon')
-        res = run_query(d, sels=selcond, cond=filtercond)
+        d = _wrap_hdf_table(t.get_node('/arrays/Vdata table: PerBlockMetadataCommon'))
+        res = _run_query(d, sels=selcond, cond=filtercond)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.shape[0] == 20
@@ -215,10 +237,10 @@ class TestTableQuery(object):
                                       agg='min', alias='min block'),
                    CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['Block_number']), SelectorTuple(dimname='row', dimvalues=[10,50])], 
                                       agg='max', alias='max block')]
-        filtercond = ConditionTuple(left=CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['Ocean_flag'])], agg=None, alias=None), comp='=', right=1)
+        filtercond = ConditionTuple(left=CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['Ocean_flag']), SelectorTuple(dimname='row', dimvalues=[10,50])], agg=None, alias=None), comp='=', right=1)
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/Vdata table: PerBlockMetadataCommon')
-        res = run_query(d, sels=selcond, cond=filtercond)
+        d = _wrap_hdf_table(t.get_node('/arrays/Vdata table: PerBlockMetadataCommon'))
+        res = _run_query(d, sels=selcond, cond=filtercond)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 2
         assert res.shape[0] == 1
@@ -236,8 +258,8 @@ class TestTableQuery(object):
                                        right=AndConditionTuple(left=ConditionTuple(left=CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['rrrrrr'])], agg=None, alias=None), comp='>', right=5000),
                                                               right=ConditionTuple(left=CellSelectionTuple(selectors=[SelectorTuple(dimname='field', dimvalues=['rrrrrr'])], agg=None, alias=None), comp='<', right=10000)))
         top = pd.read_csv('small.csv', nrows=1)  # just to get columns
-        d = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=cb_csv) # pylint: disable=no-member
-        res = run_query(d, sels=selcond, cond=filtercond) 
+        d = _wrap_pd_table(top, cb=cb_csv) # pylint: disable=no-member
+        res = _run_query(d, sels=selcond, cond=filtercond) 
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.shape[0] == 2
@@ -252,8 +274,8 @@ class TestTableQuery(object):
                                                  SelectorTuple(dimname='__dim3__', dimvalues=[0,5])], 
                                       agg=None, alias=None)]
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/3D int array')
-        res = run_query(d, sels=selcond, cond=None)
+        d = _wrap_hdf_array(t.get_node('/arrays/3D int array'))
+        res = _run_query(d, sels=selcond, cond=None)
         assert isinstance(res, np.ndarray)
         assert res.shape[0] == 10 and res.shape[1] == 10 and res.shape[2] == 5
         t.close()
@@ -265,8 +287,8 @@ class TestTableQuery(object):
                                                  SelectorTuple(dimname='__dim3__', dimvalues=[0,5])], 
                                       agg='mean', alias='mean')]
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/3D int array')
-        res = run_query(d, sels=selcond, cond=None)
+        d = _wrap_hdf_array(t.get_node('/arrays/3D int array'))
+        res = _run_query(d, sels=selcond, cond=None)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.shape[0] == 1
@@ -282,8 +304,9 @@ class TestTableQuery(object):
                                       agg='mean', alias='mean')]
         filtercond = ConditionTuple(left=CellSelectionTuple(selectors=[], agg=None, alias=None), comp='>', right=290000)
         t = tables.open_file('hdf5_test.h5')
-        d = t.get_node('/arrays/3D int array')
-        res = run_query(d, sels=selcond, cond=filtercond)
+        d = _wrap_hdf_array(t.get_node('/arrays/3D int array'))
+        res = _run_query(d, sels=None, cond=filtercond, want_arr=False)
+        res = _run_query(res, sels=selcond, cond=None)
         assert isinstance(res, pd.core.frame.DataFrame)
         assert len(res.columns) == 1
         assert res.shape[0] == 1

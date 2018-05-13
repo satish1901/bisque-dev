@@ -78,15 +78,16 @@ try:
 except ImportError:
     log.info('Pandas was not found but required for table service!')
 
-from bq.table.controllers.table_base import TableBase, run_query
+from bq.table.controllers.table_base import TableBase, TableLike, ArrayLike
 
 ################################################################################
 # misc
 ################################################################################
 
 def extjs_safe_header(s):
-    if isinstance(s, basestring):
-        return s.replace('.', '_')
+    # need to keep original names; otherwise queries may not work
+    #if isinstance(s, basestring):
+    #    return s.replace('.', '_')
     return s
 
 def _get_type(n):
@@ -139,18 +140,30 @@ class TableHDF(TableBase):
         """ Returns table information """
         super(TableHDF, self).__init__(uniq, resource, path, **kw)
 
-        # try to load the resource binary
-        b = blob_service.localpath(uniq, resource=resource) or abort (404, 'File not available from blob service')
-        self.filename = b.path
-        self.t = None
-        try:
-            self.info()
-        except Exception:
-            # close any open table
-            if self.t is not None:
-                self.t.close()
-            raise
+        if self.t is None:
+            # try to load the resource binary
+            b = blob_service.localpath(uniq, resource=resource) or abort (404, 'File not available from blob service')
+            self.filename = b.path
+            try:
+                self.info()
+            except Exception:
+                # close any open table
+                if self.t is not None:
+                    self.t.close()
+                raise
 
+    def get_queriable(self):
+        if self.data is None:
+            self.info()
+            
+        # this could be either table or array => return based on self.data type
+        if isinstance(self.data, tables.table.Table):
+            return TableLikeHDF(None, None, None, table=self)
+        elif isinstance(self.data, tables.array.Array):
+            return ArrayLikeHDF(None, None, None, table=self)
+        else:
+            return TableLikeHDF(None, None, None, table=self, data=pd.DataFrame(), sizes=[], offset=0, types=[], headers=[])
+        
     def _collect_arrays(self, path='/'):
         try:
             try:
@@ -170,104 +183,66 @@ class TableHDF(TableBase):
 
     def close(self):
         """Close table"""
-        if self.t:
+        if self.t is not None:
+            log.debug("closing HDF file")
             self.t.close()
 
     def info(self, **kw):
         """ Returns table information """
-        # load headers and types if empty
-        if self.t is None:
-            try:
-                # TODO: could lead to problems when multiple workers open same file???
-                # dima: no problems when reading but will have issues when writing and will require file locking
+        if self.data is None:
+            # load headers and types if empty
+            if self.t is None:
                 try:
-                    self.t = tables.open_file(self.filename) # v3 API
-                except AttributeError:
-                    self.t = tables.openFile(self.filename) # pylint: disable=no-member
-            except Exception:
-                log.exception('HDF file cannot be read')
-                raise RuntimeError("HDF file cannot be read")
+                    # TODO: could lead to problems when multiple workers open same file???
+                    # dima: no problems when reading but will have issues when writing and will require file locking
+                    try:
+                        self.t = tables.open_file(self.filename) # v3 API
+                    except AttributeError:
+                        self.t = tables.openFile(self.filename) # pylint: disable=no-member
+                except Exception:
+                    log.exception('HDF file cannot be read')
+                    raise RuntimeError("HDF file cannot be read")
+                
+            # determine which part of path is group in HDF vs operations
+            end = len(self.path)
+            for i in range(len(self.path)):
+                if '/' + '/'.join([p.strip('"') for p in self.path[0:i+1]]) not in self.t:    # allow quoted path segments to escape slicing, e.g. /bla/"0:100"/bla
+                    end = i
+                    break
+            self.subpath = '/' + '/'.join([p.strip('"') for p in self.path[0:end]])
+            self.path = self.path[end:]
             
-        # determine which part of path is group in HDF vs operations
-        end = len(self.path)
-        for i in range(len(self.path)):
-            if '/' + '/'.join([p.strip('"') for p in self.path[0:i+1]]) not in self.t:    # allow quoted path segments to escape slicing, e.g. /bla/"0:100"/bla
-                end = i
-                break
-        self.subpath = '/' + '/'.join([p.strip('"') for p in self.path[0:end]])
-        self.path = self.path[end:]
-        
-        if self.tables is None:
-            self.tables = self._collect_arrays(self.subpath)
-
-        if len(self.tables) == 0:
-            # subpath not found
-            abort(404, "Object '%s' not found" % self.subpath)
-
-        log.debug('HDF subpath: %s, path: %s', self.subpath, str(self.path))
-
-        try:
-            node = self.t.get_node(self.subpath or '/') # v3 API
-        except AttributeError:
-            node = self.t.getNode(self.subpath or '/') # pylint: disable=no-member
+            if self.tables is None:
+                self.tables = self._collect_arrays(self.subpath)
+    
+            if len(self.tables) == 0:
+                # subpath not found
+                abort(404, "Object '%s' not found" % self.subpath)
+    
+            log.debug('HDF subpath: %s, path: %s', self.subpath, str(self.path))
+    
+            try:
+                node = self.t.get_node(self.subpath or '/') # v3 API
+            except AttributeError:
+                node = self.t.getNode(self.subpath or '/') # pylint: disable=no-member
+            self.data = node
+        else:
+            node = self.data
 
         self.headers, self.types = _get_headers_types(node)
-        self.sizes = list(node.shape) if isinstance(node, tables.array.Array) else None
+        if isinstance(node, tables.array.Array):
+            self.sizes = list(node.shape) 
+        elif isinstance(node, tables.table.Table):
+            self.sizes = [node.shape[0], len(self.headers)]
+        else:
+            self.sizes = []
         log.debug('HDF types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
         return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }
 
-    def read(self, **kw):
-        """ Read table cells and return """
-        super(TableHDF, self).read(**kw)
-#        rng = kw.get('rng')
-#        log.debug('rng %s', str(rng))
 
-        try:
-            node = self.t.get_node(self.subpath or '/') # v3 API
-        except AttributeError:
-            node = self.t.getNode(self.subpath or '/') # pylint: disable=no-member
-
-        if isinstance(node, tables.table.Table) or isinstance(node, tables.array.Array):
-            self.data, self.sizes, self.offset, self.types, self.headers = run_query(node, sels=self.t_slice, cond=self.t_cond, want_stats=True, keep_dims=2)   # TODO: should be able to read from all dims (need to extend API/viewer)
-        else:
-            self.data = np.empty((), dtype=unicode)   # empty array
-            self.sizes = []
-            self.offset = 0
-            self.headers, self.types = _get_headers_types(node, None, None)
-        return self.data
-    
-#         startrows = [0]*node.ndim
-#         endrows   = [1]*node.ndim
-#         #endrows   = [min(50, node.shape[i]) for i in range(node.ndim)]
-#         if rng is not None:
-#             for i in range(min(node.ndim, len(rng))):
-#                 row_range = rng[i]
-#                 if len(row_range)>0:
-#                     startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
-#                     endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else node.shape[i]
-#                     startrows[i] = min(node.shape[i], max(0, startrows[i]))
-#                     endrows[i]   = min(node.shape[i], max(0, endrows[i]))
-#                     if startrows[i] > endrows[i]:
-#                         endrows[i] = startrows[i]
-#         log.debug('startrows %s, endrows %s', startrows, endrows)
-# 
-#         if isinstance(node, tables.table.Table):
-#             self.data = node.read(startrows[0], endrows[0])   # ignore higher dims
-#             self.sizes = [endrows[0]-startrows[0], 1]
-#         elif isinstance(node, tables.array.Array):
-#             if node.ndim >= 1:
-#                 slice_ranges = tuple([slice(startrows[i], endrows[i], None) for i in range(node.ndim)])
-#                 self.sizes = [endrows[i]-startrows[i] for i in range(node.ndim)]
-#             else:
-#                 slice_ranges = None
-#                 self.sizes = []
-#             self.data = node.__getitem__(slice_ranges) if slice_ranges else node.read()
-#         else:
-#             self.data = np.empty((), dtype=unicode)   # empty array
-#             self.sizes = [0 for i in range(node.ndim)]
-#         log.debug('Data: %s', str(self.data[0]) if len(self.data.shape) > 0 and self.data.shape[0] > 0 else str(self.data))
-#         self.headers, self.types = _get_headers_types(node, startrows[1] if node.ndim > 1 else None, endrows[1] if node.ndim > 1 else None)
-#         return self.data
+class TableLikeHDF(TableHDF, TableLike):
+    def __init__(self, uniq, resource, path, **kw):
+        super(TableLikeHDF, self).__init__(uniq, resource, path, **kw)
 
     def write(self, data, **kw):
         """ Write cells into a table"""
@@ -277,3 +252,15 @@ class TableHDF(TableBase):
         """ Delete cells from a table"""
         abort(501, 'HDF delete not implemented')
 
+
+class ArrayLikeHDF(TableHDF, ArrayLike):
+    def __init__(self, uniq, resource, path, **kw):
+        super(ArrayLikeHDF, self).__init__(uniq, resource, path, **kw)
+
+    def write(self, data, **kw):
+        """ Write cells into a table"""
+        abort(501, 'HDF write not implemented')
+
+    def delete(self, **kw):
+        """ Delete cells from a table"""
+        abort(501, 'HDF delete not implemented')

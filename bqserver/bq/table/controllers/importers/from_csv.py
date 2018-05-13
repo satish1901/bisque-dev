@@ -62,7 +62,7 @@ import pandas as pd
 
 
 from bq import blob_service
-from bq.table.controllers.table_base import TableBase, run_query, ArrayOrTable
+from bq.table.controllers.table_base import TableLike
 
 __all__ = [ 'TableCSV' ]
 
@@ -75,8 +75,9 @@ log = logging.getLogger("bq.table.import.csv")
 ################################################################################
 
 def extjs_safe_header(s):
-    if isinstance(s, basestring):
-        return s.replace('.', '_')
+    # need to keep original names; otherwise queries may not work
+    #if isinstance(s, basestring):
+    #    return s.replace('.', '_')
     return s
 
 def _get_headers_types(data, startcol=None, endcol=None, has_header=False):
@@ -97,7 +98,7 @@ def get_cb_csv(filename):
 # Importer: CSV
 #---------------------------------------------------------------------------------------
 
-class TableCSV(TableBase):
+class TableCSV(TableLike):
     '''Formats tables into output format'''
 
     name = 'csv'
@@ -109,80 +110,43 @@ class TableCSV(TableBase):
         """ Returns table information """
         super(TableCSV, self).__init__(uniq, resource, path, **kw)
 
-        # try to load the resource binary
-        b = blob_service.localpath(uniq, resource=resource) or abort (404, 'File not available from blob service')
-        self.filename = b.path
-        self.t = None
-        self.has_header = True
-        self.info()
+        if self.t is None:
+            # try to load the resource binary
+            b = blob_service.localpath(uniq, resource=resource) or abort (404, 'File not available from blob service')
+            self.filename = b.path
+            self.has_header = True
+            self.info()
 
     def close(self):
         """Close table"""
+        log.debug("closing CSV file")
         self.t = None
 
     def info(self, **kw):
         """ Returns table information """
-        # load headers and types if empty
-        with open(self.filename, 'rb') as f:
-            buf = f.read(1024)
-            try:
-                self.has_header = csv.Sniffer().has_header(buf)
-            except csv.Error:
-                self.has_header = True
-        if self.has_header is True:
-            data = pd.read_csv(self.filename, skiprows=0, nrows=10 )
+        if self.data is None:
+            # load headers and types if empty
+            with open(self.filename, 'rb') as f:
+                buf = f.read(1024)
+                try:
+                    self.has_header = csv.Sniffer().has_header(buf)
+                except csv.Error:
+                    self.has_header = True
+            if self.has_header is True:
+                data = pd.read_csv(self.filename, skiprows=0, nrows=10 )
+            else:
+                data = pd.read_csv(self.filename, skiprows=0, nrows=10, header=None )
+            # TODO: rows set to maxint for now
+            self.sizes = (sys.maxint, data.shape[1]) # pylint: disable=no-member
+            self.cb = get_cb_csv(self.filename)  # for lazy fetching
         else:
-            data = pd.read_csv(self.filename, skiprows=0, nrows=10, header=None )
+            data = self.data
+            self.sizes = list(data.shape)
+            
         self.headers, self.types = _get_headers_types(data, has_header=self.has_header)
-
-        # TODO: rows set to maxint for now
-        self.sizes = [sys.maxint, data.shape[1]] # pylint: disable=no-member
         self.t = True
         log.debug('CSV types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
         return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }
-
-    def read(self, **kw):
-        """ Read table cells and return """
-        super(TableCSV, self).read(**kw)
-#        rng = kw.get('rng')
-#        log.debug('rng %s', str(rng))
-
-        top = pd.read_csv(self.filename, nrows=1)   # to get the shape
-        data = ArrayOrTable(arr=None, arr_type=pd.core.frame.DataFrame, shape=(sys.maxint, top.shape[1]), columns=top.columns, cb=get_cb_csv(self.filename)) # pylint: disable=no-member
-        
-        self.data, self.sizes, self.offset, self.types, self.headers = run_query(data, sels=self.t_slice, cond=self.t_cond, want_stats=True)
-        return self.data
-
-#         # TODO: rows set to maxint for now
-#         sizes = [sys.maxint, data.shape[1]] # pylint: disable=no-member
-#         startrows = [0]*2
-#         endrows   = [1]*2
-#         #endrows   = [min(50, sizes[i]) for i in range(2)]
-#         if rng is not None:
-#             for i in range(min(2, len(rng))):
-#                 row_range = rng[i]
-#                 if len(row_range)>0:
-#                     startrows[i] = row_range[0] if len(row_range)>0 and row_range[0] is not None else 0
-#                     endrows[i]   = row_range[1]+1 if len(row_range)>1 and row_range[1] is not None else sizes[i]
-#                     startrows[i] = min(sizes[i], max(0, startrows[i]))
-#                     endrows[i]   = min(sizes[i], max(0, endrows[i]))
-#                     if startrows[i] > endrows[i]:
-#                         endrows[i] = startrows[i]
-#         log.debug('startrows %s, endrows %s', startrows, endrows)
-# 
-#         usecols = range(startrows[1], endrows[1])
-#         if endrows[0] > startrows[0] and endrows[1] > startrows[1]:
-#             if self.has_header is True:
-#                 self.data = pd.read_csv(self.filename, skiprows=startrows[0], nrows=endrows[0]-startrows[0], usecols=usecols )
-#             else:
-#                 self.data = pd.read_csv(self.filename, skiprows=startrows[0], nrows=endrows[0]-startrows[0], usecols=usecols, header=None )
-#             self.sizes = [self.data.shape[0], endrows[1]-startrows[1]]
-#         else:
-#             self.data = pd.DataFrame()   # empty table
-#             self.sizes = [0 for i in range(self.data.ndim)]
-#         log.debug('Data: %s', str(self.data.head()) if self.data.ndim > 0 else str(self.data))
-#         self.headers, self.types = _get_headers_types(data, startrows[1], endrows[1], has_header=self.has_header)
-#         return self.data
 
     def write(self, data, **kw):
         """ Write cells into a table"""

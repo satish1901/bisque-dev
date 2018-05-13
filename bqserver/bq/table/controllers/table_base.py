@@ -124,489 +124,6 @@ def _check_aggfct(agg):
     else:
         raise ParseError("Unknown aggregation function: '%s'" % agg)
 
-#---------------------------------------------------------------------------------------
-# Array/Table wrapper
-#---------------------------------------------------------------------------------------
-
-class ArrayOrTable(object):
-    def __init__(self, arr, arr_type=None, shape=None, columns=None, cb=None):
-        # arr can be DataFrame, pytables array, or pytables table
-        # OR provide callback fct to obtain one of those types based on slices provided
-        assert arr is None or isinstance(arr, pd.core.frame.DataFrame) or isinstance(arr, tables.table.Table) or isinstance(arr, tables.array.Array)
-        if arr is not None:
-            self.arr = arr
-            self.arr_type = type(arr)
-            self.shape = arr.shape
-            self.columns = arr.columns.tolist() if isinstance(arr, pd.core.frame.DataFrame) else (arr.colnames if isinstance(arr, tables.table.Table) else None)
-            self.cb = None
-        else:
-            self.arr = None
-            self.arr_type = arr_type
-            self.shape = shape
-            self.columns = columns
-            self.cb = cb
-        if self.arr_type == tables.array.ImageArray:
-            # treat image array like a regular array (for purposes of queries)
-            self.arr_type = tables.array.Array
-        assert self.arr_type in [pd.core.frame.DataFrame, tables.table.Table, tables.array.Array]
-        
-    def is_dataframe(self):
-        return self.arr_type == pd.core.frame.DataFrame
-    
-    def is_table(self):
-        return self.arr_type == tables.table.Table
-    
-    def is_array(self):
-        return self.arr_type == tables.array.Array
-    
-    def get_arr(self):
-        return self.arr
-    
-    def get_shape(self):
-        return self.shape
-    
-    def get_slices(self, sels, cond):
-        slices = None
-        if sels is not None:
-            for sel in sels:
-                add_slices = self._selectors_to_slices(sel.selectors)
-                slices = add_slices if slices is None else self._or_slices(slices, add_slices)
-        add_slices = self._cond_to_slices(cond)
-        slices = add_slices if slices is None else self._and_slices(slices, add_slices)
-        return slices
-    
-    def get_slice_iter(self, slices, cond, want_cell_coord=False):
-        offsets = [0]*len(slices)
-        
-        if self.arr is None:
-            # need to bring in data first
-            self.arr = self.cb(slices)
-            self.arr_type = type(self.arr)
-            assert self.arr_type in [pd.core.frame.DataFrame, tables.table.Table, tables.array.Array]
-            # adjust slices to start from 0 since it is already sliced and remember offsets
-            for d in xrange(len(slices)):
-                offsets[d] = slices[d].start
-            slices = tuple([slice(0, slices[d].stop-slices[d].start) for d in xrange(len(slices))])    
-        
-        ###### translator for And/Or/Condition:
-        #    => ( (tuple(coord), node[tuple(coord)]) for coord in np.argwhere((node[Ellipsis] > 0.0) & mask_of_subset & (node[Ellipsis] > 0.0) & mask2_of_subset) )  FOR ARRAY                   OR
-        #    => ( ((coord[0],), node.iloc[coord[0]]) for coord in np.argwhere((node[:]['H'] > 0) & (node[:]['L'] > 0)) )                                             FOR TABLE (IF DataFrame)    OR
-        #    => ( ((row.nrow,), row) for row in node.where('(H > 0) & (L > 0)') )                                                                                    FOR TABLE (IF pytables)
-        filter_exp = None
-        if cond is not None:
-            if self.is_dataframe():
-                filter_exp = self._gen_dataframe_filter(self.arr.iloc[slices[0]], cond)
-            elif self.is_table():
-                filter_exp = self._gen_table_filter(self.arr, cond)
-            elif self.is_array():
-                filter_exp = self._gen_array_filter(self.arr[slices], slices, cond)
-        
-        if filter_exp is None:
-            if self.is_dataframe():
-                if want_cell_coord:
-                    row_iter = ( ((row[0]+offsets[0],), row[1]) for row in self.arr.iloc[slices].iterrows() )
-                else:
-                    row_iter = ( row[1] for row in self.arr.iloc[slices].iterrows() )
-            elif self.is_table():
-                if want_cell_coord:
-                    row_iter = ( ((row.nrow+offsets[0],), row) for row in self.arr.iterrows(slices[0].start, slices[0].stop) )
-                else:
-                    row_iter = self.arr.iterrows(slices[0].start, slices[0].stop)
-            elif self.is_array():
-                if want_cell_coord:
-                    # this is very slow for large arrays; avoid!
-                    ranges = (xrange(slices[d].start, slices[d].stop) for d in xrange(len(self.arr.shape)))
-                    row_iter = ( (tuple([coord[d]+offsets[d] for d in xrange(len(coord))]), self.arr[coord]) for coord in itertools.product(*ranges) )
-                else:
-                    row_iter = ( self.arr[slices] for x in [1] )
-        else:
-            # have condition
-            if self.is_dataframe():
-                if want_cell_coord:
-                    row_iter = ( ((coord[0]+slices[0].start+offsets[0],), self.arr.iloc[(coord[0]+slices[0].start, slices[1])]) for coord in np.argwhere(filter_exp) )
-                else:
-                    row_iter = ( self.arr.iloc[coord[0]+slices[0].start] for coord in np.argwhere(filter_exp) )
-            elif self.is_table():
-                if want_cell_coord:
-                    row_iter = ( ((row.nrow+offsets[0],), row) for row in self.arr.where(filter_exp) if row.nrow >= slices[0].start and row.nrow < slices[0].stop )
-                else:
-                    row_iter = ( row for row in self.arr.where(filter_exp) if row.nrow >= slices[0].start and row.nrow < slices[0].stop )
-            elif self.is_array():
-                if want_cell_coord:
-                    # this is very slow for large arrays; avoid!
-                    row_iter = ( (tuple([coord[d]+slices[d].start+offsets[d] for d in xrange(len(slices))]), self.arr[slices][tuple(coord)]) for coord in np.argwhere(filter_exp) )
-                else:
-                    row_iter = ( np.where(filter_exp, self.arr[slices], self._gen_nan_array(slices)) for x in [1] )
-                    
-        return row_iter
-    
-    def get_sels_iter(self, row_iter, sels, want_cell_coord=False):
-        ###### translator for CellSelection:
-        #    => np.mean(r[slices])   where r from FILTER                        IF pytables array OR
-        #    => np.mean([r['K'] for r in <rowlist from FILTER or ALL>])         IF pytables table OR
-        #    => np.mean([r.loc['K'] for r in <rowlist from FILTER or ALL>])     IF pandas Series
-        if sels is None:
-            # no selection, include all columns
-            if self.is_dataframe():
-                sel_fct = lambda row: OrderedDict( (colname,row[colname]) for colname in row.keys() )
-            elif self.is_table():
-                sel_fct = lambda row: OrderedDict( (colname,row[colname]) for colname in self.arr.colnames )
-            elif self.is_array():
-                sel_fct = lambda row: row
-            if want_cell_coord:
-                row_iter = ( OrderedDict(sel_fct(row), index=coord) for (coord, row) in row_iter )
-            else:
-                row_iter = ( sel_fct(row) for row in row_iter )
-                
-        elif sels[0].agg is None:
-            # no aggregation, just return slices
-            def sel_fct_df(row):
-                res = OrderedDict()
-                selix = 0
-                for sel in sels:
-                    cols = self._selectors_to_columns(sel.selectors)
-                    for col_ix in xrange(len(cols)):
-                        alias = sel.alias or cols[col_ix]
-                        if alias in res:
-                            alias = "%s_%s" % (alias, selix)
-                        res[alias] = row.loc[cols[col_ix]]
-                    selix += 1
-                return res
-                
-            def sel_fct_tb(row):
-                res = OrderedDict()
-                selix = 0
-                for sel in sels:
-                    cols = self._selectors_to_columns(sel.selectors)
-                    for col_ix in xrange(len(cols)):
-                        alias = sel.alias or cols[col_ix]
-                        if alias in res:
-                            alias = "%s_%s" % (alias, selix)
-                        res[alias] = row[cols[col_ix]]
-                    selix += 1
-                return res
-                
-            if self.is_dataframe():
-                sel_fct = sel_fct_df
-            elif self.is_table():
-                sel_fct = sel_fct_tb
-            elif self.is_array():
-                # TODO: how about ALIAS??
-                sel_fct = lambda row: row
-            if want_cell_coord:
-                row_iter = ( OrderedDict(sel_fct(row), index=coord) for (coord, row) in row_iter )
-            else:
-                row_iter = ( sel_fct(row) for row in row_iter )
-                
-        else:
-            # with aggregation => apply agg fct
-            # TODO: find a way to not keep all in memory (push down agg into kernel)
-            row_iters_vals_map = OrderedDict()
-            row_iters_agg_map = OrderedDict()
-            for row in row_iter:
-                res = OrderedDict()
-                res_agg = OrderedDict()
-                selix = 0
-                for sel in sels:
-                    if self.is_dataframe():
-                        cols = self._selectors_to_columns(sel.selectors)
-                        for col_ix in xrange(len(cols)):
-                            alias = sel.alias or cols[col_ix]
-                            if alias in res:
-                                alias = "%s_%s" % (alias, selix)
-                            res[alias] = row.loc[cols[col_ix]]
-                            res_agg[alias] = sel.agg
-                    elif self.is_table():
-                        cols = self._selectors_to_columns(sel.selectors)
-                        for col_ix in xrange(len(cols)):
-                            alias = sel.alias or cols[col_ix]
-                            if alias in res:
-                                alias = "%s_%s" % (alias, selix)
-                            res[alias] = row[cols[col_ix]]
-                            res_agg[alias] = sel.agg
-                    elif self.is_array():
-                        alias = sel.alias or "agg%s"%selix
-                        res[alias] = row
-                        res_agg[alias] = sel.agg
-                    selix += 1
-                for alias in res:
-                    row_iters_vals_map.setdefault(alias, []).append(res[alias])
-                    row_iters_agg_map[alias] = res_agg[alias]
-                        
-            res = OrderedDict( (alias,_get_agg_fct(row_iters_agg_map[alias])(row_iters_vals_map[alias])) for alias in row_iters_vals_map.keys() )
-            row_iter = ( res for x in [1] )  # wrap in generator
-            
-        return row_iter
-
-    def _cond_to_slices(self, cond):
-        if isinstance(cond, OrConditionTuple) or isinstance(cond, AndConditionTuple):
-            # OR to keep all referenced cells
-            return self._or_slices(self._cond_to_slices(cond.left), self._cond_to_slices(cond.right))
-        elif isinstance(cond, ConditionTuple):
-            return self._cond_to_slices(cond.left)
-        elif isinstance(cond, CellSelectionTuple):
-            return self._selectors_to_slices(cond.selectors)
-        return tuple([ slice(0,self.shape[dim]) for dim in range(len(self.shape)) ])
-
-    def _or_slices(self, slices1, slices2):
-        # essentially compute "bounding" slice around slices
-        res = [None] * len(slices1)
-        for dim in range(len(slices1)):
-            res[dim] = slice(min(slices1[dim].start, slices2[dim].start), max(slices1[dim].stop, slices2[dim].stop))
-        return tuple(res)
-        
-    def _and_slices(self, slices1, slices2):
-        # compute intersection of slices BUT keep all 'column'/'fields' if Dataframe
-        # (this is an artifact of treating fields like dimensions, which they really aren't) 
-        res = [None] * len(slices1)
-        for dim in range(len(slices1)):
-            if self.is_dataframe() and dim == 1:
-                res[dim] = slice(min(slices1[dim].start, slices2[dim].start), max(slices1[dim].stop, slices2[dim].stop))
-            else:
-                res[dim] = slice(max(slices1[dim].start, slices2[dim].start), min(slices1[dim].stop, slices2[dim].stop))
-        return tuple(res)
-
-    def _selectors_to_columns(self, sels):
-        res = []
-        if sels is not None:
-            for sel in sels:
-                dim = self._get_dim(sel.dimname)
-                if dim == 1:
-                    if len(sel.dimvalues) == 0 or all([colname is None for colname in sel.dimvalues]):
-                        # select all columns
-                        for ix in xrange(len(self.columns)):
-                            if self.columns[ix] not in res:
-                                res.append(self.columns[ix])
-                    elif len(sel.dimvalues) == 1:
-                        # single column
-                        colname = sel.dimvalues[0]
-                        if isinstance(colname, int):
-                            colname = self.columns[colname]
-                        if colname not in res:
-                            res.append(colname)
-                    else:
-                        # start/stop column
-                        startcolix = self._convert_to_colnum(sel.dimvalues[0]) or 0
-                        stopcolix = self._convert_to_colnum(sel.dimvalues[1]) or len(self.columns)
-                        for ix in xrange(startcolix, stopcolix):
-                            if self.columns[ix] not in res:
-                                res.append(self.columns[ix])
-        return res
-
-    def _selectors_to_slices(self, sels):
-        res = [ slice(0,self.shape[dim]) for dim in range(len(self.shape)) ]  # start from max ranges
-        if sels is not None:
-            for sel in sels:
-                dim = self._get_dim(sel.dimname)
-                if dim >= 0 and dim < len(self.shape):
-                    if self.is_dataframe() and dim == 1:
-                        # convert the column names to column ids if needed
-                        dimvals = [self._convert_to_colnum(dimval) for dimval in sel.dimvalues]
-                    elif self.is_table() and dim == 1:
-                        # cannot slice table by column (do it later)
-                        dimvals = None
-                    else:
-                        dimvals = sel.dimvalues
-                    if dimvals is not None:
-                        if len(dimvals) > 1:
-                            res[dim] = slice(dimvals[0] or res[dim].start, dimvals[1] or res[dim].stop)
-                        elif len(dimvals) == 1 and dimvals[0] is not None:
-                            res[dim] = slice(dimvals[0], dimvals[0]+1)
-        return tuple(res)
-    
-    def _get_dim(self, dimname):
-        if self.is_dataframe() or self.is_table():
-            if dimname in ['row', '__dim1__']:
-                return 0
-            elif dimname in ['field', '__dim2__']:
-                return 1
-            else:
-                return None
-        elif self.is_array():
-            if dimname in ['row', '__dim1__']:
-                return 0
-            else:
-                parser = re.compile('__dim(?P<num>[0-9]+)__')
-                toks = re.search(parser, dimname)
-                if toks is not None:
-                    return int(toks.groupdict()['num'])-1
-            return None
-        else:
-            return None
-        
-    def _convert_to_colnum(self, colname):
-        if colname is None or isinstance(colname, int):
-            return colname
-        for ix in xrange(len(self.columns)):
-            if self.columns[ix] == colname:
-                return ix
-        raise RuntimeError("column %s not found" % colname)
-    
-    def _gen_dataframe_filter(self, arr, cond):
-        if isinstance(cond, OrConditionTuple):
-            left_cond = self._gen_dataframe_filter(arr, cond.left)
-            right_cond = self._gen_dataframe_filter(arr, cond.right)
-            return (left_cond) | (right_cond) if left_cond is not None and right_cond is not None else (left_cond or right_cond)
-        elif isinstance(cond, AndConditionTuple):
-            left_cond = self._gen_dataframe_filter(arr, cond.left)
-            right_cond = self._gen_dataframe_filter(arr, cond.right)
-            return (left_cond) & (right_cond) if left_cond is not None and right_cond is not None else (left_cond or right_cond)
-        elif isinstance(cond, ConditionTuple):
-            left_cond = self._gen_dataframe_filter(arr, cond.left)
-            if left_cond is None:
-                return None
-            # if multiple left_cond, combine via 'OR'
-            return reduce(lambda x,y: (x) | (y),
-                   [{
-                    '=': lambda x,y: (x) == (y),
-                    '!=': lambda x,y: (x) != (y),
-                    '<': lambda x,y: (x) < (y),
-                    '<=': lambda x,y: (x) <= (y),
-                    '>': lambda x,y: (x) > (y),
-                    '>=': lambda x,y: (x) >= (y)
-                    }[cond.comp](single_left_cond, float(cond.right))
-                    for single_left_cond in left_cond])
-        elif isinstance(cond, CellSelectionTuple):
-            cols = self._selectors_to_columns(cond.selectors)
-            return [arr[col] for col in cols] if len(cols)>=1 else None
-    
-    def _gen_table_filter(self, arr, cond):
-        if isinstance(cond, OrConditionTuple):
-            left_str = self._gen_table_filter(arr, cond.left)
-            right_str = self._gen_table_filter(arr, cond.right)
-            return "(%s) | (%s)" % (left_str, right_str) if left_str is not None and right_str is not None else (left_str or right_str)
-        elif isinstance(cond, AndConditionTuple):
-            left_str = self._gen_table_filter(arr, cond.left)
-            right_str = self._gen_table_filter(arr, cond.right)
-            return "(%s) & (%s)" % (left_str, right_str) if left_str is not None and right_str is not None else (left_str or right_str)
-        elif isinstance(cond, ConditionTuple):
-            left_str = self._gen_table_filter(arr, cond.left)
-            if left_str is None:
-                return None
-            # if multiple left_cond, combine via 'OR'
-            return reduce(lambda x,y: "(%s) | (%s)" % (x,y),
-                   ["%s %s %s" % (single_left_str, cond.comp if cond.comp != '=' else '==', float(cond.right))
-                   for single_left_str in left_str])
-        elif isinstance(cond, CellSelectionTuple):
-            cols = self._selectors_to_columns(cond.selectors)
-            return cols if len(cols)>=1 else None
-    
-    def _gen_array_filter(self, arr, slices, cond):
-        if isinstance(cond, OrConditionTuple):
-            return (self._gen_array_filter(arr, slices, cond.left)) | (self._gen_array_filter(arr, slices, cond.right)) 
-        elif isinstance(cond, AndConditionTuple):
-            return (self._gen_array_filter(arr, slices, cond.left)) & (self._gen_array_filter(arr, slices, cond.right))
-        elif isinstance(cond, ConditionTuple):
-            # get the selection slices in the CellSelectionTuple and construct boolean array of size of incoming slices
-            # with cells in selection slices set to True, all others set to False
-            sel_slices = self._selectors_to_slices(cond.left.selectors)
-            mask = self._gen_mask(slices, sel_slices)
-            return ({
-                     '=': lambda x,y: (x) == (y),
-                     '!=': lambda x,y: (x) != (y),
-                     '<': lambda x,y: (x) < (y),
-                     '<=': lambda x,y: (x) <= (y),
-                     '>': lambda x,y: (x) > (y),
-                     '>=': lambda x,y: (x) >= (y)
-                    }[cond.comp](arr[Ellipsis], float(cond.right))) & mask
-
-    def _gen_mask(self, outer_slices, sel_slices):
-        mask = np.zeros([s.stop-s.start for s in outer_slices], dtype=bool)
-        mask_slices = self._and_slices(outer_slices, sel_slices)
-        mask[[slice(mask_slices[dim].start-outer_slices[dim].start, mask_slices[dim].stop-outer_slices[dim].start) for dim in xrange(len(outer_slices))]] = True
-        return mask
-    
-    def _gen_nan_array(self, slices):
-        shape = tuple([s.stop-s.start for s in slices])
-        return np.full(shape, np.nan)
-
-#---------------------------------------------------------------------------------------
-# Actual query processor operating on abstract tuple language
-#---------------------------------------------------------------------------------------
-
-def run_query( arr, sels=None, cond=None, want_cell_coord=False, want_stats=False, keep_dims=None ):
-    """
-    Input:     ArrayOrTable object to query
-               query to run (selection and/or filter condition),
-               want coord back (or only values, if False)
-               want all stats back
-               dims to keep (higher dims use only slice "0" values)
-    Output:    DataFrame or numpy array
-               dim size list
-               offset (row)
-               coltype list
-               colname list
-    """
-    if not isinstance(arr, ArrayOrTable):
-        arr = ArrayOrTable(arr)
-    
-    if sels is not None and not isinstance(sels, list):
-        sels = [sels]
-    
-    assert sels is None or all([sel.agg is not None for sel in sels]) or all([sel.agg is None for sel in sels])  # all aggs or all non aggs, cannot mix 
-    
-    # no coords needed if agg
-    if sels is not None and sels[0].agg is not None:
-        want_cell_coord = False
-
-    # limit dims
-    if sels is not None and keep_dims is not None:
-        new_sels = []
-        for sel in sels:
-            new_selectors = copy.deepcopy(sel.selectors)
-            for dim in xrange(keep_dims, len(arr.get_shape())+1):
-                if "__dim%s__"%dim not in [ single_sel.dimname for single_sel in sel.selectors ]:
-                    new_selectors.append( SelectorTuple( dimname="__dim%s__"%dim, dimvalues=[0] ) )
-            new_sels.append(CellSelectionTuple(selectors=new_selectors, agg=sel.agg, alias=sel.alias))
-        sels = new_sels
-
-    # push down slicing for both sels and cond
-    log.debug("run_query %s sels=%s cond=%s" % (arr, sels, cond))
-    slices = arr.get_slices(sels, cond)
-    log.debug("slices=%s" % str(slices))
-    if slices is None:
-        # nothing selected
-        data = None
-    else:
-        # get iterator based on slices & cond
-        row_iter = arr.get_slice_iter(slices, cond, want_cell_coord)
-    
-        # get iterator based on sels
-        row_iter = arr.get_sels_iter(row_iter, sels, want_cell_coord)
-    
-        # format and return result (convert into dataframe or numpy array)
-        try:
-            peek = row_iter.next()
-            if isinstance(peek, np.ndarray):
-                data = peek
-            else:
-                data = pd.DataFrame(data=(x for x in itertools.chain([peek], row_iter)))
-        except StopIteration:
-            # empty result
-            data = None
-    
-    # set empty to correct type
-    if data is None:
-        if arr.is_array():
-            data = np.empty((), dtype=arr.get_arr().dtype)   # empty array
-        else:
-            data = pd.DataFrame()                            # empty table
-    
-    if want_stats:
-        # compute all other stats
-        dim_sizes = [d for d in data.shape]
-        offset = slices[0].start if slices is not None and len(slices)>0 and (sels is None or sels[0].agg is None) else 0
-        if isinstance(data, np.ndarray):
-            colnames = [str(i) for i in xrange(slices[1].start, slices[1].stop)] if len(slices)>1 else ['0']
-            coltypes = [arr.get_arr().dtype.name] * data.shape[1] if len(data.shape) > 1 else [arr.get_arr().dtype.name]
-        else:
-            colnames = data.columns.tolist()
-            coltypes = [data.dtypes[colname].name for colname in colnames]
-        
-        return data, dim_sizes, offset, coltypes, colnames
-    else:
-        return data    
-    
 
 #---------------------------------------------------------------------------------------
 # Query string parser; generates abstract tuple language query
@@ -622,7 +139,7 @@ class TableQueryLexer:
     floating_constant = '((('+fractional_constant+')'+exponent_part+'?)|([0-9]+'+exponent_part+'))'
 
     keywords = ( 'AND', 'OR', 'AS' )
-    tokens = keywords + ('ID', 'LP', 'RP', 'LB', 'RB', 'COLON', 'COMMA', 'STRVAL', 'INTVAL', 'FLOATVAL',
+    tokens = keywords + ('ID', 'LP', 'RP', 'LB', 'RB', 'LC', 'RC', 'COLON', 'COMMA', 'STRVAL', 'INTVAL', 'FLOATVAL',
                          'PLUS', 'MINUS', 
                          'LT', 'LE', 'GT', 'GE', 'EQ', 'NE')
 
@@ -633,6 +150,8 @@ class TableQueryLexer:
     t_RP                = r'\)'
     t_LB                = r'\['
     t_RB                = r'\]'
+    t_LC                = r'\{'
+    t_RC                = r'\}'
     t_LE                = r'<='
     t_GE                = r'>='
     t_LT                = r'<'
@@ -703,16 +222,16 @@ class TableQueryParser:
         """Create new parser and set up parse tables."""
         self.lexer = TableQueryLexer()
         self.tokens = self.lexer.tokens
-        self.cond_parser = yacc.yacc(module=self,write_tables=False,debug=False,optimize=False, start='filter_cond')
-        self.slice_parser = yacc.yacc(module=self,write_tables=False,debug=False,optimize=False, start='slice_cond')
+        self.filter_parser = yacc.yacc(module=self,write_tables=False,debug=False,optimize=False, start='query')
+        self.agg_parser = yacc.yacc(module=self,write_tables=False,debug=False,optimize=False, start='agg_list')
     
-    def parse_cond(self, query, colnames):
+    def parse_filter(self, query, colnames):
         self.colnames = colnames
-        return self.cond_parser.parse(query,lexer=self.lexer.lexer,debug=False)
+        return self.filter_parser.parse(query,lexer=self.lexer.lexer,debug=False)
     
-    def parse_slice(self, query, colnames):
+    def parse_agg(self, query, colnames):
         self.colnames = colnames
-        return self.slice_parser.parse(query,lexer=self.lexer.lexer,debug=False)
+        return self.agg_parser.parse(query,lexer=self.lexer.lexer,debug=False)
     
     def p_error(self,p):
         if p:
@@ -720,11 +239,22 @@ class TableQueryParser:
         else:
             raise ParseError("Unexpected end of query")
 
+    def p_query(self, p):
+        '''query : slice_cond LC filter_cond RC
+                 | slice_cond
+                 | LC filter_cond RC
+        '''
+        if len(p) == 5:
+            p[0] = (p[1], p[3])
+        elif len(p) == 2:
+            p[0] = (p[1], None)
+        else:
+            p[0] = (None, p[2])
+
     # TODO: retire the first rule (single cell_sel without '[',']') once UI is updated
     def p_slice_cond(self,p):
         '''slice_cond : cell_sel
                       | slice_list
-                      | agg_list
         '''
         if len(p[1]) == 0:
             p[0] = []
@@ -808,9 +338,13 @@ class TableQueryParser:
         '''
         if len(p) == 4:
             p[3] = SelectorTuple(dimname=p[3].dimname or '__dim%s__' % (len(p[1])+1), dimvalues=p[3].dimvalues)
+            if p[3].dimname not in ['__dim2__', 'field'] and any(isinstance(v, basestring) for v in p[3].dimvalues):
+                raise ParseError('values %s not allowed for dimension \'%s\'' % (p[3].dimvalues, p[3].dimname))
             p[0] = p[1] + [ p[3] ]
         else:
             p[1] = SelectorTuple(dimname=p[1].dimname or '__dim1__', dimvalues=p[1].dimvalues)
+            if p[1].dimname not in ['__dim2__', 'field'] and any(isinstance(v, basestring) for v in p[1].dimvalues):
+                raise ParseError('values %s not allowed for dimension \'%s\'' % (p[1].dimvalues, p[1].dimname))
             p[0] = [ p[1] ]
             
     def p_single_dim_sel(self,p):
@@ -872,10 +406,7 @@ class TableBase(object):
     # general functionality defined in the base class
 
     def __str__(self):
-        r = self.resource #etree.tostring(self.resource) if self.resource is not None else 'None'
-        m = self.data.shape if self.data is not None else 'None'
-        t = type(self.t)
-        return 'TableBase(m: %s, t: %s res: %s, path: %s)'%(m, t, r, self.path)
+        return '%s(data: %s, sizes: %s, headers: %s, ops: %s)'%(type(self), type(self.data), self.sizes, self.headers, self.t_ops)
 
     def isloaded(self):
         """ Returns table information """
@@ -886,26 +417,43 @@ class TableBase(object):
 
     def __init__(self, uniq, resource, path, **kw):
         """ Returns table information """
-        self.path = path
-        self.resource = resource
-        self.uniq = uniq
-        self.url = kw['url'] if 'url' in kw else None
-
-        self.subpath = None # list containing subpath to elements within the resource
-        self.tables = None # {'path':.., 'type':..} for all available tables in the resource
-        self.t = None # represents a pointer to the actual element being operated on based on the driver
-        self.t_cond = None   # filter expression to be performed on t 
-        self.t_slice = None  # slice expression to be performed on t
-        self.data = None # Numpy array or pandas dataframe
-        self.offset = 0
-        self.headers = None
-        self.types = None
-        self.sizes = None
+        table = kw.get('table')
+        if table is not None:  # "copy constructor"
+            self.path = path or table.path
+            self.resource = resource or table.resource
+            self.uniq = uniq or table.uniq
+            self.url = kw.get('url', table.url)
+            self.subpath = kw.get('subpath', table.subpath)
+            self.tables = kw.get('tables', table.tables)
+            self.t = kw.get('t', table.t)
+            self.t_ops = kw.get('t_ops', table.t_ops)
+            self.data = kw.get('data', table.data)
+            self.offset = kw.get('offset', table.offset)
+            self.headers = kw.get('headers', table.headers)
+            self.types = kw.get('types', table.types)
+            self.sizes = kw.get('sizes', table.sizes)
+            self.cb = kw.get('cb', table.cb)
+        else:
+            self.path = path
+            self.resource = resource
+            self.uniq = uniq
+            self.url = kw.get('url')
+            self.subpath = kw.get('subpath') # list containing subpath to elements within the resource
+            self.tables = kw.get('tables') # {'path':.., 'type':..} for all available tables in the resource
+            self.t = kw.get('t') # represents a pointer to the actual element being operated on based on the driver
+            self.t_ops = kw.get('t_ops', [])    # operations to be performed on t
+            self.data = kw.get('data') # Numpy array or pandas dataframe
+            self.offset = kw.get('offset', 0)
+            self.headers = kw.get('headers')
+            self.types = kw.get('types')
+            self.sizes = kw.get('sizes')
+            self.cb = kw.get('cb')   # callback to retrieve records on demand (if needed)
 
     def close(self):
-        """Close table"""
-        abort(501, 'Import driver must implement Close method')
+        """Close table; OVERWRITE IN SUBCLASS"""
+        pass
 
+    # ------------- TODO: move to subclasses -------------
     def as_array(self):
         if isinstance(self.data, pd.core.frame.DataFrame):
             return self.data.as_matrix()   # convert to numpy array
@@ -920,67 +468,152 @@ class TableBase(object):
                 return pd.DataFrame(self.data)
             else:
                 raise RuntimeError("cannot convert multi-dim array into dataframe")
-
+    # ------------- TODO: move to subclasses -------------
+    
     def info(self, **kw):
         """ Returns table information """
-        # load headers and types if empty
-        return { 'headers': self.headers, 'types': self.types }
+        raise NotImplementedError()
 
-    def filter(self, cond):
-        """ Filter table with some condition
-            Condition syntax:
-              FILTER_COND ::=  or_cond  |  "(" or_cond ")"
-              or_cond     ::=  and_cond  ( "or" and_cond )*
-              and_cond    ::=  comp_cond  ( "and" comp_cond )*
-              comp_cond   ::=  "[" cell_sel "]"  ("="|"!="|"<"|">"|"<="|">=")  <value>
-              cell_sel    ::=  ( [ <dimname> "=" ] [ <colname> ] [ ":"|";" ] [ <colname> ]  ","  )+
-            Example:
-              .../filter:[field="temperature"] >= 0 and [field="temperature"] <= 100/... 
-              .../filter:[x=0:10, y=0:10, c="infrared", field="r"] > 0.5/...    (x/y/z/c/t will be set for cells with "r > 0.5")  
-              .../filter:[0:10,0:10,50,:,"abc"] > 0.5/...                       (no field=> cell has to be numeric, not compound)
+    def run_query( self, query_op=None, sels=None, cond=None, want_cell_coord=False, keep_dims=None ):
         """
-        try:
-            filtercond = TableQueryParser().parse_cond(cond, self.headers)
-        except ParseError as e:
-            abort(400, str(e))
-        if self.t_slice is not None:
-            abort(501, 'Filter condition cannot follow slice operation currently')
-        if self.t_cond is None:
-            self.t_cond = filtercond
-        else:
-            self.t_cond = AndConditionTuple(left=self.t_cond, right=filtercond)
-        return self
-
-    def slice(self, sel):
-        """ Select subset of columns/slices plus aggregation
-            Condition syntax:
-               PROJ_COND  ::=  cell_sel | agg_cond | agg_cond ( "," agg_cond )+ 
-               agg_cond   ::=  agg_fct "(" cell_sel ")" ( "AS" <aliasname> )?
-               agg_fct    ::=  "SUM" | "AVG" | "MIN" | "MAX" | ...
-            Example:
-               .../slice:AVG(row=0:10,field="depth") AS avgdepth, MAX(row=0:10,field="depth") AS maxdepth/...
-               .../slice:SUM(0:10,0:10,0:10) AS total/...
-               .../slice:0:100,"Ocean_flag"/...
+        Actual query processor operating on abstract tuple language
+        
+        Input:     query to run (selection and/or filter condition),
+                   want coord back (or only values, if False)
+                   dims to keep (higher dims use only slice "0" values)
+        Output:    TableBase subclass (may be different type from self)
         """
-        try:
-            slicecond = TableQueryParser().parse_slice(sel, self.headers)
-        except ParseError as e:
-            abort(400, str(e))
-        if self.t_slice is None:
-            self.t_slice = slicecond
+        if query_op is not None:
+            if query_op.keys()[0] == 'filter':
+                sels, cond = query_op['filter']
+            elif query_op.keys()[0] == 'agg':
+                sels = query_op['agg']
+        
+        if sels is None and cond is None:
+            # no query => return as is
+            return self
+        
+        if sels is not None and not isinstance(sels, list):
+            sels = [sels]
+        
+        assert sels is None or all([sel.agg is not None for sel in sels]) or all([sel.agg is None for sel in sels])  # all aggs or all non aggs, cannot mix 
+        
+        # no coords needed if agg
+        if sels is not None and sels[0].agg is not None:
+            want_cell_coord = False
+    
+        # limit dims
+        if sels is not None and keep_dims is not None:
+            new_sels = []
+            for sel in sels:
+                new_selectors = copy.deepcopy(sel.selectors)
+                for dim in xrange(keep_dims, len(self.get_shape())+1):
+                    if "__dim%s__"%dim not in [ single_sel.dimname for single_sel in sel.selectors ]:
+                        new_selectors.append( SelectorTuple( dimname="__dim%s__"%dim, dimvalues=[0] ) )
+                new_sels.append(CellSelectionTuple(selectors=new_selectors, agg=sel.agg, alias=sel.alias))
+            sels = new_sels
+    
+        # push down slicing for both sels and cond
+        log.debug("run_query %s sels=%s cond=%s" % (self, sels, cond))
+        slices = self.get_slices(sels, cond)
+        log.debug("slices=%s" % str(slices))
+        if slices is None:
+            # nothing selected
+            data = None
+            row_types = [self.get_arr().dtype]
         else:
-            abort(501, 'Only one slice operation allowed currently')
-        return self
+            # get iterator based on slices & cond
+            row_iter = self.get_slice_iter(slices, cond, want_cell_coord)
+        
+            # get iterator based on sels
+            row_types, row_iter = self.get_sels_iter(row_iter, sels, want_cell_coord)
+        
+            # format and return result (convert into dataframe or numpy array)
+            try:
+                peek = row_iter.next()
+                if isinstance(peek, np.ndarray):
+                    data = peek
+                else:
+                    # set proper types
+                    new_types = {}
+                    for ix in xrange(len(row_types)):
+                        new_types[peek.keys()[ix]] = row_types[ix]
+                    data = pd.DataFrame(data=(x for x in itertools.chain([peek], row_iter)))
+                    data = data.astype(dtype=new_types)
+            except StopIteration:
+                # empty result
+                data = None
+        
+        # set empty to correct type
+        if data is None:
+            if isinstance(self, ArrayLike):
+                data = np.empty((), dtype=row_types[0])          # empty array
+            else:
+                data = pd.DataFrame()                            # empty table
+        
+        # compute all other stats
+        dim_sizes = [d for d in data.shape]
+        offset = slices[0].start if slices is not None and len(slices)>0 and (sels is None or sels[0].agg is None) else 0
+        if isinstance(data, np.ndarray):
+            all_colnames = self.get_columns()
+            colnames = [all_colnames[i] if all_colnames is not None else str(i) for i in xrange(slices[1].start, slices[1].stop)] if len(slices)>1 else ['0']
+            #colnames = [str(i) for i in xrange(slices[1].start, slices[1].stop)] if len(slices)>1 else ['0']
+            coltypes = [row_types[0]] * data.shape[1] if len(data.shape) > 1 else [row_types[0]]
+        else:
+            colnames = data.columns.tolist()
+            coltypes = row_types
+        
+        # return the proper class
+        if isinstance(data, np.ndarray) or isinstance(data, tables.array.Array):
+            return ArrayLike(None, None, None, table=self, data=data, sizes=dim_sizes, offset=offset, types=coltypes, headers=colnames)
+        else:
+            return TableLike(None, None, None, table=self, data=data, sizes=dim_sizes, offset=offset, types=coltypes, headers=colnames)
 
     def read(self, **kw):
         """ Read table cells and return """
-#         if 'rng' in kw and kw.get('rng') is not None:
-#             row_range = kw.get('rng')[0]
-#             self.offset = row_range[0] or 0 if len(row_range)>0 else 0
-#         else:
-#             self.offset = 0
-        return self.data
+        if self.data is None:
+            self.info(**kw)
 
+        assert len(self.t_ops) <= 1   # TODO: allow sequence of ops?
+        query_op = self.t_ops.pop(0) if len(self.t_ops) > 0 else None
+        return self.run_query(query_op=query_op)
+
+    def get_queriable(self):
+        """ Return object of TableLike or ArrayLike subclass for query purposes"""
+        raise NotImplementedError()
+
+    def get_arr(self):
+        return self.data
+    
+    def get_shape(self):
+        return self.sizes
+    
+    def get_columns(self):
+        return self.headers
+
+    def get_types(self):
+        return self.types
+        
+    def get_type(self, colname):
+        return self.get_types()[ self._convert_to_colnum(colname) ]
+    
+    def get_slices(self, sels, cond):
+        slices = None
+        if sels is not None:
+            for sel in sels:
+                add_slices = self._selectors_to_slices(sel.selectors)
+                slices = add_slices if slices is None else self._or_slices(slices, add_slices)
+        if cond is not None:
+            add_slices = self._cond_to_slices(cond)
+            slices = add_slices if slices is None else self._or_slices(slices, add_slices)
+        return slices
+    
+    def get_slice_iter(self, slices, cond, want_cell_coord=False):
+        raise NotImplementedError()
+    
+    def get_sels_iter(self, row_iter, sels, want_cell_coord=False):
+        raise NotImplementedError()
+    
     def write(self, data, **kw):
         """ Write cells into a table"""
         abort(501, 'Write not implemented')
@@ -988,3 +621,480 @@ class TableBase(object):
     def delete(self, **kw):
         """ Delete cells from a table"""
         abort(501, 'Delete not implemented')
+
+    def _cond_to_slices(self, cond):
+        if isinstance(cond, OrConditionTuple) or isinstance(cond, AndConditionTuple):
+            # OR to keep all referenced cells
+            return self._or_slices(self._cond_to_slices(cond.left), self._cond_to_slices(cond.right))
+        elif isinstance(cond, ConditionTuple):
+            return self._cond_to_slices(cond.left)
+        elif isinstance(cond, CellSelectionTuple):
+            return self._selectors_to_slices(cond.selectors)
+        return tuple([ slice(0,self.sizes[dim]) for dim in range(len(self.sizes)) ])
+
+    def _selectors_to_slices(self, sels):
+        raise NotImplementedError()
+    
+    def _selectors_to_columns(self, sels):
+        res = []
+        if sels is not None:
+            for sel in sels:
+                dim = self._get_dim(sel.dimname)
+                if dim == 1:
+                    if len(sel.dimvalues) == 0 or all([colname is None for colname in sel.dimvalues]):
+                        # select all columns
+                        for ix in xrange(len(self.headers)):
+                            if self.headers[ix] not in res:
+                                res.append(self.headers[ix])
+                    elif len(sel.dimvalues) == 1:
+                        # single column
+                        colname = sel.dimvalues[0]
+                        if isinstance(colname, int):
+                            colname = self.headers[colname]
+                        if colname not in res:
+                            res.append(colname)
+                    else:
+                        # start/stop column
+                        startcolix = self._convert_to_colnum(sel.dimvalues[0]) or 0
+                        stopcolix = self._convert_to_colnum(sel.dimvalues[1]) or len(self.headers)
+                        for ix in xrange(startcolix, stopcolix):
+                            if self.headers[ix] not in res:
+                                res.append(self.headers[ix])
+        return res
+    
+    def _get_dim(self, dimname):
+        raise NotImplementedError()
+        
+    def _convert_to_colnum(self, colname):
+        if colname is None or isinstance(colname, int):
+            return colname
+        for ix in xrange(len(self.headers)):
+            if self.headers[ix] == colname:
+                return ix
+        raise RuntimeError("column %s not found" % colname)
+    
+    def _or_slices(self, slices1, slices2):
+        # essentially compute "bounding" slice around slices
+        res = [None] * len(slices1)
+        for dim in range(len(slices1)):
+            res[dim] = slice(min(slices1[dim].start, slices2[dim].start), max(slices1[dim].stop, slices2[dim].stop))
+        return tuple(res)
+        
+    def _and_slices(self, slices1, slices2):
+        # compute intersection of slices BUT keep all '__dim1__'/'column'/'fields'
+        # (this is an artifact of treating fields like dimensions, which they really aren't) 
+        res = [None] * len(slices1)
+        for dim in range(len(slices1)):
+            if dim == 1:   # TODO: only treat dataframes as special? (self.is_dataframe() and dim == 1)
+                res[dim] = slice(min(slices1[dim].start, slices2[dim].start), max(slices1[dim].stop, slices2[dim].stop))
+            else:
+                res[dim] = slice(max(slices1[dim].start, slices2[dim].start), min(slices1[dim].stop, slices2[dim].stop))
+        return tuple(res)
+
+#---------------------------------------------------------------------------------------
+# Table-like object
+# Contains table-specific query translations.
+#---------------------------------------------------------------------------------------
+class TableLike(TableBase):
+    def __init__(self, uniq, resource, path, **kw):
+        super(TableLike, self).__init__(uniq, resource, path, **kw)
+        assert self.data is None or type(self.data) in [pd.core.frame.DataFrame, tables.table.Table]   # TODO: make this class DataFrame and other tables as subclasses?
+        
+    def get_queriable(self):
+        return self
+    
+    def get_slice_iter(self, slices, cond, want_cell_coord=False):
+        offsets = [0]*len(slices)
+        
+        if self.data is None:
+            # need to bring in data first
+            self.data = self.cb(slices)
+            assert type(self.data) in [pd.core.frame.DataFrame, tables.table.Table]
+            # adjust slices to start from 0 since it is already sliced and remember offsets
+            for d in xrange(len(slices)):
+                offsets[d] = slices[d].start
+            slices = tuple([slice(0, slices[d].stop-slices[d].start) for d in xrange(len(slices))])    
+        
+        ###### translator for And/Or/Condition:
+        #    => ( ((coord[0],), node.iloc[coord[0]]) for coord in np.argwhere((node[:]['H'] > 0) & (node[:]['L'] > 0)) )                 FOR TABLE (IF DataFrame)    OR
+        #    => ( ((row.nrow,), row) for row in node.where('(H > 0) & (L > 0)') )                                                        FOR TABLE (IF pytables)
+        filter_exp = None
+        if cond is not None:
+            if isinstance(self.data, pd.core.frame.DataFrame):
+                filter_exp = self._gen_dataframe_filter(self.data.iloc[slices[0]], cond)
+            else:
+                filter_exp = self._gen_table_filter(self.data, cond)
+        
+        if filter_exp is None:
+            if isinstance(self.data, pd.core.frame.DataFrame):
+                if want_cell_coord:
+                    row_iter = ( ((row[0]+offsets[0],), row[1]) for row in self.data.iloc[slices].iterrows() )
+                else:
+                    row_iter = ( row[1] for row in self.data.iloc[slices].iterrows() )
+            else:
+                if want_cell_coord:
+                    row_iter = ( ((row.nrow+offsets[0],), row) for row in self.data.iterrows(slices[0].start, slices[0].stop) )
+                else:
+                    row_iter = self.data.iterrows(slices[0].start, slices[0].stop)
+        else:
+            # have condition
+            if isinstance(self.data, pd.core.frame.DataFrame):
+                if want_cell_coord:
+                    row_iter = ( ((coord[0]+slices[0].start+offsets[0],), self.data.iloc[(coord[0]+slices[0].start, slices[1])]) for coord in np.argwhere(filter_exp) )
+                else:
+                    row_iter = ( self.data.iloc[coord[0]+slices[0].start] for coord in np.argwhere(filter_exp) )
+            else:
+                if want_cell_coord:
+                    row_iter = ( ((row.nrow+offsets[0],), row) for row in self.data.where(filter_exp) if row.nrow >= slices[0].start and row.nrow < slices[0].stop )
+                else:
+                    row_iter = ( row for row in self.data.where(filter_exp) if row.nrow >= slices[0].start and row.nrow < slices[0].stop )
+                    
+        return row_iter
+    
+    def get_sels_iter(self, row_iter, sels, want_cell_coord=False):
+        ###### translator for CellSelection:
+        #    => np.mean([r['K'] for r in <rowlist from FILTER or ALL>])         IF pytables table OR
+        #    => np.mean([r.loc['K'] for r in <rowlist from FILTER or ALL>])     IF pandas Series
+        if sels is None:
+            # no selection, include all columns
+            if isinstance(self.data, pd.core.frame.DataFrame):
+                sel_fct = lambda row: OrderedDict( (colname,row[colname]) for colname in row.keys() )
+            else:
+                sel_fct = lambda row: OrderedDict( (colname,row[colname]) for colname in self.data.colnames )
+            if want_cell_coord:
+                row_iter = ( OrderedDict(sel_fct(row), index=coord) for (coord, row) in row_iter )
+            else:
+                row_iter = ( sel_fct(row) for row in row_iter )
+            # compute row types
+            row_types = self.get_types()
+                
+        elif sels[0].agg is None:
+            # no aggregation, just return slices
+            def sel_fct_df(row):
+                res = OrderedDict()
+                selix = 0
+                for sel in sels:
+                    cols = self._selectors_to_columns(sel.selectors)
+                    for col_ix in xrange(len(cols)):
+                        alias = sel.alias or cols[col_ix]
+                        if alias in res:
+                            alias = "%s_%s" % (alias, selix)
+                        res[alias] = row.loc[cols[col_ix]]
+                    selix += 1
+                return res
+                
+            def sel_fct_tb(row):
+                res = OrderedDict()
+                selix = 0
+                for sel in sels:
+                    cols = self._selectors_to_columns(sel.selectors)
+                    for col_ix in xrange(len(cols)):
+                        alias = sel.alias or cols[col_ix]
+                        if alias in res:
+                            alias = "%s_%s" % (alias, selix)
+                        res[alias] = row[cols[col_ix]]
+                    selix += 1
+                return res
+                
+            if isinstance(self.data, pd.core.frame.DataFrame):
+                sel_fct = sel_fct_df
+            else:
+                sel_fct = sel_fct_tb
+            if want_cell_coord:
+                row_iter = ( OrderedDict(sel_fct(row), index=coord) for (coord, row) in row_iter )
+            else:
+                row_iter = ( sel_fct(row) for row in row_iter )
+            # compute row types
+            row_types = []
+            for sel in sels:
+                cols = self._selectors_to_columns(sel.selectors)
+                for col in cols:
+                    row_types.append(self.get_type(col))
+                
+        else:
+            # with aggregation => apply agg fct
+            # TODO: find a way to not keep all in memory (push down agg into kernel)
+            row_iters_vals_map = OrderedDict()
+            row_iters_agg_map = OrderedDict()
+            for row in row_iter:
+                res = OrderedDict()
+                res_agg = OrderedDict()
+                selix = 0
+                for sel in sels:
+                    if isinstance(self.data, pd.core.frame.DataFrame):
+                        cols = self._selectors_to_columns(sel.selectors)
+                        for col_ix in xrange(len(cols)):
+                            alias = sel.alias or cols[col_ix]
+                            if alias in res:
+                                alias = "%s_%s" % (alias, selix)
+                            res[alias] = row.loc[cols[col_ix]]
+                            res_agg[alias] = sel.agg
+                    else:
+                        cols = self._selectors_to_columns(sel.selectors)
+                        for col_ix in xrange(len(cols)):
+                            alias = sel.alias or cols[col_ix]
+                            if alias in res:
+                                alias = "%s_%s" % (alias, selix)
+                            res[alias] = row[cols[col_ix]]
+                            res_agg[alias] = sel.agg
+                    selix += 1
+                for alias in res:
+                    row_iters_vals_map.setdefault(alias, []).append(res[alias])
+                    row_iters_agg_map[alias] = res_agg[alias]
+                        
+            res = OrderedDict( (alias,_get_agg_fct(row_iters_agg_map[alias])(row_iters_vals_map[alias])) for alias in row_iters_vals_map.keys() )
+            row_iter = ( res for x in [1] )  # wrap in generator
+            # compute row types
+            row_types = []
+            for sel in sels:
+                cols = self._selectors_to_columns(sel.selectors)
+                for col in cols:
+                    row_types.append('float64')  # TODO: some aggregation fcts may return other types (e.g., SUM)
+            
+        return row_types, row_iter
+
+    def _selectors_to_slices(self, sels):
+        res = [ slice(0,self.sizes[dim]) for dim in range(len(self.sizes)) ]  # start from max ranges
+        if sels is not None:
+            for sel in sels:
+                dim = self._get_dim(sel.dimname)
+                if dim >= 0 and dim < len(self.sizes):
+                    if isinstance(self.data, pd.core.frame.DataFrame) and dim == 1:
+                        # convert the column names to column ids if needed
+                        dimvals = [self._convert_to_colnum(dimval) for dimval in sel.dimvalues]
+                    elif not isinstance(self.data, pd.core.frame.DataFrame) and dim == 1:
+                        # cannot slice table by column (do it later)
+                        dimvals = None
+                    else:
+                        dimvals = sel.dimvalues
+                    if dimvals is not None:
+                        if len(dimvals) > 1:
+                            slice_start = dimvals[0] or res[dim].start
+                            slice_stop = dimvals[1] or res[dim].stop
+                        elif len(dimvals) == 1 and dimvals[0] is not None:
+                            slice_start = dimvals[0]
+                            slice_stop = dimvals[0]+1
+                        else:
+                            slice_start = res[dim].start
+                            slice_stop = res[dim].stop
+                        slice_start = max(slice_start, res[dim].start)
+                        slice_stop = min(slice_stop, res[dim].stop)
+                        res[dim] = slice(slice_start, slice_stop)
+        return tuple(res)
+    
+    def _get_dim(self, dimname):
+        if dimname in ['row', '__dim1__']:
+            return 0
+        elif dimname in ['field', '__dim2__']:
+            return 1
+        else:
+            return None
+        
+    def _gen_dataframe_filter(self, arr, cond):
+        if isinstance(cond, OrConditionTuple):
+            left_cond = self._gen_dataframe_filter(arr, cond.left)
+            right_cond = self._gen_dataframe_filter(arr, cond.right)
+            return (left_cond) | (right_cond) if left_cond is not None and right_cond is not None else (left_cond or right_cond)
+        elif isinstance(cond, AndConditionTuple):
+            left_cond = self._gen_dataframe_filter(arr, cond.left)
+            right_cond = self._gen_dataframe_filter(arr, cond.right)
+            return (left_cond) & (right_cond) if left_cond is not None and right_cond is not None else (left_cond or right_cond)
+        elif isinstance(cond, ConditionTuple):
+            left_cond = self._gen_dataframe_filter(arr, cond.left)
+            if left_cond is None:
+                return None
+            # if multiple left_cond, combine via 'OR'
+            return reduce(lambda x,y: (x) | (y),
+                   [{
+                    '=': lambda x,y: (x) == (y),
+                    '!=': lambda x,y: (x) != (y),
+                    '<': lambda x,y: (x) < (y),
+                    '<=': lambda x,y: (x) <= (y),
+                    '>': lambda x,y: (x) > (y),
+                    '>=': lambda x,y: (x) >= (y)
+                    }[cond.comp](single_left_cond, float(cond.right))
+                    for single_left_cond in left_cond])
+        elif isinstance(cond, CellSelectionTuple):
+            cols = self._selectors_to_columns(cond.selectors)
+            return [arr[col] for col in cols] if len(cols)>=1 else None
+    
+    def _gen_table_filter(self, arr, cond):
+        if isinstance(cond, OrConditionTuple):
+            left_str = self._gen_table_filter(arr, cond.left)
+            right_str = self._gen_table_filter(arr, cond.right)
+            return "(%s) | (%s)" % (left_str, right_str) if left_str is not None and right_str is not None else (left_str or right_str)
+        elif isinstance(cond, AndConditionTuple):
+            left_str = self._gen_table_filter(arr, cond.left)
+            right_str = self._gen_table_filter(arr, cond.right)
+            return "(%s) & (%s)" % (left_str, right_str) if left_str is not None and right_str is not None else (left_str or right_str)
+        elif isinstance(cond, ConditionTuple):
+            left_str = self._gen_table_filter(arr, cond.left)
+            if left_str is None:
+                return None
+            # if multiple left_cond, combine via 'OR'
+            return reduce(lambda x,y: "(%s) | (%s)" % (x,y),
+                   ["%s %s %s" % (single_left_str, cond.comp if cond.comp != '=' else '==', float(cond.right))
+                   for single_left_str in left_str])
+        elif isinstance(cond, CellSelectionTuple):
+            cols = self._selectors_to_columns(cond.selectors)
+            return cols if len(cols)>=1 else None
+
+#---------------------------------------------------------------------------------------
+# Array-like object
+# Contains array-specific query translations.
+#---------------------------------------------------------------------------------------
+class ArrayLike(TableBase):
+    def __init__(self, uniq, resource, path, **kw):
+        super(ArrayLike, self).__init__(uniq, resource, path, **kw)
+        assert self.data is None or type(self.data) in [tables.array.Array, np.ndarray]  # TODO: make this class numpy array and other arrays as subclasses?
+        
+    def get_queriable(self):
+        return self
+    
+    def read(self, **kw):
+        if self.data is None:
+            self.info(**kw)
+            
+        assert len(self.t_ops) <= 1   # TODO: allow sequence of ops?
+        query_op = self.t_ops.pop(0) if len(self.t_ops) > 0 else None
+        return self.run_query(query_op=query_op, keep_dims=2)   # TODO: should be able to read from all dims (need to extend API/viewer)
+    
+    def get_slice_iter(self, slices, cond, want_cell_coord=False):
+        offsets = [0]*len(slices)
+        
+        if self.data is None:
+            # need to bring in data first
+            self.data = self.cb(slices)
+            assert type(self.data) in [tables.array.Array, np.ndarray]
+            # adjust slices to start from 0 since it is already sliced and remember offsets
+            for d in xrange(len(slices)):
+                offsets[d] = slices[d].start
+            slices = tuple([slice(0, slices[d].stop-slices[d].start) for d in xrange(len(slices))])    
+        
+        ###### translator for And/Or/Condition:
+        #    => ( (tuple(coord), node[tuple(coord)]) for coord in np.argwhere((node[Ellipsis] > 0.0) & mask_of_subset & (node[Ellipsis] > 0.0) & mask2_of_subset) )  FOR ARRAY
+        filter_exp = None
+        if cond is not None:
+            filter_exp = self._gen_array_filter(self.data[slices], slices, cond)
+        
+        if filter_exp is None:
+            if want_cell_coord:
+                # this is very slow for large arrays; avoid!
+                ranges = (xrange(slices[d].start, slices[d].stop) for d in xrange(len(self.data.shape)))
+                row_iter = ( (tuple([coord[d]+offsets[d] for d in xrange(len(coord))]), self.data[coord]) for coord in itertools.product(*ranges) )
+            else:
+                row_iter = ( self.data[slices] for x in [1] )
+        else:
+            # have condition
+            if want_cell_coord:
+                # this is very slow for large arrays; avoid!
+                row_iter = ( (tuple([coord[d]+slices[d].start+offsets[d] for d in xrange(len(slices))]), self.data[slices][tuple(coord)]) for coord in np.argwhere(filter_exp) )
+            else:
+                row_iter = ( np.where(filter_exp, self.data[slices], self._gen_nan_array(slices)) for x in [1] )
+                    
+        return row_iter
+    
+    def get_sels_iter(self, row_iter, sels, want_cell_coord=False):
+        ###### translator for CellSelection:
+        #    => np.mean(r[slices])   where r from FILTER                        IF pytables array
+        if sels is None or sels[0].agg is None:
+            # no selection, include all columns
+            if want_cell_coord:
+                row_iter = ( OrderedDict(row, index=coord) for (coord, row) in row_iter )
+            else:
+                row_iter = ( row for row in row_iter )
+            # compute row types
+            row_types = [ self.get_types()[0] ]  # assume all same type
+                
+        else:
+            # with aggregation => apply agg fct
+            # TODO: find a way to not keep all in memory (push down agg into kernel)
+            row_iters_vals_map = OrderedDict()
+            row_iters_agg_map = OrderedDict()
+            for row in row_iter:
+                res = OrderedDict()
+                res_agg = OrderedDict()
+                selix = 0
+                for sel in sels:
+                    alias = sel.alias or "agg%s"%selix
+                    res[alias] = row
+                    res_agg[alias] = sel.agg
+                    selix += 1
+                for alias in res:
+                    row_iters_vals_map.setdefault(alias, []).append(res[alias])
+                    row_iters_agg_map[alias] = res_agg[alias]
+                        
+            res = OrderedDict( (alias,_get_agg_fct(row_iters_agg_map[alias])(row_iters_vals_map[alias])) for alias in row_iters_vals_map.keys() )
+            row_iter = ( res for x in [1] )  # wrap in generator
+            # compute row types
+            row_types = []
+            for sel in sels:
+                row_types.append('float64')  # TODO: some aggregation fcts may return other types (e.g., SUM)
+            
+        return row_types, row_iter
+
+    def _selectors_to_slices(self, sels):
+        res = [ slice(0,self.sizes[dim]) for dim in range(len(self.sizes)) ]  # start from max ranges
+        if sels is not None:
+            for sel in sels:
+                dim = self._get_dim(sel.dimname)
+                if dim >= 0 and dim < len(self.sizes):
+                    dimvals = sel.dimvalues
+                    if dimvals is not None:
+                        if len(dimvals) > 1:
+                            slice_start = dimvals[0] or res[dim].start
+                            slice_stop = dimvals[1] or res[dim].stop
+                        elif len(dimvals) == 1 and dimvals[0] is not None:
+                            slice_start = dimvals[0]
+                            slice_stop = dimvals[0]+1
+                        else:
+                            slice_start = res[dim].start
+                            slice_stop = res[dim].stop
+                        slice_start = max(slice_start, res[dim].start)
+                        slice_stop = min(slice_stop, res[dim].stop)
+                        res[dim] = slice(slice_start, slice_stop)
+        return tuple(res)
+
+    def _get_dim(self, dimname):
+        if dimname in ['row', '__dim1__']:
+            return 0
+        elif dimname in ['field', '__dim2__']:
+            return 1
+        else:
+            parser = re.compile('__dim(?P<num>[0-9]+)__')
+            toks = re.search(parser, dimname)
+            if toks is not None:
+                return int(toks.groupdict()['num'])-1
+        return None
+
+    def _gen_array_filter(self, arr, slices, cond):
+        if isinstance(cond, OrConditionTuple):
+            return (self._gen_array_filter(arr, slices, cond.left)) | (self._gen_array_filter(arr, slices, cond.right)) 
+        elif isinstance(cond, AndConditionTuple):
+            return (self._gen_array_filter(arr, slices, cond.left)) & (self._gen_array_filter(arr, slices, cond.right))
+        elif isinstance(cond, ConditionTuple):
+            # get the selection slices in the CellSelectionTuple and construct boolean array of size of incoming slices
+            # with cells in selection slices set to False, all others set to True
+            # (this way, slices outside of condition selection are always included, the ones inside are only included if condition holds;
+            # this mirrors the behavior of table column selection with conditions on some columns and projection on others)
+            sel_slices = self._selectors_to_slices(cond.left.selectors)
+            mask = self._gen_mask(slices, sel_slices)
+            return ({
+                     '=': lambda x,y: (x) == (y),
+                     '!=': lambda x,y: (x) != (y),
+                     '<': lambda x,y: (x) < (y),
+                     '<=': lambda x,y: (x) <= (y),
+                     '>': lambda x,y: (x) > (y),
+                     '>=': lambda x,y: (x) >= (y)
+                    }[cond.comp](arr[Ellipsis], float(cond.right))) | mask
+
+    def _gen_mask(self, outer_slices, sel_slices):
+        mask = np.ones([s.stop-s.start for s in outer_slices], dtype=bool)
+        mask_slices = self._and_slices(outer_slices, sel_slices)
+        mask[[slice(mask_slices[dim].start-outer_slices[dim].start, mask_slices[dim].stop-outer_slices[dim].start) for dim in xrange(len(outer_slices))]] = False
+        return mask
+    
+    def _gen_nan_array(self, slices):
+        shape = tuple([s.stop-s.start for s in slices])
+        return np.full(shape, np.nan)
+    
