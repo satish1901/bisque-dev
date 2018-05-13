@@ -1295,6 +1295,7 @@ BQTemplate.prototype = new BQObject();
 function BQImage (uri){
     BQObject.call(this, uri);
     this.resource_type = "image";
+    this.path = null;
 };
 BQImage.prototype = new BQObject();
 //extend(BQImage, BQObject);
@@ -1316,6 +1317,25 @@ BQImage.prototype.initializeXml = function (node) {
     this.ch   = attribInt(node,'ch');
     */
 };
+
+BQImage.prototype.initFromObject = function (o) {
+    var f = null,
+        i = 0;
+    if (o && o.resource_uniq) {
+        for (i=0; (f=this.xmlfields[i]); ++i) {
+            this[f] = Ext.clone(o[f]);
+        }
+        this.src = this.uri.replace('/data_service/', '/image_service/');
+    }
+};
+
+BQImage.prototype.setPath = function (path) {
+    if (path) {
+        this.path = path;
+        this.src += path;
+    }
+};
+
 
 //-----------------------------------------------------------------------------
 // BQFile
@@ -2153,13 +2173,14 @@ BQImagePhys.prototype.coordinate_to_phys = function(pt, use_geo) {
     return [pt.x, pt.y];
 };
 
-BQImagePhys.prototype.load = function(cb) {
+BQImagePhys.prototype.load = function(cb, errorcb) {
     this.initialized = undefined;
     this.loadcallback = cb;
 
     BQFactory.request({
         uri : this.image.src + '?meta',
         cb_xml: callback(this, this.onloadIS),
+        errorcb: errorcb,
     });
 
     //dima: no longer needed, IS is merging meta from resource
@@ -2198,6 +2219,7 @@ BQImagePhys.prototype.onloadIS = function (image, xml) {
   this.t  = parseInt(hash['image_num_t']);
   this.ch  = parseInt(hash['image_num_c']);
 
+  // dima: have to pick these from paths "image_series_paths/00000", "image_series_paths/00001", etc...
   this.labels = parseInt(hash['image_num_labels']);
   this.previews = parseInt(hash['image_num_previews']);
 

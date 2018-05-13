@@ -197,7 +197,7 @@ Ext.define('BQ.viewer.Movie', {
             plugin=null;
         for (var i=0; (plugin=this.plug_ins[i]); i++)
             plugin.addCommand(command, opts);
-        return '/image_service/image/'+this.resource.resource_uniq+'?'+command.join('&');
+        return this.resource.src+'?'+command.join('&');
     },
 
     constructMovieUrl: function(format) {

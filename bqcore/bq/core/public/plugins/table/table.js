@@ -190,7 +190,11 @@ Ext.define('BQ.table.View', {
     extend: 'Ext.container.Container',
     alias: 'widget.bq_table_view',
     componentCls: 'bq_table_view',
-    layout: 'fit',
+    //layout: 'fit',
+    layout: {
+        type: 'vbox',
+        align: 'stretch',
+    },
 
     initComponent : function() {
         // temporary columns and store needed to init empty gridpanel without errors
@@ -206,24 +210,106 @@ Ext.define('BQ.table.View', {
             }
         });
 
+
+        // init image viewer list
+        this.image_viewers = [{
+            class: 'Ext.grid.Panel',
+            xtype: 'gridpanel',
+
+            text: 'Table',
+            icon_class: 'icon_table',
+            item_id: 'main_view_table',
+            tooltip: 'View current table',
+
+            need_destruction: false,
+            container: null,
+            creator: null,
+
+            min_p: 1,
+            min_z: 1,
+            min_t: 1,
+            min_x: 0,
+            min_y: 0,
+            max_x: null,
+            max_y: null,
+        }];
+        var viewer_menu_items = [],
+            v=null;
+        for (var i=0; (v=BQ.image_viewers.available[i]); ++i) {
+            v.container = undefined;
+            this.image_viewers.push(Ext.clone(v));
+        }
+
+        for (var i=0; (v=this.image_viewers[i]); ++i) {
+            viewer_menu_items.push({
+                xtype  : 'button',
+                itemId: 'menu_view_'+v.text.toLowerCase(),
+                pressed: i==0 ? true : false,
+                mode: v.text,
+                iconCls: v.icon_class,
+                tooltip: v.tooltip,
+                toggleGroup: 'viewers',
+                frame: false,
+                scope: this,
+                toggleHandler: this.onViewerMenu,
+                focusCls: '',
+            });
+        }
+
         // create view components: grid and tagger
         this.items = [{
-            xtype: 'gridpanel',
-            itemId  : 'table',
-            autoScroll: true,
+            xtype: 'toolbar',
+            itemId  : 'toolbar',
+            height: 40,
             border: 0,
-            viewConfig: {
-                stripeRows: true,
-                forceFit: true,
+            defaults: {
+                scale: 'medium',
+                scope: this,
             },
-            plugins: 'bufferedrenderer',
-            store: this.store,
-            columns: [
-                { text: '',  dataIndex: 'name' },
-            ],
-        }];
+            items: viewer_menu_items,
+        }, {
+            xtype: 'container',
+            itemId  : 'main_container',
+            layout: 'fit',
+            border: 0,
+            flex: 1,
+            items: [{
+                xtype: 'gridpanel',
+                itemId  : 'table',
+                autoScroll: true,
+                border: 0,
+                //flex: 1,
+                viewConfig: {
+                    stripeRows: true,
+                    forceFit: true,
+                },
+                plugins: 'bufferedrenderer',
+                store: this.store,
+                columns: [
+                    { text: '',  dataIndex: 'name' },
+                ],
+            }],
+        },
+
+        ];
+
 
         this.callParent();
+        this.toolbar = this.queryById('toolbar');
+        this.gridpanel = this.queryById('table');
+
+
+        this.image_viewers[0].container = this.gridpanel;
+        this.image_viewers[1].creator = this.show2D;
+        this.image_viewers[2].creator = this.show3D;
+        this.image_viewers[3].creator = this.showMovie;
+
+        this.image = new BQImage();
+        this.image.initFromObject(this.resource);
+        this.image.setPath(this.path);
+
+        var phys = new BQImagePhys (this.image);
+        phys.load (callback (this, this.onPhys), callback (this, this.onPhysError) );
     },
 
     afterRender : function() {
@@ -254,6 +340,27 @@ Ext.define('BQ.table.View', {
                 requestexception: function() { this.setLoading(false); },
             },
         });
+    },
+
+    onPhys: function(phys) {
+        this.phys = phys;
+        var me = this;
+        setTimeout(function(){
+            me.doCheckLimits();
+        }, 50);
+    },
+
+    onPhysError: function() {
+        this.phys = {
+            x: 0,
+            y: 0,
+            t: 1,
+            z: 1,
+        };
+        var me = this;
+        setTimeout(function(){
+            me.doCheckLimits();
+        }, 50);
     },
 
     onTableInfo: function(txt) {
@@ -321,6 +428,260 @@ Ext.define('BQ.table.View', {
         });
         var table = this.queryById('table');
         table.reconfigure(this.store, this.columns);
+    },
+
+    doCheckLimits : function() {
+        var x = this.phys.x,
+            y = this.phys.y,
+            t = this.phys.t,
+            z = this.phys.z,
+            p = t*z,
+            v=null,
+            dis=false,
+            cnt=null;
+
+        for (var i=0; (v=this.image_viewers[i]); ++i) {
+            dis=false;
+
+            if (v.max_x && v.max_x<x) dis=true;
+            if (v.max_y && v.max_y<y) dis=true;
+            if (v.min_x>x) dis=true;
+            if (v.min_y>y) dis=true;
+            if (v.min_p>p) dis=true;
+            if (v.min_t>t) dis=true;
+            if (v.min_z>z) dis=true;
+
+            cnt = this.toolbar.queryById('menu_view_'+v.text.toLowerCase());
+            if (cnt)
+                cnt.setDisabled(dis);
+        }
+
+        if (x>15000 && y>15000) {
+            BQApp.getToolbar().queryById('download_as_ometiff').setDisabled( true );
+            BQApp.getToolbar().queryById('download_as_omebigtiff').setDisabled( true );
+        }
+
+        if (!BQ.util.isWebGlAvailable()) {
+            //if webgl isn't available then we'll disable the command.
+            var button3D = this.toolbar.queryById('menu_view_3d');
+            //button3D.setText('3D (WebGl not available)');
+            button3D.setTooltip('WebGL is not available');
+            button3D.setDisabled( true );
+        }
+    },
+
+    onViewerMenu: function(m) {
+        var me = this,
+            selected = null,
+            v = null;
+        if (!m.pressed) return;
+
+        for (var i=0; (v=this.image_viewers[i]); ++i) {
+            if (m.mode === v.text) {
+                selected = v;
+                continue;
+            }
+            if (v.container) {
+                //v.container.stop();
+                v.container.setVisible(false);
+                if (v.need_destruction) {
+                    v.container.destroy();
+                    v.container = null;
+                }
+            }
+        }
+
+        if (!selected) return;
+        if (selected.container && selected.container.isVisible()) return;
+        //m.toggle(true);
+
+        if (!selected.container) {
+            if (selected.creator) {
+                selected.container = selected.creator.call(this);
+            } else {
+                var cnt = this.queryById('main_container');
+                selected.container = cnt.add({
+                    xtype: selected.xtype,
+                    itemId: selected.item_id,
+                    resource: this.image,
+                    toolbar: this.toolbar,
+                    phys: this.phys,
+                    //preferences: this.viewerContainer.viewer.preferences,
+                    listeners: {
+                        // select_gobject : function(viewer, gob) {
+                        //     var node = me.gobjectTagger.findNodeByGob(gob);
+                        //     if (!node) {
+                        //         console.log('No node found!');
+                        //         return;
+                        //     }
+                        //     // dima: here expand to expose the selected node
+                        //     var parent = node;
+                        //     for (var i=0; i<node.getDepth()-1; i++)
+                        //         parent = parent.parentNode;
+                        //     me.gobjectTagger.tree.expandNode( parent, true );
+                        //     me.gobjectTagger.tree.getSelectionModel().select(node);
+                        // },
+                        // select_plane : function(viewer, z, t) {
+                        //     me.viewerContainer.select_plane(z, t);
+                        //     me.show2D();
+                        // },
+                    },
+                });
+            }
+        }
+        selected.container.setVisible(true);
+    },
+
+    show2D : function() {
+        var cnt = this.queryById('main_container');
+        var viewer = cnt.add({
+            xtype: 'imageviewer',
+            itemId: 'main_view_2d',
+            main : this,
+            parameters : {
+                simpleview: true,
+                hide_create_gobs_menu: true,
+                hide_file_name_osd: true,
+                blockforsaves: false,
+                main: this,
+                render_plugins: ['color', 'corners', 'bbox'],
+                //plugins_skip: {download: null, external: null, pixelcounter: null, },
+            },
+            resource: this.image,
+            toolbar: this.toolbar,
+            phys: this.phys,
+            //preferences: this.viewerContainer.viewer.preferences,
+        });
+
+        // var items = [{
+        //     xtype: 'menuseparator',
+        //     itemId: 'download_movie_separator',
+        // }, {
+        //     itemId: 'download_movie_h264',
+        //     text: 'Movie as MPEG4 H264',
+        //     handler: function() { movie.export('h264'); },
+        // }, {
+        //     itemId: 'download_movie_qt',
+        //     text: 'Movie as Apple QuickTime (MOV)',
+        //     handler: function() { movie.export('quicktime'); },
+        // }, {
+        //     itemId: 'download_movie_webm',
+        //     text: 'Google WebM',
+        //     handler: function() { movie.export('webm'); },
+        // }, {
+        //     itemId: 'download_movie_avi',
+        //     text: 'Microsoft AVI (MPEG4)',
+        //     handler: function() { movie.export('avi'); },
+        // }, {
+        //     itemId: 'download_movie_wmv',
+        //     text: 'Windows Media Video',
+        //     handler: function() { movie.export('wmv'); },
+        // }, {
+        //     itemId: 'download_movie_flv',
+        //     text: 'Adobe Flash Video',
+        //     handler: function() { movie.export('flv'); },
+        // }];
+        // BQApp.add_to_toolbar_menu('button_download', items);
+        return viewer;
+
+    },
+
+    showMovie : function() {
+        var cnt = this.queryById('main_container');
+        var movie = cnt.add({
+            xtype: 'bq_movie_viewer',
+            itemId: 'main_view_movie',
+            resource: this.image,
+            toolbar: this.toolbar,
+            phys: this.phys,
+            //preferences: this.viewerContainer.viewer.preferences,
+        });
+
+        var items = [{
+            xtype: 'menuseparator',
+            itemId: 'download_movie_separator',
+        }, {
+            itemId: 'download_movie_h264',
+            text: 'Movie as MPEG4 H264',
+            handler: function() { movie.export('h264'); },
+        }, {
+            itemId: 'download_movie_qt',
+            text: 'Movie as Apple QuickTime (MOV)',
+            handler: function() { movie.export('quicktime'); },
+        }, {
+            itemId: 'download_movie_webm',
+            text: 'Google WebM',
+            handler: function() { movie.export('webm'); },
+        }, {
+            itemId: 'download_movie_avi',
+            text: 'Microsoft AVI (MPEG4)',
+            handler: function() { movie.export('avi'); },
+        }, {
+            itemId: 'download_movie_wmv',
+            text: 'Windows Media Video',
+            handler: function() { movie.export('wmv'); },
+        }, {
+            itemId: 'download_movie_flv',
+            text: 'Adobe Flash Video',
+            handler: function() { movie.export('flv'); },
+        }];
+        BQApp.add_to_toolbar_menu('button_download', items);
+        return movie;
+    },
+
+    show3D : function() {
+        var me = this;
+        if (!BQ.util.isWebGlAvailable()) {
+            BQ.ui.error('WebGL is not available in your browser, sorry...');
+            return;
+        }
+
+        var cnt = this.queryById('main_container');
+        var view3d = cnt.add({
+            xtype: 'bq_volume_panel',
+            itemId: 'main_view_3d',
+            resource: this.image,
+            toolbar: this.toolbar,
+            phys: this.phys,
+            //preferences: this.viewerContainer.viewer.preferences,
+            listeners: {
+                // select_gobject : function(viewer, gob) {
+                //     var node = me.gobjectTagger.findNodeByGob(gob);
+                //     if (!node) {
+                //         console.log('No node found!');
+                //         return;
+                //     }
+                //     // dima: here expand to expose the selected node
+                //     var parent = node;
+                //     for (var i=0; i<node.getDepth()-1; i++)
+                //         parent = parent.parentNode;
+                //     me.gobjectTagger.tree.expandNode( parent, true );
+                //     me.gobjectTagger.tree.getSelectionModel().select(node);
+                // },
+
+                glcontextlost: function(event){
+                    var msgText = " ";
+                    var link = " mailto:me@example.com"
+                        + "?cc=myCCaddress@example.com"
+                        + "&subject=" + escape("This is my subject")
+                        + "&body=" + msgText + "";
+
+                    BQ.ui.error("Hmmm... WebGL seems to hit a snag: <BR/> " +
+                                "error: " + event.statusMessage +
+                                "<BR/>Do you want to report this problem?" +
+                                "<a href = " + link + "> send mail </a>");
+
+                    var image3d = me.queryById('main_view_3d');
+                    var toolMenu = image3d.toolMenu;
+                    toolMenu.destroy();
+                    image3d.destroy();
+                    //this should destroy the 3D viewer
+                    me.show2D();
+                },
+
+            }
+        });
+        return view3d;
     },
 
 });
