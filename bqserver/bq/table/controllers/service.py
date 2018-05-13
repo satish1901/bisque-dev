@@ -272,9 +272,9 @@ class TableController(ServiceController):
         # load table
         table = None
         try:
-            # /table/ID[/PATH1/PATH2/...][/filter:FILTERCOND]*[/AGGRANGE][/COMMAND:PARS]
+            # /table/ID[/PATH1/PATH2/...](/FILTERCOND | /COMMAND:PARS)*
             # Example:
-            #   /table/ID[/PATH1/PATH2/filter:[:,"temperature"] >= 0/filter:[:,"temperature"] < 30/AVG(:,"humidity")/format:csv
+            #   /table/ID[/PATH1/PATH2/{[:,"temperature"] >= 0 and [:,"temperature"] < 30}/agg:AVG(:,"humidity")/format:csv
             if len(path)<1:
                 abort(400, 'Element ID is required as a first parameter, ex: /table/00-XXXXX/format:xml' )
             uniq = path.pop(0)
@@ -293,7 +293,7 @@ class TableController(ServiceController):
                     continue
                 try:
                     log.debug("trying format %s", str(n))
-                    table = r(uniq, resource, path, url=request.url)
+                    table = r(uniq, resource, path, url=request.url).get_queriable()
                 except Exception as ex:
                     log.debug("failed with error %s", str(ex))
                     table = None
@@ -305,42 +305,33 @@ class TableController(ServiceController):
                 abort(501, 'Table cannot be read. Format not recognized')
             log.debug('Inited table: %s',str(table))
 
-            if len(table.path) == 0 or table.path[0] != 'info':
-                # some query on table; if only info, skip this for speed (no need to read in table)
-                
-                # extract and run filterconds, if any
-                while len(table.path) > 0:
-                    candidate = table.path[0].split(':')[0]
-                    if candidate == 'filter':
-                        filtercond = table.path.pop(0).split(':',1)[1]
-                        table = table.filter(filtercond)
-                    else:
-                        break
-                
-                # extract and run aggregation/range query, if any
-                if len(table.path) > 0:
-                    candidate = table.path[0].split(':',1)[0]
-                    if candidate not in self.operations.plugins:
-                        selcond = table.path.pop(0)
-                        table = table.slice(selcond)
-                    
-                # read what is selected
-                table.read()
-            
-            log.debug('Loaded table: %s', str(table))
-
             # operations consuming the rest of the path            
             i = 0
             a = table.path[i] if len(table.path)>i else None
             while a is not None:
+                log.debug("table op %s" % a)
                 a = a.split(':',1)
                 op,arg = a if len(a)>1 else a + [None]
                 if op in self.operations.plugins and self.operations.plugins[op] is not None:
                     table.path.pop(0)
-                    self.operations.plugins[op]().execute(table, arg)
-                else:
+                    table_new = self.operations.plugins[op]().execute(table, arg)
+                    table.close()
+                    table = table_new
+                elif op in self.operations.plugins and self.operations.plugins[op] is None:
+                    # skip "special ops" for now
                     i += 1
+                else:
+                    # op unknown => assume it is 'filter' for backward compatibility
+                    table.path.pop(0)
+                    table_new = self.operations.plugins['filter']().execute(table, op+':'+arg if arg is not None else op)
+                    table.close()
+                    table = table_new
                 a = table.path[i] if len(table.path)>i else None
+                
+            # force read the latest here
+            table_new = table.read()
+            table.close()
+            table = table_new
             log.debug('Processed table: %s', str(table))
 
             # export
@@ -354,6 +345,9 @@ class TableController(ServiceController):
                     r = self.exporters.plugins[out_format]().export(table)
                 return r
             abort(400, 'Requested export format (%s) is not supported'%out_format )
+
+        except RuntimeError as exc:
+            abort(400, 'Error in query: %s'%str(exc))
 
         finally:
             # close any open table
