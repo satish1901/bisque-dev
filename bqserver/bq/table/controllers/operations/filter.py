@@ -2,6 +2,8 @@
 # Table Operations: Filter
 #---------------------------------------------------------------------------------------
 
+from pylons.controllers.util import abort
+
 from bq.table.controllers.table_operation import TableOperation
 from bq.table.controllers.table_base import TableQueryParser, ParseError
 
