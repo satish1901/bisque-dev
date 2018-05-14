@@ -698,7 +698,7 @@ class TableBase(object):
 class TableLike(TableBase):
     def __init__(self, uniq, resource, path, **kw):
         super(TableLike, self).__init__(uniq, resource, path, **kw)
-        assert self.data is None or type(self.data) in [pd.core.frame.DataFrame, tables.table.Table]   # TODO: make this class DataFrame and other tables as subclasses?
+        assert self.data is None or isinstance(self.data, pd.core.frame.DataFrame) or isinstance(self.data, tables.table.Table)   # TODO: make this class DataFrame and other tables as subclasses?
         
     def get_queriable(self):
         return self
@@ -709,7 +709,7 @@ class TableLike(TableBase):
         if self.data is None:
             # need to bring in data first
             self.data = self.cb(slices)
-            assert type(self.data) in [pd.core.frame.DataFrame, tables.table.Table]
+            assert isinstance(self.data, pd.core.frame.DataFrame) or isinstance(self.data, tables.table.Table)
             # adjust slices to start from 0 since it is already sliced and remember offsets
             for d in xrange(len(slices)):
                 offsets[d] = slices[d].start
@@ -946,7 +946,7 @@ class TableLike(TableBase):
 class ArrayLike(TableBase):
     def __init__(self, uniq, resource, path, **kw):
         super(ArrayLike, self).__init__(uniq, resource, path, **kw)
-        assert self.data is None or type(self.data) in [tables.array.Array, np.ndarray]  # TODO: make this class numpy array and other arrays as subclasses?
+        assert self.data is None or isinstance(self.data, tables.array.Array) or isinstance(self.data, np.ndarray)  # TODO: make this class numpy array and other arrays as subclasses?
         
     def get_queriable(self):
         return self
@@ -965,7 +965,7 @@ class ArrayLike(TableBase):
         if self.data is None:
             # need to bring in data first
             self.data = self.cb(slices)
-            assert type(self.data) in [tables.array.Array, np.ndarray]
+            assert isinstance(self.data, tables.array.Array) or isinstance(self.data, np.ndarray)
             # adjust slices to start from 0 since it is already sliced and remember offsets
             for d in xrange(len(slices)):
                 offsets[d] = slices[d].start
