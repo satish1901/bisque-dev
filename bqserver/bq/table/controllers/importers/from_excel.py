@@ -158,7 +158,7 @@ class TableExcel(TableLike):
                 self.subpath = self.tables[0]['path']
     
             data = pd.read_excel(self.t, self.subpath, nrows=1)
-            self.sizes = (sys.maxint, data.shape[1])
+            self.sizes = (sys.maxint, data.shape[1])  # pylint: disable=no-member
             self.cb = get_cb_excel(self.t, self.subpath)  # for lazy fetching
         else:
             data = self.data

@@ -2,6 +2,8 @@
 # Table Operations: Aggregation
 #---------------------------------------------------------------------------------------
 
+from pylons.controllers.util import abort
+
 from bq.table.controllers.table_operation import TableOperation
 from bq.table.controllers.table_base import TableQueryParser, ParseError
 
@@ -24,7 +26,7 @@ class AggOperation(TableOperation):
 
     def execute(self, table, args):
         try:
-            table.t_ops.append({'agg':TableQueryParser().parse_agg(sel, table.get_columns())})
+            table.t_ops.append({'agg':TableQueryParser().parse_agg(args, table.get_columns())})
         except ParseError as e:
             abort(400, str(e))
         return table.read()  # TODO: try to delay the read as much as possible by combining t_ops
