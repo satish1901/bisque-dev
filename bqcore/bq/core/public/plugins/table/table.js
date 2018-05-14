@@ -196,6 +196,10 @@ Ext.define('BQ.table.View', {
         align: 'stretch',
     },
 
+    filter_text: 'Filter table contents',
+    url: null,
+    query_string: null,
+
     initComponent : function() {
         // temporary columns and store needed to init empty gridpanel without errors
         this.store = Ext.create('Ext.data.Store', {
@@ -232,7 +236,33 @@ Ext.define('BQ.table.View', {
             min_y: 0,
             max_x: null,
             max_y: null,
-        }];
+        }, {
+            xtype: 'tbspacer',
+            width: 15,
+        }/*, {
+            class: 'BQ.renderers.Plotly',
+            xtype: 'rendererplotly',
+
+            text: 'Plot',
+            icon_class: 'icon_plot',
+            item_id: 'main_view_plot',
+            tooltip: 'View current table as a Plot',
+
+            need_destruction: false,
+            container: null,
+            creator: null,
+
+            min_p: 1,
+            min_z: 1,
+            min_t: 1,
+            min_x: 0,
+            min_y: 0,
+            max_x: 1,
+            max_y: 1,
+        }, {
+            xtype: 'tbspacer',
+            width: 15,
+        }*/];
         var viewer_menu_items = [],
             v=null;
         for (var i=0; (v=BQ.image_viewers.available[i]); ++i) {
@@ -241,20 +271,77 @@ Ext.define('BQ.table.View', {
         }
 
         for (var i=0; (v=this.image_viewers[i]); ++i) {
-            viewer_menu_items.push({
-                xtype  : 'button',
-                itemId: 'menu_view_'+v.text.toLowerCase(),
-                pressed: i==0 ? true : false,
-                mode: v.text,
-                iconCls: v.icon_class,
-                tooltip: v.tooltip,
-                toggleGroup: 'viewers',
-                frame: false,
-                scope: this,
-                toggleHandler: this.onViewerMenu,
-                focusCls: '',
-            });
+            if (v && v.text) {
+                viewer_menu_items.push({
+                    xtype  : 'button',
+                    itemId: 'menu_view_'+v.text.toLowerCase(),
+                    pressed: i==0 ? true : false,
+                    mode: v.text,
+                    iconCls: v.icon_class,
+                    tooltip: v.tooltip,
+                    toggleGroup: 'viewers',
+                    frame: false,
+                    scope: this,
+                    toggleHandler: this.onViewerMenu,
+                    focusCls: '',
+                });
+            } else {
+                viewer_menu_items.push(v);
+            }
         }
+
+        // and query string
+        viewer_menu_items.push({
+            xtype: 'tbspacer',
+            width: 30,
+        });
+        viewer_menu_items.push({
+            xtype  : 'textfield',
+            itemId: 'menu_filter',
+            cls: 'search_field',
+            flex: 1, // 2
+            name: 'search',
+            value: this.filter_text,
+            minWidth: 100,
+            tooltip: 'Find cells based on their content, ex: DAPI > 12.5',
+            enableKeyEvents: true,
+            listeners: {
+                scope: this,
+                // focus: function(c) {
+                //     c.flex = 2;
+                //     this.doLayout();
+                //     if (c.value === toolbar.filter_text) {
+                //         c.setValue('');
+                //     }
+                //     var tip = Ext.create('Ext.tip.ToolTip', {
+                //         target: c.el,
+                //         anchor: 'top',
+                //         minWidth: 500,
+                //         width: 500,
+                //         autoHide: true,
+                //         dismissDelay: 20000,
+                //         shadow: true,
+                //         autoScroll: true,
+                //         loader: { url: '/core/html/querying.html', renderer: 'html', autoLoad: true },
+                //     });
+                //     tip.show();
+                // },
+                // blur: function(c) {
+                //     c.flex = 0;
+                //     this.doLayout();
+                // },
+                specialkey: function(f, e) {
+                    if (e.getKey()==e.ENTER && f.value!='' && f.value != this.filter_text) {
+                        //document.location = BQ.Server.url('/client_service/browser?tag_query='+escape(f.value));
+                        this.do_filter(f.value);
+                    }
+                },
+            }
+        });
+        viewer_menu_items.push({
+            xtype: 'tbspacer',
+            width: 5,
+        });
 
         // create view components: grid and tagger
         this.items = [{
@@ -298,11 +385,17 @@ Ext.define('BQ.table.View', {
         this.toolbar = this.queryById('toolbar');
         this.gridpanel = this.queryById('table');
 
-
-        this.image_viewers[0].container = this.gridpanel;
-        this.image_viewers[1].creator = this.show2D;
-        this.image_viewers[2].creator = this.show3D;
-        this.image_viewers[3].creator = this.showMovie;
+        for (var i=0; (v=this.image_viewers[i]); ++i) {
+            if (v.text === 'Table') {
+                v.container = this.gridpanel;
+            } else if (v.text === '2D') {
+                v.creator = this.show2D;
+            } else if (v.text === '3D') {
+                v.creator = this.show3D;
+            } else if (v.text === 'Movie') {
+                v.creator = this.showMovie;
+            }
+        }
 
         this.image = new BQImage();
         this.image.initFromObject(this.resource);
@@ -314,32 +407,13 @@ Ext.define('BQ.table.View', {
 
     afterRender : function() {
         this.callParent();
-        this.url = '/table/' + this.resource.resource_uniq;
-        this.url += (this.path ? BQ.table.encodeURIpath(this.path) : '');
-        if (this.info) {
+        if (this.info && !this.query_string) {
+            this.url = this.constructUrl();
             this.onTableInfo();
             return;
         }
 
-        // load table info to configure columns and the store
-        //this.setLoading('Fetching table info...');
-        Ext.Ajax.request({
-            url: this.url + '/info/format:json',
-            callback: function(opts, succsess, response) {
-                if (response.status>=400 || !succsess)
-                    BQ.ui.error(response.responseText);
-                else
-                    this.onTableInfo(response.responseText);
-            },
-            disableCaching: false,
-            scope: this,
-            listeners: {
-                scope: this,
-                beforerequest   : function() { this.setLoading('Loading table...'); },
-                requestcomplete : function() { this.setLoading(false); },
-                requestexception: function() { this.setLoading(false); },
-            },
-        });
+        this.update();
     },
 
     onPhys: function(phys) {
@@ -348,6 +422,7 @@ Ext.define('BQ.table.View', {
         setTimeout(function(){
             me.doCheckLimits();
         }, 50);
+        this.fireEvent('new_meta', this.image.src);
     },
 
     onPhysError: function() {
@@ -361,6 +436,42 @@ Ext.define('BQ.table.View', {
         setTimeout(function(){
             me.doCheckLimits();
         }, 50);
+    },
+
+    constructUrl: function() {
+        var url = '/table/' + this.resource.resource_uniq;
+        url += (this.path ? BQ.table.encodeURIpath(this.path) : '');
+        if (this.query_string) {
+            url += '/' + this.query_string;
+        }
+        return url;
+    },
+
+    update: function() {
+        var url = this.constructUrl();
+        if (this.url === url) return;
+        this.url = url;
+
+        // load table info to configure columns and the store
+        this.setLoading('Loading table...');
+        Ext.Ajax.request({
+            url: this.url + '/info/format:json',
+            callback: function(opts, succsess, response) {
+                this.setLoading(false);
+                if (response.status>=400 || !succsess)
+                    BQ.ui.error(response.responseText);
+                else
+                    this.onTableInfo(response.responseText);
+            },
+            disableCaching: false,
+            scope: this,
+            // listeners: {
+            //     scope: this,
+            //     beforerequest   : function() { this.setLoading('Loading table...'); },
+            //     requestcomplete : function() { this.setLoading(false); },
+            //     requestexception: function() { this.setLoading(false); },
+            // },
+        });
     },
 
     onTableInfo: function(txt) {
@@ -430,6 +541,16 @@ Ext.define('BQ.table.View', {
         table.reconfigure(this.store, this.columns);
     },
 
+    do_filter: function(qstr) {
+        this.query_string = qstr;
+        // might need to do some parsing or encoding here
+        this.update();
+    },
+
+    // -----------------------------------------------------------------------------------------
+    // additional viewers
+    // -----------------------------------------------------------------------------------------
+
     doCheckLimits : function() {
         var x = this.phys.x,
             y = this.phys.y,
@@ -441,6 +562,7 @@ Ext.define('BQ.table.View', {
             cnt=null;
 
         for (var i=0; (v=this.image_viewers[i]); ++i) {
+            if (!v.text) continue;
             dis=false;
 
             if (v.max_x && v.max_x<x) dis=true;
@@ -1097,6 +1219,12 @@ Ext.define('BQ.table.Panel', {
                     resource: this.resource,
                     path: p,
                     title: p,
+                    listeners: {
+                        scope: this,
+                        new_meta: function(meta_url) {
+                            this.fireEvent('new_meta', meta_url);
+                        },
+                    },
                 });
             }*/
         } else {
@@ -1109,6 +1237,12 @@ Ext.define('BQ.table.Panel', {
                 resource: this.resource,
                 //path: p,
                 info: json,
+                listeners: {
+                    scope: this,
+                    new_meta: function(meta_url) {
+                        this.fireEvent('new_meta', meta_url);
+                    },
+                },
             });
         }
     },
@@ -1130,7 +1264,12 @@ Ext.define('BQ.table.Panel', {
                 path: path,
                 //info: r.node.raw,
                 tree_node: r.node,
-
+                listeners: {
+                    scope: this,
+                    new_meta: function(meta_url) {
+                        this.fireEvent('new_meta', meta_url);
+                    },
+                },
             });
         this.tabs.setActiveTab(t);
     },
@@ -1200,10 +1339,31 @@ Ext.define('Bisque.Resource.Table.Page', {
                 border: 0,
                 resource: this.resource,
                 //path: '',
+                listeners: {
+                    scope: this,
+                    new_meta: function(meta_url) {
+                        this.onNewMeta(meta_url);
+                    },
+                },
             }],
         });
         //this.toolbar.doLayout();
+        this.tabs = this.queryById('tabs');
     },
+
+    onNewMeta: function(meta_url) {
+        if (this.tagger_meta) {
+            this.tagger_meta.destroy();
+        }
+        this.tagger_meta = this.tabs.add({
+            xtype: 'bq-tagger',
+            resource : meta_url + '?meta',
+            title : 'Metadata',
+            viewMode : 'ReadOnly',
+            disableAuthTest : true
+        });
+    },
+
 });
 
 Ext.define('Bisque.Resource.Table.Compact', {
