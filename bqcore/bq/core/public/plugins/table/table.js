@@ -307,32 +307,27 @@ Ext.define('BQ.table.View', {
             enableKeyEvents: true,
             listeners: {
                 scope: this,
-                // focus: function(c) {
-                //     c.flex = 2;
-                //     this.doLayout();
-                //     if (c.value === toolbar.filter_text) {
-                //         c.setValue('');
-                //     }
-                //     var tip = Ext.create('Ext.tip.ToolTip', {
-                //         target: c.el,
-                //         anchor: 'top',
-                //         minWidth: 500,
-                //         width: 500,
-                //         autoHide: true,
-                //         dismissDelay: 20000,
-                //         shadow: true,
-                //         autoScroll: true,
-                //         loader: { url: '/core/html/querying.html', renderer: 'html', autoLoad: true },
-                //     });
-                //     tip.show();
-                // },
+                focus: function(c) {
+                    if (c.value === this.filter_text) {
+                        c.setValue('');
+                    }
+                    var tip = Ext.create('Ext.tip.ToolTip', {
+                        target: c.el,
+                        anchor: 'top',
+                        minWidth: 550,
+                        width: 550,
+                        autoHide: true,
+                        dismissDelay: 20000,
+                        shadow: false,
+                        autoScroll: true,
+                        loader: { url: '/core/plugins/table/help.html', renderer: 'html', autoLoad: true },
+                    });
+                    tip.show();
+                },
                 // blur: function(c) {
-                //     c.flex = 0;
-                //     this.doLayout();
                 // },
                 specialkey: function(f, e) {
                     if (e.getKey()==e.ENTER && f.value!='' && f.value != this.filter_text) {
-                        //document.location = BQ.Server.url('/client_service/browser?tag_query='+escape(f.value));
                         this.do_filter(f.value);
                     }
                 },
