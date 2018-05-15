@@ -38,6 +38,7 @@ Ext.define('Bisque.ResourceTagger', {
 
     initComponent : function() {
         this.callParent();
+        this.viewMgr = Ext.create('Bisque.ResourceTagger.viewStateManager', this.viewMode);
         if (this.full_load_on_creation)
             this.initTagger();
     },
@@ -113,20 +114,29 @@ Ext.define('Bisque.ResourceTagger', {
     },
 
     setResource: function (resource, template) {
+        var uri_params = null,
+            me = this;
         this.setLoading(true);
 
         if (resource instanceof BQObject)
             this.loadResourceInfo(resource);
-        else
+        else {
+            if (!this.disableAuthTest) {
+                uri_params = {view: 'deep'};
+            }
+
             // assume it is a resource URI otherwise
+            this.resource_fully_loaded = true;
             BQFactory.request({
                 uri: resource,
                 cb: Ext.bind(this.loadResourceInfo, this),
                 errorcb: function(error) {
-                    BQ.ui.error('Error fetching resource:<br>'+error.message_short, 4000);
+                    //BQ.ui.error('Error fetching resource:<br>'+error.message_short, 4000);
+                    me.loadResourceInfo(new BQResource());
                 },
-                uri_params: { view:'deep' },
+                uri_params: uri_params,
             });
+        }
     },
 
     loadResourceInfo: function (resource) {
@@ -137,7 +147,7 @@ Ext.define('Bisque.ResourceTagger', {
         if (!this.disableAuthTest)
             this.testAuth(BQApp.user, false);
 
-        if (this.resource.tags.length > 0)
+        if (this.resource.tags.length > 0 || this.resource_fully_loaded === true)
             this.loadResourceTags(this.resource.tags);
         else
             this.resource.loadTags(
@@ -248,7 +258,7 @@ Ext.define('Bisque.ResourceTagger', {
             ptype: 'bufferedrenderer',
         });*/
 
-        if (this.viewMgr.state.editable)
+        if (this.viewMgr && this.viewMgr.state && this.viewMgr.state.editable)
             plugins.push(this.rowEditor);
 
         this.tree = Ext.create('Ext.tree.Panel', {

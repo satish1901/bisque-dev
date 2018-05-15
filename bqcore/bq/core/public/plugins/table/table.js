@@ -141,7 +141,7 @@ Ext.define('BQ.data.reader.Table', {
             data.total += data.offset || 0;
         }
 
-        // in case of a single column data, neet to wrap it into a vector
+        // in case of a single column data, need to wrap it into a vector
         if (data.headers.length===1 && !Array.isArray(data.data[0])) {
             for (var i=0; i<data.data.length; ++i) {
                 data.data[i] = [data.data[i]];
@@ -417,7 +417,9 @@ Ext.define('BQ.table.View', {
         setTimeout(function(){
             me.doCheckLimits();
         }, 50);
-        this.fireEvent('new_meta', this.image.src);
+        if (this.phys.x>0 && this.phys.y>0) {
+            this.fireEvent('new_meta', this.image.src+'?meta');
+        }
     },
 
     onPhysError: function() {
@@ -929,6 +931,11 @@ Ext.define('BQ.table.Tree', {
                 convert : function (value, record) {
                     return (record.raw && record.raw.path) ? record.raw.path : '';
                 },
+            }, {
+                name : 'meta',
+                convert : function (value, record) {
+                    return (record.raw && record.raw.meta) ? record.raw.meta : null;
+                },
             }],
 
             listeners: {
@@ -1235,8 +1242,8 @@ Ext.define('BQ.table.Panel', {
                 info: json,
                 listeners: {
                     scope: this,
-                    new_meta: function(meta_url) {
-                        this.fireEvent('new_meta', meta_url);
+                    new_meta: function(meta) {
+                        this.fireEvent('new_meta', meta);
                     },
                 },
             });
@@ -1244,7 +1251,11 @@ Ext.define('BQ.table.Panel', {
     },
 
     onTableTreeSelected: function(r) {
-        if (r.node.data.type === 'group') return;
+        this.fireEvent('new_meta', r.url + '/info/format:xml');
+        if (r.node.data.type === 'group') {
+            //this.fireEvent('new_meta', r.url + '/info/format:xml');
+            return;
+        };
         var path = r.path,
             id = encodeURIComponent(path).replace(/\%/g, ''),
             t = this.tabs.queryById(id);
@@ -1262,8 +1273,8 @@ Ext.define('BQ.table.Panel', {
                 tree_node: r.node,
                 listeners: {
                     scope: this,
-                    new_meta: function(meta_url) {
-                        this.fireEvent('new_meta', meta_url);
+                    new_meta: function(meta) {
+                        this.fireEvent('new_meta', meta);
                     },
                 },
             });
@@ -1302,12 +1313,6 @@ Ext.define('Bisque.Resource.Table.Page', {
     onResourceRender : function() {
         // create view components: grid and tagger
 
-        var resourceTagger = {
-            xtype: 'bq-tagger',
-            resource : this.resource,
-            title : 'Annotations',
-        };
-
         this.add({
             xtype : 'container',
             itemId: 'main_container',
@@ -1327,7 +1332,19 @@ Ext.define('Bisque.Resource.Table.Page', {
                 split : true,
                 width : 400,
                 plain : true,
-                items : [resourceTagger]
+                items : [{
+                    xtype: 'bq-tagger',
+                    itemId: 'tagger',
+                    resource : this.resource,
+                    title : 'Annotations',
+                }, {
+                    xtype: 'bq-tagger',
+                    itemId: 'tagger_meta',
+                    title : 'Metadata',
+                    viewMode : 'ReadOnly',
+                    disableAuthTest: true,
+                    resource_fully_loaded: true,
+                }],
             }, {
                 xtype: 'bq_table_panel',
                 flex: 2,
@@ -1337,27 +1354,22 @@ Ext.define('Bisque.Resource.Table.Page', {
                 //path: '',
                 listeners: {
                     scope: this,
-                    new_meta: function(meta_url) {
-                        this.onNewMeta(meta_url);
-                    },
+                    new_meta: this.onNewMeta,
                 },
             }],
         });
         //this.toolbar.doLayout();
         this.tabs = this.queryById('tabs');
+        this.tagger_meta = this.queryById('tagger_meta');
     },
 
-    onNewMeta: function(meta_url) {
-        if (this.tagger_meta) {
-            this.tagger_meta.destroy();
+    onNewMeta: function(meta) {
+        if (typeof meta === "string") {
+            this.tagger_meta.setResource(meta);
+        } else {
+            // construct resource here
+
         }
-        this.tagger_meta = this.tabs.add({
-            xtype: 'bq-tagger',
-            resource : meta_url + '?meta',
-            title : 'Metadata',
-            viewMode : 'ReadOnly',
-            disableAuthTest : true
-        });
     },
 
 });

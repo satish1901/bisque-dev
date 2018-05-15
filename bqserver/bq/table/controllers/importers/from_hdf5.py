@@ -121,6 +121,18 @@ def _get_headers_types(node, startcol=None, endcol=None):
         types = []
     return ( headers, types )
 
+def _get_node_attributes(node):
+    tags = {}
+    for name in node._v_attrs._f_list():
+        tags[name] = node._v_attrs[name]
+    # try:
+    #     for name in node._v_attrs._f_list():
+    #         tags[name] = node._v_attrs[name]
+    # except Exception:
+    #     pass
+    log.debug('Metadata: %s', str(tags))
+    return tags
+
 
 #---------------------------------------------------------------------------------------
 # Importer: HDF
@@ -155,7 +167,7 @@ class TableHDF(TableBase):
     def get_queriable(self):
         if self.data is None:
             self.info()
-            
+
         # this could be either table or array => return based on self.data type
         if isinstance(self.data, tables.table.Table):
             return TableLikeHDF(None, None, None, table=self)
@@ -163,7 +175,7 @@ class TableHDF(TableBase):
             return ArrayLikeHDF(None, None, None, table=self)
         else:
             return TableLikeHDF(None, None, None, table=self, data=pd.DataFrame(), sizes=[], offset=0, types=[], headers=[])
-        
+
     def _collect_arrays(self, path='/'):
         try:
             try:
@@ -202,7 +214,7 @@ class TableHDF(TableBase):
                 except Exception:
                     log.exception('HDF file cannot be read')
                     raise RuntimeError("HDF file cannot be read")
-                
+
             # determine which part of path is group in HDF vs operations
             end = len(self.path)
             for i in range(len(self.path)):
@@ -211,16 +223,16 @@ class TableHDF(TableBase):
                     break
             self.subpath = '/' + '/'.join([p.strip('"') for p in self.path[0:end]])
             self.path = self.path[end:]
-            
+
             if self.tables is None:
                 self.tables = self._collect_arrays(self.subpath)
-    
+
             if len(self.tables) == 0:
                 # subpath not found
                 abort(404, "Object '%s' not found" % self.subpath)
-    
+
             log.debug('HDF subpath: %s, path: %s', self.subpath, str(self.path))
-    
+
             try:
                 node = self.t.get_node(self.subpath or '/') # v3 API
             except AttributeError:
@@ -230,14 +242,15 @@ class TableHDF(TableBase):
             node = self.data
 
         self.headers, self.types = _get_headers_types(node)
+        self.meta = _get_node_attributes(node)
         if isinstance(node, tables.array.Array):
-            self.sizes = list(node.shape) 
+            self.sizes = list(node.shape)
         elif isinstance(node, tables.table.Table):
             self.sizes = [node.shape[0], len(self.headers)]
         else:
             self.sizes = []
-        log.debug('HDF types: %s, header: %s, sizes: %s', str(self.types), str(self.headers), str(self.sizes))
-        return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes }
+        log.debug('HDF types: %s, header: %s, sizes: %s, meta size: %s', str(self.types), str(self.headers), str(self.sizes), len(self.meta))
+        return { 'headers': self.headers, 'types': self.types, 'sizes': self.sizes, 'meta': self.meta }
 
 
 class TableLikeHDF(TableHDF, TableLike):
