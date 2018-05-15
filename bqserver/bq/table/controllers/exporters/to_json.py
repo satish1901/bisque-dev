@@ -128,6 +128,9 @@ class ExporterJSON (TableExporter):
                 v["sizes"] = table.sizes
         if table.tables is not None:
             v["group"] = table.tables
+        if table.meta is not None and len(table.meta)>0:
+            v["meta"] = table.meta
+
         #log.debug(v)
         return json.dumps(v, cls=ExtEncoder)
 

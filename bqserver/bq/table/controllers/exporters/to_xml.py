@@ -75,14 +75,14 @@ except ImportError:
 from bq.table.controllers.table_exporter import TableExporter
 
 
-def _nested_list_to_str(l):    
+def _nested_list_to_str(l):
     # flatten nested list in l via depth first traversal
     if hasattr(l, '__iter__'):
         try:
             return ','.join([_nested_list_to_str(cell) for cell in l])
         except TypeError:
-            pass   # not iterable => just return string   
-    return str(l)    
+            pass   # not iterable => just return string
+    return str(l)
 
 
 #---------------------------------------------------------------------------------------
@@ -102,15 +102,26 @@ class ExporterXML (TableExporter):
         xml = etree.Element ('resource', uri=table.url)
         if table.headers:
             # has headers => this is a leaf object (table or matrix)
+            if isinstance(table.data, pd.core.frame.DataFrame):
+                etree.SubElement (xml, 'tag', name='type', value='table')
+            else:
+                etree.SubElement (xml, 'tag', name='type', value='matrix')
+
             el = etree.SubElement (xml, 'tag', name='headers', value=','.join([str(i) for i in table.headers]))
             el = etree.SubElement (xml, 'tag', name='types', value=','.join([str(t) for t in table.types]))
             if table.sizes is not None:
                 el = etree.SubElement (xml, 'tag', name='sizes', value=','.join([str(i) for i in table.sizes]))
         else:
             # no headers => this is a group/subfolder
+            etree.SubElement (xml, 'tag', name='type', value='group')
             el = etree.SubElement (xml, 'tag', name='group')
             for tab in table.tables:
                 etree.SubElement (el, 'tag', name=tab['path'], type=tab['type'])
+
+        if table.meta is not None and len(table.meta)>0:
+            for n,v in table.meta.iteritems():
+                etree.SubElement (xml, 'tag', name='%s'%n, value='%s'%v)
+
         return etree.tostring(xml)
 
     def format(self, table):
@@ -118,7 +129,7 @@ class ExporterXML (TableExporter):
         m = table.as_array()
         ndim = m.ndim
         if ndim > 0:
-            v = []        
+            v = []
             for i in range(m.shape[0]):
                 v.append( _nested_list_to_str(m[i]) )
         else:
