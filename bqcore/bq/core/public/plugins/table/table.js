@@ -1108,10 +1108,11 @@ Ext.define('BQ.table.Panel', {
         this.callParent();
         this.setLoading('Loading table...');
         // load table info to configure columns and the store
-        //this.setLoading('Fetching table info...');
+        this.setLoading('Loading table...');
         Ext.Ajax.request({
             url: '/table/' + this.resource.resource_uniq + '/info/format:json',
             callback: function(opts, succsess, response) {
+                this.setLoading(false);
                 if (response.status>=400 || !succsess)
                     BQ.ui.error(response.responseText);
                 else
@@ -1119,12 +1120,12 @@ Ext.define('BQ.table.Panel', {
             },
             disableCaching: false,
             scope: this,
-            listeners: {
-                scope: this,
-                beforerequest   : function() { this.setLoading('Loading table...'); },
-                requestcomplete : function() { this.setLoading(false); },
-                requestexception: function() { this.setLoading(false); },
-            },
+            // listeners: {
+            //     scope: this,
+            //     beforerequest   : function() { this.setLoading('Loading table...'); },
+            //     requestcomplete : function() { this.setLoading(false); },
+            //     requestexception: function() { this.setLoading(false); },
+            // },
         });
     },
 
