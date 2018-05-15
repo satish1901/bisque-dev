@@ -106,19 +106,19 @@ def _replace_nans(o):
         return o
 
 #---------------------------------------------------------------------------------------
-# exporters: Json
+# exporters: ExtJS - JSON formatted for ExtJS store ingest
 #---------------------------------------------------------------------------------------
 
-class ExporterJSON (TableExporter):
-    '''Formats tables as Json'''
+class ExporterExtJS (TableExporter):
+    '''Formats tables as ExtJS'''
 
-    name = 'json'
+    name = 'extjs'
     version = '1.0'
-    ext = 'json'
+    ext = 'extjs'
     mime_type = 'application/json'
 
     def info(self, table):
-        super(ExporterJSON, self).info(table)
+        super(ExporterExtJS, self).info(table)
         v = {}
         if table.headers:
             # has headers => this is a leaf object (table or matrix)
@@ -152,3 +152,69 @@ class ExporterJSON (TableExporter):
         if table.sizes is not None:
             v["sizes"] = table.sizes
         return json.dumps(v, cls=ExtEncoder)
+
+#---------------------------------------------------------------------------------------
+# exporters: Json
+#---------------------------------------------------------------------------------------
+
+class ExporterJSON (TableExporter):
+    '''Formats tables as Json'''
+
+    name = 'json'
+    version = '1.0'
+    ext = 'json'
+    mime_type = 'application/json'
+
+    def info(self, table):
+        super(ExporterJSON, self).info(table)
+        v = {}
+        if table.headers:
+            # has headers => this is a leaf object (table or matrix)
+            v["headers"] = table.headers
+            v["types"] = table.types
+            if table.sizes is not None:
+                v["sizes"] = table.sizes
+        if table.tables is not None:
+            v["group"] = table.tables
+        if table.meta is not None and len(table.meta)>0:
+            v["meta"] = table.meta
+
+        #log.debug(v)
+        return json.dumps(v, cls=ExtEncoder)
+
+    def format(self, table):
+        """ converts table to JSON """
+        #return table.data.to_json()
+        m = table.as_array()
+        rank = len(m.shape)
+        is_table = len(table.headers)<=5 or (len(table.headers)>5 and (table.headers[0] != '0' or table.headers[1] != '1' or table.headers[2] != '2' ))
+
+        if rank<3 and is_table is True:
+            v = []
+            for i in range(m.shape[1]):
+                vv = {
+                    'offset': table.offset,
+                    'header': table.headers[i],
+                    'type': table.types[i],
+                    'data': _replace_nans(m[:,i].tolist()),
+                }
+                if table.sizes is not None:
+                    vv["size"] = table.sizes[0]
+                v.append(vv)
+        else:
+            # if hasattr(data, "strip") or   \
+            #    (not hasattr(data, "__getitem__") and   \
+            #     not hasattr(data, "__iter__")):
+            #     # data is not a list/tuple => wrap it
+            #     data = [ data ]
+            v = {
+                'offset': table.offset,
+                #'headers': table.headers,
+                'type': table.types[0],
+                'data': _replace_nans(m.tolist()),
+            }
+            if table.sizes is not None:
+                v["size"] = table.sizes
+
+        return json.dumps(v, cls=ExtEncoder)
+

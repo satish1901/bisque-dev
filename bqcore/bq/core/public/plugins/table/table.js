@@ -70,7 +70,7 @@ Ext.define('BQ.data.proxy.Table', {
             url += '/'+operation.start;
         }
         url += ',;'; // request all the columns
-        url += '/format:json';
+        url += '/format:extjs';
         request.url = url;
         return me.callParent(arguments);
     },
@@ -113,7 +113,7 @@ Ext.define('BQ.data.proxy.TableTree', {
         } else if (operation.limit==1) {
             url += '/'+operation.start;
         }*/
-        url += '/info/format:json';
+        url += '/info/format:extjs';
         request.url = url;
         return me.callParent(arguments);
     },
@@ -452,7 +452,7 @@ Ext.define('BQ.table.View', {
         // load table info to configure columns and the store
         this.setLoading('Loading table...');
         Ext.Ajax.request({
-            url: this.url + '/info/format:json',
+            url: this.url + '/info/format:extjs',
             callback: function(opts, succsess, response) {
                 this.setLoading(false);
                 if (response.status>=400 || !succsess)
@@ -1112,7 +1112,7 @@ Ext.define('BQ.table.Panel', {
         // load table info to configure columns and the store
         this.setLoading('Loading table...');
         Ext.Ajax.request({
-            url: '/table/' + this.resource.resource_uniq + '/info/format:json',
+            url: '/table/' + this.resource.resource_uniq + '/info/format:extjs',
             callback: function(opts, succsess, response) {
                 this.setLoading(false);
                 if (response.status>=400 || !succsess)
