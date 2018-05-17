@@ -53,7 +53,7 @@
         "Parameters": [
             {
                 "Inputs": {
-                    "__xmlbody__": "<mex><tag name=\"inputs\"><tag type=\"system-input\" name=\"mex_url\"/><tag type=\"system-input\" name=\"bisque_token\"/></tag><tag type=\"image\" name=\"image_url\" value=\"${server_url}/data_service/${uniq}\"/></mex>"
+                    "__xmlbody__": "<mex><tag name=\"inputs\"><tag type=\"system-input\" name=\"mex_url\"/><tag type=\"system-input\" name=\"bisque_token\"/><tag type=\"image\" name=\"image_url\" value=\"${server_url}/data_service/${uniq}\"/></tag></mex>"
                 }
             },
             {
