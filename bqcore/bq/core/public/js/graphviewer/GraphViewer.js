@@ -184,6 +184,7 @@ PipelineStepCard.prototype.recurseFields = function (val, attr_name, depth, num_
     var indent = Array(depth*3+1).join(":");
     if (typeof val == 'string' || typeof val == 'number' || typeof val == 'boolean') {
         var attr_value = String(val);
+        attr_value = attr_value.replace(/</g, "{").replace(/>/g, "}")  // graph UI gets confused with '<'/'>'
         this.addField(indent+attr_name, attr_value, 'value');
         num_fields += 1;
     }

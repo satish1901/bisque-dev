@@ -340,6 +340,101 @@ Ext.define('Bisque.Resource.Imagej_pipeline.Full', {
 
 
 
+Ext.define('BQ.viewers.Bisque_pipeline', {
+    alias: 'widget.viewer_bisque_pipeline',
+    extend: 'Ext.Component',
+    componentCls: 'bisque_pipeline',
+});
+
+Ext.define('Bisque.Resource.Bisque_pipeline.Page', {
+    extend : 'Bisque.Resource.Page',
+
+    initComponent : function() {
+        this.addCls('pipelineio');
+        this.callParent();
+    },
+
+    downloadOriginal : function() {
+        if (this.resource.src) {
+            window.open(this.resource.src);
+            return;
+        }
+        var exporter = Ext.create('BQ.Export.Panel');
+        exporter.downloadResource(this.resource, 'none');
+    },
+
+    onResourceRender : function() {
+        this.setLoading(true);
+
+        var resourceTagger = {
+            xtype: 'bq-tagger',
+            resource : this.resource,
+            title : 'Annotations',
+        };
+
+        this.add({
+            xtype : 'container',
+            itemId: 'main_container',
+            layout : 'border',
+            items : [{
+                xtype: 'tabpanel',
+                itemId: 'tabs',
+                title : 'Metadata',
+                deferredRender: true,
+                region : 'east',
+                activeTab : 0,
+                border : false,
+                bodyBorder : 0,
+                collapsible : true,
+                split : true,
+                width : 400,
+                plain : true,
+                items : [resourceTagger],
+            }, {
+                xtype: 'bq_pipelineviewer_panel',
+                itemId: 'pipelineViewer',
+                region : 'center',
+                flex: 2,
+                border : false,
+                resource: this.resource,
+                resourceType: 'blobservice_url',
+                rankdir: 'TB',
+            }],
+        });
+
+        this.toolbar.doLayout();
+
+        this.setLoading(false);
+    },
+
+});
+
+Ext.define('Bisque.Resource.Bisque_pipeline.Compact', {
+    extend : 'Bisque.Resource.Compact',
+    initComponent : function() {
+        this.addCls(['resicon', 'bisque_pipeline']);
+        this.callParent();
+    },
+
+});
+
+Ext.define('Bisque.Resource.Bisque_pipeline.Card', {
+    extend : 'Bisque.Resource.Card',
+    initComponent : function() {
+        this.addCls('bisque_pipeline');
+        this.callParent();
+    },
+});
+
+Ext.define('Bisque.Resource.Bisque_pipeline.Full', {
+    extend : 'Bisque.Resource.Full',
+    initComponent : function() {
+        this.addCls('bisque_pipeline');
+        this.callParent();
+    },
+});
+
+
 
 /*******************************************************************************
 Pipeline renderer
