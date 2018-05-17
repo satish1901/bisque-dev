@@ -53,17 +53,25 @@ DESCRIPTION
 Services for the notifying users.
 """
 
-import tg
 import logging
+import smtplib
+import socket
 import turbomail
-from tg import config
+
+
+from lxml import etree
+from tg import request,  expose, require #, config
+from repoze.what import predicates
+
+
+from bq.core.service import ServiceController
+from bq.core import identity
 
 log = logging.getLogger('bq.notify')
+#admin_email = tg.config.get('bisque.admin_email')
 
-admin_email = tg.config.get('bisque.admin_email')
 
-
-def send_mail(sender_email, recepient_email, subject, body ):
+def send_mail(sender_email, recipient_email, subject, body ):
     """Send an email with  info to the user.
     """
 
@@ -72,21 +80,67 @@ def send_mail(sender_email, recepient_email, subject, body ):
     #      'because sender and/or admin email address is not set.')
     #    raise RuntimeError
 
-    msg = turbomail.Message(sender_email, recepient_email, subject)
+    msg = turbomail.Message(sender_email, recipient_email, subject)
     msg.plain = body
     try:
+        log.debug ("Sending mail to %s %s" ,  recipient_email, subject)
         turbomail.send(msg)
-        log.debug ("Sending mail to %s %s" % (recepient_email, subject))
+        return True
     except turbomail.MailNotEnabledException:
-        log.warning("Failed sending mail to %s with '%s'" % (recepient_email, subject))
+        log.warning("Failed sending %s with '%s' turbomail not enabled" ,  recipient_email, subject)
+    except (smtplib.SMTPException, socket.error) as exc :
+        log.warning("Failed sending %s with '%s'" ,  recipient_email, subject, exc_info=True)
 
+    return False
 
-def send_invite(sender_email, recepient_email, subject, body):
+def send_invite(sender_email, recipient_email, subject, body):
     """Create a new user and send them an invitation
     returns the new BQuser
     """
-
-    log.debug ("Creating new user %s" % (recepient_email))
-    send_mail(sender_email, recepient_email, subject, body)
+    log.debug ("Creating new user %s" , recipient_email)
+    return send_mail(sender_email, recipient_email, subject, body)
 
     #return newuser
+
+
+
+
+class NotifyServerController(ServiceController):
+    service_type = "notify"
+
+    @expose(content_type='text/xml')
+    def index(self, **kw):
+        descr = etree.Element ('resource', uri = self.uri)
+        entry = etree.SubElement (descr, 'method', name='/notify/email', value="Send an email from user")
+        etree.SubElement (entry, 'arguments', value = 'recipient,subject')
+        etree.SubElement (entry, 'verb', value = 'POST')
+        etree.SubElement (entry, 'body', value = 'required')
+        return etree.tostring (descr)
+
+
+    @expose(content_type='text/xml')
+    @require(predicates.not_anonymous())
+    def email(self, recipient, subject): #pylint: disable=no-self-use
+        """Send an email for logged in users
+        """
+        body = request.body
+        sender = identity.get_current_user().resource_value
+
+        if not body:
+            return "<failure msg='no body' />"
+
+        if  send_mail(sender, recipient, subject, body):
+            return "<success/>"
+        else:
+            return "<failure msg='send failed' />"
+
+
+def initialize(uri):
+    """ Initialize the top level server for this microapp"""
+    # Add you checks and database initialize
+    log.debug ("initialize " + uri)
+    service =  NotifyServerController(uri)
+
+    return service
+
+__controller__= NotifyServerController
