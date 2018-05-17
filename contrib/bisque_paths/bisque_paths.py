@@ -202,7 +202,7 @@ def main():
 
     config.read (['.bisque', os.path.expanduser('~/.bisque'), '/etc/bisque/bisque_config'])
     defaults =  dict(config.items('main'))
-    defaults.extend (config.items('bqpath'))
+    defaults.update (config.items('bqpath'))
 
     parser = argparse.ArgumentParser(description=DESCRIPTION,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter,
