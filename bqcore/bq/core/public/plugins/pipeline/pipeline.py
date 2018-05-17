@@ -2,6 +2,7 @@ from bq.blob_service.controllers.blob_plugins import ResourcePlugin
 from bq.pipeline.controllers.importers.from_dream3d import upload_dream3d_pipeline
 from bq.pipeline.controllers.importers.from_cellprofiler import upload_cellprofiler_pipeline
 from bq.pipeline.controllers.importers.from_imagej import upload_imagej_pipeline
+from bq.pipeline.controllers.importers.from_bqworkflow import upload_bisque_pipeline
 
 class Dream3DPipelinePlugin (ResourcePlugin):
     '''Dream.3D Pipeline resource''' 
@@ -16,6 +17,20 @@ class Dream3DPipelinePlugin (ResourcePlugin):
     
     def process_on_import(self, f, intags):
         return upload_dream3d_pipeline(f, intags)
+    
+class BisquePipelinePlugin (ResourcePlugin):
+    '''Bisque Pipeline resource''' 
+    name = "BisquePipelinePlugin"  
+    version = '1.0'
+    ext = 'bq'
+    resource_type = 'bisque_pipeline'
+    mime_type = 'application/json'
+    
+    def __init__(self):
+        pass
+    
+    def process_on_import(self, f, intags):
+        return upload_bisque_pipeline(f, intags)
 
 class CellprofilerPipelinePlugin (ResourcePlugin):
     '''Cellprofiler Pipeline resource''' 
