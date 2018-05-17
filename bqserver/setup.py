@@ -71,7 +71,7 @@ The bisque server
     preference       = bq.preference.controllers.service
     table            = bq.table.controllers.service
     pipeline         = bq.pipeline.controllers.service
-
+    notify           = bq.client_service.controllers.notify_service
     [bq.commands]
     module = bq.module_service.commands.module_admin:module_admin
       """,

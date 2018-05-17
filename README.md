@@ -14,8 +14,15 @@ An application for the management and analysis of complex multi-dimensional data
   2.  Using host mounted modules to make it easier to edit
   3.  Registering a module to your local server
   4.  Use an external data directory and database so you don't lose data when service stops
+  5.  This script [https://bitbucket.org/CBIucsb/bisque-stable/downloads/build_bisque_docker_modules.sh] run the following commands for you.
 
 Full instructions
+
+  0. Ensure you have the latest stable locally
+
+     ```
+       docker pull cbiucsb/bisque05:stable
+     ```
 
   1. Run a bisque server on the host port 9898:
 
@@ -41,10 +48,11 @@ Full instructions
         ```
 
   3. Registering a module to your local server
-     -  Login to your bisque server using admin:admin
-     - Find the module manager under Admin button
-     - put `http://<hostname>:9898/enginer_service` in the right panel and hit load
-     - Drag and Drop "MetaData" to the left panel
+     *  Login to your bisque server using admin:admin
+     * Find the module manager under Admin button
+     * put `http://localhost:8080/engine_service` in the right panel and hit load
+       *  use localhost:8080 here because it's internal to the container.
+     * Drag and Drop "MetaData" to the left panel
 
 
   4.  Use an external data directory so you don't lose data when service stops
@@ -58,12 +66,22 @@ Full instructions
       - The uploaded images are stored inside the container at /source/data/imagedir
 
 
-  5.  Use  an external database server for performance and durability
+  5.  (Optional) Use  an external database server for performance and durability
 
-      ```
+    ```
        docker run --name bisque --rm -p 9898:8080 -e BISQUE_DBURL=postgresql://dbhost:5432/bisque  cbiucsb/bisque05:stable
-      ```
+    ```
 
+  6.  (Optional) All together:
+
+    ```
+        docker run --name bisque --rm -p 9898:8080 \
+             -v $(pwd)/container-data:/source/data \
+             -v $(pwd)/container-modules:/source/modules \
+             -e BISQUE_DBURL=postgresql://dbhost:5432/bisque \
+             cbiucsb/bisque05:stable
+
+    ```
 
 ### Contribution guidelines ###
 
