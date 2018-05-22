@@ -189,14 +189,14 @@ class ExporterJSON (TableExporter):
         rank = len(m.shape)
         is_table = len(table.headers)<=5 or (len(table.headers)>5 and (table.headers[0] != '0' or table.headers[1] != '1' or table.headers[2] != '2' ))
 
-        if rank<3 and is_table is True:
+        if rank<3 and is_table:
             v = []
-            for i in range(m.shape[1]):
+            for i in range(len(table.headers)):
                 vv = {
                     'offset': table.offset,
                     'header': table.headers[i],
                     'type': table.types[i],
-                    'data': _replace_nans(m[:,i].tolist()),
+                    'data': _replace_nans(m[:,i].tolist()) if rank>1 else _replace_nans(m.tolist()),
                 }
                 if table.sizes is not None:
                     vv["size"] = table.sizes[0]
