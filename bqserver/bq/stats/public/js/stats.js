@@ -202,7 +202,7 @@ BQStatisticsAccessor.prototype.onLoad = function (stats) {
         if (resource.resource_type != 'resource') continue;
         var tags = resource.tags;
         var result = {};
-        result.uri = resource.uri;
+        result.uri = resource.attributes.uri;
         var u = splitUrl(result.uri);
         result.xpath   = u.attrs.xpath;
         result.xmap    = u.attrs.xmap;
@@ -350,6 +350,8 @@ Ext.define('BQ.stats.plotter.Plotter', {
         var fields = [];
         var data = [];
         var maxsz = 0;
+        var minval = Number.MAX_VALUE;
+        var maxval = -Number.MAX_VALUE;
         this.titles = this.titles || [];
 
         for (var i=0; i<results.length; i++) {
@@ -363,10 +365,14 @@ Ext.define('BQ.stats.plotter.Plotter', {
             for (var k=0; k<v.length; k++) {
                 data[k] = data[k] || { 'index': k, };
                 data[k][name] = parseFloat(v[k]);
+                if (data[k][name] < minval) minval = data[k][name];
+                if (data[k][name] > maxval) maxval = data[k][name];
             }
-
             this.titles[i] = this.titles[i] || results[i].xpath;
         }
+
+        this.min_value = minval;
+        this.max_value = maxval;
 
         this.store = Ext.create('Ext.data.JsonStore', {
             fields: ['index'].concat(fields),
@@ -470,11 +476,13 @@ Ext.define('BQ.stats.plotter.Line', {
                 position: 'left',
                 fields: this.fields,
                 label: {
-                    renderer: Ext.util.Format.numberRenderer('0,0')
+                    renderer: Ext.util.Format.numberRenderer('0.0')
                 },
                 //title: 'Sample Values',
                 //grid: true,
                 //minimum: 0
+                minimum: this.min_value,   // otherwise plots for small numbers have wrong Y-axis scale (at least for ExtJS 4)
+                maximum: this.max_value,
             }, {
                 type: 'Numeric',
                 position: 'bottom',
