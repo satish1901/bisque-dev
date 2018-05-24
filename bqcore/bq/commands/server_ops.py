@@ -16,6 +16,7 @@ PID_TEMPL = "bisque_%s.pid"
 LOG_TEMPL = 'bisque_%s.log'
 RUNNER_CMD = ['mexrunner']
 SITE_CFG = 'site.cfg'
+ING={ 'start': 'starting', 'stop':'stopping', 'restart':'restarting'}
 
 # if os.name == 'nt':
 #     #pylint:disable=F0401
@@ -142,14 +143,14 @@ def check_running (pid_file):
         else:
             return False
 
+
 def paster_command(command, options, cfgopt, processes, cfg_file = None, *args):
     def verbose(msg):
         if options.verbose:
             print msg
 
     paster_verbose = '-v' if options.verbose else '-q'
-    msg = { 'start': 'starting', 'stop':'stopping', 'restart':'restarting'}[command]
-    verbose ("%s bisque on %s .. please wait" % (msg, cfgopt['port']))
+    verbose ("%s bisque on %s .. please wait" % (ING[command], cfgopt['port']))
     server_cmd = [exe_path('paster'), 'serve', paster_verbose]
     server_cmd.extend (['--log-file', cfgopt['logfile'], '--pid-file', cfgopt['pidfile'],
                         #                   '--deamon',
@@ -218,7 +219,7 @@ def logger_command(command, cfgopt, processes):
 
     launcher  = shlex.split (cfgopt['logging_server'])
 
-    print "%sing logging service" % command
+    print "%s logging service" % ING[command]
     if command is 'start':
         with open(os.devnull, 'w') as fnull:
             #logger = Popen(cfgopt['logging_server'], stdout=fnull, stderr=fnull, shell=True)
@@ -301,7 +302,7 @@ def operation(command, options, *args):
             if args and key not in args:
                 continue
 
-            print "%sing %s" % (command, key)
+            print ING[command], key
 
             cfgopt['services_enabled'] = ','.join([
                 l.strip() for l in serverspec.pop('services_enabled', '').split(',')])
