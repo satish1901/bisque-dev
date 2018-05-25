@@ -92,7 +92,7 @@ class WorkflowRunner(object):
         self.output_resources = []
         
     def run(self):
-        #retrieve tags
+        # retrieve tags
         self.bqSession.update_mex('Extracting properties')
         
         # set up initial parameters
@@ -104,31 +104,40 @@ class WorkflowRunner(object):
         if not pipeline:
             raise WFError("trying to run incompatible workflow")
 
-        # Run the workflow
-        self.output_resources = [ET.Element('tag', name='initial state', value=cgi.escape(str(self.global_vars)))]
-        for step_id in xrange(len(pipeline)-1):
-            curr_step = pipeline.get(str(step_id))
-            if curr_step is None:
-                raise WFError("workflow step %s missing" % step_id)
-            step_label = curr_step['__Label__']
-            service_name = self._prepare_param(curr_step['__Meta__']['Service'])
-            method = self._prepare_param(curr_step['__Meta__']['Method'])
-            path = self._prepare_param(curr_step['__Meta__']['Path'])
-            extras = {}
-            for meta_param in curr_step['__Meta__']:
-                if meta_param.lower() not in ['service', 'method', 'path']:
-                    extras[meta_param.lower()] = curr_step['__Meta__'][meta_param]
-            input_map = {}
-            output_map = {}
-            for param in curr_step['Parameters']:
-                if 'Inputs' in param:
-                    input_map = param['Inputs']
-                if 'Outputs' in param:
-                    output_map = param['Outputs']
-            res = self.run_single_step(step_id, step_label, service_name, method, path, input_map, output_map, **extras)
-            self.output_resources.append(ET.Element('tag', name='state after step %s'%step_id, value=cgi.escape(str(self.global_vars))))
-            if isinstance(res, ET._Element):
-                self.output_resources.append(ET.Element('tag', name='reply from step %s'%step_id, value=cgi.escape(ET.tostring(res))))
+        # want error notification?
+        error_mail = pipeline['__Header__'].get('Error_mail')
+
+        try:
+            # Run the workflow
+            self.output_resources = [ET.Element('tag', name='initial state', value=cgi.escape(str(self.global_vars)))]
+            for step_id in xrange(len(pipeline)-1):
+                curr_step = pipeline.get(str(step_id))
+                if curr_step is None:
+                    raise WFError("workflow step %s missing" % step_id)
+                step_label = curr_step['__Label__']
+                service_name = self._prepare_param(curr_step['__Meta__']['Service'])
+                method = self._prepare_param(curr_step['__Meta__']['Method'])
+                path = self._prepare_param(curr_step['__Meta__']['Path'])
+                extras = {}
+                for meta_param in curr_step['__Meta__']:
+                    if meta_param.lower() not in ['service', 'method', 'path']:
+                        extras[meta_param.lower()] = curr_step['__Meta__'][meta_param]
+                input_map = {}
+                output_map = {}
+                for param in curr_step['Parameters']:
+                    if 'Inputs' in param:
+                        input_map = param['Inputs']
+                    if 'Outputs' in param:
+                        output_map = param['Outputs']
+                res = self.run_single_step(step_id, step_label, service_name, method, path, input_map, output_map, **extras)
+                self.output_resources.append(ET.Element('tag', name='state after step %s'%step_id, value=cgi.escape(str(self.global_vars))))
+                if isinstance(res, ET._Element):
+                    self.output_resources.append(ET.Element('tag', name='reply from step %s'%step_id, value=cgi.escape(ET.tostring(res))))
+        except Exception as exc:
+            if error_mail is not None:
+                input_map = { "recipient": error_mail, "subject": "Workflow failed", "__xmlbody__": str(exc) }
+                self.run_single_step_direct(step_id='FAIL HANDLER', service_name='notify', method='POSTXML', path='email', input_map=input_map, output_map={})
+            raise
 
     def _read_pipeline(self, pipeline_url):
         """
