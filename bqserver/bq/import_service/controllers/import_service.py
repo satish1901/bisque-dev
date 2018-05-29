@@ -1118,9 +1118,11 @@ class import_serviceController(ServiceController):
         if mime in self.filters:
             intags['type'] = mime
 
-        # take care of no extension case: force deep guessing
+        # take care of funny extension cases: force deep guessing
+        # 1) no extension, which might be in a form of some long string
+        # 2) numerical extension as is used in Nanoscope images with numerical extensions
         ext = os.path.splitext(uf.filename)[1]
-        noext = (ext == '' or len(ext)>6)
+        noext = (ext == '' or len(ext)>10 or ext.isdigit() is True)
         if needs_guessing and mime is None and noext:
             log.debug('process: setting mime to "image/series"' )
             mime = 'image/series'
