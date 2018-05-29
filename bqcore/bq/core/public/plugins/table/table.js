@@ -418,7 +418,7 @@ Ext.define('BQ.table.View', {
             me.doCheckLimits();
         }, 50);
         if (this.phys.x>0 && this.phys.y>0) {
-            this.fireEvent('new_meta', this.image.src+'?meta');
+            this.fireEvent('new_meta_image', this.image.src+'?meta');
         }
     },
 
@@ -1245,6 +1245,9 @@ Ext.define('BQ.table.Panel', {
                     new_meta: function(meta) {
                         this.fireEvent('new_meta', meta);
                     },
+                    new_meta_image: function(meta) {
+                        this.fireEvent('new_meta_image', meta);
+                    },
                 },
             });
         }
@@ -1275,6 +1278,9 @@ Ext.define('BQ.table.Panel', {
                     scope: this,
                     new_meta: function(meta) {
                         this.fireEvent('new_meta', meta);
+                    },
+                    new_meta_image: function(meta) {
+                        this.fireEvent('new_meta_image', meta);
                     },
                 },
             });
@@ -1344,6 +1350,13 @@ Ext.define('Bisque.Resource.Table.Page', {
                     viewMode : 'ReadOnly',
                     disableAuthTest: true,
                     resource_fully_loaded: true,
+                }, {
+                    xtype: 'bq-tagger',
+                    itemId: 'tagger_image',
+                    title : 'Image',
+                    viewMode : 'ReadOnly',
+                    disableAuthTest: true,
+                    resource_fully_loaded: true,
                 }],
             }, {
                 xtype: 'bq_table_panel',
@@ -1355,12 +1368,14 @@ Ext.define('Bisque.Resource.Table.Page', {
                 listeners: {
                     scope: this,
                     new_meta: this.onNewMeta,
+                    new_meta_image: this.onNewMetaImage,
                 },
             }],
         });
         //this.toolbar.doLayout();
         this.tabs = this.queryById('tabs');
         this.tagger_meta = this.queryById('tagger_meta');
+        this.tagger_image = this.queryById('tagger_image');
     },
 
     onNewMeta: function(meta) {
@@ -1372,6 +1387,14 @@ Ext.define('Bisque.Resource.Table.Page', {
         }
     },
 
+    onNewMetaImage: function(meta) {
+        if (typeof meta === "string") {
+            this.tagger_image.setResource(meta);
+        } else {
+            // construct resource here
+
+        }
+    },
 });
 
 Ext.define('Bisque.Resource.Table.Compact', {
