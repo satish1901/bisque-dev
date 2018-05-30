@@ -60,7 +60,7 @@ import turbomail
 
 
 from lxml import etree
-from tg import request,  expose, require #, config
+from tg import request,  expose, require, config
 from repoze.what import predicates
 
 
@@ -124,7 +124,8 @@ class NotifyServerController(ServiceController):
         """Send an email for logged in users
         """
         body = request.body
-        sender = identity.get_current_user().resource_value
+        #sender = identity.get_current_user().resource_value
+        sender = config.get('bisque.admin_email')  # "admin" is the true sender in this case, not the user
 
         if not body:
             return "<failure msg='no body' />"
