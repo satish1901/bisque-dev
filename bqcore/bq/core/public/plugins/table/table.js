@@ -314,8 +314,9 @@ Ext.define('BQ.table.View', {
                     var tip = Ext.create('Ext.tip.ToolTip', {
                         target: c.el,
                         anchor: 'top',
-                        minWidth: 550,
-                        width: 550,
+                        minWidth: 650,
+                        width: 650,
+                        maxHeight: 550,
                         autoHide: true,
                         dismissDelay: 20000,
                         shadow: false,
