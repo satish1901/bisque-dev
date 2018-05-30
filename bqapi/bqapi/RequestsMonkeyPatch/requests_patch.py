@@ -13,7 +13,7 @@ import email.utils
 import mimetypes
 from requests.packages.urllib3.packages import six
 import warnings
-from monkeypatch import *
+from .monkeypatch import *
 
 
 

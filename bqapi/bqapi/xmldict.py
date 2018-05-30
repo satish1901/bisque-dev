@@ -1,5 +1,6 @@
 # Create python xml structures compatible with
 # http://search.cpan.org/~grantm/XML-Simple-2.18/lib/XML/Simple.pm
+from __future__ import print_function
 
 try:
     from lxml import etree
@@ -101,10 +102,9 @@ def xml2nv(e):
 if __name__=="__main__":
 
     X = """<T uri="boo"><a n="1"/><a n="2"/><b n="3"><c x="y"/></b></T>"""
-    print X
+    print (X)
     Y = xml2d(etree.XML(X))
-    print Y
+    print (Y)
     Z = etree.tostring (d2xml(Y) )
-    print Z
+    print (Z)
     assert X == Z
-

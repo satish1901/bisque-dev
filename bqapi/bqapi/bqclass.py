@@ -55,9 +55,10 @@ __copyright__ = "Center for BioImage Informatics, University California, Santa B
 
 import sys
 import math
+import io
 import inspect
 import logging
-from urllib import quote
+import tempfile
 try:
     from lxml import etree
 except ImportError:
@@ -327,6 +328,7 @@ class BQImage(BQResource):
         return BQImagePixels(self)
 
 
+
 class BQImagePixels(object):
     """manage requests to the image pixels"""
     def __init__(self, image):
@@ -336,21 +338,31 @@ class BQImagePixels(object):
     def _construct_url(self):
         """build the final url based on the operation
         """
-        session = self.image.session
-        return session.service_url('image_service', '%s?%s'
-                                   % (self.image.resource_uniq, '&'.join(self.ops)))
-    def fetch(self, path=None):
+        image_service = self.image.session.service('image_service')
+        return image_service.construct (path = '%s?%s'%(self.image.resource_uniq,
+                                                        '&'.join ( "%s=%s" % tp for tp in self.ops )))
+        #return session.service_url('image_service',
+        #                           % (self.image.resource_uniq, '&'.join(self.ops)))
+
+    def fetch(self, path=None, stream=False):
         """resolve the current and fetch the pixel
         """
         url = self._construct_url()
-        session = self.image.session
-        return session.c.fetch (url, path=path)
+        image_service = self.image.session.service ('image_service')
+        if path is not None:
+            stream = True
 
-    def command(self, operation, arguments=None):
-        if arguments is not None:
-            self.ops.append('%s=%s'%(operation, arguments))
+        response = image_service.fetch (url, stream=stream)
+        if path is not None:
+            with open (path, 'wb') as fb:
+                for block in response.iter_content(chunk_size = 16 * 1024 * 1024): #16MB
+                    fb.write(block)
+                response.close()
         else:
-            self.ops.append(operation)
+            return response.content
+
+    def command(self, operation, arguments=''):
+        self.ops.append((operation, arguments))
         return self
 
     def slice(self, x='', y='',z='',t=''):
@@ -373,6 +385,36 @@ class BQImagePixels(object):
 
     def info(self):
         return self.command('info')
+
+    def asarray(self):
+        try:
+            import tifffile
+        except ImportError:
+            log.error ("Please install Tifffile (Optional)")
+            return None
+        # Force format to be tiff by removing any format and append format tiff
+        self.ops = [ tp for tp in self.ops if tp[0] != 'format' ]
+        self.format ('tiff')
+        url = self._construct_url()
+        image_service = self.image.session.service ('image_service')
+        with  image_service.fetch (url, stream=True) as response:
+            #response.raw.decode_content = True
+            return tifffile.imread (io.BytesIO (response.content))
+
+    def savearray (self, fname, imdata=None, imshape=None, dtype=None, **kwargs):
+        try:
+            import tifffile
+        except ImportError:
+            log.error ("Please install Tifffile (Optional)")
+            return None
+        import_service = self.image.session.service ('import_service')
+        imfile =  tempfile.mkstemp (suffix='.tiff')
+        tifffile.imsave (imfile, imdata, imshape, dtype, **kwargs)
+        import_service.transfer (fname, fileobj = open (imfile, 'rb'))
+        os.remove (imfile)
+
+
+
 
 
 ################################################################################

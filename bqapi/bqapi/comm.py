@@ -50,16 +50,20 @@ DESCRIPTION
 ===========
 
 """
+
+
 import os
 import sys
-import urlparse
-import urllib
+#import urlparse
+#import urllib
 import logging
 import itertools
 import tempfile
 import mimetypes
 import warnings
 import posixpath
+
+from six.moves import urllib
 
 
 import requests
@@ -183,7 +187,7 @@ class BQServer(Session):
             @return prepared url
         """
 
-        u = urlparse.urlsplit(url)
+        u = urllib.parse.urlsplit(url)
 
         #root
         if u.scheme and u.netloc:
@@ -191,14 +195,14 @@ class BQServer(Session):
             netloc = u.netloc
         elif self.root and u.netloc=='':
             #adds root request if no root is provided in the url
-            r = urlparse.urlsplit(self.root)
+            r = urllib.parse.urlsplit(self.root)
             scheme = r.scheme
             netloc = r.netloc
         else: #no root provided
             raise BQApiError("No root provided")
 
         #query
-        query = ['%s=%s'%(k,v) for k,v in urlparse.parse_qsl(u.query, True)]
+        query = ['%s=%s'%(k,v) for k,v in urllib.parse.parse_qsl(u.query, True)]
         unordered_query = []
         ordered_query = []
 
@@ -215,7 +219,7 @@ class BQServer(Session):
         query = query + unordered_query + ordered_query
         query = '&'.join(query)
 
-        return urlparse.urlunsplit([scheme,netloc,u.path,query,u.fragment])
+        return urllib.parse.urlunsplit([scheme,netloc,u.path,query,u.fragment])
 
 
 
@@ -376,9 +380,9 @@ class BQSession(object):
         """
         if bisque_root is None:
             # This assumes that bisque_root is http://host.org:port/
-            mex_tuple = list(urlparse.urlparse(mex_url))
+            mex_tuple = list(urllib.parse.urlparse(mex_url))
             mex_tuple[2:5] = '','',''
-            bisque_root = urlparse.urlunparse(mex_tuple)
+            bisque_root = urllib.parse.urlunparse(mex_tuple)
 
         self.bisque_root = bisque_root
         self.c.root = bisque_root
@@ -584,7 +588,7 @@ class BQSession(object):
             if path is not None:
                 return r
             return r and self.factory.string2etree(r)
-        except etree.ParseError, e:
+        except etree.ParseError as e:
             log.exception("Problem with post response %s", e)
             return r
 
@@ -664,7 +668,7 @@ class BQSession(object):
             raise BQApiError('Not a service type')
         if query:
             path = "%s?%s" % (path, urllib.urlencode(query))
-        return urlparse.urljoin(root, path)
+        return urllib.parse.urljoin(root, path)
 
 
     def _load_services(self):
@@ -780,7 +784,7 @@ class BQSession(object):
             tags.append( { 'name':'message', 'value': msg })
         try:
             return self.update_mex(status, tags=tags, gobjects=gobjects, children=children, reload=False, merge=True)
-        except BQCommError, ce:
+        except BQCommError as ce:
             log.error ("Problem during finish mex %s" % ce.response.request.headers)
             try:
                 return self.update_mex( status='FAILED',tags= [  { 'name':'error_message', 'value':  "Error during saving (status %s)" % ce.response.status_code } ] )
@@ -852,7 +856,7 @@ class BQSession(object):
                 xml = xml[0]
             bqo = self.factory.from_etree(xml)
             return bqo
-        except BQCommError, ce:
+        except BQCommError as ce:
             log.exception('communication issue while loading %s' % ce)
             return None
 
@@ -886,7 +890,7 @@ class BQSession(object):
             xml =  self.factory.to_etree(bqo)
             xml = self.postxml(url, xml, **kw)
             return xml is not None and self.factory.from_etree(xml)
-        except BQCommError, ce:
+        except BQCommError as ce:
             log.exception('communication issue while saving %s' , ce)
             return None
 
@@ -903,6 +907,6 @@ class BQSession(object):
                 bqo =  self.factory.from_etree(xmlet[0])
                 return bqo
             return None
-        except BQCommError, ce:
+        except BQCommError as ce:
             log.exception('communication issue while saving %s' , filename)
             return None
