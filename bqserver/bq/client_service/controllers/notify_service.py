@@ -138,7 +138,7 @@ class NotifyServerController(ServiceController):
         #sender = identity.get_current_user().resource_value
         sender = config.get ('bisque.admin_email')
         if request.content_type == 'application/xml':
-            message = etree.XML (body.request)
+            message = etree.XML (request.body)
             node = message.find ('subject')
             if subject is None and node is not None:
                 subject = node.text
@@ -150,7 +150,7 @@ class NotifyServerController(ServiceController):
                 body = node.text
         else:  #   if request.content_type == 'application/text':
             if body is None:
-                body = body.request
+                body = request.body
 
         if not subject:
             return "<failure msg='no subject' />"
