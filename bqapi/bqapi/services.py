@@ -1,20 +1,28 @@
 import os
-import urllib
-import urlparse
+#import urllib
+#import urlparse
+
 import random
 import string
+import logging
+import tempfile
+import json
+
+from six.moves import urllib
 
 
 from lxml import etree
 from lxml.etree import ParseError
+try:
+    import tables
+except ImportError:
+    logging.warn ("pytables services not available")
+
 
 from requests_toolbelt import MultipartEncoder
 from .util import  normalize_unicode
 from .exception import BQCommError
 
-import tables
-import json
-import tempfile
 
 
 #DEFAULT_TIMEOUT=None
@@ -34,12 +42,12 @@ class BaseServiceProxy(object):
         self.service_name = service_name
         self.timeout = timeout
 
-    def construct(self, path, params):
+    def construct(self, path, params=None):
         url = self.service_url
         if params:
             path = "%s?%s" % (path, urllib.urlencode(params))
         if path:
-            url = urlparse.urljoin (url, path)
+            url = urllib.parse.urljoin (url, path)
         return url
 
     def request (self, path=None, params=None, method='get', render=None, **kw):
@@ -51,7 +59,7 @@ class BaseServiceProxy(object):
         if path and path[0] == "/":
             path = path[1:]
         if path:
-            path = urlparse.urljoin (self.service_url, path)
+            path = urllib.parse.urljoin (self.service_url, path)
         else:
             path = self.service_url
 
@@ -112,7 +120,7 @@ class BlobProxy (BaseServiceProxy):
         return resource
 
     def path_link(self, srcpath, alias=None, resource_type=None, tag_file=None):
-        url = urlparse.urljoin( self.session.service_map['blob_service'], 'paths/insert' )
+        url = urllib.parse.urljoin( self.session.service_map['blob_service'], 'paths/insert' )
         params = {}
         resource = self._resource_element(args_srcpath=srcpath, args_resource_type=resource_type, args_tag_file=tag_file)
         payload = etree.tostring (resource)
@@ -120,25 +128,25 @@ class BlobProxy (BaseServiceProxy):
             params['user'] = alias
         r = self.post(url, data=payload, params=params, headers={'content-type': 'application/xml'})
         return r
-    
+
     def path_delete(self, srcpath, alias=None):
-        url = urlparse.urljoin( self.session.service_map['blob_service'], 'paths/remove' )
+        url = urllib.parse.urljoin( self.session.service_map['blob_service'], 'paths/remove' )
         params = {'path': srcpath}
         if alias:
             params['user'] = alias
         r = self.get(url, params=params)
         return r
-    
+
     def path_rename(self, srcpath, dstpath, alias=None):
-        url = urlparse.urljoin( self.session.service_map['blob_service'], 'paths/move' )
+        url = urllib.parse.urljoin( self.session.service_map['blob_service'], 'paths/move' )
         params = {'path': srcpath, 'destination': dstpath}
         if alias:
             params['user'] = alias
         r = self.get(url, params=params)
         return r
-    
+
     def path_list(self, srcpath, alias=None):
-        url = urlparse.urljoin( self.session.service_map['blob_service'], 'paths/list' )
+        url = urllib.parse.urljoin( self.session.service_map['blob_service'], 'paths/list' )
         params = { 'path' : srcpath }
         if alias:
             params['user'] = alias
@@ -149,11 +157,13 @@ def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 class ImportProxy(BaseServiceProxy):
-    def transfer (self, filename, xml=None):
+    def transfer (self, filename, fileobj = None, xml=None):
         fields = {}
         if filename is not None:
             filename = normalize_unicode(filename)
-            fields['file'] = (os.path.basename(filename), open(filename, 'rb'), 'application/octet-stream')
+            if fileobj is None and os.path.exists (filename):
+                fileobj = open (filename, 'rb')
+                fields['file'] = (os.path.basename(filename), fileobj, 'application/octet-stream')
         if xml is not None:
             fields['file_resource'] = xml
         if fields:
@@ -161,6 +171,7 @@ class ImportProxy(BaseServiceProxy):
             m = MultipartEncoder(fields = fields )
             m._read = m.read #pylint: disable=protected-member
             m.read = lambda size: m._read (8129*1024) # 8MB
+            # ID generator is used to force load balancing operations
             response = self.post("transfer_"+id_generator(),
                                  data=m,
                                  headers={'Accept': 'text/xml', 'Content-Type':m.content_type})
@@ -181,8 +192,8 @@ class DatasetProxy (BaseServiceProxy):
 class ModuleProxy (BaseServiceProxy):
     def execute (self, module_name, **module_parms):
         pass
-    
-    
+
+
 class TableProxy (BaseServiceProxy):
     def load_array(self, table_uniq, path, slices=[]):
         """
@@ -213,7 +224,7 @@ class TableProxy (BaseServiceProxy):
         # convert HDF5 to Numpy array (preserve indices??)
         with tables.open_file('array.h5', driver="H5FD_CORE", driver_core_image=response.content, driver_core_backing_store=0) as h5file:
             return h5file.root.array.read()
-    
+
     def store_array(self, array, name):
         """
         Store numpy array in BisQue and return resource doc.
@@ -239,12 +250,19 @@ class TableProxy (BaseServiceProxy):
             os.rmdir(dirpath)
 
 
+class ImageProxy(BaseServiceProxy):
+    pass
+
+
+
+
 SERVICE_PROXIES = {
     'admin' : AdminProxy,
     'import' : ImportProxy,
     'blob_service': BlobProxy,
     'dataset_service': DatasetProxy,
     'table': TableProxy,
+    'image_service' : ImageProxy,
 }
 
 class ServiceFactory (object):

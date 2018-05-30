@@ -1,13 +1,16 @@
+from __future__ import print_function
+
 import os
 import shutil
-import urllib
-import urlparse
-import time
+#import urllib
+#import urlparse
+#import time
 import logging
+from six.moves import urllib
 
 #from lxml import etree as ET
 #from lxml import etree
-from xmldict import xml2d, d2xml
+from .xmldict import xml2d, d2xml
 
 log = logging.getLogger('bqapi.util')
 
@@ -30,7 +33,7 @@ def normalize_unicode(s):
 
 if os.name == 'nt':
     def url2localpath(url):
-        path = urlparse.urlparse(url).path
+        path = urllib.parse.urlparse(url).path
         if len(path)>0 and path[0] == '/':
             path = path[1:]
         try:
@@ -53,7 +56,7 @@ if os.name == 'nt':
 else:
     def url2localpath(url):
         url = url.encode('utf-8') # safegurd against un-encoded values in the DB
-        path = urlparse.urlparse(url).path
+        path = urllib.parse.urlparse(url).path
         return urllib.unquote(path)
 
     def localpath2url(path):
@@ -100,7 +103,7 @@ def safecopy (*largs):
                 print ("Found existing file %s: removing .." % dest)
                 os.unlink (dest)
             os.link(f, dest)
-        except (OSError, AttributeError), e:
+        except (OSError, AttributeError) as e:
             print ("Problem in link %s .. trying copy" % e)
             shutil.copy2(f, dest)
 
@@ -299,7 +302,7 @@ def fetch_dataset(session, uri, dest, uselocalpath=False):
     results = {}
     for i, imgxml in enumerate(members):
         uri =  imgxml.text   #imgxml.get('uri')
-        print "FETCHING", uri
+        print ("FETCHING", uri)
         #fname = os.path.join (dest, "%.5d.tif" % i)
         x = fetch_image_pixels(session, uri, dest, uselocalpath=uselocalpath)
         results.update (x)
@@ -357,7 +360,7 @@ def fetchDataset(session, uri, dest, uselocalpath=False):
 
     for i, imgxml in enumerate(members):
         uri = imgxml.text
-        print "FETCHING: ", uri
+        print ("FETCHING: ", uri)
         #fname = os.path.join (dest, "%.5d.tif" % i)
         result = fetchImage(session, uri, dest, uselocalpath=uselocalpath)
         results[uri] = result[uri]

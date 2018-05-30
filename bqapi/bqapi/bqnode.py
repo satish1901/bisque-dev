@@ -282,9 +282,9 @@ class BQImagePixels(object):
     def _construct_url(self):
         """build the final url based on the operation
         """
-        session = self.image.session
-        return session.service_url('image_service', '%s?%s'
-                                   % (self.image.resource_uniq, '&'.join(self.ops)))
+        image_service = self.image.session.service('image_service')
+        return image_service.construct (path = '%s?%s'%(self.image.resource_uniq,
+                                                        '&'.join ( "%s=%s" % tp for tp in self.ops )))
 
     def fetch(self, path=None):
         """resolve the current and fetch the pixel
@@ -293,11 +293,8 @@ class BQImagePixels(object):
         session = self.image.session
         return session.c.fetch (url, path=path)
 
-    def command(self, operation, arguments=None):
-        if arguments is not None:
-            self.ops.append('%s=%s'%(operation, arguments))
-        else:
-            self.ops.append(operation)
+    def command(self, operation, arguments=''):
+        self.ops.append((operation, arguments))
         return self
 
     def slice(self, x='', y='',z='',t=''):
@@ -307,7 +304,7 @@ class BQImagePixels(object):
     def format(self, fmt):
         return self.command('format', fmt)
 
-    def resize(self, w='',h='', interpolation=''):
+    def resize(self, w='',h='', interpolation='NN'):
         """ interpoaltion may be,[ NN|,BL|,BC][,AR]
         """
         return self.command('resize', '%s,%s,%s' % (w,h,interpolation))
@@ -320,6 +317,22 @@ class BQImagePixels(object):
 
     def info(self):
         return self.command('info')
+
+    def asarray(self):
+        try:
+            import tifffile
+        except ImportError:
+            log.error ("Please install Tifffile (Optional)")
+            return None
+        # Force format to be tiff by removing any format and append format tiff
+        self.ops = [ tp for tp in self.ops if tp[0] != 'format' ]
+        self.format ('tiff')
+        url = self._construct_url()
+        image_service = self.image.session.service ('image_service')
+        with  image_service.fetch (url, stream=True) as response:
+            #response.raw.decode_content = True
+            return tifffile.imread (io.BytesIO (response.content))
+
 
 
 ################################################################################
@@ -722,7 +735,3 @@ def model_fields(dbo, baseuri=None):
             else:
                attrs[fn] = str(attr_val) #unicode(attr_val,'utf-8')
     return attrs
-
-
-
-
