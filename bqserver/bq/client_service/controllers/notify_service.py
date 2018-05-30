@@ -60,7 +60,7 @@ import turbomail
 
 
 from lxml import etree
-from tg import request,  expose, require, config
+from tg import request,  expose, require , config
 from repoze.what import predicates
 
 
@@ -71,7 +71,7 @@ log = logging.getLogger('bq.notify')
 #admin_email = tg.config.get('bisque.admin_email')
 
 
-def send_mail(sender_email, recipient_email, subject, body ):
+def send_mail(sender_email, recipients_email, subject, body ):
     """Send an email with  info to the user.
     """
 
@@ -80,16 +80,19 @@ def send_mail(sender_email, recipient_email, subject, body ):
     #      'because sender and/or admin email address is not set.')
     #    raise RuntimeError
 
-    msg = turbomail.Message(sender_email, recipient_email, subject)
+    if not isinstance(recipients_email, list):
+        recipients_email = [  recipients_email ]
+
+    msg = turbomail.Message(sender_email, ",".join (recipients_email), subject)
     msg.plain = body
     try:
-        log.debug ("Sending mail to %s %s" ,  recipient_email, subject)
+        log.debug ("Sending mail to %s %s" ,  recipients_email, subject)
         turbomail.send(msg)
         return True
     except turbomail.MailNotEnabledException:
-        log.warning("Failed sending %s with '%s' turbomail not enabled" ,  recipient_email, subject)
+        log.warning("Failed sending %s with '%s' turbomail not enabled" , recipients_email,  subject)
     except (smtplib.SMTPException, socket.error) as exc :
-        log.warning("Failed sending %s with '%s'" ,  recipient_email, subject, exc_info=True)
+        log.warning("Failed sending %s with '%s'" ,  recipients_email, subject, exc_info=True)
 
     return False
 
@@ -101,8 +104,6 @@ def send_invite(sender_email, recipient_email, subject, body):
     return send_mail(sender_email, recipient_email, subject, body)
 
     #return newuser
-
-
 
 
 class NotifyServerController(ServiceController):
@@ -120,17 +121,45 @@ class NotifyServerController(ServiceController):
 
     @expose(content_type='text/xml')
     @require(predicates.not_anonymous())
-    def email(self, recipient, subject): #pylint: disable=no-self-use
+    def email(self, recipients=None, subject=None, body=None): #pylint: disable=no-self-use
         """Send an email for logged in users
-        """
-        body = request.body
-        #sender = identity.get_current_user().resource_value
-        sender = config.get('bisque.admin_email')  # "admin" is the true sender in this case, not the user
 
+
+
+        POST application/text   ?subject=required&recipient=required[,required][&body]
+             TEXT BODY
+        POST applcation/xml   ?subject=required&recipient=required[,required][&body]
+        <message>
+           <subject>.. </subject>
+           <recipient> .. </recipient>
+           <body> .. </body>
+        </message>
+        """
+        #sender = identity.get_current_user().resource_value
+        sender = config.get ('bisque.admin_email')
+        if request.content_type == 'application/xml':
+            message = etree.XML (body.request)
+            node = message.find ('subject')
+            if subject is None and node is not None:
+                subject = node.text
+            node = message.find ('recipient')
+            if recipients is None and node is not None:
+                recipients = node.text
+            node = message.find ('body')
+            if body is None and node is not None:
+                body = node.text
+        else:  #   if request.content_type == 'application/text':
+            if body is None:
+                body = body.request
+
+        if not subject:
+            return "<failure msg='no subject' />"
         if not body:
             return "<failure msg='no body' />"
+        if not recipients:
+            return "<failure msg='no recipients' />"
 
-        if  send_mail(sender, recipient, subject, body):
+        if send_mail(sender, recipients, subject, body):
             return "<success/>"
         else:
             return "<failure msg='send failed' />"
