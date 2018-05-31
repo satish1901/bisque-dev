@@ -84,10 +84,10 @@ except ImportError:
     import xml.etree.ElementTree as etree
 
 from .types import BQMex, BQNode, BQFactory
-from .util import parse_qs, make_qs, xml2d, d2xml, normalize_unicode
-from .RequestsMonkeyPatch import requests_patch #allows multipart form to accept unicode
+#from .util import parse_qs, make_qs, xml2d, d2xml, normalize_unicode
 from .services import ServiceFactory
-from .exception import *
+from .exception import BQCommError
+from .RequestsMonkeyPatch import requests_patch#allows multipart form to accept unicode
 
 try:
     from .casauth import caslogin

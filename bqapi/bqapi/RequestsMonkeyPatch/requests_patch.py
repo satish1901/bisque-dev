@@ -7,19 +7,20 @@
 """
 
 
+import email.utils
+#import mimetypes
+import warnings
+
 import requests
 import requests.packages.urllib3 as urllib3
-import email.utils
-import mimetypes
 from requests.packages.urllib3.packages import six
-import warnings
-from .monkeypatch import *
+from .monkeypatch import monkeypatch_method
 
 
 
-requests_v = [int(s) for s in requests.__version__.split('.')]
+REQUESTS_V = [int(s) for s in requests.__version__.split('.')]
 
-if requests_v < [2, 4, 0] or  requests_v > [2, 19, 0]:
+if REQUESTS_V < [2, 4, 0] or  REQUESTS_V > [2, 19, 0]:
     warnings.warn("""\
 We need to patch requests 2.4.0 up to 2.19.0, make sure your version of requests \
 needs this patch, greater than 2.4.3 we do not know if this patch applys."""
