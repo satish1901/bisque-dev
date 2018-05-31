@@ -1,7 +1,8 @@
 import pytest
 import os
 import numpy as np
-import urllib
+#import urllib
+from six.moves import urllib
 from datetime import datetime
 
 
@@ -17,7 +18,7 @@ try:
 except ImportError:
     import xml.etree.ElementTree as etree
 
-TEST_PATH = 'tests_%s'%urllib.quote(datetime.now().strftime('%Y%m%d%H%M%S%f'))  #set a test dir on the system so not too many repeats occur
+TEST_PATH = 'tests_%s'%urllib.parse.quote(datetime.now().strftime('%Y%m%d%H%M%S%f'))  #set a test dir on the system so not too many repeats occur
 
 pytestmark = pytest.mark.skip("Unported tests")
 
