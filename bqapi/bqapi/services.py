@@ -10,14 +10,15 @@ import json
 
 from six.moves import urllib
 
+try:
+    from lxml import etree
+except ImportError:
+    import xml.etree.ElementTree as etree
 
-from lxml import etree
-from lxml.etree import ParseError
 try:
     import tables
 except ImportError:
     logging.warn ("pytables services not available")
-
 
 from requests_toolbelt import MultipartEncoder
 from .util import  normalize_unicode
@@ -106,7 +107,7 @@ class BlobProxy (BaseServiceProxy):
             # Load file into resource
             try:
                 resource = etree.parse (args_tag_file).getroot()
-            except ParseError as pe:
+            except etree.ParseError as pe:
                 raise BQCommError('Parse failure: aborting: ', pe)
         else:
             resource = etree.Element (args_resource_type or 'resource')
