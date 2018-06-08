@@ -135,7 +135,7 @@ class WorkflowRunner(object):
                     self.output_resources.append(ET.Element('tag', name='reply from step %s'%step_id, value=cgi.escape(ET.tostring(res))))
         except Exception as exc:
             if error_mail is not None:
-                input_map = { "recipient": error_mail, "subject": "Workflow failed", "__xmlbody__": str(exc) }
+                input_map = { "recipients": error_mail, "subject": "Workflow failed", "__xmlbody__": str(exc) }
                 self.run_single_step_direct(step_id='FAIL HANDLER', service_name='notify', method='POSTXML', path='email', input_map=input_map, output_map={})
             raise
 
