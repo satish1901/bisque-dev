@@ -819,6 +819,8 @@ class MountServer(TGController):
             if len(blobrefs) < 2:
                 for storeurl in bloburls:
                     driver.delete (storeurl)
+            else:
+                log.warn ("blob delete skipped >2 refs %s", str(blobrefs))
 
 
     def _find_store(self, resource):
