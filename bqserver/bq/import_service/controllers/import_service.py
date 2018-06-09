@@ -248,6 +248,7 @@ class UploadedResource(object):
                 _mkdir (os.path.dirname(localpath))
             move_file (self.fileobj, localpath)
             self.path = localpath
+            self.fileobj = open(localpath, 'rb')
         return self.path
 
     def close(self):
