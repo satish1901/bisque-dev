@@ -193,7 +193,8 @@ class TileOperation(BaseOperation):
                         c.writeHistogram(token, ofnm=hist_name)
                 # if decoder returned a list of operations for imgcnv to enqueue
                 if isinstance(r, list):
-                    r.extend([ '-ihst', hist_name])
+                    #r.extend([ '-ihst', hist_name])
+                    token.histogram = hist_name
                     return self.server.enqueue(token, 'tile', ofname, fmt=default_format, command=r, dims=info)
 
             # try other decoders to read tiles
