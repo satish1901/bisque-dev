@@ -402,7 +402,7 @@ class ConverterOpenSlide(ConverterBase):
         log.debug('histogram: %s', hist)
 
         # currently openslide only supports 8 bit 3 channel images
-        # need to generate a histogram file uniformely distributed from 0..255
+        # need to generate a histogram file uniformly distributed from 0..255
         channels = 3
         i = 0
         import struct
