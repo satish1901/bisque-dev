@@ -143,7 +143,7 @@ class ThumbnailOperation(BaseOperation):
             'format': fmt,
         }
 
-        # if image can be doecoded with imageconvert, enqueue
+        # if image can be decoded with imageconvert, enqueue
         if dims.get('converter', '') == ConverterImgcnv.name:
             r = ConverterImgcnv.thumbnail(token, ofile, size[0], size[1], method=method, preproc=preproc, fmt=fmt)
             if isinstance(r, list):
@@ -153,6 +153,7 @@ class ThumbnailOperation(BaseOperation):
         if not os.path.exists(ofile):
             intermediate = '%s.ome.tif'%(token.data)
 
+            r = None
             if 'converter' in dims and dims.get('converter') in self.server.converters:
                 r = self.server.converters[dims.get('converter')].thumbnail(token, ofile, size[0], size[1], method=method, intermediate=intermediate, preproc=preproc, fmt=fmt)
 
