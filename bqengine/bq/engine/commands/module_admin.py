@@ -52,12 +52,14 @@ import os
 import posixpath
 import sys
 import logging
-import urlparse
-import urllib
+#import urlparse
+#import urllib
 import datetime
 from lxml import etree
 from paste.deploy import appconfig
 from tg import config
+
+from six.moves import urllib
 
 #from bq.config.environment import load_environment
 from ConfigParser import ConfigParser
@@ -151,7 +153,7 @@ class module_admin(object):
     def get_modules(self, engine_path):
         'list module urls  at engine given path path'
         engine_path = norm(engine_path + '/')
-        modules = self.get_xml( url = urlparse.urljoin(engine_path, '_services'))
+        modules = self.get_xml( url = urllib.parse.urljoin(engine_path, '_services'))
         if modules is None:
             return error ('Cannot read modules from engine: %s' % engine_path)
         return  [ m.get('value') for m in modules ]
@@ -159,8 +161,8 @@ class module_admin(object):
     def register_one(self, module_path):
         bisque_root = self.root
         module_path = norm(module_path + '/')
-        module_register = norm (urlparse.urljoin(bisque_root, "module_service/register_engine") + '/')
-        module_xml = self.get_xml( url = urlparse.urljoin(module_path, 'definition'))
+        module_register = norm (urllib.parse.urljoin(bisque_root, "module_service/register_engine") + '/')
+        module_xml = self.get_xml( url = urllib.parse.urljoin(module_path, 'definition'))
         if module_xml is None:
             error ("cannot read definition from %s!  Is engine address correct?")
         name = module_xml.get('name')
@@ -178,7 +180,7 @@ class module_admin(object):
             params = [ ('engine_uri', module_path) ]
             if self.module_uri:
                 params.append ( ('module_uri', self.module_uri) )
-            url = "%s?%s" % (module_register, urllib.urlencode(params))
+            url = "%s?%s" % (module_register, urllib.parse.urlencode(params))
             self.session.postxml (url, xml = xml)
             print "Registered"
 
@@ -205,7 +207,7 @@ class module_admin(object):
     def unregister_one(self, module_path):
         bisque_root = self.root
         module_path = norm(module_path + '/')
-        module_unregister = norm (urlparse.urljoin(bisque_root, "module_service/unregister_engine") + '/')
+        module_unregister = norm (urllib.parse.urljoin(bisque_root, "module_service/unregister_engine") + '/')
 
         module_name = module_path.split('/')[-2]
         params = [ ('engine_uri', module_path) ]
@@ -227,7 +229,7 @@ class module_admin(object):
     def list_server(self):
         from collections import namedtuple
         Row = namedtuple ('Row', ('name', 'engine', 'module'))
-        server_modules = self.get_xml( url = urlparse.urljoin(self.root, 'module_service'))
+        server_modules = self.get_xml( url = urllib.parse.urljoin(self.root, 'module_service'))
         if server_modules is None:
             error ("No modules registered at %s. Is this a bisque server?" % self.root)
 
