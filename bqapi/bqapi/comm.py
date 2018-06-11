@@ -84,9 +84,9 @@ except ImportError:
     import xml.etree.ElementTree as etree
 
 from .types import BQMex, BQNode, BQFactory
-#from .util import parse_qs, make_qs, xml2d, d2xml, normalize_unicode
+from .util import d2xml #parse_qs, make_qs, xml2d, d2xml, normalize_unicode
 from .services import ServiceFactory
-from .exception import BQCommError
+from .exception import BQCommError, BQApiError
 from .RequestsMonkeyPatch import requests_patch#allows multipart form to accept unicode
 
 try:
@@ -667,7 +667,7 @@ class BQSession(object):
         if root is None:
             raise BQApiError('Not a service type')
         if query:
-            path = "%s?%s" % (path, urllib.urlencode(query))
+            path = "%s?%s" % (path, urllib.parse.urlencode(query))
         return urllib.parse.urljoin(root, path)
 
 
@@ -739,7 +739,7 @@ class BQSession(object):
                     tg = d2xml({ type_ : tg})
                 elif isinstance(tg, BQNode):
                     tg = self.factory.to_etree(tg)
-                elif isinstance(tg, etree._Element):
+                elif isinstance(tg, etree._Element): #pylint: disable=protected-access
                     pass
                 else:
                     raise BQApiError('bad values in tag/gobject list %s' % tg)

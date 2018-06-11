@@ -1,6 +1,6 @@
 
+#import threading
 from threading import Thread
-import threading
 import socket
 import errno
 import tempfile
@@ -8,11 +8,13 @@ import urllib
 import os
 from math import ceil
 import Queue
-#from bqapi.comm import BQCommError
-import numpy as np
 import logging
 import warnings
 from collections import namedtuple
+
+#import numpy as np
+
+from .exception import BQCommError
 
 try: #checks for lxml if not found uses python xml
     from lxml import etree
@@ -25,7 +27,7 @@ log = logging.getLogger('bqapi.bqfeature')
 try:
     import tables
 except ImportError:
-     warnings.warn("Pytables was not found! bqfeatures requires pytables!")
+    warnings.warn("Pytables was not found! bqfeatures requires pytables!")
 
 #max requests attemps if the connection is drop when making parallel requests
 MAX_ATTEMPTS = 5
