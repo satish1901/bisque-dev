@@ -286,6 +286,7 @@ class import_serviceController(ServiceController):
         # define the list here in order to minimize info calls on these images
         # will have to figure how many series are inside to create proper resources
         self.series_exts = image_service.proprietary_series_extensions()
+        self.non_image_exts = image_service.non_image_extensions()
         log.debug('Series extensions: %s', self.series_exts)
         for e in self.series_exts:
             mimetypes.add_type('image/series', '.%s'%e)
@@ -1113,7 +1114,7 @@ class import_serviceController(ServiceController):
 
         # append processing tags based on file type and extension
         mime = None
-        if needs_guessing:
+        if needs_guessing is True:
             log.debug('Guessing the mime type for: %s', sanitize_filename(uf.filename))
             mime = mimetypes.guess_type(sanitize_filename(uf.filename))[0]
         if mime in self.filters:
@@ -1124,7 +1125,9 @@ class import_serviceController(ServiceController):
         # 2) numerical extension as is used in Nanoscope images with numerical extensions
         ext = os.path.splitext(uf.filename)[1]
         noext = (ext == '' or len(ext)>10 or ext.isdigit() is True)
-        if needs_guessing and mime is None and noext:
+        if ext.replace('.', '') in self.non_image_exts:
+            needs_guessing = False
+        if needs_guessing is True and mime is None and noext:
             log.debug('process: setting mime to "image/series"' )
             mime = 'image/series'
 

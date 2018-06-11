@@ -174,6 +174,12 @@ class ImageServiceController(ServiceController):
         return list(((set(exts) - set(ignore)) - extensions_ignore) | extensions_series)
 
     @classmethod
+    def non_image_extensions (cls):
+        """ return all extensions that should not be interpreted as images
+        """
+        return list(extensions_ignore)
+
+    @classmethod
     def proprietary_series_headers (cls):
         """ get fixed file names that could be series headers
         """
