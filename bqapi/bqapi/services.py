@@ -46,7 +46,7 @@ class BaseServiceProxy(object):
     def construct(self, path, params=None):
         url = self.service_url
         if params:
-            path = "%s?%s" % (path, urllib.urlencode(params))
+            path = "%s?%s" % (path, urllib.parse.urlencode(params))
         if path:
             url = urllib.parse.urljoin (url, path)
         return url
@@ -108,7 +108,7 @@ class BlobProxy (BaseServiceProxy):
             try:
                 resource = etree.parse (args_tag_file).getroot()
             except etree.ParseError as pe:
-                raise BQCommError('Parse failure: aborting: ', pe)
+                raise BQCommError('Parse failure: aborting: ')
         else:
             resource = etree.Element (args_resource_type or 'resource')
 
@@ -170,7 +170,7 @@ class ImportProxy(BaseServiceProxy):
         if fields:
             # https://github.com/requests/toolbelt/issues/75
             m = MultipartEncoder(fields = fields )
-            m._read = m.read #pylint: disable=protected-member
+            m._read = m.read #pylint: disable=protected-access
             m.read = lambda size: m._read (8129*1024) # 8MB
             # ID generator is used to force load balancing operations
             response = self.post("transfer_"+id_generator(),

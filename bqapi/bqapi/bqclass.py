@@ -53,6 +53,7 @@ __revision__  = "$Rev$"
 __date__      = "$Date$"
 __copyright__ = "Center for BioImage Informatics, University California, Santa Barbara"
 
+import os
 import sys
 import math
 import io
@@ -502,6 +503,7 @@ class BQGObject(BQResource):
 
     def __init__(self, *args, **kw):
         super(BQGObject, self).__init__(*args, **kw)
+        self.name = None
         self.vertices = []
         self.type= self.type or self.xmltag
 

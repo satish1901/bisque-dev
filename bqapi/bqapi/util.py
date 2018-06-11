@@ -37,14 +37,14 @@ if os.name == 'nt':
         if len(path)>0 and path[0] == '/':
             path = path[1:]
         try:
-            return urllib.unquote(path).decode('utf-8')
+            return urllib.parse.unquote(path).decode('utf-8')
         except UnicodeEncodeError:
             # dima: safeguard measure for old non-encoded unicode paths
-            return urllib.unquote(path)
+            return urllib.parse.unquote(path)
 
     def localpath2url(path):
         path = path.replace('\\', '/')
-        url = urllib.quote(path.encode('utf-8'))
+        url = urllib.parse.quote(path.encode('utf-8'))
         if len(path)>3 and path[0] != '/' and path[1] == ':':
             # path starts with a drive letter: c:/
             url = 'file:///%s'%url
@@ -57,10 +57,10 @@ else:
     def url2localpath(url):
         url = url.encode('utf-8') # safegurd against un-encoded values in the DB
         path = urllib.parse.urlparse(url).path
-        return urllib.unquote(path)
+        return urllib.parse.unquote(path)
 
     def localpath2url(path):
-        url = urllib.quote(path.encode('utf-8'))
+        url = urllib.parse.quote(path.encode('utf-8'))
         url = 'file://%s'%url
         return url
 
