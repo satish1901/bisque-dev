@@ -280,6 +280,10 @@ def proprietary_series_headers():
     server = find_server()
     return server.proprietary_series_headers()
 
+def non_image_extensions ():
+    server = find_server()
+    return server.non_image_extensions()
+
 def get_info(filename):
     server = find_server()
     return server.get_info(filename)
