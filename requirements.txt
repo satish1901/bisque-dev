@@ -134,7 +134,7 @@ pylint==1.9.2
 configparser==3.5.0
 py==1.4.34
 mccabe==0.6.1
-singledispatch=3.4.0.3
+singledispatch==3.4.0.3
 astroid==1.6.5
 lazy-object-proxy==1.3.1
 wrapt==1.10.10
