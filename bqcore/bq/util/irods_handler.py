@@ -5,6 +5,11 @@ import logging
 import subprocess
 import urllib
 
+
+# THIS FILE IS NO LONGER USED
+
+# pylint: skip-file
+
 import irods
 
 from bq.util.mkdir import _mkdir
