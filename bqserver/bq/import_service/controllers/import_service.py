@@ -230,7 +230,7 @@ class UploadedResource(object):
             return self.path
 
         filename = getattr(self.fileobj, 'name', None)
-        if filename and filename[0] == '<' and filename[-1] == '>':
+        if filename and filename[0] == '<' and filename[-1] == '>': #pylint: disable=unsubscriptable-object
             # special case: file was not created using open();
             # in this case 'name' attribute is some string that indicates the source of the file object, of the form '<...>'.
             # (see https://docs.python.org/2.7/library/stdtypes.html#file-objects)

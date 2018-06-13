@@ -2,7 +2,9 @@ import logging
 import re
 from base64 import b64decode #b64encode
 
-from repoze.who.plugins.ldap import LDAPSearchAuthenticatorPlugin#, LDAPAttributesPlugin
+
+from repoze.who.plugins.ldap import LDAPSearchAuthenticatorPlugin #pylint: disable=no-name-in-module
+
 
 # Optional dependency
 import ldap #pylint: disable=import-error
