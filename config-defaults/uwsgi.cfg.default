@@ -62,10 +62,10 @@ reload-mercy = 120
 max-requests = 10000
 
 #recycle a worker if it consumes more than 4 GB of virtual address space
-reload-on-as = 4096
+#reload-on-as = 4096
 
 #recycle a worker if it consumers more than 2 GB of physical unshared address space
-reload-on-rss = 2048
+#reload-on-rss = 2048
 
 #destroy workers after 900 seconds of inactivity (dont start new worker till a request arrives)
 #idle = 900
