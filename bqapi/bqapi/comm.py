@@ -627,7 +627,7 @@ class BQSession(object):
         if xml!=None:
             if not isinstance(xml, basestring):
                 xml = self.factory.to_string(xml)
-        response = import_service.transfer (filename, xml)
+        response = import_service.transfer (filename=filename, xml=xml)
         return response.content
 
         # import_service_url = self.service_url('import', path='transfer')
