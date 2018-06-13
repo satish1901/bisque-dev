@@ -158,13 +158,18 @@ def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 class ImportProxy(BaseServiceProxy):
-    def transfer (self, filename, fileobj = None, xml=None):
+    def transfer (self, filename, fileobj=None, xml=None):
         fields = {}
-        if filename is not None:
+        if fileobj is None and filename is None:
+            raise BQCommError('Filename or fileobj are required for transfer')
+        if fileobj is None and os.path.exists (filename):
+            fileobj = open (filename, 'rb')
+        if fileobj is not None and filename is None:
+            filename = fileobj.name
+
+        if fileobj is not None:
             filename = normalize_unicode(filename)
-            if fileobj is None and os.path.exists (filename):
-                fileobj = open (filename, 'rb')
-                fields['file'] = (os.path.basename(filename), fileobj, 'application/octet-stream')
+            fields['file'] = (os.path.basename(filename), fileobj, 'application/octet-stream')
         if xml is not None:
             fields['file_resource'] = xml
         if fields:
