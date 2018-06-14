@@ -61,17 +61,21 @@ from datetime import datetime
 
 import pkg_resources
 import tg
-from tg import config, controllers, expose, redirect, override_template
+#from tg import require
+from tg import config,  expose,  override_template
 from pylons.controllers.util import abort, forward
 from paste.fileapp import FileApp
-from repoze.what import predicates
+#from repoze.what.predicates import not_anonymous
+#from repoze.what import predicates
 from lxml import etree
 
+from bq.config.app_cfg import public_file_filter
 from bq.core.service import ServiceController, BaseController
-from bq.exceptions import EngineError, RequestError
+from bq.exceptions import EngineError#, RequestError
 from bq.util.configfile import ConfigFile
-from bq.util.paths import bisque_path, config_path
-from bq.util.copylink import copy_link
+from bq.util.paths import bisque_path#, config_path
+#from bq.util.copylink import copy_link
+from bq.util.converters import asbool
 
 from .runtime_adapter import RuntimeAdapter
 from .pool import ProcessManager
@@ -260,6 +264,9 @@ class EngineServer(ServiceController):
                          'runtime' : RuntimeAdapter(),
                          #'lam' : LamAdapter(),
                          }
+        self.refresh()
+
+    def refresh(self):
         modules, unavailable = initialize_available_modules(self.engines)
         log.debug ('found modules= %s' % [m.get ('name') for m in modules])
         self.unavailable = unavailable
@@ -270,10 +277,13 @@ class EngineServer(ServiceController):
             self.module_by_name[module.get('name')]  = module
 
     @expose('bq.engine.templates.engine_modules')
-    def index(self):
+    def index(self, refresh='false'):
         """Return the list of available modules urls"""
         #server = urlparse.urljoin(config.get('bisque.server'), self.service_type)
         server = urlparse.urljoin (tg.request.host_url, self.service_type)
+
+        if asbool (refresh):
+            self.refresh()
 
         modules = [ ("%s/%s" % (server, k), k) for k in sorted(self.module_by_name.keys())]
         return dict(modules=modules)
@@ -301,9 +311,6 @@ class EngineServer(ServiceController):
 ##
 reserved_io_types = ['system-input']
 
-from tg import require
-from repoze.what.predicates import not_anonymous
-from bq.config.app_cfg import public_file_filter
 class EngineModuleResource(BaseController):
     """Convert the local module into one accessable as a web resource"""
 
