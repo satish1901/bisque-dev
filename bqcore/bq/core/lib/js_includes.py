@@ -217,7 +217,7 @@ def generate_js_files(root=None, public=None):
 
         '/core/js/viewer/menu_gobjects.js',
         '/core/js/viewer/scalebar.js',
-        '/core/js/viewer/2D.js',
+        # '/core/js/viewer/2D.js', # dima: clashes with Plotly, not required
         '/core/js/viewer/imgview.js',
         '/core/js/viewer/imgops.js',
         '/core/js/viewer/imgslicer.js',
