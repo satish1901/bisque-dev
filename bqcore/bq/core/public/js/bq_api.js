@@ -1505,7 +1505,7 @@ BQGObject.color_contrasting = function(c) {
     return { r:0, g: 0, b: 0, a: c.a };
 };
 
-BQGObject.string_to_color_html = function(str) {
+BQGObject.string_to_color_html = function(str, darker) {
     var hash = 0,
         colour = '#',
         i=0;
@@ -1516,7 +1516,27 @@ BQGObject.string_to_color_html = function(str) {
         var value = (hash >> (i * 8)) & 0xFF;
         colour += ('00' + value.toString(16)).substr(-2);
     }
-    if (colour === '#000000') colour = '#ffffff';
+
+    if (!darker) {
+        if (colour === '#000000') colour = '#ffffff';
+        var c = Ext.draw.Color.fromString(colour);
+        var hsl = c.getHSL();
+        if (hsl[2]<0.5) {
+            hsl[2] = 0.5;
+            c = Ext.draw.Color.fromHSL( hsl[0], hsl[1], hsl[2] );
+            colour = c.toString();
+        }
+    } else {
+        if (colour === '#ffffff') colour = '#000000';
+        var c = Ext.draw.Color.fromString(colour);
+        var hsl = c.getHSL();
+        if (hsl[2]>0.5) {
+            hsl[2] = 0.5;
+            c = Ext.draw.Color.fromHSL( hsl[0], hsl[1], hsl[2] );
+            colour = c.toString();
+        }
+    }
+
     return colour;
 };
 
