@@ -44,6 +44,7 @@ decorator==3.4.0
 ecdsa==0.11
 furl==0.3.7
 futures==3.0.5
+future==0.16.0
 funcsigs==1.0.2
 filechunkio==1.6
 gdata==2.0.18
