@@ -987,15 +987,13 @@ CanvasPolyLine.prototype.setStroke = function(sw){
 };
 
 CanvasPolyLine.prototype.updateLocal = function () {
-    //if(this.destroy)
-    var vertices = [];
-    var points = "";
-
-    var gob = this.gob;
-    var scale = this.renderer.stage.scale();
-    var viewstate = this.renderer.viewer.current_view;
-    if ( gob.type == "polygon" )
-        ctor = Polygon;
+    var vertices = [],
+        gob = this.gob;
+    //var points = "";
+    //var scale = this.renderer.stage.scale();
+    //var viewstate = this.renderer.viewer.current_view;
+    //if ( gob.type == "polygon" )
+    //    ctor = Polygon;
     for (var i=0; i < gob.vertices.length; i++) {
         var pnt = gob.vertices[i];
         if (!pnt || isNaN(pnt.x) || isNaN(pnt.y) ) {
