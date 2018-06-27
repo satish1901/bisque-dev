@@ -95,7 +95,12 @@ from dateutil.parser import parse
 from dateutil import tz
 import requests
 import pkg_resources
-import pip
+
+try:
+    from pip import main as pipmain
+except:
+    from pip._internal import main as pipmain
+
 
 #from setuptools.command import easy_install
 
@@ -905,7 +910,7 @@ def install_driver(DBURL):
             print ('\nImport failed, trying to install package %s...' % ei_drname)
             try:
                 #easy_install.main(['-U',ei_drname])
-                pip.main(['install', '-U', ei_drname]) #pylint: disable=no-member
+                pipmain(['install', '-U', ei_drname]) #pylint: disable=no-member
                 # The following line is needed to make installed module importable
                 pkg_resources.require(ei_drname)
                 print('Package %s successfully installed.' % ei_drname)
@@ -1321,7 +1326,9 @@ def fetch_git (module_url, module_dir):
     call (cmd, cwd=mdir)
     if module_branch:
         call (['git', 'checkout', module_branch], cwd=mdir, stdin = io.open(os.devnull))
-    return module_dir
+    version_info = subprocess.check_output(['git', 'log', '--max-count=1'], cwd=mdir)
+
+    return module_dir, version_info
 
 def fetch_mercurial (module_url, module_dir):
     """Mercurial clone/pull repository to local dir
@@ -1340,12 +1347,13 @@ def fetch_mercurial (module_url, module_dir):
     call (cmd, cwd=mdir, stdin = io.open(os.devnull))
     if module_branch:
         call (['hg', 'update', module_branch], cwd=module_dir)
-    return module_dir
+    version_info = subprocess.check_output(['hg', 'tip'] , cwd=mdir)
+    return module_dir, version_info
 
 def fetch_tar (module_url, module_dir):
-    return module_dir
+    return module_dir, ''
 def fetch_zip (module_url, module_dir):
-    return module_dir
+    return module_dir, ''
 def fetch_dir (module_url, module_dir):
     if not os.path.exists (module_url):
         return None
@@ -1353,18 +1361,21 @@ def fetch_dir (module_url, module_dir):
         if  os.path.exists (module_dir):
             shutil.rmtree (module_dir)
         shutil.copytree (module_url, module_dir)
-    return module_dir
+    return module_dir, ''
 
 def fetch_svn (module_url, module_dir):
     cmd = [ 'svn' ]
     mdir = '.'
+    if '#' in module_url:
+        module_url, module_branch = module_url.split ('#')
     if not os.path.exists (module_dir):
         cmd.extend(['checkout', module_url, module_dir])
     else:
         cmd.extend(['update', module_dir])
     log.debug ( "calling  %s in  %s" , cmd, mdir)
     call (cmd, cwd=mdir)
-    return module_dir
+    version_info = subprocess.check_output(['svn', 'log', '--limit', '1' ] , cwd=mdir)
+    return module_dir, version_info
 
 REPO_FETCH = {
     'tar' : fetch_tar,
@@ -1984,7 +1995,7 @@ def setup_uwsgi(params, server_params):
         return params
     if which ('uwsgi') is None:
         #easy_install.main(['-U','uwsgi'])
-        pip.main (['install', '-U','uwsgi']) #pylint: disable=no-member
+        pipmain (['install', '-U','uwsgi']) #pylint: disable=no-member
 
     from bq.util.dotnested import parse_nested, unparse_nested
     servers = [ x.strip() for x in server_params['servers'].split(',') ]
