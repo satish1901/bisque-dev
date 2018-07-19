@@ -1,12 +1,13 @@
 .x-panel-body {
-    background-color: rgb(28, 38, 51);
-}
+    background-color: #ffffff;
+} 
+
 .webapp h1, .heading-2 {
     text-shadow: #ffffff 0px 0px 0px;
 }
 
 .webapp .box {
-    background-color: rgba(6, 0, 0, 0.3411764705882353);
+    background-color: rgba(6, 0, 0, 0.05);
     border-color: #ffffff;
     border-style: solid;
     border-width: 0px;
@@ -26,8 +27,16 @@
 }
 
 .help .help-container {
-    background-color: #00000036;
+    background-color: #00000000;
+    border: #ffffff
 }
+
+
+.webapp ::-webkit-scrollbar-track {
+    background-color: black;
+}
+
+
 
 .content {
     padding: 20px;
@@ -48,17 +57,18 @@ element.style {
 }
 .x-panel-body-default {
 
-    color: white;
+    color: black;
     font-size: 12px;
     font-size: normal;
 
 }
 .lblHeading1 {
-    color: #fff;
+    color: black;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif, Georgia, serif;
 }
 .x-panel-header-default {
     background-image: none;
-    background-color: #71323200;
+    background-color: #ffffff;
     background-image: -webkit-gradient(linear,50% 0,50% 100%,color-stop(0%,#f0f0f0),color-stop(100%,#d7d7d7));
     background-image: -webkit-linear-gradient(top,#171e2800,#ffffff00);
     background-image: -moz-linear-gradient(top,#f0f0f0,#d7d7d7);
@@ -77,14 +87,14 @@ element.style {
 .x-grid-cell {
     color: null;
     font: normal 15px/17px -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: #429450;
+    background-color: #ffffff;
 }
 
 h1 {
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    font-weight: 600;
+    font-weight: bolder;
     font-size: 50px;
-    font-size: 3em;
+    font-size: 4em;
     margin: 0.67em 0px;
 }
 .x-body {
@@ -106,41 +116,44 @@ h3 {
 
 
 .help {
-    background-color: #171e28;
+    background-color: #ffffff;
 }
 
 
 .icon-tag {
-    background-image: none
+    background-image: none;
 }
 
 .x-column-header {
     border-right: 1px solid #c5c5c5;
-    color: white;
+    color: black;
     font: normal 15px/17px -apple-system, BlinkMacSystemFont, serif;
     background-image: none;
-    background-color: #1d2633;
+    background-color: #ffffff;
     }
 
 .x-toolbar-default {
-    border-color: #ff080800;
+    border-color: black;
     border-width: 1px;
     background-image: none;
-    background-color: #1d2633;
+    background-color: #f2f2f2;
 }
 
 .x-grid-row-selected .x-grid-td {
-    background-color: #151922;
+    background-color: rgba(6, 0, 0, 0.05);
 }
 
 a:visited {
     text-decoration: none;
-    color: #00fff7;
+    color: green;
 }
+
+
+
 
 .x-btn-default-toolbar-large .x-btn-inner {
 
-    color: #fff;
+    color: black;
 
 }
 
