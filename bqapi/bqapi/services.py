@@ -257,7 +257,10 @@ class TableProxy (BaseServiceProxy):
 
 
 class ImageProxy(BaseServiceProxy):
-    pass
+    def get_thumbnail (self, image_uniq, **kw):
+        url = urlparse.urljoin( self.session.service_map['image_service'], image_uniq, 'thumbnail' )
+        r = self.get(url)
+        return r
 
 
 
