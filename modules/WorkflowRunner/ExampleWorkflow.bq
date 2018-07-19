@@ -85,10 +85,28 @@
             }
         ]
     },
+    "5": {
+        "__Meta__": {
+            "Service": "notify",
+            "Method": "POSTXML",
+            "Path": "email"
+        },
+        "__Label__": "Notify clang",
+        "Parameters": [
+            {
+                "Inputs": {
+                    "recipient": "clang@ucsb.edu",
+                    "subject": "Metadata finished",
+                    "__xmlbody__": "Hi,\nyour Metadata module has ${module_status}.\nThanks,\nChris"
+                }
+            }
+        ]
+    },
     "__Header__": {
         "Version": "1.0",
         "__Type__": "BisqueWorkflow",
         "Name": "example workflow",
-        "Globals": ["@STRPARAM|file_path"]
+        "Globals": ["@STRPARAM|file_path"],
+        "Error_mail": "clang@ucsb.edu"
     }
 }
