@@ -120,7 +120,7 @@ def upload_imagej_pipeline(uf, intags):
                 param_key, param_val = param.items()[0]
                 if converted_cnt < 10 and any([phrase in param_key.lower() for phrase in ['threshold', 'size', 'diameter', 'distance', 'smoothing', 'bound', 'difference', 'intensity']]):
                     try:
-                        float(param_val)    # is this a number?
+                        float(str(param_val))    # is this a number?
                         param_val = "@STRPARAM@%s" % str(param_val)
                         converted_cnt += 1
                     except ValueError:
