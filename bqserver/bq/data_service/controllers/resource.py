@@ -457,9 +457,10 @@ class HierarchicalCache(ResponseCache):
            if published then delete all public queries
         """
         resource = force_load(resource)
-        if resource and not hasattr (resource, 'resource_uniq'):
-            log.error ("invalidate: Cannot determine resource %s",  resource)
-            return
+        while  resource and not hasattr (resource, 'resource_uniq'):
+            log.warn ("invalidate: Cannot determine resource %s",  resource)
+            resource = resource.parent
+            #return
         #pylint: disable=no-member
         log.debug ("CACHE invalidate: resource %s user %s", resource and resource.resource_uniq, user)
 
