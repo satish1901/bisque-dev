@@ -79,7 +79,7 @@ from bq.core.model import DBSession
 from bq.data_service.model import Taggable, taggable, Image, LEGAL_ATTRIBUTES
 from bq.data_service.model import TaggableAcl, BQUser
 from bq.data_service.model import Tag, GObject
-from bq.data_service.model import Value, values
+from bq.data_service.model import Value, values, Vertex
 from bq.data_service.model import dbtype_from_tag
 from bq.exceptions import IllegalOperation
 from bq.client_service.controllers import notify_service
@@ -435,6 +435,7 @@ def prepare_type (resource_type):
     @param resource_type: A tuple or string of resource_type names (seperate by '|')
     @return: a name,dbtype, query tuple
     """
+    types = []
     if resource_type is None:
         resource_type = (None, Taggable)
     if isinstance (resource_type, tuple):
@@ -442,12 +443,13 @@ def prepare_type (resource_type):
         name, dbtype = resource_type
     elif isinstance(resource_type, basestring):
         if resource_type == 'value':
-            types = []
             name, dbtype = 'value', Value
+        elif resource_type == 'vertex':
+            name, dbtype = 'vertex', Vertex
         else:
             # thinks resource_type is a tuple
-
-            types = [ dbtype_from_tag(x.strip()) for x in resource_type.split('|') ] # pylint: disable=no-member
+            types = [ dbtype_from_tag(x.strip())
+                      for x in resource_type.split('|') ] # pylint: disable=no-member
             name, dbtype = (None, Taggable)
 
     query = DBSession.query(dbtype)
@@ -966,14 +968,18 @@ def resource_load(resource_type = (None, Taggable),
 #                  user_id=None,
 #                  with_public=True,
 #                  action=RESOURCE_READ,
+                  parent = None,
                   **kw):
     name, dbtype, query = prepare_type (resource_type)
 #    resource = prepare_permissions (resource, user_id, with_public = with_public, action=action)
     if uniq is not None:
         resource = query.filter_by (resource_uniq = uniq)
     else:
-        resource = query.filter_by (id = ident)
-
+        if dbtype in (Value, Vertex):
+            resource= query.filter_by (resource_parent_id = parent.id, indx = ident)
+        else:
+            resource = query.filter_by (id = ident)
+    log.debug ("resource_load: %s", resource)
     return resource
 
 
@@ -1212,6 +1218,18 @@ def resource_delete(resource, user_id=None, check_acl=True, check_blob=True, che
 
     @param resource: a database resource
     """
+
+    if hasattr (resource, 'indx'):
+        log.debug ("resource_delete: indx")
+        resource_uniq = resource.indx
+        check_acl = check_blob = check_references = False
+        if isinstance (resource, Value):
+            resource.parent.values.remove(resource)
+        else:
+            resource.parent.vertices.remove(resource)
+        DBSession.delete(resource)
+        return
+
     resource_uniq  = resource.resource_uniq
     log.debug('resource_delete %s: start' , resource_uniq)
     if  user_id is None:
@@ -1267,6 +1285,11 @@ def resource_delete(resource, user_id=None, check_acl=True, check_blob=True, che
     log.debug('resource_delete %s:end' , resource_uniq)
     return None
 
+def resource_index (parent, index):
+    """Index a resource
+    """
+    query = DBSession.query (Value).filter_by (resource_parent_id = parent.id, indx=index)
+    return query
 
 #FILTERED_TYPES=['user', 'system', 'store']
 FILTERED_TYPES=[]

@@ -381,6 +381,8 @@ class Taggable(object):
         if 'all' in what:
             results.extend(self.children) # pylint: disable=access-member-before-definition
             del self.children[:]
+            del self.values[:]
+            del self.vertices[:]
             #self.children = []
             #self.tags = []
             #self.gobjects = []
@@ -537,7 +539,14 @@ class Value(object):
         self.indx = ind
         self.valstr = s
         self.valnum = n
-        self.object = o
+        self.valobj = o
+
+    def geturi(self):
+        return "%s/%s" % (self.parent.uri, self.indx)
+
+    uri = property (geturi)
+    def clear(self):
+        pass
 
     def getvalue(self):
         value = ''
@@ -597,6 +606,12 @@ class Value(object):
 class Vertex(object):
     xmltag = 'vertex'
 
+    def geturi(self):
+        return "%s/%s" % (self.parent.uri, self.indx)
+
+    uri = property (geturi)
+    def clear(self):
+        pass
     def get_index(self):
         return self.indx
     def set_index(self, v):
