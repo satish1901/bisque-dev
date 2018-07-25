@@ -128,7 +128,7 @@ def upload_dream3d_pipeline(uf, intags):
                                            any([param_key.lower().endswith(phrase) for phrase in ['size', 'tolerance', 'value']])):
                     param_name = "Step %s (%s) - %s" % (step_id, new_pipeline[str(new_step_id)]['__Label__'], param_key)
                     try:
-                        float(param_val)    # is this a number?
+                        float(str(param_val))    # is this a number?
                         param_val = "@NUMPARAM|%s@%s" % (param_name, str(param_val))
                         converted_cnt += 1
                     except ValueError:
