@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<module name="predict_strength" type="runtime">
+<module name="Composite_Strength" type="runtime">
 
     <!-- Comments are OK -->
     <tag name="inputs">
@@ -44,7 +44,7 @@
     <tag name="help" type="file" value="public/help.html" />
     <tag name="thumbnail" type="file" value="public/thumbnail.png" />
 
-    <tag name="title" type="string" value="Strength Prediction" />
+    <tag name="title" type="string" value="Composite Strength" />
     <tag name="authors" type="string" value="Amil Khan, Marat I. Latypov" />
-    <tag name="description" type="string" value="Predicts effective strength of 3-D RVE of a 2-phase composite." />
+    <tag name="description" type="string" value="Predicts effective strength of 3-D RVE of a 2-phase composite with strength contrast of 5.0" />
 </module>

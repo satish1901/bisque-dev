@@ -2,7 +2,7 @@ from pymks import PrimitiveBasis
 from pymks.stats import correlate
 from sklearn.externals import joblib
 import numpy as np
-import h5py
+#import h5py
 # import logging
 from bqapi.comm import BQCommError
 from bqapi.comm import BQSession
@@ -14,13 +14,13 @@ from bqapi.comm import BQSession
 def predict(bq, log, table_url, **kw):
     '''
     Predicts effective strength of 3-D RVE of a 2-phase composite with strength contrast s2/s1 = 5
-    Args: 
+    Args:
     - table_path - path to dream3d file containing microstructure data (phase labels)
     - predictor_path - path to sav file containing calibrated model (LinearRegression)
     - reducer_path - path to sav file containing dimensionality reducer (Principal Component Basis)
     - ms_path - path to microstructure data (phase lables) inside dream3d file
     Returns:
-    - y - predicted effective strength 
+    - y - predicted effective strength
     '''
 
     predictor_path='/source/modules/modules/TwoPhasePrediction/predictor.sav'
@@ -30,25 +30,40 @@ def predict(bq, log, table_url, **kw):
     # Default settings for 2-pt stats
     p_axes = (0,1,2)
     corrs = [(1,1)]
-    
+
     # Read hdf5 table
     table_uniq = table_url.split('/')[-1]
     table_service = bq.service ('table')
 
-    # Get dataset 
+    # Get dataset
     data = table_service.load_array(table_uniq, ms_path.lstrip('/'))
     ms = np.squeeze(data)
+
+
+
+    s1 = 0.2
+    s2 = 1.0
+    eta = s2/s1
+    f1 = np.count_nonzero(ms==1)*1.0 / np.prod(ms.shape)
+    f2 = np.count_nonzero(ms==2)*1.0 / np.prod(ms.shape)
+
+    sbar_up = (f1*s1) + (f2*s2)
+    # sbar1.append(sbar)
+
+    sbar_low = (f1/s1) + (f2/s2)
+    sbar_low = 1.0/sbar_low
+
 
     # f = h5py.File(table_path, 'r')
     # data = f[ms_path].value
     # ms = np.squeeze(data)
-    
+
     # Get phase labels as local states
     states = np.unique(ms)
     if len(states) > 2 :
         print('WARNING: Model is only for two-phase materials! All extra phases will be considered as the second (hard) phase')
-        ms[ms > states[0]] = states[0]   
-    
+        ms[ms > states[0]] = states[0]
+
     # Get the size of the RVE
     if len(ms.shape) == 4:
         dims = ms.shape[1:4]
@@ -58,23 +73,23 @@ def predict(bq, log, table_url, **kw):
     else:
         print('ERROR: 3-D RVE(s) are expected!')
         return None
-    
+
     # Load model and dimensionality reducer
     predictor = joblib.load(predictor_path)
     reducer = joblib.load(reducer_path)
-    
+
     # Get the number of PC components used
     n_comps = predictor.named_steps['poly'].n_input_features_
 
     # Get the size of the calibration RVE
     nx_cal = int(np.round((reducer.components_.shape[1])**(1.0/3.0)))
     dims_cal = np.array((nx_cal,nx_cal,nx_cal))
-    
+
     # Compute 2-pt stats
     n_states = len(states)
     p_basis = PrimitiveBasis(n_states=n_states, domain=states)
     tps = correlate(ms, p_basis, periodic_axes=p_axes, correlations=corrs)
-    
+
     # Check size of the provided MVE: truncate if large, pad if small
     if np.prod(dims) > reducer.components_.shape[1]:
         tps = truncate(tps, [len(ms),dims_cal[0],dims_cal[1],dims_cal[2],1])
@@ -84,24 +99,30 @@ def predict(bq, log, table_url, **kw):
         tps = pad(tps, [len(ms),dims_cal[0],dims_cal[1],dims_cal[2],1])
         dims = dims_cal
         print('Microstructure volume is smaller than calibration RVE. 2-pt correlation function is padded')
-    
+
     # Convert 2-pt stats to a vector
     tps_v = np.reshape(tps,(len(ms), np.prod(dims)))
 
     # Get low-dimensional representation
     x = reducer.transform(tps_v)
-    
+
     # Get the property prediction
     y = predictor.predict(x[:,0:n_comps])
 
     # outtable_xml = table_service.store_array(y, name='predicted_strength')
     # return [ outtable_xml ]
-    out_strength_xml = '<tag name="strength"><tag name="strength" type="string" value="%s"/><tag name="link" type="resource" value="%s"/></tag>' %(str(y[0]), table_url)
+    out_strength_xml = """<tag name="strength">
+                                <tag name="strength" type="string" value="%s"/>
+                                <tag name="sbar_up" type="string" value="%s"/>
+                                <tag name="sbar_low" type="string" value="%s"/>
+                                <tag name="vol_frac" type="string" value="%s"/>
+                                <tag name="link" type="resource" value="%s"/>
+                          </tag>""" %(str(y[0]*eta),str(sbar_up*eta),str(sbar_low*eta),str(f1)+', '+str(f2), table_url)
     return [out_strength_xml]
 
 def truncate(a, shape):
     '''truncates the edges of the array based on the shape. '''
-    
+
     a_shape = np.array(a.shape)
     n = len(shape)
     new_shape = a_shape.copy()
@@ -114,17 +135,17 @@ def truncate(a, shape):
 
 def pad(a, shape):
     '''pads the array with zeros to make for the shape'''
-    
+
     a_shape = np.array(a.shape)
     diff = shape-a_shape
     pad_1 = (diff/2.0).astype(int)
     pad_2 = diff - pad_1
-    
+
     padding = []
     for ii in range(len(pad_1)):
         padding.append((pad_1[ii],pad_2[ii]))
-    
-    return np.pad(a,padding,'constant',constant_values=(0,0))    
+
+    return np.pad(a,padding,'constant',constant_values=(0,0))
 
 # predictor_path = 'predictor.sav'
 # reducer_path = 'reducer.sav'
