@@ -15,6 +15,7 @@ RUN pip install requests==2.10.0
 WORKDIR /module
 COPY PythonScriptWrapper /module/
 COPY PythonScriptWrapper.py /module/
+COPY predict_strength.py /module/
 COPY predictor.sav /module/
 COPY reducer.sav /module/
 COPY pydist /module/pydist/

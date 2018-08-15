@@ -5,7 +5,7 @@ from bq.setup.module_setup import python_setup, docker_setup, require, read_conf
 
 def setup(params, *args, **kw):
     python_setup('PythonScriptWrapper.py', params=params)
-    docker_setup('predict_strength', 'TwoPhasePrediction', 'twophaseprediction', params=params)
+    docker_setup('Composite_Strength', 'TwoPhasePrediction', 'twophaseprediction', params=params)
     
 if __name__ =="__main__":
     params = read_config('runtime-bisque.cfg')

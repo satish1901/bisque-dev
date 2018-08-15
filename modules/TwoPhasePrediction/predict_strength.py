@@ -23,8 +23,8 @@ def predict(bq, log, table_url, **kw):
     - y - predicted effective strength
     '''
 
-    predictor_path='/source/modules/modules/TwoPhasePrediction/predictor.sav'
-    reducer_path='/source/modules/modules/TwoPhasePrediction/reducer.sav'
+    predictor_path='predictor.sav'
+    reducer_path='reducer.sav'
     ms_path='/DataContainers/SyntheticVolumeDataContainer/CellData/Phases'
 
     # Default settings for 2-pt stats
