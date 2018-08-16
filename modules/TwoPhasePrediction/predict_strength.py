@@ -3,12 +3,13 @@ from pymks.stats import correlate
 from sklearn.externals import joblib
 import numpy as np
 #import h5py
-# import logging
+import logging
 from bqapi.comm import BQCommError
 from bqapi.comm import BQSession
 
 
-#logging.basicConfig(filename='prediction.log',level=logging.DEBUG)
+logging.basicConfig(filename='PythonScript.log',filemode='a',level=logging.DEBUG)
+log = logging.getLogger('bq.modules')
 
 
 def predict(bq, log, table_url, **kw):
@@ -61,7 +62,7 @@ def predict(bq, log, table_url, **kw):
     # Get phase labels as local states
     states = np.unique(ms)
     if len(states) > 2 :
-        print('WARNING: Model is only for two-phase materials! All extra phases will be considered as the second (hard) phase')
+        log.warn('WARNING: Model is only for two-phase materials! All extra phases will be considered as the second (hard) phase')
         ms[ms > states[0]] = states[0]
 
     # Get the size of the RVE
@@ -71,7 +72,7 @@ def predict(bq, log, table_url, **kw):
         dims = ms.shape
         ms = np.expand_dims(ms,0)
     else:
-        print('ERROR: 3-D RVE(s) are expected!')
+        log.error('ERROR: 3-D RVE(s) are expected!')
         return None
 
     # Load model and dimensionality reducer
@@ -94,11 +95,11 @@ def predict(bq, log, table_url, **kw):
     if np.prod(dims) > reducer.components_.shape[1]:
         tps = truncate(tps, [len(ms),dims_cal[0],dims_cal[1],dims_cal[2],1])
         dims = dims_cal
-        print('Microstructure volume is larger than calibration RVE. 2-pt correlation function is truncated')
+        log.info('Microstructure volume is larger than calibration RVE. 2-pt correlation function is truncated')
     elif np.prod(dims) < reducer.components_.shape[1]:
         tps = pad(tps, [len(ms),dims_cal[0],dims_cal[1],dims_cal[2],1])
         dims = dims_cal
-        print('Microstructure volume is smaller than calibration RVE. 2-pt correlation function is padded')
+        log.info('Microstructure volume is smaller than calibration RVE. 2-pt correlation function is padded')
 
     # Convert 2-pt stats to a vector
     tps_v = np.reshape(tps,(len(ms), np.prod(dims)))
