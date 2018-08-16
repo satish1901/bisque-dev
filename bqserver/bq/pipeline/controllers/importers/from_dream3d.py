@@ -54,6 +54,7 @@ import json
 import pkg_resources
 import tempfile
 from pylons.controllers.util import abort
+from collections import OrderedDict
 
 from bq import blob_service
 from bq.pipeline.controllers.pipeline_base import PipelineBase
@@ -85,7 +86,6 @@ def _set_parameter(step, param_name, param_value):
 def upload_dream3d_pipeline(uf, intags):
     # analyze DREAM.3D pipeline and replace illegal operations with BisQue operations
     pipeline = {}
-    #uf.ensurelocal('/tmp/murks.json')   #!!!
     with open(uf.localpath(), 'r') as fo:
         pipeline = dream3d_to_json(fo)
     uf.close()
@@ -131,9 +131,23 @@ def upload_dream3d_pipeline(uf, intags):
                         float(str(param_val))    # is this a number?
                         param_val = "@NUMPARAM|%s@%s" % (param_name, str(param_val))
                         converted_cnt += 1
+                        new_parameters.append({param_key:param_val})
                     except ValueError:
-                        pass   # skip non-numerical parameters for now
-                new_parameters.append({param_key:param_val})
+                        # not a value... it may be a complex parameter (i.e., dictionary)
+                        if isinstance(param_val, dict):
+                            complex_val = {}
+                            for key,val in param_val.iteritems():
+                                try:
+                                    float(str(val))   # is this a number?
+                                    complex_val[key] = "@NUMPARAM|%s - %s@%s" % (param_name, key, str(val))
+                                    converted_cnt += 1
+                                except ValueError:
+                                    complex_val[key] = val
+                            new_parameters.append({param_key:complex_val})
+                        else:
+                            new_parameters.append({param_key:param_val})
+                else:
+                    new_parameters.append({param_key:param_val})
             new_pipeline[str(new_step_id)]['Parameters'] = new_parameters
             new_step_id += 1
     new_pipeline['__Header__']['ModuleCount'] = str(len(new_pipeline)-1)
