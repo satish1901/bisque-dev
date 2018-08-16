@@ -1350,6 +1350,7 @@ Ext.define('BQ.selectors.PipelineParams', {
 
         // parse pipeline resource and extract user def parameters
         var params = this.extractParameters(json);
+        params.sort(function(a,b) {return a["name"] < b["name"] ? -1 : (a["name"] > b["name"] ? 1 : 0);});
 
         this.suspendLayout = true;
 
