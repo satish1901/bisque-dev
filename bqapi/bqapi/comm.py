@@ -334,6 +334,29 @@ class BQSession(object):
         users = r.findall('./tag[@name="user"]')
         return  len(users) > 0
 
+    def init(self, bisque_url, credentials=None, moduleuri = None, create_mex=False):
+        """Create  session by connect to with bisque_url
+
+        @param bisque_url: The bisque root or MEX url
+        @param credetials : A tuple (user, pass) or (mex, token)
+        @param moduleuri :  The module URI of the mex for this session
+        @param create_mex : Create a new Mex session for this run
+        """
+        self.bisque_root = self.c.root = bisque_url
+        self._load_services()
+        if credentials:
+            if credentials[0].lower() == 'mex':
+                return self.init_mex(bisque_url, credentials[1])
+            auth_service = self.service ('auth_service')
+            logins = auth_service.login_providers (render='xml')
+            login_type = None
+            if logins is not None and logins[0]:
+                login_type = logins[0].get ('type')
+            if login_type == 'cas':
+                return self.init_cas (credentials[0], credentials[1], bisque_url, moduleuri=moduleuri, create_mex=create_mex)
+            return self.init_local (user=credentials[0], pwd=credentials[1], bisque_root=bisque_url, moduleuri=moduleuri, create_mex=create_mex)
+        return self
+
 
     def init_local(self, user, pwd, moduleuri=None, bisque_root=None, create_mex=True):
         """

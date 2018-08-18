@@ -160,7 +160,7 @@ class BQResource (BQNode):
     xmlkids = ['kids', 'tags', 'gobjects',] #  'values'] handled differently
 
     def __repr__(self):
-        return '(%s:%s)'%(self.xmltag, self.uri)
+        return '(%s:%s)'%(self.xmltag, self.uri) #pylint: disable=no-member
 
     def __init__(self, *args, **kw):
         self.tags = []
