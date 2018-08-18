@@ -7,6 +7,7 @@ import string
 import logging
 import tempfile
 import json
+import shutil
 
 from six.moves import urllib
 
@@ -67,12 +68,12 @@ class BaseServiceProxy(object):
         # no longer in session https://github.com/requests/requests/issues/3341
         timeout = kw.pop('timeout', self.timeout)
         headers = kw.pop('headers', self.session.c.headers)
-        if render=="xml":
+        if render in ("xml", 'etree'):
             headers.update ({'Content-Type':'text/xml', 'Accept': 'text/xml'})
 
         try:
             response = self.session.c.request (url=path, params=params, method=method, timeout=timeout, headers=headers, **kw)
-            if render =="xml":
+            if render  in ("xml", 'etree'):
                 return etree.fromstring (response.content)
             return response
         except etree.ParseError:
@@ -98,6 +99,16 @@ class AdminProxy (BaseServiceProxy):
         user_uniq = userxml.find ("user").get ('resource_uniq')
         self.fetch ('/user/{}/login'.format(user_uniq))
 
+
+class AuthProxy (BaseServiceProxy):
+    def login_providers (self, **kw):
+        return self.request ('login_providers', **kw)
+
+    def credentials (self, **kw):
+        return self.request ('credentials', **kw)
+
+    def get_session (self, **kw): # hides session
+        return self.request ('session', **kw)
 
 class BlobProxy (BaseServiceProxy):
     def _resource_element (self, args_tag_file=None, args_resource_type=None, args_srcpath=None, **kw):
@@ -190,14 +201,42 @@ class DatasetProxy (BaseServiceProxy):
             params = kw.pop('params', {})
             params['duri'] = dataset_uniq
             return self.fetch("delete", params=params, **kw)
-        data = self.session.service('data')
+        data = self.session.service('data_service')
         return data.delete (dataset_uniq)
 
+    def append_member (self, dataset_uniq, resource_uniq, **kw):
+        """Append an element
+        """
+        data = self.session.service('data_service')
+        member = etree.Element('value', type='object')
+        member.text = data.contruct (resource_uniq)
+        self.post (dataset_uniq, data=etree.tostring(member), render='etree')
+
+    def delete_member (self, dataset_uniq, resource_uniq, **kw):
+        """Delete a member..
+        @return new dataset if success or None
+        """
+        data = self.session.service('data_service')
+        dataset = data.fetch ( dataset_uniq,  params = {'view':'full'}, render='etree')
+        members = dataset.xpath ('value[text()="%s"]' % data.construct (resource_uniq))
+        for member in members:
+            dataset.remove (member)
+        if len (members):
+            for val in dataset.iter ('value'):
+                _ = val.attrib.pop ('index', 0)
+            return data.put (dataset_uniq, data = etree.tostring (dataset), render='etree')
+        return None
 
 
 class ModuleProxy (BaseServiceProxy):
     def execute (self, module_name, **module_parms):
         pass
+    def register(self, engine_url):
+        return self.request (path='register_engine', params = { 'engine_url':engine_url })
+    def unregister (self, engine_url):
+        return self.request (path='unregister_engine', params = { 'engine_url':engine_url })
+
+
 
 
 class TableProxy (BaseServiceProxy):
@@ -258,20 +297,31 @@ class TableProxy (BaseServiceProxy):
 
 class ImageProxy(BaseServiceProxy):
     def get_thumbnail (self, image_uniq, **kw):
-        url = urlparse.urljoin( self.session.service_map['image_service'], image_uniq, 'thumbnail' )
+        url = urllib.parse.urljoin( self.session.service_map['image_service'], image_uniq, 'thumbnail' )
         r = self.get(url)
         return r
 
-
-
+class ExportProxy(BaseServiceProxy):
+    valid_param = set (['files', 'datasets', 'dirs', 'urls', 'users'])
+    def fetch_export(self, **kw):
+        params = { key:val for key,val in kw.items() if key in self.valid_param and val is not None }
+        response = self.fetch ('stream', params = params, stream=kw.pop ('stream', True) )
+        return response
+    def fetch_export_local(self, localpath, stream=True, **kw):
+        response = self.fetch_export (stream=stream, **kw )
+        with open(localpath, 'wb') as f:
+            shutil.copyfileobj(response.raw, f)
+        return localpath
 
 SERVICE_PROXIES = {
     'admin' : AdminProxy,
+    'auth_service' : AuthProxy,
     'import' : ImportProxy,
     'blob_service': BlobProxy,
     'dataset_service': DatasetProxy,
     'table': TableProxy,
     'image_service' : ImageProxy,
+    'export' : ExportProxy,
 }
 
 class ServiceFactory (object):
