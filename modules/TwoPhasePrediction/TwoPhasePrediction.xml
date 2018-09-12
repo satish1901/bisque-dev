@@ -7,17 +7,43 @@
             <template>
                 <tag name="accepted_type" value="table" />
                 <tag name="accepted_type" value="dataset" />
-                <tag name="label" value="Image to extract metadata" />
+                <tag name="label" value="Table to extract metadata" />
                 <tag name="prohibit_upload" value="true" type="boolean" />
             </template>
         </tag>
+        <tag name="reducer_url"  type="resource">
+            <template>
+                <tag name="label" value="Select a Reducer" />
+                <tag name="accepted_type" value="file" />
+                <tag name="prohibit_upload" value="true" />
+                 <tag name="query" value="filename:*.sav" />
+                 <tag name="example_query" value="default_reducer:true" />
+            </template>
+        </tag>
+        <tag name="predictor_url"  type="resource">
+            <template>
+                <tag name="label" value="Select a Predictor" />
+                <tag name="accepted_type" value="file" />
+                <tag name="prohibit_upload" value="true" />
+                 <tag name="query" value="filename:*.sav" />
+                 <tag name="example_query" value="default_predictor:true" />
+            </template>
+        </tag>
+
+
+        <tag name="ms_path"  value="/DataContainers/SyntheticVolumeDataContainer/CellData/Phases" >
+            <template>
+        <tag name="label" value="Phase Path from HDF" />
+      </template>
+            </tag>
+
 
         <tag name="mex_url"  type="system-input" />
         <tag name="bisque_token"  type="system-input" />
     </tag>
 
     <tag name="outputs">
-         <tag name="strength">
+         <tag name="Strength">
             <template>
                 <tag name="label" value="Predicted" />
             </template>
@@ -30,8 +56,7 @@
     </tag>
 
     <tag name="module_options" >
-        <tag name="version" value="1
-            " />
+        <tag name="version" value="1" />
     </tag>
 
     <tag name="display_options" >

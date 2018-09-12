@@ -3,16 +3,20 @@ from pymks.stats import correlate
 from sklearn.externals import joblib
 import numpy as np
 #import h5py
-import logging
+# import logging
 from bqapi.comm import BQCommError
 from bqapi.comm import BQSession
+import logging
+import os
 
 
 logging.basicConfig(filename='PythonScript.log',filemode='a',level=logging.DEBUG)
 log = logging.getLogger('bq.modules')
 
+#logging.basicConfig(filename='prediction.log',level=logging.DEBUG)
 
-def predict(bq, log, table_url, **kw):
+
+def predict(bq, log, table_url, predictor_url, reducer_url, ms_path, **kw):
     '''
     Predicts effective strength of 3-D RVE of a 2-phase composite with strength contrast s2/s1 = 5
     Args:
@@ -24,36 +28,31 @@ def predict(bq, log, table_url, **kw):
     - y - predicted effective strength
     '''
 
-    predictor_path='predictor.sav'
-    reducer_path='reducer.sav'
-    ms_path='/DataContainers/SyntheticVolumeDataContainer/CellData/Phases'
+    log.debug('kw is: %s', str(kw))
+    predictor_uniq = predictor_url.split('/')[-1]
+    reducer_uniq = reducer_url.split('/')[-1]
+    table_uniq = table_url.split('/')[-1]
+
+    predictor_url = bq.service_url('blob_service', path=predictor_uniq)
+    predictor_path = os.path.join(kw.get('stagingPath', ''), 'predictor.sav')
+    predictor_path = bq.fetchblob(predictor_url, path=predictor_path)
+
+    reducer_url = bq.service_url('blob_service', path=reducer_uniq)
+    reducer_path = os.path.join(kw.get('stagingPath', ''), 'reducer.sav')
+    reducer_path = bq.fetchblob(reducer_url, path=reducer_path)
+
+    # ms_path default: '/DataContainers/SyntheticVolumeDataContainer/CellData/Phases'
 
     # Default settings for 2-pt stats
     p_axes = (0,1,2)
     corrs = [(1,1)]
 
     # Read hdf5 table
-    table_uniq = table_url.split('/')[-1]
     table_service = bq.service ('table')
 
     # Get dataset
     data = table_service.load_array(table_uniq, ms_path.lstrip('/'))
     ms = np.squeeze(data)
-
-
-
-    s1 = 0.2
-    s2 = 1.0
-    eta = s2/s1
-    f1 = np.count_nonzero(ms==1)*1.0 / np.prod(ms.shape)
-    f2 = np.count_nonzero(ms==2)*1.0 / np.prod(ms.shape)
-
-    sbar_up = (f1*s1) + (f2*s2)
-    # sbar1.append(sbar)
-
-    sbar_low = (f1/s1) + (f2/s2)
-    sbar_low = 1.0/sbar_low
-
 
     # f = h5py.File(table_path, 'r')
     # data = f[ms_path].value
@@ -64,6 +63,19 @@ def predict(bq, log, table_url, **kw):
     if len(states) > 2 :
         log.warn('WARNING: Model is only for two-phase materials! All extra phases will be considered as the second (hard) phase')
         ms[ms > states[0]] = states[0]
+
+    ph_1 = np.min(states)
+    ph_2 = np.max(states)
+
+    s1 = 0.2
+    s2 = 1.0
+    eta = s2/s1
+    f1 = np.count_nonzero(ms==ph_1)*1.0 / np.prod(ms.shape)
+    f2 = np.count_nonzero(ms==ph_2)*1.0 / np.prod(ms.shape)
+    sbar_up = (f1*s1) + (f2*s2)
+
+    sbar_low = (f1/s1) + (f2/s2)
+    sbar_low = 1.0/sbar_low
 
     # Get the size of the RVE
     if len(ms.shape) == 4:
@@ -112,11 +124,11 @@ def predict(bq, log, table_url, **kw):
 
     # outtable_xml = table_service.store_array(y, name='predicted_strength')
     # return [ outtable_xml ]
-    out_strength_xml = """<tag name="strength">
-                                <tag name="strength" type="string" value="%s"/>
+    out_strength_xml = """<tag name="Strength">
+                                <tag name="Strength" type="string" value="%s"/>
                                 <tag name="sbar_up" type="string" value="%s"/>
                                 <tag name="sbar_low" type="string" value="%s"/>
-                                <tag name="vol_frac" type="string" value="%s"/>
+                                <tag name="Volume Fraction" type="string" value="%s"/>
                                 <tag name="link" type="resource" value="%s"/>
                           </tag>""" %(str(y[0]*eta),str(sbar_up*eta),str(sbar_low*eta),str(f1)+', '+str(f2), table_url)
     return [out_strength_xml]
