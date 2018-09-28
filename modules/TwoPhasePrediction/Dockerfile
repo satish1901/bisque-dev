@@ -16,8 +16,6 @@ WORKDIR /module
 COPY PythonScriptWrapper /module/
 COPY PythonScriptWrapper.py /module/
 COPY predict_strength.py /module/
-COPY predictor.sav /module/
-COPY reducer.sav /module/
 COPY pydist /module/pydist/
 ENV PATH /module:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 #CMD [ 'python' '/predict_strength.py' ]
