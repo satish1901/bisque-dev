@@ -18,6 +18,7 @@
                 <tag name="prohibit_upload" value="true" />
                  <tag name="query" value="filename:*.sav" />
                  <tag name="example_query" value="default_reducer:true" />
+                 <tag name="example_type" value="file" />
             </template>
         </tag>
         <tag name="predictor_url"  type="resource">
@@ -27,6 +28,7 @@
                 <tag name="prohibit_upload" value="true" />
                  <tag name="query" value="filename:*.sav" />
                  <tag name="example_query" value="default_predictor:true" />
+                 <tag name="example_type" value="file" />
             </template>
         </tag>
 

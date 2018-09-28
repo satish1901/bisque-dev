@@ -437,6 +437,7 @@ Ext.define('BQ.selectors.Resource', {
             selType  : 'SINGLE',
             viewMode : 'ViewerOnly',
             tagQuery : template.example_query,
+            accType  : template.example_type || 'image',
             wpublic  : 'true',
             listeners: {  'Select': function(me, resource) {
                            //this.onselected(resource);
