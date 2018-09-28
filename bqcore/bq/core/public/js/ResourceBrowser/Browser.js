@@ -222,10 +222,12 @@ Ext.define('Bisque.ResourceBrowser.Browser', {
 
         //this.applyPreferences();
 
+        var accType = this.browserParams.accType || 'image';
+
         // defaults (should be loaded from system preferences)
         Ext.apply(this.browserParams, {
             layout : this.browserParams.layout || 1,
-            dataset : this.browserParams.dataset || '/data_service/image/',
+            dataset : this.browserParams.dataset || '/data_service/'+accType+'/',
             offset : this.browserParams.offset || 0,
             tagQuery : this.browserParams.tagQuery || '',
             tagOrder : this.browserParams.tagOrder || '"@ts":desc',
