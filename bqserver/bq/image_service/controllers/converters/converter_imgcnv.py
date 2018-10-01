@@ -175,7 +175,7 @@ class ConverterImgcnv(ConverterBase):
     installed_formats = None
     CONVERTERCOMMAND = 'imgcnv' if os.name != 'nt' else 'imgcnv.exe'
     name = 'imgcnv'
-    required_version = '2.0.9'
+    required_version = '2.0.1'  #!!! TEMP
 
     info_map = {
         'image_num_x'        : 'image_num_x',
