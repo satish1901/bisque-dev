@@ -32,6 +32,8 @@ bqfeature/bq/features/src/*
 *_mcr/
 local-packages/*
 pydist/*
+staging/*
+admin/*
 
 syntax: regexp
 .*\#.*\#$
