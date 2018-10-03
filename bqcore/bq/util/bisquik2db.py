@@ -60,6 +60,7 @@ import posixpath
 
 from datetime import datetime
 from lxml import etree
+import furl
 import sqlalchemy
 from sqlalchemy.orm import object_mapper
 #from sqlalchemy.sql import and_, or_
@@ -276,12 +277,12 @@ class ResourceFactory(object):
                 objarr[indx].document = parent.document
 
 
-            #v = DBSession.query(klass).get( (parent.id, indx) )
-            v = objarr[indx]
+            v = DBSession.query(klass).get( (parent.id, indx) )
+            # v = objarr[indx]
             #log.debug('indx %s fetched %s ' , indx, str(v))
             #objarr.extend ([ klass() for x in range(((indx+1)-len(objarr)))])
-            #if v is not None:
-            #    objarr[indx] = v
+            if v is not None:
+                objarr[indx] = v
             objarr[indx].document = parent.document
             #log.debug('ARRAY = %s' % [ str(x) for x in objarr ])
             return objarr[indx]
@@ -559,6 +560,9 @@ def db2tree(dbo, parent=None, view=None, baseuri=None, progressive=False, **kw):
     view = view or []
     if not view:
         view.append ('short')
+
+    if 'relative' in view:
+        baseuri = str(furl.furl(baseuri).path)
 
     #if 'fulluri' in view:
     #    view = [ x for x in view if x != 'fulluri' ]
