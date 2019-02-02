@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Rahul Vishwakarma">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/bisque/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>BisQue - BisQue-Docs</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/color-brewer.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-XXXXXXXX-X', 'auto');
+            ga('send', 'pageview');
+        </script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">BisQue-Docs</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Guides <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li class="active">
+    <a href="./">BisQue</a>
+</li>
+                                    
+<li >
+    <a href="../bisque_docker/">Docker</a>
+</li>
+                                    
+<li >
+    <a href="../jupyter_notebooks/">Jupyter</a>
+</li>
+                                    
+<li >
+    <a href="../errors/">Errors</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../about/">About</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../..">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../bisque_docker/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/bisque.md">Edit on UCSB-VRL/bisque</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#bisque-development-environment-setup-instructions">Bisque Development Environment Setup Instructions</a></li>
+            <li><a href="#setup-for-ubuntu-1604">Setup for Ubuntu 16.04</a></li>
+            <li><a href="#pre-requisites">Pre-requisites</a></li>
+            <li><a href="#a-download-the-bootstrap-installer-use-python-27">A. Download the Bootstrap installer (Use Python 2.7)</a></li>
+            <li><a href="#b-configure-bisque-environment">B. Configure Bisque Environment</a></li>
+            <li><a href="#c-run-bisque">C. Run Bisque</a></li>
+            <li><a href="#run">RUN</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h2 id="bisque-development-environment-setup-instructions"><a href="https://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions05">Bisque Development Environment Setup Instructions</a><a class="headerlink" href="#bisque-development-environment-setup-instructions" title="Permanent link">&para;</a></h2>
+<p>Project Source
+- https://bitbucket.org/CBIucsb/bisque
+- http://biodev.ece.ucsb.edu/projects/bisquik/export/tip/bisque-stable</p>
+<p>Reference
+- <a href="https://groups.google.com/forum/#!topic/bisque-bioimage/jwo_5sHFeHU">Bique Bioimage Google Groups</a>
+- <a href="https://bitbucket.org/CBIucsb/bisque/src/default/README.md">Instructions on installing bisque using docker</a></p>
+<h5 id="setup-for-ubuntu-1604">Setup for Ubuntu 16.04<a class="headerlink" href="#setup-for-ubuntu-1604" title="Permanent link">&para;</a></h5>
+<h5 id="pre-requisites">Pre-requisites<a class="headerlink" href="#pre-requisites" title="Permanent link">&para;</a></h5>
+<pre class="codehilite"><code>sudo apt-get install -y python python-dev python-virtualenv python-numpy python-scipy 
+sudo apt-get install -y libxml2-dev libxslt1-dev libhdf5-dev
+sudo apt-get install -y libmysqlclient-dev libpq-dev mercurial git cmake
+sudo apt-get install -y postgresql postgresql-client libsqlite3-dev
+sudo apt-get install -y python-paver python-setuptools
+sudo apt-get install -y graphviz libgraphviz-dev pkg-config
+sudo apt-get install -y openslide-tools  python-openslide
+sudo apt-get install -y libfftw3-dev libbz2-dev libz-dev
+sudo apt-get install -y liblcms2-dev libtiff-dev libpng-dev
+sudo apt-get install -y libgdcm2.6 libopenslide-dev libopenslide0</code></pre>
+
+
+<p>Install Openjpeg</p>
+<pre class="codehilite"><code>git clone https://github.com/uclouvain/openjpeg
+cd openjpeg &amp;&amp; mkdir build &amp;&amp; cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+sudo make -j4 install
+sudo ldconfig</code></pre>
+
+
+<p>Install BioImageConvert
+- <a href="https://biodev.ece.ucsb.edu/projects/imgcnv">BioImageConvert Source Repository</a>
+- <a href="https://bitbucket.org/dimin/bioimageconvert/downloads/">Prebuilt Binaries Repository</a>
+- Setup for pre-built binaries (below)</p>
+<pre class="codehilite"><code># Ubuntu 18 version
+wget https://bitbucket.org/dimin/bioimageconvert/downloads/imgcnv_ubuntu18_2.5.0.tar.gz
+
+# Ubuntu 16 version
+wget https://bitbucket.org/dimin/bioimageconvert/downloads/imgcnv_ubuntu16_2.4.3.tar.gz
+tar -xvzf imgcnv_ubuntu16_2.4.3.tar.gz
+
+sudo cp imgcnv_ubuntu16_2.4.3/imgcnv /usr/local/bin/
+sudo cp imgcnv_ubuntu16_2.4.3/libimgcnv.so.2.4.3 /usr/local/lib/
+sudo ln -s /usr/local/lib/libimgcnv.so.2.4.3 /usr/local/lib/libimgcnv.so.2.4
+sudo ln -s /usr/local/lib/libimgcnv.so.2.4 /usr/local/lib/libimgcnv.so.2
+sudo ln -s /usr/local/lib/libimgcnv.so.2 /usr/local/lib/libimgcnv.so
+sudo ldconfig</code></pre>
+
+
+<p>Alternately, Compile by source and Install </p>
+<pre class="codehilite"><code>hg clone --insecure http://biodev.ece.ucsb.edu/hg/imgcnv
+cd imgcnv &amp;&amp; make -j6 
+sudo make install</code></pre>
+
+
+<h5 id="a-download-the-bootstrap-installer-use-python-27">A. Download the Bootstrap installer (Use Python 2.7)<a class="headerlink" href="#a-download-the-bootstrap-installer-use-python-27" title="Permanent link">&para;</a></h5>
+<pre class="codehilite"><code>$ mkdir bisque &amp;&amp; cd bisque
+$ wget http://biodev.ece.ucsb.edu/projects/bisquik/export/tip/bisque-stable/contrib/bootstrap/bisque-bootstrap.py
+$ python bisque-bootstrap.py bqenv
+
+# Activate Virtualenv
+bisque$ source bqenv/bin/activate</code></pre>
+
+
+<p>Fix the requirements.txt</p>
+<pre class="codehilite"><code>#Fix the requirements.txt file using sed -i 's/.*psycopg2==2.6.1.*/psycopg2==2.7.1./' requirements.txt
+psycopg2==2.7.1
+Minimatic==1.0
+Paste==1.7.5.1
+httplib2==0.7.3
+#tgext.registration==0.1dev
+
+Install separately since packages may be deprecated in PyPi
+easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.2.tar.gz</code></pre>
+
+
+<p>Now Install requirements</p>
+<pre class="codehilite"><code>pip install -i https://biodev.ece.ucsb.edu/py/bisque/stretch/+simple/ -r requirements.txt
+
+Alternate Index Url for Development: https://biodev.ece.ucsb.edu/py/bisque/dev/+simple</code></pre>
+
+
+<h5 id="b-configure-bisque-environment">B. Configure Bisque Environment<a class="headerlink" href="#b-configure-bisque-environment" title="Permanent link">&para;</a></h5>
+<pre class="codehilite"><code>$ paver setup</code></pre>
+
+
+<p>Expected log tail</p>
+<pre class="codehilite"><code>Installing collected packages: bqengine
+  Running setup.py develop for bqengine
+Successfully installed bqengine
+
+Now run:
+bq-admin setup </code></pre>
+
+
+<pre class="codehilite"><code>$ bq-admin setup</code></pre>
+
+
+<p>Expected log tail</p>
+<pre class="codehilite"><code>  ...
+
+Found imgcnv version 2.4.3
+
+    Imgcnv is installed and no-precompiled version exists. Using installed version
+
+Top level site variables are:
+  bisque.admin_email=YourEmail@YourOrganization
+  bisque.admin_id=admin
+  bisque.organization=Your Organization
+  bisque.paths.root=.
+  bisque.server=http://0.0.0.0:8080
+  bisque.title=Image Repository
+Change a site variable [Y]? N
+
+  ...
+
+Running setup_config() from bq.websetup
+CALLING  &lt;function install_preferences at 0x7f47f191f848&gt;
+
+Initialize your database with:
+   $ bq-admin setup createdb
+
+You can start bisque with:
+   $ bq-admin server start
+then point your browser to:
+    http://0.0.0.0:8080
+If you need to shutdown the servers, then use:
+   $ bq-admin server stop
+You can login as admin and change the default password.
+
+Send Installation/Registration report [Y]? N</code></pre>
+
+
+<h5 id="c-run-bisque">C. Run Bisque<a class="headerlink" href="#c-run-bisque" title="Permanent link">&para;</a></h5>
+<p>Start/Stop the server</p>
+<pre class="codehilite"><code>$ bq-admin server start
+$ bq-admin server stop</code></pre>
+
+
+<p>Overview of Installation (Just for review)</p>
+<pre class="codehilite"><code>source bqenv/bin/activate
+paver setup    [server|engine]
+bq-admin setup [server|engine]
+bq-admin deploy public</code></pre>
+
+
+<p>Open in browser
+<img alt="Browser Client" src="../img/BisqueClientScreen.png?raw=true" /></p>
+<h4 id="run">RUN<a class="headerlink" href="#run" title="Permanent link">&para;</a></h4>
+<p>Local Bisque Dev setup</p>
+<h6 id="load-module-workflow">Load Module Workflow<a class="headerlink" href="#load-module-workflow" title="Permanent link">&para;</a></h6>
+<ul>
+<li>Login using admin:admin </li>
+<li>Open Module Manager from the admin user context menu</li>
+<li>Paste the following URL in the Module-&gt;Engine Module</li>
+</ul>
+<pre class="codehilite"><code>http://0.0.0.0:8080/engine_service/</code></pre>
+
+
+<ul>
+<li>List of engine modules could be seen</li>
+<li><img alt="Bisque Module" src="../img/ModulesBisque.png?raw=true" /></li>
+<li><img alt="Register Module" src="../img/RegisterModule.png?raw=true" /></li>
+<li>Drag-n-Drop say Dream3D from the list to the left window and close the window</li>
+<li>Go to Analyse and select Dream3D there</li>
+<li><img alt="Launch Dream 3D" src="../img/OpenModuleDream3d.png?raw=true" /></li>
+</ul>
+<h6 id="load-dream-3d-data">Load Dream 3D data<a class="headerlink" href="#load-dream-3d-data" title="Permanent link">&para;</a></h6>
+<p>==&gt; TODO</p>
+<hr />
+<pre class="codehilite"><code>Further</code></pre>
+
+
+<hr />
+<ul>
+<li>Manually create a virtualenv for development and install dependencies
+  ```
+  python -m virtualenv bqenv --no-setuptools
+  source bqenv/bin/activate
+  pip install -r requirements.txt --trusted-host=biodev.ece.ucsb.edu -i https://biodev.ece.ucsb.edu/py/bisque/dev/+simple</li>
+</ul>
+<p>```</p>
+<ul>
+<li>Install Docker (https://docs.docker.com/install/linux/docker-ce/ubuntu/)</li>
+<li>
+<p>Also go through the post-installation steps</p>
+</li>
+<li>
+<p>Install Condor (https://research.cs.wisc.edu/htcondor/ubuntu/)</p>
+</li>
+</ul>
+<pre class="codehilite"><code>rahul@bqdev:~$ /etc/init.d/condor restart
+[ ok ] Restarting condor (via systemctl): condor.service.
+rahul@bqdev:~$ ps -ef | grep condor</code></pre></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Copyright &copy; 2017 - 2018 Bisque, UCSB VRL</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"search": 83, "next": 78, "help": 191, "previous": 80};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

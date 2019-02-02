@@ -1,0 +1,2 @@
+recursive-include bq/connoisseur/templates *
+recursive-include bq/connoisseur/public *

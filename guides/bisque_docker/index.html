@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Rahul Vishwakarma">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/bisque_docker/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Docker - BisQue-Docs</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/color-brewer.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-XXXXXXXX-X', 'auto');
+            ga('send', 'pageview');
+        </script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">BisQue-Docs</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Guides <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../bisque/">BisQue</a>
+</li>
+                                    
+<li class="active">
+    <a href="./">Docker</a>
+</li>
+                                    
+<li >
+    <a href="../jupyter_notebooks/">Jupyter</a>
+</li>
+                                    
+<li >
+    <a href="../errors/">Errors</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../about/">About</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../bisque/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../jupyter_notebooks/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/bisque_docker.md">Edit on UCSB-VRL/bisque</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#bisque-docker-environment-setup-instructions">Bisque Docker Environment Setup Instructions</a></li>
+            <li><a href="#dockerproject-source">Docker/Project Source</a></li>
+            <li><a href="#pre-requisite">Pre-requisite</a></li>
+            <li><a href="#installation">Installation</a></li>
+            <li><a href="#run-environment">Run Environment</a></li>
+            <li><a href="#develop-in-docker-todo">Develop in Docker (TODO !!)</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h2 id="bisque-docker-environment-setup-instructions"><a href="https://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions05">Bisque Docker Environment Setup Instructions</a><a class="headerlink" href="#bisque-docker-environment-setup-instructions" title="Permanent link">&para;</a></h2>
+<h4 id="dockerproject-source">Docker/Project Source<a class="headerlink" href="#dockerproject-source" title="Permanent link">&para;</a></h4>
+<ul>
+<li><a href="https://hub.docker.com/r/cbiucsb/bisque05/">Docker Hub Image</a></li>
+<li><a href="https://bitbucket.org/CBIucsb/bisque-stable">Bitbucket CBIucsb/bisque-stable (TODO: Test with Github version!!)</a></li>
+<li><a href="https://groups.google.com/forum/#!topic/bisque-bioimage/jwo_5sHFeHU">Bique Bioimage Google Groups</a></li>
+</ul>
+<h4 id="pre-requisite">Pre-requisite<a class="headerlink" href="#pre-requisite" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Install docker (light weight VM) on you laptop:
+      https://docs.docker.com/install/linux/docker-ce/ubuntu/</li>
+<li>Instructions on installing bisque using docker
+      https://bitbucket.org/CBIucsb/bisque/src/default/README.md</li>
+</ul>
+<h4 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Use the installer script to setup bisque docker image</li>
+</ul>
+<pre class="codehilite"><code>wget https://bitbucket.org/CBIucsb/bisque-stable/downloads/build_bisque_docker_modules.sh
+sh build_bisque_docker_modules.sh</code></pre>
+
+
+<ul>
+<li>You can modify this script to create a modules folder and mount/load modules from the host machine into docker</li>
+</ul>
+<h4 id="run-environment">Run Environment<a class="headerlink" href="#run-environment" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Start Docker and mount directories for run</li>
+</ul>
+<pre class="codehilite"><code># Start
+xterm -e \
+docker run --name bisque --rm -p 8080:8080 -p 27000:27000 \
+-v $(pwd)/container-modules:/source/modules \
+-v $(pwd)/container-data:/source/data \
+-v $(pwd)/container-config:/source/config \
+'cbiucsb/bisque05:stable'</code></pre>
+
+
+<ul>
+<li>Stop Docker</li>
+</ul>
+<pre class="codehilite"><code> docker stop $(docker ps -a -q --filter ancestor=cbiucsb/bisque05:stable --format=&quot;{{.ID}}&quot;)</code></pre>
+
+
+<ul>
+<li>Advanced environment for working with database URI as,<ul>
+<li>sqlite:///data/bisque.db</li>
+<li>postgresql://rahul:rahul@localhost/bqmurks58 or postgresql://dbhost:5432/bisque</li>
+</ul>
+</li>
+</ul>
+<pre class="codehilite"><code>docker run --name bisque --rm -p 8080:8080 \
+-v $(pwd)/container-modules:/source/modules \
+-v $(pwd)/container-data:/source/data \
+-v $(pwd)/container-config:/source/config \
+-e BISQUE_DBURL=postgresql://rahul:rahul@localhost/bqmurks58 \
+'cbiucsb/bisque05:stable'</code></pre>
+
+
+<ul>
+<li>This will start the bisque docker/server<ul>
+<li>Client Service http://0.0.0.0:8080</li>
+<li>Engine Service http://0.0.0.0:8080/engine_service</li>
+<li>Module Service http://0.0.0.0:8080/module_service</li>
+<li>Features http://0.0.0.0:8080/features</li>
+</ul>
+</li>
+<li>Use "admin:admin" to authenticate into this local environment </li>
+<li>To manipulate and check logs, connect to docker bash </li>
+</ul>
+<pre class="codehilite"><code>bisque-host$ docker exec -t -i bisque /bin/bash</code></pre>
+
+
+<h4 id="develop-in-docker-todo">Develop in Docker (TODO !!)<a class="headerlink" href="#develop-in-docker-todo" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Use the dev <a href="https://hub.docker.com/r/cbiucsb/bisque05/">docker container</a></li>
+</ul>
+<pre class="codehilite"><code>xterm -e \
+docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
+-v $(pwd)/container-modules:/source/modules \
+-v $(pwd)/container-data:/source/data \
+-v $(pwd)/container-config:/source/config \
+'cbiucsb/bisque05:dev'</code></pre>
+
+
+<ul>
+<li>Bash into the docker container and develop</li>
+</ul>
+<pre class="codehilite"><code>docker exec -t -i bisque-dev /bin/bash
+
+# Source and develop
+docker-container$ source /usr/lib/bisque/bin/activate
+$ apt-get update 
+$ apt-get install python-dev vim
+$ ln -s /usr/include/python2.7/  /usr/lib/bisque/local/include/python2.7</code></pre>
+
+
+<ul>
+<li>Test/Build a Module (TODO !! python-dev not setup)</li>
+</ul>
+<pre class="codehilite"><code># Setup/Test Dream3D Module
+$ cd /source/modules/Dream3D
+$ python setup.py</code></pre></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Copyright &copy; 2017 - 2018 Bisque, UCSB VRL</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"search": 83, "next": 78, "help": 191, "previous": 80};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

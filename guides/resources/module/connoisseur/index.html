@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="A documentation site for BisQue (Bio-Image Semantic Query User Environment)">
+        <meta name="author" content="Rahul Vishwakarma">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/resources/module/connoisseur/">
+        <link rel="shortcut icon" href="../../../../img/favicon.ico">
+        <title>BisQue-Docs</title>
+        <link href="../../../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/color-brewer.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-XXXXXXXX-X', 'auto');
+            ga('send', 'pageview');
+        </script> 
+    </head>
+
+    <body class="homepage">
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../../../..">BisQue-Docs</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../../../..">Home</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Guides <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../../bisque/">BisQue</a>
+</li>
+                                    
+<li >
+    <a href="../../../bisque_docker/">Docker</a>
+</li>
+                                    
+<li >
+    <a href="../../../jupyter_notebooks/">Jupyter</a>
+</li>
+                                    
+<li >
+    <a href="../../../errors/">Errors</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../../../about/">About</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li>
+                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/resources/module/connoisseur/README.md">Edit on UCSB-VRL/bisque</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#connoisseur">Connoisseur</a></li>
+            <li><a href="#issues-to-solve">Issues to solve</a></li>
+        <li class="main "><a href="#info-api">INFO API</a></li>
+        <li class="main "><a href="#classification-api">CLASSIFICATION API</a></li>
+        <li class="main "><a href="#parameters-for-point-classification-random-and-uniform">parameters for point classification random and uniform</a></li>
+        <li class="main "><a href="#parameters-for-region-partitioning">parameters for region partitioning</a></li>
+        <li class="main "><a href="#parameters-for-segmentation">parameters for segmentation</a></li>
+        <li class="main "><a href="#model-info-api">MODEL INFO API</a></li>
+        <li class="main "><a href="#restful-api">RESTful API</a></li>
+        <li class="main "><a href="#model-definition">MODEL DEFINITION</a></li>
+        <li class="main "><a href="#classifier-outputs">CLASSIFIER OUTPUTS</a></li>
+        <li class="main "><a href="#status-workflow">STATUS WORKFLOW</a></li>
+        <li class="main "><a href="#training-workflow">TRAINING WORKFLOW</a></li>
+        <li class="main "><a href="#model-modification-api">MODEL MODIFICATION API</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="connoisseur">Connoisseur<a class="headerlink" href="#connoisseur" title="Permanent link">&para;</a></h1>
+<p>Connoisseur is a machine learning service for BisQue which manages ML models and their creation/execution. Currently it only supports a deep learning framework Caffe.</p>
+<h3 id="issues-to-solve">Issues to solve<a class="headerlink" href="#issues-to-solve" title="Permanent link">&para;</a></h3>
+<ul>
+<li>long running requests must run as celery tasks</li>
+<li>locking models is needed to protect binaries from parallel operations</li>
+<li>transaction during request is bad, need to update status of the resource in the middle of a long running request</li>
+<li>physical location for models</li>
+<li>store for templates</li>
+<li>need to capture output from long running caffe binary</li>
+<li>hierarchical models</li>
+<li>models loaded separately in each process/thread and thus will use more RAM and will be slower</li>
+</ul>
+<h1 id="info-api">INFO API<a class="headerlink" href="#info-api" title="Permanent link">&para;</a></h1>
+<ul>
+<li>GET /connoisseur
+or</li>
+<li>GET /connoisseur/info</li>
+</ul>
+<h1 id="classification-api">CLASSIFICATION API<a class="headerlink" href="#classification-api" title="Permanent link">&para;</a></h1>
+<ul>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID</li>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID[/method:points] # default, classify uniformly distributed points</li>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID[/method:points_random] # classify randomly distributed points</li>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID[/method:segmentation] # segment image pixels producing image mask with class labels</li>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID[/method:regions] # partition image into regions producing low-res polygons</li>
+<li></li>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID[/method:salient] #</li>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID[/method:salient_uniform] #</li>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID[/method:image] #</li>
+</ul>
+<p>Parameters for all methods:</p>
+<ul>
+<li>points: number of output points, approximate for some methods</li>
+<li>goodness: % (0-100), minimum goodness for an output point</li>
+<li>border: % (0-100) of the image size, border in pixels will be estimated from image's dimensions</li>
+</ul>
+<h1 id="parameters-for-point-classification-random-and-uniform">parameters for point classification random and uniform<a class="headerlink" href="#parameters-for-point-classification-random-and-uniform" title="Permanent link">&para;</a></h1>
+<ul>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID/method:points[/points:10][/goodness:95][/border:5][/format:csv]</li>
+</ul>
+<p>format: xml, json, csv, hdf</p>
+<h1 id="parameters-for-region-partitioning">parameters for region partitioning<a class="headerlink" href="#parameters-for-region-partitioning" title="Permanent link">&para;</a></h1>
+<ul>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID/method:regions[/points:10][/goodness:95][/border:5][/format:csv]</li>
+</ul>
+<p>format: xml, json, csv, hdf</p>
+<h1 id="parameters-for-segmentation">parameters for segmentation<a class="headerlink" href="#parameters-for-segmentation" title="Permanent link">&para;</a></h1>
+<ul>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID/method:segmentation[/points:10][/goodness:95][/border:5][/colors:ids]</li>
+<li>GET /connoisseur/MODEL_ID/classify:IMAGE_ID/method:segmentation[/points:10][/goodness:95][/border:5][/colors:colors]</li>
+</ul>
+<p>formats: png</p>
+<h1 id="model-info-api">MODEL INFO API<a class="headerlink" href="#model-info-api" title="Permanent link">&para;</a></h1>
+<ul>
+<li>GET /connoisseur/MODEL_ID/class:3/sample:1</li>
+</ul>
+<h1 id="restful-api">RESTful API<a class="headerlink" href="#restful-api" title="Permanent link">&para;</a></h1>
+<ul>
+<li>GET - request classification, preview or training</li>
+</ul>
+<p>Responses:
+<em>     204 Empty results
+</em>     400 Bad Request
+<em>     401 Unauthorized
+</em>     500 Internal Server Error
+*     501 Not Implemented</p>
+<h1 id="model-definition">MODEL DEFINITION<a class="headerlink" href="#model-definition" title="Permanent link">&para;</a></h1>
+<p>See classifier_model.py</p>
+<h1 id="classifier-outputs">CLASSIFIER OUTPUTS<a class="headerlink" href="#classifier-outputs" title="Permanent link">&para;</a></h1>
+<ul>
+<li>
+<p>[table/gobs]
+gob type: str | gob label: str | gob vertices: [(x,y,z,...)] | goodness: float | accuracy: float | color: str</p>
+</li>
+<li>
+<p>[image/png]
+bytes...</p>
+</li>
+</ul>
+<h1 id="status-workflow">STATUS WORKFLOW<a class="headerlink" href="#status-workflow" title="Permanent link">&para;</a></h1>
+<ol>
+<li>new</li>
+<li>classes loaded    &lt;-----   # needs to re-load all files from template and repeat all steps: 3-8</li>
+<li>classes filtered       |</li>
+<li>samples loaded    &lt;-----   # needs to re-split the samples and other steps: 5-8</li>
+<li>samples split          |</li>
+<li>trained                |</li>
+<li>validated              |</li>
+<li>finished          ------</li>
+</ol>
+<h1 id="training-workflow">TRAINING WORKFLOW<a class="headerlink" href="#training-workflow" title="Permanent link">&para;</a></h1>
+<p>The model resource is created by the JS UI and initially may only contain a user-given name and a dataset to train on.
+After the model resource is created in the system several operations may be requested following a typical training sequence.</p>
+<ol>
+<li>
+<p>Define required model parameters
+    a. Pick a model template to fine-tune or train from scratch
+    b. This should define a "mode", currently point classification but later also fully convolutional</p>
+</li>
+<li>
+<p>Find classes for the model, this will lock the model for current classes and will not allow further changes</p>
+</li>
+<li>
+<p>Create training samples, using parameters defined in the model. This can be repeated to augment the sample list
+    a. Absolute minimum number of samples per class
+    b. Minimum number of samples to activate sample augmentation</p>
+</li>
+<li>
+<p>Train on available samples
+    a. train the model
+    b. validate the model and update classes performance</p>
+</li>
+<li>
+<p>Set classes that will be used for classification based on observed performance in the training step</p>
+</li>
+<li>
+<p>Model is ready for recognition</p>
+</li>
+<li>
+<p>Repeat step 3 and further to improve the model</p>
+</li>
+</ol>
+<h1 id="model-modification-api">MODEL MODIFICATION API<a class="headerlink" href="#model-modification-api" title="Permanent link">&para;</a></h1>
+<ul>
+<li>GET /connoisseur/create/template:CaffeNet[/dataset:UUID]</li>
+<li>GET /connoisseur/MODEL_ID/update[/classes:init][/classes:filter][/samples:init][/samples:update][/samples:split]</li>
+<li>GET /connoisseur/MODEL_ID/train[/method:finetune][/method:snapshot]</li>
+<li>GET /connoisseur/MODEL_ID/validate</li>
+</ul></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Copyright &copy; 2017 - 2018 Bisque, UCSB VRL</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../../../..",
+                shortcuts = {"search": 83, "next": 78, "help": 191, "previous": 80};
+        </script>
+        <script src="../../../../js/base.js" defer></script>
+        <script src="../../../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
+
+<!--
+MkDocs version : 1.0.4
+Build Date UTC : 2019-02-02 00:38:24
+-->

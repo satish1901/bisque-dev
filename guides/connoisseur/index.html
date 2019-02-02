@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Rahul Vishwakarma">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/connoisseur/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Connoisseur - BisQue-Docs</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/color-brewer.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-XXXXXXXX-X', 'auto');
+            ga('send', 'pageview');
+        </script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">BisQue-Docs</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Guides <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../bisque/">BisQue</a>
+</li>
+                                    
+<li >
+    <a href="../bisque_docker/">Docker</a>
+</li>
+                                    
+<li >
+    <a href="../jupyter_notebooks/">Jupyter</a>
+</li>
+                                    
+<li >
+    <a href="../errors/">Errors</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../about/">About</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li>
+                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/connoisseur.md">Edit on UCSB-VRL/bisque</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#setup-connoisseur">Setup Connoisseur</a></li>
+            <li><a href="#information">Information</a></li>
+            <li><a href="#1-opencv-341">1. OpenCV 3.4.1</a></li>
+            <li><a href="#2-cuda-80-and-cudnn-v714">2. CUDA 8.0 and cuDNN v7.1.4</a></li>
+            <li><a href="#3-caffe">3. CAFFE</a></li>
+            <li><a href="#4-install-connoisseur">4. Install Connoisseur</a></li>
+            <li><a href="#5-load-connoisseur">5. Load Connoisseur</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h2 id="setup-connoisseur">Setup Connoisseur<a class="headerlink" href="#setup-connoisseur" title="Permanent link">&para;</a></h2>
+<h3 id="information">Information<a class="headerlink" href="#information" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Connoisseur is the DL module for distributed compute. </li>
+<li>Condor is running on each node </li>
+</ul>
+<h4 id="todo">TODO<a class="headerlink" href="#todo" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Figure out the configurations !!!</li>
+</ul>
+<h3 id="1-opencv-341">1. OpenCV 3.4.1<a class="headerlink" href="#1-opencv-341" title="Permanent link">&para;</a></h3>
+<p>Installation Guide: <a href="https://rahulvishwakarma.wordpress.com/2018/07/12/compile-and-setup-opencv-3-4-x-on-ubuntu-18-04-lts-with-python-virtualenv-for-image-processing/">Link 1</a></p>
+<pre class="codehilite"><code># Verify your installation
+pkg-config --libs opencv</code></pre>
+
+
+<h3 id="2-cuda-80-and-cudnn-v714">2. <a href="https://developer.nvidia.com/cuda-downloads">CUDA 8.0</a> and <a href="https://developer.nvidia.com/rdp/cudnn-archive">cuDNN v7.1.4</a><a class="headerlink" href="#2-cuda-80-and-cudnn-v714" title="Permanent link">&para;</a></h3>
+<p>Installation Guide: <a href="https://medium.com/@zhanwenchen/install-cuda-and-cudnn-for-tensorflow-gpu-on-ubuntu-79306e4ac04e">Link1</a>, <a href="https://rahulvishwakarma.wordpress.com/2018/07/13/tensorflow-gpu-setup-with-cudnn-and-nvidia-cuda-9-0-on-ubuntu-18-04-lts/">Link2</a></p>
+<ul>
+<li><a href="https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_375.26_linux-run">Download cuda_8.0.61</a></li>
+</ul>
+<pre class="codehilite"><code>  $ nvcc --version
+  nvcc: NVIDIA (R) Cuda compiler driver
+  Copyright (c) 2005-2016 NVIDIA Corporation
+  Built on Sun_Sep__4_22:14:01_CDT_2016
+  Cuda compilation tools, release 8.0, V8.0.44</code></pre>
+
+
+<ul>
+<li><a href="https://developer.nvidia.com/compute/machine-learning/cudnn/secure/v7.1.4/prod/8.0_20180516/Ubuntu16_04-x64/libcudnn7-dev_7.1.4.18-1_cuda8.0_amd64">Download libcudnn7-dev_7.1.4</a></li>
+</ul>
+<pre class="codehilite"><code>  cuDNN v7.1.4 Runtime Library for Ubuntu16.04 (Deb)
+  cuDNN v7.1.4 Developer Library for Ubuntu16.04 (Deb)</code></pre>
+
+
+<h3 id="3-caffe">3. <a href="http://caffe.berkeleyvision.org/">CAFFE</a><a class="headerlink" href="#3-caffe" title="Permanent link">&para;</a></h3>
+<p>Setup caffe 1.0 using the <a href="https://github.com/BVLC/caffe/wiki/Ubuntu-16.04-or-15.10-Installation-Guide">official guide</a> </p>
+<ul>
+<li>Installation Overview</li>
+</ul>
+<pre class="codehilite"><code>  mkdir build 
+  cd build 
+  cmake .. 
+  make all 
+  make install 
+  make runtest</code></pre>
+
+
+<pre class="codehilite"><code>  $ caffe --version
+    caffe version 1.0.0</code></pre>
+
+
+<ul>
+<li>Make sure you configure the path env in ~/.bashrc</li>
+</ul>
+<pre class="codehilite"><code>  export PATH=$PATH:/usr/local/cuda/bin:~/cv/caffe/build/tools
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/extras/CUPTI/lib64
+
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/cv/caffe/.build_release/lib
+  export PYTHONPATH=$PYTHONPATH:~/cv/caffe/python/:~/cv/caffe/.build_release/lib</code></pre>
+
+
+<ul>
+<li>Also add the following in ~/[python_env_folder]/bin/activate script after the PATH variable setup</li>
+</ul>
+<pre class="codehilite"><code>  export PYTHONPATH=$PYTHONPATH:~/cv/caffe/python/</code></pre>
+
+
+<p>Test it all out to ensure caffe and opencv are functional</p>
+<pre class="codehilite"><code>  (bqenv) rahul@bqdev:~/ws/bisque$ python 
+  Python 2.7.12 (default, Dec  4 2017, 14:50:18) 
+  [GCC 5.4.0 20160609] on linux2
+  &gt;&gt;&gt; import cv2
+  &gt;&gt;&gt; import caffe
+  &gt;&gt;&gt; </code></pre>
+
+
+<p>Also, ensure Caffe runs on the system</p>
+<pre class="codehilite"><code>  $ caffe --version
+  caffe version 1.0.0</code></pre>
+
+
+<h3 id="4-install-connoisseur">4. Install Connoisseur<a class="headerlink" href="#4-install-connoisseur" title="Permanent link">&para;</a></h3>
+<p>Pre-requisite: (caffe and opencv may be the cause)</p>
+<pre class="codehilite"><code>  source ~/bisque/bqenv/bin/activate
+  pip install lmdb pyvoro</code></pre>
+
+
+<p>Installation</p>
+<ul>
+<li>In Bisque top directory unzip the contents of module/connoisseur.zip</li>
+<li>Activate Env 
+  <code>source ~/bisque/bqenv/bin/activate</code></li>
+<li>Ensure that caffe and opencv is importable in python</li>
+<li>Install connoisseur 
+  <code>cd ~/bisque/connoisseur &amp;&amp; pip install -e connoisseur</code></li>
+<li>Move the module to Bisque modules 
+  <code>mv ~/bisque/connoisseur/modules/Connoisseur/ ~/bisque/modules/</code></li>
+<li>Deactivate Env 
+  <code>source ~/bisque/bqenv/bin/deactivate</code></li>
+<li>Re/Start the Bisque server
+  <code>$ paver setup &amp;&amp; bq-admin setup
+  $ bq-admin server start
+  $ bq-admin server stop</code></li>
+<li>Make sure the service is available at http://0.0.0.0:8080/services</li>
+<li>Verify the log in module manager has no errors 
+  <img alt="Bisque connoisseur load log" src="../img/BisqueLogConnLoaded.png" /></li>
+<li>Thereafter look for the loaded services at the URL http://0.0.0.0:8080/services
+  <img alt="Bisque loaded services XML description" src="../img/BisqueLoadedServicesTest.png" />
+  Look for the service named connoisseur in this list</li>
+</ul>
+<h3 id="5-load-connoisseur">5. Load Connoisseur<a class="headerlink" href="#5-load-connoisseur" title="Permanent link">&para;</a></h3>
+<p>Now lets add the connoisseur user group for loading the module</p>
+<ol>
+<li>Create a connoisseur group
+  <img alt="Create a group" src="../img/BisqueConnGroupCreate.png" /></li>
+<li>Add this group to the user/admin
+  <img alt="Add this group to admin" src="../img/BisqueConnUserGroupAdd.png" /></li>
+<li>Restart the services
+   <code>$ bq-admin server start &amp;&amp; bq-admin server stop</code></li>
+<li>Load the module as user/admin 
+   <img alt="Load the module" src="../img/BisqueConnModuleLoaded.png" /></li>
+<li>Open the module from navbar using Analyze-&gt;Classification-&gt;Connoisseur 
+   <img alt="Load the module" src="../img/BisqueAnalyzeConn.png" /></li>
+</ol>
+<p>TODO: Configuration, load model and run a test on Connoisseur</p></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Copyright &copy; 2017 - 2018 Bisque, UCSB VRL</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"search": 83, "next": 78, "help": 191, "previous": 80};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
