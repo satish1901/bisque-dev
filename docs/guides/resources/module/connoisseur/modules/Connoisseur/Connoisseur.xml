@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<module name="Connoisseur" type="runtime">
+
+    <tag name="inputs">
+        <tag name="mex_url"  type="system-input" />
+        <tag name="bisque_token"  type="system-input" />
+        <tag name="data_url" type="dataset">
+            <template>
+                <tag name="accepted_type" value="image" />
+                <tag name="accepted_type" value="dataset" />
+                <tag name="label" value="Images to classify" />
+                <tag name="prohibit_upload" value="false" type="boolean" />
+                <tag name="allow_blank" value="false" type="boolean" />
+            </template>
+        </tag>
+        <tag name="model_url" type="resource">
+            <template>
+                <tag name="accepted_type" value="connoisseur" />
+                <tag name="label" value="Classification model" />
+                <tag name="prohibit_upload" value="true" type="boolean" />
+                <tag name="allow_blank" value="false" type="boolean" />
+            </template>
+        </tag>
+
+        <tag name="method" value="points" type="combo" >
+            <template>
+                <tag name="label" value="The classification method" />
+                <tag name="select">
+                    <value>Uniformly distributed points</value>
+                    <value>Uniformly distributed points (equal number in X and Y)</value>
+                    <value>Randomly distributed points</value>
+                    <value>Salient points</value>
+                    <value>Regional centroids</value>
+                    <value>Partitioning into substrate regions</value>
+                    <value>Partitioning into simple regions</value>
+                    <value>Detection of regions</value>
+                    <value>Whole image with one predominant class</value>
+                    <value>Segmentation</value>
+                </tag>
+                <tag name="passedValues">
+                    <value>points</value>
+                    <value>points_equal</value>
+                    <value>points_random</value>
+                    <value>salient</value>
+                    <value>centroids</value>
+                    <value>substrate</value>
+                    <value>regions</value>
+                    <value>detection</value>
+                    <value>image</value>
+                    <value>segmentation</value>
+                </tag>
+                <tag name="editable" value="false" type="boolean" />
+                <tag name="description" value="Vectorial model offers higher quality estimation" />
+            </template>
+        </tag>
+
+        <tag name="number_of_points" value="100" type="number" >
+            <template>
+                <tag name="label" value="Number of points to classify" />
+                <tag name="minValue" value="1" type="number" />
+                <tag name="maxValue" value="1000" type="number" />
+                <tag name="allowDecimals" value="false" type="boolean" />
+                <tag name="description" value="Number of points to classify horizonatlly, the vertical number will be computed with the same step size" />
+            </template>
+        </tag>
+
+        <tag name="border" value="5" type="number" >
+            <template>
+                <tag name="label" value="Margin" />
+                <tag name="minValue" value="0" type="number" />
+                <tag name="maxValue" value="49" type="number" />
+                <tag name="allowDecimals" value="false" type="boolean" />
+                <tag name="units" value="%" />
+                <tag name="description" value="Margin to ignore around image boundary in percent of image width and height" />
+            </template>
+        </tag>
+
+        <tag name="confidence" value="50" type="number" >
+            <template>
+                <tag name="label" value="Minimum confidence" />
+                <tag name="minValue" value="0" type="number" />
+                <tag name="maxValue" value="99" type="number" />
+                <tag name="allowDecimals" value="false" type="boolean" />
+                <tag name="units" value="%" />
+                <tag name="description" value="Minimum confidence a point would be classified, set a smaller value to get more points" />
+            </template>
+        </tag>
+
+        <tag name="store_on_image" value="false" type="boolean" >
+            <template>
+                <tag name="label" value="Store annotations on the image" />
+            </template>
+        </tag>
+
+    </tag>
+
+    <tag name="outputs">
+        <!-- Normal outputs -->
+        <tag name="MyImage" type="image">
+            <template>
+                <tag name="label" value="Classified image" />
+            </template>
+            <gobject />
+        </tag>
+
+        <!-- Iterated outputs -->
+        <tag name="mex_url" type="mex">
+            <template>
+                <tag name="label" value="Results for all images in the dataset" />
+            </template>
+        </tag>
+
+        <tag name="input_mex" type="mex">
+            <template>
+                <tag name="mode" value="browser" />
+                <tag name="label" value="Pick an input to see individual results" />
+            </template>
+        </tag>
+    </tag>
+
+    <tag name="module_options" >
+        <tag name="version" value="1" />
+    </tag>
+
+    <tag name="display_options" >
+       <tag name="group" value="Classification" />
+       <tag name="group" value="Annotations" />
+    </tag>
+
+    <tag name="interface">
+        <tag name="javascript" type="file" value="webapp.js" />
+        <tag name="css" type="file" value="webapp.css" />
+    </tag>
+
+    <tag name="help" type="file" value="public/help.html" />
+    <tag name="thumbnail" type="file" value="public/thumbnail.svg" />
+
+    <tag name="title" type="string" value="Connoisseur: automated image annotation" />
+    <tag name="authors" type="string" value="Dmitry Fedorov" />
+    <tag name="description" type="string" value="This module automatically annotates selected images." />
+</module>
