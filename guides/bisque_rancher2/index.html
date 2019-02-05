@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Rahul Vishwakarma">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/bisque_rancher2/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Bisque Rancher 2.0 Setup (with Kubernetes engine) - BisQue-Docs</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/color-brewer.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-XXXXXXXX-X', 'auto');
+            ga('send', 'pageview');
+        </script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">BisQue-Docs</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Guides <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../bisque/">BisQue</a>
+</li>
+                                    
+<li >
+    <a href="../bisque_docker/">Docker</a>
+</li>
+                                    
+<li >
+    <a href="../jupyter_notebooks/">Jupyter</a>
+</li>
+                                    
+<li >
+    <a href="../errors/">Errors</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../about/">About</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li>
+                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/bisque_rancher2.md">Edit on UCSB-VRL/bisque</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#bisque-rancher-20-setup-with-kubernetes-engine">Bisque Rancher 2.0 Setup (with Kubernetes engine)</a></li>
+            <li><a href="#nomenclature-kubernetes-like">Nomenclature (Kubernetes like)</a></li>
+            <li><a href="#installation-rancher-20">Installation Rancher 2.0</a></li>
+            <li><a href="#create-an-access-key-for-command-line-operations-doesnt-work-on-self-signed-certs">Create an access key for command line operations (Doesnt work on self-signed certs)</a></li>
+            <li><a href="#create-the-yaml-configuration-based-on-docker-composeyaml">Create the YAML configuration based on docker-compose.yaml</a></li>
+            <li><a href="#setup-clusterworkload-rke-clusterscustom-nodes">Setup Cluster/Workload /rke-clusters/custom-nodes</a></li>
+            <li><a href="#setup-volume">Setup Volume</a></li>
+            <li><a href="#run-bisque-on-two-nodes">Run Bisque on two nodes</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="bisque-rancher-20-setup-with-kubernetes-engine">Bisque Rancher 2.0 Setup (with Kubernetes engine)<a class="headerlink" href="#bisque-rancher-20-setup-with-kubernetes-engine" title="Permanent link">&para;</a></h1>
+<hr />
+<h4 id="nomenclature-kubernetes-like">Nomenclature (Kubernetes like)<a class="headerlink" href="#nomenclature-kubernetes-like" title="Permanent link">&para;</a></h4>
+<hr />
+<table>
+<thead>
+<tr>
+<th align="left">Name</th>
+<th align="left">Kubernetes concepts</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Container</td>
+<td align="left">Pod (Simplest Kubernetes object representing a set of containers on the cluster)</td>
+</tr>
+<tr>
+<td align="left">Services</td>
+<td align="left">Workload (Units of work that are running on the cluster, these can be pods or deployments)</td>
+</tr>
+<tr>
+<td align="left">Load Balancer</td>
+<td align="left">Ingress</td>
+</tr>
+<tr>
+<td align="left">Stack</td>
+<td align="left">Namespace (A virtual cluster)</td>
+</tr>
+<tr>
+<td align="left">Environment</td>
+<td align="left">Project (Administration)/Cluster (Compute machines that run containerized applications)</td>
+</tr>
+<tr>
+<td align="left">Host</td>
+<td align="left">Node (Physical or virtual machines making up the cluster)</td>
+</tr>
+<tr>
+<td align="left">Catalog</td>
+<td align="left">Helm</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h4 id="installation-rancher-20">Installation Rancher 2.0<a class="headerlink" href="#installation-rancher-20" title="Permanent link">&para;</a></h4>
+<p>Install/Startup Rancher: https://rancher.com/docs/rancher/v2.x/en/installation/single-node/
+docker run -d --restart=unless-stopped \
+  -p 80:80 -p 443:443 \
+  -v /var/log/rancher/auditlog:/var/log/auditlog \
+  -e AUDIT_LEVEL=1 \
+  rancher/rancher:stable</p>
+<h4 id="create-an-access-key-for-command-line-operations-doesnt-work-on-self-signed-certs">Create an access key for command line operations (Doesnt work on self-signed certs)<a class="headerlink" href="#create-an-access-key-for-command-line-operations-doesnt-work-on-self-signed-certs" title="Permanent link">&para;</a></h4>
+<ul>
+<li>endpoint  : https://192.168.1.112/v3</li>
+<li>access-key: token-67rmg</li>
+<li>secret-key: 9qnqxvxpkg5zzm5pj7kkgp985zw4d6dvnf7csxvg7cbvbr5prq4wvt</li>
+<li>bearer-tok: token-67rmg:9qnqxvxpkg5zzm5pj7kkgp985zw4d6dvnf7csxvg7cbvbr5prq4wvt</li>
+</ul>
+<h4 id="create-the-yaml-configuration-based-on-docker-composeyaml">Create the YAML configuration based on docker-compose.yaml<a class="headerlink" href="#create-the-yaml-configuration-based-on-docker-composeyaml" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Download the docker-compose and rancher-compose.yml files from existing rancher user interface for migration 
+https://rancher.com/docs/rancher/v2.x/en/v1.6-migration</li>
+<li>Migration using CLI tools</li>
+</ul>
+<pre class="codehilite"><code># migration-tools export --url &lt;RANCHER_URL&gt; --access-key &lt;RANCHER_ACCESS_KEY&gt; \
+# --secret-key &lt;RANCHER_SECRET_KEY&gt; --export-dir &lt;EXPORT_DIR&gt;
+
+./migration-tools parse --docker-file compose/docker-compose.yml \
+ --rancher-file compose/rancher-compose.yml </code></pre>
+
+
+<hr />
+<h3 id="setup-clusterworkload-rke-clusterscustom-nodes">Setup Cluster/Workload <a href="https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/custom-nodes/">/rke-clusters/custom-nodes</a><a class="headerlink" href="#setup-clusterworkload-rke-clusterscustom-nodes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Added a cluster in rancher-ui named "bqdev-cluster" and run the below command for running the rancher-agent </li>
+</ul>
+<pre class="codehilite"><code>sudo docker run -d --privileged --restart=unless-stopped --net=host \
+ -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run \
+ rancher/rancher-agent:v2.1.5 --server https://192.168.1.112 \
+ --token f42lk76lj72qhrm7d6szx6vn6b869mm7kgmmrvjw7tf2gb72hd9wt2 \
+ --ca-checksum bc3bb19f279028874626d89515e16a1d5a00f03e7965e64d4c24d9546aba2f27 \
+ --etcd --controlplane --worker</code></pre>
+
+
+<ul>
+<li>Add more nodes as worker only, by running this command on those nodes so that they register with the above main node </li>
+</ul>
+<pre class="codehilite"><code>sudo docker run -d --privileged --restart=unless-stopped --net=host \
+ -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run \
+ rancher/rancher-agent:v2.1.5 --server https://192.168.1.112 \
+ --token f42lk76lj72qhrm7d6szx6vn6b869mm7kgmmrvjw7tf2gb72hd9wt2 \
+ --ca-checksum bc3bb19f279028874626d89515e16a1d5a00f03e7965e64d4c24d9546aba2f27 \
+ --worker</code></pre>
+
+
+<h4 id="create-a-namespace-bqtest-within-this-cluster">Create a namespace bqtest within this cluster<a class="headerlink" href="#create-a-namespace-bqtest-within-this-cluster" title="Permanent link">&para;</a></h4>
+<p>Bisque Test environment where workloads are deployed</p>
+<hr />
+<h3 id="setup-volume">Setup Volume<a class="headerlink" href="#setup-volume" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Mount the host directory for volume using NFS and setup the nfs client access for the cluster
+https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-16-04</li>
+<li>Or create a persistent volume with local path on the node as /tmp/bisque_ranch
+https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-from-nfs-share</li>
+</ul>
+<hr />
+<h4 id="mail-server-setup">Mail server setup<a class="headerlink" href="#mail-server-setup" title="Permanent link">&para;</a></h4>
+<p>https://www.linuxbabe.com/mail-server/ubuntu-16-04-iredmail-server-installation</p>
+<h4 id="move-individual-workloadcontainers-to-rancher-kubernetes-using-rancher-cli-doesnt-work-with-self-signed-certificates">Move individual workload/containers to rancher-kubernetes using rancher-cli (doesnt work with self-signed certificates)<a class="headerlink" href="#move-individual-workloadcontainers-to-rancher-kubernetes-using-rancher-cli-doesnt-work-with-self-signed-certificates" title="Permanent link">&para;</a></h4>
+<p>https://rancher.com/blog/2018/2018-08-02-journey-from-cattle-to-k8s/</p>
+<hr />
+<h3 id="run-bisque-on-two-nodes">Run Bisque on two nodes<a class="headerlink" href="#run-bisque-on-two-nodes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>Load Balancers add in workloads <a href="https://www.cnrancher.com/docs/rancher/v2.x/en/k8s-in-rancher/load-balancers-and-ingress/load-balancers/">/k8s-in-rancher/load-balancers-and-ingress</a></p>
+<blockquote>
+<p>Tried using built in Ingress for bisque-test.bqtest.192.168.1.112.xip.io but failed to work</p>
+</blockquote>
+</li>
+<li>
+<p>If you want to expose the workload container to outside world then use NodePort otherwise work with ClusterIp(Internal Only) port configuration </p>
+</li>
+<li>https://rancher.com/blog/2018/2018-08-14-expose-and-monitor-workloads/</li>
+</ul></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Copyright &copy; 2017 - 2018 Bisque, UCSB VRL</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"search": 83, "next": 78, "help": 191, "previous": 80};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

@@ -118,6 +118,7 @@
             <li><a href="#b-configure-bisque-environment">B. Configure Bisque Environment</a></li>
             <li><a href="#c-run-bisque">C. Run Bisque</a></li>
             <li><a href="#run">RUN</a></li>
+            <li><a href="#further">Further</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
@@ -130,6 +131,7 @@
 - <a href="https://groups.google.com/forum/#!topic/bisque-bioimage/jwo_5sHFeHU">Bique Bioimage Google Groups</a>
 - <a href="https://bitbucket.org/CBIucsb/bisque/src/default/README.md">Instructions on installing bisque using docker</a></p>
 <h5 id="setup-for-ubuntu-1604">Setup for Ubuntu 16.04<a class="headerlink" href="#setup-for-ubuntu-1604" title="Permanent link">&para;</a></h5>
+<hr />
 <h5 id="pre-requisites">Pre-requisites<a class="headerlink" href="#pre-requisites" title="Permanent link">&para;</a></h5>
 <pre class="codehilite"><code>sudo apt-get install -y python python-dev python-virtualenv python-numpy python-scipy 
 sudo apt-get install -y libxml2-dev libxslt1-dev libhdf5-dev
@@ -176,6 +178,7 @@ cd imgcnv &amp;&amp; make -j6
 sudo make install</code></pre>
 
 
+<hr />
 <h5 id="a-download-the-bootstrap-installer-use-python-27">A. Download the Bootstrap installer (Use Python 2.7)<a class="headerlink" href="#a-download-the-bootstrap-installer-use-python-27" title="Permanent link">&para;</a></h5>
 <pre class="codehilite"><code>$ mkdir bisque &amp;&amp; cd bisque
 $ wget http://biodev.ece.ucsb.edu/projects/bisquik/export/tip/bisque-stable/contrib/bootstrap/bisque-bootstrap.py
@@ -203,6 +206,7 @@ easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext
 Alternate Index Url for Development: https://biodev.ece.ucsb.edu/py/bisque/dev/+simple</code></pre>
 
 
+<hr />
 <h5 id="b-configure-bisque-environment">B. Configure Bisque Environment<a class="headerlink" href="#b-configure-bisque-environment" title="Permanent link">&para;</a></h5>
 <pre class="codehilite"><code>$ paver setup</code></pre>
 
@@ -254,6 +258,9 @@ You can login as admin and change the default password.
 Send Installation/Registration report [Y]? N</code></pre>
 
 
+<p>Add "config/runtime-bisque.cfg" for module configuration and docker image registry
+- Edit and add run config from config-defaults/runtime-bisque.defaults to config/runtime-bisque.cfg</p>
+<hr />
 <h5 id="c-run-bisque">C. Run Bisque<a class="headerlink" href="#c-run-bisque" title="Permanent link">&para;</a></h5>
 <p>Start/Stop the server</p>
 <pre class="codehilite"><code>$ bq-admin server start
@@ -269,6 +276,7 @@ bq-admin deploy public</code></pre>
 
 <p>Open in browser
 <img alt="Browser Client" src="../img/BisqueClientScreen.png?raw=true" /></p>
+<hr />
 <h4 id="run">RUN<a class="headerlink" href="#run" title="Permanent link">&para;</a></h4>
 <p>Local Bisque Dev setup</p>
 <h6 id="load-module-workflow">Load Module Workflow<a class="headerlink" href="#load-module-workflow" title="Permanent link">&para;</a></h6>
@@ -288,13 +296,10 @@ bq-admin deploy public</code></pre>
 <li>Go to Analyse and select Dream3D there</li>
 <li><img alt="Launch Dream 3D" src="../img/OpenModuleDream3d.png?raw=true" /></li>
 </ul>
+<hr />
+<h3 id="further">Further<a class="headerlink" href="#further" title="Permanent link">&para;</a></h3>
 <h6 id="load-dream-3d-data">Load Dream 3D data<a class="headerlink" href="#load-dream-3d-data" title="Permanent link">&para;</a></h6>
 <p>==&gt; TODO</p>
-<hr />
-<pre class="codehilite"><code>Further</code></pre>
-
-
-<hr />
 <ul>
 <li>Manually create a virtualenv for development and install dependencies
   ```
