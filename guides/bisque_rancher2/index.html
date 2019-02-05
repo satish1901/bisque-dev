@@ -209,6 +209,26 @@ https://rancher.com/docs/rancher/v2.x/en/v1.6-migration</li>
 
 <h4 id="create-a-namespace-bqtest-within-this-cluster">Create a namespace bqtest within this cluster<a class="headerlink" href="#create-a-namespace-bqtest-within-this-cluster" title="Permanent link">&para;</a></h4>
 <p>Bisque Test environment where workloads are deployed</p>
+<p>Bisque Test environment where workloads are deployed with open NodePort
+https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
+<h5 id="environment-configuration">Environment Configuration<a class="headerlink" href="#environment-configuration" title="Permanent link">&para;</a></h5>
+<pre class="codehilite"><code>      BISQUE_USER= bisque
+      BISQUE_BISQUE_ADMIN_EMAIL= admin@192.168.1.112
+      BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
+      BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/
+      BISQUE_BISQUE_STORES_BLOBS_TOP= file://$$datadir/blobdir/
+      BISQUE_BISQUE_STORES_LOCAL_MOUNTURL= file://$$datadir/imagedir/$$user/
+      BISQUE_BISQUE_STORES_LOCAL_READONLY= 'true'
+      BISQUE_BISQUE_STORES_LOCAL_TOP= file://$$datadir/imagedir/
+      BISQUE_DOCKER_DOCKER_HUB= biodev.ece.ucsb.edu:5000
+      BISQUE_RUNTIME_STAGING_BASE= /tmp/bisque_ranch/data/staging
+      BISQUE_SECRET= bq123
+      BISQUE_UID= '12027'
+      BQ__BISQUE__IMAGE_SERVICE__WORK_DIR= /tmp/bisque_ranch/local/workdir
+      BQ__BISQUE__PATHS__DATA= /tmp/bisque_ranch/data
+      MAIL_SERVER= dough.ece.ucsb.edu</code></pre>
+
+
 <hr />
 <h3 id="setup-volume">Setup Volume<a class="headerlink" href="#setup-volume" title="Permanent link">&para;</a></h3>
 <ul>
