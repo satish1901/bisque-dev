@@ -72,6 +72,28 @@ sudo docker run -d --privileged --restart=unless-stopped --net=host \
 #### Create a namespace bqtest within this cluster
 Bisque Test environment where workloads are deployed
 
+Bisque Test environment where workloads are deployed with open NodePort
+https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/
+
+##### Environment Configuration
+```
+      BISQUE_USER= bisque
+      BISQUE_BISQUE_ADMIN_EMAIL= admin@192.168.1.112
+      BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
+      BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/
+      BISQUE_BISQUE_STORES_BLOBS_TOP= file://$$datadir/blobdir/
+      BISQUE_BISQUE_STORES_LOCAL_MOUNTURL= file://$$datadir/imagedir/$$user/
+      BISQUE_BISQUE_STORES_LOCAL_READONLY= 'true'
+      BISQUE_BISQUE_STORES_LOCAL_TOP= file://$$datadir/imagedir/
+      BISQUE_DOCKER_DOCKER_HUB= biodev.ece.ucsb.edu:5000
+      BISQUE_RUNTIME_STAGING_BASE= /tmp/bisque_ranch/data/staging
+      BISQUE_SECRET= bq123
+      BISQUE_UID= '12027'
+      BQ__BISQUE__IMAGE_SERVICE__WORK_DIR= /tmp/bisque_ranch/local/workdir
+      BQ__BISQUE__PATHS__DATA= /tmp/bisque_ranch/data
+      MAIL_SERVER= dough.ece.ucsb.edu
+```
+
 --------------
 ### Setup Volume
 
