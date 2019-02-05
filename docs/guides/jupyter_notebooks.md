@@ -2,6 +2,7 @@
 #### Reference
 - Video demonstration at [Youtube](https://www.youtube.com/watch?v=Sv0hhZO1WDI&t=3611s)
 - [Cyverse Webinar Reference](https://wiki.cyverse.org/wiki/display/Events/Focus+Forum+Webinar+-+External+Scripting+for+Bisque+Workflows)
+- [Updated Bisque notebooks on CyVerse github account](https://github.com/cyverse/bisque-notebooks)
 
 #### Data
 - Sample data from [AWS S3](https://s3-us-west-2.amazonaws.com/viqi-test-images)
@@ -9,7 +10,7 @@
 - Download public/shared data from [UCSB Biodev Bisque](https://bisque.ece.ucsb.edu/client_service)
 
 #### Notebooks
-Use the three samples from [Bitbucket repository](https://bitbucket.org/CBIucsb/bisque_examples_ipython) as described in the video demonstration
+Use the three samples from CBIucsb [Bitbucket repository](https://bitbucket.org/CBIucsb/bisque_examples_ipython) as described in the video demonstration
 
 - 1_upload_images_group.ipynb
 - 2_upload_image_graphical_annotations.ipynb

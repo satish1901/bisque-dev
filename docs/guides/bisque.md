@@ -9,7 +9,7 @@ Reference
 - [Instructions on installing bisque using docker](https://bitbucket.org/CBIucsb/bisque/src/default/README.md)
 
 ##### Setup for Ubuntu 16.04 
-
+---
 ##### Pre-requisites 
 ```
 sudo apt-get install -y python python-dev python-virtualenv python-numpy python-scipy 
@@ -60,7 +60,7 @@ cd imgcnv && make -j6
 sudo make install
 ```
 
-
+---
 ##### A. Download the Bootstrap installer (Use Python 2.7)
 ```
 $ mkdir bisque && cd bisque
@@ -93,7 +93,7 @@ Alternate Index Url for Development: https://biodev.ece.ucsb.edu/py/bisque/dev/+
 
 ```
 
-
+---
 
 ##### B. Configure Bisque Environment
 ```
@@ -146,8 +146,12 @@ You can login as admin and change the default password.
 
 Send Installation/Registration report [Y]? N
 
-
 ```
+
+Add "config/runtime-bisque.cfg" for module configuration and docker image registry
+- Edit and add run config from config-defaults/runtime-bisque.defaults to config/runtime-bisque.cfg
+
+---
 
 ##### C. Run Bisque
 
@@ -168,7 +172,7 @@ bq-admin deploy public
 Open in browser
 ![Browser Client](img/BisqueClientScreen.png?raw=true)
 
-
+---
 #### RUN
 Local Bisque Dev setup
 ###### Load Module Workflow 
@@ -185,23 +189,14 @@ http://0.0.0.0:8080/engine_service/
 - Go to Analyse and select Dream3D there
 - ![Launch Dream 3D](img/OpenModuleDream3d.png?raw=true)
 
+---
+### Further 
+
+
 ###### Load Dream 3D data
 
 ==> TODO
 
-
-
-
-
-
-
-
-
-
-
--------------------------------------------
-    Further 
--------------------------------------------
 - Manually create a virtualenv for development and install dependencies
   ```
   python -m virtualenv bqenv --no-setuptools
