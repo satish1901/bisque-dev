@@ -103,12 +103,14 @@
     <ul class="nav bs-sidenav">
         <li class="main active"><a href="#bisque-rancher-20-setup-with-kubernetes-engine">Bisque Rancher 2.0 Setup (with Kubernetes engine)</a></li>
             <li><a href="#nomenclature-kubernetes-like">Nomenclature (Kubernetes like)</a></li>
+            <li><a href="#cluster-description">Cluster Description</a></li>
+            <li><a href="#lets-encrypt-on-ubuntu-1604">Lets Encrypt on Ubuntu 16.04</a></li>
             <li><a href="#installation-rancher-20">Installation Rancher 2.0</a></li>
-            <li><a href="#create-an-access-key-for-command-line-operations-doesnt-work-on-self-signed-certs">Create an access key for command line operations (Doesnt work on self-signed certs)</a></li>
-            <li><a href="#create-the-yaml-configuration-based-on-docker-composeyaml">Create the YAML configuration based on docker-compose.yaml</a></li>
-            <li><a href="#setup-clusterworkload-rke-clusterscustom-nodes">Setup Cluster/Workload /rke-clusters/custom-nodes</a></li>
-            <li><a href="#setup-volume">Setup Volume</a></li>
+            <li><a href="#create-the-yaml-configuration-based-on-docker-composeyaml-in-case-of-migration">Create the YAML configuration based on docker-compose.yaml (In case of migration)</a></li>
+            <li><a href="#setup-cluster-rke-clusterscustom-nodes">Setup Cluster /rke-clusters/custom-nodes</a></li>
+            <li><a href="#setup-workload-on-the-cluster">Setup Workload on the cluster</a></li>
             <li><a href="#run-bisque-on-two-nodes">Run Bisque on two nodes</a></li>
+            <li><a href="#removecleanup-rancher">Remove/Cleanup Rancher</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
@@ -156,21 +158,50 @@
 </tbody>
 </table>
 <hr />
+<h4 id="cluster-description">Cluster Description<a class="headerlink" href="#cluster-description" title="Permanent link">&para;</a></h4>
+<h4 id="lets-encrypt-on-ubuntu-1604">Lets Encrypt on <a href="https://certbot.eff.org/lets-encrypt/ubuntuxenial-other">Ubuntu 16.04</a><a class="headerlink" href="#lets-encrypt-on-ubuntu-1604" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Bind the hostname to the IP address by creating an A record in DNS </li>
+<li>Letsencrypt ACME challenge at TCP/80 on host </li>
+<li>Open up firewall for this "sudo ufw allow 80 &amp;&amp; sudo ufw allow 80 443"</li>
+<li>Verify the port 80 availability</li>
+</ul>
+<pre class="codehilite"><code>sudo netstat -peanut | grep &quot;:80&quot; </code></pre>
+
+
+<ul>
+<li>Setup certificates at /etc/letsencrypt</li>
+</ul>
+<pre class="codehilite"><code>sudo certbot certonly --standalone --dry-run \
+   --cert-name loup.ece.ucsb.edu -d loup.ece.ucsb.edu</code></pre>
+
+
+<hr />
 <h4 id="installation-rancher-20">Installation Rancher 2.0<a class="headerlink" href="#installation-rancher-20" title="Permanent link">&para;</a></h4>
 <p>Install/Startup Rancher: https://rancher.com/docs/rancher/v2.x/en/installation/single-node/
-docker run -d --restart=unless-stopped \
-  -p 80:80 -p 443:443 \
+- Rancher etcd data persisted at /var/lib/rancher
+- Since port 80 is occupied by rancher/rancher, a rancher/rancher-agent cannot be run on this node.</p>
+<pre class="codehilite"><code>docker run -d --restart=unless-stopped \
+  -p 8080:80 -p 8443:443 \
   -v /var/log/rancher/auditlog:/var/log/auditlog \
+  -v /host/rancher:/var/lib/rancher \
   -e AUDIT_LEVEL=1 \
-  rancher/rancher:stable</p>
-<h4 id="create-an-access-key-for-command-line-operations-doesnt-work-on-self-signed-certs">Create an access key for command line operations (Doesnt work on self-signed certs)<a class="headerlink" href="#create-an-access-key-for-command-line-operations-doesnt-work-on-self-signed-certs" title="Permanent link">&para;</a></h4>
+  rancher/rancher:stable </code></pre>
+
+
 <ul>
-<li>endpoint  : https://192.168.1.112/v3</li>
-<li>access-key: token-67rmg</li>
-<li>secret-key: 9qnqxvxpkg5zzm5pj7kkgp985zw4d6dvnf7csxvg7cbvbr5prq4wvt</li>
-<li>bearer-tok: token-67rmg:9qnqxvxpkg5zzm5pj7kkgp985zw4d6dvnf7csxvg7cbvbr5prq4wvt</li>
+<li>You will have rancher accessible at https://loup.ece.ucsb.edu:8443</li>
 </ul>
-<h4 id="create-the-yaml-configuration-based-on-docker-composeyaml">Create the YAML configuration based on docker-compose.yaml<a class="headerlink" href="#create-the-yaml-configuration-based-on-docker-composeyaml" title="Permanent link">&para;</a></h4>
+<hr />
+<h4 id="create-the-yaml-configuration-based-on-docker-composeyaml-in-case-of-migration">Create the YAML configuration based on docker-compose.yaml (In case of migration)<a class="headerlink" href="#create-the-yaml-configuration-based-on-docker-composeyaml-in-case-of-migration" title="Permanent link">&para;</a></h4>
+<h5 id="create-an-access-key-for-rancher-cli-operations-doesnt-work-on-self-signed-certs">Create an access key for <a href="https://rancher.com/docs/rancher/v2.x/en/cli/">Rancher CLI</a> operations (Doesnt work on self-signed certs)<a class="headerlink" href="#create-an-access-key-for-rancher-cli-operations-doesnt-work-on-self-signed-certs" title="Permanent link">&para;</a></h5>
+<ul>
+<li>endpoint  : https://loup.ece.ucsb.edu/v3</li>
+<li>access-key: token-xt47w</li>
+<li>secret-key: &lt; &gt;</li>
+<li>bearer-tok: token-xt47w: &lt; &gt;</li>
+</ul>
+<h5 id="migration-cli">Migration CLI<a class="headerlink" href="#migration-cli" title="Permanent link">&para;</a></h5>
 <ul>
 <li>Download the docker-compose and rancher-compose.yml files from existing rancher user interface for migration 
 https://rancher.com/docs/rancher/v2.x/en/v1.6-migration</li>
@@ -184,59 +215,184 @@ https://rancher.com/docs/rancher/v2.x/en/v1.6-migration</li>
 
 
 <hr />
-<h3 id="setup-clusterworkload-rke-clusterscustom-nodes">Setup Cluster/Workload <a href="https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/custom-nodes/">/rke-clusters/custom-nodes</a><a class="headerlink" href="#setup-clusterworkload-rke-clusterscustom-nodes" title="Permanent link">&para;</a></h3>
+<h3 id="setup-cluster-rke-clusterscustom-nodes">Setup Cluster <a href="https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/custom-nodes/">/rke-clusters/custom-nodes</a><a class="headerlink" href="#setup-cluster-rke-clusterscustom-nodes" title="Permanent link">&para;</a></h3>
+<h4 id="port-requirements">Port requirements<a class="headerlink" href="#port-requirements" title="Permanent link">&para;</a></h4>
+<p>Open up ports based on the <a href="https://rancher.com/docs/rancher/v2.x/en/installation/references/">CNI provider requirements</a>
+- Use Canal as the provider in this case</p>
+<pre class="codehilite"><code># API/UI Clients
+sudo ufw allow 22,80,443/tcp
+# Etcd Plane Nodes
+sudo ufw allow 2379,2380,9099,6443/tcp &amp;&amp; sudo ufw allow 8472/udp
+# Control Plane Nodes
+sudo ufw allow 2379,2380,10250,6443,9099,10254/tcp &amp;&amp; sudo ufw allow 8472/udp
+# Worker Plane Nodes
+sudo ufw allow 6443,9099,10254/tcp &amp;&amp; sudo ufw allow 8472/udp
+# Workload
+sudo ufw allow 30000:32767/tcp &amp;&amp; sudo ufw allow 30000:32767/udp
+# Others 
+sudo ufw allow  2376/tcp</code></pre>
+
+
+<h4 id="create-cluster">Create cluster<a class="headerlink" href="#create-cluster" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Added a cluster in rancher-ui named "bqdev-cluster" and run the below command for running the rancher-agent </li>
 </ul>
 <pre class="codehilite"><code>sudo docker run -d --privileged --restart=unless-stopped --net=host \
  -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run \
- rancher/rancher-agent:v2.1.5 --server https://192.168.1.112 \
- --token f42lk76lj72qhrm7d6szx6vn6b869mm7kgmmrvjw7tf2gb72hd9wt2 \
- --ca-checksum bc3bb19f279028874626d89515e16a1d5a00f03e7965e64d4c24d9546aba2f27 \
- --etcd --controlplane --worker</code></pre>
+  rancher/rancher-agent:v2.1.6 --server https://loup.ece.ucsb.edu:8443 \
+  --token 7z2ncgjj4482m48fpsj7xjmc8lc9n6bsxh7qcjrsr6rcxrzhzl6prz \
+  --ca-checksum d522680b13d7aabe4dc57bb2776e28759852c336d0cf0e0f9fed5d3fb7b495e8 \
+  --etcd --controlplane --worker</code></pre>
 
 
 <ul>
-<li>Add more nodes as worker only, by running this command on those nodes so that they register with the above main node </li>
+<li>Add more nodes as worker only, by running this command on those nodes so that they register with the above main control node </li>
 </ul>
 <pre class="codehilite"><code>sudo docker run -d --privileged --restart=unless-stopped --net=host \
- -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run \
- rancher/rancher-agent:v2.1.5 --server https://192.168.1.112 \
- --token f42lk76lj72qhrm7d6szx6vn6b869mm7kgmmrvjw7tf2gb72hd9wt2 \
- --ca-checksum bc3bb19f279028874626d89515e16a1d5a00f03e7965e64d4c24d9546aba2f27 \
- --worker</code></pre>
+  -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run \ 
+  rancher/rancher-agent:v2.1.6 --server https://arkady.ece.ucsb.edu \ 
+  --token 298vqgm9fs6kfd8n5rbmwq6mx87g6vdbmr26c7xbf4bgb6t9z4bcjt \ 
+  --worker</code></pre>
 
 
-<h4 id="create-a-namespace-bqtest-within-this-cluster">Create a namespace bqtest within this cluster<a class="headerlink" href="#create-a-namespace-bqtest-within-this-cluster" title="Permanent link">&para;</a></h4>
+<h4 id="create-a-namespace-bqdev-within-this-cluster">Create a namespace bqdev within this cluster<a class="headerlink" href="#create-a-namespace-bqdev-within-this-cluster" title="Permanent link">&para;</a></h4>
 <p>Bisque Test environment where workloads are deployed</p>
+<hr />
+<h4 id="setup-volume">Setup Volume<a class="headerlink" href="#setup-volume" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Mount the host directory for volume using NFS and setup the nfs client access for the cluster
+https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-16-04</li>
+<li>Setup folders</li>
+</ul>
+<pre class="codehilite"><code># Create the path on host system
+sudo mkdir /opt/bisque/ -p &amp;&amp; \
+ sudo mkdir /opt/bisque/data -p &amp;&amp; \
+ sudo mkdir /opt/bisque/local/workdir -p
+# Allow other users to edit this
+sudo chown -R nobody:nogroup /opt/bisque/</code></pre>
+
+
+<ul>
+<li>Open up the ports used by NFS</li>
+</ul>
+<pre class="codehilite"><code># Access from specific machines
+sudo ufw allow from 192.168.1.129 to any port nfs
+sudo ufw allow from 192.168.1.133 to any port nfs
+
+# Specific ports in case above doesnt work
+sudo ufw allow 32768:65535/tcp &amp;&amp; sudo ufw allow 32768:65535/udp
+sudo ufw allow 2049/tcp &amp;&amp; sudo ufw allow 2049/udp
+sudo ufw allow 111/tcp &amp;&amp; sudo ufw allow 111/udp</code></pre>
+
+
+<ul>
+<li>Now add NFS host configuration at /etc/exports</li>
+</ul>
+<pre class="codehilite"><code>/opt/bisque     192.168.1.129(rw,sync,no_root_squash,no_subtree_check)
+/opt/bisque     192.168.1.133(rw,sync,no_root_squash,no_subtree_check)</code></pre>
+
+
+<ul>
+<li>restart the nfs server</li>
+</ul>
+<pre class="codehilite"><code>sudo systemctl restart nfs-kernel-server</code></pre>
+
+
+<ul>
+<li>Mount the NFS folder on the client</li>
+</ul>
+<pre class="codehilite"><code>sudo mount 192.168.1.123:/opt/bisque/ /run/bisque/</code></pre>
+
+
+<ul>
+<li>Verify the mount on a client system using df -h</li>
+</ul>
+<blockquote>
+<p>OR 
+https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-from-nfs-share
+- Create a persistent volume in the cluster 
+- Set local path option on the node as /run/bisque</p>
+</blockquote>
+<hr />
+<h3 id="setup-workload-on-the-cluster">Setup Workload on the cluster<a class="headerlink" href="#setup-workload-on-the-cluster" title="Permanent link">&para;</a></h3>
 <p>Bisque Test environment where workloads are deployed with open NodePort
 https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
+<ul>
+<li>We will be using the image at registry biodev.ece.ucsb.edu:5000/ucsb-bisque05-svc</li>
+</ul>
+<h5 id="workload-configuration">Workload configuration<a class="headerlink" href="#workload-configuration" title="Permanent link">&para;</a></h5>
+<ul>
+<li>Name: ucsb-bisque05-svc-wl</li>
+<li>Pods: 1</li>
+<li>Docker Image : biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev or vishwakarmarhl/ucsb-bisque05-svc:dev</li>
+<li>Port Mapping: 80-tcp-ClusterIP(Internal)-Same &amp; 27000-tcp-ClusterIP(Internal)-Same </li>
+<li>Environment Variables: Copy paste the "Environment Configuration" section </li>
+<li>Node Scheduling: Run all the pods on a particular host</li>
+<li>Health Check: No change</li>
+<li>Volumes: Persistent Volume claim and set the mount point as /tmp/bisque</li>
+<li>Scaling: No change</li>
+<li>Command: </li>
+<li>Entrypoint: /builder/run-bisque.sh</li>
+<li>Command: bootstrap start</li>
+<li>Working Dir: /source</li>
+<li>Console: Interactive &amp; TTY (-i -t)</li>
+<li>Networking: No Change</li>
+<li>Labels: No change</li>
+<li>Security: No change</li>
+</ul>
 <h5 id="environment-configuration">Environment Configuration<a class="headerlink" href="#environment-configuration" title="Permanent link">&para;</a></h5>
+<ul>
+<li>Bisque service variables</li>
+</ul>
 <pre class="codehilite"><code>      BISQUE_USER= bisque
-      BISQUE_BISQUE_ADMIN_EMAIL= admin@192.168.1.112
+      BISQUE_BISQUE_ADMIN_EMAIL= admin@loup.ece.ucsb.edu
       BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
       BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/
       BISQUE_BISQUE_STORES_BLOBS_TOP= file://$$datadir/blobdir/
       BISQUE_BISQUE_STORES_LOCAL_MOUNTURL= file://$$datadir/imagedir/$$user/
-      BISQUE_BISQUE_STORES_LOCAL_READONLY= 'true'
+      BISQUE_BISQUE_STORES_LOCAL_READONLY= true
       BISQUE_BISQUE_STORES_LOCAL_TOP= file://$$datadir/imagedir/
       BISQUE_DOCKER_DOCKER_HUB= biodev.ece.ucsb.edu:5000
-      BISQUE_RUNTIME_STAGING_BASE= /tmp/bisque_ranch/data/staging
       BISQUE_SECRET= bq123
-      BISQUE_UID= '12027'
-      BQ__BISQUE__IMAGE_SERVICE__WORK_DIR= /tmp/bisque_ranch/local/workdir
-      BQ__BISQUE__PATHS__DATA= /tmp/bisque_ranch/data
-      MAIL_SERVER= dough.ece.ucsb.edu</code></pre>
+      BISQUE_UID= 12027
+      BISQUE_RUNTIME_STAGING_BASE= /run/bisque/data/staging
+      BQ__BISQUE__IMAGE_SERVICE__WORK_DIR= /run/bisque/local/workdir
+      BQ__BISQUE__PATHS__DATA= /run/bisque/data
+      MAIL_SERVER= dough.ece.ucsb.edu
+      BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/postgres
+
+      DEBIAN_FRONTEND=noninteractive
+      IMGCNV=imgcnv_ubuntu16_2.4.3</code></pre>
 
 
-<hr />
-<h3 id="setup-volume">Setup Volume<a class="headerlink" href="#setup-volume" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Mount the host directory for volume using NFS and setup the nfs client access for the cluster
-https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-16-04</li>
-<li>Or create a persistent volume with local path on the node as /tmp/bisque_ranch
-https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-from-nfs-share</li>
+<li>Connoisseur GPU variables</li>
 </ul>
+<pre class="codehilite"><code>NVIDIA_REQUIRE_CUDA=cuda&gt;=8.0
+NVIDIA_VISIBLE_DEVICES=all
+NVIDIA_DRIVER_CAPABILITIES=compute,utility
+CUDA_PKG_VERSION=8-0=8.0.61-1
+CAFFE_PKG_VERSION=0.15.13-1ubuntu16.04+cuda8.0
+CAFFE_VERSION=0.15
+CUDA_VERSION=8.0.61
+
+IMGCNV=imgcnv_ubuntu16_2.4.3
+CONDOR_MANAGER_HOST=master.condor
+CONDOR_DAEMONS=MASTER,SCHEDD,SHARED_PORT</code></pre>
+
+
+<h5 id="debugging-the-clusterpods">Debugging the cluster/pods<a class="headerlink" href="#debugging-the-clusterpods" title="Permanent link">&para;</a></h5>
+<ul>
+<li>Using cluster kubectl shell from the cluster web UI</li>
+</ul>
+<pre class="codehilite"><code># Fetch namespaces
+kubectl get pods --all-namespaces
+kubectl get pods -n bqdev 
+
+# Fetch logs on a pod/container
+kubectl logs postgres-564d9f79d5-z2sxl  -n bqdev </code></pre>
+
+
 <hr />
 <h4 id="mail-server-setup">Mail server setup<a class="headerlink" href="#mail-server-setup" title="Permanent link">&para;</a></h4>
 <p>https://www.linuxbabe.com/mail-server/ubuntu-16-04-iredmail-server-installation</p>
@@ -255,7 +411,73 @@ https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-fr
 <p>If you want to expose the workload container to outside world then use NodePort otherwise work with ClusterIp(Internal Only) port configuration </p>
 </li>
 <li>https://rancher.com/blog/2018/2018-08-14-expose-and-monitor-workloads/</li>
-</ul></div>
+</ul>
+<hr />
+<h3 id="removecleanup-rancher"><a href="https://rancher.com/docs/rancher/v2.x/en/admin-settings/removing-rancher/user-cluster-nodes/">Remove/Cleanup Rancher</a><a class="headerlink" href="#removecleanup-rancher" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Stop Rancher Containers </li>
+</ul>
+<pre class="codehilite"><code># Master: for the rancher server container
+docker stop $(docker ps -a -q --filter ancestor=rancher/rancher:stable --format=&quot;{{.ID}}&quot;)
+# Workers: for all k8s containers 
+docker stop $(docker ps -f name=k8s* --format=&quot;{{.ID}}&quot;)</code></pre>
+
+
+<ul>
+<li>Clean the container, images and volumes</li>
+</ul>
+<pre class="codehilite"><code>docker rm -f $(docker ps -a -f name=k8s* --format=&quot;{{.ID}}&quot;)
+docker rmi -f $(docker images -q &quot;rancher/*&quot;)
+docker volume rm $(docker volume ls -q)</code></pre>
+
+
+<ul>
+<li>Unmount and remove data (/var/lib/kubelet/pods/XXX, /var/lib/kubelet, /var/lib/rancher)</li>
+</ul>
+<pre class="codehilite"><code># Unmount directories
+for mount in $(mount | grep tmpfs | grep '/var/lib/kubelet' | awk '{ print $3 }') /var/lib/kubelet /var/lib/rancher; do sudo umount $mount; done
+
+# Clean the directories
+sudo rm -rf /etc/ceph \
+       /etc/cni \
+       /etc/kubernetes \
+       /opt/cni \
+       /opt/rke \
+       /run/secrets/kubernetes.io \
+       /run/calico \
+       /run/flannel \
+       /var/lib/calico \
+       /var/lib/etcd \
+       /var/lib/cni \
+       /var/lib/kubelet \
+       /var/lib/rancher/rke/log \
+       /var/log/containers \
+       /var/log/pods \
+       /var/run/calico
+# Mounted host directories
+sudo rm -rf /host/rancher/
+sudo rm -rf /var/log/rancher/auditlog</code></pre>
+
+
+<ul>
+<li>Remove the existing network interface</li>
+</ul>
+<pre class="codehilite"><code>ip address show
+ip link delete &lt;interface_name&gt;</code></pre>
+
+
+<h5 id="condor-provisioning">Condor provisioning<a class="headerlink" href="#condor-provisioning" title="Permanent link">&para;</a></h5>
+<p>Condor Master 
+- Image: biodev.ece.ucsb.edu:5000/condor 
+- Ports: 9618, 9886 as HostPort
+- Environment</p>
+<pre class="codehilite"><code>CONDOR_DAEMONS = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
+CONDOR_MANAGER_HOST = master</code></pre>
+
+
+<p>Condor Worker
+- Same configuration as above
+- Ports: 9886 NodePort Random</p></div>
         </div>
 
         <footer class="col-md-12">
