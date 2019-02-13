@@ -2,8 +2,8 @@
 ---------------------------------------------------------------
 
 ### Pre-requisite
-- [Rancher 2.0 with bq-cluster workload instructions](./rancher2_bisque)
-- [Rancher 2.0 with PostgreSql workload instructions](./rancher2_postgresql)
+- [Rancher 2.0 with bq-cluster workload instructions](/guides/rancher2_bisque)
+- [Rancher 2.0 with PostgreSql workload instructions](/guides/rancher2_postgresql)
 
 ##### General instructions
 - Setup Cluster with [/rke-clusters/custom-nodes](https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/custom-nodes/)
@@ -77,9 +77,12 @@ Condor Worker
 
 
 
---------------------------------------------- 
+----------------------------------------
 ## Connoisseur/GPU Workload provisioning
+----------------------------------------
+Here lets take a look at connoissuer service in Bisque. We will run a Bisque H1 server disabling the engine_service and connoisseur in part (A) and later another service in part (B) with Connoisseur and engine service for the actual compute. 
 
+##### Pre-requisites
 - Create a namespace "connoisseur" and deploy everything isolated from the existing bisque-svc
 - Create a postgres database for this deployment
   - psql -h 10.42.0.15 -U postgres --password -p 5432 postgres
