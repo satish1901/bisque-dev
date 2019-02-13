@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <meta name="author" content="Rahul Vishwakarma">
-        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/bisque_postgres/">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/rancher2_postgresql/">
         <link rel="shortcut icon" href="../../img/favicon.ico">
-        <title>Bisque postgres - BisQue-Docs</title>
+        <title>Rancher2 postgresql - BisQue-Docs</title>
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
         <link href="../../css/font-awesome.min.css" rel="stylesheet">
         <link href="../../css/base.css" rel="stylesheet">
@@ -91,7 +91,7 @@
                             </a>
                         </li>
                             <li>
-                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/bisque_postgres.md">Edit on UCSB-VRL/bisque</a>
+                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/rancher2_postgresql.md">Edit on UCSB-VRL/bisque</a>
                             </li>
                     </ul>
                 </div>
@@ -110,54 +110,35 @@
 
 <h4 id="create-a-volume-pgdev-vol">Create a Volume: pgdev-vol<a class="headerlink" href="#create-a-volume-pgdev-vol" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Path on the host node: /tmp/postgres</li>
+<li>Path on the host node: /opt/bisque/pg
+<img alt="Persistent Storage postgres volume" src="../img/bqranch/rancher_volume_pg.png?raw=true" /></li>
 </ul>
 <h4 id="setup-a-postgresql-10-database">Setup a Postgresql 10 database<a class="headerlink" href="#setup-a-postgresql-10-database" title="Permanent link">&para;</a></h4>
-<p>Image: postgres:10.4
-Environment</p>
+<ul>
+<li>Image: postgres:10.4</li>
+<li>Environment:</li>
+</ul>
 <pre class="codehilite"><code>    POSTGRES_DB=postgres
     POSTGRES_PASSWORD=postgres
     POSTGRES_USER=postgres</code></pre>
 
 
-<p>Spec for a Rancher 2 workload</p>
-<pre class="codehilite"><code>spec:
-  containers:
-  - env:
-    - name: POSTGRES_DB
-      value: postgres
-    - name: POSTGRES_PASSWORD
-      value: postgres
-    - name: POSTGRES_USER
-      value: postgres
-    image: postgres:10.4
-    imagePullPolicy: Always
-    name: postgres
-    ports:
-    - containerPort: 5432
-      hostPort: 5432
-      name: 5432tcp54320
-      protocol: TCP
-    resources: {}
-    volumeMounts:
-    - mountPath: /var/lib/postgresql/data
-      name: pgdev-vol
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-7hhqq
-      readOnly: true
-  dnsPolicy: ClusterFirst
-  nodeName: loup
-  volumes:
-  - name: pgdev-vol
-    persistentVolumeClaim:
-      claimName: pgdev-vol
-  - name: default-token-7hhqq
-    secret:
-      defaultMode: 420
-      secretName: default-token-7hhqq</code></pre>
-
-
+<ul>
+<li>Ports: 5432/TCP -&gt; ClusterIP -&gt; Same as container port</li>
+<li>Volume: Mount pgdev-vol created above to mount point "/var/lib/postgresql/data"</li>
+</ul>
+<blockquote>
+<p>Here is the complete Postgres workload configuration screen shot for reference</p>
+</blockquote>
+<p><img alt="Workload postgres" src="../img/bqranch/workload_postgres.png?raw=true" /></p>
+<blockquote>
+<p>Make sure to claim this volume in the Postgres workload deploy configuration</p>
+</blockquote>
+<p><img alt="Workload postgres volume" src="../img/bqranch/workload_postgres_volume.png?raw=true" /></p>
 <h5 id="test-database-using-the-nodes-ip">Test database using the nodes IP<a class="headerlink" href="#test-database-using-the-nodes-ip" title="Permanent link">&para;</a></h5>
+<ul>
+<li>Test using psql, depending on what IP the postgres server is available at</li>
+</ul>
 <pre class="codehilite"><code>psql -h 10.42.0.15 -U postgres --password -p 5432 postgres
 psql -h loup.ece.ucsb.edu -U postgres --password -p 5432 postgres</code></pre></div>
         </div>

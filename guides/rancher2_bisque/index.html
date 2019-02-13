@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <meta name="author" content="Rahul Vishwakarma">
-        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/bisque_rancher2/">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/rancher2_bisque/">
         <link rel="shortcut icon" href="../../img/favicon.ico">
-        <title>Bisque Rancher 2.0 Setup (with Kubernetes engine) - BisQue-Docs</title>
+        <title>Rancher 2.0 Setup (with Kubernetes engine) - BisQue-Docs</title>
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
         <link href="../../css/font-awesome.min.css" rel="stylesheet">
         <link href="../../css/base.css" rel="stylesheet">
@@ -91,7 +91,7 @@
                             </a>
                         </li>
                             <li>
-                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/bisque_rancher2.md">Edit on UCSB-VRL/bisque</a>
+                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/rancher2_bisque.md">Edit on UCSB-VRL/bisque</a>
                             </li>
                     </ul>
                 </div>
@@ -101,7 +101,7 @@
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-        <li class="main active"><a href="#bisque-rancher-20-setup-with-kubernetes-engine">Bisque Rancher 2.0 Setup (with Kubernetes engine)</a></li>
+        <li class="main active"><a href="#rancher-20-setup-with-kubernetes-engine">Rancher 2.0 Setup (with Kubernetes engine)</a></li>
             <li><a href="#nomenclature-kubernetes-like">Nomenclature (Kubernetes like)</a></li>
             <li><a href="#cluster-description">Cluster Description</a></li>
             <li><a href="#lets-encrypt-on-ubuntu-1604">Lets Encrypt on Ubuntu 16.04</a></li>
@@ -109,13 +109,13 @@
             <li><a href="#create-the-yaml-configuration-based-on-docker-composeyaml-in-case-of-migration">Create the YAML configuration based on docker-compose.yaml (In case of migration)</a></li>
             <li><a href="#setup-cluster-rke-clusterscustom-nodes">Setup Cluster /rke-clusters/custom-nodes</a></li>
             <li><a href="#setup-workload-on-the-cluster">Setup Workload on the cluster</a></li>
-            <li><a href="#run-bisque-on-two-nodes">Run Bisque on two nodes</a></li>
             <li><a href="#removecleanup-rancher">Remove/Cleanup Rancher</a></li>
+            <li><a href="#additional-references">Additional References</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
 
-<h1 id="bisque-rancher-20-setup-with-kubernetes-engine">Bisque Rancher 2.0 Setup (with Kubernetes engine)<a class="headerlink" href="#bisque-rancher-20-setup-with-kubernetes-engine" title="Permanent link">&para;</a></h1>
+<h1 id="rancher-20-setup-with-kubernetes-engine">Rancher 2.0 Setup (with Kubernetes engine)<a class="headerlink" href="#rancher-20-setup-with-kubernetes-engine" title="Permanent link">&para;</a></h1>
 <hr />
 <h4 id="nomenclature-kubernetes-like">Nomenclature (Kubernetes like)<a class="headerlink" href="#nomenclature-kubernetes-like" title="Permanent link">&para;</a></h4>
 <hr />
@@ -189,14 +189,13 @@
   rancher/rancher:stable </code></pre>
 
 
-<ul>
-<li>You will have rancher accessible at https://loup.ece.ucsb.edu:8443</li>
-</ul>
+<p><img alt="Rancher main Container" src="../img/bqranch/rancher_main_container.png?raw=true" />
+- You will have rancher accessible at https://loup.ece.ucsb.edu:8443</p>
 <hr />
 <h4 id="create-the-yaml-configuration-based-on-docker-composeyaml-in-case-of-migration">Create the YAML configuration based on docker-compose.yaml (In case of migration)<a class="headerlink" href="#create-the-yaml-configuration-based-on-docker-composeyaml-in-case-of-migration" title="Permanent link">&para;</a></h4>
 <h5 id="create-an-access-key-for-rancher-cli-operations-doesnt-work-on-self-signed-certs">Create an access key for <a href="https://rancher.com/docs/rancher/v2.x/en/cli/">Rancher CLI</a> operations (Doesnt work on self-signed certs)<a class="headerlink" href="#create-an-access-key-for-rancher-cli-operations-doesnt-work-on-self-signed-certs" title="Permanent link">&para;</a></h5>
 <ul>
-<li>endpoint  : https://loup.ece.ucsb.edu/v3</li>
+<li>endpoint  : https://loup.ece.ucsb.edu:8443/v3</li>
 <li>access-key: token-xt47w</li>
 <li>secret-key: &lt; &gt;</li>
 <li>bearer-tok: token-xt47w: &lt; &gt;</li>
@@ -233,9 +232,12 @@ sudo ufw allow 30000:32767/tcp &amp;&amp; sudo ufw allow 30000:32767/udp
 sudo ufw allow  2376/tcp</code></pre>
 
 
+<p><img alt="Ubuntu ufw status" src="../img/bqranch/rancher_ufw_status.png?raw=true" /></p>
 <h4 id="create-cluster">Create cluster<a class="headerlink" href="#create-cluster" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Added a cluster in rancher-ui named "bqdev-cluster" and run the below command for running the rancher-agent </li>
+<li>Create a cluster in rancher-ui named "bq-cluster"</li>
+<li>Select "custom" local/remote nodes option to create this cluster</li>
+<li>Run the below command for running the rancher-agent/workers</li>
 </ul>
 <pre class="codehilite"><code>sudo docker run -d --privileged --restart=unless-stopped --net=host \
  -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run \
@@ -246,17 +248,21 @@ sudo ufw allow  2376/tcp</code></pre>
 
 
 <ul>
-<li>Add more nodes as worker only, by running this command on those nodes so that they register with the above main control node </li>
+<li>
+<p>The final "bq-cluster" state can be visualized upon creation 
+<img alt="Rancher cluster created state" src="../img/bqranch/rancher_cluster.png?raw=true" /></p>
+</li>
+<li>
+<p>A docker ps on a node of the cluster (as created above) would look like below screenshot
+<img alt="Rancher cluster node addition" src="../img/bqranch/rancher_worker_control_plane.png?raw=true" /></p>
+</li>
+<li>
+<p>Add more nodes as worker, by running above command on those nodes so that they register with the rancher2 and become part of this cluster. The nodes on a cluster can be visualized in rancher cluster -&gt; nodes menu.
+<img alt="Rancher cluster node view" src="../img/bqranch/rancher_cluster_nodes.png?raw=true" /></p>
+</li>
 </ul>
-<pre class="codehilite"><code>sudo docker run -d --privileged --restart=unless-stopped --net=host \
-  -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run \ 
-  rancher/rancher-agent:v2.1.6 --server https://arkady.ece.ucsb.edu \ 
-  --token 298vqgm9fs6kfd8n5rbmwq6mx87g6vdbmr26c7xbf4bgb6t9z4bcjt \ 
-  --worker</code></pre>
-
-
 <h4 id="create-a-namespace-bqdev-within-this-cluster">Create a namespace bqdev within this cluster<a class="headerlink" href="#create-a-namespace-bqdev-within-this-cluster" title="Permanent link">&para;</a></h4>
-<p>Bisque Test environment where workloads are deployed</p>
+<p>Bisque Development environment where workloads are deployed and tested</p>
 <hr />
 <h4 id="setup-volume">Setup Volume<a class="headerlink" href="#setup-volume" title="Permanent link">&para;</a></h4>
 <ul>
@@ -293,13 +299,13 @@ sudo ufw allow 111/tcp &amp;&amp; sudo ufw allow 111/udp</code></pre>
 
 
 <ul>
-<li>restart the nfs server</li>
+<li>restart the nfs server on the NFS host machine</li>
 </ul>
 <pre class="codehilite"><code>sudo systemctl restart nfs-kernel-server</code></pre>
 
 
 <ul>
-<li>Mount the NFS folder on the client</li>
+<li>Mount the NFS folder on the client machine</li>
 </ul>
 <pre class="codehilite"><code>sudo mount 192.168.1.123:/opt/bisque/ /run/bisque/</code></pre>
 
@@ -308,30 +314,39 @@ sudo ufw allow 111/tcp &amp;&amp; sudo ufw allow 111/udp</code></pre>
 <li>Verify the mount on a client system using df -h</li>
 </ul>
 <blockquote>
-<p>OR 
+<p>AND
 https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-from-nfs-share
 - Create a persistent volume in the cluster 
 - Set local path option on the node as /run/bisque</p>
 </blockquote>
+<p><img alt="Rancher NFS persistent volume addition" src="../img/bqranch/rancher_volume_nfs.png?raw=true" /></p>
+<p>We can see all the volumes that are created in the Volumes section of the "bq-cluster" workload
+<img alt="Rancher workload volumes" src="../img/bqranch/workload_volumes.png?raw=true" /></p>
 <hr />
 <h3 id="setup-workload-on-the-cluster">Setup Workload on the cluster<a class="headerlink" href="#setup-workload-on-the-cluster" title="Permanent link">&para;</a></h3>
 <p>Bisque Test environment where workloads are deployed with open NodePort
 https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
 <ul>
-<li>We will be using the image at registry biodev.ece.ucsb.edu:5000/ucsb-bisque05-svc</li>
+<li>We will be using the image at custom registry biodev.ece.ucsb.edu:5000/ucsb-bisque05-svc or we can use a publicly deployed image at https://hub.docker.com</li>
 </ul>
-<h5 id="workload-configuration">Workload configuration<a class="headerlink" href="#workload-configuration" title="Permanent link">&para;</a></h5>
+<h5 id="test-workload-configuration">Test workload configuration<a class="headerlink" href="#test-workload-configuration" title="Permanent link">&para;</a></h5>
 <ul>
-<li>Name: ucsb-bisque05-svc-wl</li>
-<li>Pods: 1</li>
-<li>Docker Image : biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev or vishwakarmarhl/ucsb-bisque05-svc:dev</li>
-<li>Port Mapping: 80-tcp-ClusterIP(Internal)-Same &amp; 27000-tcp-ClusterIP(Internal)-Same </li>
+<li>Name: ucsb-bisque05-svc</li>
+<li>Pods: 2</li>
+<li>Docker Image : biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev or vishwakarmarhl/ucsb-bisque05-svc:dev
+  <img alt="Workload name" src="../img/bqranch/workload_head.png?raw=true" /></li>
+<li>Port Mapping: </li>
+<li>8080-tcp-NodePort-Random &amp; 27000-tcp-NodePort-Random</li>
+<li>Alternately, we can use 8080-tcp-ClusterIP(Internal)-Same &amp; 27000-tcp-ClusterIP(Internal)-Same</li>
+</ul>
+<p><img alt="Workload ports" src="../img/bqranch/workload_ports.png?raw=true" /></p>
+<ul>
 <li>Environment Variables: Copy paste the "Environment Configuration" section </li>
 <li>Node Scheduling: Run all the pods on a particular host</li>
 <li>Health Check: No change</li>
 <li>Volumes: Persistent Volume claim and set the mount point as /tmp/bisque</li>
 <li>Scaling: No change</li>
-<li>Command: </li>
+<li>Command: (Only, in case needed. Not used with the current Image)</li>
 <li>Entrypoint: /builder/run-bisque.sh</li>
 <li>Command: bootstrap start</li>
 <li>Working Dir: /source</li>
@@ -340,6 +355,10 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
 <li>Labels: No change</li>
 <li>Security: No change</li>
 </ul>
+<blockquote>
+<p>Finally we can see the overall state of pods in the workload within the clusters
+<img alt="Workload pods" src="../img/bqranch/workload_pods.png?raw=true" /></p>
+</blockquote>
 <h5 id="environment-configuration">Environment Configuration<a class="headerlink" href="#environment-configuration" title="Permanent link">&para;</a></h5>
 <ul>
 <li>Bisque service variables</li>
@@ -365,23 +384,21 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
       IMGCNV=imgcnv_ubuntu16_2.4.3</code></pre>
 
 
+<p>We should see the overview of workloads deployed as below
+<img alt="Workload Dashboard" src="../img/bqranch/workloads.png?raw=true" /></p>
+<h5 id="load-balancing-using-l7-ingress">Load Balancing (using L7 Ingress)<a class="headerlink" href="#load-balancing-using-l7-ingress" title="Permanent link">&para;</a></h5>
 <ul>
-<li>Connoisseur GPU variables</li>
+<li>Add Ingress configuration for load balancing with name "bq-website" </li>
+<li>
+<p>Configure the target(ucsb-bisque05-svc) pods so that the port 8080 is exposed through the ingress controller
+<img alt="Ingress Ctrl Configuration " src="../img/bqranch/workload_ingress_ctrl.png?raw=true" /></p>
+</li>
+<li>
+<p>Load Balancing section of the workload will showcase the list of ingress controllers along with the mapping
+<img alt="Ingress Ctrl dashboard " src="../img/bqranch/workload_ingress_dash.png?raw=true" /></p>
+</li>
 </ul>
-<pre class="codehilite"><code>NVIDIA_REQUIRE_CUDA=cuda&gt;=8.0
-NVIDIA_VISIBLE_DEVICES=all
-NVIDIA_DRIVER_CAPABILITIES=compute,utility
-CUDA_PKG_VERSION=8-0=8.0.61-1
-CAFFE_PKG_VERSION=0.15.13-1ubuntu16.04+cuda8.0
-CAFFE_VERSION=0.15
-CUDA_VERSION=8.0.61
-
-IMGCNV=imgcnv_ubuntu16_2.4.3
-CONDOR_MANAGER_HOST=master.condor
-CONDOR_DAEMONS=MASTER,SCHEDD,SHARED_PORT</code></pre>
-
-
-<h5 id="debugging-the-clusterpods">Debugging the cluster/pods<a class="headerlink" href="#debugging-the-clusterpods" title="Permanent link">&para;</a></h5>
+<h5 id="monitoringdebugging-the-clusterpods">Monitoring/Debugging the cluster/pods<a class="headerlink" href="#monitoringdebugging-the-clusterpods" title="Permanent link">&para;</a></h5>
 <ul>
 <li>Using cluster kubectl shell from the cluster web UI</li>
 </ul>
@@ -393,25 +410,8 @@ kubectl get pods -n bqdev
 kubectl logs postgres-564d9f79d5-z2sxl  -n bqdev </code></pre>
 
 
-<hr />
-<h4 id="mail-server-setup">Mail server setup<a class="headerlink" href="#mail-server-setup" title="Permanent link">&para;</a></h4>
-<p>https://www.linuxbabe.com/mail-server/ubuntu-16-04-iredmail-server-installation</p>
-<h4 id="move-individual-workloadcontainers-to-rancher-kubernetes-using-rancher-cli-doesnt-work-with-self-signed-certificates">Move individual workload/containers to rancher-kubernetes using rancher-cli (doesnt work with self-signed certificates)<a class="headerlink" href="#move-individual-workloadcontainers-to-rancher-kubernetes-using-rancher-cli-doesnt-work-with-self-signed-certificates" title="Permanent link">&para;</a></h4>
-<p>https://rancher.com/blog/2018/2018-08-02-journey-from-cattle-to-k8s/</p>
-<hr />
-<h3 id="run-bisque-on-two-nodes">Run Bisque on two nodes<a class="headerlink" href="#run-bisque-on-two-nodes" title="Permanent link">&para;</a></h3>
-<ul>
-<li>
-<p>Load Balancers add in workloads <a href="https://www.cnrancher.com/docs/rancher/v2.x/en/k8s-in-rancher/load-balancers-and-ingress/load-balancers/">/k8s-in-rancher/load-balancers-and-ingress</a></p>
-<blockquote>
-<p>Tried using built in Ingress for bisque-test.bqtest.192.168.1.112.xip.io but failed to work</p>
-</blockquote>
-</li>
-<li>
-<p>If you want to expose the workload container to outside world then use NodePort otherwise work with ClusterIp(Internal Only) port configuration </p>
-</li>
-<li>https://rancher.com/blog/2018/2018-08-14-expose-and-monitor-workloads/</li>
-</ul>
+<p>Use Cluster dashboard for all cluster monitoring and configuration
+<img alt="Cluster Dashboard" src="../img/bqranch/cluster_dash.png?raw=true" /></p>
 <hr />
 <h3 id="removecleanup-rancher"><a href="https://rancher.com/docs/rancher/v2.x/en/admin-settings/removing-rancher/user-cluster-nodes/">Remove/Cleanup Rancher</a><a class="headerlink" href="#removecleanup-rancher" title="Permanent link">&para;</a></h3>
 <ul>
@@ -466,18 +466,35 @@ sudo rm -rf /var/log/rancher/auditlog</code></pre>
 ip link delete &lt;interface_name&gt;</code></pre>
 
 
-<h5 id="condor-provisioning">Condor provisioning<a class="headerlink" href="#condor-provisioning" title="Permanent link">&para;</a></h5>
-<p>Condor Master 
-- Image: biodev.ece.ucsb.edu:5000/condor 
-- Ports: 9618, 9886 as HostPort
-- Environment</p>
-<pre class="codehilite"><code>CONDOR_DAEMONS = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
-CONDOR_MANAGER_HOST = master</code></pre>
-
-
-<p>Condor Worker
-- Same configuration as above
-- Ports: 9886 NodePort Random</p></div>
+<hr />
+<h2 id="additional-references">Additional References<a class="headerlink" href="#additional-references" title="Permanent link">&para;</a></h2>
+<hr />
+<h4 id="a-mail-server-setup">A.) Mail server setup<a class="headerlink" href="#a-mail-server-setup" title="Permanent link">&para;</a></h4>
+<p>https://www.linuxbabe.com/mail-server/ubuntu-16-04-iredmail-server-installation</p>
+<h4 id="b-migration-from-rancher-1x-to-2x">B.) Migration from Rancher 1.x to 2.x<a class="headerlink" href="#b-migration-from-rancher-1x-to-2x" title="Permanent link">&para;</a></h4>
+<ul>
+<li>individual workload/containers to rancher-kubernetes using rancher-cli (doesnt work with self-signed certificates)
+https://rancher.com/blog/2018/2018-08-02-journey-from-cattle-to-k8s/</li>
+</ul>
+<h4 id="c-reference-on-ingress-controllers">C.) Reference on Ingress Controllers<a class="headerlink" href="#c-reference-on-ingress-controllers" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p>Load Balancers add in workloads <a href="https://www.cnrancher.com/docs/rancher/v2.x/en/k8s-in-rancher/load-balancers-and-ingress/load-balancers/">/k8s-in-rancher/load-balancers-and-ingress</a></p>
+<blockquote>
+<p>Tried using built in Ingress for    <br />
+bq-website.bqdev.192.168.1.129.xip.io but failed to work</p>
+</blockquote>
+</li>
+<li>
+<p>If you want to expose the workload container to outside world then use NodePort otherwise work with ClusterIp(Internal Only) port configuration </p>
+</li>
+<li>https://rancher.com/blog/2018/2018-08-14-expose-and-monitor-workloads/</li>
+</ul>
+<h4 id="d-postgresql-server">D.) PostgreSQL server<a class="headerlink" href="#d-postgresql-server" title="Permanent link">&para;</a></h4>
+<ul>
+<li><a href="./rancher_postgresql">Setup PostgreSql 10.4 on Rancher workload</a></li>
+<li>This is used in the Bisque configuration as environment variable BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/postgres</li>
+</ul></div>
         </div>
 
         <footer class="col-md-12">
