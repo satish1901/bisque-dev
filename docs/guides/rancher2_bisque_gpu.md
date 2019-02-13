@@ -145,9 +145,15 @@ Condor Worker
       CONDOR_DAEMONS=MASTER,SCHEDD,SHARED_PORT
 
 ```
+
+##### Workload (bq-cluster) with Namespace Connoissuer
+![Rancher Workload Dashboard](img/bqranch/workload_connoisseur.png?raw=true)
+
+
 -----
 TODO:  
 - Fix Caffe and CUDA within the image 
+- Probably write your own Docker file for a new CUDA/GPU enabled container
 
 ```
 bisque@bq-connoisseur-engine-svc-74755f798b-6lbgk:/source$ caffe deveice_query -gpu all
