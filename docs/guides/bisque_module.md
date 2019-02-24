@@ -36,3 +36,10 @@ Container organization and plan for rancher setup
 | Predict Strength | IP ADDR     | biodev.ece.ucsb.edu:5000/predict_strength   | Predict Strength Module |
 | Connoisseur | IP ADDR     | biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev   | Predict Strength Module |
 
+
+
+
+### [Reference](https://github.com/pndaly/BisQue_Platform_Guide): https://github.com/pndaly/BisQue_Platform_Guide
+
+- Sample Deep Learning Module: [Planteome Deep Segment Analysis](https://github.com/Planteome/planteome-deep-segmenter-dockerized)
+- 

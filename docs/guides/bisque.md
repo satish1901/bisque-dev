@@ -177,6 +177,7 @@ Open in browser
 Local Bisque Dev setup
 ###### Load Module Workflow 
 - Login using admin:admin 
+- Update the email address in the users context menu item (This is important)
 - Open Module Manager from the admin user context menu
 - Paste the following URL in the Module->Engine Module
 ```
