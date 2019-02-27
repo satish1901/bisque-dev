@@ -42,4 +42,6 @@ Container organization and plan for rancher setup
 ### [Reference](https://github.com/pndaly/BisQue_Platform_Guide): https://github.com/pndaly/BisQue_Platform_Guide
 
 - Sample Deep Learning Module: [Planteome Deep Segment Analysis](https://github.com/Planteome/planteome-deep-segmenter-dockerized)
-- 
+
+
+### Overall Source code stack 

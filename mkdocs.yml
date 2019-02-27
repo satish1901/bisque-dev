@@ -3,7 +3,7 @@
 site_name: 'BisQue-Docs'
 site_description: 'A documentation site for BisQue (Bio-Image Semantic Query User Environment)'
 site_author: 'Rahul Vishwakarma'
-site_url: 'https://UCSB-VRL.github.io/bisque'
+site_url: 'https://UCSB-VRL.github.io/bisque-dev'
 
 nav:
     - Home: index.md
@@ -17,11 +17,11 @@ nav:
 
 
 # Repository
-repo_name: 'UCSB-VRL/bisque'
-repo_url: 'https://github.com/UCSB-VRL/bisque'
+repo_name: 'UCSB-VRL/bisque-dev'
+repo_url: 'https://github.com/UCSB-VRL/bisque-dev'
 
 # Copyright
-copyright: 'Copyright &copy; 2017 - 2018 Bisque, UCSB VRL'
+copyright: 'Copyright &copy; 2018 - 2019 Bisque, UCSB VRL'
 
 # Configuration
 theme:
@@ -32,11 +32,11 @@ theme:
 extra:
   manifest: 'manifest.webmanifest'
   social:
-    - type: 'github'
-      link: 'https://github.com/UCSB-VRL/bisque'
-    - type: 'bisque'
+    - type: 'Github'
+      link: 'https://github.com/UCSB-VRL/bisque-dev'
+    - type: 'Bisque'
       link: 'http://bisque.ece.ucsb.edu'
-    - type: 'wiki'
+    - type: 'Wiki'
       link: 'https://biodev.ece.ucsb.edu/projects/bisquik'
 
 # Google Analytics

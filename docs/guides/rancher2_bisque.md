@@ -15,9 +15,13 @@
 | Catalog			|	Helm |
 
 --------------------------
-#### Cluster Description
+#### A. Cluster Description
+- Deployment [Google Slides](https://docs.google.com/presentation/d/1E6f6BR5sj5g3WPc_uRV01ZPbAjezZuUAvidUwZbbthQ/edit#slide=id.g4f74d0d960_0_58)
 
-#### Lets Encrypt on [Ubuntu 16.04](https://certbot.eff.org/lets-encrypt/ubuntuxenial-other)
+![Rancher Deployment Diagram](img/bqranch/Rancher2-deployment.png?raw=true)
+
+
+#### B. Lets Encrypt on [Ubuntu 16.04](https://certbot.eff.org/lets-encrypt/ubuntuxenial-other)
 
 - Bind the hostname to the IP address by creating an A record in DNS 
 - Letsencrypt ACME challenge at TCP/80 on host 
@@ -33,7 +37,7 @@ sudo certbot certonly --standalone --dry-run \
 ```
 
 --------------------------
-#### Installation Rancher 2.0
+#### C. Master Rancher 2.0
 
 Install/Startup Rancher: https://rancher.com/docs/rancher/v2.x/en/installation/single-node/
 - Rancher etcd data persisted at /var/lib/rancher
@@ -47,35 +51,38 @@ docker run -d --restart=unless-stopped \
   rancher/rancher:stable 
 ```
 ![Rancher main Container](img/bqranch/rancher_main_container.png?raw=true)
-- You will have rancher accessible at https://loup.ece.ucsb.edu:8443
+
+- You will have rancher accessible at https://loup.ece.ucsb.edu:8443 if everything goes fine
 
 
 ------------------------
-#### Create the YAML configuration based on docker-compose.yaml (In case of migration)
 
-##### Create an access key for [Rancher CLI](https://rancher.com/docs/rancher/v2.x/en/cli/) operations (Doesnt work on self-signed certs)
-- endpoint  : https://loup.ece.ucsb.edu:8443/v3
-- access-key: token-xt47w
-- secret-key: < >
-- bearer-tok: token-xt47w: < >
+- Create the YAML configuration based on docker-compose.yaml (In case of migration)
+- Create an access key for [Rancher CLI](https://rancher.com/docs/rancher/v2.x/en/cli/) operations (Doesnt work on self-signed certs)
+    - endpoint  : https://loup.ece.ucsb.edu:8443/v3
+    - access-key: token-xt47w
+    - secret-key: < >
+    - bearer-tok: token-xt47w: < >
 
 ##### Migration CLI 
 - Download the docker-compose and rancher-compose.yml files from existing rancher user interface for migration 
 https://rancher.com/docs/rancher/v2.x/en/v1.6-migration
 - Migration using CLI tools
-```
-# migration-tools export --url <RANCHER_URL> --access-key <RANCHER_ACCESS_KEY> \
-# --secret-key <RANCHER_SECRET_KEY> --export-dir <EXPORT_DIR>
 
+```
+migration-tools export --url <RANCHER_URL> --access-key <RANCHER_ACCESS_KEY> \
+ --secret-key <RANCHER_SECRET_KEY> --export-dir <EXPORT_DIR>
+```
+```
 ./migration-tools parse --docker-file compose/docker-compose.yml \
  --rancher-file compose/rancher-compose.yml 
 ```
 
 ------------------------
 
-### Setup Cluster [/rke-clusters/custom-nodes](https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/custom-nodes/)
+#### D. Setup Cluster [RKE/custom-nodes](https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/custom-nodes/)
 
-#### Port requirements
+##### Port requirements
 
 Open up ports based on the [CNI provider requirements](https://rancher.com/docs/rancher/v2.x/en/installation/references/)
 - Use Canal as the provider in this case
@@ -96,7 +103,7 @@ sudo ufw allow  2376/tcp
 ![Ubuntu ufw status](img/bqranch/rancher_ufw_status.png?raw=true)
 
 
-#### Create cluster 
+##### Create cluster 
 
 - Create a cluster in rancher-ui named "bq-cluster"
 - Select "custom" local/remote nodes option to create this cluster
@@ -118,11 +125,11 @@ sudo docker run -d --privileged --restart=unless-stopped --net=host \
 - Add more nodes as worker, by running above command on those nodes so that they register with the rancher2 and become part of this cluster. The nodes on a cluster can be visualized in rancher cluster -> nodes menu.
 ![Rancher cluster node view](img/bqranch/rancher_cluster_nodes.png?raw=true)
 
-#### Create a namespace bqdev within this cluster
+##### Create a namespace bqdev within this cluster
 Bisque Development environment where workloads are deployed and tested
 
 --------------
-#### Setup Volume
+#### E. Setup Volume
 
 - Mount the host directory for volume using NFS and setup the nfs client access for the cluster
 https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-16-04
@@ -130,8 +137,9 @@ https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-u
 ```
 # Create the path on host system
 sudo mkdir /opt/bisque/ -p && \
- sudo mkdir /opt/bisque/data -p && \
- sudo mkdir /opt/bisque/local/workdir -p
+sudo mkdir /opt/bisque/data -p && \
+sudo mkdir /opt/bisque/local/workdir -p
+
 # Allow other users to edit this
 sudo chown -R nobody:nogroup /opt/bisque/
 ```
@@ -164,21 +172,23 @@ sudo mount 192.168.1.123:/opt/bisque/ /run/bisque/
 
 > AND
 https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-from-nfs-share
+
 - Create a persistent volume in the cluster 
 - Set local path option on the node as /run/bisque
 
 ![Rancher NFS persistent volume addition](img/bqranch/rancher_volume_nfs.png?raw=true)
 
-We can see all the volumes that are created in the Volumes section of the "bq-cluster" workload
+- We can see all the volumes that are created in the Volumes section of the "bq-cluster" workload
+
 ![Rancher workload volumes](img/bqranch/workload_volumes.png?raw=true)
 
 ---------------------------------
-### Setup Workload on the cluster
+#### F. Setup Workload (on the cluster)
 
 Bisque Test environment where workloads are deployed with open NodePort
 https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/
 
-- We will be using the image at custom registry biodev.ece.ucsb.edu:5000/ucsb-bisque05-svc or we can use a publicly deployed image at https://hub.docker.com
+- We will be using the image at custom registry [biodev.ece.ucsb.edu:5000/ucsb-bisque05-svc](https://biodev.ece.ucsb.edu:5000/v2/_catalog) or we can use a publicly deployed image at [https://hub.docker.com](https://hub.docker.com)
 
 ##### Test workload configuration
 - Name: ucsb-bisque05-svc
@@ -235,7 +245,7 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/
 We should see the overview of workloads deployed as below
 ![Workload Dashboard](img/bqranch/workloads.png?raw=true)
 
-##### Load Balancing (using L7 Ingress)
+#### G. Load Balancing (using L7 Ingress)
 - Add Ingress configuration for load balancing with name "bq-website" 
 - Configure the target(ucsb-bisque05-svc) pods so that the port 8080 is exposed through the ingress controller
 ![Ingress Ctrl Configuration ](img/bqranch/workload_ingress_ctrl.png?raw=true)
@@ -243,7 +253,7 @@ We should see the overview of workloads deployed as below
 - Load Balancing section of the workload will showcase the list of ingress controllers along with the mapping
 ![Ingress Ctrl dashboard ](img/bqranch/workload_ingress_dash.png?raw=true)
 
-##### Monitoring/Debugging the cluster/pods 
+#### H. Monitoring/Debugging 
 - Using cluster kubectl shell from the cluster web UI
 ```
 # Fetch namespaces
@@ -253,12 +263,13 @@ kubectl get pods -n bqdev
 # Fetch logs on a pod/container
 kubectl logs postgres-564d9f79d5-z2sxl  -n bqdev 
 ```
-Use Cluster dashboard for all cluster monitoring and configuration
-![Cluster Dashboard](img/bqranch/cluster_dash.png?raw=true)
+- Use Cluster dashboard for all cluster monitoring and configuration
+
+    ![Cluster Dashboard](img/bqranch/cluster_dash.png?raw=true)
 
 
 -------------------------
-### [Remove/Cleanup Rancher](https://rancher.com/docs/rancher/v2.x/en/admin-settings/removing-rancher/user-cluster-nodes/)
+#### I. [Uninstall](https://rancher.com/docs/rancher/v2.x/en/admin-settings/removing-rancher/user-cluster-nodes/) Rancher
 
 - Stop Rancher Containers 
 ```
@@ -309,25 +320,26 @@ ip link delete <interface_name>
 ---------------------
 Additional References
 ---------------------
----------------------
 
-#### A.) Mail server setup 
+==TODO==
+
+#### 1.) Mail server setup 
 https://www.linuxbabe.com/mail-server/ubuntu-16-04-iredmail-server-installation
 
-#### B.) Migration from Rancher 1.x to 2.x
+#### 2.) Migration from Rancher 1.x to 2.x
 - individual workload/containers to rancher-kubernetes using rancher-cli (doesnt work with self-signed certificates)
 https://rancher.com/blog/2018/2018-08-02-journey-from-cattle-to-k8s/
 
 
-#### C.) Reference on Ingress Controllers
+#### 3.) Reference on Ingress Controllers
 
 - Load Balancers add in workloads [/k8s-in-rancher/load-balancers-and-ingress](https://www.cnrancher.com/docs/rancher/v2.x/en/k8s-in-rancher/load-balancers-and-ingress/load-balancers/)
 > Tried using built in Ingress for  	
-bq-website.bqdev.192.168.1.129.xip.io but failed to work
+bq-website.bqdev.192.168.1.129.xip.io but failed to work for engine service
 
 - If you want to expose the workload container to outside world then use NodePort otherwise work with ClusterIp(Internal Only) port configuration 
 - https://rancher.com/blog/2018/2018-08-14-expose-and-monitor-workloads/
 
-#### D.) PostgreSQL server
-- [Setup PostgreSql 10.4 on Rancher workload](./rancher_postgresql)
+#### 4.) PostgreSQL server
+- [Setup PostgreSql 10.4 on Rancher workload](../rancher2_postgresql)
 - This is used in the Bisque configuration as environment variable BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/postgres

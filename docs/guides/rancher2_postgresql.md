@@ -1,4 +1,7 @@
-Reference: https://severalnines.com/blog/using-kubernetes-deploy-postgresql
+## Setup Postgresql for Bisque Database Persistence
+- Idea is, to not use the default Sqlite DB in a cluster environment
+- The data directory is still being used for images/cache etc, and mounted as NFS across this cluster
+- Reference: https://severalnines.com/blog/using-kubernetes-deploy-postgresql
 
 #### Create a Volume: pgdev-vol
 - Path on the host node: /opt/bisque/pg

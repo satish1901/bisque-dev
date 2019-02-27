@@ -8,9 +8,9 @@ Reference
 - [Bique Bioimage Google Groups](https://groups.google.com/forum/#!topic/bisque-bioimage/jwo_5sHFeHU)
 - [Instructions on installing bisque using docker](https://bitbucket.org/CBIucsb/bisque/src/default/README.md)
 
-##### Setup for Ubuntu 16.04 
+#### Setup for Ubuntu 16.04 
 ---
-##### Pre-requisites 
+#### Pre-requisites 
 ```
 sudo apt-get install -y python python-dev python-virtualenv python-numpy python-scipy 
 sudo apt-get install -y libxml2-dev libxslt1-dev libhdf5-dev
@@ -61,7 +61,7 @@ sudo make install
 ```
 
 ---
-##### A. Download the Bootstrap installer (Use Python 2.7)
+#### A. Download the Bootstrap installer (Use Python 2.7)
 ```
 $ mkdir bisque && cd bisque
 $ wget http://biodev.ece.ucsb.edu/projects/bisquik/export/tip/bisque-stable/contrib/bootstrap/bisque-bootstrap.py
@@ -95,7 +95,7 @@ Alternate Index Url for Development: https://biodev.ece.ucsb.edu/py/bisque/dev/+
 
 ---
 
-##### B. Configure Bisque Environment
+#### B. Configure Bisque Environment
 ```
 $ paver setup
 ```
@@ -124,7 +124,7 @@ Top level site variables are:
   bisque.admin_id=admin
   bisque.organization=Your Organization
   bisque.paths.root=.
-  bisque.server=http://0.0.0.0:8080
+  bisque.server=http://loup.ece.ucsb.edu:8088
   bisque.title=Image Repository
 Change a site variable [Y]? N
 
@@ -139,7 +139,7 @@ Initialize your database with:
 You can start bisque with:
    $ bq-admin server start
 then point your browser to:
-    http://0.0.0.0:8080
+   http://loup.ece.ucsb.edu:8088
 If you need to shutdown the servers, then use:
    $ bq-admin server stop
 You can login as admin and change the default password.
@@ -153,7 +153,7 @@ Add "config/runtime-bisque.cfg" for module configuration and docker image regist
 
 ---
 
-##### C. Run Bisque
+#### C. Run Bisque Server
 
 Start/Stop the server
 ```
@@ -172,44 +172,156 @@ bq-admin deploy public
 Open in browser
 ![Browser Client](img/BisqueClientScreen.png?raw=true)
 
+
+#### D. Upload Dataset 
+- Upload an [image file](img/cells.ome.tif) from your local directory to Bisque 
+  ![Upload Image file](img/UploadImageData.png)
+
+- Browse uploaded dataset in the file explorer
+    - Select Browse menu item in the navigation bar and click on dataset
+    - Thereafter click on the files tab and click through the local database folder in the left document tree section.
+
+  ![Upload Image file](img/DatasetBrowse.png)
+
+- Select the uploaded file to view 
+    - This visualization is by default 2D in nature. 
+    - The various slices can be stepped through or played using the scroll bar on righ bottom of the image view area
+
+  ![View 2D Image file](img/ViewCell2DImage.png)
+
+  - A 3D visualization can be explored by clicking the cube icon towards the right of share and delete icons on the tool bar right below the navigation bar.
+
+  ![View 3D Image file](img/ViewCell3DImage.png)
+
 ---
-#### RUN
-Local Bisque Dev setup
-###### Load Module Workflow 
+#### E. Module 
+
+##### Load Module
+Install Module packages and dependencies
+
+- Ensure ~/bisque/config/runtime-bisque.cfg has the configuration as below
+```
+runtime.staging_base = staging/
+docker.hub = biodev.ece.ucsb.edu:5000
+```
+- Make sure the runtime-module.cfg is as per below
+```
+module_enabled = True
+runtime.platforms=command
+[command]
+environments = Staged
+executable = python MetaData.py
+files = MetaData.py
+```
+- Now build/compile this module
+```
+ cd ~/bisque/modules/MetaData
+ python setup.py
+```
+
+Open up the Bisque web interface at http://loup.ece.ucsb.edu:8088
+
 - Login using admin:admin 
 - Update the email address in the users context menu item (This is important)
 - Open Module Manager from the admin user context menu
 - Paste the following URL in the Module->Engine Module
 ```
-http://0.0.0.0:8080/engine_service/
+http://loup.ece.ucsb.edu:8088/engine_service/
 ```
 - List of engine modules could be seen
-- ![Bisque Module](img/ModulesBisque.png?raw=true)
-- ![Register Module](img/RegisterModule.png?raw=true)
-- Drag-n-Drop say Dream3D from the list to the left window and close the window
-- Go to Analyse and select Dream3D there
-- ![Launch Dream 3D](img/OpenModuleDream3d.png?raw=true)
+- Drag-n-Drop say MetaData module from the list to the left window and close the window
+
+  ![Bisque Module](img/module_metadata/DragRegModule.png?raw=true)
+  ![Bisque Module](img/module_metadata/RegisterModuleMetaData.png?raw=true)
+
+##### Run Module
+
+- Refresh the page, go to Analyse and select Metadata module there
+  ![Launch MetaData](img/module_metadata/ModuleSelection.png?raw=true)
+
+- Select a single image for test
+  ![View MetaData Module](img/module_metadata/OpenMetadataModule.png?raw=true)
+
+- Execute Run command and observe the updates in the results section
+  ![View MetaData Module](img/module_metadata/ModuleMetadataResults.png?raw=true)
+
+#### F. Debug Module
+- Every module run will generate a model execution identifier to track this execution. You can observe this after clicking the run command and you have a result. It could be success or fail in the Results section
+  ```
+  http://loup.ece.ucsb.edu:8088/module_service/MetaData/?wpublic=1#mex=http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF
+  ```
+- The mex identifier (==MEX_ID=00-ZmuAoE43wTxByycmaCnvBF==) observed from URL can be used to locate this execution code & resulting logs in the staging folders
+- change directory to this staging folder and observe the files there
+```
+cd ~/bisque/staging/00-ZmuAoE43wTxByycmaCnvBF
+rahul@loup:~/bisque/staging/00-ZmuAoE43wTxByycmaCnvBF$ tree 
+.
+├── MetaData.log
+├── MetaData.py
+├── python.log
+└── state00-ZmuAoE43wTxByycmaCnvBF.bq
+0 directories, 4 files
+```
+- Here we can see that the MetaData.log and python.log files are generated
+- In case of issues these are the log files that we need to look into for detailed error reporting
+- main log file is the bisque_8088.log file at the ~/bisque home directory 
+```
+13:45:11,996 INFO  [bq.root] [admin] POST http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF?view=short
+13:45:12,001 INFO  [bq.module_server] MEX APPEND http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF?view=short
+13:45:12,205 INFO  [bq.engine_service.command_run] SUCCESS Command python MetaData.py http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF admin:00-ZmuAoE43wTxByycmaCnvBF with 0
+13:45:12,206 INFO  [bq.engine_service.command_run] All processes have returned ['finished']
+13:45:12,206 INFO  [bq.engine_service.command_run] finishing 1 mexes -> [{'files': ['MetaData.py'], 'status': 'finished', 'executable': ['python', 'MetaData.py', 'http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh', 'http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF', 'admin:00-ZmuAoE43wTxByycmaCnvBF'], 'initial_dir': '/home/rahul/repository/github/bisque-dev', 'module_enabled': 'True', 'named_args': {'bisque_token': 'admin:00-ZmuAoE43wTxByycmaCnvBF', 'image_url': 'http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh', 'mex_url': 'http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF'}, 'bisque_token': u'admin:00-ZmuAoE43wTxByycmaCnvBF', 'environments': 'Staged', 'runtime.staging_base': 'staging/', 'mex_id': '00-ZmuAoE43wTxByycmaCnvBF', 'runtime.matlab_launcher': 'config-defaults/templates/matlab_launcher_SYS.tmpl', 'arguments': [], 'module_dir': '/home/rahul/repository/github/bisque-dev', 'staging_path': '/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF', 'iterables': False, 'log_name': '/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF/python.log', 'runtime.matlab_home': '', 'mex_url': 'http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF', 'rundir': '/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF', 'runtime.platforms': 'command'}]
+
+```
+
+- This will show us the COMMAND that was run to execute this module with MEX_URL
+```
+python MetaData.py \
+http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh \ 
+http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF \
+admin:00-ZmuAoE43wTxByycmaCnvBF
+```
+- This is the command that we can use to debug and rerun/replay this MEX in order to update the execution result. This is different from running the module again from the web interface since that will produce a new MEX_ID and create another staging folder corresponding to that.
+
+#### G. Module MEX/UI
+- Click on Browse->mex to go to the Model execution page
+
+  ![Mex Module](img/module_metadata/NavBrowseMex.png?raw=true)
+
+  ![Mex Browse](img/module_metadata/ModuleMexView.png?raw=true)
+
+- Here we will be able to see the various MEX sessions that were run for all modules under execution
+- We will be able to obtain the MEX_ID and view its state from here by selecting one of the executions of interest.
+
+  ![Mex Success Module](img/module_metadata/ModuleRunMexView.png?raw=true)
+
+- In case we select a module that has errors in it then it would turn out to show the status with messages in red
+
+  ![Mex Success Module](img/module_metadata/ModuleMexFailure.png?raw=true)
+
+- Now let us go to Browse->dataset and select the file that we ran the module for. Here we will be able to view the Annotation that was added by the Metadata module to this image.
+    - Annotation can be visualized using the "Annotations" tab on the right
+  
+  ![Data Annot Module](img/module_metadata/DatasetFileMetadataAnnotated.png?raw=true)
+
+  - The Model execution runs can be seen in the "Analysis" tab on the right
+
+  ![Data Mex Module](img/module_metadata/DatasetFileMetadataMex.png?raw=true)
+
 
 ---
-### Further 
+
+#### Further 
 
 
-###### Load Dream 3D data
+#### Docker & Condor based modules require additional setup
 
-==> TODO
-
-- Manually create a virtualenv for development and install dependencies
-  ```
-  python -m virtualenv bqenv --no-setuptools
-  source bqenv/bin/activate
-  pip install -r requirements.txt --trusted-host=biodev.ece.ucsb.edu -i https://biodev.ece.ucsb.edu/py/bisque/dev/+simple
-
-  ```
-
+==TODO==
 - Install Docker (https://docs.docker.com/install/linux/docker-ce/ubuntu/)
   - Also go through the post-installation steps
 
 - Install Condor (https://research.cs.wisc.edu/htcondor/ubuntu/)
+  - Need to understand the configurations as well for master & slave setup
 ```
 rahul@bqdev:~$ /etc/init.d/condor restart
 [ ok ] Restarting condor (via systemctl): condor.service.
