@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <meta name="author" content="Rahul Vishwakarma">
-        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/connoisseur/">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque-dev/guides/connoisseur/">
         <link rel="shortcut icon" href="../../img/favicon.ico">
         <title>Connoisseur - BisQue-Docs</title>
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
@@ -91,7 +91,7 @@
                             </a>
                         </li>
                             <li>
-                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/connoisseur.md">Edit on UCSB-VRL/bisque</a>
+                                <a href="https://github.com/UCSB-VRL/bisque-dev/edit/master/docs/guides/connoisseur.md">Edit on UCSB-VRL/bisque-dev</a>
                             </li>
                     </ul>
                 </div>
@@ -124,8 +124,9 @@
 </ul>
 <h3 id="1-opencv-341">1. OpenCV 3.4.1<a class="headerlink" href="#1-opencv-341" title="Permanent link">&para;</a></h3>
 <p>Installation Guide: <a href="https://rahulvishwakarma.wordpress.com/2018/07/12/compile-and-setup-opencv-3-4-x-on-ubuntu-18-04-lts-with-python-virtualenv-for-image-processing/">Link 1</a></p>
-<pre class="codehilite"><code># Verify your installation
-pkg-config --libs opencv</code></pre>
+<div class="codehilite"><pre># Verify your installation
+pkg-config --libs opencv
+</pre></div>
 
 
 <h3 id="2-cuda-80-and-cudnn-v714">2. <a href="https://developer.nvidia.com/cuda-downloads">CUDA 8.0</a> and <a href="https://developer.nvidia.com/rdp/cudnn-archive">cuDNN v7.1.4</a><a class="headerlink" href="#2-cuda-80-and-cudnn-v714" title="Permanent link">&para;</a></h3>
@@ -133,18 +134,20 @@ pkg-config --libs opencv</code></pre>
 <ul>
 <li><a href="https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_375.26_linux-run">Download cuda_8.0.61</a></li>
 </ul>
-<pre class="codehilite"><code>  $ nvcc --version
+<div class="codehilite"><pre>  $ nvcc --version
   nvcc: NVIDIA (R) Cuda compiler driver
   Copyright (c) 2005-2016 NVIDIA Corporation
   Built on Sun_Sep__4_22:14:01_CDT_2016
-  Cuda compilation tools, release 8.0, V8.0.44</code></pre>
+  Cuda compilation tools, release 8.0, V8.0.44
+</pre></div>
 
 
 <ul>
 <li><a href="https://developer.nvidia.com/compute/machine-learning/cudnn/secure/v7.1.4/prod/8.0_20180516/Ubuntu16_04-x64/libcudnn7-dev_7.1.4.18-1_cuda8.0_amd64">Download libcudnn7-dev_7.1.4</a></li>
 </ul>
-<pre class="codehilite"><code>  cuDNN v7.1.4 Runtime Library for Ubuntu16.04 (Deb)
-  cuDNN v7.1.4 Developer Library for Ubuntu16.04 (Deb)</code></pre>
+<div class="codehilite"><pre>  cuDNN v7.1.4 Runtime Library for Ubuntu16.04 (Deb)
+  cuDNN v7.1.4 Developer Library for Ubuntu16.04 (Deb)
+</pre></div>
 
 
 <h3 id="3-caffe">3. <a href="http://caffe.berkeleyvision.org/">CAFFE</a><a class="headerlink" href="#3-caffe" title="Permanent link">&para;</a></h3>
@@ -152,54 +155,61 @@ pkg-config --libs opencv</code></pre>
 <ul>
 <li>Installation Overview</li>
 </ul>
-<pre class="codehilite"><code>  mkdir build 
+<div class="codehilite"><pre>  mkdir build 
   cd build 
   cmake .. 
   make all 
   make install 
-  make runtest</code></pre>
+  make runtest
+</pre></div>
 
 
-<pre class="codehilite"><code>  $ caffe --version
-    caffe version 1.0.0</code></pre>
+<div class="codehilite"><pre>  $ caffe --version
+    caffe version 1.0.0
+</pre></div>
 
 
 <ul>
 <li>Make sure you configure the path env in ~/.bashrc</li>
 </ul>
-<pre class="codehilite"><code>  export PATH=$PATH:/usr/local/cuda/bin:~/cv/caffe/build/tools
+<div class="codehilite"><pre>  export PATH=$PATH:/usr/local/cuda/bin:~/cv/caffe/build/tools
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/extras/CUPTI/lib64
 
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/cv/caffe/.build_release/lib
-  export PYTHONPATH=$PYTHONPATH:~/cv/caffe/python/:~/cv/caffe/.build_release/lib</code></pre>
+  export PYTHONPATH=$PYTHONPATH:~/cv/caffe/python/:~/cv/caffe/.build_release/lib
+</pre></div>
 
 
 <ul>
 <li>Also add the following in ~/[python_env_folder]/bin/activate script after the PATH variable setup</li>
 </ul>
-<pre class="codehilite"><code>  export PYTHONPATH=$PYTHONPATH:~/cv/caffe/python/</code></pre>
+<div class="codehilite"><pre>  export PYTHONPATH=$PYTHONPATH:~/cv/caffe/python/
+</pre></div>
 
 
 <p>Test it all out to ensure caffe and opencv are functional</p>
-<pre class="codehilite"><code>  (bqenv) rahul@bqdev:~/ws/bisque$ python 
+<div class="codehilite"><pre>  (bqenv) rahul@bqdev:~/ws/bisque$ python 
   Python 2.7.12 (default, Dec  4 2017, 14:50:18) 
   [GCC 5.4.0 20160609] on linux2
   &gt;&gt;&gt; import cv2
   &gt;&gt;&gt; import caffe
-  &gt;&gt;&gt; </code></pre>
+  &gt;&gt;&gt; 
+</pre></div>
 
 
 <p>Also, ensure Caffe runs on the system</p>
-<pre class="codehilite"><code>  $ caffe --version
-  caffe version 1.0.0</code></pre>
+<div class="codehilite"><pre>  $ caffe --version
+  caffe version 1.0.0
+</pre></div>
 
 
 <h3 id="4-install-connoisseur">4. Install Connoisseur<a class="headerlink" href="#4-install-connoisseur" title="Permanent link">&para;</a></h3>
 <p>Pre-requisite: (caffe and opencv may be the cause)</p>
-<pre class="codehilite"><code>  source ~/bisque/bqenv/bin/activate
-  pip install lmdb pyvoro</code></pre>
+<div class="codehilite"><pre>  source ~/bisque/bqenv/bin/activate
+  pip install lmdb pyvoro
+</pre></div>
 
 
 <p>Installation</p>
@@ -244,7 +254,7 @@ pkg-config --libs opencv</code></pre>
 
         <footer class="col-md-12">
             <hr>
-                <p>Copyright &copy; 2017 - 2018 Bisque, UCSB VRL</p>
+                <p>Copyright &copy; 2018 - 2019 Bisque, UCSB VRL</p>
             <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>

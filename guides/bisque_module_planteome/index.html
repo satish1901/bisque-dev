@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Rahul Vishwakarma">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque-dev/guides/bisque_module_planteome/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Bisque module planteome - BisQue-Docs</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/color-brewer.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-XXXXXXXX-X', 'auto');
+            ga('send', 'pageview');
+        </script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">BisQue-Docs</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Guides <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../bisque/">BisQue</a>
+</li>
+                                    
+<li >
+    <a href="../bisque_docker/">Docker</a>
+</li>
+                                    
+<li >
+    <a href="../jupyter_notebooks/">Jupyter</a>
+</li>
+                                    
+<li >
+    <a href="../errors/">Errors</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../about/">About</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li>
+                                <a href="https://github.com/UCSB-VRL/bisque-dev/edit/master/docs/guides/bisque_module_planteome.md">Edit on UCSB-VRL/bisque-dev</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#planteome-deep-segment-analysis-module">PLANTEOME DEEP SEGMENT ANALYSIS MODULE</a></li>
+            <li><a href="#pre-requisite-link">Pre-requisite: link</a></li>
+            <li><a href="#adddeploy-the-planteome-module">Add/Deploy the Planteome module</a></li>
+            <li><a href="#buildconfigure-the-module">Build/Configure the module</a></li>
+            <li><a href="#steps-to-run-the-algorithm-from-bisque-client">Steps to run the algorithm from Bisque Client</a></li>
+            <li><a href="#isolateddevelopment-test-setup">Isolated/Development test setup</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="planteome-deep-segment-analysis-module"><a href="">PLANTEOME DEEP SEGMENT ANALYSIS MODULE</a><a class="headerlink" href="#planteome-deep-segment-analysis-module" title="Permanent link">&para;</a></h1>
+<p><strong>This module segments a marked object (creating a graphical object) within an input image.</strong></p>
+<p>Then the module will classify either the entire original image or the segment created in the first step. This uses PyTorch in order to do this deep segmentation.</p>
+<h4 id="pre-requisite-link">Pre-requisite: <a href="../bisque/">link</a><a class="headerlink" href="#pre-requisite-link" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Working bisque environment at http://loup.ece.ucsb.edu:8088/</li>
+<li>Docker should be enabled and setup on this environment</li>
+<li>The bisque deployment server should have access to good CPU &amp; RAM since Torch &amp; Scikit-image is used</li>
+<li>Access to module folder for deploying this module (Say at ~/bisque/module)</li>
+</ul>
+<h4 id="adddeploy-the-planteome-module">Add/Deploy the <a href="https://github.com/Planteome/planteome-deep-segmenter-dockerized">Planteome module</a><a class="headerlink" href="#adddeploy-the-planteome-module" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Identify the bisque module folder at path ~/bisque/module</li>
+<li>Login to http://loup.ece.ucsb.edu:8088/ with credentials admin:admin</li>
+<li>Download the <a href="https://github.com/Planteome/planteome-deep-segmenter-dockerized">Planteome module</a> to the bisque module folder</li>
+<li>Register the module to Bisque by opening the Module Manager
+<img alt="Module Manager Menu" src="../img/module_planteome/module_menu.png?raw=true" /> </li>
+<li>Provide the engine URL(http://loup.ece.ucsb.edu:8088/engine_service) in the Engine service section and click load. This will list the modules by querying the engine service. </li>
+<li>Select the module named "Planteome", drag this module to the left pane and drop it to register. 
+<img alt="Module Register" src="../img/module_planteome/module_add_planteome.png?raw=true" /> </li>
+</ul>
+<h4 id="buildconfigure-the-module">Build/Configure the module<a class="headerlink" href="#buildconfigure-the-module" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Edit the runtime-module.cfg with relevant configuration</li>
+<li>Changed the docker.hub configuration to biodev.ece.ucsb.edu:5000</li>
+<li>View/Edit the Dockerfile for the relevant packages </li>
+<li>Edited versions for numpy\==1.16.1 &amp; scikit-image\==0.14.2</li>
+<li>Source to your bisque python environment "workon bqenv" for installation</li>
+<li>pip install -r requirements.txt</li>
+<li>python setup.py</li>
+</ul>
+<p>This will install all the dependency in the modules requirements.txt file, build modules code, and create a docker image for running it. Based on your "docker.hub" configuration the setup will push the docker image to registry as [biodev.ece.ucsb.edu:5000/bisque_uplanteome]</p>
+<h4 id="steps-to-run-the-algorithm-from-bisque-client">Steps to run the algorithm from Bisque Client<a class="headerlink" href="#steps-to-run-the-algorithm-from-bisque-client" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Select an image to be analyzed.</li>
+<li>
+<p>The foreground/background annotation tooltip can be found on the top-right of the module image viewer. Mark the part of the image to be segmented with foreground line(s) annotation(s). Mark the image with background annotations around the object to be segmented.
+<img alt="Test Segmentation Setup" src="../img/module_planteome/setup_planteome.png?raw=true" /></p>
+</li>
+<li>
+<p>Select which deep classifier to use, whether to segment the image, the segmentation quality, and whether to classify the entire image or the segmented object instead.</p>
+</li>
+<li>
+<p>Press the 'RUN' button. Analysis may take some time depending on the image and segmentation quality.</p>
+</li>
+<li>
+<p>Results are given in visual and table formats, depending on whether the segmentation and classification functionalities respectively were enabled in the options. 
+<img alt="Test Segmentation Results" src="../img/module_planteome/results_planteome.png?raw=true" /></p>
+</li>
+</ul>
+<h4 id="isolateddevelopment-test-setup">Isolated/Development test setup<a class="headerlink" href="#isolateddevelopment-test-setup" title="Permanent link">&para;</a></h4>
+<p>Make sure you have annotated the image and have an a mex identifier availablefor manual test/run. 
+This can be done by,
+- Opening the module and select image
+- Annotate the image as per the directions above
+- Configure and run the module once
+- Make note of the mex URL for this run by looking at the docker_run.log in the staging folder. This will be used for replaying the test run from the modules folder.</p>
+<p>Additional module execution information
+- When we annotate the image and click RUN on the module user interface
+- The Planteome module is created from biodev.ece.ucsb.edu:5000/bisque_uplanteome:latest
+    <code>docker create biodev.ece.ucsb.edu:5000/bisque_uplanteome \
+    python PlanteomeDeepSegment.py \
+    http://loup.ece.ucsb.edu:8088/module_service/mex/00-NKpU4CWiHfupgckuXBNFDd \
+    admin:00-NKpU4CWiHfupgckuXBNFDd Simple True 3 False</code>
+- This module is run with the hash id of the docker create </p>
+<h5 id="setuprun-the-docker-container-for-test">Setup/Run the docker container for test<a class="headerlink" href="#setuprun-the-docker-container-for-test" title="Permanent link">&para;</a></h5>
+<ul>
+<li>Build the docker container</li>
+<li>docker build --no-cache -t bisque_uplanteome -f Dockerfile .</li>
+<li>docker build  -t biodev.ece.ucsb.edu:5000/bisque_uplanteome .</li>
+<li>Run the container and bash into it</li>
+<li>docker run -it --net=host biodev.ece.ucsb.edu:5000/bisque_uplanteome bash</li>
+<li>test run the code on mex identifier</li>
+<li>python PlanteomeDeepSegment.py http://loup.ece.ucsb.edu:8088/module_service/mex/00-NKpU4CWiHfupgckuXBNFDd admin:00-NKpU4CWiHfupgckuXBNFDd Simple True 3 False</li>
+</ul>
+<hr />
+<p>Version: 0.3
+Author(s): Dimitrios Trigkakis, Justin Preece</p></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Copyright &copy; 2018 - 2019 Bisque, UCSB VRL</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"search": 83, "next": 78, "help": 191, "previous": 80};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

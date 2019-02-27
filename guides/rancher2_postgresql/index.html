@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <meta name="author" content="Rahul Vishwakarma">
-        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/rancher2_postgresql/">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque-dev/guides/rancher2_postgresql/">
         <link rel="shortcut icon" href="../../img/favicon.ico">
         <title>Rancher2 postgresql - BisQue-Docs</title>
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
@@ -91,7 +91,7 @@
                             </a>
                         </li>
                             <li>
-                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/rancher2_postgresql.md">Edit on UCSB-VRL/bisque</a>
+                                <a href="https://github.com/UCSB-VRL/bisque-dev/edit/master/docs/guides/rancher2_postgresql.md">Edit on UCSB-VRL/bisque-dev</a>
                             </li>
                     </ul>
                 </div>
@@ -101,13 +101,19 @@
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-        <li class="main active"><a href="#create-a-volume-pgdev-vol">Create a Volume: pgdev-vol</a></li>
-        <li class="main "><a href="#setup-a-postgresql-10-database">Setup a Postgresql 10 database</a></li>
-            <li><a href="#test-database-using-the-nodes-ip">Test database using the nodes IP</a></li>
+        <li class="main active"><a href="#setup-postgresql-for-bisque-database-persistence">Setup Postgresql for Bisque Database Persistence</a></li>
+            <li><a href="#create-a-volume-pgdev-vol">Create a Volume: pgdev-vol</a></li>
+            <li><a href="#setup-a-postgresql-10-database">Setup a Postgresql 10 database</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
 
+<h2 id="setup-postgresql-for-bisque-database-persistence">Setup Postgresql for Bisque Database Persistence<a class="headerlink" href="#setup-postgresql-for-bisque-database-persistence" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Idea is, to not use the default Sqlite DB in a cluster environment</li>
+<li>The data directory is still being used for images/cache etc, and mounted as NFS across this cluster</li>
+<li>Reference: https://severalnines.com/blog/using-kubernetes-deploy-postgresql</li>
+</ul>
 <h4 id="create-a-volume-pgdev-vol">Create a Volume: pgdev-vol<a class="headerlink" href="#create-a-volume-pgdev-vol" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Path on the host node: /opt/bisque/pg
@@ -118,9 +124,10 @@
 <li>Image: postgres:10.4</li>
 <li>Environment:</li>
 </ul>
-<pre class="codehilite"><code>    POSTGRES_DB=postgres
+<div class="codehilite"><pre>    POSTGRES_DB=postgres
     POSTGRES_PASSWORD=postgres
-    POSTGRES_USER=postgres</code></pre>
+    POSTGRES_USER=postgres
+</pre></div>
 
 
 <ul>
@@ -139,13 +146,14 @@
 <ul>
 <li>Test using psql, depending on what IP the postgres server is available at</li>
 </ul>
-<pre class="codehilite"><code>psql -h 10.42.0.15 -U postgres --password -p 5432 postgres
-psql -h loup.ece.ucsb.edu -U postgres --password -p 5432 postgres</code></pre></div>
+<div class="codehilite"><pre>psql -h 10.42.0.15 -U postgres --password -p 5432 postgres
+psql -h loup.ece.ucsb.edu -U postgres --password -p 5432 postgres
+</pre></div></div>
         </div>
 
         <footer class="col-md-12">
             <hr>
-                <p>Copyright &copy; 2017 - 2018 Bisque, UCSB VRL</p>
+                <p>Copyright &copy; 2018 - 2019 Bisque, UCSB VRL</p>
             <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>

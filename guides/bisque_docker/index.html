@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <meta name="author" content="Rahul Vishwakarma">
-        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/bisque_docker/">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque-dev/guides/bisque_docker/">
         <link rel="shortcut icon" href="../../img/favicon.ico">
         <title>Docker - BisQue-Docs</title>
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
@@ -101,7 +101,7 @@
                                 </a>
                             </li>
                             <li>
-                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/bisque_docker.md">Edit on UCSB-VRL/bisque</a>
+                                <a href="https://github.com/UCSB-VRL/bisque-dev/edit/master/docs/guides/bisque_docker.md">Edit on UCSB-VRL/bisque-dev</a>
                             </li>
                     </ul>
                 </div>
@@ -139,8 +139,9 @@
 <ul>
 <li>Use the installer script to setup bisque docker image</li>
 </ul>
-<pre class="codehilite"><code>wget https://bitbucket.org/CBIucsb/bisque-stable/downloads/build_bisque_docker_modules.sh
-sh build_bisque_docker_modules.sh</code></pre>
+<div class="codehilite"><pre>wget https://bitbucket.org/CBIucsb/bisque-stable/downloads/build_bisque_docker_modules.sh
+sh build_bisque_docker_modules.sh
+</pre></div>
 
 
 <ul>
@@ -150,19 +151,21 @@ sh build_bisque_docker_modules.sh</code></pre>
 <ul>
 <li>Start Docker and mount directories for run</li>
 </ul>
-<pre class="codehilite"><code># Start
+<div class="codehilite"><pre># Start
 xterm -e \
 docker run --name bisque --rm -p 8080:8080 -p 27000:27000 \
 -v $(pwd)/container-modules:/source/modules \
 -v $(pwd)/container-data:/source/data \
 -v $(pwd)/container-config:/source/config \
-'cbiucsb/bisque05:stable'</code></pre>
+&#39;cbiucsb/bisque05:stable&#39;
+</pre></div>
 
 
 <ul>
 <li>Stop Docker</li>
 </ul>
-<pre class="codehilite"><code> docker stop $(docker ps -a -q --filter ancestor=cbiucsb/bisque05:stable --format=&quot;{{.ID}}&quot;)</code></pre>
+<div class="codehilite"><pre> docker stop $(docker ps -a -q --filter ancestor=cbiucsb/bisque05:stable --format=&quot;{{.ID}}&quot;)
+</pre></div>
 
 
 <ul>
@@ -172,12 +175,13 @@ docker run --name bisque --rm -p 8080:8080 -p 27000:27000 \
 </ul>
 </li>
 </ul>
-<pre class="codehilite"><code>docker run --name bisque --rm -p 8080:8080 \
+<div class="codehilite"><pre>docker run --name bisque --rm -p 8080:8080 \
 -v $(pwd)/container-modules:/source/modules \
 -v $(pwd)/container-data:/source/data \
 -v $(pwd)/container-config:/source/config \
 -e BISQUE_DBURL=postgresql://rahul:rahul@localhost/bqmurks58 \
-'cbiucsb/bisque05:stable'</code></pre>
+&#39;cbiucsb/bisque05:stable&#39;
+</pre></div>
 
 
 <ul>
@@ -191,44 +195,48 @@ docker run --name bisque --rm -p 8080:8080 -p 27000:27000 \
 <li>Use "admin:admin" to authenticate into this local environment </li>
 <li>To manipulate and check logs, connect to docker bash </li>
 </ul>
-<pre class="codehilite"><code>bisque-host$ docker exec -t -i bisque /bin/bash</code></pre>
+<div class="codehilite"><pre>bisque-host$ docker exec -t -i bisque /bin/bash
+</pre></div>
 
 
 <h4 id="develop-in-docker-todo">Develop in Docker (TODO !!)<a class="headerlink" href="#develop-in-docker-todo" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Use the dev <a href="https://hub.docker.com/r/cbiucsb/bisque05/">docker container</a></li>
 </ul>
-<pre class="codehilite"><code>xterm -e \
+<div class="codehilite"><pre>xterm -e \
 docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
 -v $(pwd)/container-modules:/source/modules \
 -v $(pwd)/container-data:/source/data \
 -v $(pwd)/container-config:/source/config \
-'cbiucsb/bisque05:dev'</code></pre>
+&#39;cbiucsb/bisque05:dev&#39;
+</pre></div>
 
 
 <ul>
 <li>Bash into the docker container and develop</li>
 </ul>
-<pre class="codehilite"><code>docker exec -t -i bisque-dev /bin/bash
+<div class="codehilite"><pre>docker exec -t -i bisque-dev /bin/bash
 
 # Source and develop
 docker-container$ source /usr/lib/bisque/bin/activate
 $ apt-get update 
 $ apt-get install python-dev vim
-$ ln -s /usr/include/python2.7/  /usr/lib/bisque/local/include/python2.7</code></pre>
+$ ln -s /usr/include/python2.7/  /usr/lib/bisque/local/include/python2.7
+</pre></div>
 
 
 <ul>
 <li>Test/Build a Module (TODO !! python-dev not setup)</li>
 </ul>
-<pre class="codehilite"><code># Setup/Test Dream3D Module
+<div class="codehilite"><pre># Setup/Test Dream3D Module
 $ cd /source/modules/Dream3D
-$ python setup.py</code></pre></div>
+$ python setup.py
+</pre></div></div>
         </div>
 
         <footer class="col-md-12">
             <hr>
-                <p>Copyright &copy; 2017 - 2018 Bisque, UCSB VRL</p>
+                <p>Copyright &copy; 2018 - 2019 Bisque, UCSB VRL</p>
             <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>

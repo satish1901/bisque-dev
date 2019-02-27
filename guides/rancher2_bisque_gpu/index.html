@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <meta name="author" content="Rahul Vishwakarma">
-        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/rancher2_bisque_gpu/">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque-dev/guides/rancher2_bisque_gpu/">
         <link rel="shortcut icon" href="../../img/favicon.ico">
         <title>Bisque Workload on Rancher 2.0 Setup (with Kubernetes engine) - BisQue-Docs</title>
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
@@ -91,7 +91,7 @@
                             </a>
                         </li>
                             <li>
-                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/rancher2_bisque_gpu.md">Edit on UCSB-VRL/bisque</a>
+                                <a href="https://github.com/UCSB-VRL/bisque-dev/edit/master/docs/guides/rancher2_bisque_gpu.md">Edit on UCSB-VRL/bisque-dev</a>
                             </li>
                     </ul>
                 </div>
@@ -148,7 +148,7 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
 <ul>
 <li>Bisque service variables</li>
 </ul>
-<pre class="codehilite"><code>      BISQUE_USER= bisque
+<div class="codehilite"><pre>      BISQUE_USER= bisque
       BISQUE_BISQUE_ADMIN_EMAIL= admin@loup.ece.ucsb.edu
       BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
       BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/
@@ -166,7 +166,8 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
       BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/postgres
 
       DEBIAN_FRONTEND=noninteractive
-      IMGCNV=imgcnv_ubuntu16_2.4.3</code></pre>
+      IMGCNV=imgcnv_ubuntu16_2.4.3
+</pre></div>
 
 
 <h5 id="condor-provisioning">Condor provisioning<a class="headerlink" href="#condor-provisioning" title="Permanent link">&para;</a></h5>
@@ -174,8 +175,9 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
 - Image: biodev.ece.ucsb.edu:5000/condor 
 - Ports: 9618, 9886 as HostPort
 - Environment</p>
-<pre class="codehilite"><code>CONDOR_DAEMONS = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
-CONDOR_MANAGER_HOST = master</code></pre>
+<div class="codehilite"><pre>CONDOR_DAEMONS = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
+CONDOR_MANAGER_HOST = master
+</pre></div>
 
 
 <p>Condor Worker
@@ -216,7 +218,7 @@ CONDOR_MANAGER_HOST = master</code></pre>
 <ul>
 <li>Bisque client service variables</li>
 </ul>
-<pre class="codehilite"><code>      BISQUE_USER= bisque
+<div class="codehilite"><pre>      BISQUE_USER= bisque
       BISQUE_BISQUE_ADMIN_EMAIL= admin@loup.ece.ucsb.edu
       BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
       BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/
@@ -234,7 +236,8 @@ CONDOR_MANAGER_HOST = master</code></pre>
       DEBIAN_FRONTEND=noninteractive
       IMGCNV=imgcnv_ubuntu16_2.4.3
       BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/connoisseur
-      BISQUE_SERVERS_H1_SERVICES_DISABLED = engine_service,connoisseur</code></pre>
+      BISQUE_SERVERS_H1_SERVICES_DISABLED = engine_service,connoisseur
+</pre></div>
 
 
 <h4 id="b-bisque-engine-service-workload-configuration">B.) Bisque Engine Service Workload configuration<a class="headerlink" href="#b-bisque-engine-service-workload-configuration" title="Permanent link">&para;</a></h4>
@@ -247,7 +250,7 @@ CONDOR_MANAGER_HOST = master</code></pre>
 <p>Verify connoisseur GPU variables </p>
 </li>
 </ul>
-<pre class="codehilite"><code>      NVIDIA_REQUIRE_CUDA=cuda&gt;=8.0
+<div class="codehilite"><pre>      NVIDIA_REQUIRE_CUDA=cuda&gt;=8.0
       NVIDIA_VISIBLE_DEVICES=all
       NVIDIA_DRIVER_CAPABILITIES=compute,utility
       CUDA_PKG_VERSION=8-0=8.0.61-1
@@ -256,7 +259,8 @@ CONDOR_MANAGER_HOST = master</code></pre>
       CUDA_VERSION=8.0.61
 
       CONDOR_MANAGER_HOST=master.condor
-      CONDOR_DAEMONS=MASTER,SCHEDD,SHARED_PORT</code></pre>
+      CONDOR_DAEMONS=MASTER,SCHEDD,SHARED_PORT
+</pre></div>
 
 
 <h5 id="workload-bq-cluster-with-namespace-connoissuer">Workload (bq-cluster) with Namespace Connoissuer<a class="headerlink" href="#workload-bq-cluster-with-namespace-connoissuer" title="Permanent link">&para;</a></h5>
@@ -265,7 +269,7 @@ CONDOR_MANAGER_HOST = master</code></pre>
 <p>TODO:<br />
 - Fix Caffe and CUDA within the image 
 - Probably write your own Docker file for a new CUDA/GPU enabled container</p>
-<pre class="codehilite"><code>bisque@bq-connoisseur-engine-svc-74755f798b-6lbgk:/source$ caffe deveice_query -gpu all
+<div class="codehilite"><pre>bisque@bq-connoisseur-engine-svc-74755f798b-6lbgk:/source$ caffe deveice_query -gpu all
 E0213 00:36:24.855478  1798 caffe.cpp:77] Available caffe actions:
 E0213 00:36:24.856573  1798 caffe.cpp:80]       device_query
 E0213 00:36:24.856690  1798 caffe.cpp:80]       test
@@ -281,12 +285,13 @@ F0213 00:36:24.857019  1798 caffe.cpp:82] Unknown action: deveice_query
     @     0x7fafbb218830  __libc_start_main
     @           0x408dd9  _start
     @              (nil)  (unknown)
-Aborted (core dumped)</code></pre></div>
+Aborted (core dumped)
+</pre></div></div>
         </div>
 
         <footer class="col-md-12">
             <hr>
-                <p>Copyright &copy; 2017 - 2018 Bisque, UCSB VRL</p>
+                <p>Copyright &copy; 2018 - 2019 Bisque, UCSB VRL</p>
             <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>

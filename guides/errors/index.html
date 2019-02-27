@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <meta name="author" content="Rahul Vishwakarma">
-        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque/guides/errors/">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque-dev/guides/errors/">
         <link rel="shortcut icon" href="../../img/favicon.ico">
         <title>Errors - BisQue-Docs</title>
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
@@ -101,7 +101,7 @@
                                 </a>
                             </li>
                             <li>
-                                <a href="https://github.com/UCSB-VRL/bisque/edit/master/docs/guides/errors.md">Edit on UCSB-VRL/bisque</a>
+                                <a href="https://github.com/UCSB-VRL/bisque-dev/edit/master/docs/guides/errors.md">Edit on UCSB-VRL/bisque-dev</a>
                             </li>
                     </ul>
                 </div>
@@ -124,15 +124,17 @@
 <ul>
 <li>If you see an error like below it may be due to port not being free</li>
 </ul>
-<pre class="codehilite"><code>    File &quot;/opt/nagare-home/lib/python2.7/site-packages/Paste-1.7.5.1-py2.7.egg/paste/httpserver.py&quot;, line 1105, in server_close
+<div class="codehilite"><pre>    File &quot;/opt/nagare-home/lib/python2.7/site-packages/Paste-1.7.5.1-py2.7.egg/paste/httpserver.py&quot;, line 1105, in server_close
     self.thread_pool.shutdown(60)
-    AttributeError: 'WSGIThreadPoolServer' object has no attribute 'thread_pool'</code></pre>
+    AttributeError: &#39;WSGIThreadPoolServer&#39; object has no attribute &#39;thread_pool&#39;
+</pre></div>
 
 
 <ul>
 <li>Solution is to kill the process holding the port</li>
 </ul>
-<pre class="codehilite"><code>    sudo kill $(sudo lsof -t -i:8080)</code></pre>
+<div class="codehilite"><pre>    sudo kill $(sudo lsof -t -i:8080)
+</pre></div>
 
 
 <h4 id="2-import-error-on-a-library">2. Import Error on a library<a class="headerlink" href="#2-import-error-on-a-library" title="Permanent link">&para;</a></h4>
@@ -140,14 +142,15 @@
 <li>Issue: ImportError: libhdf5_serial.so.100: cannot open shared object file: No such file or directory</li>
 <li>Solution to fix the installed packages</li>
 </ul>
-<pre class="codehilite"><code>    pip uninstall h5py
+<div class="codehilite"><pre>    pip uninstall h5py
     pip uninstall tables
-    pip install --no-cache-dir tables</code></pre></div>
+    pip install --no-cache-dir tables
+</pre></div></div>
         </div>
 
         <footer class="col-md-12">
             <hr>
-                <p>Copyright &copy; 2017 - 2018 Bisque, UCSB VRL</p>
+                <p>Copyright &copy; 2018 - 2019 Bisque, UCSB VRL</p>
             <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>
