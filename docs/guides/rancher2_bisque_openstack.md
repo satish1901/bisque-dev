@@ -1,12 +1,30 @@
 # Rancher 2.0 (with Kubernetes engine) Openstack
 ------------------------------------------------
 
+#### Pre-requisite
+
+Since there is a GPU requirement in Bisque Connoisseur.
+- Upon installing [Nvidia-Docker](https://github.com/nvidia/nvidia-docker/), 
+- Configure default nvidia-runtime: https://github.com/NVIDIA/k8s-device-plugin#preparing-your-gpu-nodes
+```
+sudo cat /etc/docker/daemon.json
+{
+    "default-runtime": "nvidia",
+    "runtimes": {
+        "nvidia": {
+            "path": "nvidia-container-runtime",
+            "runtimeArgs": []
+        }
+    }
+}
+```
+- Check whethere you can execute ```docker run  --rm nvidia/cuda:9.0-base nvidia-smi ```
 
 --------------------------
 #### A. Cluster Description
 - Deployment [Google Slides](https://docs.google.com/presentation/d/1E6f6BR5sj5g3WPc_uRV01ZPbAjezZuUAvidUwZbbthQ/edit#slide=id.g4f74d0d960_0_58)
 
-![Rancher Deployment Diagram](img/bqranch/Rancher2-deployment.png?raw=true)
+![Rancher Deployment Diagram](img/bqranch/)
 
 
 ==Cluster==
@@ -24,13 +42,26 @@
 ``` 
 sudo netstat -peanut | grep ":80" 
 ```
-- Setup certificates at /etc/letsencrypt
+- Setup certificates at /etc/letsencrypt on each node
 ```
 sudo certbot certonly --standalone --dry-run \
    --agree-tos -m vishwakarma@ucsb.edu \
    --cert-name bisque-dev-01.cyverse.org \
    -d bisque-dev-01.cyverse.org 
 ```
+```
+sudo certbot certonly --standalone --dry-run \
+   --agree-tos -m vishwakarma@ucsb.edu \
+   --cert-name bisque-dev-02.cyverse.org \
+   -d bisque-dev-02.cyverse.org 
+```
+```
+sudo certbot certonly --standalone --dry-run \
+   --agree-tos -m vishwakarma@ucsb.edu \
+   --cert-name bisque-dev-gpu-01.cyverse.org \
+   -d bisque-dev-gpu-01.cyverse.org 
+```
+
 
 --------------------------
 #### C. Master Rancher 2.0
@@ -46,83 +77,40 @@ docker run -d --restart=unless-stopped \
   -e AUDIT_LEVEL=1 \
   rancher/rancher:stable 
 ```
-![Rancher main Container](img/bqranch/rancher_main_container.png?raw=true)
-
-- You will have rancher accessible at https://loup.ece.ucsb.edu:8443 if everything goes fine
-
-
-------------------------
-
-- Create the YAML configuration based on docker-compose.yaml (In case of migration)
-- Create an access key for [Rancher CLI](https://rancher.com/docs/rancher/v2.x/en/cli/) operations (Doesnt work on self-signed certs)
-    - endpoint  : https://loup.ece.ucsb.edu:8443/v3
-    - access-key: token-xt47w
-    - secret-key: < >
-    - bearer-tok: token-xt47w: < >
-
-##### Migration CLI 
-- Download the docker-compose and rancher-compose.yml files from existing rancher user interface for migration 
-https://rancher.com/docs/rancher/v2.x/en/v1.6-migration
-- Migration using CLI tools
-
-```
-migration-tools export --url <RANCHER_URL> --access-key <RANCHER_ACCESS_KEY> \
- --secret-key <RANCHER_SECRET_KEY> --export-dir <EXPORT_DIR>
-```
-```
-./migration-tools parse --docker-file compose/docker-compose.yml \
- --rancher-file compose/rancher-compose.yml 
-```
+- You will have rancher accessible at https://bisque-dev-01.cyverse.org:8443 if everything goes fine
 
 ------------------------
 
 #### D. Setup Cluster [RKE/custom-nodes](https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/custom-nodes/)
 
+- Create a cluster and name it "bq-cluster"
+- Use Calico for the CNI network layer
+- Choose custom cloud provider leveraging k8s
+- Make this server as etcd, controlplane and worker
+
+```
+ sudo docker run -d --privileged --restart=unless-stopped --net=host \
+  -v /etc/kubernetes:/etc/kubernetes \
+  -v /var/run:/var/run rancher/ \
+  rancher-agent:v2.1.6 \
+  --server https://bisque-dev-01.cyverse.org:8443 \
+  --token 2s7gbd8gj9vx4pv4vgsq899gkkxdfrxc8j8wh8njgcgwdmtfkt7gd8 \
+  --ca-checksum cf2f54c1837a5d9e1f8cc7db35efdb9a497c16b4ea9022b52b877a7cc94be505 \
+  --node-name bisque-dev-gpu-01.cyverse.org \
+  --address 128.196.65.142 \
+  --etcd --controlplane --worker \
+  --label type=gpu
+ 
+```
+You will see a green bar below saying a particular node has registered.
+
 ##### Port requirements
 
 Open up ports based on the [CNI provider requirements](https://rancher.com/docs/rancher/v2.x/en/installation/references/)
-- Use Canal as the provider in this case
-```
-# API/UI Clients
-sudo ufw allow 22,80,443/tcp
-# Etcd Plane Nodes
-sudo ufw allow 2379,2380,9099,6443/tcp && sudo ufw allow 8472/udp
-# Control Plane Nodes
-sudo ufw allow 2379,2380,10250,6443,9099,10254/tcp && sudo ufw allow 8472/udp
-# Worker Plane Nodes
-sudo ufw allow 6443,9099,10254/tcp && sudo ufw allow 8472/udp
-# Workload
-sudo ufw allow 30000:32767/tcp && sudo ufw allow 30000:32767/udp
-# Others 
-sudo ufw allow  2376/tcp
-```
-![Ubuntu ufw status](img/bqranch/rancher_ufw_status.png?raw=true)
+- See requirements for Calico as the provider in this case
 
-
-##### Create cluster 
-
-- Create a cluster in rancher-ui named "bq-cluster"
-- Select "custom" local/remote nodes option to create this cluster
-- Run the below command for running the rancher-agent/workers
-```
-sudo docker run -d --privileged --restart=unless-stopped --net=host \
- -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run \
-  rancher/rancher-agent:v2.1.6 --server https://loup.ece.ucsb.edu:8443 \
-  --token 7z2ncgjj4482m48fpsj7xjmc8lc9n6bsxh7qcjrsr6rcxrzhzl6prz \
-  --ca-checksum d522680b13d7aabe4dc57bb2776e28759852c336d0cf0e0f9fed5d3fb7b495e8 \
-  --etcd --controlplane --worker
-```
-- The final "bq-cluster" state can be visualized upon creation 
-![Rancher cluster created state](img/bqranch/rancher_cluster.png?raw=true)
-
-- A docker ps on a node of the cluster (as created above) would look like below screenshot
-![Rancher cluster node addition](img/bqranch/rancher_worker_control_plane.png?raw=true)
-
-- Add more nodes as worker, by running above command on those nodes so that they register with the rancher2 and become part of this cluster. The nodes on a cluster can be visualized in rancher cluster -> nodes menu.
-![Rancher cluster node view](img/bqranch/rancher_cluster_nodes.png?raw=true)
-
-##### Create a namespace bqdev within this cluster
-Bisque Development environment where workloads are deployed and tested
+##### Service Discovery
+- This [Service Discovery](https://rancher.com/docs/rancher/v2.x/en/k8s-in-rancher/service-discovery) entry enables DNS resolution for the workload’s pods using the following naming convention: ```<workload>.<namespace>.svc.cluster.local```
 
 --------------
 #### E. Setup Volume
@@ -132,28 +120,23 @@ https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-u
 - Setup folders
 ```
 # Create the path on host system
-sudo mkdir /opt/bisque/ -p && \
-sudo mkdir /opt/bisque/data -p && \
-sudo mkdir /opt/bisque/local/workdir -p
+sudo mkdir /etc/letsencrypt/ -p && \
+sudo mkdir /run/bisque/ -p && \
+sudo mkdir /run/bisque/data -p && \
+sudo mkdir /run/bisque/local/workdir -p
 
 # Allow other users to edit this
-sudo chown -R nobody:nogroup /opt/bisque/
-```
-- Open up the ports used by NFS
-```
-# Access from specific machines
-sudo ufw allow from 192.168.1.129 to any port nfs
-sudo ufw allow from 192.168.1.133 to any port nfs
+sudo chown -R nobody:nogroup /run/bisque/
 
-# Specific ports in case above doesnt work
-sudo ufw allow 32768:65535/tcp && sudo ufw allow 32768:65535/udp
-sudo ufw allow 2049/tcp && sudo ufw allow 2049/udp
-sudo ufw allow 111/tcp && sudo ufw allow 111/udp
+- bisque-dev-01.cyverse.org , ubuntu@128.196.65.71
+- bisque-dev-02.cyverse.org , ubuntu@128.196.65.100
+- bisque-dev-gpu-01.cyverse.org , ubuntu@128.196.65.142
+
 ```
 - Now add NFS host configuration at /etc/exports
 ```
-/opt/bisque     192.168.1.129(rw,sync,no_root_squash,no_subtree_check)
-/opt/bisque     192.168.1.133(rw,sync,no_root_squash,no_subtree_check)
+/run/bisque     128.196.65.100(rw,sync,no_root_squash,no_subtree_check)
+/run/bisque     128.196.65.142(rw,sync,no_root_squash,no_subtree_check)
 ```
 - restart the nfs server on the NFS host machine
 ```
@@ -161,10 +144,10 @@ sudo systemctl restart nfs-kernel-server
 ```
 - Mount the NFS folder on the client machine
 ```
-sudo mount 192.168.1.123:/opt/bisque/ /run/bisque/
+sudo apt-get install nfs-common
+sudo mount 128.196.65.71:/run/bisque/ /run/bisque/
 ```
 - Verify the mount on a client system using df -h
-
 
 > AND
 https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-from-nfs-share
@@ -172,11 +155,11 @@ https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-fr
 - Create a persistent volume in the cluster 
 - Set local path option on the node as /run/bisque
 
-![Rancher NFS persistent volume addition](img/bqranch/rancher_volume_nfs.png?raw=true)
+![Rancher NFS persistent volume addition](img/bqranch/rancher_volume_nfs?raw=true)
 
 - We can see all the volumes that are created in the Volumes section of the "bq-cluster" workload
 
-![Rancher workload volumes](img/bqranch/workload_volumes.png?raw=true)
+![Rancher workload volumes](img/bqranch/workload_vol?raw=true)
 
 ---------------------------------
 #### F. Setup Workload (on the cluster)
@@ -184,23 +167,51 @@ https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-fr
 Bisque Test environment where workloads are deployed with open NodePort
 https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/
 
-- We will be using the image at custom registry [biodev.ece.ucsb.edu:5000/ucsb-bisque05-svc](https://biodev.ece.ucsb.edu:5000/v2/_catalog) or we can use a publicly deployed image at [https://hub.docker.com](https://hub.docker.com)
+##### Condor Setup
+Installation & Configuration
+- [HT Condor install instructions](https://research.cs.wisc.edu/htcondor/instructions/ubuntu/16/stable/)
 
-##### Test workload configuration
-- Name: ucsb-bisque05-svc
-- Pods: 2
-- Docker Image : biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev or vishwakarmarhl/ucsb-bisque05-svc:dev
-  ![Workload name](img/bqranch/workload_head.png?raw=true)
+###### Condor Master Node Configuration. This service will be discoverable at ```condor-master.condor.svc.cluster.local```
+- Name: condor-master
+- Pods: 1
+- Docker Image: biodev.ece.ucsb.edu:5000/condor
 - Port Mapping: 
-  - 8080-tcp-NodePort-Random & 27000-tcp-NodePort-Random
-  - Alternately, we can use 8080-tcp-ClusterIP(Internal)-Same & 27000-tcp-ClusterIP(Internal)-Same
+  - 9618 	  	TCP 	  	HostPort 	  	9618
+  - 9886 	  	TCP 	  	HostPort 	  	9886 
+```
+CONDOR_MANAGER_HOST =	master.condor
+CONDOR_DAEMONS =	COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
+```
 
-  ![Workload ports](img/bqranch/workload_ports.png?raw=true)
+###### Condor Worker Node Configuration
+- Name: condor-worker-1
+- Pods: 1
+- Docker Image: biodev.ece.ucsb.edu:5000/condor
+- Port Mapping: 
+  - 9886 	  	TCP 	  	HostPort 	  	9886 
+```
+CONDOR_MANAGER_HOST =	master.condor
+CONDOR_DAEMONS =	COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
+```
+
+
+##### Bisque workload configuration
+
+We will be using the image at custom registry [biodev.ece.ucsb.edu:5000/ucsb-bisque05-svc](https://biodev.ece.ucsb.edu:5000/v2/_catalog) or we can use a publicly deployed image at [https://hub.docker.com](https://hub.docker.com)
+
+- Name: bisquesvc
+- Pods: 1
+- Docker Image: biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev
+- Port Mapping: 
+  - 80-TCP-NodePort-Random 
+  - 27000-TCP-NodePort-Random
 
 - Environment Variables: Copy paste the "Environment Configuration" section 
 - Node Scheduling: Run all the pods on a particular host
 - Health Check: No change
-- Volumes: Persistent Volume claim and set the mount point as /tmp/bisque
+- Volumes
+  - Persistent Volume claim and set the mount point as /run/bisque
+  - Persistent Volume from Node path /etc/letsencrypt
 - Scaling: No change
 - Command: (Only, in case needed. Not used with the current Image)
   - Entrypoint: /builder/run-bisque.sh
@@ -209,16 +220,16 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/
   - Console: Interactive & TTY (-i -t)
 - Networking: No Change
 - Labels: No change
-- Security: No change
+- Security & Host: Privileged is True
 
-> Finally we can see the overall state of pods in the workload within the clusters
-![Workload pods](img/bqranch/workload_pods.png?raw=true)
+> Finally we can see the overall state of pods in the workload within the clusters. Also view logs to track the Bisque initialization 
+![Workload pods](img/bqranch/workload_pod?raw=true)
 ##### Environment Configuration
 
 - Bisque service variables
 ```
       BISQUE_USER= bisque
-      BISQUE_BISQUE_ADMIN_EMAIL= admin@loup.ece.ucsb.edu
+      BISQUE_BISQUE_ADMIN_EMAIL= admin@bisque-dev-gpu-01.cyverse.org
       BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
       BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/
       BISQUE_BISQUE_STORES_BLOBS_TOP= file://$$datadir/blobdir/
@@ -232,8 +243,9 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/
       BQ__BISQUE__IMAGE_SERVICE__WORK_DIR= /run/bisque/local/workdir
       BQ__BISQUE__PATHS__DATA= /run/bisque/data
       MAIL_SERVER= dough.ece.ucsb.edu
-      BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/postgres
-
+      BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.7:5432/postgres
+      CONDOR_DAEMONS= MASTER,SCHEDD,SHARED_PORT	
+      CONDOR_MANAGER_HOST= master.condor
       DEBIAN_FRONTEND=noninteractive
       IMGCNV=imgcnv_ubuntu16_2.4.3
 ```
@@ -241,101 +253,13 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/
 We should see the overview of workloads deployed as below
 ![Workload Dashboard](img/bqranch/workloads.png?raw=true)
 
+Service should be running at http://bisque-dev-gpu-01.cyverse.org:31274
+
+##### Bisque GPU Verification (nvidia-docker should be default runtime)
+- Connect into the container and verify ```nvidia-smi``` state
+- Caffe can be tested with ```caffe device_query --gpu all```
+
 #### G. Load Balancing (using L7 Ingress)
 - Add Ingress configuration for load balancing with name "bq-website" 
-- Configure the target(ucsb-bisque05-svc) pods so that the port 8080 is exposed through the ingress controller
-![Ingress Ctrl Configuration ](img/bqranch/workload_ingress_ctrl.png?raw=true)
+- Configure the target(bisquesvc) pods so that the port 80 is used
 
-- Load Balancing section of the workload will showcase the list of ingress controllers along with the mapping
-![Ingress Ctrl dashboard ](img/bqranch/workload_ingress_dash.png?raw=true)
-
-#### H. Monitoring/Debugging 
-- Using cluster kubectl shell from the cluster web UI
-```
-# Fetch namespaces
-kubectl get pods --all-namespaces
-kubectl get pods -n bqdev 
-
-# Fetch logs on a pod/container
-kubectl logs postgres-564d9f79d5-z2sxl  -n bqdev 
-```
-- Use Cluster dashboard for all cluster monitoring and configuration
-
-    ![Cluster Dashboard](img/bqranch/cluster_dash.png?raw=true)
-
-
--------------------------
-#### I. [Uninstall](https://rancher.com/docs/rancher/v2.x/en/admin-settings/removing-rancher/user-cluster-nodes/) Rancher
-
-- Stop Rancher Containers 
-```
-# Master: for the rancher server container
-docker stop $(docker ps -a -q --filter ancestor=rancher/rancher:stable --format="{{.ID}}")
-# Workers: for all k8s containers 
-docker stop $(docker ps -f name=k8s* --format="{{.ID}}")
-```
-- Clean the container, images and volumes
-```
-docker rm -f $(docker ps -a -f name=k8s* --format="{{.ID}}")
-docker rmi -f $(docker images -q "rancher/*")
-docker volume rm $(docker volume ls -q)
-```
-- Unmount and remove data (/var/lib/kubelet/pods/XXX, /var/lib/kubelet, /var/lib/rancher)
-```
-# Unmount directories
-for mount in $(mount | grep tmpfs | grep '/var/lib/kubelet' | awk '{ print $3 }') /var/lib/kubelet /var/lib/rancher; do sudo umount $mount; done
-
-# Clean the directories
-sudo rm -rf /etc/ceph \
-       /etc/cni \
-       /etc/kubernetes \
-       /opt/cni \
-       /opt/rke \
-       /run/secrets/kubernetes.io \
-       /run/calico \
-       /run/flannel \
-       /var/lib/calico \
-       /var/lib/etcd \
-       /var/lib/cni \
-       /var/lib/kubelet \
-       /var/lib/rancher/rke/log \
-       /var/log/containers \
-       /var/log/pods \
-       /var/run/calico
-# Mounted host directories
-sudo rm -rf /host/rancher/
-sudo rm -rf /var/log/rancher/auditlog
-```
-
-- Remove the existing network interface
-```
-ip address show
-ip link delete <interface_name>
-```
-
----------------------
-Additional References
----------------------
-
-==TODO==
-
-#### 1.) Mail server setup 
-https://www.linuxbabe.com/mail-server/ubuntu-16-04-iredmail-server-installation
-
-#### 2.) Migration from Rancher 1.x to 2.x
-- individual workload/containers to rancher-kubernetes using rancher-cli (doesnt work with self-signed certificates)
-https://rancher.com/blog/2018/2018-08-02-journey-from-cattle-to-k8s/
-
-
-#### 3.) Reference on Ingress Controllers
-
-- Load Balancers add in workloads [/k8s-in-rancher/load-balancers-and-ingress](https://www.cnrancher.com/docs/rancher/v2.x/en/k8s-in-rancher/load-balancers-and-ingress/load-balancers/)
-> Tried using built in Ingress for  	
-bq-website.bqdev.192.168.1.129.xip.io but failed to work for engine service
-
-- If you want to expose the workload container to outside world then use NodePort otherwise work with ClusterIp(Internal Only) port configuration 
-- https://rancher.com/blog/2018/2018-08-14-expose-and-monitor-workloads/
-
-#### 4.) PostgreSQL server
-- [Setup PostgreSql 10.4 on Rancher workload](../rancher2_postgresql)
-- This is used in the Bisque configuration as environment variable BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/postgres
