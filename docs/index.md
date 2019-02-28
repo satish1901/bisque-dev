@@ -1,12 +1,10 @@
 # BisQue Documentation
 
-> Bio-Image Semantic Query User Environment
+> Bisque (Bio-Image Semantic Query User Environment) : Store, visualize, organize and analyze images in the cloud. 
 
 * https://bioimage.ucsb.edu/bisque
 
-## Project Source
-
-#### Current
+#### Project Source
 * Github: [https://github.com/UCSB-VRL/bisque](https://github.com/UCSB-VRL/bisque)
 * Docs  : [https://UCSB-VRL.github.io/bisque-dev](https://UCSB-VRL.github.io/bisque-dev)
 
@@ -16,12 +14,13 @@ Legacy
 * Wiki      : `http://biodev.ece.ucsb.edu/projects/bisquik`
 
 #### Clone BisQue
-Explore the source by checking out the bisque-stable branch from legacy mercurial or current github
+Explore the source by checking out the bisque-stable branch from the current github repository
 
 * `git clone https://github.com/UCSB-VRL/bisque bisque-stable`
 
-## Docs 
-#### Bisque Development Environment (artifact/guides)
+
+#### Bisque Development Environment 
+Artifact and guides
 
 1. [Bisque setup from source code](./guides/bisque.md)
 2. [Bisque setup in Docker](./guides/bisque_docker.md)
