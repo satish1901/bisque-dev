@@ -69,34 +69,43 @@ bisque-host$ docker exec -t -i bisque /bin/bash
 
 #### Develop in Docker (TODO !!)
 
-- Use the dev [docker container](https://hub.docker.com/r/cbiucsb/bisque05/)
+- Use the dev docker image [docker vishwakarmarhl/ucsb-bisque05-svc](https://cloud.docker.com/repository/docker/vishwakarmarhl/ucsb-bisque05-svc)
+
+- Create the workspace and prepare the development setup
+```
+cd ~/ws
+git clone https://github.com/UCSB-VRL/bisque
+mkdir container-modules container-data container-config
+cp -r bisque/modules/* container-modules/
+```
+- Create the container 
 
 ```
-xterm -e \
 docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
 -v $(pwd)/container-modules:/source/modules \
 -v $(pwd)/container-data:/source/data \
 -v $(pwd)/container-config:/source/config \
-'cbiucsb/bisque05:dev'
+'vishwakarmarhl/ucsb-bisque05-svc:dev'
 ```
+
 - Bash into the docker container and develop
 
 ```
-docker exec -t -i bisque-dev /bin/bash
-
-# Source and develop
-docker-container$ source /usr/lib/bisque/bin/activate
-$ apt-get update 
-$ apt-get install python-dev vim
-$ ln -s /usr/include/python2.7/  /usr/lib/bisque/local/include/python2.7
-
-```
-- Test/Build a Module (TODO !! python-dev not setup)
+docker exec -it bisque-dev /bin/bash
 
 ```
 
-# Setup/Test Dream3D Module
-$ cd /source/modules/Dream3D
-$ python setup.py
+- Activate environment and Test/Build a Module (TODO !! python-dev)
 
 ```
+root@9362d1f8bf12:/source# cd modules/MetaData
+root@9362d1f8bf12:/source/modules/MetaData# source /usr/lib/bisque/bin/activate
+root@9362d1f8bf12:/source/modules/MetaData# python setup.py
+
+```
+- Verify Bisque Services
+  - Bisque Client interface at http://0.0.0.0:8080/client_service
+  - Bisque Engine service at http://0.0.0.0:8080/engine_service
+
+- Now you can add the Metadata module from the manager interface and run a test
+

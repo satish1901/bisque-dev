@@ -111,8 +111,8 @@ docker run -d --restart=unless-stopped \
 ```
  sudo docker run -d --privileged --restart=unless-stopped --net=host \
   -v /etc/kubernetes:/etc/kubernetes \
-  -v /var/run:/var/run rancher/ \
-  rancher-agent:v2.1.6 \
+  -v /var/run:/var/run \
+  rancher/rancher-agent:v2.1.6 \
   --server https://bisque-dev-01.cyverse.org:8443 \
   --token 2s7gbd8gj9vx4pv4vgsq899gkkxdfrxc8j8wh8njgcgwdmtfkt7gd8 \
   --ca-checksum cf2f54c1837a5d9e1f8cc7db35efdb9a497c16b4ea9022b52b877a7cc94be505 \
@@ -122,7 +122,24 @@ docker run -d --restart=unless-stopped \
   --label type=gpu
  
 ```
-You will see a green bar below saying a particular node has registered.
+
+- You will see a green bar below saying a particular node has registered.
+
+> You can add more nodes to the cluster by editing the cluster and running another command as below
+
+```
+sudo docker run -d --privileged --restart=unless-stopped --net=host \
+  -v /etc/kubernetes:/etc/kubernetes \
+  -v /var/run:/var/run \
+  rancher/rancher-agent:v2.1.6 \
+  --server https://bisque-dev-01.cyverse.org:8443 \
+  --token 2sw5pb6nv2vqhrb8hrkbc6dgbn9k9lmw9kv6h8qzgmncxg9bfz6qpl \
+  --ca-checksum cf2f54c1837a5d9e1f8cc7db35efdb9a497c16b4ea9022b52b877a7cc94be505 \
+  --node-name bisque-dev-02.cyverse.org \
+  --address 128.196.65.100 \
+  --controlplane --worker \
+  --label type=cpu
+```
 
 ##### Port requirements
 
@@ -231,7 +248,7 @@ We will be using the image at custom registry [biodev.ece.ucsb.edu:5000](https:/
   - 27000-TCP-NodePort-Random
 
 - Environment Variables: Copy paste the "Environment Configuration" section 
-- Node Scheduling: Run all the pods on a particular host
+- Node Scheduling: Run all the pods on a particular host (GPU based due to caffe engine)
 - Health Check: No change
 - Volumes
   - Persistent Volume claim and set the mount point as /run/bisque
