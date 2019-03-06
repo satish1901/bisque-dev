@@ -3,6 +3,10 @@
 
 #### Pre-requisite
 
+- [Packages list](resources/dpackages.dump) on bisquesvc production (xenial-caffe) env
+- [Custom Registry](https://docs.docker.com/registry/) is available and active at https://biodev.ece.ucsb.edu:5000/v2/_catalog
+- [Dev Pi Packages](https://biodev.ece.ucsb.edu/py/bisque/stretch/+simple/) are acccessible 
+
 ##### Nvidia-docker
 
 Since there is a GPU requirement in Bisque Connoisseur.
@@ -212,29 +216,49 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/
 Installation & Configuration
 - [HT Condor install instructions](https://research.cs.wisc.edu/htcondor/instructions/ubuntu/16/stable/)
 
-###### Condor Master Node Configuration. This service will be discoverable at ```condor-master.condor.svc.cluster.local```
-- Name: condor-master
+###### Condor Master Node Deployment. This service will be discoverable at master.condor.svc.cluster.local
+- Name: master
+- Namespace: condor
 - Pods: 1
 - Docker Image: biodev.ece.ucsb.edu:5000/condor
 - Port Mapping: 
   - 9618 	  	TCP 	  	HostPort 	  	9618
   - 9886 	  	TCP 	  	HostPort 	  	9886 
+- Environment
+
 ```
 CONDOR_MANAGER_HOST =	master.condor
 CONDOR_DAEMONS =	COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
 ```
 
-###### Condor Worker Node Configuration
-- Name: condor-worker-1
-- Pods: 1
+Also, verify the /etc/condor/condor_config.local has property
+
+```
+DAEMON_LIST = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
+
+```
+
+###### Condor Worker Node Deployment
+- Name: worker
+- Namespace: condor
+- Pods: 2
 - Docker Image: biodev.ece.ucsb.edu:5000/condor
 - Port Mapping: 
-  - 9886 	  	TCP 	  	HostPort 	  	9886 
+  - 9886 	  	TCP 	  	ClusterIP(Internal) 	  	9886 
+- Volumes
+  - Persistent Volume from Node path /var/run/docker.sock (enables docker run)
+- Node Scheduling: Run all the pods on a particular host (GPU based bisque-dev-gpu-01.cyverse.org due to caffe engine requirements)
+
+- Environment
+
 ```
 CONDOR_MANAGER_HOST =	master.condor
-CONDOR_DAEMONS =	COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
+CONDOR_DAEMONS =	MASTER,SCHEDD,STARTD,SHARED_PORT
 ```
 
+###### Condor Configuration: [Advanced Setup Instructions](../rancher2_condor) 
+
+- Configuration is needed to make sure the pool is discoverable, functional and collecting jobs.
 
 ##### Bisque workload configuration
 
@@ -248,11 +272,12 @@ We will be using the image at custom registry [biodev.ece.ucsb.edu:5000](https:/
   - 27000-TCP-NodePort-Random
 
 - Environment Variables: Copy paste the "Environment Configuration" section 
-- Node Scheduling: Run all the pods on a particular host (GPU based due to caffe engine)
+- Node Scheduling: Run all the pods on a particular host (GPU based bisque-dev-gpu-01.cyverse.org due to caffe engine)
 - Health Check: No change
 - Volumes
   - Persistent Volume claim and set the mount point as /run/bisque
   - Persistent Volume from Node path /etc/letsencrypt
+  - Persistent Volume from Node path /var/run/docker.sock
 - Scaling: No change
 - Command: (Only, in case needed. Not used with the current Image)
   - Entrypoint: /builder/run-bisque.sh
