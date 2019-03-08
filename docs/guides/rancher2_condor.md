@@ -1,5 +1,6 @@
 The Condor instructions are based out of custom image(biodev.ece.ucsb.edu:5000/condor)
 
+
 Official Docs: https://research.cs.wisc.edu/htcondor/manual/v8.8
 
 ###### References:
@@ -7,6 +8,7 @@ Official Docs: https://research.cs.wisc.edu/htcondor/manual/v8.8
   - Multi Node [Condor Pool (Blog)](https://spinningmatt.wordpress.com/2011/06/12/getting-started-creating-a-multiple-node-condor-pool/)
   - Simple [Condor Cluster (Blog)](https://www.linux.com/news/setting-condor-cluster)
 - Condor [Examples of Security Configurations (Official Docs)](https://research.cs.wisc.edu/htcondor/manual/v8.8/Security.html)
+- Install Docker Community Edition https://docs.docker.com/install/linux/docker-ce/ubuntu/
 
 ### Topology
 

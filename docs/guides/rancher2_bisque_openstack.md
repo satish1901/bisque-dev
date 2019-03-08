@@ -15,7 +15,12 @@ Since there is a GPU requirement in Bisque Connoisseur.
 - Configure default nvidia-runtime: https://github.com/NVIDIA/k8s-device-plugin#preparing-your-gpu-nodes
 
 ```
-sudo cat /etc/docker/daemon.json
+# Run the following to insert the configuration
+sudo echo "{ \"default-runtime\": \"nvidia\", \"runtimes\": { \"nvidia\": { \"path\": \"nvidia-container-runtime\", \"runtimeArgs\": [] }}}" \
+ > /etc/docker/daemon.json
+
+# Now verify the config and it should look like below
+sudo echo > /etc/docker/daemon.json
 {
     "default-runtime": "nvidia",
     "runtimes": {
@@ -26,9 +31,10 @@ sudo cat /etc/docker/daemon.json
     }
 }
 ```
-- Check whethere you can execute without the runtime flag 
-
-  ```docker run  --rm nvidia/cuda:9.0-base nvidia-smi ```
+- Check whether you can execute nvidia-smi inside a container without the runtime flag 
+```
+docker run  --rm nvidia/cuda:9.0-base nvidia-smi 
+```
 
 ##### PostgreSQL server
 - [Setup PostgreSql 10.4 on Rancher workload](../rancher2_postgresql)
@@ -39,7 +45,9 @@ psql -h postgres.prod -U postgres --password -p 5432 postgres
 ```
 - This is used in the Bisque configuration as environment variable 
 
-```BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/postgres```
+```
+BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/postgres
+```
 
 --------------------------
 #### A. Cluster Description
