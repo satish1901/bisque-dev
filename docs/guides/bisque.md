@@ -1,8 +1,12 @@
 ## [Bisque Development Environment Setup Instructions](https://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions05)
 
+This guide details the installation of a bisque server on an Ubuntu 16.04 LTS environment.
+
 Project Source
-- https://bitbucket.org/CBIucsb/bisque
-- http://biodev.ece.ucsb.edu/projects/bisquik/export/tip/bisque-stable
+- Github: https://github.com/UCSB-VRL/bisque
+
+Developer Installation
+- Bisque Github Pages: https://ucsb-vrl.github.io/bisque-dev/guides/bisque
 
 Reference
 - [Bique Bioimage Google Groups](https://groups.google.com/forum/#!topic/bisque-bioimage/jwo_5sHFeHU)
@@ -53,7 +57,8 @@ sudo ln -s /usr/local/lib/libimgcnv.so.2.4 /usr/local/lib/libimgcnv.so.2
 sudo ln -s /usr/local/lib/libimgcnv.so.2 /usr/local/lib/libimgcnv.so
 sudo ldconfig
 ```
-Alternately, Compile by source and Install 
+
+Alternately, Compile by source and Install (You are on your own here)
 ```
 hg clone --insecure http://biodev.ece.ucsb.edu/hg/imgcnv
 cd imgcnv && make -j6 
@@ -61,7 +66,31 @@ sudo make install
 ```
 
 ---
-#### A. Download the Bootstrap installer (Use Python 2.7)
+
+#### A. Clone the repository and Prepare Virtual Environment
+```
+git clone https://github.com/UCSB-VRL/bisque.git bisque-stable
+```
+- Its always a good practive to use a virtualenv to develop projects
+
+```
+sudo pip install virtualenvwrapper
+```
+- Edit ~/.bashrc and export the following variables
+
+```
+# virtualenv and virtualenvwrapper
+export PATH=/usr/local/bin:$PATH
+export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python
+export VIRTUALENVWRAPPER_VIRTUALENV=/usr/local/bin/virtualenv
+source /usr/local/bin/virtualenvwrapper.sh
+```
+
+- Now load this using "source ~/.bashrc"
+- Create a virtual envrionment "mkvirtualenv -p /usr/bin/python2 bqdev"
+- Change environment "workon bqdev"
+
+###### Deprecated Bootstrap Installer (Do Not Use this Script)
 ```
 $ mkdir bisque && cd bisque
 $ wget http://biodev.ece.ucsb.edu/projects/bisquik/export/tip/bisque-stable/contrib/bootstrap/bisque-bootstrap.py
@@ -69,10 +98,19 @@ $ python bisque-bootstrap.py bqenv
 
 # Activate Virtualenv
 bisque$ source bqenv/bin/activate
-
 ```
 
-Fix the requirements.txt
+- Now Install requirements
+```
+pip install -i https://biodev.ece.ucsb.edu/py/bisque/xenial/+simple/ -r requirements.txt
+
+Alternate Index Url for Development: https://biodev.ece.ucsb.edu/py/bisque/dev/+simple
+Index Url Debian Stretch: https://biodev.ece.ucsb.edu/py/bisque/stretch/+simple/
+Index Url Ubuntu xenial: https://biodev.ece.ucsb.edu/py/bisque/xenial/+simple/
+```
+
+- Fix the requirements.txt (Only if the installation fails)
+
 ```
 #Fix the requirements.txt file using sed -i 's/.*psycopg2==2.6.1.*/psycopg2==2.7.1./' requirements.txt
 psycopg2==2.7.1
@@ -81,15 +119,8 @@ Paste==1.7.5.1
 httplib2==0.7.3
 #tgext.registration==0.1dev
 
-Install separately since packages may be deprecated in PyPi
+# Install separately since packages may be deprecated in PyPi
 easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext.registration2-0.5.2.tar.gz
-
-```
-Now Install requirements
-```
-pip install -i https://biodev.ece.ucsb.edu/py/bisque/stretch/+simple/ -r requirements.txt
-
-Alternate Index Url for Development: https://biodev.ece.ucsb.edu/py/bisque/dev/+simple
 
 ```
 
@@ -150,6 +181,16 @@ Send Installation/Registration report [Y]? N
 
 Add "config/runtime-bisque.cfg" for module configuration and docker image registry
 - Edit and add run config from config-defaults/runtime-bisque.defaults to config/runtime-bisque.cfg
+- Here are some local changes but requires docker to be setup
+```
+runtime.platforms = command
+runtime.staging_base = staging/
+
+[docker]
+docker.enabled = true
+# A  hub where to push containers to
+docker.hub = biodev.ece.ucsb.edu:5000
+```
 
 ---
 
@@ -163,7 +204,7 @@ $ bq-admin server stop
 
 Overview of Installation (Just for review)
 ```
-source bqenv/bin/activate
+workon bqdev
 paver setup    [server|engine]
 bq-admin setup [server|engine]
 bq-admin deploy public
@@ -316,12 +357,15 @@ admin:00-ZmuAoE43wTxByycmaCnvBF
 
 #### Docker & Condor based modules require additional setup
 
-==TODO==
+==NEXT==
 - Install Docker (https://docs.docker.com/install/linux/docker-ce/ubuntu/)
   - Also go through the post-installation steps
+  - Also install the [Nvidia-docker](https://github.com/nvidia/nvidia-docker/) in case you are planning to use GPU based modules or connoisseur services.
 
 - Install Condor (https://research.cs.wisc.edu/htcondor/ubuntu/)
-  - Need to understand the configurations as well for master & slave setup
+  - Understand the configurations as well for master & slave setup 
+  - [Bisque Condor Setup Instructions](../rancher2_condor) 
+
 ```
 rahul@bqdev:~$ /etc/init.d/condor restart
 [ ok ] Restarting condor (via systemctl): condor.service.
