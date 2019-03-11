@@ -1,9 +1,13 @@
-[PLANTEOME DEEP SEGMENT ANALYSIS MODULE]()
+PLANTEOME DEEP SEGMENT ANALYSIS MODULE
 ===============================
 
 **This module segments a marked object (creating a graphical object) within an input image.**
 
 Then the module will classify either the entire original image or the segment created in the first step. This uses PyTorch in order to do this deep segmentation.
+
+#### [Reference](https://github.com/pndaly/BisQue_Platform_Guide) 
+- Module Development Guide: https://github.com/pndaly/BisQue_Platform_Guide
+- Sample Deep Learning Module: [Planteome Deep Segment Analysis](https://github.com/Planteome/planteome-deep-segmenter-dockerized)
 
 #### Pre-requisite: [link](./bisque.md)
 - Working bisque environment at http://loup.ece.ucsb.edu:8088/

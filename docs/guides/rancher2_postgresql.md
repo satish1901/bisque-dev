@@ -30,8 +30,17 @@
 
 
 ##### Test database using the nodes IP
+
 - Test using psql, depending on what IP the postgres server is available at
+
 ```
 psql -h 10.42.0.15 -U postgres --password -p 5432 postgres
-psql -h loup.ece.ucsb.edu -U postgres --password -p 5432 postgres
+psql -h postgres.prod -U postgres --password -p 5432 postgres
+```
+
+- Create database for a particular instance
+
+```
+CREATE DATABASE connoisseur;
+GRANT ALL PRIVILEGES ON DATABASE "connoisseur" to postgres;
 ```

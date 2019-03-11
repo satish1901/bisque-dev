@@ -33,6 +33,7 @@ sudo echo > /etc/docker/daemon.json
 ```
 - Check whether you can execute nvidia-smi inside a container without the runtime flag 
 ```
+sudo service docker restart
 docker run  --rm nvidia/cuda:9.0-base nvidia-smi 
 ```
 
@@ -270,13 +271,14 @@ CONDOR_DAEMONS =	MASTER,SCHEDD,STARTD,SHARED_PORT
 
 ##### Bisque workload configuration
 
-We will be using the image at custom registry [biodev.ece.ucsb.edu:5000](https://biodev.ece.ucsb.edu:5000/v2/_catalog) or we can use any publicly deployed image at [https://hub.docker.com](https://hub.docker.com)
+We will be using the image at custom registry [biodev.ece.ucsb.edu:5000](https://biodev.ece.ucsb.edu:5000/v2/_catalog) or we can use any publicly deployed image at [https://hub.docker.com](https://hub.docker.com). The GPU enabled development environment is available at [vishwakarmarhl/ucsb-bisque05-c9r:latest](https://cloud.docker.com/u/vishwakarmarhl/repository/docker/vishwakarmarhl/ucsb-bisque05-c9r) and the production image is at biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev
 
 - Name: bisquesvc
 - Pods: 1
 - Docker Image: biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev
 - Port Mapping: 
   - 80-TCP-NodePort-Random 
+  - 8080-TCP-NodePort-Random 
   - 27000-TCP-NodePort-Random
 
 - Environment Variables: Copy paste the "Environment Configuration" section 
@@ -292,7 +294,7 @@ We will be using the image at custom registry [biodev.ece.ucsb.edu:5000](https:/
   - Command: bootstrap start
   - Working Dir: /source
   - Console: Interactive & TTY (-i -t)
-- Networking: No Change
+- Networking: Cluster first with host network
 - Labels: No change
 - Security & Host: Privileged is True
 

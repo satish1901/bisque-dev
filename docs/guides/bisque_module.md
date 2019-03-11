@@ -1,47 +1,133 @@
 
-##### Rancher: http://saw.ece.ucsb.edu:8080
+## Module Development Guide/Resources
 
-Container organization and plan for rancher setup
+- Developer Reference: https://biodev.ece.ucsb.edu/projects/bisquik/wiki/Developer
+- Module Reference: https://biodev.ece.ucsb.edu/projects/bisquik/wiki/Developer/ModuleSystem
 
-##### Main Containers
+##### Container organization and plan for rancher setup
+
+- Bisque Production Rancher: http://saw.ece.ucsb.edu:8080
+
+##### Server Containers
 | Instance Name | Host or IP  | Image Name | Remarks    |
 | :---          | :---        | :---       | :---       |
-| condor-nodes | IP ADDR     | biodev.ece.ucsb.edu:5000/condor      | One master and 4 worker nodes |
-| elasticsearch 2 | IP ADDR     | rancher/elasticsearch-conf:v0.5.0     | One container each elasticsearch-[clients, datanodes & masters] |
-| elasticsearch base/data | IP ADDR     | elasticsearch:2.4.3-alpine     | Two containers(base & data volume) for each elasticsearch-[clients, datanodes & masters] |
-| elasticsearch kopf | IP ADDR     | rancher/kopf:v0.4.0     | One container |
-| healthcheck | IP ADDR     | rancher/healthcheck:v0.3.6     | One on each instance |
-| ipsec cni-driver, connectivity-check, router | IP ADDR     | rancher/net:v0.13.11     | One on each instance for executing start-cni-driver, connectivity-check, and start-ipsec |
-| ipsec-ipsec | IP ADDR     | rancher/net:holder     | One on each instance |
-| network-services-meta | IP ADDR     | rancher/metadata:v0.10.2     | One on each instance start.sh,rancher-metadata,-reload-interval-limit=1000,-subscribe |
-| network-services-meta-dns | IP ADDR     | rancher/dns:v0.17.3     | One on each instance rancher-dns,--listen,169.254.169.250:53,--metadata-server=localhost |
-| network-services-manager | IP ADDR     | rancher/network-manager:v0.7.20    | One on each instance plugin-manager,--disable-cni-setup,--metadata-address,169.254.169.250 |
-| nfs-driver | IP ADDR     | rancher/storage-nfs:v0.9.1     | One on each instance |
-| rancher-agent | IP ADDR     | rancher/agent:v1.2.10      | One on each instance |
-| scheduler | IP ADDR     | rancher/scheduler:v0.8.3     | One instance  scheduler,--metadata-address,169.254.169.250 |
-| janitor-cleanup | IP ADDR     | meltwater/docker-cleanup:1.8.0     | One on each instance |
-| kibana | IP ADDR     | kibana:5.3.0      | One instance |
-| kibana rancher | IP ADDR     | rancher/lb-service-haproxy:v0.7.9, rancher/nginx:v1.9.4-3, rancher/nginx-conf:v0.2.0      | One instance |
-| production logsvc | IP ADDR     | biodev.ece.ucsb.edu:5000/logger_ucsb:dev      | One instance |
-| LetsEncrypt | IP ADDR     | janeczku/rancher-letsencrypt:v0.4.0     | One instance |
-| jenkins | IP ADDR     | jenkins/jenkins:lts     | One instance |
-| jenkins plugins | IP ADDR     | biodev.ece.ucsb.edu:5000/jenkins-cbi-plugins:v0.1.1     | One instance |
+| BisQue Server | http://dough.ece.ucsb.edu  | biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev   | Main BisQue service with Connoisseur |
+| condor-nodes | condor.master     | biodev.ece.ucsb.edu:5000/condor      | One master and 4 worker nodes |
 
 
-
-##### Modules Containers
+##### Module Containers
 | Instance Name | Host or IP  | Image Name | Remarks    |
 | :---          | :---        | :---       | :---       |
 | Dream3D       | IP ADDR     | biodev.ece.ucsb.edu:5000/bisque_dream3d    | Dream3D Module |
 | Predict Strength | IP ADDR     | biodev.ece.ucsb.edu:5000/predict_strength   | Predict Strength Module |
-| Connoisseur | IP ADDR     | biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev   | Predict Strength Module |
+| Cell Segment 3D Unet | IP ADDR     | biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2  | 3D Cell Segmentation |
+
+- There is another load balancer or haproxy to route the traffic based on IP rules
+- LetsEncrypt certificates are used for encrypted traffic
+
+## A.) Develop Module CellSegment3DUnet (PyTorch)
+We describe the module which takes a 3D cell image in NIFTI (*.nii) format as input and generates segmentation mask for it.
+
+### Overall Module code 
+
+```
+root@karma:/module# tree -L 1  
+.
+|-- CellSegment3DUnet.xml
+|-- Dockerfile
+|-- PythonScript.log
+|-- PythonScriptWrapper
+|-- PythonScriptWrapper.py
+|-- PythonScriptWrapper.spec
+|-- README.md
+|-- build/
+|-- module.log
+|-- public/
+|-- pydist/
+|-- runtime-module.cfg
+|-- scriptrun.log
+|-- setup.py
+`-- source/
+```
+
+- Describe each section of the module
+
+### Developing the Module in Docker
+
+This module is used for segmenting the 3D image using UNet Pytorch based model. We  will build a container to test, develop and deploy the module.
+
+#### Build Docker Image
+docker build -t biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest . -f Dockerfile
+
+#### Run container and bash
+nvidia-docker run -it --ipc=host -v $(pwd):/module biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest bash
+
+- The docker run, creates a container and then connect to its bash
+
+
+
+## B.) Module Deploy/Execution
+
+- Extracts from the ~/staging/**/docker_run.log execution log
+
+```
+docker create biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
+python PythonScriptWrapper.py \
+http://drishti.ece.ucsb.edu:8080/data_service/00-kDwj3vQq83vJA6SvVvVVh8 \
+15 0.05 \
+http://drishti.ece.ucsb.edu:8080/module_service/mex/00-XW6DsZR9puKj76Ezn9Mi79 \
+admin:00-XW6DsZR9puKj76Ezn9Mi79
+
+9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9 (Returns an identifier for this instance)
+```
+
+- Eventually this is the code that is running inside the container at runtime
+
+```
+python PythonScriptWrapper.py \
+http://drishti.ece.ucsb.edu:8080/data_service/00-kDwj3vQq83vJA6SvVvVVh8 \
+15 0.05 \
+http://drishti.ece.ucsb.edu:8080/module_service/mex/00-XW6DsZR9puKj76Ezn9Mi79 \
+admin:00-XW6DsZR9puKj76Ezn9Mi79
+
+```
+
+#### Run based on the identifier for that instance
+
+```
+docker start 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9
+```
 
 
 
 
-### [Reference](https://github.com/pndaly/BisQue_Platform_Guide): https://github.com/pndaly/BisQue_Platform_Guide
+### Issues:
 
-- Sample Deep Learning Module: [Planteome Deep Segment Analysis](https://github.com/Planteome/planteome-deep-segmenter-dockerized)
+- Fix for the network issues. cannot reach/connect to external/host address
+  - Error: Network
+    ```
+    requests.exceptions.ConnectionError: HTTPConnectionPool
+    (host='loup.ece.ucsb.edu', port=8088): Max retries exceeded with url
+    ```
+  - Error: PyTorch 
+    ```
+    ERROR: Unexpected bus error encountered in worker. This might be caused by insufficient shared memory (shm).
+    File "/usr/local/lib/python2.7/dist-packages/torch/utils/data/dataloader.py", line 274, in handler
+    _error_if_any_worker_fails()
+    RuntimeError: DataLoader worker (pid 277) is killed by signal: Bus error.
+    ```
+  - [Common Fix](https://github.com/tengshaofeng/ResidualAttentionNetwork-pytorch/issues/2): mount the docker container using --ipc=host flag
+  
+```
+docker create --ipc=host biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
+ python PythonScriptWrapper.py \ 
+ http://bisque-dev-gpu-01.cyverse.org:8080/data_service/00-ZeBjryEbutgnpKFWvFDx38 \
+ 15 0.05 \
+ http://bisque-dev-gpu-01.cyverse.org:8080/module_service/mex/00-g5rHg7NyujuUmPzLLb2M78 \
+ admin:00-g5rHg7NyujuUmPzLLb2M78
 
+8de7677ec1c531cc97124ee9808c36166e941bd6487a721c74fa84e037d59f6a
 
-### Overall Source code stack 
+docker start 8de7677ec1c531cc97124ee9808c36166e941bd6487a721c74fa84e037d59f6a
+docker wait 8de7677ec1c531cc97124ee9808c36166e941bd6487a721c74fa84e037d59f6a
+```
