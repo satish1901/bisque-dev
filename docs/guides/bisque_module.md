@@ -26,7 +26,7 @@
 - LetsEncrypt certificates are used for encrypted traffic
 
 ## A.) Develop Module CellSegment3DUnet (PyTorch)
-We describe the module which takes a 3D cell image in NIFTI (*.nii) format as input and generates segmentation mask for it.
+We describe the module which takes a 3D cell image in TIFF format as input and generates segmentation mask for it.
 
 ### Overall Module code 
 
@@ -69,9 +69,10 @@ nvidia-docker run -it --ipc=host -v $(pwd):/module biodev.ece.ucsb.edu:5000/torc
 ## B.) Module Deploy/Execution
 
 - Extracts from the ~/staging/**/docker_run.log execution log
+- Updated engine service to include --ipc=host parameter in the launcher template (DOCKER_RUN) at bq.engine.controllers/docker_env.py
 
 ```
-docker create biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
+docker create --ipc=host biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
 python PythonScriptWrapper.py \
 http://drishti.ece.ucsb.edu:8080/data_service/00-kDwj3vQq83vJA6SvVvVVh8 \
 15 0.05 \
@@ -90,12 +91,16 @@ http://drishti.ece.ucsb.edu:8080/data_service/00-kDwj3vQq83vJA6SvVvVVh8 \
 http://drishti.ece.ucsb.edu:8080/module_service/mex/00-XW6DsZR9puKj76Ezn9Mi79 \
 admin:00-XW6DsZR9puKj76Ezn9Mi79
 
+
+tail -f PythonScript.log
+
 ```
 
 #### Run based on the identifier for that instance
 
 ```
 docker start 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9
+docker wait 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9
 ```
 
 
@@ -117,17 +122,12 @@ docker start 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9
     RuntimeError: DataLoader worker (pid 277) is killed by signal: Bus error.
     ```
   - [Common Fix](https://github.com/tengshaofeng/ResidualAttentionNetwork-pytorch/issues/2): mount the docker container using --ipc=host flag
-  
-```
-docker create --ipc=host biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
- python PythonScriptWrapper.py \ 
- http://bisque-dev-gpu-01.cyverse.org:8080/data_service/00-ZeBjryEbutgnpKFWvFDx38 \
- 15 0.05 \
- http://bisque-dev-gpu-01.cyverse.org:8080/module_service/mex/00-g5rHg7NyujuUmPzLLb2M78 \
- admin:00-g5rHg7NyujuUmPzLLb2M78
-
-8de7677ec1c531cc97124ee9808c36166e941bd6487a721c74fa84e037d59f6a
-
-docker start 8de7677ec1c531cc97124ee9808c36166e941bd6487a721c74fa84e037d59f6a
-docker wait 8de7677ec1c531cc97124ee9808c36166e941bd6487a721c74fa84e037d59f6a
-```
+ 
+    ```
+    docker create --ipc=host biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
+    python PythonScriptWrapper.py \ 
+    http://bisque-dev-gpu-01.cyverse.org:8080/data_service/00-ZeBjryEbutgnpKFWvFDx38 \
+    15 0.05 \
+    http://bisque-dev-gpu-01.cyverse.org:8080/module_service/mex/00-g5rHg7NyujuUmPzLLb2M78 \
+    admin:00-g5rHg7NyujuUmPzLLb2M78
+    ```

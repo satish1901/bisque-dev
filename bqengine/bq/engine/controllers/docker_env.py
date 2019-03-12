@@ -18,7 +18,7 @@ set -x
 #mkdir -p ./output_files
 ${DOCKER_LOGIN}
 ${DOCKER_PULL}
-CONTAINER=$$(docker create ${DOCKER_IMAGE}  $@)
+CONTAINER=$$(docker create --ipc=host ${DOCKER_IMAGE}  $@)
 ${DOCKER_INPUTS}
 docker start $CONTAINER
 MODULE_RETURN=$$(docker wait  $CONTAINER)
