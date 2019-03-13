@@ -58,6 +58,9 @@ This module is used for segmenting the 3D image using UNet Pytorch based model. 
 
 #### Build Docker Image
 docker build -t biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest . -f Dockerfile
+docker tag $(docker images -q "biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest") biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest
+docker push biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest
+
 
 #### Run container and bash
 nvidia-docker run -it --ipc=host -v $(pwd):/module biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest bash
@@ -74,10 +77,10 @@ nvidia-docker run -it --ipc=host -v $(pwd):/module biodev.ece.ucsb.edu:5000/torc
 ```
 docker create --ipc=host biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
 python PythonScriptWrapper.py \
-http://drishti.ece.ucsb.edu:8080/data_service/00-kDwj3vQq83vJA6SvVvVVh8 \
+http://drishti.ece.ucsb.edu:8080/data_service/00-GFmjehgjqfqQi5CdXsAbiC \
 15 0.05 \
-http://drishti.ece.ucsb.edu:8080/module_service/mex/00-XW6DsZR9puKj76Ezn9Mi79 \
-admin:00-XW6DsZR9puKj76Ezn9Mi79
+http://drishti.ece.ucsb.edu:8080/module_service/mex/00-ZRwn68oz8CRhf2n9oXA9za \
+admin:00-ZRwn68oz8CRhf2n9oXA9za
 
 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9 (Returns an identifier for this instance)
 ```
@@ -88,8 +91,8 @@ admin:00-XW6DsZR9puKj76Ezn9Mi79
 python PythonScriptWrapper.py \
 http://drishti.ece.ucsb.edu:8080/data_service/00-kDwj3vQq83vJA6SvVvVVh8 \
 15 0.05 \
-http://drishti.ece.ucsb.edu:8080/module_service/mex/00-XW6DsZR9puKj76Ezn9Mi79 \
-admin:00-XW6DsZR9puKj76Ezn9Mi79
+http://drishti.ece.ucsb.edu:8080/module_service/mex/00-RNeG4KEKJUQPXboPEbt63S \
+admin:00-RNeG4KEKJUQPXboPEbt63S
 
 
 tail -f PythonScript.log
@@ -106,28 +109,20 @@ docker wait 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9
 
 
 
-### Issues:
-
-- Fix for the network issues. cannot reach/connect to external/host address
-  - Error: Network
-    ```
-    requests.exceptions.ConnectionError: HTTPConnectionPool
-    (host='loup.ece.ucsb.edu', port=8088): Max retries exceeded with url
-    ```
-  - Error: PyTorch 
-    ```
-    ERROR: Unexpected bus error encountered in worker. This might be caused by insufficient shared memory (shm).
-    File "/usr/local/lib/python2.7/dist-packages/torch/utils/data/dataloader.py", line 274, in handler
-    _error_if_any_worker_fails()
-    RuntimeError: DataLoader worker (pid 277) is killed by signal: Bus error.
-    ```
-  - [Common Fix](https://github.com/tengshaofeng/ResidualAttentionNetwork-pytorch/issues/2): mount the docker container using --ipc=host flag
- 
-    ```
-    docker create --ipc=host biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
-    python PythonScriptWrapper.py \ 
-    http://bisque-dev-gpu-01.cyverse.org:8080/data_service/00-ZeBjryEbutgnpKFWvFDx38 \
-    15 0.05 \
-    http://bisque-dev-gpu-01.cyverse.org:8080/module_service/mex/00-g5rHg7NyujuUmPzLLb2M78 \
-    admin:00-g5rHg7NyujuUmPzLLb2M78
-    ```
+## C.) Integrate with Python 3 codebase/module or external clients
+  - Use a Python 3 wheels build of the bisque-api==0.5.9 package
+  - BQAPI https://setuptools.readthedocs.io/en/latest/setuptools.html#distributing-a-setuptools-based-project
+  ```
+  cd ~/bisque/bqapi
+  python3 -m pip install --user --upgrade setuptools wheel
+  python3 setup.py sdist bdist_wheel
+  ```
+  - This will create the whl file in dist folder which can be installed using
+  ```
+  python3 -m pip install dist/bisque_api-0.5.9-py2.py3-none-any.whl 
+  ```
+  - In case the bqapi code is not portable to Python 3 easily. We can use the 2to3.5 CLI for migration. This will update the files with Python 3 syntax in place and move the legacy code to a *.bak file upon update
+  ```
+  2to3.5 -w *.py  
+  ```
+  - Ideally we should be able to create a new bisque-api-py3 and push it to the packages respository at https://biodev.ece.ucsb.edu/py/bisque/prod
