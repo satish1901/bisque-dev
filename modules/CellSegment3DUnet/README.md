@@ -1,18 +1,9 @@
-This module is used for segmenting the 3D image using UNet Pytorch based model.
+This module is used for segmenting the 3D image using UNet Pytorch based model. It works out of the docker image and all the corresponding data & code should be made available inside the docker image.
 
 #### Pre-requisite:
-- Mask RCNN source should be present and should have compiled pycoco tools available in source/samples/coco/ folder
-  - Download the repo and build it
-  - cd ~/source/ && wget https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcnn_coco.h5
-  - python3 setup.py install
-  - cd samples/coco && git clone https://github.com/cocodataset/cocoapi
-  - cd cocoapi/PythonAPI/ && make
-  - cp -r pycocotools/ ../../ 
-
-
-
-#### Create a volume 
-docker volume create --name bqvol
+- Source should be present and should have compiled data & model available in respective folder
+  - Download the data from https://drive.google.com/open?id=1WsMfVIdNaLqTrAPkt_qNdNyNSpINSVxS
+  - unzip its contents to folder source/data/PNAS
  
 #### Create Docker Instance
 docker build -t biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest . -f Dockerfile
@@ -30,7 +21,7 @@ The docker run template creates a container and then runs it
 ```
 
 ```
-docker create biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
+docker create --ipc=host  biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
 python PythonScriptWrapper.py \
 http://loup.ece.ucsb.edu:8088/data_service/00-DJW3jb8FDp9njehRm9qkMf \
 /DataContainers/SyntheticVolumeDataContainer/CellData/Phases \ 
