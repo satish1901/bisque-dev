@@ -113,8 +113,9 @@
     <ul class="nav bs-sidenav">
         <li class="main active"><a href="#bisque-docker-environment-setup-instructions">Bisque Docker Environment Setup Instructions</a></li>
             <li><a href="#dockerproject-source">Docker/Project Source</a></li>
-            <li><a href="#pre-requisite">Pre-requisite</a></li>
             <li><a href="#installation">Installation</a></li>
+            <li><a href="#pre-requisite">Pre-requisite</a></li>
+            <li><a href="#create-the-docker-image">Create the Docker Image</a></li>
             <li><a href="#run-environment">Run Environment</a></li>
             <li><a href="#develop-in-docker-todo">Develop in Docker (TODO !!)</a></li>
     </ul>
@@ -124,47 +125,53 @@
 <h2 id="bisque-docker-environment-setup-instructions"><a href="https://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions05">Bisque Docker Environment Setup Instructions</a><a class="headerlink" href="#bisque-docker-environment-setup-instructions" title="Permanent link">&para;</a></h2>
 <h4 id="dockerproject-source">Docker/Project Source<a class="headerlink" href="#dockerproject-source" title="Permanent link">&para;</a></h4>
 <ul>
-<li><a href="https://hub.docker.com/r/cbiucsb/bisque05/">Docker Hub Image</a></li>
-<li><a href="https://bitbucket.org/CBIucsb/bisque-stable">Bitbucket CBIucsb/bisque-stable (TODO: Test with Github version!!)</a></li>
+<li><a href="https://cloud.docker.com/u/vishwakarmarhl/repository/docker/vishwakarmarhl/ucsb-bisque05-svc">Docker Hub Bisque Dev Image</a></li>
+<li><a href="https://github.com/UCSB-VRL/bisque">UCSB-VRL/bisque-stable Github</a></li>
 <li><a href="https://groups.google.com/forum/#!topic/bisque-bioimage/jwo_5sHFeHU">Bique Bioimage Google Groups</a></li>
 </ul>
+<h4 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h4>
 <h4 id="pre-requisite">Pre-requisite<a class="headerlink" href="#pre-requisite" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Install docker (light weight VM) on you laptop:
       https://docs.docker.com/install/linux/docker-ce/ubuntu/</li>
 <li>Instructions on installing bisque using docker
-      https://bitbucket.org/CBIucsb/bisque/src/default/README.md</li>
+      https://github.com/UCSB-VRL/bisque/README.md</li>
 </ul>
-<h4 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h4>
+<h4 id="create-the-docker-image">Create the Docker Image<a class="headerlink" href="#create-the-docker-image" title="Permanent link">&para;</a></h4>
+<h4 id="run-environment">Run Environment<a class="headerlink" href="#run-environment" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Use the installer script to setup bisque docker image</li>
+<li>Setup folders &amp; pull code </li>
 </ul>
-<div class="codehilite"><pre>wget https://bitbucket.org/CBIucsb/bisque-stable/downloads/build_bisque_docker_modules.sh
-sh build_bisque_docker_modules.sh
+<div class="codehilite"><pre>mkdir ws &amp;&amp; cd ws &amp;&amp; git clone https://github.com/UCSB-VRL/bisque
+mkdir container-modules container-data container-config &amp;&amp; cp -r bisque/modules/* container-modules/
 </pre></div>
 
 
 <ul>
-<li>You can modify this script to create a modules folder and mount/load modules from the host machine into docker</li>
-</ul>
-<h4 id="run-environment">Run Environment<a class="headerlink" href="#run-environment" title="Permanent link">&para;</a></h4>
-<ul>
 <li>Start Docker and mount directories for run</li>
 </ul>
-<div class="codehilite"><pre># Start
-xterm -e \
-docker run --name bisque --rm -p 8080:8080 -p 27000:27000 \
--v $(pwd)/container-modules:/source/modules \
--v $(pwd)/container-data:/source/data \
--v $(pwd)/container-config:/source/config \
-&#39;cbiucsb/bisque05:stable&#39;
+<div class="codehilite"><pre># Docker Run
+docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
+ -v $(pwd)/container-modules:/source/modules \
+ -v $(pwd)/container-data:/source/data \
+ -v $(pwd)/container-config:/source/config \
+ &#39;vishwakarmarhl/ucsb-bisque05-svc:dev&#39;
+</pre></div>
+
+
+<ul>
+<li>Check Container state</li>
+</ul>
+<div class="codehilite"><pre>bisque@ubuntu:~$ docker ps
+CONTAINER ID        IMAGE                                  COMMAND                  CREATED             STATUS              PORTS                                              NAMES
+a1162677d66a        vishwakarmarhl/ucsb-bisque05-svc:dev   &quot;/builder/run-bisque…&quot;   13 minutes ago      Up 13 minutes       0.0.0.0:8080-&gt;8080/tcp, 0.0.0.0:27000-&gt;27000/tcp   bisque-dev
 </pre></div>
 
 
 <ul>
 <li>Stop Docker</li>
 </ul>
-<div class="codehilite"><pre> docker stop $(docker ps -a -q --filter ancestor=cbiucsb/bisque05:stable --format=&quot;{{.ID}}&quot;)
+<div class="codehilite"><pre>docker stop $(docker ps -a -q --filter ancestor=vishwakarmarhl/ucsb-bisque05-svc:dev --format=&quot;{{.ID}}&quot;)
 </pre></div>
 
 
@@ -175,12 +182,12 @@ docker run --name bisque --rm -p 8080:8080 -p 27000:27000 \
 </ul>
 </li>
 </ul>
-<div class="codehilite"><pre>docker run --name bisque --rm -p 8080:8080 \
--v $(pwd)/container-modules:/source/modules \
--v $(pwd)/container-data:/source/data \
--v $(pwd)/container-config:/source/config \
--e BISQUE_DBURL=postgresql://rahul:rahul@localhost/bqmurks58 \
-&#39;cbiucsb/bisque05:stable&#39;
+<div class="codehilite"><pre>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
+ -v $(pwd)/container-modules:/source/modules \
+ -v $(pwd)/container-data:/source/data \
+ -v $(pwd)/container-config:/source/config \
+ -e BISQUE_DBURL=postgresql://rahul:rahul@localhost/bqmurks58 \
+ &#39;vishwakarmarhl/ucsb-bisque05-svc:dev&#39;
 </pre></div>
 
 
@@ -195,43 +202,63 @@ docker run --name bisque --rm -p 8080:8080 -p 27000:27000 \
 <li>Use "admin:admin" to authenticate into this local environment </li>
 <li>To manipulate and check logs, connect to docker bash </li>
 </ul>
-<div class="codehilite"><pre>bisque-host$ docker exec -t -i bisque /bin/bash
+<div class="codehilite"><pre>bisque-host$ docker exec -t -i bisque-dev /bin/bash
 </pre></div>
 
 
 <h4 id="develop-in-docker-todo">Develop in Docker (TODO !!)<a class="headerlink" href="#develop-in-docker-todo" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Use the dev <a href="https://hub.docker.com/r/cbiucsb/bisque05/">docker container</a></li>
+<li>
+<p>Use the dev docker image <a href="https://cloud.docker.com/repository/docker/vishwakarmarhl/ucsb-bisque05-svc">docker vishwakarmarhl/ucsb-bisque05-svc</a></p>
+</li>
+<li>
+<p>Create the workspace and prepare the development setup</p>
+</li>
 </ul>
-<div class="codehilite"><pre>xterm -e \
-docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
+<div class="codehilite"><pre>cd ~/ws
+git clone https://github.com/UCSB-VRL/bisque
+mkdir container-modules container-data container-config
+cp -r bisque/modules/* container-modules/
+</pre></div>
+
+
+<ul>
+<li>Create the container </li>
+</ul>
+<div class="codehilite"><pre>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
 -v $(pwd)/container-modules:/source/modules \
 -v $(pwd)/container-data:/source/data \
 -v $(pwd)/container-config:/source/config \
-&#39;cbiucsb/bisque05:dev&#39;
+&#39;vishwakarmarhl/ucsb-bisque05-svc:dev&#39;
 </pre></div>
 
 
 <ul>
 <li>Bash into the docker container and develop</li>
 </ul>
-<div class="codehilite"><pre>docker exec -t -i bisque-dev /bin/bash
-
-# Source and develop
-docker-container$ source /usr/lib/bisque/bin/activate
-$ apt-get update 
-$ apt-get install python-dev vim
-$ ln -s /usr/include/python2.7/  /usr/lib/bisque/local/include/python2.7
+<div class="codehilite"><pre>docker exec -it bisque-dev /bin/bash
 </pre></div>
 
 
 <ul>
-<li>Test/Build a Module (TODO !! python-dev not setup)</li>
+<li>Activate environment and Test/Build a Module (TODO !! python-dev)</li>
 </ul>
-<div class="codehilite"><pre># Setup/Test Dream3D Module
-$ cd /source/modules/Dream3D
-$ python setup.py
-</pre></div></div>
+<div class="codehilite"><pre>root@9362d1f8bf12:/source# cd modules/MetaData
+root@9362d1f8bf12:/source/modules/MetaData# source /usr/lib/bisque/bin/activate
+root@9362d1f8bf12:/source/modules/MetaData# python setup.py
+</pre></div>
+
+
+<ul>
+<li>Verify Bisque Services</li>
+<li>Bisque Client interface at http://0.0.0.0:8080/client_service</li>
+<li>
+<p>Bisque Engine service at http://0.0.0.0:8080/engine_service</p>
+</li>
+<li>
+<p>Now you can add the Metadata module from the manager interface and run a test</p>
+</li>
+</ul></div>
         </div>
 
         <footer class="col-md-12">

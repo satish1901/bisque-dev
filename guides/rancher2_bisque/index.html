@@ -102,6 +102,7 @@
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
         <li class="main active"><a href="#rancher-20-setup-with-kubernetes-engine">Rancher 2.0 Setup (with Kubernetes engine)</a></li>
+            <li><a href="#introduction">Introduction</a></li>
             <li><a href="#nomenclature-kubernetes-like">Nomenclature (Kubernetes like)</a></li>
             <li><a href="#a-cluster-description">A. Cluster Description</a></li>
             <li><a href="#b-lets-encrypt-on-ubuntu-1604">B. Lets Encrypt on Ubuntu 16.04</a></li>
@@ -119,8 +120,25 @@
 
 <h1 id="rancher-20-setup-with-kubernetes-engine">Rancher 2.0 Setup (with Kubernetes engine)<a class="headerlink" href="#rancher-20-setup-with-kubernetes-engine" title="Permanent link">&para;</a></h1>
 <hr />
+<h4 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h4>
+<ul>
+<li><a href="https://www.docker.com/why-docker">Why Docker Container</a> ??</li>
+<li>A container is a standard unit of software that packages up code and all its dependencies so the application runs quickly and reliably from one computing environment to another. A Docker container image is a lightweight, standalone, executable package of software that includes everything needed to run an application: code, runtime, system tools, system libraries and settings.</li>
+<li>
+<p><a href="https://www.docker.com/resources/what-container">Container vs. Virtual Machine</a>
+  <img alt="What is Container" src="../img/bqranch/container-vs-vm.png" /></p>
+</li>
+<li>
+<p><a href="https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/#why-do-i-need-kubernetes-and-what-can-it-do">Why Kubernetes</a> ?? <a href="https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/#what-does-kubernetes-mean-k8s">K8s</a> ??</p>
+</li>
+<li>Kubernetes provides a container-centric management environment. It orchestrates computing, networking, and storage infrastructure on behalf of user workloads. </li>
+<li><a href="https://rancher.com/what-is-rancher/what-rancher-adds-to-kubernetes/">Why Rancher</a> ??</li>
+<li>Rancher combines everything an organization needs to run containers in production and centrally manage multiple Kubernetes clusters</li>
+<li>Rancher includes a full Kubernetes distribution, but adds value around Kubernetes in three key areas: Cluster Operations and Management, Intuitive Workload Management, and Enterprise Support.</li>
+</ul>
 <h4 id="nomenclature-kubernetes-like">Nomenclature (Kubernetes like)<a class="headerlink" href="#nomenclature-kubernetes-like" title="Permanent link">&para;</a></h4>
 <hr />
+<p>Rancher 2.0 <a href="https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/">Guide to provisioning a Kubernetes cluster</a> which uses the Kubernetes container-orchestration system to  </p>
 <table>
 <thead>
 <tr>
@@ -454,14 +472,14 @@ kubectl logs postgres-564d9f79d5-z2sxl  -n bqdev
 <div class="codehilite"><pre># Master: for the rancher server container
 docker stop $(docker ps -a -q --filter ancestor=rancher/rancher:stable --format=&quot;{{.ID}}&quot;)
 # Workers: for all k8s containers 
-docker stop $(docker ps -f name=k8s* --format=&quot;{{.ID}}&quot;)
+docker stop $(docker ps -f name=k* --format=&quot;{{.ID}}&quot;)
 </pre></div>
 
 
 <ul>
 <li>Clean the container, images and volumes</li>
 </ul>
-<div class="codehilite"><pre>docker rm -f $(docker ps -a -f name=k8s* --format=&quot;{{.ID}}&quot;)
+<div class="codehilite"><pre>docker rm -f $(docker ps -a -f name=k* --format=&quot;{{.ID}}&quot;)
 docker rmi -f $(docker images -q &quot;rancher/*&quot;)
 docker volume rm $(docker volume ls -q)
 </pre></div>

@@ -102,6 +102,7 @@
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
         <li class="main active"><a href="#planteome-deep-segment-analysis-module">PLANTEOME DEEP SEGMENT ANALYSIS MODULE</a></li>
+            <li><a href="#reference">Reference</a></li>
             <li><a href="#pre-requisite-link">Pre-requisite: link</a></li>
             <li><a href="#adddeploy-the-planteome-module">Add/Deploy the Planteome module</a></li>
             <li><a href="#buildconfigure-the-module">Build/Configure the module</a></li>
@@ -111,9 +112,14 @@
 </div></div>
                 <div class="col-md-9" role="main">
 
-<h1 id="planteome-deep-segment-analysis-module"><a href="">PLANTEOME DEEP SEGMENT ANALYSIS MODULE</a><a class="headerlink" href="#planteome-deep-segment-analysis-module" title="Permanent link">&para;</a></h1>
+<h1 id="planteome-deep-segment-analysis-module">PLANTEOME DEEP SEGMENT ANALYSIS MODULE<a class="headerlink" href="#planteome-deep-segment-analysis-module" title="Permanent link">&para;</a></h1>
 <p><strong>This module segments a marked object (creating a graphical object) within an input image.</strong></p>
 <p>Then the module will classify either the entire original image or the segment created in the first step. This uses PyTorch in order to do this deep segmentation.</p>
+<h4 id="reference"><a href="https://github.com/pndaly/BisQue_Platform_Guide">Reference</a><a class="headerlink" href="#reference" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Module Development Guide: https://github.com/pndaly/BisQue_Platform_Guide</li>
+<li>Sample Deep Learning Module: <a href="https://github.com/Planteome/planteome-deep-segmenter-dockerized">Planteome Deep Segment Analysis</a></li>
+</ul>
 <h4 id="pre-requisite-link">Pre-requisite: <a href="../bisque/">link</a><a class="headerlink" href="#pre-requisite-link" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Working bisque environment at http://loup.ece.ucsb.edu:8088/</li>
@@ -170,12 +176,19 @@ This can be done by,
 - Make note of the mex URL for this run by looking at the docker_run.log in the staging folder. This will be used for replaying the test run from the modules folder.</p>
 <p>Additional module execution information
 - When we annotate the image and click RUN on the module user interface
-- The Planteome module is created from biodev.ece.ucsb.edu:5000/bisque_uplanteome:latest
-    <code>docker create biodev.ece.ucsb.edu:5000/bisque_uplanteome \
-    python PlanteomeDeepSegment.py \
-    http://loup.ece.ucsb.edu:8088/module_service/mex/00-NKpU4CWiHfupgckuXBNFDd \
-    admin:00-NKpU4CWiHfupgckuXBNFDd Simple True 3 False</code>
-- This module is run with the hash id of the docker create </p>
+- The Planteome module is created from biodev.ece.ucsb.edu:5000/bisque_uplanteome:latest</p>
+<div class="codehilite"><pre>```
+docker create biodev.ece.ucsb.edu:5000/bisque_uplanteome \
+python PlanteomeDeepSegment.py \
+http://loup.ece.ucsb.edu:8088/module_service/mex/00-NKpU4CWiHfupgckuXBNFDd \
+admin:00-NKpU4CWiHfupgckuXBNFDd Simple True 3 False
+```
+</pre></div>
+
+
+<ul>
+<li>This module is run with the hash id of the docker create </li>
+</ul>
 <h5 id="setuprun-the-docker-container-for-test">Setup/Run the docker container for test<a class="headerlink" href="#setuprun-the-docker-container-for-test" title="Permanent link">&para;</a></h5>
 <ul>
 <li>Build the docker container</li>

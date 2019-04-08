@@ -147,7 +147,15 @@
 <li>Test using psql, depending on what IP the postgres server is available at</li>
 </ul>
 <div class="codehilite"><pre>psql -h 10.42.0.15 -U postgres --password -p 5432 postgres
-psql -h loup.ece.ucsb.edu -U postgres --password -p 5432 postgres
+psql -h postgres.prod -U postgres --password -p 5432 postgres
+</pre></div>
+
+
+<ul>
+<li>Create database for a particular instance</li>
+</ul>
+<div class="codehilite"><pre>CREATE DATABASE connoisseur;
+GRANT ALL PRIVILEGES ON DATABASE &quot;connoisseur&quot; to postgres;
 </pre></div></div>
         </div>
 

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Rahul Vishwakarma">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque-dev/guides/rancher2_bisque_openstack/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Rancher 2.0 (with Kubernetes engine) Openstack - BisQue-Docs</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/color-brewer.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-XXXXXXXX-X', 'auto');
+            ga('send', 'pageview');
+        </script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">BisQue-Docs</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Guides <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../bisque/">BisQue</a>
+</li>
+                                    
+<li >
+    <a href="../bisque_docker/">Docker</a>
+</li>
+                                    
+<li >
+    <a href="../jupyter_notebooks/">Jupyter</a>
+</li>
+                                    
+<li >
+    <a href="../errors/">Errors</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../about/">About</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li>
+                                <a href="https://github.com/UCSB-VRL/bisque-dev/edit/master/docs/guides/rancher2_bisque_openstack.md">Edit on UCSB-VRL/bisque-dev</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#rancher-20-with-kubernetes-engine-openstack">Rancher 2.0 (with Kubernetes engine) Openstack</a></li>
+            <li><a href="#pre-requisite">Pre-requisite</a></li>
+            <li><a href="#a-cluster-description">A. Cluster Description</a></li>
+            <li><a href="#b-lets-encrypt-on-ubuntu-1604">B. Lets Encrypt on Ubuntu 16.04</a></li>
+            <li><a href="#c-master-rancher-20">C. Master Rancher 2.0</a></li>
+            <li><a href="#d-setup-cluster-rkecustom-nodes">D. Setup Cluster RKE/custom-nodes</a></li>
+            <li><a href="#e-setup-volume">E. Setup Volume</a></li>
+            <li><a href="#f-setup-workload-on-the-cluster">F. Setup Workload (on the cluster)</a></li>
+            <li><a href="#g-load-balancing-using-l7-ingress">G. Load Balancing (using L7 Ingress)</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="rancher-20-with-kubernetes-engine-openstack">Rancher 2.0 (with Kubernetes engine) Openstack<a class="headerlink" href="#rancher-20-with-kubernetes-engine-openstack" title="Permanent link">&para;</a></h1>
+<hr />
+<h4 id="pre-requisite">Pre-requisite<a class="headerlink" href="#pre-requisite" title="Permanent link">&para;</a></h4>
+<ul>
+<li><a href="../resources/dpackages.dump">Packages list</a> on bisquesvc production (xenial-caffe) env</li>
+<li><a href="https://docs.docker.com/registry/">Custom Registry</a> is available and active at https://biodev.ece.ucsb.edu:5000/v2/_catalog</li>
+<li><a href="https://biodev.ece.ucsb.edu/py/bisque/stretch/+simple/">Dev Pi Packages</a> are acccessible </li>
+<li>Openstack environment as per the screenshot
+  <img alt="Openstack Resources Dashboard" src="../img/bqranch/openstack_instances_dash.png" /></li>
+<li>Add <a href="http://www.darwinbiler.com/openstack-creating-and-attaching-a-volume-into-an-instance/">Openstack storage volume</a> as per the Bisque requirement and volume available in openstack. This will later be NFS mounted for this tutorial.</li>
+</ul>
+<h5 id="nvidia-docker">Nvidia-docker<a class="headerlink" href="#nvidia-docker" title="Permanent link">&para;</a></h5>
+<p>Since there is a GPU requirement in Bisque Connoisseur.
+- Install <a href="https://docs.docker.com/install/linux/docker-ce/ubuntu">Docker</a>
+  - Use a specific version of docker for compatibility with nvidia-docker2 on Xenial or Bionic based on your system
+    ```
+    sudo apt-get install docker-ce=5:18.09.1~3-0~ubuntu-xenial \
+         docker-ce-cli=5:18.09.1~3-0~ubuntu-xenial containerd.io</p>
+<div class="codehilite"><pre>OR
+
+sudo apt-get install docker-ce=5:18.09.2~3-0~ubuntu-bionic \
+     docker-ce-cli=5:18.09.2~3-0~ubuntu-bionic containerd.io
+```
+</pre></div>
+
+
+<ul>
+<li>Install <a href="https://github.com/nvidia/nvidia-docker/">Nvidia-Docker</a>, </li>
+<li>Configure default nvidia-runtime: https://github.com/NVIDIA/k8s-device-plugin#preparing-your-gpu-nodes</li>
+</ul>
+<div class="codehilite"><pre># Run the following to insert the configuration
+sudo echo &quot;{ \&quot;default-runtime\&quot;: \&quot;nvidia\&quot;, \&quot;runtimes\&quot;: { \&quot;nvidia\&quot;: { \&quot;path\&quot;: \&quot;nvidia-container-runtime\&quot;, \&quot;runtimeArgs\&quot;: [] }}}&quot; \
+ &gt; /etc/docker/daemon.json
+
+# Now verify the config and it should look like below
+sudo echo &gt; /etc/docker/daemon.json
+{
+    &quot;default-runtime&quot;: &quot;nvidia&quot;,
+    &quot;runtimes&quot;: {
+        &quot;nvidia&quot;: {
+            &quot;path&quot;: &quot;nvidia-container-runtime&quot;,
+            &quot;runtimeArgs&quot;: []
+        }
+    }
+}
+</pre></div>
+
+
+<ul>
+<li>(Not Prefferred, use only if you know what you are doing) Configure the docker to use a particular storage path or even a <a href="https://whyistheinternetbroken.wordpress.com/2015/05/12/techusing-nfs-with-docker-where-does-it-fit-in/">NFS mounted path</a></li>
+</ul>
+<div class="codehilite"><pre># Edit where images are stored at &quot;sudo vim /etc/default/docker&quot;
+DOCKER_OPTS=&quot;-dns 8.8.8.8 -dns 8.8.4.4 -g /run/bisque/docker&quot;
+</pre></div>
+
+
+<ul>
+<li>Check whether you can execute nvidia-smi inside a container without the runtime flag </li>
+</ul>
+<div class="codehilite"><pre>sudo service docker restart
+docker run  --rm nvidia/cuda:9.0-base nvidia-smi 
+</pre></div>
+
+
+<h5 id="postgresql-server">PostgreSQL server<a class="headerlink" href="#postgresql-server" title="Permanent link">&para;</a></h5>
+<ul>
+<li><a href="../rancher2_postgresql">Setup PostgreSql 10.4 on Rancher workload</a></li>
+<li>Verify the connectivity to this database using the below command</li>
+</ul>
+<div class="codehilite"><pre>psql -h postgres.prod -U postgres --password -p 5432 postgres
+</pre></div>
+
+
+<ul>
+<li>This will be used in the Bisque configuration as environment variable later</li>
+</ul>
+<div class="codehilite"><pre>BISQUE_DBURL=postgresql://postgres:postgres@postgres.prod:5432/postgres
+</pre></div>
+
+
+<hr />
+<h4 id="a-cluster-description">A. Cluster Description<a class="headerlink" href="#a-cluster-description" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Deployment <a href="https://docs.google.com/presentation/d/1E6f6BR5sj5g3WPc_uRV01ZPbAjezZuUAvidUwZbbthQ/edit#slide=id.g4f74d0d960_0_58">Google Slides</a></li>
+</ul>
+<p><img alt="Rancher Deployment Diagram" src="../img/bqranch/rancher2-openstack-bisque-topology.png" /></p>
+<p>==Cluster==
+- bisque-dev-01.cyverse.org , ubuntu@128.196.65.71
+- bisque-dev-02.cyverse.org , ubuntu@128.196.65.100
+- bisque-dev-gpu-01.cyverse.org , ubuntu@128.196.65.142</p>
+<h4 id="b-lets-encrypt-on-ubuntu-1604">B. Lets Encrypt on <a href="https://certbot.eff.org/lets-encrypt/ubuntuxenial-other">Ubuntu 16.04</a><a class="headerlink" href="#b-lets-encrypt-on-ubuntu-1604" title="Permanent link">&para;</a></h4>
+<p>Note: Only works on port 80
+- Bind the hostname to the IP address by creating an A record in DNS 
+- Letsencrypt ACME challenge at TCP/80 on host
+- Open up firewall for this "sudo ufw allow 80 &amp;&amp; sudo ufw allow 80 443"
+- Verify the port 80 availability</p>
+<div class="codehilite"><pre>sudo netstat -peanut | grep &quot;:80&quot; 
+</pre></div>
+
+
+<ul>
+<li>Setup certificates at /etc/letsencrypt on each node</li>
+</ul>
+<div class="codehilite"><pre>sudo certbot certonly --standalone --dry-run \
+   --agree-tos -m vishwakarma@ucsb.edu \
+   --cert-name bisque-dev-01.cyverse.org \
+   -d bisque-dev-01.cyverse.org 
+</pre></div>
+
+
+<div class="codehilite"><pre>sudo certbot certonly --standalone --dry-run \
+   --agree-tos -m vishwakarma@ucsb.edu \
+   --cert-name bisque-dev-02.cyverse.org \
+   -d bisque-dev-02.cyverse.org 
+</pre></div>
+
+
+<div class="codehilite"><pre>sudo certbot certonly --standalone --dry-run \
+   --agree-tos -m vishwakarma@ucsb.edu \
+   --cert-name bisque-dev-gpu-01.cyverse.org \
+   -d bisque-dev-gpu-01.cyverse.org 
+</pre></div>
+
+
+<hr />
+<h4 id="c-master-rancher-20">C. Master Rancher 2.0<a class="headerlink" href="#c-master-rancher-20" title="Permanent link">&para;</a></h4>
+<p>Install/Startup Rancher: https://rancher.com/docs/rancher/v2.x/en/installation/single-node/
+- Rancher etcd data persisted at /var/lib/rancher
+- Since port 80 is occupied by rancher/rancher, a rancher/rancher-agent cannot be run on this node.</p>
+<div class="codehilite"><pre>docker run -d --restart=unless-stopped \
+  -p 8080:80 -p 8443:443 \
+  -v /var/log/rancher/auditlog:/var/log/auditlog \
+  -v /host/rancher:/var/lib/rancher \
+  -e AUDIT_LEVEL=1 \
+  rancher/rancher:stable 
+</pre></div>
+
+
+<ul>
+<li>You will have rancher accessible at https://bisque-dev-01.cyverse.org:8443 if everything goes fine</li>
+</ul>
+<hr />
+<h4 id="d-setup-cluster-rkecustom-nodes">D. Setup Cluster <a href="https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/custom-nodes/">RKE/custom-nodes</a><a class="headerlink" href="#d-setup-cluster-rkecustom-nodes" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Create a cluster and name it "bq-cluster"</li>
+<li>Use Calico for the CNI network layer</li>
+<li>Choose custom cloud provider leveraging k8s</li>
+<li>Make this server as etcd, controlplane and worker</li>
+</ul>
+<div class="codehilite"><pre> sudo docker run -d --privileged --restart=unless-stopped --net=host \
+  -v /etc/kubernetes:/etc/kubernetes \
+  -v /var/run:/var/run \
+  rancher/rancher-agent:v2.1.6 \
+  --server https://bisque-dev-01.cyverse.org:8443 \
+  --token 2s7gbd8gj9vx4pv4vgsq899gkkxdfrxc8j8wh8njgcgwdmtfkt7gd8 \
+  --ca-checksum cf2f54c1837a5d9e1f8cc7db35efdb9a497c16b4ea9022b52b877a7cc94be505 \
+  --node-name bisque-dev-gpu-01.cyverse.org \
+  --address 128.196.65.142 \
+  --etcd --controlplane --worker \
+  --label type=gpu
+</pre></div>
+
+
+<ul>
+<li>You will see a green bar below saying a particular node has registered.</li>
+</ul>
+<blockquote>
+<p>You can add more nodes to the cluster by editing the cluster and running another command as below</p>
+</blockquote>
+<div class="codehilite"><pre>sudo docker run -d --privileged --restart=unless-stopped --net=host \
+  -v /etc/kubernetes:/etc/kubernetes \
+  -v /var/run:/var/run \
+  rancher/rancher-agent:v2.1.6 \
+  --server https://bisque-dev-01.cyverse.org:8443 \
+  --token 2sw5pb6nv2vqhrb8hrkbc6dgbn9k9lmw9kv6h8qzgmncxg9bfz6qpl \
+  --ca-checksum cf2f54c1837a5d9e1f8cc7db35efdb9a497c16b4ea9022b52b877a7cc94be505 \
+  --node-name bisque-dev-02.cyverse.org \
+  --address 128.196.65.100 \
+  --controlplane --worker \
+  --label type=cpu
+</pre></div>
+
+
+<h5 id="port-requirements">Port requirements<a class="headerlink" href="#port-requirements" title="Permanent link">&para;</a></h5>
+<p>Open up ports based on the <a href="https://rancher.com/docs/rancher/v2.x/en/installation/references/">CNI provider requirements</a>
+- See requirements for Calico as the provider in this case</p>
+<h5 id="service-discovery">Service Discovery<a class="headerlink" href="#service-discovery" title="Permanent link">&para;</a></h5>
+<ul>
+<li>This <a href="https://rancher.com/docs/rancher/v2.x/en/k8s-in-rancher/service-discovery">Service Discovery</a> entry enables DNS resolution for the workload’s pods using the following naming convention: <code>&lt;workload&gt;.&lt;namespace&gt;.svc.cluster.local</code></li>
+</ul>
+<hr />
+<h4 id="e-setup-volume">E. Setup Volume<a class="headerlink" href="#e-setup-volume" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Mount the host directory for volume using NFS and setup the nfs client access for the cluster
+https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-16-04</li>
+<li>Setup folders</li>
+</ul>
+<div class="codehilite"><pre># Create the path on host system
+sudo mkdir /etc/letsencrypt/ -p &amp;&amp; \
+sudo mkdir /run/bisque/ -p &amp;&amp; \
+sudo mkdir /run/bisque/data -p &amp;&amp; \
+sudo mkdir /run/bisque/local/workdir -p
+
+# Allow other users to edit this
+sudo chown -R nobody:nogroup /run/bisque/
+sudo chmod 0777 -R /run/bisque
+</pre></div>
+
+
+<ul>
+<li>Now add NFS host configuration at /etc/exports</li>
+</ul>
+<div class="codehilite"><pre>/run/bisque     128.196.65.100(rw,sync,no_root_squash,no_subtree_check)
+/run/bisque     128.196.65.142(rw,sync,no_root_squash,no_subtree_check)
+/run/postgres     128.196.65.100(rw,sync,no_root_squash,no_subtree_check)
+/run/postgres     128.196.65.142(rw,sync,no_root_squash,no_subtree_check)
+</pre></div>
+
+
+<ul>
+<li>restart the nfs server on the NFS host machine</li>
+</ul>
+<div class="codehilite"><pre>sudo systemctl restart nfs-kernel-server
+</pre></div>
+
+
+<ul>
+<li>Mount the NFS folder on the client machine</li>
+</ul>
+<div class="codehilite"><pre>sudo apt-get install nfs-common
+sudo mount 128.196.65.71:/run/bisque/ /run/bisque/
+sudo mount 128.196.65.71:/run/postgres/ /run/postgres/
+</pre></div>
+
+
+<ul>
+<li>Verify the mount on a client system using df -h</li>
+</ul>
+<blockquote>
+<p>AND
+https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-from-nfs-share</p>
+</blockquote>
+<ul>
+<li>Create a persistent volume in the cluster </li>
+<li>Set NFS-Share option on the node as /run/bisque </li>
+</ul>
+<p><img alt="Rancher NFS persistent volume addition" src="img/bqranch/rancher_volume_nfs?raw=true" /></p>
+<ul>
+<li>We can see all the volumes that are created in the Volumes section of the "bq-cluster" workload</li>
+</ul>
+<p><img alt="Rancher workload volumes" src="img/bqranch/workload_vol?raw=true" /></p>
+<hr />
+<h4 id="f-setup-workload-on-the-cluster">F. Setup Workload (on the cluster)<a class="headerlink" href="#f-setup-workload-on-the-cluster" title="Permanent link">&para;</a></h4>
+<p>Bisque Test environment where workloads are deployed with open NodePort
+https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
+<h5 id="condor-setup">Condor Setup<a class="headerlink" href="#condor-setup" title="Permanent link">&para;</a></h5>
+<p>Installation &amp; Configuration
+- <a href="https://research.cs.wisc.edu/htcondor/instructions/ubuntu/16/stable/">HT Condor install instructions</a></p>
+<h6 id="condor-master-node-deployment-this-service-will-be-discoverable-at-mastercondorsvcclusterlocal">Condor Master Node Deployment. This service will be discoverable at master.condor.svc.cluster.local<a class="headerlink" href="#condor-master-node-deployment-this-service-will-be-discoverable-at-mastercondorsvcclusterlocal" title="Permanent link">&para;</a></h6>
+<ul>
+<li>Name: master</li>
+<li>Namespace: condor</li>
+<li>Pods: 1</li>
+<li>Docker Image: biodev.ece.ucsb.edu:5000/condor</li>
+<li>Port Mapping: </li>
+<li>9618        TCP         HostPort        9618</li>
+<li>9886        TCP         HostPort        9886 </li>
+<li>Environment</li>
+</ul>
+<div class="codehilite"><pre>CONDOR_MANAGER_HOST =   master.condor
+CONDOR_DAEMONS =    COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
+</pre></div>
+
+
+<p>Also, verify the /etc/condor/condor_config.local has property</p>
+<div class="codehilite"><pre>DAEMON_LIST = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
+</pre></div>
+
+
+<h6 id="condor-worker-node-deployment">Condor Worker Node Deployment<a class="headerlink" href="#condor-worker-node-deployment" title="Permanent link">&para;</a></h6>
+<ul>
+<li>Name: worker</li>
+<li>Namespace: condor</li>
+<li>Pods: 2</li>
+<li>Docker Image: biodev.ece.ucsb.edu:5000/condor</li>
+<li>Port Mapping: </li>
+<li>9886        TCP         ClusterIP(Internal)         9886 </li>
+<li>Volumes</li>
+<li>Persistent Volume from Node path /var/run/docker.sock (enables docker run)</li>
+<li>
+<p>Node Scheduling: Run all the pods on a particular host (GPU based bisque-dev-gpu-01.cyverse.org due to caffe engine requirements)</p>
+</li>
+<li>
+<p>Environment</p>
+</li>
+</ul>
+<div class="codehilite"><pre>CONDOR_MANAGER_HOST =   master.condor
+CONDOR_DAEMONS =    MASTER,SCHEDD,STARTD,SHARED_PORT
+</pre></div>
+
+
+<h6 id="condor-configuration-advanced-setup-instructions">Condor Configuration: <a href="../rancher2_condor">Advanced Setup Instructions</a><a class="headerlink" href="#condor-configuration-advanced-setup-instructions" title="Permanent link">&para;</a></h6>
+<ul>
+<li>Configuration is needed to make sure the pool is discoverable, functional and collecting jobs.</li>
+</ul>
+<h5 id="bisque-workload-configuration">Bisque workload configuration<a class="headerlink" href="#bisque-workload-configuration" title="Permanent link">&para;</a></h5>
+<p>We will be using the image at custom registry <a href="https://biodev.ece.ucsb.edu:5000/v2/_catalog">biodev.ece.ucsb.edu:5000</a> or we can use any publicly deployed image at <a href="https://hub.docker.com">https://hub.docker.com</a>. The GPU enabled development environment is available at <a href="https://cloud.docker.com/u/vishwakarmarhl/repository/docker/vishwakarmarhl/ucsb-bisque05-c9r">vishwakarmarhl/ucsb-bisque05-c9r:latest</a> and the production image is at biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev</p>
+<ul>
+<li>Name: bisquesvc</li>
+<li>Pods: 1</li>
+<li>Docker Image: biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev</li>
+<li>Port Mapping: </li>
+<li>80-TCP-NodePort-Random </li>
+<li>8080-TCP-NodePort-Random </li>
+<li>
+<p>27000-TCP-NodePort-Random</p>
+</li>
+<li>
+<p>Environment Variables: Copy paste the "Environment Configuration" section </p>
+</li>
+<li>Node Scheduling: Run all the pods on a particular host (GPU based bisque-dev-gpu-01.cyverse.org due to caffe engine)</li>
+<li>Health Check: No change</li>
+<li>Volumes</li>
+<li>Persistent Volume claim and set the mount point as /run/bisque</li>
+<li>Persistent Volume from Node path /etc/letsencrypt</li>
+<li>Persistent Volume from Node path /var/run/docker.sock</li>
+<li>Scaling: No change</li>
+<li>Command: (Only, in case needed. Not used with the current Image)</li>
+<li>Entrypoint: /builder/run-bisque.sh</li>
+<li>Command: bootstrap start</li>
+<li>Working Dir: /source</li>
+<li>Console: Interactive &amp; TTY (-i -t)</li>
+<li>Networking: Cluster first with host network</li>
+<li>Labels: No change</li>
+<li>Security &amp; Host: Privileged is True</li>
+</ul>
+<blockquote>
+<p>Finally we can see the overall state of pods in the workload within the clusters. Also view logs to track the Bisque initialization 
+<img alt="Workload pods" src="img/bqranch/workload_pod?raw=true" /></p>
+</blockquote>
+<h5 id="environment-configuration">Environment Configuration<a class="headerlink" href="#environment-configuration" title="Permanent link">&para;</a></h5>
+<ul>
+<li>Bisque service variables</li>
+</ul>
+<div class="codehilite"><pre>      BISQUE_USER= bisque
+      BISQUE_BISQUE_ADMIN_EMAIL= admin@bisque-dev-gpu-01.cyverse.org
+      BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
+      BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/
+      BISQUE_BISQUE_STORES_BLOBS_TOP= file://$$datadir/blobdir/
+      BISQUE_BISQUE_STORES_LOCAL_MOUNTURL= file://$$datadir/imagedir/$$user/
+      BISQUE_BISQUE_STORES_LOCAL_READONLY= true
+      BISQUE_BISQUE_STORES_LOCAL_TOP= file://$$datadir/imagedir/
+      BISQUE_DOCKER_DOCKER_HUB= biodev.ece.ucsb.edu:5000
+      BISQUE_SECRET= bq123
+      BISQUE_UID= 12027
+      BISQUE_RUNTIME_STAGING_BASE= /run/bisque/data/staging
+      BQ__BISQUE__IMAGE_SERVICE__WORK_DIR= /run/bisque/local/workdir
+      BQ__BISQUE__PATHS__DATA= /run/bisque/data
+      MAIL_SERVER= dough.ece.ucsb.edu
+      BISQUE_DBURL=postgresql://postgres:postgres@postgres.prod:5432/postgres
+      CONDOR_DAEMONS= MASTER,SCHEDD,SHARED_PORT 
+      CONDOR_MANAGER_HOST= master.condor
+      DEBIAN_FRONTEND=noninteractive
+      IMGCNV=imgcnv_ubuntu16_2.4.3
+</pre></div>
+
+
+<p>We should see the overview of workloads deployed as below
+<img alt="Workload Dashboard" src="../img/bqranch/workloads.png?raw=true" /></p>
+<p>Service should be running at http://bisque-dev-gpu-01.cyverse.org:31274</p>
+<h5 id="bisque-gpu-verification-nvidia-docker-should-be-default-runtime">Bisque GPU Verification (nvidia-docker should be default runtime)<a class="headerlink" href="#bisque-gpu-verification-nvidia-docker-should-be-default-runtime" title="Permanent link">&para;</a></h5>
+<ul>
+<li>Connect into the container and verify "nvidia-smi" client </li>
+<li>Nvidia-Docker can be tested with 
+  <code>docker run --runtime=nvidia --rm nvidia/cuda:9.0-base nvidia-smi</code></li>
+<li>Test whether nvidia-runtime is default 
+  <code>docker run --rm nvidia/cuda:9.0-base nvidia-smi</code></li>
+</ul>
+<p>You should be able to tail the log on the node where you have deployed the container.
+<code>sudo tail -f /var/log/containers/prod_bisquecon-*.log</code></p>
+<h4 id="g-load-balancing-using-l7-ingress">G. Load Balancing (using L7 Ingress)<a class="headerlink" href="#g-load-balancing-using-l7-ingress" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Add Ingress configuration for load balancing with name "bq-website" </li>
+<li>Configure the target(bisquesvc) pods so that the port 80 is used</li>
+</ul></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Copyright &copy; 2018 - 2019 Bisque, UCSB VRL</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"search": 83, "next": 78, "help": 191, "previous": 80};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

@@ -101,18 +101,30 @@
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-        <li class="main active"><a href="#rancher-httpsaweceucsbedu8080">Rancher: http://saw.ece.ucsb.edu:8080</a></li>
-        <li class="main "><a href="#main-containers">Main Containers</a></li>
-        <li class="main "><a href="#modules-containers">Modules Containers</a></li>
-        <li class="main "><a href="#reference-httpsgithubcompndalybisque_platform_guide">Reference: https://github.com/pndaly/BisQue_Platform_Guide</a></li>
-        <li class="main "><a href="#overall-source-code-stack">Overall Source code stack</a></li>
+        <li class="main active"><a href="#module-development-guideresources">Module Development Guide/Resources</a></li>
+            <li><a href="#container-organization-and-plan-for-rancher-setup">Container organization and plan for rancher setup</a></li>
+            <li><a href="#server-containers">Server Containers</a></li>
+            <li><a href="#module-containers">Module Containers</a></li>
+        <li class="main "><a href="#a-develop-module-cellsegment3dunet-pytorch">A.) Develop Module CellSegment3DUnet (PyTorch)</a></li>
+            <li><a href="#overall-module-code">Overall Module code</a></li>
+            <li><a href="#developing-the-module-in-docker">Developing the Module in Docker</a></li>
+        <li class="main "><a href="#b-module-deployexecution">B.) Module Deploy/Execution</a></li>
+            <li><a href="#run-based-on-the-identifier-for-that-instance">Run based on the identifier for that instance</a></li>
+        <li class="main "><a href="#c-integrate-with-python-3-codebasemodule-or-external-clients">C.) Integrate with Python 3 codebase/module or external clients</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
 
-<h5 id="rancher-httpsaweceucsbedu8080">Rancher: http://saw.ece.ucsb.edu:8080<a class="headerlink" href="#rancher-httpsaweceucsbedu8080" title="Permanent link">&para;</a></h5>
-<p>Container organization and plan for rancher setup</p>
-<h5 id="main-containers">Main Containers<a class="headerlink" href="#main-containers" title="Permanent link">&para;</a></h5>
+<h2 id="module-development-guideresources">Module Development Guide/Resources<a class="headerlink" href="#module-development-guideresources" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Developer Reference: https://biodev.ece.ucsb.edu/projects/bisquik/wiki/Developer</li>
+<li>Module Reference: https://biodev.ece.ucsb.edu/projects/bisquik/wiki/Developer/ModuleSystem</li>
+</ul>
+<h5 id="container-organization-and-plan-for-rancher-setup">Container organization and plan for rancher setup<a class="headerlink" href="#container-organization-and-plan-for-rancher-setup" title="Permanent link">&para;</a></h5>
+<ul>
+<li>Bisque Production Rancher: http://saw.ece.ucsb.edu:8080</li>
+</ul>
+<h5 id="server-containers">Server Containers<a class="headerlink" href="#server-containers" title="Permanent link">&para;</a></h5>
 <table>
 <thead>
 <tr>
@@ -124,128 +136,20 @@
 </thead>
 <tbody>
 <tr>
+<td align="left">BisQue Server</td>
+<td align="left">http://dough.ece.ucsb.edu</td>
+<td align="left">biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev</td>
+<td align="left">Main BisQue service with Connoisseur</td>
+</tr>
+<tr>
 <td align="left">condor-nodes</td>
-<td align="left">IP ADDR</td>
+<td align="left">condor.master</td>
 <td align="left">biodev.ece.ucsb.edu:5000/condor</td>
 <td align="left">One master and 4 worker nodes</td>
 </tr>
-<tr>
-<td align="left">elasticsearch 2</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/elasticsearch-conf:v0.5.0</td>
-<td align="left">One container each elasticsearch-[clients, datanodes &amp; masters]</td>
-</tr>
-<tr>
-<td align="left">elasticsearch base/data</td>
-<td align="left">IP ADDR</td>
-<td align="left">elasticsearch:2.4.3-alpine</td>
-<td align="left">Two containers(base &amp; data volume) for each elasticsearch-[clients, datanodes &amp; masters]</td>
-</tr>
-<tr>
-<td align="left">elasticsearch kopf</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/kopf:v0.4.0</td>
-<td align="left">One container</td>
-</tr>
-<tr>
-<td align="left">healthcheck</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/healthcheck:v0.3.6</td>
-<td align="left">One on each instance</td>
-</tr>
-<tr>
-<td align="left">ipsec cni-driver, connectivity-check, router</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/net:v0.13.11</td>
-<td align="left">One on each instance for executing start-cni-driver, connectivity-check, and start-ipsec</td>
-</tr>
-<tr>
-<td align="left">ipsec-ipsec</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/net:holder</td>
-<td align="left">One on each instance</td>
-</tr>
-<tr>
-<td align="left">network-services-meta</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/metadata:v0.10.2</td>
-<td align="left">One on each instance start.sh,rancher-metadata,-reload-interval-limit=1000,-subscribe</td>
-</tr>
-<tr>
-<td align="left">network-services-meta-dns</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/dns:v0.17.3</td>
-<td align="left">One on each instance rancher-dns,--listen,169.254.169.250:53,--metadata-server=localhost</td>
-</tr>
-<tr>
-<td align="left">network-services-manager</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/network-manager:v0.7.20</td>
-<td align="left">One on each instance plugin-manager,--disable-cni-setup,--metadata-address,169.254.169.250</td>
-</tr>
-<tr>
-<td align="left">nfs-driver</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/storage-nfs:v0.9.1</td>
-<td align="left">One on each instance</td>
-</tr>
-<tr>
-<td align="left">rancher-agent</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/agent:v1.2.10</td>
-<td align="left">One on each instance</td>
-</tr>
-<tr>
-<td align="left">scheduler</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/scheduler:v0.8.3</td>
-<td align="left">One instance  scheduler,--metadata-address,169.254.169.250</td>
-</tr>
-<tr>
-<td align="left">janitor-cleanup</td>
-<td align="left">IP ADDR</td>
-<td align="left">meltwater/docker-cleanup:1.8.0</td>
-<td align="left">One on each instance</td>
-</tr>
-<tr>
-<td align="left">kibana</td>
-<td align="left">IP ADDR</td>
-<td align="left">kibana:5.3.0</td>
-<td align="left">One instance</td>
-</tr>
-<tr>
-<td align="left">kibana rancher</td>
-<td align="left">IP ADDR</td>
-<td align="left">rancher/lb-service-haproxy:v0.7.9, rancher/nginx:v1.9.4-3, rancher/nginx-conf:v0.2.0</td>
-<td align="left">One instance</td>
-</tr>
-<tr>
-<td align="left">production logsvc</td>
-<td align="left">IP ADDR</td>
-<td align="left">biodev.ece.ucsb.edu:5000/logger_ucsb:dev</td>
-<td align="left">One instance</td>
-</tr>
-<tr>
-<td align="left">LetsEncrypt</td>
-<td align="left">IP ADDR</td>
-<td align="left">janeczku/rancher-letsencrypt:v0.4.0</td>
-<td align="left">One instance</td>
-</tr>
-<tr>
-<td align="left">jenkins</td>
-<td align="left">IP ADDR</td>
-<td align="left">jenkins/jenkins:lts</td>
-<td align="left">One instance</td>
-</tr>
-<tr>
-<td align="left">jenkins plugins</td>
-<td align="left">IP ADDR</td>
-<td align="left">biodev.ece.ucsb.edu:5000/jenkins-cbi-plugins:v0.1.1</td>
-<td align="left">One instance</td>
-</tr>
 </tbody>
 </table>
-<h5 id="modules-containers">Modules Containers<a class="headerlink" href="#modules-containers" title="Permanent link">&para;</a></h5>
+<h5 id="module-containers">Module Containers<a class="headerlink" href="#module-containers" title="Permanent link">&para;</a></h5>
 <table>
 <thead>
 <tr>
@@ -269,18 +173,103 @@
 <td align="left">Predict Strength Module</td>
 </tr>
 <tr>
-<td align="left">Connoisseur</td>
+<td align="left">Cell Segment 3D Unet</td>
 <td align="left">IP ADDR</td>
-<td align="left">biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev</td>
-<td align="left">Predict Strength Module</td>
+<td align="left">biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2</td>
+<td align="left">3D Cell Segmentation</td>
 </tr>
 </tbody>
 </table>
-<h3 id="reference-httpsgithubcompndalybisque_platform_guide"><a href="https://github.com/pndaly/BisQue_Platform_Guide">Reference</a>: https://github.com/pndaly/BisQue_Platform_Guide<a class="headerlink" href="#reference-httpsgithubcompndalybisque_platform_guide" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Sample Deep Learning Module: <a href="https://github.com/Planteome/planteome-deep-segmenter-dockerized">Planteome Deep Segment Analysis</a></li>
+<li>There is another load balancer or haproxy to route the traffic based on IP rules</li>
+<li>LetsEncrypt certificates are used for encrypted traffic</li>
 </ul>
-<h3 id="overall-source-code-stack">Overall Source code stack<a class="headerlink" href="#overall-source-code-stack" title="Permanent link">&para;</a></h3></div>
+<h2 id="a-develop-module-cellsegment3dunet-pytorch">A.) Develop Module CellSegment3DUnet (PyTorch)<a class="headerlink" href="#a-develop-module-cellsegment3dunet-pytorch" title="Permanent link">&para;</a></h2>
+<p>We describe the module which takes a 3D cell image in TIFF format as input and generates segmentation mask for it.</p>
+<h3 id="overall-module-code">Overall Module code<a class="headerlink" href="#overall-module-code" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre>root@karma:/module# tree -L 1  
+.
+|-- CellSegment3DUnet.xml
+|-- Dockerfile
+|-- PythonScript.log
+|-- PythonScriptWrapper
+|-- PythonScriptWrapper.py
+|-- PythonScriptWrapper.spec
+|-- README.md
+|-- build/
+|-- module.log
+|-- public/
+|-- pydist/
+|-- runtime-module.cfg
+|-- scriptrun.log
+|-- setup.py
+`-- source/
+</pre></div>
+
+
+<ul>
+<li>Describe each section of the module</li>
+</ul>
+<h3 id="developing-the-module-in-docker">Developing the Module in Docker<a class="headerlink" href="#developing-the-module-in-docker" title="Permanent link">&para;</a></h3>
+<p>This module is used for segmenting the 3D image using UNet Pytorch based model. We  will build a container to test, develop and deploy the module.</p>
+<h4 id="build-docker-image">Build Docker Image<a class="headerlink" href="#build-docker-image" title="Permanent link">&para;</a></h4>
+<p>docker build -t biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest . -f Dockerfile
+docker tag $(docker images -q "biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest") biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest
+docker push biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest</p>
+<h4 id="run-container-and-bash">Run container and bash<a class="headerlink" href="#run-container-and-bash" title="Permanent link">&para;</a></h4>
+<p>nvidia-docker run -it --ipc=host -v $(pwd):/module biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest bash</p>
+<ul>
+<li>The docker run, creates a container and then connect to its bash</li>
+</ul>
+<h2 id="b-module-deployexecution">B.) Module Deploy/Execution<a class="headerlink" href="#b-module-deployexecution" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Extracts from the ~/staging/**/docker_run.log execution log</li>
+<li>Updated engine service to include --ipc=host parameter in the launcher template (DOCKER_RUN) at bq.engine.controllers/docker_env.py</li>
+</ul>
+<div class="codehilite"><pre>docker create --ipc=host biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
+python PythonScriptWrapper.py \
+http://drishti.ece.ucsb.edu:8080/data_service/00-GFmjehgjqfqQi5CdXsAbiC \
+15 0.05 \
+http://drishti.ece.ucsb.edu:8080/module_service/mex/00-ZRwn68oz8CRhf2n9oXA9za \
+admin:00-ZRwn68oz8CRhf2n9oXA9za
+
+9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9 (Returns an identifier for this instance)
+</pre></div>
+
+
+<ul>
+<li>Eventually this is the code that is running inside the container at runtime</li>
+</ul>
+<div class="codehilite"><pre>python PythonScriptWrapper.py \
+http://drishti.ece.ucsb.edu:8080/data_service/00-kDwj3vQq83vJA6SvVvVVh8 \
+15 0.05 \
+http://drishti.ece.ucsb.edu:8080/module_service/mex/00-RNeG4KEKJUQPXboPEbt63S \
+admin:00-RNeG4KEKJUQPXboPEbt63S
+
+
+tail -f PythonScript.log
+</pre></div>
+
+
+<h4 id="run-based-on-the-identifier-for-that-instance">Run based on the identifier for that instance<a class="headerlink" href="#run-based-on-the-identifier-for-that-instance" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre>docker start 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9
+docker wait 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9
+</pre></div>
+
+
+<h2 id="c-integrate-with-python-3-codebasemodule-or-external-clients">C.) Integrate with Python 3 codebase/module or external clients<a class="headerlink" href="#c-integrate-with-python-3-codebasemodule-or-external-clients" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Use a Python 3 wheels build of the bisque-api==0.5.9 package</li>
+<li>BQAPI https://setuptools.readthedocs.io/en/latest/setuptools.html#distributing-a-setuptools-based-project
+  <code>cd ~/bisque/bqapi
+  python3 -m pip install --user --upgrade setuptools wheel
+  python3 setup.py sdist bdist_wheel</code></li>
+<li>This will create the whl file in dist folder which can be installed using
+  <code>python3 -m pip install dist/bisque_api-0.5.9-py2.py3-none-any.whl</code></li>
+<li>In case the bqapi code is not portable to Python 3 easily. We can use the 2to3.5 CLI for migration. This will update the files with Python 3 syntax in place and move the legacy code to a *.bak file upon update
+  <code>2to3.5 -w *.py</code></li>
+<li>Ideally we should be able to create a new bisque-api-py3 and push it to the packages respository at https://biodev.ece.ucsb.edu/py/bisque/prod</li>
+</ul></div>
         </div>
 
         <footer class="col-md-12">

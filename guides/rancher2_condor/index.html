@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Rahul Vishwakarma">
+        <link rel="canonical" href="https://UCSB-VRL.github.io/bisque-dev/guides/rancher2_condor/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Rancher2 condor - BisQue-Docs</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/color-brewer.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-XXXXXXXX-X', 'auto');
+            ga('send', 'pageview');
+        </script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">BisQue-Docs</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Guides <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../bisque/">BisQue</a>
+</li>
+                                    
+<li >
+    <a href="../bisque_docker/">Docker</a>
+</li>
+                                    
+<li >
+    <a href="../jupyter_notebooks/">Jupyter</a>
+</li>
+                                    
+<li >
+    <a href="../errors/">Errors</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../about/">About</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li>
+                                <a href="https://github.com/UCSB-VRL/bisque-dev/edit/master/docs/guides/rancher2_condor.md">Edit on UCSB-VRL/bisque-dev</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#references">References:</a></li>
+        <li class="main "><a href="#topology">Topology</a></li>
+        <li class="main "><a href="#masterworker-condor-config">Master/Worker Condor Config</a></li>
+            <li><a href="#initiate-startd-at-master-and-workers">Initiate startd at master and workers</a></li>
+            <li><a href="#condor-config-vim-etccondorcondor_configlocal">Condor config vim /etc/condor/condor_config.local</a></li>
+            <li><a href="#reconfig-restart-condor">Reconfig &amp; Restart Condor</a></li>
+        <li class="main "><a href="#bisquesvc-submit-node-condor-config">BisqueSvc Submit Node Condor Config</a></li>
+        <li class="main "><a href="#state-logs">State &amp; logs</a></li>
+        <li class="main "><a href="#test-condor">Test Condor</a></li>
+            <li><a href="#create-a-file-docksh-with-the-following-commands">Create a file dock.sh with the following commands</a></li>
+            <li><a href="#create-a-docksubmit-file-with-the-following-paramaters">Create a dock.submit file with the following paramaters</a></li>
+            <li><a href="#now-execute">Now execute</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<p>The Condor instructions are based out of custom image(biodev.ece.ucsb.edu:5000/condor)</p>
+<p>Official Docs: https://research.cs.wisc.edu/htcondor/manual/v8.8</p>
+<h6 id="references">References:<a class="headerlink" href="#references" title="Permanent link">&para;</a></h6>
+<ul>
+<li>Condor <a href="https://research.cs.wisc.edu/htcondor/manual/v8.2/2_5Submitting_Job.html">Submit Jobs (Official Docs)</a></li>
+<li>Multi Node <a href="https://spinningmatt.wordpress.com/2011/06/12/getting-started-creating-a-multiple-node-condor-pool/">Condor Pool (Blog)</a></li>
+<li>Simple <a href="https://www.linux.com/news/setting-condor-cluster">Condor Cluster (Blog)</a></li>
+<li>Condor <a href="https://research.cs.wisc.edu/htcondor/manual/v8.8/Security.html">Examples of Security Configurations (Official Docs)</a></li>
+<li>Install Docker Community Edition https://docs.docker.com/install/linux/docker-ce/ubuntu/</li>
+</ul>
+<h3 id="topology">Topology<a class="headerlink" href="#topology" title="Permanent link">&para;</a></h3>
+<p>The condor image available at the registry has <code>htcondor==8.4.2~dfsg.1-1build1</code> pre-installed.</p>
+<ul>
+<li>Submit Node   (host = bisquesvc.prod)</li>
+<li>Master node   (host = master.condor)</li>
+<li>Worker Nodes  (host = worker*.condor) </li>
+<li>Docker typically runs at worker and on the Bisque submit node for cases where we dont use condor at all</li>
+<li>Test this using <code>docker ps</code> on the worker nodes</li>
+</ul>
+<blockquote>
+<p>Now on each node we should start Condor and also make sure that the hostname "master.condor" is reachable from all the nodes in the pool, including the bisque submit node.</p>
+</blockquote>
+<div class="codehilite"><pre>$ ping master.condor
+    PING master.condor.svc.cluster.local (10.43.55.33) 56(84) bytes of data.
+$ service condor start
+</pre></div>
+
+
+<h3 id="masterworker-condor-config">Master/Worker Condor Config<a class="headerlink" href="#masterworker-condor-config" title="Permanent link">&para;</a></h3>
+<h4 id="initiate-startd-at-master-and-workers">Initiate startd at master and workers<a class="headerlink" href="#initiate-startd-at-master-and-workers" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre>condor_startd 
+</pre></div>
+
+
+<h4 id="condor-config-vim-etccondorcondor_configlocal">Condor config <code>vim /etc/condor/condor_config.local</code><a class="headerlink" href="#condor-config-vim-etccondorcondor_configlocal" title="Permanent link">&para;</a></h4>
+<p>Add the following in the section where you see ALLOW_READ/WRITE keys</p>
+<div class="codehilite"><pre>ALLOW_ADMINISTRATOR = $(CONDOR_HOST)
+ALLOW_OWNER = $(FULL_HOSTNAME), $(ALLOW_ADMINISTRATOR)
+ALLOW_READ = *
+ALLOW_WRITE = *
+ALLOW_NEGOTIATOR = *
+ALLOW_NEGOTIATOR_SCHEDD = *
+ALLOW_WRITE_COLLECTOR = $(ALLOW_WRITE), $(FLOCK_FROM)
+ALLOW_WRITE_STARTD    = $(ALLOW_WRITE), $(FLOCK_FROM)
+ALLOW_READ_COLLECTOR  = $(ALLOW_READ), $(FLOCK_FROM)
+ALLOW_READ_STARTD     = $(ALLOW_READ), $(FLOCK_FROM)
+ALLOW_CLIENT = *
+ALLOW_ADVERTISE_STARTD = *
+
+SEC_DEFAULT_NEGOTIATION = NEVER
+SEC_DEFAULT_AUTHENTICATION = NEVER
+</pre></div>
+
+
+<h4 id="reconfig-restart-condor">Reconfig &amp; Restart Condor<a class="headerlink" href="#reconfig-restart-condor" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre>condor_reconfig
+service condor restart
+</pre></div>
+
+
+<h3 id="bisquesvc-submit-node-condor-config">BisqueSvc Submit Node Condor Config<a class="headerlink" href="#bisquesvc-submit-node-condor-config" title="Permanent link">&para;</a></h3>
+<p>Here is contents of the production configuration <code>/etc/condor/condor_config.local</code> file</p>
+<div class="codehilite"><pre>CONDOR_HOST = master.condor
+COLLECTOR_NAME = CBIUCSB
+DAEMON_LIST = MASTER,SCHEDD,SHARED_PORT
+CONDOR_ADMIN          = admin@biodev.ece.ucsb.edu
+##  Do you want to use NFS for file access instead of remote system calls
+ALLOW_READ  = $(ALLOW_READ), 172.*, 10.*, 128.111.*, *.ece.ucsb.edu, *.cs.ucsb.edu
+ALLOW_WRITE = $(ALLOW_WRITE), 172.*, 10.*, 128.111.*, *.ece.ucsb.edu, *.cs.ucsb.edu
+ALLOW_NEGOTIATOR      = 172.*, 10.*, 128.111.*
+
+#https://lists.cs.wisc.edu/archive/htcondor-users/2016-December/msg00046.shtml
+DISCARD_SESSION_KEYRING_ON_STARTUP = false
+
+# Use CCB with shared port so outside units can talk to
+USE_SHARED_PORT = TRUE
+SHARED_PORT_ARGS = -p 9886
+UPDATE_COLLECTOR_WITH_TCP = TRUE
+BIND_ALL_INTERFACES = TRUE
+
+# Slots for multi-cpu machines
+NUM_SLOTS = 1
+NUM_SLOTS_TYPE_1 = 1
+SLOT_TYPE_1 = 100%
+SLOT_TYPE_1_PARTITIONABLE = true
+
+START = True
+PREEMPT = False
+SUSPEND = False
+KILL = False
+WANT_SUSPEND = False
+WANT_VACATE= False
+CONTINUE= True
+</pre></div>
+
+
+<h3 id="state-logs">State &amp; logs<a class="headerlink" href="#state-logs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>condor_status for the state of the pool</li>
+</ul>
+<div class="codehilite"><pre>root@bisquevc:/source# condor_status
+
+Name               OpSys      Arch   State     Activity LoadAv Mem    ActvtyTime
+slot1@master-7b988 LINUX      X86_64 Unclaimed Idle     -1.000 64423  0+13:07:28
+slot1@worker-6c6cc LINUX      X86_64 Unclaimed Idle     -1.000 64423  0+13:04:24
+                     Total Owner Claimed Unclaimed Matched Preempting Backfill
+        X86_64/LINUX     2     0       0         2       0          0        0
+               Total     2     0       0         2       0          0        0
+</pre></div>
+
+
+<ul>
+<li>condor_q for the schedule of the queue. You can use "-analyse" to get additional details on the jobs.</li>
+</ul>
+<div class="codehilite"><pre>root@bisquesvc:/source# condor_q
+-- Schedd: bisquesvc : &lt;10.42.0.15:40007&gt;
+ ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
+
+0 jobs; 0 completed, 0 removed, 0 idle, 0 running, 0 held, 0 suspended
+</pre></div>
+
+
+<h3 id="test-condor">Test Condor<a class="headerlink" href="#test-condor" title="Permanent link">&para;</a></h3>
+<p>Condor is configured to be run as a user and not root. So we will change user (su bisque) to bisque and operate with a regular user level privileges for job submittion purposes.</p>
+<h5 id="create-a-file-docksh-with-the-following-commands">Create a file dock.sh with the following commands<a class="headerlink" href="#create-a-file-docksh-with-the-following-commands" title="Permanent link">&para;</a></h5>
+<table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4</pre></div></td><td class="code"><div class="codehilite"><pre><span class="ch">#!/bin/bash</span>
+<span class="nb">echo</span> <span class="s2">&quot;Hello HTCondor from Job </span><span class="nv">$1</span><span class="s2"> running on `whoami`@`hostname`&quot;</span>
+docker --version
+sleep 10s
+</pre></div>
+</td></tr></table>
+
+<h5 id="create-a-docksubmit-file-with-the-following-paramaters">Create a dock.submit file with the following paramaters<a class="headerlink" href="#create-a-docksubmit-file-with-the-following-paramaters" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre>executable = dock.sh
+arguments = $(Process)
+universe = vanilla
+output = dock_$(Cluster)_$(Process).out
+error= dock_$(Cluster)_$(Process).error
+log = dock_$(Cluster)_$(Process).log
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+queue 2
+</pre></div>
+
+
+<h5 id="now-execute">Now execute<a class="headerlink" href="#now-execute" title="Permanent link">&para;</a></h5>
+<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ condor_submit dock.submit
+Submitting job(s)..
+2 job(s) submitted to cluster 10.
+</pre></div>
+
+
+<ul>
+<li>Here we also observe the status of condor queue which should have the jobs running</li>
+</ul>
+<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ condor_q
+-- Schedd: bisquesvc : &lt;10.42.0.15:9886?...
+ ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
+  11.0   bisque          3/5  22:37   0+00:00:00 I  0   0.0  dock.sh 0
+  11.1   bisque          3/5  22:37   0+00:00:00 I  0   0.0  dock.sh 1
+
+2 jobs; 0 completed, 0 removed, 2 idle, 0 running, 0 held, 0 suspended
+</pre></div>
+
+
+<ul>
+<li>When the Master/worker nodes executes the job we see the following state</li>
+</ul>
+<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ condor_status
+Name               OpSys      Arch   State     Activity LoadAv Mem    ActvtyTime
+
+slot1@master-7b988 LINUX      X86_64 Unclaimed Idle      0.000 64295  0+00:00:04
+slot1_1@master-7b9 LINUX      X86_64 Claimed   Busy     -1.000  128  0+00:00:04
+slot1@worker-6c6cc LINUX      X86_64 Unclaimed Idle      0.000 64295  0+00:00:04
+slot1_1@worker-6c6 LINUX      X86_64 Claimed   Busy     -1.000  128  0+00:00:04
+                     Total Owner Claimed Unclaimed Matched Preempting Backfill
+        X86_64/LINUX     4     0       2         2       0          0        0
+               Total     4     0       2         2       0          0        0
+</pre></div>
+
+
+<ul>
+<li>In about 10 seconds this execution will terminate and dump the results in corresponding log files</li>
+</ul>
+<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ condor_status
+Name               OpSys      Arch   State     Activity LoadAv Mem    ActvtyTime
+slot1@master-7b988 LINUX      X86_64 Unclaimed Idle      0.000 64295  0+00:00:04
+slot1@worker-6c6cc LINUX      X86_64 Unclaimed Idle      0.000 64295  0+00:00:04
+                     Total Owner Claimed Unclaimed Matched Preempting Backfill
+        X86_64/LINUX     2     0       0         2       0          0        0
+               Total     2     0       0         2       0          0        0
+
+bisque@bisquesvc:~/condor_dock_test$ condor_q
+-- Schedd: bisquesvc : &lt;10.42.0.15:9886?...
+ ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
+
+0 jobs; 0 completed, 0 removed, 0 idle, 0 running, 0 held, 0 suspended
+</pre></div>
+
+
+<ul>
+<li>To verify the execution at worker/master we can take a look at the /var/log/condor/StartLog</li>
+</ul>
+<div class="codehilite"><pre># Logs at the master condor node
+
+03/05/19 22:37:54 slot1_1: Request accepted.
+03/05/19 22:37:54 slot1_1: Remote owner is bisque@bisquesvc
+03/05/19 22:37:54 slot1_1: State change: claiming protocol successful
+03/05/19 22:37:54 slot1_1: Changing state: Owner -&gt; Claimed
+03/05/19 22:37:54 slot1_1: Got activate_claim request from shadow (10.42.0.15)
+03/05/19 22:37:54 /proc format unknown for kernel version 4.15.0
+03/05/19 22:37:54 slot1_1: Remote job ID is 11.0
+03/05/19 22:37:54 slot1_1: Got universe &quot;VANILLA&quot; (5) from request classad
+03/05/19 22:37:54 slot1_1: State change: claim-activation protocol successful
+03/05/19 22:37:54 slot1_1: Changing activity: Idle -&gt; Busy
+03/05/19 22:37:59 /proc format unknown for kernel version 4.15.0
+03/05/19 22:38:04 /proc format unknown for kernel version 4.15.0
+03/05/19 22:38:09 /proc format unknown for kernel version 4.15.0
+03/05/19 22:38:09 slot1_1: Called deactivate_claim_forcibly()
+03/05/19 22:38:09 Starter pid 1141 exited with status 0
+03/05/19 22:38:09 slot1_1: State change: starter exited
+03/05/19 22:38:09 slot1_1: Changing activity: Busy -&gt; Idle
+03/05/19 22:38:09 slot1_1: State change: received RELEASE_CLAIM command
+03/05/19 22:38:09 slot1_1: Changing state and activity: Claimed/Idle -&gt; Preempting/Vacating
+03/05/19 22:38:09 slot1_1: State change: No preempting claim, returning to owner
+03/05/19 22:38:09 slot1_1: Changing state and activity: Preempting/Vacating -&gt; Owner/Idle
+03/05/19 22:38:09 slot1_1: State change: IS_OWNER is false
+03/05/19 22:38:09 slot1_1: Changing state: Owner -&gt; Unclaimed
+03/05/19 22:38:09 slot1_1: Changing state: Unclaimed -&gt; Delete
+03/05/19 22:38:09 slot1_1: Resource no longer needed, deleting
+</pre></div>
+
+
+<ul>
+<li>Final results of the output could be seen in the dock_11_*.out result files which represents the Job Id = 11</li>
+</ul>
+<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ ll
+total 36
+drwxrwxr-x 2 bisque bisque 4096 Mar  5 22:37 ./
+drwxr-xr-x 1 bisque bisque 4096 Mar  5 22:34 ../
+-rw-r--r-- 1 bisque bisque    0 Mar  5 22:37 dock_11_0.error
+-rw-rw-r-- 1 bisque bisque 1021 Mar  5 22:38 dock_11_0.log
+-rw-r--r-- 1 bisque bisque  132 Mar  5 22:38 dock_11_0.out
+-rw-r--r-- 1 bisque bisque    0 Mar  5 22:37 dock_11_1.error
+-rw-rw-r-- 1 bisque bisque 1021 Mar  5 22:38 dock_11_1.log
+-rw-r--r-- 1 bisque bisque  132 Mar  5 22:38 dock_11_1.out
+-rw-r--r-- 1 bisque bisque  163 Mar  5 22:34 dock.sh
+-rw-r--r-- 1 bisque bisque  253 Mar  5 09:07 dock.submit
+</pre></div>
+
+
+<ul>
+<li>Output Result</li>
+</ul>
+<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ cat dock_11_1.out
+Hello HTCondor from Job 1 running on nobody@master-7b988ddb7d-hnspj
+Docker version 17.03.0-ce, build 60ccb22
+Completed my first job
+</pre></div>
+
+
+<ul>
+<li>Output Log</li>
+</ul>
+<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ cat dock_11_1.log
+000 (011.001.000) 03/05 22:37:44 Job submitted from host: &lt;10.42.0.15:9886?addrs=10.42.0.15-9886&amp;noUDP&amp;sock=6207_60d7_3&gt;
+...
+001 (011.001.000) 03/05 22:37:57 Job executing on host: &lt;10.42.0.8:9886?sock=30363_868c&gt;
+...
+006 (011.001.000) 03/05 22:38:07 Image size of job updated: 1
+        8  -  MemoryUsage of job (MB)
+        7560  -  ResidentSetSize of job (KB)
+...
+005 (011.001.000) 03/05 22:38:09 Job terminated.
+        (1) Normal termination (return value 0)
+                Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+                Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+                Usr 0 00:00:00, Sys 0 00:00:00  -  Total Remote Usage
+                Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+        132  -  Run Bytes Sent By Job
+        163  -  Run Bytes Received By Job
+        132  -  Total Bytes Sent By Job
+        163  -  Total Bytes Received By Job
+        Partitionable Resources :    Usage  Request Allocated
+           Cpus                 :                 1         1
+           Disk (KB)            :        9        1    893677
+           Memory (MB)          :        8        1         1
+...
+</pre></div></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+                <p>Copyright &copy; 2018 - 2019 Bisque, UCSB VRL</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"search": 83, "next": 78, "help": 191, "previous": 80};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
