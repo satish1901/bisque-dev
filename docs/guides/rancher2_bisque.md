@@ -1,8 +1,24 @@
 # Rancher 2.0 Setup (with Kubernetes engine)
 ---------------------------------------------------
 
+
+#### Introduction
+
+- [Why Docker Container](https://www.docker.com/why-docker) ??
+  - A container is a standard unit of software that packages up code and all its dependencies so the application runs quickly and reliably from one computing environment to another. A Docker container image is a lightweight, standalone, executable package of software that includes everything needed to run an application: code, runtime, system tools, system libraries and settings.
+  - [Container vs. Virtual Machine](https://www.docker.com/resources/what-container)
+  ![What is Container](img/bqranch/container-vs-vm.png)
+
+- [Why Kubernetes](https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/#why-do-i-need-kubernetes-and-what-can-it-do) ?? [K8s](https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/#what-does-kubernetes-mean-k8s) ??
+  - Kubernetes provides a container-centric management environment. It orchestrates computing, networking, and storage infrastructure on behalf of user workloads. 
+- [Why Rancher](https://rancher.com/what-is-rancher/what-rancher-adds-to-kubernetes/) ??
+  - Rancher combines everything an organization needs to run containers in production and centrally manage multiple Kubernetes clusters
+  - Rancher includes a full Kubernetes distribution, but adds value around Kubernetes in three key areas: Cluster Operations and Management, Intuitive Workload Management, and Enterprise Support.
+
 #### Nomenclature (Kubernetes like)
 --------------------------------
+
+Rancher 2.0 [Guide to provisioning a Kubernetes cluster](https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/) which uses the Kubernetes container-orchestration system to  
 
 | Name | Kubernetes concepts  |
 | :---          | :---        |
@@ -276,11 +292,11 @@ kubectl logs postgres-564d9f79d5-z2sxl  -n bqdev
 # Master: for the rancher server container
 docker stop $(docker ps -a -q --filter ancestor=rancher/rancher:stable --format="{{.ID}}")
 # Workers: for all k8s containers 
-docker stop $(docker ps -f name=k8s* --format="{{.ID}}")
+docker stop $(docker ps -f name=k* --format="{{.ID}}")
 ```
 - Clean the container, images and volumes
 ```
-docker rm -f $(docker ps -a -f name=k8s* --format="{{.ID}}")
+docker rm -f $(docker ps -a -f name=k* --format="{{.ID}}")
 docker rmi -f $(docker images -q "rancher/*")
 docker volume rm $(docker volume ls -q)
 ```

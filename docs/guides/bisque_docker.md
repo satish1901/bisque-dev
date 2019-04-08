@@ -2,45 +2,55 @@
 
 #### Docker/Project Source
 
-- [Docker Hub Image](https://hub.docker.com/r/cbiucsb/bisque05/)
-- [Bitbucket CBIucsb/bisque-stable (TODO: Test with Github version!!)](https://bitbucket.org/CBIucsb/bisque-stable)
+- [Docker Hub Bisque Dev Image](https://cloud.docker.com/u/vishwakarmarhl/repository/docker/vishwakarmarhl/ucsb-bisque05-svc)
+- [UCSB-VRL/bisque-stable Github](https://github.com/UCSB-VRL/bisque)
 - [Bique Bioimage Google Groups](https://groups.google.com/forum/#!topic/bisque-bioimage/jwo_5sHFeHU)
 
+#### Installation
 #### Pre-requisite
 
 - Install docker (light weight VM) on you laptop:
       https://docs.docker.com/install/linux/docker-ce/ubuntu/
 - Instructions on installing bisque using docker
-      https://bitbucket.org/CBIucsb/bisque/src/default/README.md
+      https://github.com/UCSB-VRL/bisque/README.md
 
-#### Installation
+#### Create the Docker Image
 
-- Use the installer script to setup bisque docker image
-```
-wget https://bitbucket.org/CBIucsb/bisque-stable/downloads/build_bisque_docker_modules.sh
-sh build_bisque_docker_modules.sh
-```
-- You can modify this script to create a modules folder and mount/load modules from the host machine into docker
 
 
 #### Run Environment
 
+- Setup folders & pull code 
+
+```
+mkdir ws && cd ws && git clone https://github.com/UCSB-VRL/bisque
+mkdir container-modules container-data container-config && cp -r bisque/modules/* container-modules/
+```
+
 - Start Docker and mount directories for run
 
 ```
-# Start
-xterm -e \
-docker run --name bisque --rm -p 8080:8080 -p 27000:27000 \
--v $(pwd)/container-modules:/source/modules \
--v $(pwd)/container-data:/source/data \
--v $(pwd)/container-config:/source/config \
-'cbiucsb/bisque05:stable'
+# Docker Run
+docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
+ -v $(pwd)/container-modules:/source/modules \
+ -v $(pwd)/container-data:/source/data \
+ -v $(pwd)/container-config:/source/config \
+ 'vishwakarmarhl/ucsb-bisque05-svc:dev'
+
+```
+- Check Container state
+
+```
+bisque@ubuntu:~$ docker ps
+CONTAINER ID        IMAGE                                  COMMAND                  CREATED             STATUS              PORTS                                              NAMES
+a1162677d66a        vishwakarmarhl/ucsb-bisque05-svc:dev   "/builder/run-bisque…"   13 minutes ago      Up 13 minutes       0.0.0.0:8080->8080/tcp, 0.0.0.0:27000->27000/tcp   bisque-dev
+
 ```
 
 - Stop Docker
 
 ```
- docker stop $(docker ps -a -q --filter ancestor=cbiucsb/bisque05:stable --format="{{.ID}}")
+docker stop $(docker ps -a -q --filter ancestor=vishwakarmarhl/ucsb-bisque05-svc:dev --format="{{.ID}}")
 ```
 
 - Advanced environment for working with database URI as,
@@ -48,12 +58,12 @@ docker run --name bisque --rm -p 8080:8080 -p 27000:27000 \
     - postgresql://rahul:rahul@localhost/bqmurks58 or postgresql://dbhost:5432/bisque
 
 ```
-docker run --name bisque --rm -p 8080:8080 \
--v $(pwd)/container-modules:/source/modules \
--v $(pwd)/container-data:/source/data \
--v $(pwd)/container-config:/source/config \
--e BISQUE_DBURL=postgresql://rahul:rahul@localhost/bqmurks58 \
-'cbiucsb/bisque05:stable'
+docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
+ -v $(pwd)/container-modules:/source/modules \
+ -v $(pwd)/container-data:/source/data \
+ -v $(pwd)/container-config:/source/config \
+ -e BISQUE_DBURL=postgresql://rahul:rahul@localhost/bqmurks58 \
+ 'vishwakarmarhl/ucsb-bisque05-svc:dev'
 ```
 
 - This will start the bisque docker/server
@@ -64,7 +74,7 @@ docker run --name bisque --rm -p 8080:8080 \
 - Use "admin:admin" to authenticate into this local environment 
 - To manipulate and check logs, connect to docker bash 
 ```
-bisque-host$ docker exec -t -i bisque /bin/bash
+bisque-host$ docker exec -t -i bisque-dev /bin/bash
 ```
 
 #### Develop in Docker (TODO !!)

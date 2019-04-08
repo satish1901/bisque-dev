@@ -6,11 +6,24 @@
 - [Packages list](resources/dpackages.dump) on bisquesvc production (xenial-caffe) env
 - [Custom Registry](https://docs.docker.com/registry/) is available and active at https://biodev.ece.ucsb.edu:5000/v2/_catalog
 - [Dev Pi Packages](https://biodev.ece.ucsb.edu/py/bisque/stretch/+simple/) are acccessible 
+- Openstack environment as per the screenshot
+  ![Openstack Resources Dashboard](img/bqranch/openstack_instances_dash.png)
+- Add [Openstack storage volume](http://www.darwinbiler.com/openstack-creating-and-attaching-a-volume-into-an-instance/) as per the Bisque requirement and volume available in openstack. This will later be NFS mounted for this tutorial.
 
 ##### Nvidia-docker
 
 Since there is a GPU requirement in Bisque Connoisseur.
 - Install [Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu)
+  - Use a specific version of docker for compatibility with nvidia-docker2 on Xenial or Bionic based on your system
+    ```
+    sudo apt-get install docker-ce=5:18.09.1~3-0~ubuntu-xenial \
+         docker-ce-cli=5:18.09.1~3-0~ubuntu-xenial containerd.io
+
+    OR
+
+    sudo apt-get install docker-ce=5:18.09.2~3-0~ubuntu-bionic \
+         docker-ce-cli=5:18.09.2~3-0~ubuntu-bionic containerd.io
+    ```
 - Install [Nvidia-Docker](https://github.com/nvidia/nvidia-docker/), 
 - Configure default nvidia-runtime: https://github.com/NVIDIA/k8s-device-plugin#preparing-your-gpu-nodes
 
@@ -31,30 +44,39 @@ sudo echo > /etc/docker/daemon.json
     }
 }
 ```
+- (Not Prefferred, use only if you know what you are doing) Configure the docker to use a particular storage path or even a [NFS mounted path](https://whyistheinternetbroken.wordpress.com/2015/05/12/techusing-nfs-with-docker-where-does-it-fit-in/)
+
+```
+# Edit where images are stored at "sudo vim /etc/default/docker"
+DOCKER_OPTS="-dns 8.8.8.8 -dns 8.8.4.4 -g /run/bisque/docker"
+```
+
 - Check whether you can execute nvidia-smi inside a container without the runtime flag 
+
 ```
 sudo service docker restart
 docker run  --rm nvidia/cuda:9.0-base nvidia-smi 
 ```
 
 ##### PostgreSQL server
+
 - [Setup PostgreSql 10.4 on Rancher workload](../rancher2_postgresql)
-- Verify the connectivity to this database
+- Verify the connectivity to this database using the below command
 
 ```
 psql -h postgres.prod -U postgres --password -p 5432 postgres
 ```
-- This is used in the Bisque configuration as environment variable 
+- This will be used in the Bisque configuration as environment variable later
 
 ```
-BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/postgres
+BISQUE_DBURL=postgresql://postgres:postgres@postgres.prod:5432/postgres
 ```
 
 --------------------------
 #### A. Cluster Description
 - Deployment [Google Slides](https://docs.google.com/presentation/d/1E6f6BR5sj5g3WPc_uRV01ZPbAjezZuUAvidUwZbbthQ/edit#slide=id.g4f74d0d960_0_58)
 
-![Rancher Deployment Diagram](img/bqranch/)
+![Rancher Deployment Diagram](img/bqranch/rancher2-openstack-bisque-topology.png)
 
 
 ==Cluster==
@@ -65,8 +87,9 @@ BISQUE_DBURL=postgresql://postgres:postgres@10.42.0.15:5432/postgres
 
 #### B. Lets Encrypt on [Ubuntu 16.04](https://certbot.eff.org/lets-encrypt/ubuntuxenial-other)
 
+Note: Only works on port 80
 - Bind the hostname to the IP address by creating an A record in DNS 
-- Letsencrypt ACME challenge at TCP/80 on host 
+- Letsencrypt ACME challenge at TCP/80 on host
 - Open up firewall for this "sudo ufw allow 80 && sudo ufw allow 80 443"
 - Verify the port 80 availability
 
@@ -332,8 +355,11 @@ We should see the overview of workloads deployed as below
 Service should be running at http://bisque-dev-gpu-01.cyverse.org:31274
 
 ##### Bisque GPU Verification (nvidia-docker should be default runtime)
-- Connect into the container and verify ```nvidia-smi``` state
-- Caffe can be tested with ```caffe device_query --gpu all```
+- Connect into the container and verify "nvidia-smi" client 
+- Nvidia-Docker can be tested with 
+  ```docker run --runtime=nvidia --rm nvidia/cuda:9.0-base nvidia-smi ```
+- Test whether nvidia-runtime is default 
+  ```docker run --rm nvidia/cuda:9.0-base nvidia-smi ```
 
 You should be able to tail the log on the node where you have deployed the container.
 ``` sudo tail -f /var/log/containers/prod_bisquecon-*.log ```
