@@ -139,7 +139,7 @@
 <blockquote>
 <p>Now on each node we should start Condor and also make sure that the hostname "master.condor" is reachable from all the nodes in the pool, including the bisque submit node.</p>
 </blockquote>
-<div class="codehilite"><pre>$ ping master.condor
+<div class="codehilite"><pre><span></span>$ ping master.condor
     PING master.condor.svc.cluster.local (10.43.55.33) 56(84) bytes of data.
 $ service condor start
 </pre></div>
@@ -147,13 +147,13 @@ $ service condor start
 
 <h3 id="masterworker-condor-config">Master/Worker Condor Config<a class="headerlink" href="#masterworker-condor-config" title="Permanent link">&para;</a></h3>
 <h4 id="initiate-startd-at-master-and-workers">Initiate startd at master and workers<a class="headerlink" href="#initiate-startd-at-master-and-workers" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre>condor_startd 
+<div class="codehilite"><pre><span></span>condor_startd 
 </pre></div>
 
 
 <h4 id="condor-config-vim-etccondorcondor_configlocal">Condor config <code>vim /etc/condor/condor_config.local</code><a class="headerlink" href="#condor-config-vim-etccondorcondor_configlocal" title="Permanent link">&para;</a></h4>
 <p>Add the following in the section where you see ALLOW_READ/WRITE keys</p>
-<div class="codehilite"><pre>ALLOW_ADMINISTRATOR = $(CONDOR_HOST)
+<div class="codehilite"><pre><span></span>ALLOW_ADMINISTRATOR = $(CONDOR_HOST)
 ALLOW_OWNER = $(FULL_HOSTNAME), $(ALLOW_ADMINISTRATOR)
 ALLOW_READ = *
 ALLOW_WRITE = *
@@ -172,14 +172,14 @@ SEC_DEFAULT_AUTHENTICATION = NEVER
 
 
 <h4 id="reconfig-restart-condor">Reconfig &amp; Restart Condor<a class="headerlink" href="#reconfig-restart-condor" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre>condor_reconfig
+<div class="codehilite"><pre><span></span>condor_reconfig
 service condor restart
 </pre></div>
 
 
 <h3 id="bisquesvc-submit-node-condor-config">BisqueSvc Submit Node Condor Config<a class="headerlink" href="#bisquesvc-submit-node-condor-config" title="Permanent link">&para;</a></h3>
 <p>Here is contents of the production configuration <code>/etc/condor/condor_config.local</code> file</p>
-<div class="codehilite"><pre>CONDOR_HOST = master.condor
+<div class="codehilite"><pre><span></span>CONDOR_HOST = master.condor
 COLLECTOR_NAME = CBIUCSB
 DAEMON_LIST = MASTER,SCHEDD,SHARED_PORT
 CONDOR_ADMIN          = admin@biodev.ece.ucsb.edu
@@ -217,7 +217,7 @@ CONTINUE= True
 <ul>
 <li>condor_status for the state of the pool</li>
 </ul>
-<div class="codehilite"><pre>root@bisquevc:/source# condor_status
+<div class="codehilite"><pre><span></span>root@bisquevc:/source# condor_status
 
 Name               OpSys      Arch   State     Activity LoadAv Mem    ActvtyTime
 slot1@master-7b988 LINUX      X86_64 Unclaimed Idle     -1.000 64423  0+13:07:28
@@ -231,7 +231,7 @@ slot1@worker-6c6cc LINUX      X86_64 Unclaimed Idle     -1.000 64423  0+13:04:24
 <ul>
 <li>condor_q for the schedule of the queue. You can use "-analyse" to get additional details on the jobs.</li>
 </ul>
-<div class="codehilite"><pre>root@bisquesvc:/source# condor_q
+<div class="codehilite"><pre><span></span>root@bisquesvc:/source# condor_q
 -- Schedd: bisquesvc : &lt;10.42.0.15:40007&gt;
  ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
 
@@ -245,7 +245,7 @@ slot1@worker-6c6cc LINUX      X86_64 Unclaimed Idle     -1.000 64423  0+13:04:24
 <table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre>1
 2
 3
-4</pre></div></td><td class="code"><div class="codehilite"><pre><span class="ch">#!/bin/bash</span>
+4</pre></div></td><td class="code"><div class="codehilite"><pre><span></span><span class="ch">#!/bin/bash</span>
 <span class="nb">echo</span> <span class="s2">&quot;Hello HTCondor from Job </span><span class="nv">$1</span><span class="s2"> running on `whoami`@`hostname`&quot;</span>
 docker --version
 sleep 10s
@@ -253,7 +253,7 @@ sleep 10s
 </td></tr></table>
 
 <h5 id="create-a-docksubmit-file-with-the-following-paramaters">Create a dock.submit file with the following paramaters<a class="headerlink" href="#create-a-docksubmit-file-with-the-following-paramaters" title="Permanent link">&para;</a></h5>
-<div class="codehilite"><pre>executable = dock.sh
+<div class="codehilite"><pre><span></span>executable = dock.sh
 arguments = $(Process)
 universe = vanilla
 output = dock_$(Cluster)_$(Process).out
@@ -266,7 +266,7 @@ queue 2
 
 
 <h5 id="now-execute">Now execute<a class="headerlink" href="#now-execute" title="Permanent link">&para;</a></h5>
-<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ condor_submit dock.submit
+<div class="codehilite"><pre><span></span>bisque@bisquesvc:~/condor_dock_test$ condor_submit dock.submit
 Submitting job(s)..
 2 job(s) submitted to cluster 10.
 </pre></div>
@@ -275,7 +275,7 @@ Submitting job(s)..
 <ul>
 <li>Here we also observe the status of condor queue which should have the jobs running</li>
 </ul>
-<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ condor_q
+<div class="codehilite"><pre><span></span>bisque@bisquesvc:~/condor_dock_test$ condor_q
 -- Schedd: bisquesvc : &lt;10.42.0.15:9886?...
  ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
   11.0   bisque          3/5  22:37   0+00:00:00 I  0   0.0  dock.sh 0
@@ -288,7 +288,7 @@ Submitting job(s)..
 <ul>
 <li>When the Master/worker nodes executes the job we see the following state</li>
 </ul>
-<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ condor_status
+<div class="codehilite"><pre><span></span>bisque@bisquesvc:~/condor_dock_test$ condor_status
 Name               OpSys      Arch   State     Activity LoadAv Mem    ActvtyTime
 
 slot1@master-7b988 LINUX      X86_64 Unclaimed Idle      0.000 64295  0+00:00:04
@@ -304,7 +304,7 @@ slot1_1@worker-6c6 LINUX      X86_64 Claimed   Busy     -1.000  128  0+00:00:04
 <ul>
 <li>In about 10 seconds this execution will terminate and dump the results in corresponding log files</li>
 </ul>
-<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ condor_status
+<div class="codehilite"><pre><span></span>bisque@bisquesvc:~/condor_dock_test$ condor_status
 Name               OpSys      Arch   State     Activity LoadAv Mem    ActvtyTime
 slot1@master-7b988 LINUX      X86_64 Unclaimed Idle      0.000 64295  0+00:00:04
 slot1@worker-6c6cc LINUX      X86_64 Unclaimed Idle      0.000 64295  0+00:00:04
@@ -323,7 +323,7 @@ bisque@bisquesvc:~/condor_dock_test$ condor_q
 <ul>
 <li>To verify the execution at worker/master we can take a look at the /var/log/condor/StartLog</li>
 </ul>
-<div class="codehilite"><pre># Logs at the master condor node
+<div class="codehilite"><pre><span></span># Logs at the master condor node
 
 03/05/19 22:37:54 slot1_1: Request accepted.
 03/05/19 22:37:54 slot1_1: Remote owner is bisque@bisquesvc
@@ -356,7 +356,7 @@ bisque@bisquesvc:~/condor_dock_test$ condor_q
 <ul>
 <li>Final results of the output could be seen in the dock_11_*.out result files which represents the Job Id = 11</li>
 </ul>
-<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ ll
+<div class="codehilite"><pre><span></span>bisque@bisquesvc:~/condor_dock_test$ ll
 total 36
 drwxrwxr-x 2 bisque bisque 4096 Mar  5 22:37 ./
 drwxr-xr-x 1 bisque bisque 4096 Mar  5 22:34 ../
@@ -374,7 +374,7 @@ drwxr-xr-x 1 bisque bisque 4096 Mar  5 22:34 ../
 <ul>
 <li>Output Result</li>
 </ul>
-<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ cat dock_11_1.out
+<div class="codehilite"><pre><span></span>bisque@bisquesvc:~/condor_dock_test$ cat dock_11_1.out
 Hello HTCondor from Job 1 running on nobody@master-7b988ddb7d-hnspj
 Docker version 17.03.0-ce, build 60ccb22
 Completed my first job
@@ -384,7 +384,7 @@ Completed my first job
 <ul>
 <li>Output Log</li>
 </ul>
-<div class="codehilite"><pre>bisque@bisquesvc:~/condor_dock_test$ cat dock_11_1.log
+<div class="codehilite"><pre><span></span>bisque@bisquesvc:~/condor_dock_test$ cat dock_11_1.log
 000 (011.001.000) 03/05 22:37:44 Job submitted from host: &lt;10.42.0.15:9886?addrs=10.42.0.15-9886&amp;noUDP&amp;sock=6207_60d7_3&gt;
 ...
 001 (011.001.000) 03/05 22:37:57 Job executing on host: &lt;10.42.0.8:9886?sock=30363_868c&gt;

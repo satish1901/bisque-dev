@@ -132,7 +132,7 @@
     ```
     sudo apt-get install docker-ce=5:18.09.1~3-0~ubuntu-xenial \
          docker-ce-cli=5:18.09.1~3-0~ubuntu-xenial containerd.io</p>
-<div class="codehilite"><pre>OR
+<div class="codehilite"><pre><span></span>OR
 
 sudo apt-get install docker-ce=5:18.09.2~3-0~ubuntu-bionic \
      docker-ce-cli=5:18.09.2~3-0~ubuntu-bionic containerd.io
@@ -144,7 +144,7 @@ sudo apt-get install docker-ce=5:18.09.2~3-0~ubuntu-bionic \
 <li>Install <a href="https://github.com/nvidia/nvidia-docker/">Nvidia-Docker</a>, </li>
 <li>Configure default nvidia-runtime: https://github.com/NVIDIA/k8s-device-plugin#preparing-your-gpu-nodes</li>
 </ul>
-<div class="codehilite"><pre># Run the following to insert the configuration
+<div class="codehilite"><pre><span></span># Run the following to insert the configuration
 sudo echo &quot;{ \&quot;default-runtime\&quot;: \&quot;nvidia\&quot;, \&quot;runtimes\&quot;: { \&quot;nvidia\&quot;: { \&quot;path\&quot;: \&quot;nvidia-container-runtime\&quot;, \&quot;runtimeArgs\&quot;: [] }}}&quot; \
  &gt; /etc/docker/daemon.json
 
@@ -165,7 +165,7 @@ sudo echo &gt; /etc/docker/daemon.json
 <ul>
 <li>(Not Prefferred, use only if you know what you are doing) Configure the docker to use a particular storage path or even a <a href="https://whyistheinternetbroken.wordpress.com/2015/05/12/techusing-nfs-with-docker-where-does-it-fit-in/">NFS mounted path</a></li>
 </ul>
-<div class="codehilite"><pre># Edit where images are stored at &quot;sudo vim /etc/default/docker&quot;
+<div class="codehilite"><pre><span></span># Edit where images are stored at &quot;sudo vim /etc/default/docker&quot;
 DOCKER_OPTS=&quot;-dns 8.8.8.8 -dns 8.8.4.4 -g /run/bisque/docker&quot;
 </pre></div>
 
@@ -173,7 +173,7 @@ DOCKER_OPTS=&quot;-dns 8.8.8.8 -dns 8.8.4.4 -g /run/bisque/docker&quot;
 <ul>
 <li>Check whether you can execute nvidia-smi inside a container without the runtime flag </li>
 </ul>
-<div class="codehilite"><pre>sudo service docker restart
+<div class="codehilite"><pre><span></span>sudo service docker restart
 docker run  --rm nvidia/cuda:9.0-base nvidia-smi 
 </pre></div>
 
@@ -183,14 +183,14 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 <li><a href="../rancher2_postgresql">Setup PostgreSql 10.4 on Rancher workload</a></li>
 <li>Verify the connectivity to this database using the below command</li>
 </ul>
-<div class="codehilite"><pre>psql -h postgres.prod -U postgres --password -p 5432 postgres
+<div class="codehilite"><pre><span></span>psql -h postgres.prod -U postgres --password -p 5432 postgres
 </pre></div>
 
 
 <ul>
 <li>This will be used in the Bisque configuration as environment variable later</li>
 </ul>
-<div class="codehilite"><pre>BISQUE_DBURL=postgresql://postgres:postgres@postgres.prod:5432/postgres
+<div class="codehilite"><pre><span></span>BISQUE_DBURL=postgresql://postgres:postgres@postgres.prod:5432/postgres
 </pre></div>
 
 
@@ -210,28 +210,28 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 - Letsencrypt ACME challenge at TCP/80 on host
 - Open up firewall for this "sudo ufw allow 80 &amp;&amp; sudo ufw allow 80 443"
 - Verify the port 80 availability</p>
-<div class="codehilite"><pre>sudo netstat -peanut | grep &quot;:80&quot; 
+<div class="codehilite"><pre><span></span>sudo netstat -peanut | grep &quot;:80&quot; 
 </pre></div>
 
 
 <ul>
 <li>Setup certificates at /etc/letsencrypt on each node</li>
 </ul>
-<div class="codehilite"><pre>sudo certbot certonly --standalone --dry-run \
+<div class="codehilite"><pre><span></span>sudo certbot certonly --standalone --dry-run \
    --agree-tos -m vishwakarma@ucsb.edu \
    --cert-name bisque-dev-01.cyverse.org \
    -d bisque-dev-01.cyverse.org 
 </pre></div>
 
 
-<div class="codehilite"><pre>sudo certbot certonly --standalone --dry-run \
+<div class="codehilite"><pre><span></span>sudo certbot certonly --standalone --dry-run \
    --agree-tos -m vishwakarma@ucsb.edu \
    --cert-name bisque-dev-02.cyverse.org \
    -d bisque-dev-02.cyverse.org 
 </pre></div>
 
 
-<div class="codehilite"><pre>sudo certbot certonly --standalone --dry-run \
+<div class="codehilite"><pre><span></span>sudo certbot certonly --standalone --dry-run \
    --agree-tos -m vishwakarma@ucsb.edu \
    --cert-name bisque-dev-gpu-01.cyverse.org \
    -d bisque-dev-gpu-01.cyverse.org 
@@ -243,7 +243,7 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 <p>Install/Startup Rancher: https://rancher.com/docs/rancher/v2.x/en/installation/single-node/
 - Rancher etcd data persisted at /var/lib/rancher
 - Since port 80 is occupied by rancher/rancher, a rancher/rancher-agent cannot be run on this node.</p>
-<div class="codehilite"><pre>docker run -d --restart=unless-stopped \
+<div class="codehilite"><pre><span></span>docker run -d --restart=unless-stopped \
   -p 8080:80 -p 8443:443 \
   -v /var/log/rancher/auditlog:/var/log/auditlog \
   -v /host/rancher:/var/lib/rancher \
@@ -263,7 +263,7 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 <li>Choose custom cloud provider leveraging k8s</li>
 <li>Make this server as etcd, controlplane and worker</li>
 </ul>
-<div class="codehilite"><pre> sudo docker run -d --privileged --restart=unless-stopped --net=host \
+<div class="codehilite"><pre><span></span> sudo docker run -d --privileged --restart=unless-stopped --net=host \
   -v /etc/kubernetes:/etc/kubernetes \
   -v /var/run:/var/run \
   rancher/rancher-agent:v2.1.6 \
@@ -283,7 +283,7 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 <blockquote>
 <p>You can add more nodes to the cluster by editing the cluster and running another command as below</p>
 </blockquote>
-<div class="codehilite"><pre>sudo docker run -d --privileged --restart=unless-stopped --net=host \
+<div class="codehilite"><pre><span></span>sudo docker run -d --privileged --restart=unless-stopped --net=host \
   -v /etc/kubernetes:/etc/kubernetes \
   -v /var/run:/var/run \
   rancher/rancher-agent:v2.1.6 \
@@ -311,7 +311,7 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-16-04</li>
 <li>Setup folders</li>
 </ul>
-<div class="codehilite"><pre># Create the path on host system
+<div class="codehilite"><pre><span></span># Create the path on host system
 sudo mkdir /etc/letsencrypt/ -p &amp;&amp; \
 sudo mkdir /run/bisque/ -p &amp;&amp; \
 sudo mkdir /run/bisque/data -p &amp;&amp; \
@@ -326,7 +326,7 @@ sudo chmod 0777 -R /run/bisque
 <ul>
 <li>Now add NFS host configuration at /etc/exports</li>
 </ul>
-<div class="codehilite"><pre>/run/bisque     128.196.65.100(rw,sync,no_root_squash,no_subtree_check)
+<div class="codehilite"><pre><span></span>/run/bisque     128.196.65.100(rw,sync,no_root_squash,no_subtree_check)
 /run/bisque     128.196.65.142(rw,sync,no_root_squash,no_subtree_check)
 /run/postgres     128.196.65.100(rw,sync,no_root_squash,no_subtree_check)
 /run/postgres     128.196.65.142(rw,sync,no_root_squash,no_subtree_check)
@@ -336,14 +336,14 @@ sudo chmod 0777 -R /run/bisque
 <ul>
 <li>restart the nfs server on the NFS host machine</li>
 </ul>
-<div class="codehilite"><pre>sudo systemctl restart nfs-kernel-server
+<div class="codehilite"><pre><span></span>sudo systemctl restart nfs-kernel-server
 </pre></div>
 
 
 <ul>
 <li>Mount the NFS folder on the client machine</li>
 </ul>
-<div class="codehilite"><pre>sudo apt-get install nfs-common
+<div class="codehilite"><pre><span></span>sudo apt-get install nfs-common
 sudo mount 128.196.65.71:/run/bisque/ /run/bisque/
 sudo mount 128.196.65.71:/run/postgres/ /run/postgres/
 </pre></div>
@@ -383,13 +383,13 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
 <li>9886        TCP         HostPort        9886 </li>
 <li>Environment</li>
 </ul>
-<div class="codehilite"><pre>CONDOR_MANAGER_HOST =   master.condor
+<div class="codehilite"><pre><span></span>CONDOR_MANAGER_HOST =   master.condor
 CONDOR_DAEMONS =    COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
 </pre></div>
 
 
 <p>Also, verify the /etc/condor/condor_config.local has property</p>
-<div class="codehilite"><pre>DAEMON_LIST = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
+<div class="codehilite"><pre><span></span>DAEMON_LIST = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
 </pre></div>
 
 
@@ -410,7 +410,7 @@ CONDOR_DAEMONS =    COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
 <p>Environment</p>
 </li>
 </ul>
-<div class="codehilite"><pre>CONDOR_MANAGER_HOST =   master.condor
+<div class="codehilite"><pre><span></span>CONDOR_MANAGER_HOST =   master.condor
 CONDOR_DAEMONS =    MASTER,SCHEDD,STARTD,SHARED_PORT
 </pre></div>
 
@@ -458,7 +458,7 @@ CONDOR_DAEMONS =    MASTER,SCHEDD,STARTD,SHARED_PORT
 <ul>
 <li>Bisque service variables</li>
 </ul>
-<div class="codehilite"><pre>      BISQUE_USER= bisque
+<div class="codehilite"><pre><span></span>      BISQUE_USER= bisque
       BISQUE_BISQUE_ADMIN_EMAIL= admin@bisque-dev-gpu-01.cyverse.org
       BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
       BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/

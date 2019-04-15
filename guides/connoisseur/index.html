@@ -124,7 +124,7 @@
 </ul>
 <h3 id="1-opencv-341">1. OpenCV 3.4.1<a class="headerlink" href="#1-opencv-341" title="Permanent link">&para;</a></h3>
 <p>Installation Guide: <a href="https://rahulvishwakarma.wordpress.com/2018/07/12/compile-and-setup-opencv-3-4-x-on-ubuntu-18-04-lts-with-python-virtualenv-for-image-processing/">Link 1</a></p>
-<div class="codehilite"><pre># Verify your installation
+<div class="codehilite"><pre><span></span># Verify your installation
 pkg-config --libs opencv
 </pre></div>
 
@@ -134,7 +134,7 @@ pkg-config --libs opencv
 <ul>
 <li><a href="https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_375.26_linux-run">Download cuda_8.0.61</a></li>
 </ul>
-<div class="codehilite"><pre>  $ nvcc --version
+<div class="codehilite"><pre><span></span>  $ nvcc --version
   nvcc: NVIDIA (R) Cuda compiler driver
   Copyright (c) 2005-2016 NVIDIA Corporation
   Built on Sun_Sep__4_22:14:01_CDT_2016
@@ -145,7 +145,7 @@ pkg-config --libs opencv
 <ul>
 <li><a href="https://developer.nvidia.com/compute/machine-learning/cudnn/secure/v7.1.4/prod/8.0_20180516/Ubuntu16_04-x64/libcudnn7-dev_7.1.4.18-1_cuda8.0_amd64">Download libcudnn7-dev_7.1.4</a></li>
 </ul>
-<div class="codehilite"><pre>  cuDNN v7.1.4 Runtime Library for Ubuntu16.04 (Deb)
+<div class="codehilite"><pre><span></span>  cuDNN v7.1.4 Runtime Library for Ubuntu16.04 (Deb)
   cuDNN v7.1.4 Developer Library for Ubuntu16.04 (Deb)
 </pre></div>
 
@@ -155,7 +155,7 @@ pkg-config --libs opencv
 <ul>
 <li>Installation Overview</li>
 </ul>
-<div class="codehilite"><pre>  mkdir build 
+<div class="codehilite"><pre><span></span>  mkdir build 
   cd build 
   cmake .. 
   make all 
@@ -164,7 +164,7 @@ pkg-config --libs opencv
 </pre></div>
 
 
-<div class="codehilite"><pre>  $ caffe --version
+<div class="codehilite"><pre><span></span>  $ caffe --version
     caffe version 1.0.0
 </pre></div>
 
@@ -172,7 +172,7 @@ pkg-config --libs opencv
 <ul>
 <li>Make sure you configure the path env in ~/.bashrc</li>
 </ul>
-<div class="codehilite"><pre>  export PATH=$PATH:/usr/local/cuda/bin:~/cv/caffe/build/tools
+<div class="codehilite"><pre><span></span>  export PATH=$PATH:/usr/local/cuda/bin:~/cv/caffe/build/tools
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/extras/CUPTI/lib64
@@ -185,12 +185,12 @@ pkg-config --libs opencv
 <ul>
 <li>Also add the following in ~/[python_env_folder]/bin/activate script after the PATH variable setup</li>
 </ul>
-<div class="codehilite"><pre>  export PYTHONPATH=$PYTHONPATH:~/cv/caffe/python/
+<div class="codehilite"><pre><span></span>  export PYTHONPATH=$PYTHONPATH:~/cv/caffe/python/
 </pre></div>
 
 
 <p>Test it all out to ensure caffe and opencv are functional</p>
-<div class="codehilite"><pre>  (bqenv) rahul@bqdev:~/ws/bisque$ python 
+<div class="codehilite"><pre><span></span>  (bqenv) rahul@bqdev:~/ws/bisque$ python 
   Python 2.7.12 (default, Dec  4 2017, 14:50:18) 
   [GCC 5.4.0 20160609] on linux2
   &gt;&gt;&gt; import cv2
@@ -200,14 +200,14 @@ pkg-config --libs opencv
 
 
 <p>Also, ensure Caffe runs on the system</p>
-<div class="codehilite"><pre>  $ caffe --version
+<div class="codehilite"><pre><span></span>  $ caffe --version
   caffe version 1.0.0
 </pre></div>
 
 
 <h3 id="4-install-connoisseur">4. Install Connoisseur<a class="headerlink" href="#4-install-connoisseur" title="Permanent link">&para;</a></h3>
 <p>Pre-requisite: (caffe and opencv may be the cause)</p>
-<div class="codehilite"><pre>  source ~/bisque/bqenv/bin/activate
+<div class="codehilite"><pre><span></span>  source ~/bisque/bqenv/bin/activate
   pip install lmdb pyvoro
 </pre></div>
 

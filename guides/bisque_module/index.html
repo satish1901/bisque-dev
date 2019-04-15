@@ -187,7 +187,7 @@
 <h2 id="a-develop-module-cellsegment3dunet-pytorch">A.) Develop Module CellSegment3DUnet (PyTorch)<a class="headerlink" href="#a-develop-module-cellsegment3dunet-pytorch" title="Permanent link">&para;</a></h2>
 <p>We describe the module which takes a 3D cell image in TIFF format as input and generates segmentation mask for it.</p>
 <h3 id="overall-module-code">Overall Module code<a class="headerlink" href="#overall-module-code" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre>root@karma:/module# tree -L 1  
+<div class="codehilite"><pre><span></span>root@karma:/module# tree -L 1  
 .
 |-- CellSegment3DUnet.xml
 |-- Dockerfile
@@ -226,7 +226,7 @@ docker push biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2:latest</p>
 <li>Extracts from the ~/staging/**/docker_run.log execution log</li>
 <li>Updated engine service to include --ipc=host parameter in the launcher template (DOCKER_RUN) at bq.engine.controllers/docker_env.py</li>
 </ul>
-<div class="codehilite"><pre>docker create --ipc=host biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
+<div class="codehilite"><pre><span></span>docker create --ipc=host biodev.ece.ucsb.edu:5000/torch-cellseg-3dunet-v2 \
 python PythonScriptWrapper.py \
 http://drishti.ece.ucsb.edu:8080/data_service/00-GFmjehgjqfqQi5CdXsAbiC \
 15 0.05 \
@@ -240,7 +240,7 @@ admin:00-ZRwn68oz8CRhf2n9oXA9za
 <ul>
 <li>Eventually this is the code that is running inside the container at runtime</li>
 </ul>
-<div class="codehilite"><pre>python PythonScriptWrapper.py \
+<div class="codehilite"><pre><span></span>python PythonScriptWrapper.py \
 http://drishti.ece.ucsb.edu:8080/data_service/00-kDwj3vQq83vJA6SvVvVVh8 \
 15 0.05 \
 http://drishti.ece.ucsb.edu:8080/module_service/mex/00-RNeG4KEKJUQPXboPEbt63S \
@@ -252,7 +252,7 @@ tail -f PythonScript.log
 
 
 <h4 id="run-based-on-the-identifier-for-that-instance">Run based on the identifier for that instance<a class="headerlink" href="#run-based-on-the-identifier-for-that-instance" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre>docker start 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9
+<div class="codehilite"><pre><span></span>docker start 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9
 docker wait 9eb7d1be403ca77b6cdc5c2140d289c2ee1692e736fe39abc0bf1fd798a530f9
 </pre></div>
 

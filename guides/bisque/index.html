@@ -129,17 +129,23 @@
 
 <h2 id="bisque-development-environment-setup-instructions"><a href="https://biodev.ece.ucsb.edu/projects/bisquik/wiki/InstallationInstructions05">Bisque Development Environment Setup Instructions</a><a class="headerlink" href="#bisque-development-environment-setup-instructions" title="Permanent link">&para;</a></h2>
 <p>This guide details the installation of a bisque server on an Ubuntu 16.04 LTS environment.</p>
-<p>Project Source
-- Github: https://github.com/UCSB-VRL/bisque</p>
-<p>Developer Installation
-- Bisque Github Pages: https://ucsb-vrl.github.io/bisque-dev/guides/bisque</p>
-<p>Reference
-- <a href="https://groups.google.com/forum/#!topic/bisque-bioimage/jwo_5sHFeHU">Bique Bioimage Google Groups</a>
-- <a href="https://bitbucket.org/CBIucsb/bisque/src/default/README.md">Instructions on installing bisque using docker</a></p>
+<p>Project Source</p>
+<ul>
+<li>Github: https://github.com/UCSB-VRL/bisque</li>
+</ul>
+<p>Developer Installation</p>
+<ul>
+<li>Bisque Github Pages: https://ucsb-vrl.github.io/bisque-dev/guides/bisque</li>
+</ul>
+<p>Reference</p>
+<ul>
+<li><a href="https://groups.google.com/forum/#!topic/bisque-bioimage/jwo_5sHFeHU">Bique Bioimage Google Groups</a></li>
+<li><a href="https://bitbucket.org/CBIucsb/bisque/src/default/README.md">Instructions on installing bisque using docker</a></li>
+</ul>
 <h4 id="setup-for-ubuntu-1604">Setup for Ubuntu 16.04<a class="headerlink" href="#setup-for-ubuntu-1604" title="Permanent link">&para;</a></h4>
 <hr />
 <h4 id="pre-requisites">Pre-requisites<a class="headerlink" href="#pre-requisites" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre>sudo apt-get install -y python python-dev python-virtualenv python-numpy python-scipy 
+<div class="codehilite"><pre><span></span>sudo apt-get install -y python python-dev python-virtualenv python-numpy python-scipy 
 sudo apt-get install -y libxml2-dev libxslt1-dev libhdf5-dev
 sudo apt-get install -y libmysqlclient-dev libpq-dev mercurial git cmake
 sudo apt-get install -y postgresql postgresql-client libsqlite3-dev
@@ -153,7 +159,7 @@ sudo apt-get install -y libgdcm2.6 libopenslide-dev libopenslide0
 
 
 <p>Install Openjpeg</p>
-<div class="codehilite"><pre>git clone https://github.com/uclouvain/openjpeg
+<div class="codehilite"><pre><span></span>git clone https://github.com/uclouvain/openjpeg
 cd openjpeg &amp;&amp; mkdir build &amp;&amp; cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 sudo make -j4 install
@@ -161,11 +167,13 @@ sudo ldconfig
 </pre></div>
 
 
-<p>Install BioImageConvert
-- <a href="https://biodev.ece.ucsb.edu/projects/imgcnv">BioImageConvert Source Repository</a>
-- <a href="https://bitbucket.org/dimin/bioimageconvert/downloads/">Prebuilt Binaries Repository</a>
-- Setup for pre-built binaries (below)</p>
-<div class="codehilite"><pre># Ubuntu 18 version
+<p>Install BioImageConvert</p>
+<ul>
+<li><a href="https://biodev.ece.ucsb.edu/projects/imgcnv">BioImageConvert Source Repository</a></li>
+<li><a href="https://bitbucket.org/dimin/bioimageconvert/downloads/">Prebuilt Binaries Repository</a></li>
+<li>Setup for pre-built binaries (below)</li>
+</ul>
+<div class="codehilite"><pre><span></span># Ubuntu 18 version
 wget https://bitbucket.org/dimin/bioimageconvert/downloads/imgcnv_ubuntu18_2.5.0.tar.gz
 
 # Ubuntu 16 version
@@ -182,7 +190,7 @@ sudo ldconfig
 
 
 <p>Alternately, Compile by source and Install (You are on your own here)</p>
-<div class="codehilite"><pre>hg clone --insecure http://biodev.ece.ucsb.edu/hg/imgcnv
+<div class="codehilite"><pre><span></span>hg clone --insecure http://biodev.ece.ucsb.edu/hg/imgcnv
 cd imgcnv &amp;&amp; make -j6 
 sudo make install
 </pre></div>
@@ -190,21 +198,22 @@ sudo make install
 
 <hr />
 <h4 id="a-clone-the-repository-and-prepare-virtual-environment">A. Clone the repository and Prepare Virtual Environment<a class="headerlink" href="#a-clone-the-repository-and-prepare-virtual-environment" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre>git clone https://github.com/UCSB-VRL/bisque.git bisque-stable
+<p>We will clone the stable repository and work inside a python virtual environment for setup requirements.</p>
+<div class="codehilite"><pre><span></span>git clone https://github.com/UCSB-VRL/bisque.git bisque-stable
 </pre></div>
 
 
 <ul>
 <li>Its always a good practive to use a virtualenv to develop projects</li>
 </ul>
-<div class="codehilite"><pre>sudo pip install virtualenvwrapper
+<div class="codehilite"><pre><span></span>sudo pip install virtualenvwrapper
 </pre></div>
 
 
 <ul>
 <li>Edit ~/.bashrc and export the following variables</li>
 </ul>
-<div class="codehilite"><pre># virtualenv and virtualenvwrapper
+<div class="codehilite"><pre><span></span># virtualenv and virtualenvwrapper
 export PATH=/usr/local/bin:$PATH
 export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python
 export VIRTUALENVWRAPPER_VIRTUALENV=/usr/local/bin/virtualenv
@@ -218,7 +227,7 @@ source /usr/local/bin/virtualenvwrapper.sh
 <li>Change environment "workon bqdev"</li>
 </ul>
 <h6 id="deprecated-bootstrap-installer-do-not-use-this-script">Deprecated Bootstrap Installer (Do Not Use this Script)<a class="headerlink" href="#deprecated-bootstrap-installer-do-not-use-this-script" title="Permanent link">&para;</a></h6>
-<div class="codehilite"><pre>$ mkdir bisque &amp;&amp; cd bisque
+<div class="codehilite"><pre><span></span>$ mkdir bisque &amp;&amp; cd bisque
 $ wget http://biodev.ece.ucsb.edu/projects/bisquik/export/tip/bisque-stable/contrib/bootstrap/bisque-bootstrap.py
 $ python bisque-bootstrap.py bqenv
 
@@ -230,7 +239,7 @@ bisque$ source bqenv/bin/activate
 <ul>
 <li>Now Install requirements</li>
 </ul>
-<div class="codehilite"><pre>pip install -i https://biodev.ece.ucsb.edu/py/bisque/xenial/+simple/ -r requirements.txt
+<div class="codehilite"><pre><span></span>pip install -i https://biodev.ece.ucsb.edu/py/bisque/xenial/+simple/ -r requirements.txt
 
 Alternate Index Url for Development: https://biodev.ece.ucsb.edu/py/bisque/dev/+simple
 Index Url Debian Stretch: https://biodev.ece.ucsb.edu/py/bisque/stretch/+simple/
@@ -241,7 +250,7 @@ Index Url Ubuntu xenial: https://biodev.ece.ucsb.edu/py/bisque/xenial/+simple/
 <ul>
 <li>Fix the requirements.txt (Only if the installation fails)</li>
 </ul>
-<div class="codehilite"><pre>#Fix the requirements.txt file using sed -i &#39;s/.*psycopg2==2.6.1.*/psycopg2==2.7.1./&#39; requirements.txt
+<div class="codehilite"><pre><span></span>#Fix the requirements.txt file using sed -i &#39;s/.*psycopg2==2.6.1.*/psycopg2==2.7.1./&#39; requirements.txt
 psycopg2==2.7.1
 Minimatic==1.0
 Paste==1.7.5.1
@@ -255,12 +264,17 @@ easy_install http://biodev.ece.ucsb.edu/binaries/depot/tgext.registration2/tgext
 
 <hr />
 <h4 id="b-configure-bisque-environment">B. Configure Bisque Environment<a class="headerlink" href="#b-configure-bisque-environment" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre>$ paver setup
+<ul>
+<li>Run the Paver setup</li>
+</ul>
+<div class="codehilite"><pre><span></span>$ paver setup
 </pre></div>
 
 
-<p>Expected log tail</p>
-<div class="codehilite"><pre>Installing collected packages: bqengine
+<ul>
+<li>Expected paver log tail</li>
+</ul>
+<div class="codehilite"><pre><span></span>Installing collected packages: bqengine
   Running setup.py develop for bqengine
 Successfully installed bqengine
 
@@ -269,12 +283,17 @@ bq-admin setup
 </pre></div>
 
 
-<div class="codehilite"><pre>$ bq-admin setup
+<ul>
+<li>Run the bq-admin standalone setup </li>
+</ul>
+<div class="codehilite"><pre><span></span>$ bq-admin setup
 </pre></div>
 
 
-<p>Expected log tail</p>
-<div class="codehilite"><pre>  ...
+<ul>
+<li>Expected bq-admin setup log tail</li>
+</ul>
+<div class="codehilite"><pre><span></span>  ...
 
 Found imgcnv version 2.4.3
 
@@ -309,10 +328,12 @@ Send Installation/Registration report [Y]? N
 </pre></div>
 
 
-<p>Add "config/runtime-bisque.cfg" for module configuration and docker image registry
-- Edit and add run config from config-defaults/runtime-bisque.defaults to config/runtime-bisque.cfg
-- Here are some local changes but requires docker to be setup</p>
-<div class="codehilite"><pre>runtime.platforms = command
+<ul>
+<li>Add "config/runtime-bisque.cfg" for module configuration and docker image registry</li>
+<li>Edit and add run config from config-defaults/runtime-bisque.defaults to config/runtime-bisque.cfg</li>
+<li>Here are some local changes but requires docker to be setup</li>
+</ul>
+<div class="codehilite"><pre><span></span>runtime.platforms = command
 runtime.staging_base = staging/
 
 [docker]
@@ -324,20 +345,18 @@ docker.hub = biodev.ece.ucsb.edu:5000
 
 <hr />
 <h4 id="c-run-bisque-server">C. Run Bisque Server<a class="headerlink" href="#c-run-bisque-server" title="Permanent link">&para;</a></h4>
-<p>Start/Stop the server</p>
-<div class="codehilite"><pre>$ bq-admin server start
-$ bq-admin server stop
-</pre></div>
-
-
-<p>Overview of Installation (Just for review)</p>
-<div class="codehilite"><pre>workon bqdev
-paver setup    [server|engine]
-bq-admin setup [server|engine]
-bq-admin deploy public
-</pre></div>
-
-
+<ul>
+<li>Start/Stop the server</li>
+</ul>
+<p><code>$ bq-admin server start
+  $ bq-admin server stop</code></p>
+<ul>
+<li>Overview of Installation (Just for review)</li>
+</ul>
+<p><code>workon bqdev
+  paver setup    [server|engine]
+  bq-admin setup [server|engine]
+  bq-admin deploy public</code></p>
 <p>Open in browser
 <img alt="Browser Client" src="../img/BisqueClientScreen.png?raw=true" /></p>
 <h4 id="d-upload-dataset">D. Upload Dataset<a class="headerlink" href="#d-upload-dataset" title="Permanent link">&para;</a></h4>
@@ -369,12 +388,12 @@ bq-admin deploy public
 <p><img alt="View 3D Image file" src="../img/ViewCell3DImage.png" /></p>
 <hr />
 <h4 id="e-module">E. Module<a class="headerlink" href="#e-module" title="Permanent link">&para;</a></h4>
-<h5 id="load-module">Load Module<a class="headerlink" href="#load-module" title="Permanent link">&para;</a></h5>
-<p>Install Module packages and dependencies</p>
+<h5 id="loadinstall-module-packages-and-dependencies">Load/Install Module packages and dependencies<a class="headerlink" href="#loadinstall-module-packages-and-dependencies" title="Permanent link">&para;</a></h5>
+<p>Lets take module/MetaData code as an example.</p>
 <ul>
 <li>Ensure ~/bisque/config/runtime-bisque.cfg has the configuration as below</li>
 </ul>
-<div class="codehilite"><pre>runtime.staging_base = staging/
+<div class="codehilite"><pre><span></span>runtime.staging_base = staging/
 docker.hub = biodev.ece.ucsb.edu:5000
 </pre></div>
 
@@ -382,7 +401,7 @@ docker.hub = biodev.ece.ucsb.edu:5000
 <ul>
 <li>Make sure the runtime-module.cfg is as per below</li>
 </ul>
-<div class="codehilite"><pre>module_enabled = True
+<div class="codehilite"><pre><span></span>module_enabled = True
 runtime.platforms=command
 [command]
 environments = Staged
@@ -394,7 +413,7 @@ files = MetaData.py
 <ul>
 <li>Now build/compile this module</li>
 </ul>
-<div class="codehilite"><pre> cd ~/bisque/modules/MetaData
+<div class="codehilite"><pre><span></span> cd ~/bisque/modules/MetaData
  python setup.py
 </pre></div>
 
@@ -406,7 +425,7 @@ files = MetaData.py
 <li>Open Module Manager from the admin user context menu</li>
 <li>Paste the following URL in the Module-&gt;Engine Module</li>
 </ul>
-<div class="codehilite"><pre>http://loup.ece.ucsb.edu:8088/engine_service/
+<div class="codehilite"><pre><span></span>http://loup.ece.ucsb.edu:8088/engine_service/
 </pre></div>
 
 
@@ -436,43 +455,32 @@ files = MetaData.py
 <li>Every module run will generate a model execution identifier to track this execution. You can observe this after clicking the run command and you have a result. It could be success or fail in the Results section
   <code>http://loup.ece.ucsb.edu:8088/module_service/MetaData/?wpublic=1#mex=http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF</code></li>
 <li>The mex identifier (==MEX_ID=00-ZmuAoE43wTxByycmaCnvBF==) observed from URL can be used to locate this execution code &amp; resulting logs in the staging folders</li>
-<li>change directory to this staging folder and observe the files there</li>
-</ul>
-<div class="codehilite"><pre>cd ~/bisque/staging/00-ZmuAoE43wTxByycmaCnvBF
-rahul@loup:~/bisque/staging/00-ZmuAoE43wTxByycmaCnvBF$ tree 
-.
-├── MetaData.log
-├── MetaData.py
-├── python.log
-└── state00-ZmuAoE43wTxByycmaCnvBF.bq
-0 directories, 4 files
-</pre></div>
-
-
-<ul>
+<li>change directory to this staging folder and observe the files there
+  <code>cd ~/bisque/staging/00-ZmuAoE43wTxByycmaCnvBF
+  rahul@loup:~/bisque/staging/00-ZmuAoE43wTxByycmaCnvBF$ tree 
+  .
+  ├── MetaData.log
+  ├── MetaData.py
+  ├── python.log
+  └── state00-ZmuAoE43wTxByycmaCnvBF.bq
+  0 directories, 4 files</code></li>
 <li>Here we can see that the MetaData.log and python.log files are generated</li>
 <li>In case of issues these are the log files that we need to look into for detailed error reporting</li>
-<li>main log file is the bisque_8088.log file at the ~/bisque home directory </li>
+<li>main log file is the bisque_8088.log file at the ~/bisque home directory 
+  ```
+  13:45:11,996 INFO  [bq.root] [admin] POST http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF?view=short
+  13:45:12,001 INFO  [bq.module_server] MEX APPEND http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF?view=short
+  13:45:12,205 INFO  [bq.engine_service.command_run] SUCCESS Command python MetaData.py http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF admin:00-ZmuAoE43wTxByycmaCnvBF with 0
+  13:45:12,206 INFO  [bq.engine_service.command_run] All processes have returned ['finished']
+  13:45:12,206 INFO  [bq.engine_service.command_run] finishing 1 mexes -&gt; [{'files': ['MetaData.py'], 'status': 'finished', 'executable': ['python', 'MetaData.py', 'http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh', 'http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF', 'admin:00-ZmuAoE43wTxByycmaCnvBF'], 'initial_dir': '/home/rahul/repository/github/bisque-dev', 'module_enabled': 'True', 'named_args': {'bisque_token': 'admin:00-ZmuAoE43wTxByycmaCnvBF', 'image_url': 'http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh', 'mex_url': 'http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF'}, 'bisque_token': u'admin:00-ZmuAoE43wTxByycmaCnvBF', 'environments': 'Staged', 'runtime.staging_base': 'staging/', 'mex_id': '00-ZmuAoE43wTxByycmaCnvBF', 'runtime.matlab_launcher': 'config-defaults/templates/matlab_launcher_SYS.tmpl', 'arguments': [], 'module_dir': '/home/rahul/repository/github/bisque-dev', 'staging_path': '/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF', 'iterables': False, 'log_name': '/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF/python.log', 'runtime.matlab_home': '', 'mex_url': 'http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF', 'rundir': '/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF', 'runtime.platforms': 'command'}]</li>
 </ul>
-<div class="codehilite"><pre>13:45:11,996 INFO  [bq.root] [admin] POST http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF?view=short
-13:45:12,001 INFO  [bq.module_server] MEX APPEND http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF?view=short
-13:45:12,205 INFO  [bq.engine_service.command_run] SUCCESS Command python MetaData.py http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF admin:00-ZmuAoE43wTxByycmaCnvBF with 0
-13:45:12,206 INFO  [bq.engine_service.command_run] All processes have returned [&#39;finished&#39;]
-13:45:12,206 INFO  [bq.engine_service.command_run] finishing 1 mexes -&gt; [{&#39;files&#39;: [&#39;MetaData.py&#39;], &#39;status&#39;: &#39;finished&#39;, &#39;executable&#39;: [&#39;python&#39;, &#39;MetaData.py&#39;, &#39;http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh&#39;, &#39;http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;admin:00-ZmuAoE43wTxByycmaCnvBF&#39;], &#39;initial_dir&#39;: &#39;/home/rahul/repository/github/bisque-dev&#39;, &#39;module_enabled&#39;: &#39;True&#39;, &#39;named_args&#39;: {&#39;bisque_token&#39;: &#39;admin:00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;image_url&#39;: &#39;http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh&#39;, &#39;mex_url&#39;: &#39;http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF&#39;}, &#39;bisque_token&#39;: u&#39;admin:00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;environments&#39;: &#39;Staged&#39;, &#39;runtime.staging_base&#39;: &#39;staging/&#39;, &#39;mex_id&#39;: &#39;00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;runtime.matlab_launcher&#39;: &#39;config-defaults/templates/matlab_launcher_SYS.tmpl&#39;, &#39;arguments&#39;: [], &#39;module_dir&#39;: &#39;/home/rahul/repository/github/bisque-dev&#39;, &#39;staging_path&#39;: &#39;/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;iterables&#39;: False, &#39;log_name&#39;: &#39;/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF/python.log&#39;, &#39;runtime.matlab_home&#39;: &#39;&#39;, &#39;mex_url&#39;: &#39;http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;rundir&#39;: &#39;/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;runtime.platforms&#39;: &#39;command&#39;}]
-</pre></div>
-
-
+<p>```</p>
 <ul>
-<li>This will show us the COMMAND that was run to execute this module with MEX_URL</li>
-</ul>
-<div class="codehilite"><pre>python MetaData.py \
-http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh \ 
-http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF \
-admin:00-ZmuAoE43wTxByycmaCnvBF
-</pre></div>
-
-
-<ul>
+<li>This will show us the COMMAND that was run to execute this module with MEX_URL
+  <code>python MetaData.py \
+  http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh \ 
+  http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF \
+  admin:00-ZmuAoE43wTxByycmaCnvBF</code></li>
 <li>This is the command that we can use to debug and rerun/replay this MEX in order to update the execution result. This is different from running the module again from the web interface since that will produce a new MEX_ID and create another staging folder corresponding to that.</li>
 </ul>
 <h4 id="g-module-mexui">G. Module MEX/UI<a class="headerlink" href="#g-module-mexui" title="Permanent link">&para;</a></h4>
@@ -504,19 +512,20 @@ admin:00-ZmuAoE43wTxByycmaCnvBF
 <hr />
 <h4 id="further">Further<a class="headerlink" href="#further" title="Permanent link">&para;</a></h4>
 <h4 id="docker-condor-based-modules-require-additional-setup">Docker &amp; Condor based modules require additional setup<a class="headerlink" href="#docker-condor-based-modules-require-additional-setup" title="Permanent link">&para;</a></h4>
-<p>==NEXT==
-- Install Docker (https://docs.docker.com/install/linux/docker-ce/ubuntu/)
-  - Also go through the post-installation steps
-  - Also install the <a href="https://github.com/nvidia/nvidia-docker/">Nvidia-docker</a> in case you are planning to use GPU based modules or connoisseur services.</p>
+<blockquote>
+<p>NEXT</p>
+</blockquote>
 <ul>
+<li>Install Docker (https://docs.docker.com/install/linux/docker-ce/ubuntu/)</li>
+<li>Also go through the post-installation steps</li>
+<li>Also install the <a href="https://github.com/nvidia/nvidia-docker/">Nvidia-docker</a> in case you are planning to use GPU based modules or connoisseur services.</li>
 <li>Install Condor (https://research.cs.wisc.edu/htcondor/ubuntu/)</li>
 <li>Understand the configurations as well for master &amp; slave setup </li>
 <li><a href="../rancher2_condor">Bisque Condor Setup Instructions</a> </li>
 </ul>
-<div class="codehilite"><pre>rahul@bqdev:~$ /etc/init.d/condor restart
-[ ok ] Restarting condor (via systemctl): condor.service.
-rahul@bqdev:~$ ps -ef | grep condor
-</pre></div></div>
+<p><code>rahul@bqdev:~$ /etc/init.d/condor restart
+  [ ok ] Restarting condor (via systemctl): condor.service.
+  rahul@bqdev:~$ ps -ef | grep condor</code></p></div>
         </div>
 
         <footer class="col-md-12">

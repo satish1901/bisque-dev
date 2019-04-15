@@ -142,7 +142,7 @@
 <ul>
 <li>Setup folders &amp; pull code </li>
 </ul>
-<div class="codehilite"><pre>mkdir ws &amp;&amp; cd ws &amp;&amp; git clone https://github.com/UCSB-VRL/bisque
+<div class="codehilite"><pre><span></span>mkdir ws &amp;&amp; cd ws &amp;&amp; git clone https://github.com/UCSB-VRL/bisque
 mkdir container-modules container-data container-config &amp;&amp; cp -r bisque/modules/* container-modules/
 </pre></div>
 
@@ -150,7 +150,7 @@ mkdir container-modules container-data container-config &amp;&amp; cp -r bisque/
 <ul>
 <li>Start Docker and mount directories for run</li>
 </ul>
-<div class="codehilite"><pre># Docker Run
+<div class="codehilite"><pre><span></span># Docker Run
 docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
  -v $(pwd)/container-modules:/source/modules \
  -v $(pwd)/container-data:/source/data \
@@ -162,7 +162,7 @@ docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
 <ul>
 <li>Check Container state</li>
 </ul>
-<div class="codehilite"><pre>bisque@ubuntu:~$ docker ps
+<div class="codehilite"><pre><span></span>bisque@ubuntu:~$ docker ps
 CONTAINER ID        IMAGE                                  COMMAND                  CREATED             STATUS              PORTS                                              NAMES
 a1162677d66a        vishwakarmarhl/ucsb-bisque05-svc:dev   &quot;/builder/run-bisque…&quot;   13 minutes ago      Up 13 minutes       0.0.0.0:8080-&gt;8080/tcp, 0.0.0.0:27000-&gt;27000/tcp   bisque-dev
 </pre></div>
@@ -171,7 +171,7 @@ a1162677d66a        vishwakarmarhl/ucsb-bisque05-svc:dev   &quot;/builder/run-bi
 <ul>
 <li>Stop Docker</li>
 </ul>
-<div class="codehilite"><pre>docker stop $(docker ps -a -q --filter ancestor=vishwakarmarhl/ucsb-bisque05-svc:dev --format=&quot;{{.ID}}&quot;)
+<div class="codehilite"><pre><span></span>docker stop $(docker ps -a -q --filter ancestor=vishwakarmarhl/ucsb-bisque05-svc:dev --format=&quot;{{.ID}}&quot;)
 </pre></div>
 
 
@@ -182,7 +182,7 @@ a1162677d66a        vishwakarmarhl/ucsb-bisque05-svc:dev   &quot;/builder/run-bi
 </ul>
 </li>
 </ul>
-<div class="codehilite"><pre>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
+<div class="codehilite"><pre><span></span>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
  -v $(pwd)/container-modules:/source/modules \
  -v $(pwd)/container-data:/source/data \
  -v $(pwd)/container-config:/source/config \
@@ -202,7 +202,7 @@ a1162677d66a        vishwakarmarhl/ucsb-bisque05-svc:dev   &quot;/builder/run-bi
 <li>Use "admin:admin" to authenticate into this local environment </li>
 <li>To manipulate and check logs, connect to docker bash </li>
 </ul>
-<div class="codehilite"><pre>bisque-host$ docker exec -t -i bisque-dev /bin/bash
+<div class="codehilite"><pre><span></span>bisque-host$ docker exec -t -i bisque-dev /bin/bash
 </pre></div>
 
 
@@ -215,7 +215,7 @@ a1162677d66a        vishwakarmarhl/ucsb-bisque05-svc:dev   &quot;/builder/run-bi
 <p>Create the workspace and prepare the development setup</p>
 </li>
 </ul>
-<div class="codehilite"><pre>cd ~/ws
+<div class="codehilite"><pre><span></span>cd ~/ws
 git clone https://github.com/UCSB-VRL/bisque
 mkdir container-modules container-data container-config
 cp -r bisque/modules/* container-modules/
@@ -225,7 +225,7 @@ cp -r bisque/modules/* container-modules/
 <ul>
 <li>Create the container </li>
 </ul>
-<div class="codehilite"><pre>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
+<div class="codehilite"><pre><span></span>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
 -v $(pwd)/container-modules:/source/modules \
 -v $(pwd)/container-data:/source/data \
 -v $(pwd)/container-config:/source/config \
@@ -236,14 +236,14 @@ cp -r bisque/modules/* container-modules/
 <ul>
 <li>Bash into the docker container and develop</li>
 </ul>
-<div class="codehilite"><pre>docker exec -it bisque-dev /bin/bash
+<div class="codehilite"><pre><span></span>docker exec -it bisque-dev /bin/bash
 </pre></div>
 
 
 <ul>
 <li>Activate environment and Test/Build a Module (TODO !! python-dev)</li>
 </ul>
-<div class="codehilite"><pre>root@9362d1f8bf12:/source# cd modules/MetaData
+<div class="codehilite"><pre><span></span>root@9362d1f8bf12:/source# cd modules/MetaData
 root@9362d1f8bf12:/source/modules/MetaData# source /usr/lib/bisque/bin/activate
 root@9362d1f8bf12:/source/modules/MetaData# python setup.py
 </pre></div>

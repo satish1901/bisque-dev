@@ -148,7 +148,7 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
 <ul>
 <li>Bisque service variables</li>
 </ul>
-<div class="codehilite"><pre>      BISQUE_USER= bisque
+<div class="codehilite"><pre><span></span>      BISQUE_USER= bisque
       BISQUE_BISQUE_ADMIN_EMAIL= admin@loup.ece.ucsb.edu
       BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
       BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/
@@ -175,7 +175,7 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
 - Image: biodev.ece.ucsb.edu:5000/condor 
 - Ports: 9618, 9886 as HostPort
 - Environment</p>
-<div class="codehilite"><pre>CONDOR_DAEMONS = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
+<div class="codehilite"><pre><span></span>CONDOR_DAEMONS = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
 CONDOR_MANAGER_HOST = master
 </pre></div>
 
@@ -218,7 +218,7 @@ CONDOR_MANAGER_HOST = master
 <ul>
 <li>Bisque client service variables</li>
 </ul>
-<div class="codehilite"><pre>      BISQUE_USER= bisque
+<div class="codehilite"><pre><span></span>      BISQUE_USER= bisque
       BISQUE_BISQUE_ADMIN_EMAIL= admin@loup.ece.ucsb.edu
       BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
       BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/
@@ -250,7 +250,7 @@ CONDOR_MANAGER_HOST = master
 <p>Verify connoisseur GPU variables </p>
 </li>
 </ul>
-<div class="codehilite"><pre>      NVIDIA_REQUIRE_CUDA=cuda&gt;=8.0
+<div class="codehilite"><pre><span></span>      NVIDIA_REQUIRE_CUDA=cuda&gt;=8.0
       NVIDIA_VISIBLE_DEVICES=all
       NVIDIA_DRIVER_CAPABILITIES=compute,utility
       CUDA_PKG_VERSION=8-0=8.0.61-1
@@ -269,7 +269,7 @@ CONDOR_MANAGER_HOST = master
 <p>TODO:<br />
 - Fix Caffe and CUDA within the image 
 - Probably write your own Docker file for a new CUDA/GPU enabled container</p>
-<div class="codehilite"><pre>bisque@bq-connoisseur-engine-svc-74755f798b-6lbgk:/source$ caffe deveice_query -gpu all
+<div class="codehilite"><pre><span></span>bisque@bq-connoisseur-engine-svc-74755f798b-6lbgk:/source$ caffe deveice_query -gpu all
 E0213 00:36:24.855478  1798 caffe.cpp:77] Available caffe actions:
 E0213 00:36:24.856573  1798 caffe.cpp:80]       device_query
 E0213 00:36:24.856690  1798 caffe.cpp:80]       test

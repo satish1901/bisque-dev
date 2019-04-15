@@ -190,14 +190,14 @@
 <li>Open up firewall for this "sudo ufw allow 80 &amp;&amp; sudo ufw allow 80 443"</li>
 <li>Verify the port 80 availability</li>
 </ul>
-<div class="codehilite"><pre>sudo netstat -peanut | grep &quot;:80&quot; 
+<div class="codehilite"><pre><span></span>sudo netstat -peanut | grep &quot;:80&quot; 
 </pre></div>
 
 
 <ul>
 <li>Setup certificates at /etc/letsencrypt</li>
 </ul>
-<div class="codehilite"><pre>sudo certbot certonly --standalone --dry-run \
+<div class="codehilite"><pre><span></span>sudo certbot certonly --standalone --dry-run \
    --cert-name loup.ece.ucsb.edu -d loup.ece.ucsb.edu
 </pre></div>
 
@@ -207,7 +207,7 @@
 <p>Install/Startup Rancher: https://rancher.com/docs/rancher/v2.x/en/installation/single-node/
 - Rancher etcd data persisted at /var/lib/rancher
 - Since port 80 is occupied by rancher/rancher, a rancher/rancher-agent cannot be run on this node.</p>
-<div class="codehilite"><pre>docker run -d --restart=unless-stopped \
+<div class="codehilite"><pre><span></span>docker run -d --restart=unless-stopped \
   -p 8080:80 -p 8443:443 \
   -v /var/log/rancher/auditlog:/var/log/auditlog \
   -v /host/rancher:/var/lib/rancher \
@@ -237,12 +237,12 @@
 https://rancher.com/docs/rancher/v2.x/en/v1.6-migration</li>
 <li>Migration using CLI tools</li>
 </ul>
-<div class="codehilite"><pre>migration-tools export --url &lt;RANCHER_URL&gt; --access-key &lt;RANCHER_ACCESS_KEY&gt; \
+<div class="codehilite"><pre><span></span>migration-tools export --url &lt;RANCHER_URL&gt; --access-key &lt;RANCHER_ACCESS_KEY&gt; \
  --secret-key &lt;RANCHER_SECRET_KEY&gt; --export-dir &lt;EXPORT_DIR&gt;
 </pre></div>
 
 
-<div class="codehilite"><pre>./migration-tools parse --docker-file compose/docker-compose.yml \
+<div class="codehilite"><pre><span></span>./migration-tools parse --docker-file compose/docker-compose.yml \
  --rancher-file compose/rancher-compose.yml 
 </pre></div>
 
@@ -252,7 +252,7 @@ https://rancher.com/docs/rancher/v2.x/en/v1.6-migration</li>
 <h5 id="port-requirements">Port requirements<a class="headerlink" href="#port-requirements" title="Permanent link">&para;</a></h5>
 <p>Open up ports based on the <a href="https://rancher.com/docs/rancher/v2.x/en/installation/references/">CNI provider requirements</a>
 - Use Canal as the provider in this case</p>
-<div class="codehilite"><pre># API/UI Clients
+<div class="codehilite"><pre><span></span># API/UI Clients
 sudo ufw allow 22,80,443/tcp
 # Etcd Plane Nodes
 sudo ufw allow 2379,2380,9099,6443/tcp &amp;&amp; sudo ufw allow 8472/udp
@@ -274,7 +274,7 @@ sudo ufw allow  2376/tcp
 <li>Select "custom" local/remote nodes option to create this cluster</li>
 <li>Run the below command for running the rancher-agent/workers</li>
 </ul>
-<div class="codehilite"><pre>sudo docker run -d --privileged --restart=unless-stopped --net=host \
+<div class="codehilite"><pre><span></span>sudo docker run -d --privileged --restart=unless-stopped --net=host \
  -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run \
   rancher/rancher-agent:v2.1.6 --server https://loup.ece.ucsb.edu:8443 \
   --token 7z2ncgjj4482m48fpsj7xjmc8lc9n6bsxh7qcjrsr6rcxrzhzl6prz \
@@ -306,7 +306,7 @@ sudo ufw allow  2376/tcp
 https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-16-04</li>
 <li>Setup folders</li>
 </ul>
-<div class="codehilite"><pre># Create the path on host system
+<div class="codehilite"><pre><span></span># Create the path on host system
 sudo mkdir /opt/bisque/ -p &amp;&amp; \
 sudo mkdir /opt/bisque/data -p &amp;&amp; \
 sudo mkdir /opt/bisque/local/workdir -p
@@ -319,7 +319,7 @@ sudo chown -R nobody:nogroup /opt/bisque/
 <ul>
 <li>Open up the ports used by NFS</li>
 </ul>
-<div class="codehilite"><pre># Access from specific machines
+<div class="codehilite"><pre><span></span># Access from specific machines
 sudo ufw allow from 192.168.1.129 to any port nfs
 sudo ufw allow from 192.168.1.133 to any port nfs
 
@@ -333,7 +333,7 @@ sudo ufw allow 111/tcp &amp;&amp; sudo ufw allow 111/udp
 <ul>
 <li>Now add NFS host configuration at /etc/exports</li>
 </ul>
-<div class="codehilite"><pre>/opt/bisque     192.168.1.129(rw,sync,no_root_squash,no_subtree_check)
+<div class="codehilite"><pre><span></span>/opt/bisque     192.168.1.129(rw,sync,no_root_squash,no_subtree_check)
 /opt/bisque     192.168.1.133(rw,sync,no_root_squash,no_subtree_check)
 </pre></div>
 
@@ -341,14 +341,14 @@ sudo ufw allow 111/tcp &amp;&amp; sudo ufw allow 111/udp
 <ul>
 <li>restart the nfs server on the NFS host machine</li>
 </ul>
-<div class="codehilite"><pre>sudo systemctl restart nfs-kernel-server
+<div class="codehilite"><pre><span></span>sudo systemctl restart nfs-kernel-server
 </pre></div>
 
 
 <ul>
 <li>Mount the NFS folder on the client machine</li>
 </ul>
-<div class="codehilite"><pre>sudo mount 192.168.1.123:/opt/bisque/ /run/bisque/
+<div class="codehilite"><pre><span></span>sudo mount 192.168.1.123:/opt/bisque/ /run/bisque/
 </pre></div>
 
 
@@ -409,7 +409,7 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
 <ul>
 <li>Bisque service variables</li>
 </ul>
-<div class="codehilite"><pre>      BISQUE_USER= bisque
+<div class="codehilite"><pre><span></span>      BISQUE_USER= bisque
       BISQUE_BISQUE_ADMIN_EMAIL= admin@loup.ece.ucsb.edu
       BISQUE_BISQUE_BLOB_SERVICE_STORES= blobs,local
       BISQUE_BISQUE_STORES_BLOBS_MOUNTURL= file://$$datadir/blobdir/$$user/
@@ -449,7 +449,7 @@ https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
 <ul>
 <li>Using cluster kubectl shell from the cluster web UI</li>
 </ul>
-<div class="codehilite"><pre># Fetch namespaces
+<div class="codehilite"><pre><span></span># Fetch namespaces
 kubectl get pods --all-namespaces
 kubectl get pods -n bqdev 
 
@@ -469,7 +469,7 @@ kubectl logs postgres-564d9f79d5-z2sxl  -n bqdev
 <ul>
 <li>Stop Rancher Containers </li>
 </ul>
-<div class="codehilite"><pre># Master: for the rancher server container
+<div class="codehilite"><pre><span></span># Master: for the rancher server container
 docker stop $(docker ps -a -q --filter ancestor=rancher/rancher:stable --format=&quot;{{.ID}}&quot;)
 # Workers: for all k8s containers 
 docker stop $(docker ps -f name=k* --format=&quot;{{.ID}}&quot;)
@@ -479,7 +479,7 @@ docker stop $(docker ps -f name=k* --format=&quot;{{.ID}}&quot;)
 <ul>
 <li>Clean the container, images and volumes</li>
 </ul>
-<div class="codehilite"><pre>docker rm -f $(docker ps -a -f name=k* --format=&quot;{{.ID}}&quot;)
+<div class="codehilite"><pre><span></span>docker rm -f $(docker ps -a -f name=k* --format=&quot;{{.ID}}&quot;)
 docker rmi -f $(docker images -q &quot;rancher/*&quot;)
 docker volume rm $(docker volume ls -q)
 </pre></div>
@@ -488,7 +488,7 @@ docker volume rm $(docker volume ls -q)
 <ul>
 <li>Unmount and remove data (/var/lib/kubelet/pods/XXX, /var/lib/kubelet, /var/lib/rancher)</li>
 </ul>
-<div class="codehilite"><pre># Unmount directories
+<div class="codehilite"><pre><span></span># Unmount directories
 for mount in $(mount | grep tmpfs | grep &#39;/var/lib/kubelet&#39; | awk &#39;{ print $3 }&#39;) /var/lib/kubelet /var/lib/rancher; do sudo umount $mount; done
 
 # Clean the directories
@@ -517,7 +517,7 @@ sudo rm -rf /var/log/rancher/auditlog
 <ul>
 <li>Remove the existing network interface</li>
 </ul>
-<div class="codehilite"><pre>ip address show
+<div class="codehilite"><pre><span></span>ip address show
 ip link delete &lt;interface_name&gt;
 </pre></div>
 
