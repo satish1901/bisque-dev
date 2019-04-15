@@ -452,35 +452,51 @@ files = MetaData.py
 </ul>
 <h4 id="f-debug-module">F. Debug Module<a class="headerlink" href="#f-debug-module" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Every module run will generate a model execution identifier to track this execution. You can observe this after clicking the run command and you have a result. It could be success or fail in the Results section
-  <code>http://loup.ece.ucsb.edu:8088/module_service/MetaData/?wpublic=1#mex=http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF</code></li>
+<li>Every module run will generate a model execution identifier to track this execution. You can observe this after clicking the run command and you have a result. It could be success or fail in the Results section</li>
+</ul>
+<div class="codehilite"><pre><span></span>http://loup.ece.ucsb.edu:8088/module_service/MetaData/?wpublic=1#mex=http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF
+</pre></div>
+
+
+<ul>
 <li>The mex identifier (==MEX_ID=00-ZmuAoE43wTxByycmaCnvBF==) observed from URL can be used to locate this execution code &amp; resulting logs in the staging folders</li>
-<li>change directory to this staging folder and observe the files there
-  <code>cd ~/bisque/staging/00-ZmuAoE43wTxByycmaCnvBF
-  rahul@loup:~/bisque/staging/00-ZmuAoE43wTxByycmaCnvBF$ tree 
-  .
-  ├── MetaData.log
-  ├── MetaData.py
-  ├── python.log
-  └── state00-ZmuAoE43wTxByycmaCnvBF.bq
-  0 directories, 4 files</code></li>
+<li>change directory to this staging folder and observe the files there</li>
+</ul>
+<div class="codehilite"><pre><span></span>cd ~/bisque/staging/00-ZmuAoE43wTxByycmaCnvBF
+rahul@loup:~/bisque/staging/00-ZmuAoE43wTxByycmaCnvBF$ tree 
+.
+├── MetaData.log
+├── MetaData.py
+├── python.log
+└── state00-ZmuAoE43wTxByycmaCnvBF.bq
+0 directories, 4 files
+</pre></div>
+
+
+<ul>
 <li>Here we can see that the MetaData.log and python.log files are generated</li>
 <li>In case of issues these are the log files that we need to look into for detailed error reporting</li>
-<li>main log file is the bisque_8088.log file at the ~/bisque home directory 
-  ```
-  13:45:11,996 INFO  [bq.root] [admin] POST http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF?view=short
-  13:45:12,001 INFO  [bq.module_server] MEX APPEND http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF?view=short
-  13:45:12,205 INFO  [bq.engine_service.command_run] SUCCESS Command python MetaData.py http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF admin:00-ZmuAoE43wTxByycmaCnvBF with 0
-  13:45:12,206 INFO  [bq.engine_service.command_run] All processes have returned ['finished']
-  13:45:12,206 INFO  [bq.engine_service.command_run] finishing 1 mexes -&gt; [{'files': ['MetaData.py'], 'status': 'finished', 'executable': ['python', 'MetaData.py', 'http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh', 'http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF', 'admin:00-ZmuAoE43wTxByycmaCnvBF'], 'initial_dir': '/home/rahul/repository/github/bisque-dev', 'module_enabled': 'True', 'named_args': {'bisque_token': 'admin:00-ZmuAoE43wTxByycmaCnvBF', 'image_url': 'http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh', 'mex_url': 'http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF'}, 'bisque_token': u'admin:00-ZmuAoE43wTxByycmaCnvBF', 'environments': 'Staged', 'runtime.staging_base': 'staging/', 'mex_id': '00-ZmuAoE43wTxByycmaCnvBF', 'runtime.matlab_launcher': 'config-defaults/templates/matlab_launcher_SYS.tmpl', 'arguments': [], 'module_dir': '/home/rahul/repository/github/bisque-dev', 'staging_path': '/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF', 'iterables': False, 'log_name': '/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF/python.log', 'runtime.matlab_home': '', 'mex_url': 'http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF', 'rundir': '/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF', 'runtime.platforms': 'command'}]</li>
+<li>main log file is the bisque_8088.log file at the ~/bisque home directory </li>
 </ul>
-<p>```</p>
+<div class="codehilite"><pre><span></span>13:45:11,996 INFO  [bq.root] [admin] POST http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF?view=short
+13:45:12,001 INFO  [bq.module_server] MEX APPEND http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF?view=short
+13:45:12,205 INFO  [bq.engine_service.command_run] SUCCESS Command python MetaData.py http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF admin:00-ZmuAoE43wTxByycmaCnvBF with 0
+13:45:12,206 INFO  [bq.engine_service.command_run] All processes have returned [&#39;finished&#39;]
+13:45:12,206 INFO  [bq.engine_service.command_run] finishing 1 mexes -&gt; [{&#39;files&#39;: [&#39;MetaData.py&#39;], &#39;status&#39;: &#39;finished&#39;, &#39;executable&#39;: [&#39;python&#39;, &#39;MetaData.py&#39;, &#39;http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh&#39;, &#39;http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;admin:00-ZmuAoE43wTxByycmaCnvBF&#39;], &#39;initial_dir&#39;: &#39;/home/rahul/repository/github/bisque-dev&#39;, &#39;module_enabled&#39;: &#39;True&#39;, &#39;named_args&#39;: {&#39;bisque_token&#39;: &#39;admin:00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;image_url&#39;: &#39;http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh&#39;, &#39;mex_url&#39;: &#39;http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF&#39;}, &#39;bisque_token&#39;: u&#39;admin:00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;environments&#39;: &#39;Staged&#39;, &#39;runtime.staging_base&#39;: &#39;staging/&#39;, &#39;mex_id&#39;: &#39;00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;runtime.matlab_launcher&#39;: &#39;config-defaults/templates/matlab_launcher_SYS.tmpl&#39;, &#39;arguments&#39;: [], &#39;module_dir&#39;: &#39;/home/rahul/repository/github/bisque-dev&#39;, &#39;staging_path&#39;: &#39;/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;iterables&#39;: False, &#39;log_name&#39;: &#39;/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF/python.log&#39;, &#39;runtime.matlab_home&#39;: &#39;&#39;, &#39;mex_url&#39;: &#39;http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;rundir&#39;: &#39;/home/rahul/repository/github/bisque-dev/staging/00-ZmuAoE43wTxByycmaCnvBF&#39;, &#39;runtime.platforms&#39;: &#39;command&#39;}]
+</pre></div>
+
+
 <ul>
-<li>This will show us the COMMAND that was run to execute this module with MEX_URL
-  <code>python MetaData.py \
-  http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh \ 
-  http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF \
-  admin:00-ZmuAoE43wTxByycmaCnvBF</code></li>
+<li>This will show us the COMMAND that was run to execute this module with MEX_URL</li>
+</ul>
+<div class="codehilite"><pre><span></span>python MetaData.py \
+http://loup.ece.ucsb.edu:8088/data_service/00-6dpWgEAue2iz8YZcKPHejh \ 
+http://loup.ece.ucsb.edu:8088/module_service/mex/00-ZmuAoE43wTxByycmaCnvBF \
+admin:00-ZmuAoE43wTxByycmaCnvBF
+</pre></div>
+
+
+<ul>
 <li>This is the command that we can use to debug and rerun/replay this MEX in order to update the execution result. This is different from running the module again from the web interface since that will produce a new MEX_ID and create another staging folder corresponding to that.</li>
 </ul>
 <h4 id="g-module-mexui">G. Module MEX/UI<a class="headerlink" href="#g-module-mexui" title="Permanent link">&para;</a></h4>
