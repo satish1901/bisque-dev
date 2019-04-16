@@ -212,6 +212,7 @@ sudo make install
 
 <ul>
 <li>Edit ~/.bashrc and export the following variables</li>
+<li>In case of issues around virtualenvwrapper make sure the paths in the variables below exist</li>
 </ul>
 <div class="codehilite"><pre><span></span># virtualenv and virtualenvwrapper
 export PATH=/usr/local/bin:$PATH
@@ -291,40 +292,159 @@ bq-admin setup
 
 
 <ul>
-<li>Expected bq-admin setup log tail</li>
+<li>Expected bq-admin setup log tail (also observe the various inputs in the log for this setup)</li>
 </ul>
-<div class="codehilite"><pre><span></span>  ...
+<div class="codehilite"><pre><span></span>  (bqdev) rahul@loup:~/repository/github/bisque$ bq-admin setup 
+  INFO:root:Generating grammar tables from /usr/lib/python2.7/lib2to3/Grammar.txt
+  INFO:root:Generating grammar tables from /usr/lib/python2.7/lib2to3/PatternGrammar.txt
+  Developer installation
+  DIRS:  {&#39;bin&#39;: &#39;/home/rahul/.virtualenvs/bqdev/bin&#39;, &#39;run&#39;: &#39;.&#39;, &#39;share&#39;: &#39;.&#39;, &#39;plugins&#39;: &#39;./plugins&#39;, &#39;packages&#39;: &#39;/home/rahul/.virtualenvs/bqdev/lib/python2.7/site-packages&#39;, &#39;data&#39;: &#39;./data&#39;, &#39;virtualenv&#39;: &#39;/home/rahul/.virtualenvs/bqdev&#39;, &#39;default&#39;: &#39;./config-defaults&#39;, &#39;jslocation&#39;: &#39;bqcore&#39;, &#39;modules&#39;: &#39;./modules&#39;, &#39;depot&#39;: &#39;./external&#39;, &#39;config&#39;: &#39;./config&#39;, &#39;public&#39;: &#39;./public&#39;}
+  INFO:root:Generating grammar tables from /usr/lib/python2.7/lib2to3/Grammar.txt
+  INFO:root:Generating grammar tables from /usr/lib/python2.7/lib2to3/PatternGrammar.txt
+  Developer installation
+  DIRS:  {&#39;bin&#39;: &#39;/home/rahul/.virtualenvs/bqdev/bin&#39;, &#39;run&#39;: &#39;.&#39;, &#39;share&#39;: &#39;.&#39;, &#39;plugins&#39;: &#39;./plugins&#39;, &#39;packages&#39;: &#39;/home/rahul/.virtualenvs/bqdev/lib/python2.7/site-packages&#39;, &#39;data&#39;: &#39;./data&#39;, &#39;virtualenv&#39;: &#39;/home/rahul/.virtualenvs/bqdev&#39;, &#39;default&#39;: &#39;./config-defaults&#39;, &#39;jslocation&#39;: &#39;bqcore&#39;, &#39;modules&#39;: &#39;./modules&#39;, &#39;depot&#39;: &#39;./external&#39;, &#39;config&#39;: &#39;./config&#39;, &#39;public&#39;: &#39;./public&#39;}
+  This is the main installer for Bisque
 
-Found imgcnv version 2.4.3
+      The system will initialize and be ready for use after a succesfull
+      setup has completed.
 
-    Imgcnv is installed and no-precompiled version exists. Using installed version
+      Several questions must be answered to complete the install.  Each
+      question is presented with default in brackets [].  Pressing
+      &lt;enter&gt; means that you are accepting the default value. You may
+      request more information by responding with single &#39;?&#39; and then &lt;enter&gt;.
 
-Top level site variables are:
-  bisque.admin_email=YourEmail@YourOrganization
-  bisque.admin_id=admin
-  bisque.organization=Your Organization
-  bisque.paths.root=.
-  bisque.server=http://loup.ece.ucsb.edu:8088
-  bisque.title=Image Repository
-Change a site variable [Y]? N
+      For example:
+      What is postal abbreviation of Alaska [AK]?
 
-  ...
+      The default answer is AK and is chosen by simply entering &lt;enter&gt;
 
-Running setup_config() from bq.websetup
-CALLING  &lt;function install_preferences at 0x7f47f191f848&gt;
 
-Initialize your database with:
-   $ bq-admin setup createdb
+  Beginning install of [&#39;bisque&#39;, &#39;engine&#39;] with [&#39;server&#39;] 
+  CALLING  &lt;function install_external_binaries at 0x7f9533ffac08&gt;
+  Fetch external binary files from Bisque development server [Y]? Y
+  Matched section Linux-64bit-*
+  extjs.zip found locally
+  bioformats-pack.zip found locally
+  libmbgl-linux-64-large.a found locally
+  feature_extractors.zip found locally
+  ImarisConvert.tar.gz found locally
+  opencv-2.4.6.zip found locally
+  CALLING  &lt;function install_dependencies at 0x7f9533ffad70&gt;
+  2.4.3
 
-You can start bisque with:
-   $ bq-admin server start
-then point your browser to:
-   http://loup.ece.ucsb.edu:8088
-If you need to shutdown the servers, then use:
-   $ bq-admin server stop
-You can login as admin and change the default password.
+  Found imgcnv version 2.4.3
 
-Send Installation/Registration report [Y]? N
+
+  Imgcnv is installed and no-precompiled version exists. Using installed version
+  ImarisConvert is up to date
+  No pre-compiled version of openslide exists for your system
+  Please visit our mailing list https://groups.google.com/forum/#!forum/bisque-bioimage for help
+  Bioformats is up to date
+  CALLING  &lt;function install_features at 0x7f9533ffb050&gt;
+  Install feature extractors (Feature Server) [Y]? 
+  Unpacking ./external/feature_extractors.zip into ./bqfeature/bq
+  Install source code for feature extractors [N]? 
+  To enable the feature service to read OME-bigtiff for feature extraction install
+          libtiff4
+          For Debian use the command apt-get install libtiff5-dev
+
+  Install OpenCV-2.4.6 [Y]? 
+  Extracted opencv-2.4.6/python2.7/cv.py -&gt; /home/rahul/.virtualenvs/bqdev/lib/python2.7/site-packages/cv.py
+  Extracted opencv-2.4.6/python2.7/cv2.so -&gt; /home/rahul/.virtualenvs/bqdev/lib/python2.7/site-packages/cv2.so
+  CALLING  &lt;function install_plugins at 0x7f9533ff9b18&gt;
+  Try to install plugins [Y]? 
+  INFO &#39;svn&#39;not found: cannot fetch source repositories with svn 
+  INSTALL PLGINS  [&#39;./plugins&#39;]
+  Checking ./plugins for modules
+  CALLING  &lt;function install_public_static at 0x7f9533ffa848&gt;
+  Deploy all static resources to public directory [Y]? 
+  Creating ./public
+  INFO:bq.image_service.server:Available converters: openslide (1.1.1), imgcnv (2.4.3), ImarisConvert (8.0.2), bioformats (5.1.1)
+  Problem loading registration = bq.registration.controllers.registration_service: &#39;User&#39;
+
+  Generating packaged JS and CSS files
+
+  INFO:minimatic:Combined -&gt; ./public/core/css/all_css.css:
+  INFO:minimatic:Combined -&gt; ./public/core/js/all_js.js:
+  CALLING  &lt;function install_server_defaults at 0x7f9533ffa410&gt;
+  Server config
+  Top level site variables are:
+    bisque.admin_email=YourEmail@YourOrganization
+    bisque.admin_id=admin
+    bisque.organization=Your Organization
+    bisque.paths.root=.
+    bisque.server=http://0.0.0.0:8088
+    bisque.title=Image Repository
+  Change a site variable [N]? Y
+  Enter the root URL of the server  [http://0.0.0.0:8088]? http://loup.ece.ucsb.edu:8080
+  Your real name  administrator account []? 
+  A login ID for the administrator account [admin]? 
+  An email for the administrator [YourEmail@YourOrganization]? 
+  A small organization title for the main page [Your Organization]? 
+  The main title for the web page header [Image Repository]? 
+  Installation Directory [.]? 
+  Do you want to create new server configuations [Y]? 
+  {&#39;backend&#39;: &#39;paster&#39;,
+  &#39;e1.bisque.has_database&#39;: &#39;false&#39;,
+  &#39;e1.bisque.static_files&#39;: &#39;false&#39;,
+  &#39;e1.services_enabled&#39;: &#39;engine_service&#39;,
+  &#39;e1.url&#39;: &#39;http://0.0.0.0:27000&#39;,
+  &#39;h1.bisque.static_files&#39;: &#39;true&#39;,
+  &#39;h1.services_disabled&#39;: &#39;&#39;,
+  &#39;h1.services_enabled&#39;: &#39;&#39;,
+  &#39;h1.url&#39;: &#39;http://0.0.0.0:8088&#39;,
+  &#39;servers&#39;: &#39;h1&#39;}
+  The server agent for bisque [paster]? 
+  list of server entries to be configured [h1]? 
+  Install (update) paster configs (application server and configs) [Y]? 
+  PARAMS {&#39;h1.bisque.static_files&#39;: &#39;true&#39;, &#39;h1.services_enabled&#39;: &#39;&#39;, &#39;e1.bisque.has_database&#39;: &#39;false&#39;, &#39;h1.url&#39;: &#39;http://0.0.0.0:8088&#39;, &#39;servers&#39;: &#39;h1&#39;, &#39;h1.services_disabled&#39;: &#39;&#39;, &#39;e1.url&#39;: &#39;http://0.0.0.0:27000&#39;, &#39;e1.bisque.static_files&#39;: &#39;false&#39;, &#39;e1.services_enabled&#39;: &#39;engine_service&#39;, &#39;backend&#39;: &#39;paster&#39;}
+  h1: the url of the server [http://0.0.0.0:8088]? http://loup.ece.ucsb.edu:8080
+  h1: Services enabled []? 
+  h1: Services disabled []? 
+  Created paster config:  ./config/h1_paster.cfg
+  CALLING  &lt;function install_mail at 0x7f9533ffa758&gt;
+  Enable mail delivery [Y]? N
+  CALLING  &lt;function install_secrets at 0x7f9533ffa8c0&gt;
+  Encrypt cookies with secret phrase [CEMWOJ65]? 
+  CALLING  &lt;function install_database at 0x7f9533ff9578&gt;
+  A database URI [sqlite:///data/bisque.db]? 
+  Trying to import driver sqlite3...
+  Driver successfully imported.
+  Create and initialize database [Y]? 
+  A database URI [sqlite:///data/bisque.db]? 
+  Checking whether database &quot;data/bisque.db&quot; already exists...
+  Yes, it exists.
+  Upgrading database version (alembic)
+  INFO  [alembic.migration] Context impl SQLiteImpl.
+  INFO  [alembic.migration] Will assume non-transactional DDL.
+  CALLING  &lt;function install_preferences at 0x7f9533ffa7d0&gt;
+  Initialize Preferences  [Y]? 
+  Force initialization  [N]? 
+  INFO:bq.config:DATABASE sqlite:///data/bisque.db
+  INFO:bq.config:SQLLite special handling NullPool timoout
+  INFO:bq.image_service.server:Available converters: openslide (1.1.1), imgcnv (2.4.3), ImarisConvert (8.0.2), bioformats (5.1.1)
+  INFO:bq.blobs.mounts:Loaded drivers OrderedDict([(&#39;local&#39;, {&#39;top&#39;: &#39;file://$datadir/imagedir/&#39;, &#39;mounturl&#39;: &#39;file://$datadir/imagedir/$user/&#39;})])
+  WARNING:bq.blobs.mounts:SQLITE does not support subtransactions: some mount service operations will fail
+  INFO:bq.blobs.plugins:Resource plugins: [&#39;(bisque_pipeline, bq)&#39;, &#39;(cellprofiler_pipeline, cppipe)&#39;, &#39;(cellprofiler_pipeline, cp)&#39;, &#39;(dream3d_pipeline, json)&#39;, &#39;(imagej_pipeline, ijm)&#39;, &#39;(text, asc)&#39;, &#39;(text, ascii)&#39;, &#39;(text, zw)&#39;, &#39;(text, hz)&#39;, &#39;(text, txt)&#39;, &#39;(text, utxt)&#39;, &#39;(text, utf8)&#39;, &#39;(table, csv)&#39;, &#39;(table, hdf)&#39;, &#39;(table, hdf5)&#39;, &#39;(table, h5)&#39;, &#39;(table, he5)&#39;, &#39;(table, h5ebsd)&#39;, &#39;(table, dream3d)&#39;, &#39;(table, csv)&#39;, &#39;(table, xls)&#39;, &#39;(table, xlsx)&#39;]
+  WARNING:bq.service:Following service were not found: set([&#39;mnt&#39;])
+  /home/rahul/.virtualenvs/bqdev/local/lib/python2.7/site-packages/sqlalchemy/sql/sqltypes.py:226: SAWarning: Unicode type received non-unicode bind param value &#39;system&#39;. (this warning may be suppressed after 10 occurrences)
+    (util.ellipses_string(value),))
+  NO ACTION: System object initialized at &lt;system created=&quot;2019-02-04T10:51:57.823907&quot; name=&quot;system&quot; owner=&quot;http://localhost/data_service/00-2jimYQLLjB3yy3HuTwQM5c&quot; permission=&quot;published&quot; resource_uniq=&quot;00-UAZfWJYjDKp4yhabV3PP7S&quot; ts=&quot;2019-02-04T10:51:57.823907&quot; uri=&quot;http://localhost/data_service/00-UAZfWJYjDKp4yhabV3PP7S&quot;/&gt; 
+  Problem initializing preferences.. please use bq-admin preferences
+
+  Initialize your database with:
+    $ bq-admin setup createdb
+
+  You can start bisque with:
+    $ bq-admin server start
+  then point your browser to:
+      http://loup.ece.ucsb.edu:8080
+  If you need to shutdown the servers, then use:
+    $ bq-admin server stop
+  You can login as admin and change the default password.
+
+  Send Installation/Registration report [Y]? N
+  (bqdev) rahul@loup:~/repository/github/bisque$ 
 </pre></div>
 
 
