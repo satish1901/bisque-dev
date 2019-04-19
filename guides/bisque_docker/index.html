@@ -223,15 +223,16 @@ a1162677d66a        vishwakarmarhl/ucsb-bisque05-svc:dev   &quot;/builder/run-bi
 <ul>
 <li>Advanced environment for working with database URI as<ul>
 <li>sqlite:///data/bisque.db</li>
-<li>
-<p>postgresql://rahul:rahul@localhost/bqmurks58 or postgresql://dbhost:5432/bisque</p>
-<p><code>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
+<li>postgresql://rahul:rahul@localhost/bqmurks58 or postgresql://dbhost:5432/bisque</li>
+</ul>
+</li>
+</ul>
+<div class="codehilite"><pre><span></span>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
 -e BISQUE_DBURL=postgresql://rahul:rahul@localhost/bqmurks58 \
-'vishwakarmarhl/ucsb-bisque05-svc:dev'</code></p>
-</li>
-</ul>
-</li>
-</ul>
+&#39;vishwakarmarhl/ucsb-bisque05-svc:dev&#39;
+</pre></div>
+
+
 <h4 id="develop-in-docker-work-in-progress">Develop in Docker (Work In Progress !!)<a class="headerlink" href="#develop-in-docker-work-in-progress" title="Permanent link">&para;</a></h4>
 <p>Run the containerized bisque server as described in the first half of this document</p>
 <ul>
@@ -256,26 +257,33 @@ root@9362d1f8bf12:/source/modules/MaskRCNN# python setup.py
 <li>Now you can add the MaskRCNN module from the manager interface and run a test</li>
 <li>In this test a MEX-ID will be assigned to this module run and corresponding code will be dumped in the staging folder</li>
 <li>Look for "docker_run" script in the "staging/<mex_id>" folder. It has the following commands which you can use to run and debug your codebase</li>
-<li>
-<p>Script first creates the parameterized container command </p>
-<p><code>docker pull biodev.ece.ucsb.edu:5000/tflow-mrcnn-mod-v1
-CONTAINER=$(docker create --ipc=host biodev.ece.ucsb.edu:5000/tflow-mrcnn-mod-v1  python PythonScriptWrapper.py http://192.168.0.14:8080/data_service/00-s3KxZhuvBt8vhER5RD7wdX 15 0.05 http://192.168.0.14:8080/module_service/mex/00-wRq68hGv5HTtr6mBsfM4CG admin:00-wRq68hGv5HTtr6mBsfM4CG)</code></p>
-</li>
-<li>
-<p>Thereafter it executes the parameterized container command</p>
-<p><code>docker start $CONTAINER
-MODULE_RETURN=$(docker wait  $CONTAINER)
-docker logs $CONTAINER</code></p>
-</li>
-<li>
-<p>In your test, while still in the staging folder you can directly use the "docker_run" script to run your module as follows</p>
-<p><code>sh docker_run python PythonScriptWrapper.py \
- http://192.168.0.14:8080/data_service/00-s3KxZhuvBt8vhER5RD7wdX \
- 15 0.05 \
- http://192.168.0.14:8080/module_service/mex/00-wRq68hGv5HTtr6mBsfM4CG \
- admin:00-wRq68hGv5HTtr6mBsfM4CG)</code></p>
-</li>
+<li>Script first creates the parameterized container command </li>
 </ul>
+<div class="codehilite"><pre><span></span>docker pull biodev.ece.ucsb.edu:5000/tflow-mrcnn-mod-v1
+CONTAINER=$(docker create --ipc=host biodev.ece.ucsb.edu:5000/tflow-mrcnn-mod-v1  python PythonScriptWrapper.py http://192.168.0.14:8080/data_service/00-s3KxZhuvBt8vhER5RD7wdX 15 0.05 http://192.168.0.14:8080/module_service/mex/00-wRq68hGv5HTtr6mBsfM4CG admin:00-wRq68hGv5HTtr6mBsfM4CG)
+</pre></div>
+
+
+<ul>
+<li>Thereafter it executes the parameterized container command</li>
+</ul>
+<div class="codehilite"><pre><span></span>docker start $CONTAINER
+MODULE_RETURN=$(docker wait  $CONTAINER)
+docker logs $CONTAINER
+</pre></div>
+
+
+<ul>
+<li>In your test, while still in the staging folder you can directly use the "docker_run" script to run your module as follows</li>
+</ul>
+<div class="codehilite"><pre><span></span>sh docker_run python PythonScriptWrapper.py \
+  http://192.168.0.14:8080/data_service/00-s3KxZhuvBt8vhER5RD7wdX \
+  15 0.05 \
+  http://192.168.0.14:8080/module_service/mex/00-wRq68hGv5HTtr6mBsfM4CG \
+  admin:00-wRq68hGv5HTtr6mBsfM4CG)
+</pre></div>
+
+
 <p>Notes: Look into the README files on the modules for more commands on test/debug
 - MaskRCNN - <a href="https://github.com/UCSB-VRL/bisque-dev/blob/master/modules/MaskRCNN/README.md">README from Github</a>
 - Deep Planteome - <a href="../bisque_module_planteome">Module Instructions</a></p></div>
