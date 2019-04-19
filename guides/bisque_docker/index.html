@@ -117,7 +117,7 @@
             <li><a href="#pre-requisite">Pre-requisite</a></li>
             <li><a href="#create-the-docker-image">Create the Docker Image</a></li>
             <li><a href="#run-environment">Run Environment</a></li>
-            <li><a href="#develop-in-docker-todo">Develop in Docker (TODO !!)</a></li>
+            <li><a href="#develop-in-docker-work-in-progress">Develop in Docker (Work In Progress !!)</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
@@ -138,9 +138,16 @@
       https://github.com/UCSB-VRL/bisque/README.md</li>
 </ul>
 <h4 id="create-the-docker-image">Create the Docker Image<a class="headerlink" href="#create-the-docker-image" title="Permanent link">&para;</a></h4>
+<blockquote>
+<p>Look into the <a href="https://github.com/UCSB-VRL/bisque-build">UCSB-VRL/bisque-build</a> repository on how to create Docker container images for development</p>
+</blockquote>
+<ul>
+<li>The container image has bisque server, docker &amp; virtual environment pre-installed</li>
+<li>The child containers that will run modules, will use the host network since we are working with local IP addresses which are not resolved on development network environments.</li>
+</ul>
 <h4 id="run-environment">Run Environment<a class="headerlink" href="#run-environment" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Setup folders &amp; pull code </li>
+<li>Setup folders &amp; pull code (Only for modules since Bisque server codebase is already part of the container image being used in next step)</li>
 </ul>
 <div class="codehilite"><pre><span></span>mkdir ws &amp;&amp; cd ws &amp;&amp; git clone https://github.com/UCSB-VRL/bisque
 mkdir container-modules container-data container-config &amp;&amp; cp -r bisque/modules/* container-modules/
@@ -155,12 +162,26 @@ docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
  -v $(pwd)/container-modules:/source/modules \
  -v $(pwd)/container-data:/source/data \
  -v $(pwd)/container-config:/source/config \
+ -v /var/run/docker.sock:/var/run/docker.sock \
+ --ipc=host \
+ --net=host \
  &#39;vishwakarmarhl/ucsb-bisque05-svc:dev&#39;
 </pre></div>
 
 
+<p>Alternately if you want an interactive log for docker run use the below command</p>
+<div class="codehilite"><pre><span></span>docker run -it -p 8080:8080 -p 27000:27000 \
+ -v $(pwd):/ws \
+ -v /var/run/docker.sock:/var/run/docker.sock \
+ --mount source=bqvol,target=/ws/bqvol \
+ --ipc=host \
+ --net=host \
+ ucsb-bisque05-svc:dev
+</pre></div>
+
+
 <ul>
-<li>Check Container state</li>
+<li>Check Container state </li>
 </ul>
 <div class="codehilite"><pre><span></span>bisque@ubuntu:~$ docker ps
 CONTAINER ID        IMAGE                                  COMMAND                  CREATED             STATUS              PORTS                                              NAMES
@@ -176,22 +197,6 @@ a1162677d66a        vishwakarmarhl/ucsb-bisque05-svc:dev   &quot;/builder/run-bi
 
 
 <ul>
-<li>Advanced environment for working with database URI as,<ul>
-<li>sqlite:///data/bisque.db</li>
-<li>postgresql://rahul:rahul@localhost/bqmurks58 or postgresql://dbhost:5432/bisque</li>
-</ul>
-</li>
-</ul>
-<div class="codehilite"><pre><span></span>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
- -v $(pwd)/container-modules:/source/modules \
- -v $(pwd)/container-data:/source/data \
- -v $(pwd)/container-config:/source/config \
- -e BISQUE_DBURL=postgresql://rahul:rahul@localhost/bqmurks58 \
- &#39;vishwakarmarhl/ucsb-bisque05-svc:dev&#39;
-</pre></div>
-
-
-<ul>
 <li>This will start the bisque docker/server<ul>
 <li>Client Service http://0.0.0.0:8080</li>
 <li>Engine Service http://0.0.0.0:8080/engine_service</li>
@@ -199,41 +204,38 @@ a1162677d66a        vishwakarmarhl/ucsb-bisque05-svc:dev   &quot;/builder/run-bi
 <li>Features http://0.0.0.0:8080/features</li>
 </ul>
 </li>
-<li>Use "admin:admin" to authenticate into this local environment </li>
+<li>
+<p>Since we want to develop we should use the local IP address for all accesses</p>
+<ul>
+<li>Client Service http://192.168.0.14:8080/</li>
+<li>Engine Service http://192.168.0.14:8080/engine_service</li>
+</ul>
+</li>
+<li>
+<p>Use "admin:admin" to authenticate into this local environment </p>
+</li>
 <li>To manipulate and check logs, connect to docker bash </li>
 </ul>
 <div class="codehilite"><pre><span></span>bisque-host$ docker exec -t -i bisque-dev /bin/bash
 </pre></div>
 
 
-<h4 id="develop-in-docker-todo">Develop in Docker (TODO !!)<a class="headerlink" href="#develop-in-docker-todo" title="Permanent link">&para;</a></h4>
 <ul>
+<li>Advanced environment for working with database URI as<ul>
+<li>sqlite:///data/bisque.db</li>
 <li>
-<p>Use the dev docker image <a href="https://cloud.docker.com/repository/docker/vishwakarmarhl/ucsb-bisque05-svc">docker vishwakarmarhl/ucsb-bisque05-svc</a></p>
-</li>
-<li>
-<p>Create the workspace and prepare the development setup</p>
+<p>postgresql://rahul:rahul@localhost/bqmurks58 or postgresql://dbhost:5432/bisque</p>
+<p><code>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
+-e BISQUE_DBURL=postgresql://rahul:rahul@localhost/bqmurks58 \
+'vishwakarmarhl/ucsb-bisque05-svc:dev'</code></p>
 </li>
 </ul>
-<div class="codehilite"><pre><span></span>cd ~/ws
-git clone https://github.com/UCSB-VRL/bisque
-mkdir container-modules container-data container-config
-cp -r bisque/modules/* container-modules/
-</pre></div>
-
-
-<ul>
-<li>Create the container </li>
+</li>
 </ul>
-<div class="codehilite"><pre><span></span>docker run --name bisque-dev --rm -p 8080:8080 -p 27000:27000 \
--v $(pwd)/container-modules:/source/modules \
--v $(pwd)/container-data:/source/data \
--v $(pwd)/container-config:/source/config \
-&#39;vishwakarmarhl/ucsb-bisque05-svc:dev&#39;
-</pre></div>
-
-
+<h4 id="develop-in-docker-work-in-progress">Develop in Docker (Work In Progress !!)<a class="headerlink" href="#develop-in-docker-work-in-progress" title="Permanent link">&para;</a></h4>
+<p>Run the containerized bisque server as described in the first half of this document</p>
 <ul>
+<li>Use the dev docker image <a href="https://cloud.docker.com/repository/docker/vishwakarmarhl/ucsb-bisque05-svc">docker vishwakarmarhl/ucsb-bisque05-svc</a></li>
 <li>Bash into the docker container and develop</li>
 </ul>
 <div class="codehilite"><pre><span></span>docker exec -it bisque-dev /bin/bash
@@ -241,24 +243,42 @@ cp -r bisque/modules/* container-modules/
 
 
 <ul>
-<li>Activate environment and Test/Build a Module (TODO !! python-dev)</li>
+<li>Activate environment and Test/Build a Module</li>
 </ul>
-<div class="codehilite"><pre><span></span>root@9362d1f8bf12:/source# cd modules/MetaData
-root@9362d1f8bf12:/source/modules/MetaData# source /usr/lib/bisque/bin/activate
-root@9362d1f8bf12:/source/modules/MetaData# python setup.py
+<div class="codehilite"><pre><span></span>root@9362d1f8bf12:/source# cd modules/MaskRCNN
+root@9362d1f8bf12:/source/modules/MaskRCNN# source /usr/lib/bisque/bin/activate
+root@9362d1f8bf12:/source/modules/MaskRCNN# python setup.py
 </pre></div>
 
 
 <ul>
 <li>Verify Bisque Services</li>
-<li>Bisque Client interface at http://0.0.0.0:8080/client_service</li>
+<li>Now you can add the MaskRCNN module from the manager interface and run a test</li>
+<li>In this test a MEX-ID will be assigned to this module run and corresponding code will be dumped in the staging folder</li>
+<li>Look for "docker_run" script in the "staging/<mex_id>" folder. It has the following commands which you can use to run and debug your codebase</li>
 <li>
-<p>Bisque Engine service at http://0.0.0.0:8080/engine_service</p>
+<p>Script first creates the parameterized container command </p>
+<p><code>docker pull biodev.ece.ucsb.edu:5000/tflow-mrcnn-mod-v1
+CONTAINER=$(docker create --ipc=host biodev.ece.ucsb.edu:5000/tflow-mrcnn-mod-v1  python PythonScriptWrapper.py http://192.168.0.14:8080/data_service/00-s3KxZhuvBt8vhER5RD7wdX 15 0.05 http://192.168.0.14:8080/module_service/mex/00-wRq68hGv5HTtr6mBsfM4CG admin:00-wRq68hGv5HTtr6mBsfM4CG)</code></p>
 </li>
 <li>
-<p>Now you can add the Metadata module from the manager interface and run a test</p>
+<p>Thereafter it executes the parameterized container command</p>
+<p><code>docker start $CONTAINER
+MODULE_RETURN=$(docker wait  $CONTAINER)
+docker logs $CONTAINER</code></p>
 </li>
-</ul></div>
+<li>
+<p>In your test, while still in the staging folder you can directly use the "docker_run" script to run your module as follows</p>
+<p><code>sh docker_run python PythonScriptWrapper.py \
+ http://192.168.0.14:8080/data_service/00-s3KxZhuvBt8vhER5RD7wdX \
+ 15 0.05 \
+ http://192.168.0.14:8080/module_service/mex/00-wRq68hGv5HTtr6mBsfM4CG \
+ admin:00-wRq68hGv5HTtr6mBsfM4CG)</code></p>
+</li>
+</ul>
+<p>Notes: Look into the README files on the modules for more commands on test/debug
+- MaskRCNN - <a href="https://github.com/UCSB-VRL/bisque-dev/blob/master/modules/MaskRCNN/README.md">README from Github</a>
+- Deep Planteome - <a href="../bisque_module_planteome">Module Instructions</a></p></div>
         </div>
 
         <footer class="col-md-12">
