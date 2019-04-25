@@ -126,23 +126,28 @@
 <li>Add <a href="http://www.darwinbiler.com/openstack-creating-and-attaching-a-volume-into-an-instance/">Openstack storage volume</a> as per the Bisque requirement and volume available in openstack. This will later be NFS mounted for this tutorial.</li>
 </ul>
 <h5 id="nvidia-docker">Nvidia-docker<a class="headerlink" href="#nvidia-docker" title="Permanent link">&para;</a></h5>
-<p>Since there is a GPU requirement in Bisque Connoisseur.
-- Install <a href="https://docs.docker.com/install/linux/docker-ce/ubuntu">Docker</a>
-  - Use a specific version of docker for compatibility with nvidia-docker2 on Xenial or Bionic based on your system
-    ```
-    sudo apt-get install docker-ce=5:18.09.1~3-0~ubuntu-xenial \
-         docker-ce-cli=5:18.09.1~3-0~ubuntu-xenial containerd.io</p>
-<div class="codehilite"><pre><span></span>OR
+<p>Since there is a GPU requirement in Bisque Modules/Connoisseur.</p>
+<ul>
+<li>Install <a href="https://docs.docker.com/install/linux/docker-ce/ubuntu">Docker</a><ul>
+<li>Use a specific version of docker for compatibility with nvidia-docker2 on Xenial or Bionic based on your system</li>
+</ul>
+</li>
+</ul>
+<div class="codehilite"><pre><span></span>sudo apt-get install docker-ce=5:18.09.1~3-0~ubuntu-xenial \
+      docker-ce-cli=5:18.09.1~3-0~ubuntu-xenial containerd.io
+
+OR
 
 sudo apt-get install docker-ce=5:18.09.2~3-0~ubuntu-bionic \
-     docker-ce-cli=5:18.09.2~3-0~ubuntu-bionic containerd.io
-```
+      docker-ce-cli=5:18.09.2~3-0~ubuntu-bionic containerd.io
 </pre></div>
 
 
 <ul>
-<li>Install <a href="https://github.com/nvidia/nvidia-docker/">Nvidia-Docker</a>, </li>
-<li>Configure default nvidia-runtime: https://github.com/NVIDIA/k8s-device-plugin#preparing-your-gpu-nodes</li>
+<li>Install <a href="https://github.com/nvidia/nvidia-docker/">Nvidia-Docker</a>, <ul>
+<li>Configure <a href="https://github.com/NVIDIA/k8s-device-plugin#preparing-your-gpu-nodes">default nvidia-runtime</a> as below</li>
+</ul>
+</li>
 </ul>
 <div class="codehilite"><pre><span></span># Run the following to insert the configuration
 sudo echo &quot;{ \&quot;default-runtime\&quot;: \&quot;nvidia\&quot;, \&quot;runtimes\&quot;: { \&quot;nvidia\&quot;: { \&quot;path\&quot;: \&quot;nvidia-container-runtime\&quot;, \&quot;runtimeArgs\&quot;: [] }}}&quot; \
@@ -180,15 +185,17 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 
 <h5 id="postgresql-server">PostgreSQL server<a class="headerlink" href="#postgresql-server" title="Permanent link">&para;</a></h5>
 <ul>
-<li><a href="../rancher2_postgresql">Setup PostgreSql 10.4 on Rancher workload</a></li>
+<li><a href="../rancher2_postgresql">Setup PostgreSql 10.4 on Rancher workload</a><ul>
 <li>Verify the connectivity to this database using the below command</li>
+</ul>
+</li>
 </ul>
 <div class="codehilite"><pre><span></span>psql -h postgres.prod -U postgres --password -p 5432 postgres
 </pre></div>
 
 
 <ul>
-<li>This will be used in the Bisque configuration as environment variable later</li>
+<li>Below variable will be used in the Bisque configuration as environment variable later</li>
 </ul>
 <div class="codehilite"><pre><span></span>BISQUE_DBURL=postgresql://postgres:postgres@postgres.prod:5432/postgres
 </pre></div>
@@ -200,16 +207,23 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 <li>Deployment <a href="https://docs.google.com/presentation/d/1E6f6BR5sj5g3WPc_uRV01ZPbAjezZuUAvidUwZbbthQ/edit#slide=id.g4f74d0d960_0_58">Google Slides</a></li>
 </ul>
 <p><img alt="Rancher Deployment Diagram" src="../img/bqranch/rancher2-openstack-bisque-topology.png" /></p>
-<p>==Cluster==
-- bisque-dev-01.cyverse.org , ubuntu@128.196.65.71
-- bisque-dev-02.cyverse.org , ubuntu@128.196.65.100
-- bisque-dev-gpu-01.cyverse.org , ubuntu@128.196.65.142</p>
+<blockquote>
+<p>Cluster (access Openstack instances using the admin provided SSH keys)</p>
+</blockquote>
+<ul>
+<li>bisque-dev-01.cyverse.org , ubuntu@128.196.65.71</li>
+<li>bisque-dev-02.cyverse.org , ubuntu@128.196.65.100</li>
+<li>bisque-dev-gpu-01.cyverse.org , ubuntu@128.196.65.142</li>
+</ul>
+<hr />
 <h4 id="b-lets-encrypt-on-ubuntu-1604">B. Lets Encrypt on <a href="https://certbot.eff.org/lets-encrypt/ubuntuxenial-other">Ubuntu 16.04</a><a class="headerlink" href="#b-lets-encrypt-on-ubuntu-1604" title="Permanent link">&para;</a></h4>
-<p>Note: Only works on port 80
-- Bind the hostname to the IP address by creating an A record in DNS 
-- Letsencrypt ACME challenge at TCP/80 on host
-- Open up firewall for this "sudo ufw allow 80 &amp;&amp; sudo ufw allow 80 443"
-- Verify the port 80 availability</p>
+<p>Note: Only works on port 80 (Not using this on the test setup)</p>
+<ul>
+<li>Bind the hostname to the IP address by creating an A record in DNS </li>
+<li>Letsencrypt ACME challenge at TCP/80 on host</li>
+<li>Open up firewall for this "sudo ufw allow 80 &amp;&amp; sudo ufw allow 80 443"</li>
+<li>Verify the port 80 availability</li>
+</ul>
 <div class="codehilite"><pre><span></span>sudo netstat -peanut | grep &quot;:80&quot; 
 </pre></div>
 
@@ -240,9 +254,12 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 
 <hr />
 <h4 id="c-master-rancher-20">C. Master Rancher 2.0<a class="headerlink" href="#c-master-rancher-20" title="Permanent link">&para;</a></h4>
-<p>Install/Startup Rancher: https://rancher.com/docs/rancher/v2.x/en/installation/single-node/
-- Rancher etcd data persisted at /var/lib/rancher
-- Since port 80 is occupied by rancher/rancher, a rancher/rancher-agent cannot be run on this node.</p>
+<p>Install/Startup Rancher: https://rancher.com/docs/rancher/v2.x/en/installation/single-node/</p>
+<ul>
+<li>Lets setup Rancher master on "bisque-dev-01.cyverse.org" </li>
+<li>Rancher etcd data persisted at /var/lib/rancher</li>
+<li>Since port 80 is occupied by rancher/rancher, a rancher/rancher-agent cannot be run on this node.</li>
+</ul>
 <div class="codehilite"><pre><span></span>docker run -d --restart=unless-stopped \
   -p 8080:80 -p 8443:443 \
   -v /var/log/rancher/auditlog:/var/log/auditlog \
@@ -255,9 +272,11 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 <ul>
 <li>You will have rancher accessible at https://bisque-dev-01.cyverse.org:8443 if everything goes fine</li>
 </ul>
+<p>We will setup a custom RKE Kubernetes cluster using the remaining nodes/instances and dedicate this for rancher master server.</p>
 <hr />
 <h4 id="d-setup-cluster-rkecustom-nodes">D. Setup Cluster <a href="https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/custom-nodes/">RKE/custom-nodes</a><a class="headerlink" href="#d-setup-cluster-rkecustom-nodes" title="Permanent link">&para;</a></h4>
 <ul>
+<li>Access the admin interface at https://bisque-dev-01.cyverse.org:8443 for cluster management</li>
 <li>Create a cluster and name it "bq-cluster"</li>
 <li>Use Calico for the CNI network layer</li>
 <li>Choose custom cloud provider leveraging k8s</li>
@@ -283,6 +302,7 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 <blockquote>
 <p>You can add more nodes to the cluster by editing the cluster and running another command as below</p>
 </blockquote>
+<p>Be sure to provide the relevant configuration by editing the cluster from the rancher admin user interface</p>
 <div class="codehilite"><pre><span></span>sudo docker run -d --privileged --restart=unless-stopped --net=host \
   -v /etc/kubernetes:/etc/kubernetes \
   -v /var/run:/var/run \
@@ -370,17 +390,21 @@ https://www.claudiokuenzler.com/blog/786/rancher-2.0-create-persistent-volume-fr
 <p>Bisque Test environment where workloads are deployed with open NodePort
 https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/</p>
 <h5 id="condor-setup">Condor Setup<a class="headerlink" href="#condor-setup" title="Permanent link">&para;</a></h5>
-<p>Installation &amp; Configuration
-- <a href="https://research.cs.wisc.edu/htcondor/instructions/ubuntu/16/stable/">HT Condor install instructions</a></p>
+<p>Installation &amp; Configuration</p>
+<ul>
+<li><a href="https://research.cs.wisc.edu/htcondor/instructions/ubuntu/16/stable/">HT Condor install instructions</a></li>
+</ul>
 <h6 id="condor-master-node-deployment-this-service-will-be-discoverable-at-mastercondorsvcclusterlocal">Condor Master Node Deployment. This service will be discoverable at master.condor.svc.cluster.local<a class="headerlink" href="#condor-master-node-deployment-this-service-will-be-discoverable-at-mastercondorsvcclusterlocal" title="Permanent link">&para;</a></h6>
 <ul>
 <li>Name: master</li>
 <li>Namespace: condor</li>
 <li>Pods: 1</li>
 <li>Docker Image: biodev.ece.ucsb.edu:5000/condor</li>
-<li>Port Mapping: </li>
-<li>9618        TCP         HostPort        9618</li>
-<li>9886        TCP         HostPort        9886 </li>
+<li>Port Mapping: <ul>
+<li>9618      TCP         HostPort        9618</li>
+<li>9886      TCP         HostPort        9886 </li>
+</ul>
+</li>
 <li>Environment</li>
 </ul>
 <div class="codehilite"><pre><span></span>CONDOR_MANAGER_HOST =   master.condor
@@ -399,10 +423,14 @@ CONDOR_DAEMONS =    COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
 <li>Namespace: condor</li>
 <li>Pods: 2</li>
 <li>Docker Image: biodev.ece.ucsb.edu:5000/condor</li>
-<li>Port Mapping: </li>
-<li>9886        TCP         ClusterIP(Internal)         9886 </li>
-<li>Volumes</li>
+<li>Port Mapping: <ul>
+<li>9886      TCP         ClusterIP(Internal)         9886 </li>
+</ul>
+</li>
+<li>Volumes<ul>
 <li>Persistent Volume from Node path /var/run/docker.sock (enables docker run)</li>
+</ul>
+</li>
 <li>
 <p>Node Scheduling: Run all the pods on a particular host (GPU based bisque-dev-gpu-01.cyverse.org due to caffe engine requirements)</p>
 </li>
@@ -425,27 +453,33 @@ CONDOR_DAEMONS =    MASTER,SCHEDD,STARTD,SHARED_PORT
 <li>Name: bisquesvc</li>
 <li>Pods: 1</li>
 <li>Docker Image: biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev</li>
-<li>Port Mapping: </li>
+<li>
+<p>Port Mapping: </p>
+<ul>
 <li>80-TCP-NodePort-Random </li>
 <li>8080-TCP-NodePort-Random </li>
-<li>
-<p>27000-TCP-NodePort-Random</p>
+<li>27000-TCP-NodePort-Random</li>
+</ul>
 </li>
 <li>
 <p>Environment Variables: Copy paste the "Environment Configuration" section </p>
 </li>
 <li>Node Scheduling: Run all the pods on a particular host (GPU based bisque-dev-gpu-01.cyverse.org due to caffe engine)</li>
 <li>Health Check: No change</li>
-<li>Volumes</li>
+<li>Volumes<ul>
 <li>Persistent Volume claim and set the mount point as /run/bisque</li>
 <li>Persistent Volume from Node path /etc/letsencrypt</li>
 <li>Persistent Volume from Node path /var/run/docker.sock</li>
+</ul>
+</li>
 <li>Scaling: No change</li>
-<li>Command: (Only, in case needed. Not used with the current Image)</li>
+<li>Command: (Only, in case needed. Not used with the current Image)<ul>
 <li>Entrypoint: /builder/run-bisque.sh</li>
 <li>Command: bootstrap start</li>
 <li>Working Dir: /source</li>
 <li>Console: Interactive &amp; TTY (-i -t)</li>
+</ul>
+</li>
 <li>Networking: Cluster first with host network</li>
 <li>Labels: No change</li>
 <li>Security &amp; Host: Privileged is True</li>
@@ -494,6 +528,7 @@ CONDOR_DAEMONS =    MASTER,SCHEDD,STARTD,SHARED_PORT
 </ul>
 <p>You should be able to tail the log on the node where you have deployed the container.
 <code>sudo tail -f /var/log/containers/prod_bisquecon-*.log</code></p>
+<hr />
 <h4 id="g-load-balancing-using-l7-ingress">G. Load Balancing (using L7 Ingress)<a class="headerlink" href="#g-load-balancing-using-l7-ingress" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Add Ingress configuration for load balancing with name "bq-website" </li>
@@ -508,7 +543,7 @@ CONDOR_DAEMONS =    MASTER,SCHEDD,STARTD,SHARED_PORT
         </footer>
         <script>
             var base_url = "../..",
-                shortcuts = {"search": 83, "next": 78, "help": 191, "previous": 80};
+                shortcuts = {"help": 191, "next": 78, "search": 83, "previous": 80};
         </script>
         <script src="../../js/base.js" defer></script>
         <script src="../../search/main.js" defer></script>
