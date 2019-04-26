@@ -12,20 +12,23 @@
 
 ##### Nvidia-docker
 
-Since there is a GPU requirement in Bisque Connoisseur.
+Since there is a GPU requirement in Bisque Modules/Connoisseur.
+
 - Install [Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu)
-  - Use a specific version of docker for compatibility with nvidia-docker2 on Xenial or Bionic based on your system
-    ```
-    sudo apt-get install docker-ce=5:18.09.1~3-0~ubuntu-xenial \
-         docker-ce-cli=5:18.09.1~3-0~ubuntu-xenial containerd.io
+    - Use a specific version of docker for compatibility with nvidia-docker2 on Xenial or Bionic based on your system
 
-    OR
+```
+sudo apt-get install docker-ce=5:18.09.1~3-0~ubuntu-xenial \
+      docker-ce-cli=5:18.09.1~3-0~ubuntu-xenial containerd.io
 
-    sudo apt-get install docker-ce=5:18.09.2~3-0~ubuntu-bionic \
-         docker-ce-cli=5:18.09.2~3-0~ubuntu-bionic containerd.io
-    ```
+OR
+
+sudo apt-get install docker-ce=5:18.09.2~3-0~ubuntu-bionic \
+      docker-ce-cli=5:18.09.2~3-0~ubuntu-bionic containerd.io
+```
+
 - Install [Nvidia-Docker](https://github.com/nvidia/nvidia-docker/), 
-- Configure default nvidia-runtime: https://github.com/NVIDIA/k8s-device-plugin#preparing-your-gpu-nodes
+    - Configure [default nvidia-runtime](https://github.com/NVIDIA/k8s-device-plugin#preparing-your-gpu-nodes) as below
 
 ```
 # Run the following to insert the configuration
@@ -44,7 +47,8 @@ sudo echo > /etc/docker/daemon.json
     }
 }
 ```
-- (Not Prefferred, use only if you know what you are doing) Configure the docker to use a particular storage path or even a [NFS mounted path](https://whyistheinternetbroken.wordpress.com/2015/05/12/techusing-nfs-with-docker-where-does-it-fit-in/)
+
+  - (Not Prefferred, use only if you know what you are doing) Configure the docker to use a particular storage path or even a [NFS mounted path](https://whyistheinternetbroken.wordpress.com/2015/05/12/techusing-nfs-with-docker-where-does-it-fit-in/)
 
 ```
 # Edit where images are stored at "sudo vim /etc/default/docker"
@@ -61,12 +65,13 @@ docker run  --rm nvidia/cuda:9.0-base nvidia-smi
 ##### PostgreSQL server
 
 - [Setup PostgreSql 10.4 on Rancher workload](../rancher2_postgresql)
-- Verify the connectivity to this database using the below command
+    - Verify the connectivity to this database using the below command
 
 ```
 psql -h postgres.prod -U postgres --password -p 5432 postgres
 ```
-- This will be used in the Bisque configuration as environment variable later
+
+  - Below variable will be used in the Bisque configuration as environment variable later
 
 ```
 BISQUE_DBURL=postgresql://postgres:postgres@postgres.prod:5432/postgres
@@ -79,15 +84,18 @@ BISQUE_DBURL=postgresql://postgres:postgres@postgres.prod:5432/postgres
 ![Rancher Deployment Diagram](img/bqranch/rancher2-openstack-bisque-topology.png)
 
 
-==Cluster==
+> Cluster (access Openstack instances using the admin provided SSH keys)
+
 - bisque-dev-01.cyverse.org , ubuntu@128.196.65.71
 - bisque-dev-02.cyverse.org , ubuntu@128.196.65.100
 - bisque-dev-gpu-01.cyverse.org , ubuntu@128.196.65.142
 
+--------------------------
 
 #### B. Lets Encrypt on [Ubuntu 16.04](https://certbot.eff.org/lets-encrypt/ubuntuxenial-other)
 
-Note: Only works on port 80
+Note: Only works on port 80 (Not using this on the test setup)
+
 - Bind the hostname to the IP address by creating an A record in DNS 
 - Letsencrypt ACME challenge at TCP/80 on host
 - Open up firewall for this "sudo ufw allow 80 && sudo ufw allow 80 443"
@@ -122,6 +130,8 @@ sudo certbot certonly --standalone --dry-run \
 #### C. Master Rancher 2.0
 
 Install/Startup Rancher: https://rancher.com/docs/rancher/v2.x/en/installation/single-node/
+
+- Lets setup Rancher master on "bisque-dev-01.cyverse.org" 
 - Rancher etcd data persisted at /var/lib/rancher
 - Since port 80 is occupied by rancher/rancher, a rancher/rancher-agent cannot be run on this node.
 
@@ -135,10 +145,15 @@ docker run -d --restart=unless-stopped \
 ```
 - You will have rancher accessible at https://bisque-dev-01.cyverse.org:8443 if everything goes fine
 
+
+We will setup a custom RKE Kubernetes cluster using the remaining nodes/instances and dedicate this for rancher master server.
+
+
 ------------------------
 
 #### D. Setup Cluster [RKE/custom-nodes](https://rancher.com/docs/rancher/v2.x/en/cluster-provisioning/rke-clusters/custom-nodes/)
 
+- Access the admin interface at https://bisque-dev-01.cyverse.org:8443 for cluster management
 - Create a cluster and name it "bq-cluster"
 - Use Calico for the CNI network layer
 - Choose custom cloud provider leveraging k8s
@@ -162,6 +177,8 @@ docker run -d --restart=unless-stopped \
 - You will see a green bar below saying a particular node has registered.
 
 > You can add more nodes to the cluster by editing the cluster and running another command as below
+
+Be sure to provide the relevant configuration by editing the cluster from the rancher admin user interface
 
 ```
 sudo docker run -d --privileged --restart=unless-stopped --net=host \
@@ -245,17 +262,20 @@ Bisque Test environment where workloads are deployed with open NodePort
 https://rancher.com/managing-kubernetes-workloads-with-rancher-2-0/
 
 ##### Condor Setup
+
 Installation & Configuration
+
 - [HT Condor install instructions](https://research.cs.wisc.edu/htcondor/instructions/ubuntu/16/stable/)
 
 ###### Condor Master Node Deployment. This service will be discoverable at master.condor.svc.cluster.local
+
 - Name: master
 - Namespace: condor
 - Pods: 1
 - Docker Image: biodev.ece.ucsb.edu:5000/condor
 - Port Mapping: 
-  - 9618 	  	TCP 	  	HostPort 	  	9618
-  - 9886 	  	TCP 	  	HostPort 	  	9886 
+    - 9618 	  	TCP 	  	HostPort 	  	9618
+    - 9886 	  	TCP 	  	HostPort 	  	9886 
 - Environment
 
 ```
@@ -276,9 +296,9 @@ DAEMON_LIST = COLLECTOR,MASTER,NEGOTIATOR,SCHEDD,SHARED_PORT
 - Pods: 2
 - Docker Image: biodev.ece.ucsb.edu:5000/condor
 - Port Mapping: 
-  - 9886 	  	TCP 	  	ClusterIP(Internal) 	  	9886 
+    - 9886 	  	TCP 	  	ClusterIP(Internal) 	  	9886 
 - Volumes
-  - Persistent Volume from Node path /var/run/docker.sock (enables docker run)
+    - Persistent Volume from Node path /var/run/docker.sock (enables docker run)
 - Node Scheduling: Run all the pods on a particular host (GPU based bisque-dev-gpu-01.cyverse.org due to caffe engine requirements)
 
 - Environment
@@ -300,23 +320,23 @@ We will be using the image at custom registry [biodev.ece.ucsb.edu:5000](https:/
 - Pods: 1
 - Docker Image: biodev.ece.ucsb.edu:5000/bisque-caffe-xenial:dev
 - Port Mapping: 
-  - 80-TCP-NodePort-Random 
-  - 8080-TCP-NodePort-Random 
-  - 27000-TCP-NodePort-Random
+    - 80-TCP-NodePort-Random 
+    - 8080-TCP-NodePort-Random 
+    - 27000-TCP-NodePort-Random
 
 - Environment Variables: Copy paste the "Environment Configuration" section 
 - Node Scheduling: Run all the pods on a particular host (GPU based bisque-dev-gpu-01.cyverse.org due to caffe engine)
 - Health Check: No change
 - Volumes
-  - Persistent Volume claim and set the mount point as /run/bisque
-  - Persistent Volume from Node path /etc/letsencrypt
-  - Persistent Volume from Node path /var/run/docker.sock
+    - Persistent Volume claim and set the mount point as /run/bisque
+    - Persistent Volume from Node path /etc/letsencrypt
+    - Persistent Volume from Node path /var/run/docker.sock
 - Scaling: No change
 - Command: (Only, in case needed. Not used with the current Image)
-  - Entrypoint: /builder/run-bisque.sh
-  - Command: bootstrap start
-  - Working Dir: /source
-  - Console: Interactive & TTY (-i -t)
+    - Entrypoint: /builder/run-bisque.sh
+    - Command: bootstrap start
+    - Working Dir: /source
+    - Console: Interactive & TTY (-i -t)
 - Networking: Cluster first with host network
 - Labels: No change
 - Security & Host: Privileged is True
@@ -364,6 +384,7 @@ Service should be running at http://bisque-dev-gpu-01.cyverse.org:31274
 You should be able to tail the log on the node where you have deployed the container.
 ``` sudo tail -f /var/log/containers/prod_bisquecon-*.log ```
 
+--------------
 #### G. Load Balancing (using L7 Ingress)
 - Add Ingress configuration for load balancing with name "bq-website" 
 - Configure the target(bisquesvc) pods so that the port 80 is used

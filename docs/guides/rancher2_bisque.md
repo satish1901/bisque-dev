@@ -56,8 +56,10 @@ sudo certbot certonly --standalone --dry-run \
 #### C. Master Rancher 2.0
 
 Install/Startup Rancher: https://rancher.com/docs/rancher/v2.x/en/installation/single-node/
+
 - Rancher etcd data persisted at /var/lib/rancher
 - Since port 80 is occupied by rancher/rancher, a rancher/rancher-agent cannot be run on this node.
+
 ```
 docker run -d --restart=unless-stopped \
   -p 8080:80 -p 8443:443 \
@@ -66,6 +68,7 @@ docker run -d --restart=unless-stopped \
   -e AUDIT_LEVEL=1 \
   rancher/rancher:stable 
 ```
+
 ![Rancher main Container](img/bqranch/rancher_main_container.png?raw=true)
 
 - You will have rancher accessible at https://loup.ece.ucsb.edu:8443 if everything goes fine

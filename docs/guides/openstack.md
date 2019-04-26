@@ -1,6 +1,6 @@
 
 
-
+------------------
 ## Openstack @UCSB
 
 We should login to it using our Ucsb NetId credentials(the way you use at gauchospace).
@@ -32,7 +32,7 @@ We should login to it using our Ucsb NetId credentials(the way you use at gaucho
 ###### Note: Openstack uses 3 KVM instances and try not to launch 3 instances with 32GB RAM at once
 
 
-
+------------------
 ## Openstack @CyVerse
 
 Login to Cyverse Openstack using the account created by Chris Martin or Andy Edmond in University of Arizona
