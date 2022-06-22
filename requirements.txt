@@ -119,7 +119,7 @@ pydicom==0.9.8
 #json== #standard python package
 xlrd==0.9.4
 numexpr==2.6.2
-numpy==1.12.0
+numpy==1.22.0
 tables==3.4.2
 pandas==0.19.2
 
